@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@9.1.2",
   "scripts": {
+    "prepare": "husky install",
     "dev": "turbo dev --filter=apps/web",
     "dev:landing": "turbo dev --filter=apps/landing",
     "build": "turbo build --filter=apps/web",
@@ -12,6 +13,7 @@
     "test": "pnpm --filter apps/web test"
   },
   "devDependencies": {
+    "husky": "^9.1.6",
     "turbo": "latest"
   }
 }

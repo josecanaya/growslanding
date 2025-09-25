@@ -1,6 +1,10 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { format } from 'date-fns';
 
 import { visitStatusSchema } from '@/lib/fsm';
@@ -52,10 +56,28 @@ type Token = {
   enabled: boolean;
 };
 
+type Obra = {
+  id: string;
+  nombre: string;
+  cliente: string | null;
+  localizacion: string | null;
+};
+
+type Invite = {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: 'funcional' | 'autonomo';
+  status: string;
+  created_at: string;
+};
+
 type LeaderClientProps = {
   socios: Socio[];
   tareas: Tarea[];
   tokens: Token[];
+  obras: Obra[];
+  invites: Invite[];
 };
 
 const estadoColors: Record<string, string> = {
@@ -71,13 +93,44 @@ function buildProgress(estado: Tarea['estado']) {
   return Math.max(0, Math.min(100, percent));
 }
 
-export default function LeaderClient({ socios, tareas, tokens }: LeaderClientProps) {
+const nuevaTareaSchema = z.object({
+  obra_id: z.string().uuid('Selecciona una obra'),
+  tipo: z.string().min(2, 'Indica el tipo de tarea'),
+  descripcion: z.string().min(5, 'Describe la tarea'),
+});
+
+const nuevoInviteSchema = z.object({
+  nombre: z.string().min(2, 'El nombre es requerido'),
+  email: z.string().email('Correo inválido'),
+  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
+});
+
+export default function LeaderClient({ socios, tareas, tokens, obras, invites }: LeaderClientProps) {
+  const router = useRouter();
   const sociosOrdenados = useMemo(
     () => [...socios].sort((a, b) => a.nombre.localeCompare(b.nombre)),
     [socios]
   );
   const [socioId, setSocioId] = useState<string>(sociosOrdenados[0]?.id ?? '');
   const [estadoFiltro, setEstadoFiltro] = useState<'all' | Tarea['estado']>('all');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const tareaForm = useForm<z.infer<typeof nuevaTareaSchema>>({
+    resolver: zodResolver(nuevaTareaSchema),
+    defaultValues: {
+      obra_id: obras[0]?.id ?? '',
+      tipo: '',
+      descripcion: '',
+    },
+  });
+
+  const inviteForm = useForm<z.infer<typeof nuevoInviteSchema>>({
+    resolver: zodResolver(nuevoInviteSchema),
+    defaultValues: { nombre: '', email: '', rol: 'funcional' },
+  });
 
   const tokenMap = useMemo(() => {
     const map = new Map<string, Token>();
@@ -139,6 +192,114 @@ export default function LeaderClient({ socios, tareas, tokens }: LeaderClientPro
     [tokenMap]
   );
 
+  const [estadoObjetivo, setEstadoObjetivo] = useState<Record<string, Tarea['estado']>>({});
+
+  useEffect(() => {
+    setEstadoObjetivo((prev) => {
+      const next: Record<string, Tarea['estado']> = {};
+      tareas.forEach((t) => {
+        next[t.id] = prev[t.id] ?? t.estado;
+      });
+      return next;
+    });
+  }, [tareas]);
+
+  function showSuccess(message: string) {
+    setFormSuccess(message);
+    setFormError(null);
+    setTimeout(() => setFormSuccess(null), 4000);
+  }
+
+  function showError(err: unknown) {
+    const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado';
+    setFormError(message);
+    setFormSuccess(null);
+  }
+
+  async function handleCrearTarea(values: z.infer<typeof nuevaTareaSchema>) {
+    setPendingAction(true);
+    try {
+      const response = await fetch('/api/tareas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...values, estado: 'pendiente' }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ message: 'Error' }));
+        throw new Error(data.message ?? 'No se pudo crear la tarea');
+      }
+      showSuccess('Tarea creada correctamente');
+      tareaForm.reset({ obra_id: values.obra_id, tipo: '', descripcion: '' });
+      router.refresh();
+    } catch (error) {
+      showError(error);
+    } finally {
+      setPendingAction(false);
+    }
+  }
+
+  async function handleInvitar(values: z.infer<typeof nuevoInviteSchema>) {
+    setPendingAction(true);
+    try {
+      const response = await fetch('/api/invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ message: 'Error' }));
+        throw new Error(data.message ?? 'No se pudo enviar la invitación');
+      }
+      inviteForm.reset({ nombre: '', email: '', rol: 'funcional' });
+      showSuccess('Invitación enviada');
+      router.refresh();
+    } catch (error) {
+      showError(error);
+    } finally {
+      setPendingAction(false);
+    }
+  }
+
+  async function handleActualizarEstado(tarea: Tarea, nuevoEstado: Tarea['estado']) {
+    if (nuevoEstado === tarea.estado) {
+      return;
+    }
+    setUpdatingId(tarea.id);
+    try {
+      const response = await fetch(`/api/tareas/${tarea.id}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nuevo_estado: nuevoEstado,
+          notas: '',
+          checklist: [],
+          has_nc: false,
+          actor: {
+            name: socioSeleccionado?.nombre ?? 'Socio constructor',
+            role: 'Socio',
+            method: 'login',
+          },
+          media: [],
+          motivo:
+            tarea.estado === 'finalizado' && nuevoEstado === 'en_ejecucion'
+              ? 'Ajuste realizado por el líder'
+              : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({ message: 'Error' }));
+        throw new Error(data.message ?? 'No se pudo actualizar el estado');
+      }
+      showSuccess('Estado actualizado');
+      router.refresh();
+    } catch (error) {
+      showError(error);
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8 p-6">
       <header className="rounded border border-border bg-card p-4 shadow-sm">
@@ -188,6 +349,136 @@ export default function LeaderClient({ socios, tareas, tokens }: LeaderClientPro
           </div>
         </div>
       </header>
+
+      {(formError || formSuccess) && (
+        <div
+          className={`rounded border px-3 py-2 text-sm ${{
+            success: 'border-green-200 bg-green-50 text-green-700',
+            error: 'border-destructive/40 bg-destructive/10 text-destructive',
+          }[formSuccess ? 'success' : 'error']}`}
+        >
+          {formSuccess ?? formError}
+        </div>
+      )}
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4 rounded border border-border bg-card p-4 shadow-sm">
+          <h2 className="text-lg font-semibold">Crear nueva tarea</h2>
+          {obras.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Aún no existen obras en tu organización.
+            </p>
+          ) : (
+            <form className="space-y-3" onSubmit={tareaForm.handleSubmit(handleCrearTarea)}>
+              <div>
+                <label className="block text-sm font-medium">Obra</label>
+                <select
+                  className="mt-1 w-full rounded border px-3 py-2"
+                  {...tareaForm.register('obra_id')}
+                >
+                  <option value="">Selecciona una obra</option>
+                  {obras.map((obra) => (
+                    <option key={obra.id} value={obra.id}>
+                      {obra.nombre}
+                    </option>
+                  ))}
+                </select>
+                {tareaForm.formState.errors.obra_id && (
+                  <p className="mt-1 text-xs text-destructive">{tareaForm.formState.errors.obra_id.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Tipo</label>
+                <input
+                  className="mt-1 w-full rounded border px-3 py-2"
+                  placeholder="Ej. Terminaciones"
+                  {...tareaForm.register('tipo')}
+                />
+                {tareaForm.formState.errors.tipo && (
+                  <p className="mt-1 text-xs text-destructive">{tareaForm.formState.errors.tipo.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Descripción</label>
+                <textarea
+                  className="mt-1 w-full rounded border px-3 py-2"
+                  rows={3}
+                  placeholder="Describe la actividad"
+                  {...tareaForm.register('descripcion')}
+                />
+                {tareaForm.formState.errors.descripcion && (
+                  <p className="mt-1 text-xs text-destructive">{tareaForm.formState.errors.descripcion.message}</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                disabled={pendingAction}
+              >
+                {pendingAction ? 'Guardando…' : 'Agregar tarea'}
+              </button>
+            </form>
+          )}
+        </div>
+
+        <div className="space-y-4 rounded border border-border bg-card p-4 shadow-sm">
+          <h2 className="text-lg font-semibold">Invitar nuevo socio</h2>
+          <form className="space-y-3" onSubmit={inviteForm.handleSubmit(handleInvitar)}>
+            <div>
+              <label className="block text-sm font-medium">Nombre</label>
+              <input
+                className="mt-1 w-full rounded border px-3 py-2"
+                placeholder="Nombre y apellido"
+                {...inviteForm.register('nombre')}
+              />
+              {inviteForm.formState.errors.nombre && (
+                <p className="mt-1 text-xs text-destructive">{inviteForm.formState.errors.nombre.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Correo</label>
+              <input
+                className="mt-1 w-full rounded border px-3 py-2"
+                placeholder="correo@socio.com"
+                {...inviteForm.register('email')}
+              />
+              {inviteForm.formState.errors.email && (
+                <p className="mt-1 text-xs text-destructive">{inviteForm.formState.errors.email.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Rol</label>
+              <select
+                className="mt-1 w-full rounded border px-3 py-2"
+                {...inviteForm.register('rol')}
+              >
+                <option value="funcional">Líder funcional</option>
+                <option value="autonomo">Líder autónomo</option>
+              </select>
+            </div>
+            <button
+              type="submit"
+              className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              disabled={pendingAction}
+            >
+              {pendingAction ? 'Enviando…' : 'Enviar invitación'}
+            </button>
+          </form>
+
+          {invites.length > 0 && (
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <h3 className="font-medium text-foreground">Invitaciones recientes</h3>
+              <ul className="space-y-1">
+                {invites.map((invite) => (
+                  <li key={invite.id} className="rounded border border-dashed px-3 py-2 text-xs">
+                    {invite.nombre} ({invite.email}) · {invite.rol} · {invite.status}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </section>
 
       {socioSeleccionado && (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -319,7 +610,7 @@ export default function LeaderClient({ socios, tareas, tokens }: LeaderClientPro
                 </div>
 
                 <footer className="mt-auto flex flex-wrap items-center gap-2">
-                  <button
+                 <button
                     type="button"
                     className="rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
                     onClick={() => handleAbrirQR(tarea)}
@@ -327,6 +618,37 @@ export default function LeaderClient({ socios, tareas, tokens }: LeaderClientPro
                   >
                     Reportar avance por QR
                   </button>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <select
+                      className="rounded border px-2 py-1"
+                      value={estadoObjetivo[tarea.id] ?? tarea.estado}
+                      onChange={(event) =>
+                        setEstadoObjetivo((prev) => ({
+                          ...prev,
+                          [tarea.id]: event.target.value as Tarea['estado'],
+                        }))
+                      }
+                    >
+                      {estadosOrdenados.map((estado) => (
+                        <option key={estado} value={estado}>
+                          {estadoLabels[estado]}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="rounded border border-border px-3 py-1 text-xs font-medium text-foreground disabled:opacity-60"
+                      onClick={() =>
+                        handleActualizarEstado(
+                          tarea,
+                          estadoObjetivo[tarea.id] ?? tarea.estado
+                        )
+                      }
+                      disabled={updatingId === tarea.id}
+                    >
+                      {updatingId === tarea.id ? 'Actualizando…' : 'Aplicar'}
+                    </button>
+                  </div>
                   {!token?.enabled && (
                     <span className="text-xs text-muted-foreground">
                       Solicita al cliente el QR de esta tarea.

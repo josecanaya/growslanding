@@ -11,7 +11,7 @@ Estimated release dates:
   - Community users: [36maround 15th December, 2025 [1m(subject to team availability)[22m[39m
 [33m  - PRO users[39m:       [1m[32mpriority access is available now[39m[22m
 
- [33m[1m⚠[22m[39m Port 3000 is in use by process 55275, using available port 3001 instead.
+ [33m[1m⚠[22m[39m Port 3000 is in use by process 55275, using available port 3003 instead.
 
 [31m✘[39m next.js v15.5.4 is [31mnot yet supported[39m in the Community edition of [33mConsole Ninja[39m.
 We are working hard on it for you [36mhttps://tinyurl.com/3h9mtwra[39m.
@@ -21,198 +21,18 @@ Estimated release dates:
 [33m  - PRO users[39m:       [1m[32mpriority access is available now[39m[22m
 
    [1m[38;2;173;127;168m▲ Next.js 15.5.4[39m[22m
-   - Local:        http://localhost:3001
-   - Network:      http://192.168.100.13:3001
+   - Local:        http://localhost:3003
+   - Network:      http://192.168.100.13:3003
    - Environments: .env.local
 
  [32m[1m✓[22m[39m Starting...
- [32m[1m✓[22m[39m Ready in 1633ms
+ [32m[1m✓[22m[39m Ready in 1601ms
  [37m[1m○[22m[39m Compiling / ...
- [32m[1m✓[22m[39m Compiled / in 1801ms (768 modules)
- GET / [34m307[39m in 3805ms
- [32m[1m✓[22m[39m Compiled /middleware in 158ms (251 modules)
- [32m[1m✓[22m[39m Compiled /dashboard in 467ms (886 modules)
- GET /dashboard [32m200[39m in 2560ms
- [32m[1m✓[22m[39m Compiled /auth/signout in 182ms (889 modules)
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.set (../../../src/server/request/cookies.ts:379:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
- POST /auth/signout?redirect=/ [34m303[39m in 682ms
- GET / [34m307[39m in 115ms
- [32m[1m✓[22m[39m Compiled /auth/login in 295ms (1186 modules)
- GET /auth/login [32m200[39m in 473ms
- GET /auth/login?redirect=%2Fdashboard [32m200[39m in 22ms
- GET /auth/login?redirect=%2Flider [32m200[39m in 19ms
- GET / [32m200[39m in 22ms
- GET /auth/login [32m200[39m in 18ms
- GET /auth/login [32m200[39m in 11ms
- [32m[1m✓[22m[39m Compiled in 260ms (431 modules)
- GET /auth/login [32m200[39m in 40ms
- [32m[1m✓[22m[39m Compiled in 308ms (1179 modules)
- GET /auth/login [32m200[39m in 130ms
- [32m[1m✓[22m[39m Compiled in 100ms (431 modules)
- GET /auth/login [32m200[39m in 17ms
- [32m[1m✓[22m[39m Compiled in 98ms (431 modules)
- GET /auth/login [32m200[39m in 19ms
- [37m[1m○[22m[39m Compiling /_not-found ...
- [32m[1m✓[22m[39m Compiled /_not-found in 710ms (1421 modules)
- GET /auth/login [33m404[39m in 733ms
- GET /auth/login [32m200[39m in 22ms
- GET /auth/login [32m200[39m in 126ms
- [32m[1m✓[22m[39m Compiled in 98ms (435 modules)
- GET /auth/login [32m200[39m in 19ms
- [32m[1m✓[22m[39m Compiled in 93ms (435 modules)
- GET /auth/login [32m200[39m in 19ms
- [32m[1m✓[22m[39m Compiled in 327ms (1421 modules)
- GET /auth/login [33m404[39m in 360ms
- GET /auth/login [32m200[39m in 18ms
- GET /auth/login [32m200[39m in 94ms
- [32m[1m✓[22m[39m Compiled in 123ms (435 modules)
- GET /auth/login [32m200[39m in 18ms
- [32m[1m✓[22m[39m Compiled in 120ms (435 modules)
- GET /auth/login [32m200[39m in 22ms
- [32m[1m✓[22m[39m Compiled in 353ms (1421 modules)
- GET /auth/login [32m200[39m in 358ms
- GET /auth/login [32m200[39m in 14ms
- [32m[1m✓[22m[39m Compiled in 116ms (431 modules)
- GET /auth/login [32m200[39m in 17ms
+ [32m[1m✓[22m[39m Compiled / in 2.1s (768 modules)
+ GET / [34m307[39m in 2375ms
+ [37m[1m○[22m[39m Compiling /middleware ...
+ [32m[1m✓[22m[39m Compiled /middleware in 514ms (251 modules)
+ [37m[1m○[22m[39m Compiling /auth/login ...
+<w> [1m[33m[webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)[39m[22m
+ [32m[1m✓[22m[39m Compiled /auth/login in 1070ms (1071 modules)
+ GET /auth/login [32m200[39m in 1291ms

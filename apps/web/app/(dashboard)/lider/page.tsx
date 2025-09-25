@@ -38,7 +38,7 @@ export default async function LeaderPage() {
 
   const orgId = invite.org_id;
 
-  const [{ data: socios = [] }, { data: tareas = [] }, { data: tokens = [] }] =
+  const [{ data: socios = [] }, { data: tareas = [] }, { data: tokens = [] }, { data: obras = [] }, { data: invites = [] }] =
     await Promise.all([
       supabase
         .from('socios')
@@ -58,6 +58,16 @@ export default async function LeaderPage() {
         .from('qr_tokens')
         .select('ref_id, token, enabled')
         .eq('scope', 'tarea'),
+      supabase
+        .from('obras')
+        .select('id, nombre, cliente, localizacion')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('leader_invites')
+        .select('id, email, nombre, rol, status, created_at')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false }),
     ]);
 
   const tareaIds = new Set((tareas ?? []).map((t) => t.id));
@@ -68,6 +78,8 @@ export default async function LeaderPage() {
       socios={socios ?? []}
       tareas={tareas ?? []}
       tokens={tokensFiltrados}
+      obras={obras ?? []}
+      invites={invites ?? []}
     />
   );
 }

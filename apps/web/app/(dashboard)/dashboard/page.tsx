@@ -45,6 +45,10 @@ export default async function DashboardPage() {
       user.user_metadata?.full_name ?? user.email ?? 'Organización'
     ));
 
+  if (!org.onboarding_completed) {
+    redirect('/onboarding');
+  }
+
   const [{ data: obras = [] }, { data: socios = [] }, { data: tareas = [] }, { data: invites = [] }] =
     await Promise.all([
       serviceClient

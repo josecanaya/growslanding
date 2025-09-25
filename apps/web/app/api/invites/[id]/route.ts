@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-import { ensureOrgForUser } from '@/lib/orgs';
+import { resolveOrgContext } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
@@ -26,9 +26,10 @@ export async function DELETE(
     }
 
     const supabase = createServiceSupabaseClient();
-    const org = await ensureOrgForUser(
+    const { org } = await resolveOrgContext(
       user.id,
-      user.user_metadata?.full_name ?? user.email ?? 'Organización'
+      user.user_metadata?.full_name ?? user.email ?? 'Organización',
+      user.email
     );
 
     const { data: invite, error: fetchError } = await supabase

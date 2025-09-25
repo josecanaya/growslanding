@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 
 import { createLeaderInvite } from '@/lib/invites';
-import { ensureOrgForUser } from '@/lib/orgs';
+import { resolveOrgContext } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
@@ -32,9 +32,10 @@ export async function POST(request: Request) {
       });
     }
 
-    const org = await ensureOrgForUser(
+    const { org } = await resolveOrgContext(
       user.id,
-      user.user_metadata?.full_name ?? user.email ?? 'Organización'
+      user.user_metadata?.full_name ?? user.email ?? 'Organización',
+      user.email
     );
 
     const supabase = createServiceSupabaseClient();
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
 
     const { inviteId, token } = await createLeaderInvite({
       userId: user.id,
+      userEmail: user.email,
       nombre: payload.nombre,
       email: payload.email,
       rol: payload.rol,

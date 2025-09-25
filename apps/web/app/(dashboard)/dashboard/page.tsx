@@ -57,6 +57,7 @@ export default async function DashboardPage() {
       .from('socios')
       .select('id, org_id, nombre, contacto, status, rol')
       .eq('org_id', org.id)
+      .eq('status', 'activo')
       .order('nombre', { ascending: true }),
       serviceClient
         .from('tareas')

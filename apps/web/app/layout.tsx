@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { cookies } from "next/headers";
@@ -36,15 +37,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
               <span className="text-sm font-semibold uppercase tracking-wide">Grows</span>
               <div className="flex items-center gap-4 text-sm">
-                <a className="text-muted-foreground transition hover:text-foreground" href="/">
+                <Link className="text-muted-foreground transition hover:text-foreground" href="/">
                   Inicio
-                </a>
-                <a className="text-muted-foreground transition hover:text-foreground" href="/dashboard">
+                </Link>
+                <Link className="text-muted-foreground transition hover:text-foreground" href="/dashboard">
                   Cliente Técnico
-                </a>
-                <a className="text-muted-foreground transition hover:text-foreground" href="/lider">
+                </Link>
+                <Link className="text-muted-foreground transition hover:text-foreground" href="/lider">
                   Líder de cuadrilla
-                </a>
+                </Link>
                 {user ? (
                   <div className="flex items-center gap-3">
                     <span className="hidden text-xs text-muted-foreground sm:inline">{userLabel}</span>
@@ -55,12 +56,12 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                     </form>
                   </div>
                 ) : (
-                  <a
+                  <Link
                     className="rounded bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
                     href="/auth/login"
                   >
                     Ingresar
-                  </a>
+                  </Link>
                 )}
               </div>
             </nav>

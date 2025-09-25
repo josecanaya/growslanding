@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { format } from 'date-fns';
 import { z } from 'zod';
 
-import { canTransitionSafely, visitStatusSchema } from '@/lib/fsm';
+import { canTransition, visitStatusSchema } from '@/lib/fsm';
 
 const obraSchema = z.object({
   nombre: z.string().min(2),
@@ -107,6 +107,7 @@ type InviteFormValues = z.infer<typeof inviteSchema>;
 export default function DashboardClient({ org, obras, socios, tareas, invites }: DashboardClientProps) {
   const router = useRouter();
   const feedback = useServerActionFeedback();
+  const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
 
   const obraForm = useForm<ObraFormValues>({
     resolver: zodResolver(obraSchema),
@@ -150,6 +151,44 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
     } else {
       const error = await response.json().catch(() => ({ message: 'Error' }));
       feedback.pushMessage(error.message ?? 'No se pudo guardar', 'error');
+    }
+  }
+
+  async function handleRevoke(inviteId: string) {
+    setProcessingInviteId(inviteId);
+    try {
+      const response = await fetch(`/api/invites/${inviteId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        feedback.pushMessage('Invitación revocada', 'success');
+        router.refresh();
+      } else {
+        const error = await response.json().catch(() => ({ message: 'Error' }));
+        feedback.pushMessage(error.message ?? 'No se pudo revocar la invitación', 'error');
+      }
+    } finally {
+      setProcessingInviteId(null);
+    }
+  }
+
+  async function handleRemoveLeader(inviteId: string, socioId: string) {
+    setProcessingInviteId(inviteId);
+    try {
+      const response = await fetch(`/api/socios/${socioId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        feedback.pushMessage('Líder eliminado', 'success');
+        router.refresh();
+      } else {
+        const error = await response.json().catch(() => ({ message: 'Error' }));
+        feedback.pushMessage(error.message ?? 'No se pudo eliminar el líder', 'error');
+      }
+    } finally {
+      setProcessingInviteId(null);
     }
   }
 
@@ -394,13 +433,53 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
           {invites.length > 0 && (
             <div className="mt-4 rounded border border-dashed px-4 py-3">
               <p className="text-sm font-medium">Invitaciones recientes</p>
-              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                {invites.map((invite) => (
-                  <li key={invite.id}>
-                    {invite.nombre} ({invite.email}) · {invite.rol} · {invite.status}{' '}
-                    <span className="text-xs">{new Date(invite.created_at).toLocaleString()}</span>
+              <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+                {invites.map((invite) => {
+                  const socioAsignado = socios.find(
+                    (socio) => socio.contacto === invite.email && invite.status === 'accepted'
+                  );
+
+                  const showRevoke = invite.status === 'pending';
+                  const showRemoveLeader = Boolean(socioAsignado);
+
+                  return (
+                    <li
+                      key={invite.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2"
+                    >
+                      <div>
+                      <p className="font-medium text-foreground">{invite.nombre}</p>
+                      <p>{invite.email}</p>
+                      <p className="text-xs">
+                        {invite.rol} · {invite.status} ·{' '}
+                        {new Date(invite.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {showRevoke && (
+                        <button
+                          type="button"
+                          className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                          onClick={() => handleRevoke(invite.id)}
+                          disabled={processingInviteId === invite.id}
+                        >
+                          {processingInviteId === invite.id ? 'Procesando…' : 'Revocar'}
+                        </button>
+                      )}
+                      {showRemoveLeader && socioAsignado && (
+                        <button
+                          type="button"
+                          className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                          onClick={() => handleRemoveLeader(invite.id, socioAsignado.id)}
+                          disabled={processingInviteId === invite.id}
+                        >
+                          {processingInviteId === invite.id ? 'Procesando…' : 'Eliminar líder'}
+                        </button>
+                      )}
+                    </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -587,7 +666,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                             </div>
                             <div className="text-right text-xs text-muted-foreground">
                               <p>Estado: {tarea.estado}</p>
-                              {canTransitionSafely(tarea.estado, proximoEstado) && (
+                              {canTransition(tarea.estado, proximoEstado) && (
                                 <p>Próximo: {proximoEstado}</p>
                               )}
                             </div>

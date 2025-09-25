@@ -1,0 +1,15 @@
+# Commits (AI Commit)
+
+- Idioma: español rioplatense (es-AR).
+- Formato: Conventional Commits → `<tipo>(<alcance>): <resumen>`.
+- Tipos: feat, fix, chore, refactor, docs, test, perf, ci, build, style.
+- Resumen: modo imperativo, máx 72 caracteres, sin punto final.
+- Cuerpo: explica el “por qué” y el impacto; bullets ok.
+- Footer: `BREAKING CHANGE:` si aplica, `Refs:`/`Closes #` para issues.
+
+## Ejemplos
+
+- feat(cliente): agrega validación de DNI en alta de socio
+- fix(ui): corrige desbordes en tarjetas del dashboard móvil
+- chore: actualiza dependencias y sincroniza pnpm-lock
+- refactor(api): simplifica handlers de errores en auth

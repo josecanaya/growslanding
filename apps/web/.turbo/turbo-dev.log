@@ -18,24 +18,31 @@ Estimated release dates:
 We are working hard on it for you [36mhttps://tinyurl.com/3h9mtwra[39m.
 
 Estimated release dates:
-  - Community users: [36maround 15th December, 2025 [1m(subject to team availability)[22m[39m
-[33m  - PRO users[39m:       [1m[32mpriority access is available now[39m[22m
+  - Community users: [36maround 15th December, 20   - Experiments (use with caution):
+     ✓ typedRoutes
 
-   [1m[38;2;173;127;168m▲ Next.js 15.5.4[39m[22m
-   - Local:        http://localhost:3004
-   - Network:      http://192.168.100.13:3004
+ ✓ Starting...
+ ✓ Ready in 1874ms
+   Reload env: .env.local
+   Reload env: .env.local
+   Reload env: .env.local
+   Reload env: .env.local
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.100.13:3001
    - Environments: .env.local
-   - Experiments (use with caution):
-     [1m✓[22m typedRoutes
 
- [32m[1m✓[22m[39m Starting...
- [32m[1m✓[22m[39m Ready in 1843ms
- [37m[1m○[22m[39m Compiling / ...
- [32m[1m✓[22m[39m Compiled / in 1724ms (560 modules)
- GET / [32m200[39m in 2342ms
- [32m[1m✓[22m[39m Compiled in 128ms (237 modules)
- GET / [32m200[39m in 21ms
- [32m[1m✓[22m[39m Compiled in 134ms (237 modules)
+ ✓ Starting...
+ ✓ R ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.100.13:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 2.5s
+ed in 134ms (237 modules)
  [32m[1m✓[22m[39m Compiled in 73ms (237 modules)
  [32m[1m✓[22m[39m Compiled in 73ms (237 modules)
  [32m[1m✓[22m[39m Compiled in 63ms (237 modules)
@@ -2046,3 +2053,994 @@ Error: Route "/auth/login" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-tok
  [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
  GET / [32m200[39m in 78ms
  GET /auth/login?redirect=%2Flider [32m200[39m in 68ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/login" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ GET / [32m200[39m in 301ms
+ GET /auth/login?redirect=%2Flider [32m200[39m in 113ms
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ GET /auth/callback?code=346c9bf8-dc0c-44d7-ad06-6ca73287e132&redirect=%2Flider [34m307[39m in 890ms
+Error: Route "/lider" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /lider [34m307[39m in 492ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1059ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 183ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 227ms
+ GET /dashboard [32m200[39m in 197ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 90ms
+ GET /dashboard [32m200[39m in 132ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [33m404[39m in 1036ms
+ GET /dashboard [33m404[39m in 926ms
+ GET / [33m404[39m in 1000ms
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 99ms
+ GET /dashboard [32m200[39m in 95ms
+ GET /dashboard [32m200[39m in 96ms
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 120ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 78ms
+ GET /dashboard [32m200[39m in 1757ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 508ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 144ms
+ GET /dashboard [32m200[39m in 139ms
+ GET /dashboard [32m200[39m in 139ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 123ms
+ GET /dashboard [32m200[39m in 117ms
+ GET /dashboard [32m200[39m in 117ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1076ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1076ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 160ms
+ GET /dashboard [32m200[39m in 134ms
+ GET /dashboard [32m200[39m in 135ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 80ms
+ GET /dashboard [32m200[39m in 75ms
+ GET /dashboard [32m200[39m in 76ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/_not-found" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [33m404[39m in 649ms
+ GET /dashboard [33m404[39m in 628ms
+ GET /dashboard [33m404[39m in 629ms
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 90ms
+ GET /dashboard [32m200[39m in 87ms
+ GET /dashboard [32m200[39m in 87ms
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 64ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1472ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 161ms
+ GET /dashboard [32m200[39m in 381ms
+ GET /dashboard [32m200[39m in 391ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET / [32m200[39m in 116ms
+ GET /dashboard [32m200[39m in 110ms
+ GET /dashboard [32m200[39m in 110ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1030ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 53ms
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+ [33m[1m⚠[22m[39m ./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Attempted import error: 'canTransitionSafely' is not exported from '@/lib/fsm' (imported as 'canTransitionSafely').
+
+Import trace for requested module:
+./app/(dashboard)/dashboard/dashboard-client.tsx
+Error: Route "/api/socios/[id]" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/api/socios/[id]" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/api/socios/[id]" used `params.id`. `params` should be awaited before using its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at DELETE (app/api/socios/[id]/route.ts:32:24)
+[0m [90m 30 |[39m       [33m.[39m[36mfrom[39m([32m'socios'[39m)
+ [90m 31 |[39m       [33m.[39mselect([32m'id, org_id, contacto, status'[39m)
+[31m[1m>[22m[39m[90m 32 |[39m       [33m.[39meq([32m'id'[39m[33m,[39m params[33m.[39mid)
+ [90m    |[39m                        [31m[1m^[22m[39m
+ [90m 33 |[39m       [33m.[39mmaybeSingle()[33m;[39m
+ [90m 34 |[39m
+ [90m 35 |[39m     [36mif[39m (socioError [33m||[39m [33m![39msocio [33m||[39m socio[33m.[39morg_id [33m!==[39m org[33m.[39mid) {[0m
+ DELETE /api/socios/5696e554-505c-49c1-a813-e75aa71f6999 [32m200[39m in 2754ms
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 537ms
+ [32m[1m✓[22m[39m Compiled /api/socios/[id] in 340ms (1418 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 83ms
+ [32m[1m✓[22m[39m Compiled in 926ms (1462 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 162ms
+ [33m[1m⚠[22m[39m Found a change in next.config.ts. Restarting the server to apply the changes...
+   [1m[38;2;173;127;168m▲ Next.js 15.5.4[39m[22m
+   - Local:        http://localhost:3004
+   - Network:      http://192.168.100.13:3004
+   - Environments: .env.local
+
+ [32m[1m✓[22m[39m Starting...
+ [32m[1m✓[22m[39m Ready in 1920ms

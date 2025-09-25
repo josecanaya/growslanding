@@ -12,6 +12,7 @@ export default function LoginClient() {
   const redirect = searchParams?.get('redirect') ?? '/dashboard';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
@@ -42,6 +43,37 @@ export default function LoginClient() {
       setError(err instanceof Error ? err.message : 'No se pudo enviar el enlace.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGoogleLogin() {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      const origin = window.location.origin;
+      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            prompt: 'consent',
+            access_type: 'offline',
+          },
+        },
+      });
+      if (oauthError) {
+        throw oauthError;
+      }
+      // Supabase redirige automáticamente, no continuamos flujo local.
+    } catch (err) {
+      console.error('[GOOGLE_LOGIN_ERROR]', err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo iniciar sesión con Google. Intenta nuevamente.'
+      );
+      setGoogleLoading(false);
     }
   }
 
@@ -80,9 +112,24 @@ export default function LoginClient() {
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <p className="text-center text-xs text-muted-foreground">
-        El enlace expira en pocos minutos. Puedes reenviarlo ingresando el correo nuevamente.
-      </p>
+      <div className="space-y-3">
+        <p className="text-center text-xs text-muted-foreground">
+          El enlace expira en pocos minutos. Puedes reenviarlo ingresando el correo nuevamente.
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs uppercase text-muted-foreground">o</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        <button
+          type="button"
+          onClick={handleGoogleLogin}
+          className="w-full rounded border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-60"
+          disabled={googleLoading}
+        >
+          {googleLoading ? 'Redirigiendo a Google…' : 'Continuar con Google'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import type { RouteContext } from 'next';
 import { z } from 'zod';
 
 import { visitStatusSchema } from '@/lib/fsm';
@@ -40,9 +41,10 @@ const requestSchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteContext<{ id: string }>
 ) {
   try {
+    const { id } = await context.params;
     const body = await request.json();
     const payload = requestSchema.parse(body);
     const supabase = createServiceSupabaseClient();
@@ -53,7 +55,7 @@ export async function POST(
         `id, obra_id, tipo, descripcion, estado, referente_id, socio_ids,
          obra:obras(nombre, cliente, localizacion)`
       )
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
     if (tareaError) {

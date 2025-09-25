@@ -12,3 +12,349 @@
 
  [32m[1m✓[22m[39m Starting...
  [32m[1m✓[22m[39m Ready in 1656ms
+ [37m[1m○[22m[39m Compiling /auth/signout ...
+ [32m[1m✓[22m[39m Compiled /auth/signout in 1112ms (464 modules)
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../   - Environments: .env.local
+   - Experiments (use with caution):
+     ✓ typedRoutes
+
+ ✓ Starting...
+ ✓ Ready in 1877ms
+   Reload env: .env.local
+   Reload env: .env.local
+   Reload env: .env.local
+ ⚠ Found a change in next.config.ts. Restarting the server to apply the changes...
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3003
+   - Network:      http://192.168.100.13:3003
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready i<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/daniellenarduzzi/grows/apps/web/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/daniellenarduzzi/grows/apps/web/.next/cache/webpack/client-development/0.pack.gz'
+[?25h
+fhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m  > 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+ GET / 404 in 680ms
+ ✓ Compiled in 136ms (248 modules)
+ ✓ Compiled in 316ms (244 modules)
+ ✓ Compiled in 103ms (244 modules)
+ ✓ Compiled in 95ms (244 modules)
+[?25h
+kies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ POST /auth/signout?redirect=/ [34m303[39m in 2708ms
+ [37m[1m○[22m[39m Compiling / ...
+ [32m[1m✓[22m[39m Compiled / in 1230ms (803 modules)
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ GET / [32m200[39m in 1467ms
+ GET / [32m200[39m in 22ms
+ GET / [32m200[39m in 23ms
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ GET / [32m200[39m in 54ms
+ [32m[1m✓[22m[39m Compiled /middleware in 199ms (251 modules)
+ [37m[1m○[22m[39m Compiling /auth/login ...
+<w> [1m[33m[webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)[39m[22m
+ [32m[1m✓[22m[39m Compiled /auth/login in 1107ms (1088 modules)
+ GET /auth/login?redirect=%2Fdashboard [32m200[39m in 1266ms
+ [32m[1m✓[22m[39m Compiled /auth/callback in 191ms (1090 modules)
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.set (../../../src/server/request/cookies.ts:379:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+ GET /auth/callback?code=cd3c23fb-0821-4a07-87c5-5cc212161656&redirect=%2Fdashboard [34m307[39m in 512ms
+ [32m[1m✓[22m[39m Compiled /dashboard in 474ms (1210 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 1961ms
+ [32m[1m✓[22m[39m Compiled in 306ms (439 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 249ms
+ [32m[1m✓[22m[39m Compiled in 118ms (439 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 33ms
+ [32m[1m✓[22m[39m Compiled in 98ms (439 modules)
+Error: Route "/dashboard" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+[0m [90m 527 |[39m ) {
+ [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
+[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
+ [90m     |[39m          [31m[1m^[22m[39m
+ [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
+ [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
+ [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+Using the user object as returned from supabase.auth.getSession() or from some supabase.auth.onAuthStateChange() events could be insecure! This value comes directly from the storage medium (usually cookies on the server) and may not be authentic. Use supabase.auth.getUser() instead which authenticates the data by contacting the Supabase Auth server.
+ GET /dashboard [32m200[39m in 27ms
+[?25h

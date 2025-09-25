@@ -1,0 +1,13 @@
+{
+  "name": "grows",
+  "private": true,
+  "packageManager": "pnpm@9.1.2",
+  "scripts": {
+    "dev": "turbo dev --filter=apps/web",
+    "build": "turbo build --filter=apps/web",
+    "lint": "turbo lint --filter=apps/web"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  }
+}

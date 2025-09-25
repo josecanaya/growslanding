@@ -1,0 +1,10 @@
+node_modules
+.pnp.*
+dist
+.next
+out
+.env*
+.eslintcache
+.DS_Store
+.idea
+.vscode

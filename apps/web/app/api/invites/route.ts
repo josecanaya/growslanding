@@ -1,0 +1,102 @@
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { z } from 'zod';
+
+import { createLeaderInvite } from '@/lib/invites';
+import { ensureOrgForUser } from '@/lib/orgs';
+import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/types/supabase.gen';
+
+const schema = z.object({
+  nombre: z.string().min(2),
+  email: z.string().email(),
+  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
+});
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const payload = schema.parse(body);
+
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies });
+    const {
+      data: { session },
+    } = await supabaseAuth.auth.getSession();
+
+    if (!session?.user) {
+      return new Response(JSON.stringify({ message: 'No autenticado' }), {
+        status: 401,
+      });
+    }
+
+    const org = await ensureOrgForUser(
+      session.user.id,
+      session.user.user_metadata?.full_name ?? session.user.email ?? 'Organización'
+    );
+
+    const supabase = createServiceSupabaseClient();
+
+    const { data: existing } = await supabase
+      .from('leader_invites')
+      .select('id, status')
+      .eq('org_id', org.id)
+      .eq('email', payload.email)
+      .maybeSingle();
+
+    if (existing && existing.status === 'pending') {
+      return new Response(JSON.stringify({ message: 'Ya existe una invitación pendiente para este correo.' }), {
+        status: 409,
+      });
+    }
+
+    const { data: existingSocio } = await supabase
+      .from('socios')
+      .select('id')
+      .eq('org_id', org.id)
+      .eq('contacto', payload.email)
+      .maybeSingle();
+
+    if (existingSocio) {
+      return new Response(JSON.stringify({ message: 'Este socio ya está registrado.' }), {
+        status: 409,
+      });
+    }
+
+    const { inviteId, token } = await createLeaderInvite({
+      userId: session.user.id,
+      nombre: payload.nombre,
+      email: payload.email,
+      rol: payload.rol,
+    });
+
+    const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+    const redirectUrl = new URL('/auth/invite', origin);
+    redirectUrl.searchParams.set('invite', inviteId);
+    redirectUrl.searchParams.set('token', token);
+    redirectUrl.searchParams.set('target', '/lider');
+
+    const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+      email: payload.email,
+      options: {
+        emailRedirectTo: redirectUrl.toString(),
+        data: {
+          invite_id: inviteId,
+          org_id: org.id,
+          rol: payload.rol,
+          nombre: payload.nombre,
+        },
+      },
+    });
+
+    if (magicLinkError) {
+      throw magicLinkError;
+    }
+
+    return new Response(JSON.stringify({ inviteId }), { status: 201 });
+  } catch (error) {
+    console.error('[INVITE_ERROR]', error);
+    const message =
+      error instanceof Error ? error.message : 'Error al enviar la invitación';
+    return new Response(JSON.stringify({ message }), { status: 400 });
+  }
+}

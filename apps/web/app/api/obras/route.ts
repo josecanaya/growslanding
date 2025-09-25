@@ -6,6 +6,8 @@ import { ensureOrgForUser } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
+export const runtime = 'nodejs';
+
 const schema = z.object({
   nombre: z.string().min(2),
   localizacion: z.string().optional(),

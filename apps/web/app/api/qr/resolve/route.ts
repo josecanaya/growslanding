@@ -1,6 +1,9 @@
 import { z } from 'zod';
+
 import { assertPinForToken, decodeQR } from '@/lib/qr';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
+
+export const runtime = 'nodejs';
 
 const requestSchema = z.object({
   token: z.string().min(3),

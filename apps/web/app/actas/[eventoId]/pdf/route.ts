@@ -2,6 +2,8 @@ import type { RouteContext } from 'next';
 
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 
+export const runtime = 'nodejs';
+
 export async function GET(
   _request: Request,
   context: RouteContext<{ eventoId: string }>

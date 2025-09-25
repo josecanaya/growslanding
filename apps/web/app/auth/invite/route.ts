@@ -5,6 +5,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
+export const runtime = 'nodejs';
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get('code');

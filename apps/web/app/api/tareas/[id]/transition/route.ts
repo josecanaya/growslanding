@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { visitStatusSchema } from '@/lib/fsm';
 import {
   prepareEventoInsert,
@@ -6,6 +7,8 @@ import {
 } from '@/lib/evento-rules';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { uploadActaPdf, uploadPhoto, uploadSignature } from '@/lib/storage';
+
+export const runtime = 'nodejs';
 
 const mediaSchema = z.object({
   kind: z.enum(['foto', 'firma']),

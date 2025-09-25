@@ -62,3 +62,175 @@ A `locale` is expected to be returned from `getRequestConfig`, but none was retu
 
 See: https://next-intl.dev/blog/next-intl-3-22#await-request-locale
 
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getNow.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/layout.tsx
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:32:88)
+    at stringify (<anonymous>)
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[0m
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getMessages.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/layout.tsx
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[0m
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+digest: "4030250010"
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[0m
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getMessages.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/layout.tsx
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getFormatter.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/layout.tsx
+ [37m[1m○[22m[39m Compiling /not-found ...
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getFormatter.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/layout.tsx
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[0m
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+digest: "4030250010"
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[0m
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+ [33m[1m⚠[22m[39m ./src/i18n.ts
+Attempted import error: 'requestLocale' is not exported from 'next-intl/server' (imported as 'requestLocale').
+
+Import trace for requested module:
+./src/i18n.ts
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getConfig.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server/react-server/getFormatter.js
+../../node_modules/.pnpm/next-intl@3.26.5_next@14.0.4_react-dom@18.3.1_react@18.3.1__react@18.3.1__react@18.3.1/node_modules/next-intl/dist/esm/server.react-server.js
+./src/app/[locale]/page.tsx
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[33m,[39m[0m
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+digest: "4030250010"
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[33m,[39m[0m
+ [33m[1m⚠[22m[39m Fast Refresh had to perform a full reload due to a runtime error.
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[33m,[39m[0m
+ [31m[1m⨯[22m[39m src/i18n.ts (8:36) @ requestLocale
+ [31m[1m⨯[22m[39m TypeError: (0 , next_intl_server__WEBPACK_IMPORTED_MODULE_2__.requestLocale) is not a function
+    at eval (./src/i18n.ts:17:89)
+    at RootLayout (./src/app/[locale]/layout.tsx:35:88)
+    at stringify (<anonymous>)
+digest: "4030250010"
+[0m [90m  6 |[39m[0m
+[0m [90m  7 |[39m [36mexport[39m [36mdefault[39m getRequestConfig([36masync[39m () [33m=>[39m {[0m
+[0m[31m[1m>[22m[39m[90m  8 |[39m   [36mconst[39m locale [33m=[39m [36mawait[39m requestLocale()[33m;[39m[0m
+[0m [90m    |[39m                                    [31m[1m^[22m[39m[0m
+[0m [90m  9 |[39m   [36mif[39m ([33m![39mlocales[33m.[39mincludes(locale [36mas[39m any)) notFound()[33m;[39m[0m
+[0m [90m 10 |[39m   [36mreturn[39m {[0m
+[0m [90m 11 |[39m     messages[33m:[39m ([36mawait[39m [36mimport[39m([32m`../messages/${locale}.json`[39m))[33m.[39m[36mdefault[39m[33m,[39m[0m

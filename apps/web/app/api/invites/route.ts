@@ -47,19 +47,22 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (existing && existing.status === 'pending') {
-      return new Response(JSON.stringify({ message: 'Ya existe una invitación pendiente para este correo.' }), {
-        status: 409,
-      });
+      return new Response(
+        JSON.stringify({ message: 'Ya existe una invitación pendiente para este correo.' }),
+        {
+          status: 409,
+        }
+      );
     }
 
     const { data: existingSocio } = await supabase
       .from('socios')
-      .select('id')
+      .select('id, status')
       .eq('org_id', org.id)
       .eq('contacto', payload.email)
       .maybeSingle();
 
-    if (existingSocio) {
+    if (existingSocio && existingSocio.status !== 'inactivo') {
       return new Response(JSON.stringify({ message: 'Este socio ya está registrado.' }), {
         status: 409,
       });

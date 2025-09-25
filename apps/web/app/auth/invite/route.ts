@@ -63,7 +63,7 @@ export async function GET(request: Request) {
 
   const { data: existingSocio } = await serviceClient
     .from('socios')
-    .select('id')
+    .select('id, status')
     .eq('org_id', invite.org_id)
     .eq('contacto', invite.email)
     .maybeSingle();
@@ -74,7 +74,13 @@ export async function GET(request: Request) {
       nombre: invite.nombre,
       contacto: invite.email,
       rol: invite.rol,
+      status: 'activo',
     });
+  } else if (existingSocio.status !== 'activo') {
+    await serviceClient
+      .from('socios')
+      .update({ status: 'activo', nombre: invite.nombre })
+      .eq('id', existingSocio.id);
   }
 
   return redirectToTarget();

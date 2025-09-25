@@ -1,14 +1,15 @@
 
+
 > apps/landing@0.1.0 dev /Users/daniellenarduzzi/grows/apps/landing
 > next dev
 
-   ▲ Next.js 14.0.4
-   - Local:        http://localhost:3000
+ [33m[1m⚠[22m[39m Port 3000 is in use, trying 3001 instead.
+  [1m[38;2;173;127;168m ▲ Next.js 14.0.4[39m[22m
+   - Local:        http://localhost:3001
 
- ⚠ Invalid next.config.js options detected: 
- ⚠     "env._next_intl_trailing_slash" is missing, expected string
- ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
- ✓ Ready in 1591ms
- ✓ Compiled /src/middleware in 251ms (93 modules)
- ○ Compiling /[locale] ...
- ✓ Compiled /[locale] in 1680ms (669 modules)
+ [33m[1m⚠[22m[39m Invalid next.config.js options detected: 
+ [33m[1m⚠[22m[39m     "env._next_intl_trailing_slash" is missing, expected string
+ [33m[1m⚠[22m[39m See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ [32m[1m✓[22m[39m Ready in 1702ms
+ [37m[1m○[22m[39m Compiling /not-found ...
+ [32m[1m✓[22m[39m Compiled /not-found in 842ms (398 modules)

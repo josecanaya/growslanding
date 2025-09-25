@@ -1,0 +1,41 @@
+
+> apps/web@0.0.0 build /Users/daniellenarduzzi/grows/apps/web
+> next build
+
+   ▲ Next.js 15.5.4
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+ ⚠ Compiled with warnings in 782ms
+
+../../node_modules/.pnpm/@supabase+realtime-js@2.15.5/node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+A Node.js API is used (process.versions at line: 35) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+../../node_modules/.pnpm/@supabase+realtime-js@2.15.5/node_modules/@supabase/realtime-js/dist/module/lib/websocket-factory.js
+../../node_modules/.pnpm/@supabase+realtime-js@2.15.5/node_modules/@supabase/realtime-js/dist/module/index.js
+../../node_modules/.pnpm/@supabase+supabase-js@2.57.4/node_modules/@supabase/supabase-js/dist/module/index.js
+../../node_modules/.pnpm/@supabase+auth-helpers-shared@0.7.0_@supabase+supabase-js@2.57.4/node_modules/@supabase/auth-helpers-shared/dist/index.mjs
+../../node_modules/.pnpm/@supabase+auth-helpers-nextjs@0.10.0_@supabase+supabase-js@2.57.4/node_modules/@supabase/auth-helpers-nextjs/dist/index.js
+
+../../node_modules/.pnpm/@supabase+supabase-js@2.57.4/node_modules/@supabase/supabase-js/dist/module/index.js
+A Node.js API is used (process.version at line: 24) which is not supported in the Edge Runtime.
+Learn more: https://nextjs.org/docs/api-reference/edge-runtime
+
+Import trace for requested module:
+../../node_modules/.pnpm/@supabase+supabase-js@2.57.4/node_modules/@supabase/supabase-js/dist/module/index.js
+../../node_modules/.pnpm/@supabase+auth-helpers-shared@0.7.0_@supabase+supabase-js@2.57.4/node_modules/@supabase/auth-helpers-shared/dist/index.mjs
+../../node_modules/.pnpm/@supabase+auth-helpers-nextjs@0.10.0_@supabase+supabase-js@2.57.4/node_modules/@supabase/auth-helpers-nextjs/dist/index.js
+
+ ✓ Compiled successfully in 5.7s
+   Linting and checking validity of types ...
+Failed to compile.
+
+app/api/tareas/[id]/transition/route.ts
+Type error: Route "app/api/tareas/[id]/transition/route.ts" has an invalid "POST" export:
+  Type "{ params: { id: string; }; }" is not a valid type for the function's second argument.
+
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

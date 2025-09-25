@@ -4,8 +4,12 @@
   "packageManager": "pnpm@9.1.2",
   "scripts": {
     "dev": "turbo dev --filter=apps/web",
+    "dev:landing": "turbo dev --filter=apps/landing",
     "build": "turbo build --filter=apps/web",
-    "lint": "turbo lint --filter=apps/web"
+    "build:landing": "turbo build --filter=apps/landing",
+    "lint": "turbo lint --filter=apps/web",
+    "lint:landing": "turbo lint --filter=apps/landing",
+    "test": "pnpm --filter apps/web test"
   },
   "devDependencies": {
     "turbo": "latest"

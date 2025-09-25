@@ -1,0 +1,104 @@
+{
+  "hero": {
+    "title": "GROWS – Plataforma de Gestión Inteligente para la Construcción",
+    "subtitle": "Organiza y estandariza las tareas de obra mediante plantillas constructivas, cronogramas automáticos y seguimiento visual",
+    "description": "GROWS es una plataforma digital B2B diseñada para estudios de arquitectura, arquitectos independientes y pequeñas constructoras dedicadas a obras de pequeña y mediana escala.",
+    "cta": "Solicitar Demo",
+    "learnMore": "Conocer más"
+  },
+  "problem": {
+    "title": "El problema en la construcción",
+    "subtitle": "Métodos informales y falta de herramientas adecuadas",
+    "issues": {
+      "informal": {
+        "title": "Métodos informales",
+        "description": "Las obras residenciales de pequeña y mediana escala suelen operar con métodos informales, ausencia de planificación sistemática y falta de registros confiables."
+      },
+      "tools": {
+        "title": "Falta de herramientas",
+        "description": "Las plataformas existentes están orientadas a grandes constructoras, dejando sin herramientas específicas a estudios de arquitectura y pequeñas constructoras."
+      },
+      "consequences": {
+        "title": "Consecuencias",
+        "description": "Esta situación genera conflictos, sobrecostos y baja productividad en las obras."
+      }
+    }
+  },
+  "solution": {
+    "title": "La solución GROWS",
+    "subtitle": "Gestión centralizada y eficiente para Clientes Técnicos",
+    "description": "GROWS cubre este vacío ofreciendo una solución digital B2B que permite a los Clientes Técnicos gestionar, asignar y controlar a sus líderes de cuadrilla de manera centralizada y eficiente.",
+    "features": {
+      "templates": {
+        "title": "Plantillas Constructivas",
+        "description": "Tareas predefinidas y estandarizadas para cada fase de obra"
+      },
+      "scheduling": {
+        "title": "Cronogramas Automáticos",
+        "description": "Planificación inteligente que se ajusta automáticamente"
+      },
+      "tracking": {
+        "title": "Seguimiento Visual",
+        "description": "Control en tiempo real del avance de cada tarea"
+      },
+      "centralized": {
+        "title": "Gestión Centralizada",
+        "description": "Un solo lugar para gestionar todas tus obras y cuadrillas"
+      }
+    }
+  },
+  "users": {
+    "title": "Perfiles de Usuario",
+    "subtitle": "Cada tipo de usuario trabaja en un entorno digital claro y adaptado a su rol",
+    "cliente": {
+      "title": "Cliente Técnico",
+      "subtitle": "Estudios de arquitectura, arquitectos independientes y pequeñas constructoras",
+      "features": [
+        "Dashboard general con barra de progreso para cada obra activa",
+        "Plantillas constructivas predefinidas aplicables con un clic",
+        "Checklist digital integrado para cada tarea",
+        "Notificaciones push sobre cambios de estado"
+      ]
+    },
+    "lider": {
+      "title": "Líder de Cuadrilla",
+      "subtitle": "Coordinadores operativos que ejecutan tareas asignadas",
+      "features": [
+        "Lista de tareas pendientes con filtros por obra y fecha",
+        "Checklist de preparación y seguridad simplificado",
+        "Subida de fotos como evidencia del trabajo realizado",
+        "Gestión de microcuadrillas de hasta 4 personas"
+      ]
+    },
+    "socio": {
+      "title": "Socio",
+      "subtitle": "Trabajadores que acumulan experiencia y reputación",
+      "features": [
+        "Sistema de niveles basado en horas trabajadas",
+        "Acumulación de puntos por desempeño",
+        "Reputación visible en la plataforma",
+        "Progresión desde Hierro hasta Oro"
+      ]
+    }
+  },
+  "cta": {
+    "title": "¿Listo para transformar tu gestión de obra?",
+    "subtitle": "Únete a la revolución digital de la construcción",
+    "emailPlaceholder": "Tu email profesional",
+    "submitButton": "Solicitar Demo Gratuita",
+    "privacy": "Respetamos tu privacidad. Sin spam, solo información valiosa.",
+    "success": "¡Gracias! Te contactaremos pronto con más información.",
+    "error": "Hubo un error. Por favor, intenta nuevamente."
+  },
+  "footer": {
+    "description": "GROWS - Plataforma de Gestión Inteligente para la Construcción",
+    "rights": "Todos los derechos reservados"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "problem": "Problema",
+    "solution": "Solución",
+    "users": "Usuarios",
+    "contact": "Contacto"
+  }
+}

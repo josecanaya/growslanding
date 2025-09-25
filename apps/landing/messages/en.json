@@ -1,0 +1,104 @@
+{
+  "hero": {
+    "title": "GROWS – Intelligent Construction Management Platform",
+    "subtitle": "Organize and standardize construction tasks through construction templates, automatic schedules and visual tracking",
+    "description": "GROWS is a B2B digital platform designed for architecture studios, independent architects and small construction companies dedicated to small and medium-scale works.",
+    "cta": "Request Demo",
+    "learnMore": "Learn More"
+  },
+  "problem": {
+    "title": "The problem in construction",
+    "subtitle": "Informal methods and lack of adequate tools",
+    "issues": {
+      "informal": {
+        "title": "Informal methods",
+        "description": "Small and medium-scale residential works usually operate with informal methods, absence of systematic planning and lack of reliable records."
+      },
+      "tools": {
+        "title": "Lack of tools",
+        "description": "Existing platforms are oriented to large construction companies, leaving architecture studios and small construction companies without specific tools."
+      },
+      "consequences": {
+        "title": "Consequences",
+        "description": "This situation generates conflicts, cost overruns and low productivity in works."
+      }
+    }
+  },
+  "solution": {
+    "title": "The GROWS solution",
+    "subtitle": "Centralized and efficient management for Technical Clients",
+    "description": "GROWS covers this gap by offering a B2B digital solution that allows Technical Clients to manage, assign and control their crew leaders in a centralized and efficient way.",
+    "features": {
+      "templates": {
+        "title": "Construction Templates",
+        "description": "Predefined and standardized tasks for each construction phase"
+      },
+      "scheduling": {
+        "title": "Automatic Schedules",
+        "description": "Intelligent planning that adjusts automatically"
+      },
+      "tracking": {
+        "title": "Visual Tracking",
+        "description": "Real-time control of the progress of each task"
+      },
+      "centralized": {
+        "title": "Centralized Management",
+        "description": "One place to manage all your works and crews"
+      }
+    }
+  },
+  "users": {
+    "title": "User Profiles",
+    "subtitle": "Each type of user works in a clear digital environment adapted to their role",
+    "cliente": {
+      "title": "Technical Client",
+      "subtitle": "Architecture studios, independent architects and small construction companies",
+      "features": [
+        "General dashboard with progress bar for each active work",
+        "Predefined construction templates applicable with one click",
+        "Integrated digital checklist for each task",
+        "Push notifications about status changes"
+      ]
+    },
+    "lider": {
+      "title": "Crew Leader",
+      "subtitle": "Operational coordinators who execute assigned tasks",
+      "features": [
+        "List of pending tasks with filters by work and date",
+        "Simplified preparation and safety checklist",
+        "Photo upload as evidence of work performed",
+        "Management of micro-crews of up to 4 people"
+      ]
+    },
+    "socio": {
+      "title": "Partner",
+      "subtitle": "Workers who accumulate experience and reputation",
+      "features": [
+        "Level system based on hours worked",
+        "Point accumulation for performance",
+        "Visible reputation on the platform",
+        "Progression from Iron to Gold"
+      ]
+    }
+  },
+  "cta": {
+    "title": "Ready to transform your work management?",
+    "subtitle": "Join the digital revolution of construction",
+    "emailPlaceholder": "Your professional email",
+    "submitButton": "Request Free Demo",
+    "privacy": "We respect your privacy. No spam, just valuable information.",
+    "success": "Thank you! We will contact you soon with more information.",
+    "error": "There was an error. Please try again."
+  },
+  "footer": {
+    "description": "GROWS - Intelligent Construction Management Platform",
+    "rights": "All rights reserved"
+  },
+  "navigation": {
+    "home": "Home",
+    "problem": "Problem",
+    "solution": "Solution",
+    "users": "Users",
+    "contact": "Contact"
+  }
+}

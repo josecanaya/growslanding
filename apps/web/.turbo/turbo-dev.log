@@ -42,24 +42,16 @@ Estimated release dates:
 
  ✓ Starting...
  ✓ Ready in 2.5s
-ed in 134ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 73ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 73ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 63ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 80ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 63ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 59ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 73ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 125ms (560 modules)
- [32m[1m✓[22m[39m Compiled in 97ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 62ms (237 modules)
- [32m[1m✓[22m[39m Compiled in 147ms (560 modules)
- [32m[1m✓[22m[39m Compiled in 68ms (237 modules)
- GET / [32m200[39m in 187ms
- GET / [32m200[39m in 35ms
- GET / [32m200[39m in 31ms
- [37m[1m○[22m[39m Compiling /dashboard ...
- [32m[1m✓[22m[39m Compiled /dashboard in 676ms (727 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename '/Users/daniellenarduzzi/grows/apps/web/.next/cache/webpack/client-development/0.pack.gz_' -> '/Users/daniellenarduzzi/grows/apps/web/.next/cache/webpack/client-development/0.pack.gz'
+ ○ Compiling / ...
+ ✓ Compiled / in 2.3s (783 modules)
+Error: Route "/" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
+    at syncIODev (../../../src/server/request/cookies.ts:517:3)
+    at Promise.get (../../../src/server/request/cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+[32m[1m✓[22m[39m Compiled /dashboard in 676ms (727 modules)
  GET /dashboard [32m200[39m in 1730ms
  GET /dashboard [32m200[39m in 568ms
  [32m[1m✓[22m[39m Compiled /lider in 164ms (737 modules)

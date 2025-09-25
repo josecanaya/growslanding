@@ -1,0 +1,14 @@
+
+> apps/landing@0.1.0 dev /Users/daniellenarduzzi/grows/apps/landing
+> next dev
+
+   ▲ Next.js 14.0.4
+   - Local:        http://localhost:3000
+
+ ⚠ Invalid next.config.js options detected: 
+ ⚠     "env._next_intl_trailing_slash" is missing, expected string
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ✓ Ready in 1591ms
+ ✓ Compiled /src/middleware in 251ms (93 modules)
+ ○ Compiling /[locale] ...
+ ✓ Compiled /[locale] in 1680ms (669 modules)

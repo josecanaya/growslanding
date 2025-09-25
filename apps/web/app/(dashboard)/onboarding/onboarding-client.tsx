@@ -28,7 +28,6 @@ const tareaSchema = z.object({
 const inviteSchema = z.object({
   nombre: z.string().min(2),
   email: z.string().email(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 type Org = {
@@ -56,7 +55,6 @@ type Invite = {
   id: string;
   email: string;
   nombre: string;
-  rol: 'funcional' | 'autonomo';
   status: string;
 };
 
@@ -118,7 +116,7 @@ export default function OnboardingClient({
 
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { nombre: '', email: '', rol: 'funcional' },
+    defaultValues: { nombre: '', email: '' },
   });
 
   const obraOptions = useMemo(() => obras.map((obra) => ({ value: obra.id, label: obra.nombre })), [obras]);
@@ -231,7 +229,7 @@ export default function OnboardingClient({
         status: 'pending',
       };
       setInvites((prev) => [...prev, newInvite]);
-      inviteForm.reset({ nombre: '', email: '', rol: 'funcional' });
+      inviteForm.reset({ nombre: '', email: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -529,8 +527,7 @@ export default function OnboardingClient({
                 className="mt-2 w-full rounded border border-border px-3 py-2"
                 {...inviteForm.register('rol')}
               >
-                <option value="funcional">Líder funcional</option>
-                <option value="autonomo">Líder autónomo</option>
+                <option value="constructor">Socio constructor</option>
               </select>
             </div>
             <div className="md:col-span-2">

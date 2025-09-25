@@ -8,10 +8,9 @@ type InviteInput = {
   userEmail?: string | null;
   nombre: string;
   email: string;
-  rol: 'funcional' | 'autonomo';
 };
 
-export async function createLeaderInvite({ userId, userEmail, nombre, email, rol }: InviteInput) {
+export async function createLeaderInvite({ userId, userEmail, nombre, email }: InviteInput) {
   const supabase = createServiceSupabaseClient();
   const { org } = await resolveOrgContext(
     userId,
@@ -28,7 +27,7 @@ export async function createLeaderInvite({ userId, userEmail, nombre, email, rol
         org_id: org.id,
         nombre,
         email,
-        rol,
+        rol: 'constructor',
         status: 'pending',
         accepted_at: null,
         token,

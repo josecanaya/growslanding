@@ -11,3 +11,54 @@
  [33m[1m⚠[22m[39m     "env._next_intl_trailing_slash" is missing, expected string
  [33m[1m⚠[22m[39m See more info here: https://nextjs.org/docs/messages/invalid-next-config
  [32m[1m✓[22m[39m Ready in 1630ms
+ [32m[1m✓[22m[39m Compiled /api/leads in 439ms (120 modules)
+ [32m[1m✓[22m[39m Compiled /src/middleware in 132ms (93 modules)
+ [37m[1m○[22m[39m Compiling /[locale] ...
+ [32m[1m✓[22m[39m Compiled /[locale] in 1618ms (803 modules)
+ [32m[1m✓[22m[39m Compiled in 63ms (316 modules)
+
+The `locale` parameter in `getRequestConfig` is deprecated, please switch to `await requestLocale`. See https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+
+A `locale` is expected to be returned from `getRequestConfig`, but none was returned. This will be an error in the next major version of next-intl.
+
+See: https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+ [32m[1m✓[22m[39m Compiled /not-found in 199ms (784 modules)
+ [32m[1m✓[22m[39m Compiled in 287ms (693 modules)
+
+The `locale` parameter in `getReques<w> [webpack.cache.PackFileCacheStrategy] Restoring pack from /Users/daniellenarduzzi/grows/apps/landing/.next/cache/webpack/client-development.pack.gz failed: TypeError: Cannot read properties of undefined (reading 'hasStartTime')
+ ✓ Compiled in 79ms (298 modules)
+ ✓ Compiled in 215ms (316 modules)
+ ✓ Compiled in 109ms (316 modules)
+ ✓ Compiled in 68ms (316 modules)
+ ✓ Compiled in 330ms (316 modules)
+ ✓ Compiled in 92ms (316 modules)
+ ✓ Compiled /api/leads in 370ms (120 modules)
+t requestLocale`. See https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+
+A `locale` is expected to be returned from `getRequestConfig`, but none was returned. This will be an error in the next major version of next-intl.
+
+See: https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+ [32m[1m✓[22m[39m Compiled in 79ms (316 modules)
+ [32m[1m✓[22m[39m Compiled /not-found in 56ms (683 modules)
+
+The `locale` parameter in `getRequestConfig` is deprecated, please switch to `await requestLocale`. See https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+
+A `locale` is expected to be returned from `getRequestConfig`, but none was returned. This will be an error in the next major version of next-intl.
+
+See: https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+<w> [1m[33m[webpack.cache.PackFileCacheStrategy] Restoring pack from /Users/daniellenarduzzi/grows/apps/landing/.next/cache/webpack/client-development.pack.gz failed: TypeError: Cannot read properties of undefined (reading 'hasStartTime')[39m[22m
+ [32m[1m✓[22m[39m Compiled in 302ms (693 modules)
+
+The `locale` parameter in `getRequestConfig` is deprecated, please switch to `await requestLocale`. See https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+
+
+A `locale` is expected to be returned from `getRequestConfig`, but none was returned. This will be an error in the next major version of next-intl.
+
+See: https://next-intl.dev/blog/next-intl-3-22#await-request-locale
+

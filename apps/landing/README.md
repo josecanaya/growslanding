@@ -23,7 +23,7 @@ A modern, responsive landing page for GROWS - Intelligent Construction Managemen
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - pnpm (recommended) or npm
 
 ### Installation
@@ -33,7 +33,7 @@ A modern, responsive landing page for GROWS - Intelligent Construction Managemen
 pnpm install
 
 # Run development server
-pnpm dev
+pnpm dev:landing
 
 # Build for production
 pnpm build
@@ -90,14 +90,26 @@ The app supports Spanish (default) and English. To add a new language:
 2. Create a new translation file in `messages/`
 3. Update the middleware configuration
 
-## Deployment
+## Environment
 
-The app is configured for static export and can be deployed to any static hosting service:
+Create a `.env.local` in `apps/landing` with:
 
-- Vercel (recommended)
-- Netlify
-- GitHub Pages
-- AWS S3 + CloudFront
+```env
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_turnstile_site_key
+TURNSTILE_SECRET_KEY=your_turnstile_secret_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+Also create the leads table in Supabase:
+
+```sql
+create table if not exists public.leads (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  created_at timestamptz not null default now()
+);
+```
 
 ## Customization
 

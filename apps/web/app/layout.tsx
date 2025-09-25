@@ -41,10 +41,10 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                   Inicio
                 </Link>
                 <Link className="text-muted-foreground transition hover:text-foreground" href="/dashboard">
-                  Cliente Técnico
+                  Cliente
                 </Link>
                 <Link className="text-muted-foreground transition hover:text-foreground" href="/lider">
-                  Líder de cuadrilla
+                  Socio constructor
                 </Link>
                 {user ? (
                   <div className="flex items-center gap-3">

@@ -12,7 +12,6 @@ export const runtime = 'nodejs';
 const schema = z.object({
   nombre: z.string().min(2),
   email: z.string().email(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 export async function POST(request: Request) {
@@ -71,7 +70,6 @@ export async function POST(request: Request) {
       userEmail: user.email,
       nombre: payload.nombre,
       email: payload.email,
-      rol: payload.rol,
     });
 
     const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -87,7 +85,7 @@ export async function POST(request: Request) {
         data: {
           invite_id: inviteId,
           org_id: org.id,
-          rol: payload.rol,
+          rol: 'constructor',
           nombre: payload.nombre,
         },
       },

@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     );
 
     if (role !== 'owner') {
-      return new Response(JSON.stringify({ message: 'Solo el cliente técnico puede crear obras' }), {
+      return new Response(JSON.stringify({ message: 'Solo el cliente puede crear obras' }), {
         status: 403,
       });
     }

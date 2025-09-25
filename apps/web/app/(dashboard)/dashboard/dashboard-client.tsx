@@ -20,7 +20,6 @@ type ObraFormValues = z.infer<typeof obraSchema>;
 const socioSchema = z.object({
   nombre: z.string().min(2),
   contacto: z.string().optional(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 type SocioFormValues = z.infer<typeof socioSchema>;
@@ -52,7 +51,7 @@ type DashboardClientProps = {
     org_id: string;
     nombre: string;
     contacto: string | null;
-    rol: 'funcional' | 'autonomo';
+    rol: string;
     status: string;
   }>;
   tareas: Array<{
@@ -77,7 +76,7 @@ type DashboardClientProps = {
     id: string;
     email: string;
     nombre: string;
-    rol: 'funcional' | 'autonomo';
+    rol: string;
     status: string;
     created_at: string;
   }>;
@@ -99,7 +98,6 @@ function useServerActionFeedback() {
 const inviteSchema = z.object({
   nombre: z.string().min(2),
   email: z.string().email(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
@@ -116,7 +114,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
 
   const socioForm = useForm<SocioFormValues>({
     resolver: zodResolver(socioSchema),
-    defaultValues: { nombre: '', rol: 'funcional' },
+    defaultValues: { nombre: '', contacto: '' },
   });
 
   const tareaForm = useForm<TareaFormValues>({
@@ -130,7 +128,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
 
   const inviteForm = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { nombre: '', email: '', rol: 'funcional' },
+    defaultValues: { nombre: '', email: '' },
   });
 
   async function handleSubmit(
@@ -173,7 +171,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
     }
   }
 
-  async function handleRemoveLeader(inviteId: string, socioId: string) {
+  async function handleRemoveSocio(inviteId: string, socioId: string) {
     setProcessingInviteId(inviteId);
     try {
       const response = await fetch(`/api/socios/${socioId}`, {
@@ -181,11 +179,11 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
       });
 
       if (response.ok) {
-        feedback.pushMessage('Líder eliminado', 'success');
+        feedback.pushMessage('Socio eliminado', 'success');
         router.refresh();
       } else {
         const error = await response.json().catch(() => ({ message: 'Error' }));
-        feedback.pushMessage(error.message ?? 'No se pudo eliminar el líder', 'error');
+        feedback.pushMessage(error.message ?? 'No se pudo eliminar el socio', 'error');
       }
     } finally {
       setProcessingInviteId(null);
@@ -212,7 +210,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
     <div className="flex min-h-[calc(100vh-80px)] bg-muted/10">
       <aside className="sticky top-[80px] hidden h-[calc(100vh-80px)] w-72 flex-shrink-0 flex-col gap-6 border-r border-border bg-card/70 p-6 backdrop-blur lg:flex">
         <div>
-          <p className="text-xs uppercase text-muted-foreground">Cliente técnico</p>
+          <p className="text-xs uppercase text-muted-foreground">Cliente</p>
           <h2 className="text-lg font-semibold">{org.name}</h2>
         </div>
         <nav className="flex flex-col gap-3 text-sm">
@@ -225,8 +223,8 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
           <a className="text-muted-foreground transition hover:text-foreground" href="#crear-socio">
             Crear socio
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#invitar-lider">
-            Invitar líder
+          <a className="text-muted-foreground transition hover:text-foreground" href="#invitar-socio">
+            Invitar socio constructor
           </a>
           <a className="text-muted-foreground transition hover:text-foreground" href="#crear-tarea">
             Crear tarea
@@ -251,7 +249,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
           <header className="space-y-1">
             <h1 className="text-3xl font-semibold">Panel del cliente</h1>
             <p className="text-sm text-muted-foreground">
-              Administra tu obra, registra líderes de cuadrilla y controla el avance desde un solo lugar.
+              Administra tus obras y coordina a tus socios constructores desde un solo lugar.
             </p>
           </header>
           {feedback.message && (
@@ -336,12 +334,12 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
         <section id="crear-socio" className="rounded border border-border bg-card p-6 shadow-sm">
           <h2 className="text-xl font-semibold">Crear socio</h2>
           <p className="text-sm text-muted-foreground">
-            Registra líderes funcionales o autónomos para asignarlos a las tareas de la obra.
+            Registra socios constructores para asignarlos a las tareas de la obra.
           </p>
           <form
             onSubmit={socioForm.handleSubmit((values) =>
               handleSubmit('/api/socios', values, () =>
-                socioForm.reset({ nombre: '', contacto: '', rol: 'funcional' })
+                socioForm.reset({ nombre: '', contacto: '' })
               )
             )}
             className="mt-4 grid gap-4 md:grid-cols-2"
@@ -362,16 +360,6 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                 {...socioForm.register('contacto')}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium">Rol</label>
-              <select
-                className="mt-2 w-full rounded border border-border px-3 py-2"
-                {...socioForm.register('rol')}
-              >
-                <option value="funcional">Líder funcional</option>
-                <option value="autonomo">Líder autónomo</option>
-              </select>
-            </div>
             <div className="md:col-span-2">
               <button
                 type="submit"
@@ -383,14 +371,14 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
           </form>
         </section>
 
-        <section id="invitar-lider" className="rounded border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Invitar líder de cuadrilla</h2>
+        <section id="invitar-socio" className="rounded border border-border bg-card p-6 shadow-sm">
+          <h2 className="text-xl font-semibold">Invitar socio constructor</h2>
           <p className="text-sm text-muted-foreground">
-            Envía un enlace mágico para que nuevos líderes accedan al panel público y reporten tareas.
+            Envía un enlace mágico para que nuevos socios constructores accedan al panel público y reporten tareas.
           </p>
           <form
             onSubmit={inviteForm.handleSubmit((values) =>
-              handleSubmit('/api/invites', values, () => inviteForm.reset({ nombre: '', email: '', rol: 'funcional' }))
+              handleSubmit('/api/invites', values, () => inviteForm.reset({ nombre: '', email: '' }))
             )}
             className="mt-4 grid gap-4 md:grid-cols-2"
           >
@@ -406,19 +394,9 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
               <label className="block text-sm font-medium">Correo</label>
               <input
                 className="mt-2 w-full rounded border border-border px-3 py-2"
-                placeholder="lider@empresa.com"
+                placeholder="socio@empresa.com"
                 {...inviteForm.register('email')}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Rol</label>
-              <select
-                className="mt-2 w-full rounded border border-border px-3 py-2"
-                {...inviteForm.register('rol')}
-              >
-                <option value="funcional">Líder funcional (microcuadrilla)</option>
-                <option value="autonomo">Líder autónomo (cuadrilla propia)</option>
-              </select>
             </div>
             <div className="md:col-span-2">
               <button
@@ -440,7 +418,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                   );
 
                   const showRevoke = invite.status === 'pending';
-                  const showRemoveLeader = Boolean(socioAsignado);
+                  const showRemoveSocio = Boolean(socioAsignado);
 
                   return (
                     <li
@@ -448,36 +426,36 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                       className="flex flex-wrap items-center justify-between gap-2 rounded border border-border px-3 py-2"
                     >
                       <div>
-                      <p className="font-medium text-foreground">{invite.nombre}</p>
-                      <p>{invite.email}</p>
-                      <p className="text-xs">
-                        {invite.rol} · {invite.status} ·{' '}
-                        {new Date(invite.created_at).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      {showRevoke && (
-                        <button
-                          type="button"
-                          className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
-                          onClick={() => handleRevoke(invite.id)}
-                          disabled={processingInviteId === invite.id}
-                        >
-                          {processingInviteId === invite.id ? 'Procesando…' : 'Revocar'}
-                        </button>
-                      )}
-                      {showRemoveLeader && socioAsignado && (
-                        <button
-                          type="button"
-                          className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
-                          onClick={() => handleRemoveLeader(invite.id, socioAsignado.id)}
-                          disabled={processingInviteId === invite.id}
-                        >
-                          {processingInviteId === invite.id ? 'Procesando…' : 'Eliminar líder'}
-                        </button>
-                      )}
-                    </div>
-                  </li>
+                        <p className="font-medium text-foreground">{invite.nombre}</p>
+                        <p>{invite.email}</p>
+                        <p className="text-xs">
+                          Socio constructor · {invite.status} ·{' '}
+                          {new Date(invite.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {showRevoke && (
+                          <button
+                            type="button"
+                            className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                            onClick={() => handleRevoke(invite.id)}
+                            disabled={processingInviteId === invite.id}
+                          >
+                            {processingInviteId === invite.id ? 'Procesando…' : 'Revocar'}
+                          </button>
+                        )}
+                        {showRemoveSocio && socioAsignado && (
+                          <button
+                            type="button"
+                            className="rounded border border-destructive px-3 py-1 text-xs font-medium text-destructive transition hover:bg-destructive hover:text-destructive-foreground disabled:opacity-60"
+                            onClick={() => handleRemoveSocio(invite.id, socioAsignado.id)}
+                            disabled={processingInviteId === invite.id}
+                          >
+                            {processingInviteId === invite.id ? 'Procesando…' : 'Eliminar socio'}
+                          </button>
+                        )}
+                      </div>
+                    </li>
                   );
                 })}
               </ul>
@@ -488,7 +466,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
         <section id="crear-tarea" className="rounded border border-border bg-card p-6 shadow-sm">
           <h2 className="text-xl font-semibold">Crear tarea</h2>
           <p className="text-sm text-muted-foreground">
-            Define el trabajo asignado y vincúlalo a la obra y líderes correspondientes.
+            Define el trabajo asignado y vincúlalo a la obra y socios constructores correspondientes.
           </p>
           {obras.length === 0 && (
             <p className="mt-3 rounded border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-700">
@@ -556,7 +534,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                   <option value="">Sin referente</option>
                   {socios.map((socio) => (
                     <option key={socio.id} value={socio.id}>
-                      {socio.nombre} ({socio.rol})
+                      {socio.nombre} (Socio constructor)
                     </option>
                   ))}
                 </select>
@@ -577,7 +555,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
                 >
                   {socios.map((socio) => (
                     <option key={socio.id} value={socio.id}>
-                      {socio.nombre} ({socio.rol})
+                      {socio.nombre} (Socio constructor)
                     </option>
                   ))}
                 </select>

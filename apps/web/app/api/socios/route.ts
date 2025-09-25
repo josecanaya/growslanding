@@ -11,7 +11,6 @@ export const runtime = 'nodejs';
 const schema = z.object({
   nombre: z.string().min(2),
   contacto: z.string().optional(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 export async function POST(request: Request) {
@@ -38,7 +37,7 @@ export async function POST(request: Request) {
     );
 
     if (role !== 'owner') {
-      return new Response(JSON.stringify({ message: 'Solo el cliente técnico puede crear socios manualmente' }), {
+      return new Response(JSON.stringify({ message: 'Solo el cliente puede crear socios manualmente' }), {
         status: 403,
       });
     }
@@ -50,7 +49,7 @@ export async function POST(request: Request) {
         org_id: org.id,
         nombre: payload.nombre,
         contacto: payload.contacto ?? null,
-        rol: payload.rol,
+        rol: 'constructor',
       })
       .select('id')
       .single();

@@ -24,7 +24,7 @@ type Socio = {
   contacto: string | null;
   org_id: string;
   status: string;
-  rol: 'funcional' | 'autonomo';
+  rol: string;
 };
 
 type Evento = {
@@ -67,7 +67,7 @@ type Invite = {
   id: string;
   email: string;
   nombre: string;
-  rol: 'funcional' | 'autonomo';
+  rol: string;
   status: string;
   created_at: string;
 };
@@ -102,7 +102,6 @@ const nuevaTareaSchema = z.object({
 const nuevoInviteSchema = z.object({
   nombre: z.string().min(2, 'El nombre es requerido'),
   email: z.string().email('Correo inválido'),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
 });
 
 export default function LeaderClient({ socios, tareas, tokens, obras, invites }: LeaderClientProps) {
@@ -129,7 +128,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
 
   const inviteForm = useForm<z.infer<typeof nuevoInviteSchema>>({
     resolver: zodResolver(nuevoInviteSchema),
-    defaultValues: { nombre: '', email: '', rol: 'funcional' },
+    defaultValues: { nombre: '', email: '' },
   });
 
   const tokenMap = useMemo(() => {
@@ -183,7 +182,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
     (tarea: Tarea) => {
       const token = tokenMap.get(tarea.id);
       if (!token || !token.enabled) {
-        alert('Esta tarea aún no tiene un QR habilitado. Solicita al Cliente Técnico su creación.');
+        alert('Esta tarea aún no tiene un QR habilitado. Solicita al cliente su creación.');
         return;
       }
       const url = `/t/${token.token}`;
@@ -250,7 +249,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
         const data = await response.json().catch(() => ({ message: 'Error' }));
         throw new Error(data.message ?? 'No se pudo enviar la invitación');
       }
-      inviteForm.reset({ nombre: '', email: '', rol: 'funcional' });
+      inviteForm.reset({ nombre: '', email: '' });
       showSuccess('Invitación enviada');
       router.refresh();
     } catch (error) {
@@ -282,7 +281,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
           media: [],
           motivo:
             tarea.estado === 'finalizado' && nuevoEstado === 'en_ejecucion'
-              ? 'Ajuste realizado por el líder'
+              ? 'Ajuste realizado por el socio'
               : undefined,
         }),
       });
@@ -305,15 +304,15 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
       <header className="rounded border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Panel del Líder</h1>
+            <h1 className="text-2xl font-semibold">Panel del socio constructor</h1>
             <p className="text-sm text-muted-foreground">
-              Visualiza tus tareas asignadas, tu micro-cuadrilla y el historial de actas.
+              Visualiza tus tareas asignadas, tu equipo y el historial de actas.
             </p>
           </div>
           <div className="flex flex-col gap-3 md:flex-row md:items-center">
             <div>
               <label className="text-xs uppercase text-muted-foreground">
-                Seleccionar líder
+                Seleccionar socio
               </label>
               <select
                 className="mt-1 w-64 rounded border px-3 py-2"
@@ -322,7 +321,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
               >
                 {sociosOrdenados.map((socio) => (
                   <option key={socio.id} value={socio.id}>
-                    {socio.nombre} — {socio.rol === 'funcional' ? 'Funcional' : 'Autónomo'}
+                    {socio.nombre}
                   </option>
                 ))}
               </select>
@@ -422,7 +421,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
         </div>
 
         <div className="space-y-4 rounded border border-border bg-card p-4 shadow-sm">
-          <h2 className="text-lg font-semibold">Invitar nuevo socio</h2>
+          <h2 className="text-lg font-semibold">Invitar socio constructor</h2>
           <form className="space-y-3" onSubmit={inviteForm.handleSubmit(handleInvitar)}>
             <div>
               <label className="block text-sm font-medium">Nombre</label>
@@ -446,16 +445,6 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
                 <p className="mt-1 text-xs text-destructive">{inviteForm.formState.errors.email.message}</p>
               )}
             </div>
-            <div>
-              <label className="block text-sm font-medium">Rol</label>
-              <select
-                className="mt-1 w-full rounded border px-3 py-2"
-                {...inviteForm.register('rol')}
-              >
-                <option value="funcional">Líder funcional</option>
-                <option value="autonomo">Líder autónomo</option>
-              </select>
-            </div>
             <button
               type="submit"
               className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
@@ -471,7 +460,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
               <ul className="space-y-1">
                 {invites.map((invite) => (
                   <li key={invite.id} className="rounded border border-dashed px-3 py-2 text-xs">
-                    {invite.nombre} ({invite.email}) · {invite.rol} · {invite.status}
+                    {invite.nombre} ({invite.email}) · Socio constructor · {invite.status}
                   </li>
                 ))}
               </ul>
@@ -507,9 +496,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
             {equipo.map((miembro) => (
               <div key={miembro.id} className="rounded border border-dashed px-3 py-2">
                 <p className="font-medium">{miembro.nombre}</p>
-                <p className="text-xs text-muted-foreground">
-                  {miembro.rol === 'funcional' ? 'Funcional' : 'Autónomo'}
-                </p>
+                <p className="text-xs text-muted-foreground">Socio constructor</p>
                 {miembro.contacto && (
                   <p className="text-xs text-muted-foreground">{miembro.contacto}</p>
                 )}
@@ -524,7 +511,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
           <h2 className="text-lg font-semibold">Tareas asignadas</h2>
           <p className="text-sm text-muted-foreground">
             Cada cambio de estado requiere evidencia fotográfica o firma según aplique.
-            Puedes usar el acceso QR o solicitarlo al cliente técnico.
+            Puedes usar el acceso QR o solicitarlo al cliente.
           </p>
         </div>
         {tareasFiltradas.length === 0 && (

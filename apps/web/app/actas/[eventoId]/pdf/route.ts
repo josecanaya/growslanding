@@ -1,9 +1,12 @@
+import type { RouteContext } from 'next';
+
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 
 export async function GET(
   _request: Request,
-  { params }: { params: { eventoId: string } }
+  context: RouteContext<{ eventoId: string }>
 ) {
+  const params = await context.params;
   const supabase = createServiceSupabaseClient();
 
   const { data: evento, error } = await supabase

@@ -1,2 +1,4 @@
 - agregar toast
 - simplificar a dos usuarios: cliente y socio(colapsan lider tecnico, funcional, etc)
+- editar mensajes de invitacion enviados por supabase
+- login con cuenta de google

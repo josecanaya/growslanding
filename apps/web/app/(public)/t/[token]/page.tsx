@@ -1,9 +1,12 @@
+import type { PageProps } from 'next';
+
 import QrClient from './qr-client';
 
-export default function PublicTaskPage({
-  params,
-}: {
-  params: { token: string };
-}) {
-  return <QrClient token={decodeURIComponent(params.token)} />;
+type Params = {
+  token: string;
+};
+
+export default async function PublicTaskPage({ params }: PageProps<Params>) {
+  const { token } = await params;
+  return <QrClient token={decodeURIComponent(token)} />;
 }

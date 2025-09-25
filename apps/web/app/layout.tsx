@@ -18,11 +18,11 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: RootLayoutProps) {
-  const supabase = createServerComponentClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore });
   const {
-    data: { session }
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
+    data: { user }
+  } = await supabase.auth.getUser();
   const userLabel =
     user?.user_metadata?.full_name ??
     user?.user_metadata?.name ??

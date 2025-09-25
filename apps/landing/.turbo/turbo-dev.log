@@ -10,6 +10,7 @@
  [33m[1m⚠[22m[39m Invalid next.config.js options detected: 
  [33m[1m⚠[22m[39m     "env._next_intl_trailing_slash" is missing, expected string
  [33m[1m⚠[22m[39m See more info here: https://nextjs.org/docs/messages/invalid-next-config
- [32m[1m✓[22m[39m Ready in 1702ms
+ [32m[1m✓[22m[39m Ready in 1886ms
  [37m[1m○[22m[39m Compiling /not-found ...
- [32m[1m✓[22m[39m Compiled /not-found in 842ms (398 modules)
+ [32m[1m✓[22m[39m Compiled /not-found in 827ms (398 modules)
+[?25h

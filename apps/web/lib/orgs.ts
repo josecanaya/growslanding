@@ -5,7 +5,7 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
 
   const { data: existing, error: fetchError } = await supabase
     .from('orgs')
-    .select('id, name, owner_user_id')
+    .select('id, name, owner_user_id, onboarding_completed')
     .eq('owner_user_id', userId)
     .maybeSingle();
 
@@ -23,8 +23,9 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
     .insert({
       name: defaultName,
       owner_user_id: userId,
+      onboarding_completed: false,
     })
-    .select('id, name, owner_user_id')
+    .select('id, name, owner_user_id, onboarding_completed')
     .single();
 
   if (error) {

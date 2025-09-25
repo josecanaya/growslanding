@@ -4,12 +4,12 @@
   "packageManager": "pnpm@9.1.2",
   "scripts": {
     "prepare": "husky install",
-    "dev": "turbo dev --filter=apps/landing",
+    "dev": "turbo dev --filter=apps/web",
     "dev:web": "turbo dev --filter=apps/web",
     "dev:landing": "turbo dev --filter=apps/landing",
-    "build": "turbo build --filter=apps/landing",
+    "build": "turbo build --filter=apps/web",
     "build:web": "turbo build --filter=apps/web",
-    "lint": "turbo lint --filter=apps/landing",
+    "lint": "turbo lint --filter=apps/web",
     "lint:web": "turbo lint --filter=apps/web",
     "test": "pnpm --filter apps/web test"
   },

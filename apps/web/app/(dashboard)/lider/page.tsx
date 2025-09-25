@@ -7,18 +7,19 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
 export default async function LeaderPage() {
-  const supabaseAuth = createServerComponentClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabaseAuth = createServerComponentClient<Database>({ cookies: () => cookieStore });
   const {
-    data: { session },
-  } = await supabaseAuth.auth.getSession();
+    data: { user },
+  } = await supabaseAuth.auth.getUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect('/auth/login');
   }
 
   const supabase = createServiceSupabaseClient();
 
-  const leaderEmail = session.user.email;
+  const leaderEmail = user.email;
   if (!leaderEmail) {
     redirect('/auth/login');
   }

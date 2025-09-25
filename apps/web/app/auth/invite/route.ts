@@ -50,7 +50,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(actionLink);
   }
 
-  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
   await supabase.auth.exchangeCodeForSession(code);
 
   if (invite.status !== 'accepted') {

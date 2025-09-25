@@ -8,16 +8,15 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
 export default async function DashboardPage() {
-  const supabaseAuth = createServerComponentClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabaseAuth = createServerComponentClient<Database>({ cookies: () => cookieStore });
   const {
-    data: { session },
-  } = await supabaseAuth.auth.getSession();
+    data: { user },
+  } = await supabaseAuth.auth.getUser();
 
-  if (!session?.user) {
+  if (!user) {
     redirect('/auth/login');
   }
-
-  const user = session.user;
   const serviceClient = createServiceSupabaseClient();
   const { data: existingOrg } = await serviceClient
     .from('orgs')

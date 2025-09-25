@@ -19,20 +19,21 @@ export async function POST(request: Request) {
     const body = await request.json();
     const payload = schema.parse(body);
 
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies });
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
     const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    if (!session?.user) {
+    if (!user) {
       return new Response(JSON.stringify({ message: 'No autenticado' }), {
         status: 401,
       });
     }
 
     const org = await ensureOrgForUser(
-      session.user.id,
-      session.user.user_metadata?.full_name ?? session.user.email ?? 'Organización'
+      user.id,
+      user.user_metadata?.full_name ?? user.email ?? 'Organización'
     );
 
     const supabase = createServiceSupabaseClient();

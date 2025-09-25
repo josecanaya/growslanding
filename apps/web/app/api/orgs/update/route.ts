@@ -9,9 +9,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 export const runtime = 'nodejs';
 
 const schema = z.object({
-  nombre: z.string().min(2),
-  contacto: z.string().optional(),
-  rol: z.enum(['funcional', 'autonomo']).default('funcional'),
+  name: z.string().min(2).max(80),
 });
 
 export async function POST(request: Request) {
@@ -31,31 +29,28 @@ export async function POST(request: Request) {
       });
     }
 
+    const supabase = createServiceSupabaseClient();
     const org = await ensureOrgForUser(
       user.id,
-      user.user_metadata?.full_name ?? user.email ?? 'Organización'
+      payload.name
     );
 
-    const supabase = createServiceSupabaseClient();
     const { data, error } = await supabase
-      .from('socios')
-      .insert({
-        org_id: org.id,
-        nombre: payload.nombre,
-        contacto: payload.contacto ?? null,
-        rol: payload.rol,
-      })
-      .select('id')
+      .from('orgs')
+      .update({ name: payload.name })
+      .eq('id', org.id)
+      .select('id, name, onboarding_completed')
       .single();
 
     if (error) {
       throw error;
     }
 
-    return new Response(JSON.stringify({ id: data.id }), { status: 201 });
+    return new Response(JSON.stringify({ org: data }));
   } catch (error) {
+    console.error('[ORG_UPDATE_ERROR]', error);
     const message =
-      error instanceof Error ? error.message : 'Error al crear socio';
+      error instanceof Error ? error.message : 'Error al actualizar la organización';
     return new Response(JSON.stringify({ message }), { status: 400 });
   }
 }

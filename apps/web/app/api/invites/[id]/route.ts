@@ -15,19 +15,20 @@ export async function DELETE(
 ) {
   try {
     const params = await context.params;
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies });
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
     const {
-      data: { session },
-    } = await supabaseAuth.auth.getSession();
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
     }
 
     const supabase = createServiceSupabaseClient();
     const org = await ensureOrgForUser(
-      session.user.id,
-      session.user.user_metadata?.full_name ?? session.user.email ?? 'Organización'
+      user.id,
+      user.user_metadata?.full_name ?? user.email ?? 'Organización'
     );
 
     const { data: invite, error: fetchError } = await supabase

@@ -13,61 +13,15 @@ type RootLayoutProps = {
 };
 
 export const metadata: Metadata = {
-  title: "grows",
-  description: "Monorepo web app bootstrap with Next.js 15"
+  title: "GROWS - Panel de Socio",
+  description: "Plataforma de gestión inteligente para la construcción"
 };
 
 export default async function RootLayout({ children }: RootLayoutProps) {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient<Database>({ cookies: () => cookieStore });
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
-  const userLabel =
-    user?.user_metadata?.full_name ??
-    user?.user_metadata?.name ??
-    user?.email ??
-    "Perfil";
-
   return (
     <html lang="es">
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        <div className="flex min-h-screen flex-col">
-          <header className="border-b border-border bg-card/60 backdrop-blur">
-            <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-              <span className="text-sm font-semibold uppercase tracking-wide">Grows</span>
-              <div className="flex items-center gap-4 text-sm">
-                <Link className="text-muted-foreground transition hover:text-foreground" href="/">
-                  Inicio
-                </Link>
-                <Link className="text-muted-foreground transition hover:text-foreground" href="/dashboard">
-                  Cliente
-                </Link>
-                <Link className="text-muted-foreground transition hover:text-foreground" href="/lider">
-                  Socio constructor
-                </Link>
-                {user ? (
-                  <div className="flex items-center gap-3">
-                    <span className="hidden text-xs text-muted-foreground sm:inline">{userLabel}</span>
-                    <form action="/auth/signout?redirect=/" method="post">
-                      <button className="rounded border border-border px-3 py-1 text-xs font-medium transition hover:bg-muted" type="submit">
-                        Cerrar sesión
-                      </button>
-                    </form>
-                  </div>
-                ) : (
-                  <Link
-                    className="rounded bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
-                    href="/auth/login"
-                  >
-                    Ingresar
-                  </Link>
-                )}
-              </div>
-            </nav>
-          </header>
-          <main className="flex-1">{children}</main>
-        </div>
+      <body className="min-h-screen bg-secundario text-oscuro antialiased">
+        <main className="min-h-screen">{children}</main>
       </body>
     </html>
   );

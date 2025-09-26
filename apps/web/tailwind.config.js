@@ -9,6 +9,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // Paleta de colores especificada
+        primario: '#1B263B',
+        secundario: '#f5f7fa',
+        acento: '#f4e27e',
+        claro: '#eaf0f6',
+        oscuro: '#10161a',
+        // Variables para compatibilidad con shadcn/ui
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

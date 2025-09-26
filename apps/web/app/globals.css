@@ -3,25 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 47.4% 11.2%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 47.4% 11.2%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
+  --color-primario: #1B263B;
+  --color-secundario: #f5f7fa;
+  --color-acento: #f4e27e;
+  --color-claro: #eaf0f6;
+  --color-oscuro: #10161a;
+  
+  /* Variables para compatibilidad con shadcn/ui */
+  --background: 245 247 250; /* secundario */
+  --foreground: 16 22 26; /* oscuro */
+  --muted: 234 240 246; /* claro */
+  --muted-foreground: 16 22 26; /* oscuro */
+  --popover: 245 247 250; /* secundario */
+  --popover-foreground: 16 22 26; /* oscuro */
+  --card: 255 255 255;
+  --card-foreground: 16 22 26; /* oscuro */
+  --border: 234 240 246; /* claro */
+  --input: 234 240 246; /* claro */
+  --primary: 27 38 59; /* primario */
+  --primary-foreground: 255 255 255;
+  --secondary: 245 247 250; /* secundario */
+  --secondary-foreground: 16 22 26; /* oscuro */
+  --accent: 244 226 126; /* acento */
+  --accent-foreground: 16 22 26; /* oscuro */
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  --ring: 215 20.2% 65.1%;
+  --ring: 27 38 59; /* primario */
   --radius: 0.5rem;
 }
 

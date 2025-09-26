@@ -1,139 +1,218 @@
 
-
-> apps/web@0.0.0 dev /Users/daniellenarduzzi/grows/apps/web
+> apps/web@0.0.0 dev C:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\apps\web
 > next dev
 
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\Pc\package-lock.json as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\pnpm-lock.yaml
 
-[31m✘[39m next.js v15.5.4 is [31mnot yet supported[39m in the Community edition of [33mConsole Ninja[39m.
-We are working hard on it for you [36mhttps://tinyurl.com/3h9mtwra[39m.
+ ⚠ Port 3000 is in use by process 19208, using available port 3001 instead.
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.0.2:3001
+   - Environments: .env
 
-Estimated release dates:
-  - Community users: [36maround 15th December, 2025 [1m(subject to team availability)[22m[39m
-[33m  - PRO users[39m:       [1m[32mpriority access is available now[39m[22m
-
- [33m[1m⚠[22m[39m Port 3000 is in use by process 55275, using available port 3003 instead.
-
-[31m✘[39m next.js v15.5.4 is [31mnot yet supported[39m in the Community edition of [33mConsole Ninja[39m.
-We are working hard on it for you [36mhttps://tinyurl.com/3h9mtwra[39m.
-
-Estimated release dates:
-  - Community users: [36maround 15th December, 2025 [1m(subject to team availability)[22m[39m
-[33m  - PRO users[39m:       [1m[32mpriority access is available now[39m[22m
-
-   [1m[38;2;173;127;168m▲ Next.js 15.5.4[39m[22m
-   - Local:        http://localhost:3003
-   - Network:      http://192.168.100.13:3003
-   - Environments: .env.local
-
- [32m[1m✓[22m[39m Starting...
- [32m[1m✓[22m[39m Ready in 1601ms
- [37m[1m○[22m[39m Compiling / ...
- [32m[1m✓[22m[39m Compiled / in 2.1s (768 modules)
- GET / [34m307[39m in 2375ms
- [37m[1m○[22m[39m Compiling /middleware ...
- [32m[1m✓[22m[39m Compiled /middleware in 514ms (251 modules)
- [37m[1m○[22m[39m Compiling /auth/login ...
-<w> [1m[33m[webpack.cache.PackFileCacheStrategy] Serializing big strings (108kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)[39m[22m
- [32m[1m✓[22m[39m Compiled /auth/login in 1070ms (1071 modules)
- GET /auth/login [32m200[39m in 1291ms
- [32m[1m✓[22m[39m Compiled /auth/callback in 217ms (1074 modules)
-Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.set (../../../src/server/request/cookies.ts:379:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.get (../../../src/server/request/cookies.ts:332:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
-Error: Route "/auth/callback" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
-    at createCookiesAccessError (../../../src/server/request/cookies.ts:529:10)
-    at syncIODev (../../../src/server/request/cookies.ts:517:3)
-    at Promise.set (../../../src/server/request/cookies.ts:379:9)
-[0m [90m 527 |[39m ) {
- [90m 528 |[39m   [36mconst[39m prefix [33m=[39m route [33m?[39m [32m`Route "${route}" `[39m [33m:[39m [32m'This route '[39m
-[31m[1m>[22m[39m[90m 529 |[39m   [36mreturn[39m [36mnew[39m [33mError[39m(
- [90m     |[39m          [31m[1m^[22m[39m
- [90m 530 |[39m     [32m`${prefix}used ${expression}. `[39m [33m+[39m
- [90m 531 |[39m       [32m`\`cookies()\` should be awaited before using its value. `[39m [33m+[39m
- [90m 532 |[39m       [32m`Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`[39m[0m
- GET /auth/callback?code=a04e8d75-50c3-454f-99ea-a196e0cc3f72&redirect=%2Fdashboard [34m307[39m in 911ms
- [32m[1m✓[22m[39m Compiled /dashboard in 435ms (1186 modules)
- GET /dashboard [34m307[39m in 1292ms
- [32m[1m✓[22m[39m Compiled /onboarding in 228ms (1194 modules)
- GET /onboarding [32m200[39m in 1457ms
- [32m[1m✓[22m[39m Compiled /api/invites in 243ms (1206 modules)
- POST /api/invites [33m409[39m in 922ms
- [32m[1m✓[22m[39m Compiled in 537ms (1144 modules)
- GET /onboarding [32m200[39m in 695ms
- [32m[1m✓[22m[39m Compiled in 228ms (433 modules)
- GET /onboarding [32m200[39m in 269ms
- [32m[1m✓[22m[39m Compiled in 127ms (433 modules)
- GET /onboarding [32m200[39m in 444ms
- [32m[1m✓[22m[39m Compiled in 460ms (1144 modules)
- GET /onboarding [32m200[39m in 299ms
- [32m[1m✓[22m[39m Compiled in 196ms (433 modules)
- GET /onboarding [32m200[39m in 817ms
- [32m[1m✓[22m[39m Compiled in 97ms (433 modules)
- GET /onboarding [32m200[39m in 375ms
- [32m[1m✓[22m[39m Compiled in 103ms (433 modules)
- GET /onboarding [32m200[39m in 688ms
- [37m[1m○[22m[39m Compiling /api/invites ...
- GET /onboarding [32m200[39m in 2001ms
+ ✓ Starting...
+ ✓ Ready in 2s
+ ○ Compiling / ...
+ ✓ Compiled / in 2.8s (768 modules)
+ GET / 307 in 4099ms
+ ○ Compiling /panel ...
+ ✓ Compiled /panel in 2.6s (887 modules)
+ GET /panel 200 in 3160ms
+ ✓ Compiled /middleware in 394ms (251 modules)
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 1079ms (983 modules)
+ GET /dashboard 200 in 1480ms
+ ✓ Compiled / in 138ms (654 modules)
+ GET / 200 in 269ms
+ GET /panel 200 in 49ms
+ GET /panel 200 in 34ms
+ GET /panel 200 in 619ms
+ ✓ Compiled in 2s (997 modules)
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 728ms (988 modules)
+ GET /panel 404 in 1048ms
+ GET /panel 200 in 370ms
+ ✓ Compiled in 524ms (351 modules)
+ GET /panel 200 in 56ms
+ ✓ Compiled in 1883ms (1002 modules)
+ GET /panel 200 in 417ms
+ ✓ Compiled in 1718ms (1002 modules)
+ GET /panel 200 in 89ms
+ ✓ Compiled in 1592ms (1002 modules)
+ GET /panel 200 in 175ms
+ ✓ Compiled in 1374ms (1002 modules)
+ GET /panel 200 in 115ms
+ ✓ Compiled in 567ms (351 modules)
+ GET /panel 200 in 64ms
+ ✓ Compiled in 1764ms (1002 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 2.1s (1327 modules)
+ GET /panel 404 in 2559ms
+ GET /panel 200 in 231ms
+ GET /panel 200 in 34ms
+ GET /panel 200 in 977ms
+ GET /panel 200 in 210ms
+ GET /panel 200 in 245ms
+ GET /panel 200 in 188ms
+ ○ Compiling / ...
+ ✓ Compiled / in 663ms (750 modules)
+ GET / 200 in 1116ms
+ ○ Compiling /lider ...
+ GET /dashboard 200 in 1127ms
+ ✓ Compiled /auth/signout in 1883ms (1258 modules)
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().set('sb-hkiymjknbxuvfufhadnh-auth-token', ...)`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.set (..\..\..\src\server\request\cookies.ts:379:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-user.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token-code-verifier')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (. ✓ Compiled in 541ms (452 modules)
+ GET /dashboard 200 in 61ms
+ ✓ Compiled in 453ms (452 modules)
+ GET /dashboard 200 in 61ms
+ ✓ Compiled in 350ms (452 modules)
+ GET /dashboard 200 in 61ms
+ ✓ Compiled in 1177ms (1244 modules)
+ GET /dashboard 200 in 238ms
+ ✓ Compiled in 1441ms (1244 modules)
+ GET /dashboard 200 in 146ms
+ ✓ Compiled in 1885ms (1093 modules)
+ ✓ Compiled /_not-found in 454ms (1084 modules)
+ GET /auth/login?redirect=%2Fdashboard 404 in 847ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(ssr)/./app/auth/login/page.tsx:11:114)
+    at (ssr)/./app/auth/login/page.tsx (C:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\apps\web\.next\server\app\auth\login\page.js:126:1) {
+  digest: '3706108241'
+}
+ GET /auth/login?redirect=%2Fdashboard 500 in 471ms
+ ✓ Compiled in 450ms (1098 modules)
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 574ms (1177 modules)
+ GET /auth/login?redirect=%2Fdashboard 404 in 984ms
+ ⨯ TypeError: Cannot read properties of undefined (reading 'call')
+    at eval (webpack-internal:///(ssr)/./app/auth/login/page.tsx:11:114)
+    at (ssr)/./app/auth/login/page.tsx (C:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\apps\web\.next\server\app\auth\login\page.js:126:1) {
+  digest: '3706108241'
+}
+ GET /auth/login?redirect=%2Fdashboard 500 in 549ms
+server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +
+  532 |       `Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis`
+Error: Route "/auth/signout" used `cookies().get('sb-hkiymjknbxuvfufhadnh-auth-token.0')`. `cookies()` should be awaited before using its value. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+    at createCookiesAccessError (..\..\..\src\server\request\cookies.ts:529:10)
+    at syncIODev (..\..\..\src\server\request\cookies.ts:517:3)
+    at Promise.get (..\..\..\src\server\request\cookies.ts:332:9)
+  527 | ) {
+  528 |   const prefix = route ? `Route "${route}" ` : 'This route '
+> 529 |   return new Error(
+      |          ^
+  530 |     `${prefix}used ${expression}. ` +
+  531 |       `\`cookies()\` should be awaited before using its value. ` +

@@ -1,9 +1,9 @@
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
-import { ProblemSection } from "@/components/ProblemSection";
-import { SolutionSection } from "@/components/SolutionSection";
-import { UserProfiles } from "@/components/UserProfiles";
-import { CTASection } from "@/components/CTASection";
+import { WhatIsSection } from "@/components/WhatIsSection";
+import { FeaturesSection } from "@/components/FeaturesSection";
+import { ConstructorSection } from "@/components/ConstructorSection";
+import { FinalCTA } from "@/components/FinalCTA";
 import { Footer } from "@/components/Footer";
 import { setRequestLocale } from "next-intl/server";
 
@@ -16,10 +16,10 @@ export default function HomePage({ params: { locale } }: Props) {
       <Navigation />
       <main>
         <Hero />
-        <ProblemSection />
-        <SolutionSection />
-        <UserProfiles />
-        <CTASection />
+        <WhatIsSection />
+        <FeaturesSection />
+        <ConstructorSection />
+        <FinalCTA />
       </main>
       <Footer />
     </div>

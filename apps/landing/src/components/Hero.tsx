@@ -1,66 +1,76 @@
 'use client';
 
-import {useTranslations} from 'next-intl';
 import {ArrowRight, Play} from 'lucide-react';
-import {cn} from '@/lib/utils';
 
 export function Hero() {
-  const t = useTranslations('hero');
-
   return (
-    <section id="home" className="pt-16 bg-gradient-to-br from-primary-50 to-white">
+    <section id="home" className="pt-16 bg-gradient-to-br from-secundario to-claro">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center">
-          {/* Main Title */}
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            <span className="text-primary-600">GROWS</span>
-            <br />
-            <span className="text-3xl md:text-5xl text-gray-700">
-              Plataforma de Gestión Inteligente
-            </span>
-            <br />
-            <span className="text-2xl md:text-4xl text-gray-600">
-              para la Construcción
-            </span>
-          </h1>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Contenido de texto */}
+          <div className="text-left">
+            {/* Main Title */}
+            <h1 className="text-4xl md:text-6xl font-bold text-oscuro mb-6 leading-tight">
+              <span className="text-primario">GROWS</span>
+              <br />
+              <span className="text-3xl md:text-5xl text-oscuro">
+                Plataforma de Gestión Inteligente
+              </span>
+              <br />
+              <span className="text-2xl md:text-4xl text-oscuro/80">
+                para la Construcción
+              </span>
+            </h1>
 
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-gray-600 mb-8 max-w-4xl mx-auto leading-relaxed">
-            {t('subtitle')}
-          </p>
+            {/* Subtitle */}
+            <p className="text-xl md:text-2xl text-oscuro/70 mb-8 leading-relaxed">
+              Revoluciona la forma de gestionar obras de construcción con tecnología de última generación
+            </p>
 
-          {/* Description */}
-          <p className="text-lg text-gray-500 mb-12 max-w-3xl mx-auto">
-            {t('description')}
-          </p>
+            {/* Description */}
+            <p className="text-lg text-oscuro/60 mb-12 leading-relaxed">
+              Conecta constructores, supervisores y clientes en una plataforma única que optimiza tiempos, 
+              reduce costos y mejora la calidad de tus proyectos.
+            </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button className="bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
-              {t('cta')}
-              <ArrowRight className="h-5 w-5" />
-            </button>
-            
-            <button className="border-2 border-primary-600 text-primary-600 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-50 transition-colors duration-200 flex items-center gap-2">
-              <Play className="h-5 w-5" />
-              {t('learnMore')}
-            </button>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button className="bg-acento text-oscuro px-8 py-4 rounded-lg text-lg font-semibold hover:bg-acento/90 transition-colors duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                Comenzar ahora
+                <ArrowRight className="h-5 w-5" />
+              </button>
+              
+              <button className="border-2 border-primario text-primario px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primario hover:text-white transition-colors duration-200 flex items-center gap-2">
+                <Play className="h-5 w-5" />
+                Ver demo
+              </button>
+            </div>
           </div>
 
-          {/* Stats or Features Preview */}
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary-600 mb-2">100%</div>
-              <div className="text-gray-600">Digital</div>
+          {/* Imagen placeholder */}
+          <div className="flex justify-center lg:justify-end">
+            <div className="w-full max-w-md h-96 bg-gradient-to-br from-primario/20 to-acento/20 rounded-2xl flex items-center justify-center">
+              <div className="text-center text-oscuro/60">
+                <div className="text-6xl mb-4">🏗️</div>
+                <p className="text-lg font-medium">Imagen de la plataforma</p>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary-600 mb-2">24/7</div>
-              <div className="text-gray-600">Seguimiento</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary-600 mb-2">0%</div>
-              <div className="text-gray-600">Comisiones</div>
-            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primario mb-2">100%</div>
+            <div className="text-oscuro/70">Digital</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primario mb-2">24/7</div>
+            <div className="text-oscuro/70">Seguimiento</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-bold text-primario mb-2">0%</div>
+            <div className="text-oscuro/70">Comisiones</div>
           </div>
         </div>
       </div>

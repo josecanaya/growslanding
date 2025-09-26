@@ -38,13 +38,13 @@ export function SolutionSection() {
     <section id="solution" className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-oscuro mb-4">
             {t('title')}
           </h2>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-oscuro/70 mb-8 max-w-3xl mx-auto">
             {t('subtitle')}
           </p>
-          <p className="text-lg text-gray-500 max-w-4xl mx-auto">
+          <p className="text-lg text-oscuro/60 max-w-4xl mx-auto">
             {t('description')}
           </p>
         </div>
@@ -56,19 +56,19 @@ export function SolutionSection() {
               <div
                 key={feature.key}
                 className={cn(
-                  'p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1',
-                  feature.bgColor
+                  'p-6 rounded-xl border border-claro hover:shadow-lg transition-all duration-300 hover:-translate-y-1',
+                  'bg-claro'
                 )}
               >
                 <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-white mb-4">
-                  <Icon className={cn('h-6 w-6', feature.color)} />
+                  <Icon className={cn('h-6 w-6', 'text-primario')} />
                 </div>
                 
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                <h3 className="text-lg font-semibold text-oscuro mb-3">
                   {t(`features.${feature.key}.title`)}
                 </h3>
                 
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-oscuro/70 text-sm leading-relaxed">
                   {t(`features.${feature.key}.description`)}
                 </p>
               </div>
@@ -77,51 +77,62 @@ export function SolutionSection() {
         </div>
 
         {/* How it works section */}
-        <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-2xl p-8 md:p-12">
+        <div className="bg-gradient-to-r from-claro to-secundario rounded-2xl p-8 md:p-12">
           <div className="text-center mb-12">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl md:text-3xl font-bold text-oscuro mb-4">
               ¿Cómo funciona GROWS?
             </h3>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-oscuro/70 max-w-3xl mx-auto">
               Un proceso simple y eficiente que transforma la gestión de tus obras
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              <div className="w-16 h-16 bg-primario text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              <h4 className="text-lg font-semibold text-oscuro mb-2">
                 Carga tu Obra
               </h4>
-              <p className="text-gray-600">
+              <p className="text-oscuro/70">
                 Define tu proyecto y selecciona las tareas desde nuestras plantillas predefinidas
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              <div className="w-16 h-16 bg-primario text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              <h4 className="text-lg font-semibold text-oscuro mb-2">
                 Asigna Líderes
               </h4>
-              <p className="text-gray-600">
+              <p className="text-oscuro/70">
                 Designa responsables para cada tarea y forma cuadrillas de trabajo
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-16 h-16 bg-primary-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+              <div className="w-16 h-16 bg-primario text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              <h4 className="text-lg font-semibold text-oscuro mb-2">
                 Sigue el Progreso
               </h4>
-              <p className="text-gray-600">
+              <p className="text-oscuro/70">
                 Monitorea el avance en tiempo real con reportes visuales y automáticos
               </p>
+            </div>
+          </div>
+
+          {/* Imagen del trabajador con tablet - separada */}
+          <div className="mt-12 flex justify-center">
+            <div className="w-full max-w-md h-96 rounded-2xl overflow-hidden shadow-lg">
+              <img 
+                src="/images/obrero.png" 
+                alt="Obrero de construcción usando tecnología digital"
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>

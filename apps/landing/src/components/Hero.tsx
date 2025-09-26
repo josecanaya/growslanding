@@ -47,15 +47,16 @@ export function Hero() {
             </div>
           </div>
 
-          {/* Imagen placeholder */}
-          <div className="flex justify-center lg:justify-end">
-            <div className="w-full max-w-md h-96 bg-gradient-to-br from-primario/20 to-acento/20 rounded-2xl flex items-center justify-center">
-              <div className="text-center text-oscuro/60">
-                <div className="text-6xl mb-4">🏗️</div>
-                <p className="text-lg font-medium">Imagen de la plataforma</p>
-              </div>
-            </div>
-          </div>
+                  {/* Imagen de construcción moderna */}
+                  <div className="flex justify-center lg:justify-end">
+                    <div className="w-full max-w-2xl h-[500px] rounded-2xl overflow-hidden shadow-xl">
+                      <img 
+                        src="/images/arquitecto.png" 
+                        alt="Arquitecto supervisando obra de construcción"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
         </div>
 
         {/* Stats */}

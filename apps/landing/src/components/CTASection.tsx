@@ -50,27 +50,27 @@ export function CTASection() {
   return (
     <section
       id="contact"
-      className="py-20 bg-gradient-to-br from-primary-600 to-primary-800"
+      className="py-20 bg-gradient-to-br from-primario to-primario/80"
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             {t("title")}
           </h2>
-          <p className="text-xl text-primary-100 mb-8">{t("subtitle")}</p>
+          <p className="text-xl text-white/90 mb-8">{t("subtitle")}</p>
         </div>
 
         <div className="bg-white rounded-2xl p-8 md:p-12 shadow-2xl">
           {status === "success" ? (
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              <h3 className="text-2xl font-bold text-oscuro mb-4">
                 ¡Gracias por tu interés!
               </h3>
-              <p className="text-lg text-gray-600 mb-6">{t("success")}</p>
+              <p className="text-lg text-oscuro/70 mb-6">{t("success")}</p>
               <button
                 onClick={() => setStatus("idle")}
-                className="text-primary-600 hover:text-primary-700 font-semibold"
+                className="text-primario hover:text-primario/80 font-semibold"
               >
                 Enviar otro email
               </button>
@@ -82,12 +82,12 @@ export function CTASection() {
             >
               <div className="mb-6">
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-oscuro/50" />
                   <input
                     type="email"
                     placeholder={t("emailPlaceholder")}
                     {...form.register("email")}
-                    className="w-full pl-12 pr-4 py-4 border border-gray-300 rounded-lg text-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full pl-12 pr-4 py-4 border border-claro rounded-lg text-lg focus:ring-2 focus:ring-primario focus:border-transparent"
                   />
                 </div>
                 {form.formState.errors.email && (
@@ -139,10 +139,10 @@ export function CTASection() {
                   status === "loading" || (turnstileEnabled && !turnstileReady)
                 }
                 className={cn(
-                  "w-full bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2",
+                  "w-full bg-primario text-white px-8 py-4 rounded-lg text-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2",
                   status === "loading"
                     ? "opacity-50 cursor-not-allowed"
-                    : "hover:bg-primary-700 hover:shadow-lg"
+                    : "hover:bg-primario/90 hover:shadow-lg"
                 )}
               >
                 {status === "loading" ? (
@@ -158,7 +158,7 @@ export function CTASection() {
                 )}
               </button>
 
-              <p className="text-sm text-gray-500 mt-4">{t("privacy")}</p>
+              <p className="text-sm text-oscuro/50 mt-4">{t("privacy")}</p>
             </form>
           )}
         </div>
@@ -167,15 +167,15 @@ export function CTASection() {
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
           <div className="text-center">
             <div className="text-3xl font-bold mb-2">30 días</div>
-            <div className="text-primary-100">Prueba gratuita</div>
+            <div className="text-white/90">Prueba gratuita</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold mb-2">Sin setup</div>
-            <div className="text-primary-100">Configuración inmediata</div>
+            <div className="text-white/90">Configuración inmediata</div>
           </div>
           <div className="text-center">
             <div className="text-3xl font-bold mb-2">Soporte 24/7</div>
-            <div className="text-primary-100">Asistencia técnica</div>
+            <div className="text-white/90">Asistencia técnica</div>
           </div>
         </div>
       </div>

@@ -32,13 +32,13 @@ export function UserProfiles() {
   ];
 
   return (
-    <section id="users" className="py-20 bg-gray-50">
+    <section id="users" className="py-20 bg-claro">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-oscuro mb-4">
             {t('title')}
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-oscuro/70 max-w-3xl mx-auto">
             {t('subtitle')}
           </p>
         </div>
@@ -51,23 +51,22 @@ export function UserProfiles() {
                 key={userType.key}
                 className={cn(
                   'p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-2',
-                  userType.bgColor,
-                  userType.borderColor
+                  'bg-white border-claro'
                 )}
               >
                 <div className="text-center mb-6">
                   <div className={cn(
                     'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
-                    userType.bgColor
+                    'bg-claro'
                   )}>
-                    <Icon className={cn('h-8 w-8', userType.color)} />
+                    <Icon className={cn('h-8 w-8', 'text-primario')} />
                   </div>
                   
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-2xl font-bold text-oscuro mb-2">
                     {t(`${userType.key}.title`)}
                   </h3>
                   
-                  <p className="text-gray-600 mb-6">
+                  <p className="text-oscuro/70 mb-6">
                     {t(`${userType.key}.subtitle`)}
                   </p>
                 </div>
@@ -75,8 +74,8 @@ export function UserProfiles() {
                 <div className="space-y-4">
                   {[0, 1, 2, 3].map((index) => (
                     <div key={index} className="flex items-start gap-3">
-                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                      <p className="text-gray-700 text-sm leading-relaxed">
+                      <CheckCircle className="h-5 w-5 text-acento mt-0.5 flex-shrink-0" />
+                      <p className="text-oscuro/80 text-sm leading-relaxed">
                         {t(`${userType.key}.features.${index}`)}
                       </p>
                     </div>
@@ -86,9 +85,7 @@ export function UserProfiles() {
                 <div className="mt-8 text-center">
                   <button className={cn(
                     'px-6 py-3 rounded-lg font-semibold transition-colors duration-200',
-                    userType.color,
-                    userType.bgColor,
-                    'hover:shadow-md'
+                    'bg-primario text-white hover:bg-primario/90 hover:shadow-md'
                   )}>
                     Saber más
                   </button>
@@ -101,65 +98,76 @@ export function UserProfiles() {
         {/* Additional info about the ecosystem */}
         <div className="mt-16 bg-white rounded-2xl p-8 shadow-lg">
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            <h3 className="text-2xl font-bold text-oscuro mb-4">
               Un Ecosistema Completo
             </h3>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-oscuro/70 max-w-3xl mx-auto">
               GROWS conecta a todos los actores de la construcción en una plataforma unificada
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              <h4 className="text-lg font-semibold text-oscuro mb-4">
                 Sistema de Niveles y Reputación
               </h4>
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-yellow-400 rounded-full"></div>
-                  <span className="text-gray-700">Hierro: Estructura básica</span>
+                  <div className="w-4 h-4 bg-acento rounded-full"></div>
+                  <span className="text-oscuro/80">Hierro: Estructura básica</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-orange-400 rounded-full"></div>
-                  <span className="text-gray-700">Bronce: Estructura / Obra gris</span>
+                  <div className="w-4 h-4 bg-acento rounded-full"></div>
+                  <span className="text-oscuro/80">Bronce: Estructura / Obra gris</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-gray-300 rounded-full"></div>
-                  <span className="text-gray-700">Plata: Estructura / Obra gris</span>
+                  <div className="w-4 h-4 bg-acento rounded-full"></div>
+                  <span className="text-oscuro/80">Plata: Estructura / Obra gris</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                  <span className="text-gray-700">Platino: Todas las etapas</span>
+                  <div className="w-4 h-4 bg-acento rounded-full"></div>
+                  <span className="text-oscuro/80">Platino: Todas las etapas</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                  <span className="text-gray-700">Oro: Líder habilitado</span>
+                  <div className="w-4 h-4 bg-acento rounded-full"></div>
+                  <span className="text-oscuro/80">Oro: Líder habilitado</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-4">
+              <h4 className="text-lg font-semibold text-oscuro mb-4">
                 Beneficios Clave
               </h4>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Estandarización de procesos</span>
+                  <CheckCircle className="h-5 w-5 text-acento mt-0.5 flex-shrink-0" />
+                  <span className="text-oscuro/80">Estandarización de procesos</span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Trazabilidad completa</span>
+                  <CheckCircle className="h-5 w-5 text-acento mt-0.5 flex-shrink-0" />
+                  <span className="text-oscuro/80">Trazabilidad completa</span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Planificación automática</span>
+                  <CheckCircle className="h-5 w-5 text-acento mt-0.5 flex-shrink-0" />
+                  <span className="text-oscuro/80">Planificación automática</span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-gray-700">Sin comisiones por tarea</span>
+                  <CheckCircle className="h-5 w-5 text-acento mt-0.5 flex-shrink-0" />
+                  <span className="text-oscuro/80">Sin comisiones por tarea</span>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Imagen de familia feliz - resultado final */}
+          <div className="mt-12 flex justify-center">
+            <div className="w-full max-w-lg h-96 rounded-2xl overflow-hidden shadow-lg">
+              <img 
+                src="/images/familia.png" 
+                alt="Familia feliz disfrutando su nueva casa construida con GROWS"
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>

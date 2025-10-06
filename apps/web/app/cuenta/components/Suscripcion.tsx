@@ -9,117 +9,129 @@ function SimpleModal({ isOpen, onClose, children }: { isOpen: boolean; onClose: 
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg p-6 max-w-xl w-full mx-4">
+      <div className="fixed inset-0 bg-black bg-opacity-70" onClick={onClose}></div>
+      <div className="relative bg-[#141518] border border-[#2b2c32] rounded-2xl p-8 max-w-4xl w-full mx-4 shadow-2xl">
         {children}
       </div>
     </div>
   )
 }
 
-// Tabs simplificados sin Radix UI
-function SimpleTabs({ defaultValue, children }: { defaultValue: string; children: React.ReactNode }) {
-  const [activeTab, setActiveTab] = useState(defaultValue)
-  
+// Icono de tarjeta de crédito simplificado
+function CreditCardIcon() {
   return (
-    <div>
-      <div className="flex border-b">
-        <button
-          onClick={() => setActiveTab("planes")}
-          className={`px-4 py-2 ${activeTab === "planes" ? "border-b-2 border-blue-500" : ""}`}
-        >
-          Planes
-        </button>
-        <button
-          onClick={() => setActiveTab("metodo")}
-          className={`px-4 py-2 ${activeTab === "metodo" ? "border-b-2 border-blue-500" : ""}`}
-        >
-          Método de pago
-        </button>
-        <button
-          onClick={() => setActiveTab("historial")}
-          className={`px-4 py-2 ${activeTab === "historial" ? "border-b-2 border-blue-500" : ""}`}
-        >
-          Historial
-        </button>
-      </div>
-      <div className="mt-4">
-        {activeTab === "planes" && (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600">Plan actual: <strong>Profesional</strong></p>
-            <div className="flex gap-3">
-              <Button onClick={() => alert("Plan cambiado a Básico")}>Básico</Button>
-              <Button onClick={() => alert("Plan cambiado a Profesional")}>Profesional</Button>
-              <Button onClick={() => alert("Plan cambiado a Premium")}>Premium</Button>
-            </div>
-          </div>
-        )}
-        {activeTab === "metodo" && (
-          <div>
-            <p className="text-sm text-gray-600 mb-2">Actualizar método de pago</p>
-            <input className="border p-2 w-full rounded-md" placeholder="Número de tarjeta (mock)" />
-            <Button className="mt-3 bg-green-600 hover:bg-green-700 text-white">Guardar</Button>
-          </div>
-        )}
-        {activeTab === "historial" && (
-          <div>
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2">Fecha</th>
-                  <th className="border border-gray-300 px-4 py-2">Monto</th>
-                  <th className="border border-gray-300 px-4 py-2">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-300 px-4 py-2">15/09/2024</td>
-                  <td className="border border-gray-300 px-4 py-2">$15.000</td>
-                  <td className="border border-gray-300 px-4 py-2">Pagado</td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-300 px-4 py-2">15/10/2024</td>
-                  <td className="border border-gray-300 px-4 py-2">$15.000</td>
-                  <td className="border border-gray-300 px-4 py-2">Pagado</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+    <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+    </svg>
   )
 }
 
 export default function Suscripcion() {
   const [modalOpen, setModalOpen] = useState(false)
 
+  const handleChangePlan = (plan: string) => {
+    alert(`Plan cambiado a ${plan}`)
+  }
+
   return (
-    <Card className="p-6 space-y-4">
-      <h2 className="text-xl font-semibold">💳 Suscripción</h2>
-      <p>Plan actual: <strong>Profesional</strong></p>
-      <p>Próxima renovación: <strong>15/12/2024</strong></p>
-      <div className="flex gap-3">
-        <Button onClick={() => setModalOpen(true)}>Editar suscripción</Button>
-        <button className="px-4 py-2 rounded-md border text-sm hover:bg-gray-100">
-          Descargar facturas
-        </button>
-      </div>
-      
-      <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Gestión de suscripción</h3>
-            <button onClick={() => setModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-              ✕
-            </button>
+    <div className="transform transition-all duration-300 hover:scale-[1.02]">
+      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-[#2b2c32] rounded-xl">
+            <CreditCardIcon />
           </div>
-          <p className="text-sm text-gray-600">Configurá tu plan, método de pago o historial.</p>
-          <SimpleTabs defaultValue="planes">
-            {/* Contenido de tabs */}
-          </SimpleTabs>
+          <h2 className="text-xl font-semibold text-white">Suscripción</h2>
         </div>
-      </SimpleModal>
-    </Card>
+        
+        <div className="space-y-4 mb-6">
+          <p className="text-gray-300">
+            Plan actual: <strong className="text-[#8b5cf6]">Profesional</strong>
+          </p>
+          <p className="text-gray-400">
+            Próxima renovación: <strong className="text-gray-200">15/12/2024</strong>
+          </p>
+        </div>
+        
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setModalOpen(true)} 
+            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+          >
+            Editar suscripción
+          </Button>
+          <button className="px-4 py-2 rounded-md border border-[#2b2c32] text-gray-300 hover:bg-[#2b2c32]/70 transition">
+            Descargar facturas
+          </button>
+        </div>
+        
+        <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-semibold text-white">Elige tu plan</h3>
+              <button 
+                onClick={() => setModalOpen(false)} 
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-400">Seleccioná el plan que mejor se adapte a vos.</p>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { 
+                  nombre: "Básico", 
+                  precio: "$9.000", 
+                  desc: "Ideal para profesionales individuales.", 
+                  grad: "from-[#3b82f6] to-[#60a5fa]",
+                  features: ["Hasta 3 obras", "Soporte básico", "Reportes básicos"]
+                },
+                { 
+                  nombre: "Profesional", 
+                  precio: "$15.000", 
+                  desc: "Para equipos y pequeñas empresas.", 
+                  grad: "from-[#8b5cf6] to-[#7c3aed]",
+                  features: ["Hasta 10 obras", "Soporte prioritario", "Reportes avanzados", "Integraciones"]
+                },
+                { 
+                  nombre: "Premium", 
+                  precio: "$25.000", 
+                  desc: "Para constructoras grandes o desarrolladoras.", 
+                  grad: "from-[#ec4899] to-[#a855f7]",
+                  features: ["Obras ilimitadas", "Soporte 24/7", "Reportes personalizados", "API completa"]
+                },
+              ].map((plan) => (
+                <div
+                  key={plan.nombre}
+                  className="p-6 rounded-xl border border-[#2b2c32] bg-[#1c1d22]/70 hover:border-[#8b5cf6] transition-all shadow-lg hover:scale-105"
+                >
+                  <h3 className="text-lg font-semibold text-white mb-2">{plan.nombre}</h3>
+                  <p className={`bg-gradient-to-r ${plan.grad} text-transparent bg-clip-text font-bold text-2xl mb-1`}>
+                    {plan.precio}/mes
+                  </p>
+                  <p className="text-gray-400 text-sm mb-4">{plan.desc}</p>
+                  
+                  <ul className="space-y-2 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="text-gray-300 text-sm flex items-center">
+                        <span className="w-2 h-2 bg-[#8b5cf6] rounded-full mr-2"></span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button 
+                    onClick={() => handleChangePlan(plan.nombre)} 
+                    className={`w-full bg-gradient-to-r ${plan.grad} text-white font-medium hover:opacity-90 transition-all`}
+                  >
+                    Elegir
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SimpleModal>
+      </Card>
+    </div>
   )
 }

@@ -171,19 +171,65 @@ function PerfilUsuario() {
   }
 
   return (
-    <Card className="p-6 space-y-4">
-      <h2 className="text-xl font-semibold">👤 Datos personales</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Input name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" />
-        <Input name="apellido" value={form.apellido} onChange={handleChange} placeholder="Apellido" />
-        <Input name="correo" value={form.correo} onChange={handleChange} placeholder="Correo electrónico" />
-        <Input name="telefono" value={form.telefono} onChange={handleChange} placeholder="Teléfono" />
-        <Input name="especialidad" value={form.especialidad} onChange={handleChange} placeholder="Especialidad / Rol" />
-      </div>
-      <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-        Guardar cambios
-      </Button>
-    </Card>
+    <div className="transform transition-all duration-300 hover:scale-[1.02]">
+      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-[#2b2c32] rounded-xl">
+            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-white">Datos personales</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <Input 
+            name="nombre" 
+            value={form.nombre} 
+            onChange={handleChange} 
+            placeholder="Nombre" 
+            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+          />
+          <Input 
+            name="apellido" 
+            value={form.apellido} 
+            onChange={handleChange} 
+            placeholder="Apellido" 
+            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+          />
+          <Input 
+            name="correo" 
+            value={form.correo} 
+            onChange={handleChange} 
+            placeholder="Correo electrónico" 
+            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+          />
+          <Input 
+            name="telefono" 
+            value={form.telefono} 
+            onChange={handleChange} 
+            placeholder="Teléfono" 
+            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+          />
+          <Input 
+            name="especialidad" 
+            value={form.especialidad} 
+            onChange={handleChange} 
+            placeholder="Especialidad / Rol" 
+            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg md:col-span-2" 
+          />
+        </div>
+
+        <div className="text-right mt-6">
+          <Button 
+            onClick={handleSave} 
+            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+          >
+            Guardar cambios
+          </Button>
+        </div>
+      </Card>
+    </div>
   )
 }
 
@@ -232,41 +278,58 @@ function Personalizacion() {
   }
 
   return (
-    <Card className="p-6 space-y-6">
-      <h2 className="text-xl font-semibold">🎨 Personalización</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex justify-between items-center">
-          <span>Modo oscuro</span>
-          <SimpleSwitch checked={darkMode} onCheckedChange={setDarkMode} />
+    <div className="transform transition-all duration-300 hover:scale-[1.02]">
+      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-[#2b2c32] rounded-xl">
+            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-white">Personalización</h2>
         </div>
 
-        <div className="flex justify-between items-center">
-          <span>Color principal</span>
-          <SimpleSelect value={color} onValueChange={setColor}>
-            <SimpleSelectItem value="azul" onSelect={setColor}>Azul</SimpleSelectItem>
-            <SimpleSelectItem value="verde" onSelect={setColor}>Verde</SimpleSelectItem>
-            <SimpleSelectItem value="gris" onSelect={setColor}>Gris</SimpleSelectItem>
-            <SimpleSelectItem value="naranja" onSelect={setColor}>Naranja</SimpleSelectItem>
-          </SimpleSelect>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-300">Modo oscuro</span>
+            <SimpleSwitch checked={darkMode} onCheckedChange={setDarkMode} />
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-300">Color principal</span>
+            <SimpleSelect value={color} onValueChange={setColor}>
+              <SimpleSelectItem value="azul" onSelect={setColor}>Azul</SimpleSelectItem>
+              <SimpleSelectItem value="verde" onSelect={setColor}>Verde</SimpleSelectItem>
+              <SimpleSelectItem value="gris" onSelect={setColor}>Gris</SimpleSelectItem>
+              <SimpleSelectItem value="naranja" onSelect={setColor}>Naranja</SimpleSelectItem>
+            </SimpleSelect>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-300">Idioma</span>
+            <SimpleSelect value={idioma} onValueChange={setIdioma}>
+              <SimpleSelectItem value="es" onSelect={setIdioma}>Español</SimpleSelectItem>
+              <SimpleSelectItem value="en" onSelect={setIdioma}>Inglés</SimpleSelectItem>
+            </SimpleSelect>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-300">Notificaciones</span>
+            <SimpleSwitch checked={notificaciones} onCheckedChange={setNotificaciones} />
+          </div>
         </div>
 
-        <div className="flex justify-between items-center">
-          <span>Idioma</span>
-          <SimpleSelect value={idioma} onValueChange={setIdioma}>
-            <SimpleSelectItem value="es" onSelect={setIdioma}>Español</SimpleSelectItem>
-            <SimpleSelectItem value="en" onSelect={setIdioma}>Inglés</SimpleSelectItem>
-          </SimpleSelect>
+        <div className="text-right mt-6">
+          <Button 
+            onClick={handleSave} 
+            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+          >
+            Guardar cambios
+          </Button>
         </div>
-
-        <div className="flex justify-between items-center">
-          <span>Notificaciones</span>
-          <SimpleSwitch checked={notificaciones} onCheckedChange={setNotificaciones} />
-        </div>
-      </div>
-      <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
-        Guardar cambios
-      </Button>
-    </Card>
+      </Card>
+    </div>
   )
 }
 
@@ -274,45 +337,125 @@ function Personalizacion() {
 function Suscripcion() {
   const [modalOpen, setModalOpen] = useState(false)
 
+  const handleChangePlan = (plan: string) => {
+    alert(`Plan cambiado a ${plan}`)
+  }
+
   return (
-    <Card className="p-6 space-y-4">
-      <h2 className="text-xl font-semibold">💳 Suscripción</h2>
-      <p>Plan actual: <strong>Profesional</strong></p>
-      <p>Próxima renovación: <strong>15/12/2024</strong></p>
-      <div className="flex gap-3">
-        <Button onClick={() => setModalOpen(true)}>Editar suscripción</Button>
-        <button className="px-4 py-2 rounded-md border text-sm hover:bg-gray-100">
-          Descargar facturas
-        </button>
-      </div>
-      
-      <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Gestión de suscripción</h3>
-            <button onClick={() => setModalOpen(false)} className="text-gray-500 hover:text-gray-700">
-              ✕
-            </button>
+    <div className="transform transition-all duration-300 hover:scale-[1.02]">
+      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-[#2b2c32] rounded-xl">
+            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
           </div>
-          <p className="text-sm text-gray-600">Configurá tu plan, método de pago o historial.</p>
-          <SimpleTabs defaultValue="planes">
-            {/* Contenido de tabs */}
-          </SimpleTabs>
+          <h2 className="text-xl font-semibold text-white">Suscripción</h2>
         </div>
-      </SimpleModal>
-    </Card>
+        
+        <div className="space-y-4 mb-6">
+          <p className="text-gray-300">
+            Plan actual: <strong className="text-[#8b5cf6]">Profesional</strong>
+          </p>
+          <p className="text-gray-400">
+            Próxima renovación: <strong className="text-gray-200">15/12/2024</strong>
+          </p>
+        </div>
+        
+        <div className="flex gap-3">
+          <Button 
+            onClick={() => setModalOpen(true)} 
+            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+          >
+            Editar suscripción
+          </Button>
+          <button className="px-4 py-2 rounded-md border border-[#2b2c32] text-gray-300 hover:bg-[#2b2c32]/70 transition">
+            Descargar facturas
+          </button>
+        </div>
+        
+        <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-semibold text-white">Elige tu plan</h3>
+              <button 
+                onClick={() => setModalOpen(false)} 
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-400">Seleccioná el plan que mejor se adapte a vos.</p>
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              {[
+                { 
+                  nombre: "Básico", 
+                  precio: "$9.000", 
+                  desc: "Ideal para profesionales individuales.", 
+                  grad: "from-[#3b82f6] to-[#60a5fa]",
+                  features: ["Hasta 3 obras", "Soporte básico", "Reportes básicos"]
+                },
+                { 
+                  nombre: "Profesional", 
+                  precio: "$15.000", 
+                  desc: "Para equipos y pequeñas empresas.", 
+                  grad: "from-[#8b5cf6] to-[#7c3aed]",
+                  features: ["Hasta 10 obras", "Soporte prioritario", "Reportes avanzados", "Integraciones"]
+                },
+                { 
+                  nombre: "Premium", 
+                  precio: "$25.000", 
+                  desc: "Para constructoras grandes o desarrolladoras.", 
+                  grad: "from-[#ec4899] to-[#a855f7]",
+                  features: ["Obras ilimitadas", "Soporte 24/7", "Reportes personalizados", "API completa"]
+                },
+              ].map((plan) => (
+                <div
+                  key={plan.nombre}
+                  className="p-6 rounded-xl border border-[#2b2c32] bg-[#1c1d22]/70 hover:border-[#8b5cf6] transition-all shadow-lg hover:scale-105"
+                >
+                  <h3 className="text-lg font-semibold text-white mb-2">{plan.nombre}</h3>
+                  <p className={`bg-gradient-to-r ${plan.grad} text-transparent bg-clip-text font-bold text-2xl mb-1`}>
+                    {plan.precio}/mes
+                  </p>
+                  <p className="text-gray-400 text-sm mb-4">{plan.desc}</p>
+                  
+                  <ul className="space-y-2 mb-6">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="text-gray-300 text-sm flex items-center">
+                        <span className="w-2 h-2 bg-[#8b5cf6] rounded-full mr-2"></span>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  
+                  <Button 
+                    onClick={() => handleChangePlan(plan.nombre)} 
+                    className={`w-full bg-gradient-to-r ${plan.grad} text-white font-medium hover:opacity-90 transition-all`}
+                  >
+                    Elegir
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SimpleModal>
+      </Card>
+    </div>
   )
 }
 
 export function CuentaSection() {
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-claro px-6 py-4 border-b border-claro">
-          <h2 className="text-xl font-semibold text-primario">Cuenta</h2>
-          <p className="text-sm text-primario/70">Configuración de perfil y cuenta</p>
+    <div className="max-w-5xl mx-auto">
+      <div className="bg-gradient-to-br from-[#0b0b0d] via-[#0f1014] to-[#16171c] rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-[#1a1b1f]/80 px-8 py-6 border-b border-[#2b2c32]">
+          <h2 className="text-2xl font-semibold text-white">Configuración de Cuenta</h2>
+          <p className="text-sm text-gray-400">Gestioná tu perfil, preferencias y suscripción</p>
+          <div className="w-24 h-1 bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] mt-4 rounded-full" />
         </div>
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-8">
           <PerfilUsuario />
           <Personalizacion />
           <Suscripcion />

@@ -1,0 +1,1242 @@
+{
+  "catalogo": "Elementos Constructivos - GROWS",
+  "version": "1.0.0",
+  "categorias": [
+    {
+      "id": "fundacion_estructura",
+      "categoria": "Fundación y Estructura",
+      "subcategorias": [
+        {
+          "id": "excavacion",
+          "nombre": "Excavación",
+          "elementos": [
+            {
+              "id": "excavacion_manual",
+              "nombre": "Excavación de fundación manual",
+              "unidad": "m³",
+              "opciones": {
+                "profundidad": ["0.5m", "0.8m", "1.0m", "1.2m"],
+                "tipo_suelo": ["normal", "tosca", "arcilloso"]
+              },
+              "tareas": ["replanteo", "excavación manual", "nivelación", "compactación"]
+            },
+            {
+              "id": "excavacion_mecanica",
+              "nombre": "Excavación de fundación mecánica",
+              "unidad": "m³",
+              "opciones": {
+                "profundidad": ["0.5m", "0.8m", "1.0m", "1.2m", "1.5m"],
+                "tipo_suelo": ["normal", "tosca", "arcilloso", "roca"],
+                "maquinaria": ["retroexcavadora", "pala cargadora"]
+              },
+              "tareas": ["replanteo", "excavación mecánica", "nivelación", "compactación"]
+            }
+          ]
+        },
+        {
+          "id": "fundaciones",
+          "nombre": "Fundaciones",
+          "elementos": [
+            {
+              "id": "platea_fundacion",
+              "nombre": "Platea de fundación",
+              "unidad": "m³",
+              "opciones": {
+                "espesor": ["15cm", "20cm", "25cm"],
+                "resistencia": ["H17", "H21", "H30"],
+                "armadura": ["malla 15x15 Ø6", "malla 15x15 Ø8", "doble malla"],
+                "aislacion": ["sin aislación", "polietileno 200μ", "membrana geotextil"]
+              },
+              "tareas": ["nivelación terreno", "encofrado", "colocación armadura", "hormigonado", "curado", "desencofrado"]
+            },
+            {
+              "id": "zapatas_aisladas",
+              "nombre": "Zapatas aisladas",
+              "unidad": "m³",
+              "opciones": {
+                "dimensiones": ["60x60cm", "80x80cm", "100x100cm", "120x120cm"],
+                "profundidad": ["40cm", "50cm", "60cm"],
+                "resistencia": ["H17", "H21", "H30"],
+                "armadura": ["Ø8", "Ø10", "Ø12"]
+              },
+              "tareas": ["excavación puntual", "encofrado", "armado", "hormigonado", "curado"]
+            },
+            {
+              "id": "vigas_fundacion",
+              "nombre": "Vigas de fundación",
+              "unidad": "m",
+              "opciones": {
+                "sección": ["20x40cm", "25x40cm", "30x40cm"],
+                "resistencia": ["H17", "H21", "H30"],
+                "armadura": ["4Ø10", "4Ø12", "6Ø12"]
+              },
+              "tareas": ["encofrado", "armado", "hormigonado", "curado", "desencofrado"]
+            }
+          ]
+        },
+        {
+          "id": "hormigon_armado",
+          "nombre": "Hormigón Armado",
+          "elementos": [
+            {
+              "id": "bases_hormigon",
+              "nombre": "Bases de hormigón armado",
+              "unidad": "m³",
+              "opciones": {
+                "tipo": ["base corrida", "base aislada"],
+                "resistencia": ["H17", "H21", "H30"],
+                "armadura": ["Ø8", "Ø10", "Ø12"]
+              },
+              "tareas": ["encofrado", "colocación armadura", "hormigonado", "vibrado", "curado"]
+            },
+            {
+              "id": "columnas_hormigon",
+              "nombre": "Columnas de hormigón armado",
+              "unidad": "m",
+              "opciones": {
+                "sección": ["20x20cm", "25x25cm", "30x30cm", "20x40cm"],
+                "resistencia": ["H21", "H30"],
+                "armadura_longitudinal": ["4Ø10", "4Ø12", "6Ø12", "8Ø12"],
+                "estribos": ["Ø6@15cm", "Ø6@20cm", "Ø8@15cm"]
+              },
+              "tareas": ["encofrado", "armado longitudinal", "colocación estribos", "hormigonado", "vibrado", "curado", "desencofrado"]
+            },
+            {
+              "id": "columnas_metalicas",
+              "nombre": "Columnas metálicas",
+              "unidad": "m",
+              "opciones": {
+                "perfil": ["HEB 160", "HEB 180", "HEB 200", "IPE 200", "IPE 240"],
+                "terminacion": ["sin pintura", "antióxido", "pintura epoxi"],
+                "base": ["con placa de anclaje", "sin placa"]
+              },
+              "tareas": ["replanteo", "montaje", "aplomado", "soldadura/bulonado", "pintura"]
+            },
+            {
+              "id": "vigas_hormigon",
+              "nombre": "Vigas de hormigón armado",
+              "unidad": "m",
+              "opciones": {
+                "sección": ["20x40cm", "25x40cm", "30x50cm"],
+                "resistencia": ["H21", "H30"],
+                "armadura_superior": ["2Ø10", "2Ø12", "4Ø12"],
+                "armadura_inferior": ["2Ø10", "2Ø12", "4Ø12"],
+                "estribos": ["Ø6@15cm", "Ø6@20cm", "Ø8@15cm"]
+              },
+              "tareas": ["encofrado", "armado", "hormigonado", "vibrado", "curado", "desencofrado"]
+            },
+            {
+              "id": "vigas_metalicas",
+              "nombre": "Vigas metálicas",
+              "unidad": "m",
+              "opciones": {
+                "perfil": ["IPE 160", "IPE 180", "IPE 200", "IPE 240", "IPE 270"],
+                "terminacion": ["sin pintura", "antióxido", "pintura epoxi"],
+                "conexion": ["soldada", "bulonada"]
+              },
+              "tareas": ["replanteo", "montaje", "nivelación", "soldadura/bulonado", "pintura"]
+            },
+            {
+              "id": "losa_maciza",
+              "nombre": "Losa maciza de hormigón armado",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["12cm", "15cm", "18cm", "20cm"],
+                "resistencia": ["H21", "H30"],
+                "armadura": ["malla Ø8@15cm", "malla Ø10@15cm", "doble malla"],
+                "aislacion": ["sin aislación", "EPS 2cm", "EPS 3cm", "lana de vidrio"]
+              },
+              "tareas": ["encofrado", "armado", "instalaciones embutidas", "hormigonado", "vibrado", "curado", "desencofrado"]
+            },
+            {
+              "id": "losa_alivianada",
+              "nombre": "Losa alivianada",
+              "unidad": "m²",
+              "opciones": {
+                "espesor_total": ["18cm", "20cm", "22cm"],
+                "alivianamiento": ["bovedillas cerámicas", "EPS", "cajones recuperables"],
+                "nervios": ["cada 50cm", "cada 60cm"],
+                "resistencia": ["H21", "H30"]
+              },
+              "tareas": ["encofrado", "colocación nervios", "colocación alivianamiento", "malla superior", "hormigonado", "curado", "desencofrado"]
+            },
+            {
+              "id": "losa_pretensada",
+              "nombre": "Losa pretensada",
+              "unidad": "m²",
+              "opciones": {
+                "tipo": ["viguetas pretensadas + bovedilla", "placas pretensadas"],
+                "espesor": ["18cm", "20cm", "22cm"],
+                "luz": ["hasta 4m", "hasta 5m", "hasta 6m"],
+                "capa_compresion": ["4cm", "5cm"]
+              },
+              "tareas": ["replanteo", "montaje viguetas", "colocación bovedillas", "malla superior", "capa de compresión", "curado"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "muros_cerramientos",
+      "categoria": "Muros y Cerramientos",
+      "subcategorias": [
+        {
+          "id": "muros_exteriores",
+          "nombre": "Muros Exteriores",
+          "elementos": [
+            {
+              "id": "muro_ladrillo_comun_15",
+              "nombre": "Muro de ladrillo común 15 cm",
+              "unidad": "m²",
+              "opciones": {
+                "configuracion": ["simple", "con aislación intramuro"],
+                "aislacion": ["sin aislación", "EPS 2cm", "EPS 3cm", "lana de vidrio 5cm", "poliuretano proyectado"],
+                "terminacion_exterior": ["revoque + pintura", "ladrillo visto", "revestimiento piedra", "siding vinílico", "siding cementicio"],
+                "terminacion_interior": ["revoque + pintura", "yeso", "durlock sobre muro"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque grueso exterior", "revoque fino exterior", "revoque grueso interior", "revoque fino interior", "terminación elegida"]
+            },
+            {
+              "id": "muro_ladrillo_comun_30",
+              "nombre": "Muro de ladrillo común 30 cm (doble muro)",
+              "unidad": "m²",
+              "opciones": {
+                "configuracion": ["doble muro con cámara de aire", "doble muro con aislación"],
+                "aislacion": ["sin aislación", "EPS 3cm", "EPS 5cm", "lana de vidrio 5cm", "poliuretano proyectado"],
+                "terminacion_exterior": ["revoque + pintura", "ladrillo visto", "revestimiento piedra", "siding vinílico", "siding cementicio"],
+                "terminacion_interior": ["revoque + pintura", "yeso", "durlock sobre muro"]
+              },
+              "tareas": ["replanteo", "levantar muro exterior", "colocar aislación", "levantar muro interior", "revoque grueso exterior", "revoque fino exterior", "revoque grueso interior", "revoque fino interior", "terminación elegida"]
+            },
+            {
+              "id": "muro_ladrillo_ceramico_18",
+              "nombre": "Muro de ladrillo cerámico hueco 18 cm",
+              "unidad": "m²",
+              "opciones": {
+                "configuracion": ["simple", "con aislación exterior", "con aislación interior"],
+                "aislacion": ["sin aislación", "EPS 2cm", "EPS 3cm", "lana de vidrio"],
+                "terminacion_exterior": ["revoque + pintura", "revestimiento", "siding"],
+                "terminacion_interior": ["revoque + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque grueso", "revoque fino", "terminación"]
+            },
+            {
+              "id": "muro_ladrillo_ceramico_20",
+              "nombre": "Muro de ladrillo cerámico hueco 20 cm",
+              "unidad": "m²",
+              "opciones": {
+                "configuracion": ["simple", "con aislación"],
+                "aislacion": ["sin aislación", "EPS 3cm", "lana de vidrio 5cm"],
+                "terminacion_exterior": ["revoque + pintura", "revestimiento", "siding"],
+                "terminacion_interior": ["revoque + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque grueso", "revoque fino", "terminación"]
+            },
+            {
+              "id": "muro_bloque_hormigon_15",
+              "nombre": "Muro de bloque de hormigón 15 cm",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_bloque": ["común", "portante", "visto"],
+                "aislacion": ["sin aislación", "EPS 2cm", "EPS 3cm"],
+                "terminacion_exterior": ["revoque + pintura", "bloque visto", "revestimiento"],
+                "terminacion_interior": ["revoque + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque (si aplica)", "terminación"]
+            },
+            {
+              "id": "muro_bloque_hormigon_20",
+              "nombre": "Muro de bloque de hormigón 20 cm",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_bloque": ["común", "portante", "visto"],
+                "aislacion": ["sin aislación", "EPS 3cm"],
+                "terminacion_exterior": ["revoque + pintura", "bloque visto", "revestimiento"],
+                "terminacion_interior": ["revoque + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque (si aplica)", "terminación"]
+            },
+            {
+              "id": "muro_bloque_hormigon_30",
+              "nombre": "Muro de bloque de hormigón 30 cm",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_bloque": ["portante reforzado"],
+                "relleno": ["sin relleno", "con hormigón", "con aislación"],
+                "terminacion_exterior": ["revoque + pintura", "revestimiento"],
+                "terminacion_interior": ["revoque + pintura"]
+              },
+              "tareas": ["replanteo", "levantar muro", "relleno (si aplica)", "revoque", "terminación"]
+            },
+            {
+              "id": "muro_retak_15",
+              "nombre": "Muro de Retak / bloque celular 15 cm",
+              "unidad": "m²",
+              "opciones": {
+                "aislacion": ["sin aislación", "EPS 2cm"],
+                "terminacion_exterior": ["revoque + pintura", "revestimiento", "siding"],
+                "terminacion_interior": ["revoque fino + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque especial", "terminación"]
+            },
+            {
+              "id": "muro_retak_20",
+              "nombre": "Muro de Retak / bloque celular 20 cm",
+              "unidad": "m²",
+              "opciones": {
+                "aislacion": ["sin aislación", "EPS 3cm"],
+                "terminacion_exterior": ["revoque + pintura", "revestimiento", "siding"],
+                "terminacion_interior": ["revoque fino + pintura", "yeso"]
+              },
+              "tareas": ["replanteo", "levantar muro", "colocar aislación (si aplica)", "revoque especial", "terminación"]
+            },
+            {
+              "id": "panel_sandwich_metalico",
+              "nombre": "Panel sándwich metálico con aislación",
+              "unidad": "m²",
+              "opciones": {
+                "espesor_total": ["50mm", "80mm", "100mm"],
+                "nucleo": ["EPS", "poliuretano", "lana de roca"],
+                "exterior": ["chapa prepintada", "chapa galvanizada pintada"],
+                "interior": ["chapa prepintada", "chapa blanca"]
+              },
+              "tareas": ["replanteo", "montaje estructura soporte", "colocación paneles", "sellado juntas", "terminaciones"]
+            },
+            {
+              "id": "muro_cortina_vidrio",
+              "nombre": "Muro cortina de vidrio (con DVH)",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_vidrio": ["DVH 4+9+4", "DVH 6+12+6", "laminado 3+3"],
+                "carpinteria": ["aluminio estándar", "aluminio premium", "PVC"],
+                "control_solar": ["sin control", "film", "vidrio bajo emisivo"],
+                "apertura": ["fija", "proyectante", "oscilo-batiente"]
+              },
+              "tareas": ["replanteo", "montaje estructura", "colocación carpintería", "colocación vidrios", "sellado", "limpieza"]
+            }
+          ]
+        },
+        {
+          "id": "muros_interiores",
+          "nombre": "Muros Interiores",
+          "elementos": [
+            {
+              "id": "tabique_ladrillo_8",
+              "nombre": "Tabique de ladrillo cerámico 8 cm",
+              "unidad": "m²",
+              "opciones": {
+                "terminacion": ["revoque + pintura", "yeso + pintura", "cerámico", "madera"]
+              },
+              "tareas": ["replanteo", "levantar tabique", "revoque grueso", "revoque fino", "terminación"]
+            },
+            {
+              "id": "tabique_ladrillo_12",
+              "nombre": "Tabique de ladrillo cerámico 12 cm",
+              "unidad": "m²",
+              "opciones": {
+                "terminacion": ["revoque + pintura", "yeso + pintura", "cerámico", "madera"]
+              },
+              "tareas": ["replanteo", "levantar tabique", "revoque grueso", "revoque fino", "terminación"]
+            },
+            {
+              "id": "tabique_durlock_simple",
+              "nombre": "Tabique de durlock placa simple",
+              "unidad": "m²",
+              "opciones": {
+                "estructura": ["perfiles 70mm", "perfiles 100mm"],
+                "placa": ["estándar 12.5mm", "resistente humedad (RH)", "resistente fuego (RF)"],
+                "aislacion_acustica": ["sin aislación", "lana de vidrio 50mm", "lana de vidrio 80mm"],
+                "terminacion": ["pintura", "empapelado", "revestimiento"]
+              },
+              "tareas": ["replanteo", "montaje estructura", "instalaciones", "colocación aislación", "colocación placas", "masillado", "terminación"]
+            },
+            {
+              "id": "tabique_durlock_doble",
+              "nombre": "Tabique de durlock placa doble",
+              "unidad": "m²",
+              "opciones": {
+                "estructura": ["perfiles 70mm", "perfiles 100mm"],
+                "placa": ["estándar 12.5mm", "resistente humedad (RH)", "resistente fuego (RF)"],
+                "aislacion_acustica": ["sin aislación", "lana de vidrio 50mm", "lana de vidrio 80mm", "lana de roca"],
+                "terminacion": ["pintura", "empapelado", "revestimiento"]
+              },
+              "tareas": ["replanteo", "montaje estructura", "instalaciones", "colocación aislación", "1ra capa placas", "2da capa placas", "masillado", "terminación"]
+            },
+            {
+              "id": "tabique_durlock_acustico",
+              "nombre": "Tabique de durlock con aislación acústica",
+              "unidad": "m²",
+              "opciones": {
+                "estructura": ["doble estructura independiente 70mm", "doble estructura independiente 100mm"],
+                "placa": ["doble placa 12.5mm", "doble placa RF"],
+                "aislacion_acustica": ["lana de vidrio 80mm", "lana de roca 80mm"],
+                "terminacion": ["pintura", "empapelado"]
+              },
+              "tareas": ["replanteo", "montaje 1ra estructura", "montaje 2da estructura", "instalaciones", "aislación", "placas lado 1", "placas lado 2", "masillado", "terminación"]
+            },
+            {
+              "id": "tabique_retak_10",
+              "nombre": "Tabique de Retak interior 10 cm",
+              "unidad": "m²",
+              "opciones": {
+                "terminacion": ["revoque fino + pintura", "yeso + pintura", "cerámico"]
+              },
+              "tareas": ["replanteo", "levantar tabique", "revoque fino", "terminación"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instalaciones",
+      "categoria": "Instalaciones",
+      "subcategorias": [
+        {
+          "id": "sanitaria",
+          "nombre": "Instalación Sanitaria",
+          "elementos": [
+            {
+              "id": "instalacion_sanitaria_1_bano",
+              "nombre": "Instalación sanitaria 1 baño",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo_bano": ["completo (inodoro + lavabo + ducha)", "medio baño (inodoro + lavabo)"],
+                "artefactos": ["línea económica", "línea estándar", "línea premium"],
+                "grifería": ["monocomando", "dos llaves"],
+                "desagües": ["PVC Ø110", "PVC Ø63"]
+              },
+              "tareas": ["replanteo", "cañerías agua fría", "cañerías agua caliente", "desagües cloacales", "desagües pluviales", "colocación artefactos", "prueba hidráulica"]
+            },
+            {
+              "id": "instalacion_sanitaria_2_banos",
+              "nombre": "Instalación sanitaria 2 baños",
+              "unidad": "unidad",
+              "opciones": {
+                "distribucion": ["baños separados", "baños contiguos"],
+                "artefactos": ["línea económica", "línea estándar", "línea premium"],
+                "grifería": ["monocomando", "dos llaves"]
+              },
+              "tareas": ["replanteo", "cañerías agua fría", "cañerías agua caliente", "desagües", "colocación artefactos", "prueba"]
+            },
+            {
+              "id": "instalacion_sanitaria_3_banos",
+              "nombre": "Instalación sanitaria 3 baños",
+              "unidad": "unidad",
+              "opciones": {
+                "distribucion": ["baños independientes", "baños agrupados"],
+                "artefactos": ["línea económica", "línea estándar", "línea premium"],
+                "grifería": ["monocomando", "dos llaves"]
+              },
+              "tareas": ["replanteo", "cañerías", "desagües", "colocación artefactos", "prueba"]
+            },
+            {
+              "id": "instalacion_cocina",
+              "nombre": "Instalación sanitaria cocina",
+              "unidad": "unidad",
+              "opciones": {
+                "pileta": ["simple", "doble", "con escurridor"],
+                "grifería": ["monocomando", "monocomando con ducha extraíble"],
+                "desagüe": ["PVC Ø63", "PVC Ø110"]
+              },
+              "tareas": ["cañerías agua", "desagüe", "ventilación", "colocación pileta", "grifería"]
+            },
+            {
+              "id": "instalacion_lavadero",
+              "nombre": "Instalación sanitaria lavadero",
+              "unidad": "unidad",
+              "opciones": {
+                "pileta": ["pileta lavadero fibrocemento", "pileta acero inoxidable"],
+                "provision_lavarropas": ["sí", "no"],
+                "desagüe": ["PVC Ø63", "PVC Ø110"]
+              },
+              "tareas": ["cañerías", "desagüe", "colocación pileta", "conexión lavarropas"]
+            },
+            {
+              "id": "tanque_agua_superior",
+              "nombre": "Tanque de agua superior",
+              "unidad": "unidad",
+              "opciones": {
+                "capacidad": ["500 litros", "750 litros", "1000 litros", "1500 litros"],
+                "material": ["polietileno tricapa", "fibrocemento"],
+                "estructura_soporte": ["columnas mampostería", "columnas hormigón", "metálica"]
+              },
+              "tareas": ["construcción soporte", "montaje tanque", "cañería alimentación", "cañería distribución", "ventilación", "rebose"]
+            },
+            {
+              "id": "cisterna",
+              "nombre": "Cisterna",
+              "unidad": "m³",
+              "opciones": {
+                "capacidad": ["3 m³", "5 m³", "10 m³", "15 m³"],
+                "tipo": ["hormigón armado in situ", "prefabricada"],
+                "bomba": ["con bomba presurizadora", "sin bomba"]
+              },
+              "tareas": ["excavación", "construcción cisterna", "impermeabilización", "tapa", "cañerías", "bomba (si aplica)"]
+            },
+            {
+              "id": "bomba_presurizadora",
+              "nombre": "Bomba presurizadora",
+              "unidad": "unidad",
+              "opciones": {
+                "potencia": ["0.5 HP", "0.75 HP", "1 HP"],
+                "presostato": ["estándar", "digital"],
+                "tanque_presion": ["20 litros", "50 litros"]
+              },
+              "tareas": ["instalación bomba", "conexión eléctrica", "conexión cañerías", "programación", "prueba"]
+            }
+          ]
+        },
+        {
+          "id": "electrica",
+          "nombre": "Instalación Eléctrica",
+          "elementos": [
+            {
+              "id": "instalacion_electrica_basica",
+              "nombre": "Instalación eléctrica básica",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_instalacion": ["embutida", "semi-embutida", "vista"],
+                "cable": ["1.5mm²", "2.5mm²", "4mm²"],
+                "bocas_luz": ["estándar", "dimmer", "LED"]
+              },
+              "tareas": ["replanteo", "cajeado", "cañería", "cableado", "bocas", "llaves", "tomas", "prueba"]
+            },
+            {
+              "id": "tablero_principal",
+              "nombre": "Tablero eléctrico principal",
+              "unidad": "unidad",
+              "opciones": {
+                "capacidad": ["monofásico 4-6 circuitos", "monofásico 8-12 circuitos", "trifásico 12-18 circuitos"],
+                "protecciones": ["térmicas", "térmicas + diferenciales"],
+                "disyuntor": ["25A", "32A", "40A", "63A"]
+              },
+              "tareas": ["montaje tablero", "cableado interno", "conexión disyuntores", "conexión a medidor", "identificación circuitos", "prueba"]
+            },
+            {
+              "id": "prevision_aire_acondicionado",
+              "nombre": "Previsión aire acondicionado",
+              "unidad": "unidad",
+              "opciones": {
+                "cantidad_equipos": ["1", "2", "3", "4+"],
+                "capacidad": ["2250 kcal/h", "3000 kcal/h", "4500 kcal/h", "6000 kcal/h"],
+                "tipo": ["split", "multi-split", "conductos"]
+              },
+              "tareas": ["cañería", "cable 3x2.5mm²", "llave térmica dedicada", "toma dedicada", "pase pared"]
+            },
+            {
+              "id": "iluminacion_exterior",
+              "nombre": "Iluminación exterior",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["apliques pared", "balizas", "reflectores LED", "farolas"],
+                "potencia": ["10W LED", "20W LED", "30W LED", "50W LED"],
+                "sensor": ["sin sensor", "con fotocélula", "con sensor movimiento"]
+              },
+              "tareas": ["cañería exterior", "cableado", "montaje luminaria", "conexión", "programación sensor"]
+            },
+            {
+              "id": "tomas_electricas",
+              "nombre": "Tomas eléctricas",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["simple", "doble", "triple", "con USB"],
+                "ubicacion": ["interior", "exterior (IP65)"],
+                "cable": ["2.5mm²", "4mm²"]
+              },
+              "tareas": ["cajeado", "cañería", "cableado", "colocación toma", "conexión", "prueba"]
+            }
+          ]
+        },
+        {
+          "id": "gas",
+          "nombre": "Instalación de Gas",
+          "elementos": [
+            {
+              "id": "instalacion_gas_natural",
+              "nombre": "Instalación de gas natural",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["embutida", "semi-vista", "vista"],
+                "cañeria": ["caño negro", "multicapa"],
+                "artefactos": ["cocina", "cocina + calefactor", "cocina + caldera"],
+                "regulador": ["estándar", "doble etapa"]
+              },
+              "tareas": ["replanteo", "cañería principal", "derivaciones", "válvulas", "conexión medidor", "conexión artefactos", "prueba estanqueidad"]
+            },
+            {
+              "id": "instalacion_gas_envasado",
+              "nombre": "Instalación de gas envasado (GLP)",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["garrafa 10kg", "garrafa 45kg", "tanque 250kg", "tanque 500kg"],
+                "cañeria": ["cobre", "multicapa"],
+                "artefactos": ["cocina", "cocina + calefactor", "cocina + caldera"]
+              },
+              "tareas": ["instalación contenedor", "cañería", "regulador", "derivaciones", "conexión artefactos", "prueba"]
+            },
+            {
+              "id": "artefacto_cocina",
+              "nombre": "Artefacto cocina a gas",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["4 hornallas", "4 hornallas + horno", "5 hornallas + horno"],
+                "linea": ["económica", "estándar", "premium"]
+              },
+              "tareas": ["conexión gas", "nivelación", "prueba"]
+            },
+            {
+              "id": "calefactor",
+              "nombre": "Calefactor a gas",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["tiro balanceado 2000 kcal", "tiro balanceado 3000 kcal", "tiro balanceado 5000 kcal"],
+                "evacuacion": ["tiro balanceado", "salida exterior"]
+              },
+              "tareas": ["conexión gas", "fijación pared", "conducto evacuación", "prueba"]
+            },
+            {
+              "id": "caldera",
+              "nombre": "Caldera a gas",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["mural 24 kW", "mural 28 kW", "piso 35 kW"],
+                "uso": ["solo calefacción", "calefacción + ACS"],
+                "evacuacion": ["tiro balanceado", "chimenea"]
+              },
+              "tareas": ["conexión gas", "conexión agua", "evacuación", "conexión eléctrica", "prueba"]
+            }
+          ]
+        },
+        {
+          "id": "pluvial",
+          "nombre": "Instalación Pluvial",
+          "elementos": [
+            {
+              "id": "canaletas",
+              "nombre": "Canaletas",
+              "unidad": "m",
+              "opciones": {
+                "material": ["PVC", "chapa galvanizada", "chapa prepintada", "cobre"],
+                "sección": ["rectangular 12x7cm", "semicircular Ø12cm", "semicircular Ø15cm"],
+                "color": ["blanco", "negro", "terracota", "cobre"]
+              },
+              "tareas": ["replanteo", "soportes", "montaje canaleta", "conexión bajadas", "prueba estanqueidad"]
+            },
+            {
+              "id": "desagues_verticales",
+              "nombre": "Desagües pluviales verticales",
+              "unidad": "m",
+              "opciones": {
+                "material": ["PVC Ø110", "chapa galvanizada Ø110", "cobre"],
+                "ubicacion": ["embutida", "vista"],
+                "color": ["blanco", "negro", "terracota", "cobre"]
+              },
+              "tareas": ["fijaciones", "montaje bajada", "conexión canaleta superior", "conexión desagüe inferior", "prueba"]
+            },
+            {
+              "id": "desague_pluvial_subterraneo",
+              "nombre": "Desagüe pluvial subterráneo",
+              "unidad": "m",
+              "opciones": {
+                "diametro": ["110mm", "160mm"],
+                "destino": ["a calle", "a pozo absorbente", "a cisterna"],
+                "material": ["PVC naranja", "hormigón"]
+              },
+              "tareas": ["excavación zanja", "cama de arena", "colocación caños", "uniones", "relleno", "prueba"]
+            }
+          ]
+        },
+        {
+          "id": "climatizacion",
+          "nombre": "Climatización",
+          "elementos": [
+            {
+              "id": "radiadores",
+              "nombre": "Radiadores",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["chapa", "aluminio", "paneles"],
+                "elementos": ["6 elementos", "8 elementos", "10 elementos", "12 elementos"],
+                "valvula": ["estándar", "termostática"]
+              },
+              "tareas": ["fijación pared", "conexión cañerías", "purgado", "prueba"]
+            },
+            {
+              "id": "piso_radiante",
+              "nombre": "Piso radiante",
+              "unidad": "m²",
+              "opciones": {
+                "tipo": ["agua caliente", "eléctrico"],
+                "aislacion": ["poliestireno 2cm", "poliestireno 3cm", "poliestireno 5cm"],
+                "paso_cañeria": ["10cm", "15cm", "20cm"],
+                "control": ["termostato ambiente", "termostato por zona"]
+              },
+              "tareas": ["aislación térmica", "colocación cañería/cable", "prueba hidráulica", "carpeta cemento", "conexión colectores", "puesta en marcha"]
+            },
+            {
+              "id": "split_aire_acondicionado",
+              "nombre": "Split aire acondicionado",
+              "unidad": "unidad",
+              "opciones": {
+                "capacidad": ["2250 kcal/h", "3000 kcal/h", "4500 kcal/h", "6000 kcal/h"],
+                "tecnologia": ["on/off", "inverter", "inverter A+++"],
+                "tipo": ["frío solo", "frío/calor"]
+              },
+              "tareas": ["montaje unidad interior", "montaje unidad exterior", "conexión frigorífica", "conexión eléctrica", "desagüe", "vacío", "carga gas", "puesta en marcha"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cubiertas",
+      "categoria": "Cubiertas",
+      "subcategorias": [
+        {
+          "id": "cubiertas_planas",
+          "nombre": "Cubiertas Planas",
+          "elementos": [
+            {
+              "id": "cubierta_plana_hormigon",
+              "nombre": "Cubierta plana de hormigón impermeabilizada",
+              "unidad": "m²",
+              "opciones": {
+                "espesor_losa": ["15cm", "18cm", "20cm"],
+                "impermeabilizacion": ["membrana asfáltica monocapa", "membrana asfáltica bicapa", "membrana geotextil", "poliuretano líquido"],
+                "aislacion_termica": ["sin aislación", "EPS 3cm", "EPS 5cm", "XPS 5cm"],
+                "terminacion": ["sin terminación", "pintura asfáltica blanca", "carpeta transitable"]
+              },
+              "tareas": ["losa hormigón", "nivelación", "impermeabilización", "aislación térmica (si aplica)", "terminación", "desagües"]
+            },
+            {
+              "id": "cubierta_invertida",
+              "nombre": "Cubierta invertida (aislación sobre impermeabilización)",
+              "unidad": "m²",
+              "opciones": {
+                "espesor_losa": ["15cm", "18cm", "20cm"],
+                "impermeabilizacion": ["membrana asfáltica bicapa", "EPDM", "PVC"],
+                "aislacion": ["XPS 5cm", "XPS 8cm", "XPS 10cm"],
+                "proteccion": ["manta geotextil + canto rodado", "baldosas sobre plots", "deck WPC"]
+              },
+              "tareas": ["losa hormigón", "pendientes", "impermeabilización", "aislación XPS", "geotextil", "protección", "desagües"]
+            }
+          ]
+        },
+        {
+          "id": "cubiertas_inclinadas",
+          "nombre": "Cubiertas Inclinadas",
+          "elementos": [
+            {
+              "id": "cubierta_2_aguas_teja_ceramica",
+              "nombre": "Cubierta inclinada 2 aguas - teja cerámica",
+              "unidad": "m²",
+              "opciones": {
+                "pendiente": ["25%", "30%", "35%"],
+                "estructura": ["cabriadas madera", "cerchas metálicas"],
+                "aislacion": ["sin aislación", "EPS bajo teja", "lana de vidrio", "membrana reflectiva"],
+                "tipo_teja": ["colonial", "francesa", "portuguesa"]
+              },
+              "tareas": ["estructura soporte", "correas", "aislación", "listones", "colocación tejas", "caballete", "limatesas", "canaletas"]
+            },
+            {
+              "id": "cubierta_2_aguas_teja_hormigon",
+              "nombre": "Cubierta inclinada 2 aguas - teja de hormigón",
+              "unidad": "m²",
+              "opciones": {
+                "pendiente": ["25%", "30%", "35%"],
+                "estructura": ["cabriadas madera", "cerchas metálicas"],
+                "aislacion": ["sin aislación", "EPS bajo teja", "lana de vidrio"],
+                "color_teja": ["terracota", "gris", "negro", "verde"]
+              },
+              "tareas": ["estructura soporte", "correas", "aislación", "colocación tejas", "caballete", "limatesas", "canaletas"]
+            },
+            {
+              "id": "cubierta_2_aguas_chapa",
+              "nombre": "Cubierta inclinada 2 aguas - chapa",
+              "unidad": "m²",
+              "opciones": {
+                "pendiente": ["15%", "20%", "25%"],
+                "tipo_chapa": ["trapezoidal", "sinusoidal", "cincalum", "prepintada"],
+                "espesor": ["0.4mm", "0.5mm", "0.6mm"],
+                "estructura": ["cabriadas madera", "cerchas metálicas"],
+                "aislacion": ["sin aislación", "EPS autoadhesivo", "lana de vidrio", "membrana reflectiva + cámara aire"]
+              },
+              "tareas": ["estructura soporte", "correas", "aislación", "colocación chapas", "caballete", "babetas", "canaletas"]
+            },
+            {
+              "id": "cubierta_4_aguas_teja",
+              "nombre": "Cubierta inclinada 4 aguas - teja",
+              "unidad": "m²",
+              "opciones": {
+                "pendiente": ["25%", "30%", "35%"],
+                "tipo_teja": ["cerámica colonial", "cerámica francesa", "hormigón"],
+                "estructura": ["cabriadas madera", "cerchas metálicas"],
+                "aislacion": ["sin aislación", "EPS", "lana de vidrio"]
+              },
+              "tareas": ["estructura soporte", "correas", "aislación", "listones", "colocación tejas", "caballete", "limahoyas", "limatesas", "canaletas"]
+            },
+            {
+              "id": "cubierta_4_aguas_chapa",
+              "nombre": "Cubierta inclinada 4 aguas - chapa",
+              "unidad": "m²",
+              "opciones": {
+                "pendiente": ["15%", "20%", "25%"],
+                "tipo_chapa": ["trapezoidal", "cincalum", "prepintada"],
+                "estructura": ["cabriadas madera", "cerchas metálicas"],
+                "aislacion": ["sin aislación", "EPS", "lana de vidrio", "membrana reflectiva"]
+              },
+              "tareas": ["estructura soporte", "correas", "aislación", "colocación chapas", "caballete", "limahoyas", "babetas", "canaletas"]
+            }
+          ]
+        },
+        {
+          "id": "cubiertas_especiales",
+          "nombre": "Cubiertas Especiales",
+          "elementos": [
+            {
+              "id": "cubierta_diente_sierra",
+              "nombre": "Cubierta industrial diente de sierra",
+              "unidad": "m²",
+              "opciones": {
+                "estructura": ["metálica liviana", "metálica pesada"],
+                "cerramiento": ["chapa trapezoidal", "panel sándwich"],
+                "iluminacion_cenital": ["chapa translúcida", "policarbonato", "claraboyas"]
+              },
+              "tareas": ["estructura metálica", "correas", "cerramiento", "iluminación cenital", "canaletas", "desagües"]
+            },
+            {
+              "id": "cubierta_policarbonato",
+              "nombre": "Cubierta liviana de policarbonato",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_policarbonato": ["alveolar 4mm", "alveolar 6mm", "alveolar 10mm", "compacto 3mm"],
+                "color": ["cristal", "bronce", "azul", "verde", "opal"],
+                "estructura": ["aluminio", "hierro pintado"],
+                "proteccion_UV": ["estándar", "premium"]
+              },
+              "tareas": ["estructura soporte", "perfilería", "colocación placas", "sellado", "remates"]
+            },
+            {
+              "id": "cubierta_vidrio",
+              "nombre": "Cubierta liviana de vidrio",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_vidrio": ["laminado 6+6", "laminado 8+8", "DVH 6+12+6"],
+                "estructura": ["aluminio", "hierro + pintura"],
+                "control_solar": ["sin control", "film", "vidrio bajo emisivo"]
+              },
+              "tareas": ["estructura soporte", "perfilería", "colocación vidrios", "sellado", "limpieza"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "suelos_pisos",
+      "categoria": "Suelos / Pisos",
+      "subcategorias": [
+        {
+          "id": "base_pisos",
+          "nombre": "Base para Pisos",
+          "elementos": [
+            {
+              "id": "contrapiso_hormigon",
+              "nombre": "Contrapiso de hormigón",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["8cm", "10cm", "12cm", "15cm"],
+                "resistencia": ["H13", "H17"],
+                "armadura": ["sin armadura", "malla Ø4.2", "fibra estructural"],
+                "aislacion": ["sin aislación", "polietileno 200μ", "EPS 2cm"]
+              },
+              "tareas": ["compactación suelo", "nivelación", "aislación hidrófuga", "encofrado perimetral", "hormigonado", "nivelación", "curado"]
+            },
+            {
+              "id": "carpeta_nivelacion",
+              "nombre": "Carpeta de nivelación",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["2cm", "3cm", "4cm"],
+                "tipo": ["cemento arena", "cemento arena + hidrófugo", "autonivelante"]
+              },
+              "tareas": ["preparación superficie", "aplicación carpeta", "nivelación", "fratazado", "curado"]
+            }
+          ]
+        },
+        {
+          "id": "pisos_interiores",
+          "nombre": "Pisos Interiores",
+          "elementos": [
+            {
+              "id": "piso_ceramico",
+              "nombre": "Piso cerámico",
+              "unidad": "m²",
+              "opciones": {
+                "formato": ["30x30cm", "40x40cm", "45x45cm", "30x60cm"],
+                "tipo": ["esmaltado", "rústico"],
+                "junta": ["mínima 1mm", "estándar 3mm"],
+                "terminacion": ["sin pastina", "pastinado color", "pastinado epoxi"]
+              },
+              "tareas": ["preparación superficie", "replanteo", "pegado cerámicos", "nivelación", "pastinado", "limpieza"]
+            },
+            {
+              "id": "piso_porcelanato",
+              "nombre": "Piso porcelanato",
+              "unidad": "m²",
+              "opciones": {
+                "formato": ["60x60cm", "80x80cm", "60x120cm", "120x120cm"],
+                "tipo": ["pulido", "mate", "símil madera", "símil mármol"],
+                "junta": ["rectificado 1mm", "estándar 2mm"],
+                "terminacion": ["pastinado color", "pastinado epoxi"]
+              },
+              "tareas": ["preparación superficie", "replanteo", "pegado adhesivo especial", "nivelación perfecta", "pastinado", "pulido (si aplica)", "limpieza"]
+            },
+            {
+              "id": "piso_madera",
+              "nombre": "Piso de madera maciza",
+              "unidad": "m²",
+              "opciones": {
+                "especie": ["pino tea", "eucalipto", "petiribi", "pinotea"],
+                "formato": ["tabla 7cm", "tabla 10cm", "parquet mosaico"],
+                "terminacion": ["hidrolaqueado mate", "hidrolaqueado satinado", "plastificado"],
+                "colocacion": ["clavado sobre rastreles", "pegado"]
+              },
+              "tareas": ["rastreles (si aplica)", "colocación madera", "lijado", "masillado", "2da lijada", "barniz/laca", "pulido final"]
+            },
+            {
+              "id": "piso_flotante",
+              "nombre": "Piso flotante laminado",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["7mm", "8mm", "10mm", "12mm"],
+                "clase_uso": ["AC3 doméstico", "AC4 comercial", "AC5 intensivo"],
+                "color": ["roble claro", "roble medio", "nogal", "gris"],
+                "aislacion_acustica": ["sin aislación", "espuma EVA 2mm", "espuma EVA 3mm"]
+              },
+              "tareas": ["nivelación superficie", "barrera humedad", "aislación acústica", "colocación flotante", "zócalos"]
+            },
+            {
+              "id": "microcemento",
+              "nombre": "Microcemento",
+              "unidad": "m²",
+              "opciones": {
+                "color": ["gris natural", "blanco", "beige", "arena", "negro"],
+                "terminacion": ["mate", "satinado", "brillante"],
+                "proteccion": ["barniz poliuretano", "cera", "resina epoxi"]
+              },
+              "tareas": ["preparación soporte", "imprimación", "1ra capa base", "2da capa base", "lijado", "capa micro", "sellador", "protección"]
+            },
+            {
+              "id": "hormigon_alisado",
+              "nombre": "Hormigón alisado",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["8cm", "10cm", "12cm"],
+                "color": ["natural gris", "con pigmento"],
+                "terminacion": ["alisado", "alisado + endurecedor", "pulido con diamante"],
+                "juntas": ["sin juntas de dilatación", "con juntas cada 3m"]
+              },
+              "tareas": ["preparación base", "encofrado", "hormigonado", "alisado mecánico", "curado", "sellado (si aplica)"]
+            }
+          ]
+        },
+        {
+          "id": "pisos_exteriores",
+          "nombre": "Pisos Exteriores",
+          "elementos": [
+            {
+              "id": "piso_ceramico_antideslizante",
+              "nombre": "Piso cerámico antideslizante",
+              "unidad": "m²",
+              "opciones": {
+                "formato": ["30x30cm", "40x40cm", "45x45cm"],
+                "tipo": ["rústico", "símil piedra"],
+                "grado_antideslizante": ["R11", "R12", "R13"],
+                "junta": ["estándar 3mm", "ancha 5mm"]
+              },
+              "tareas": ["contrapiso", "carpeta hidrófuga", "replanteo", "pegado", "pastinado hidrófugo", "limpieza"]
+            },
+            {
+              "id": "piso_porcelanato_exterior",
+              "nombre": "Piso porcelanato exterior",
+              "unidad": "m²",
+              "opciones": {
+                "formato": ["60x60cm", "80x80cm"],
+                "tipo": ["antideslizante R11", "símil madera", "símil piedra"],
+                "espesor": ["2cm elevado", "estándar 1cm"],
+                "colocacion": ["sobre plots", "pegado tradicional"]
+              },
+              "tareas": ["preparación base", "plots (si aplica)", "colocación", "nivelación", "pastinado", "limpieza"]
+            },
+            {
+              "id": "deck_madera",
+              "nombre": "Deck de madera",
+              "unidad": "m²",
+              "opciones": {
+                "especie": ["eucalipto", "lapacho", "curupay", "quebracho"],
+                "formato": ["tabla 7cm", "tabla 10cm", "tabla 14cm"],
+                "tratamiento": ["autoclave CCA", "aceite protector", "hidrolaqueado exterior"],
+                "estructura": ["sobre rastreles madera", "sobre estructura metálica"]
+              },
+              "tareas": ["estructura soporte", "nivelación", "colocación tablas", "fijación", "tratamiento protector"]
+            },
+            {
+              "id": "deck_wpc",
+              "nombre": "Deck WPC (madera plástica)",
+              "unidad": "m²",
+              "opciones": {
+                "tipo": ["macizo", "hueco cámara"],
+                "color": ["marrón", "gris", "teka"],
+                "formato": ["14cm ancho", "20cm ancho"],
+                "estructura": ["rastreles WPC", "rastreles aluminio"]
+              },
+              "tareas": ["estructura soporte", "nivelación", "colocación tablas", "clips fijación", "remates"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "amenities",
+      "categoria": "Amenities",
+      "subcategorias": [
+        {
+          "id": "parrilla_quincho",
+          "nombre": "Parrilla y Quincho",
+          "elementos": [
+            {
+              "id": "parrilla_refractaria",
+              "nombre": "Parrilla refractaria",
+              "unidad": "unidad",
+              "opciones": {
+                "tamaño": ["60cm", "80cm", "100cm", "120cm"],
+                "tipo": ["simple", "con horno pizzero", "con brasero lateral"],
+                "campana": ["sin campana", "con campana metálica", "con campana mampostería"],
+                "revestimiento": ["ladrillo visto", "piedra", "revoque + pintura"]
+              },
+              "tareas": ["fundación", "mampostería", "construcción cámara combustión", "parrilla", "horno (si aplica)", "campana (si aplica)", "revestimiento"]
+            },
+            {
+              "id": "parrilla_metalica",
+              "nombre": "Parrilla metálica",
+              "unidad": "unidad",
+              "opciones": {
+                "tamaño": ["60cm", "80cm", "100cm"],
+                "material": ["chapa plegada", "acero inoxidable"],
+                "tipo": ["simple", "con carro", "con brasero"],
+                "campana": ["sin campana", "con campana metálica"]
+              },
+              "tareas": ["base hormigón", "montaje estructura", "instalación parrilla", "campana (si aplica)", "terminación"]
+            },
+            {
+              "id": "quincho_cubierto",
+              "nombre": "Quincho / galería cubierta",
+              "unidad": "m²",
+              "opciones": {
+                "estructura": ["madera", "metálica", "hormigón"],
+                "cubierta": ["chapa", "teja", "policarbonato", "techo verde"],
+                "cerramiento_lateral": ["abierto", "semi-cerrado", "con cortinas cristal"],
+                "piso": ["hormigón alisado", "cerámico", "deck madera", "deck WPC"]
+              },
+              "tareas": ["fundación columnas", "estructura soporte", "cubierta", "instalación eléctrica", "piso", "cerramiento (si aplica)", "terminaciones"]
+            }
+          ]
+        },
+        {
+          "id": "pileta",
+          "nombre": "Pileta",
+          "elementos": [
+            {
+              "id": "pileta_hormigon",
+              "nombre": "Pileta de hormigón",
+              "unidad": "m³",
+              "opciones": {
+                "dimensiones": ["3x6m", "4x8m", "5x10m", "custom"],
+                "profundidad": ["1.40m constante", "0.80m a 1.80m"],
+                "revestimiento": ["venecitas", "gresite", "membrana PVC", "pintura epoxi"],
+                "borde": ["atérmico", "porcelanato", "piedra", "deck madera"],
+                "equipo": ["bomba + filtro arena", "bomba + filtro DE", "sistema sal"]
+              },
+              "tareas": ["excavación", "fundación", "mampostería/encofrado", "hierros", "hormigonado", "impermeabilización", "revestimiento", "instalación equipo", "playa/borde", "llenado", "puesta en marcha"]
+            },
+            {
+              "id": "pileta_fibra",
+              "nombre": "Pileta de fibra de vidrio",
+              "unidad": "unidad",
+              "opciones": {
+                "dimensiones": ["3x6m", "4x8m", "5x10m"],
+                "color": ["azul", "celeste", "blanco"],
+                "equipo": ["bomba + filtro arena", "bomba + filtro DE", "sistema sal"],
+                "instalacion": ["enterrada", "semi-enterrada"]
+              },
+              "tareas": ["excavación", "nivelación", "colocación pileta", "relleno perimetral", "instalación equipo", "playa", "llenado", "puesta en marcha"]
+            },
+            {
+              "id": "solarium",
+              "nombre": "Solárium",
+              "unidad": "m²",
+              "opciones": {
+                "piso": ["porcelanato atérmico", "deck madera", "deck WPC", "césped sintético"],
+                "cerramiento": ["sin cerrar", "cerco metálico", "cerco madera", "mampostería"],
+                "sombra": ["sin sombra", "pérgola", "sombrillas", "toldo"]
+              },
+              "tareas": ["nivelación terreno", "contrapiso", "piso elegido", "cerramiento (si aplica)", "estructura sombra (si aplica)"]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parquizado",
+      "categoria": "Parquizado",
+      "subcategorias": [
+        {
+          "id": "cesped_vegetacion",
+          "nombre": "Césped y Vegetación",
+          "elementos": [
+            {
+              "id": "cesped_natural",
+              "nombre": "Césped natural",
+              "unidad": "m²",
+              "opciones": {
+                "tipo": ["siembra", "panes (tepes)", "hidrosiembra"],
+                "variedad": ["bermuda", "kikuyo", "rye grass", "festuca"],
+                "preparacion_suelo": ["básica", "con tierra negra", "con tierra + compost"],
+                "riego": ["sin riego", "riego por aspersión", "riego por goteo"]
+              },
+              "tareas": ["limpieza terreno", "nivelación", "tierra vegetal", "siembra/panes", "riego inicial", "primer corte"]
+            },
+            {
+              "id": "cesped_sintetico",
+              "nombre": "Césped sintético",
+              "unidad": "m²",
+              "opciones": {
+                "altura_fibra": ["20mm", "30mm", "40mm", "50mm"],
+                "densidad": ["estándar", "premium"],
+                "color": ["verde natural", "verde intenso", "bicolor"],
+                "drenaje": ["perforado", "super drenante"]
+              },
+              "tareas": ["nivelación base", "compactación", "malla antimaleza", "extendido césped", "corte y unión", "relleno arena sílice", "cepillado"]
+            },
+            {
+              "id": "arboles",
+              "nombre": "Árboles",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["caduco", "perenne", "frutal"],
+                "altura": ["1-2m", "2-3m", "3-4m"],
+                "especies_sugeridas": ["jacarandá", "tipa", "ceibo", "fresno", "cítricos"]
+              },
+              "tareas": ["excavación pozo", "tierra preparada", "plantación", "tutor", "riego"]
+            },
+            {
+              "id": "arbustos",
+              "nombre": "Arbustos",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["ornamental", "cerco vivo", "aromático"],
+                "altura": ["30-50cm", "50-80cm", "80-120cm"],
+                "especies_sugeridas": ["ligustrina", "fotinia", "lavanda", "romero", "santolina"]
+              },
+              "tareas": ["preparación suelo", "plantación", "riego", "mulching"]
+            }
+          ]
+        },
+        {
+          "id": "senderos_veredas",
+          "nombre": "Senderos y Veredas",
+          "elementos": [
+            {
+              "id": "sendero_piedra",
+              "nombre": "Sendero de piedra",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_piedra": ["laja", "canto rodado", "piedra partida", "adoquín piedra"],
+                "espesor": ["3-5cm", "5-8cm"],
+                "junta": ["con césped", "con arena", "con mortero"],
+                "base": ["sobre tierra compactada", "sobre cascajo", "sobre hormigón"]
+              },
+              "tareas": ["excavación", "base", "nivelación", "colocación piedras", "junta", "limpieza"]
+            },
+            {
+              "id": "sendero_hormigon",
+              "nombre": "Sendero de hormigón",
+              "unidad": "m²",
+              "opciones": {
+                "espesor": ["8cm", "10cm"],
+                "ancho": ["60cm", "80cm", "100cm"],
+                "terminacion": ["alisado", "con textura", "símil piedra", "con junta seca"],
+                "color": ["gris natural", "con pigmento"]
+              },
+              "tareas": ["excavación", "base cascajo", "encofrado", "hormigonado", "terminación", "curado", "cortes dilatación"]
+            },
+            {
+              "id": "sendero_deck",
+              "nombre": "Sendero de deck",
+              "unidad": "m",
+              "opciones": {
+                "material": ["madera eucalipto", "madera lapacho", "WPC"],
+                "ancho": ["60cm", "80cm", "100cm"],
+                "estructura": ["sobre rastreles", "sobre estructura metálica"]
+              },
+              "tareas": ["nivelación", "estructura soporte", "colocación tablas", "tratamiento (si aplica)"]
+            }
+          ]
+        },
+        {
+          "id": "iluminacion_riego",
+          "nombre": "Iluminación y Riego Exterior",
+          "elementos": [
+            {
+              "id": "iluminacion_balizas",
+              "nombre": "Iluminación balizas",
+              "unidad": "unidad",
+              "opciones": {
+                "tipo": ["LED 3W", "LED 5W", "LED 10W"],
+                "alimentacion": ["220V", "12V", "solar"],
+                "material": ["acero inoxidable", "aluminio", "plástico"],
+                "altura": ["30cm", "50cm", "80cm"]
+              },
+              "tareas": ["cañería eléctrica", "cableado", "colocación balizas", "conexión", "prueba"]
+            },
+            {
+              "id": "reflectores_led",
+              "nombre": "Reflectores LED",
+              "unidad": "unidad",
+              "opciones": {
+                "potencia": ["10W", "20W", "30W", "50W"],
+                "tipo": ["con estaca", "pared", "poste"],
+                "sensor": ["sin sensor", "con fotocélula", "con sensor movimiento"],
+                "color_luz": ["blanco cálido", "blanco frío", "RGB"]
+              },
+              "tareas": ["cañería", "cableado", "montaje", "orientación", "conexión", "programación"]
+            },
+            {
+              "id": "riego_aspersion",
+              "nombre": "Riego por aspersión",
+              "unidad": "m²",
+              "opciones": {
+                "tipo_aspersor": ["emergente estático", "emergente rotativo", "aéreo"],
+                "alcance": ["3m", "5m", "8m", "12m"],
+                "programacion": ["sin programador", "programador mecánico", "programador digital", "Wi-Fi"]
+              },
+              "tareas": ["diseño sistema", "excavación zanja", "cañerías", "electroválvulas", "aspersores", "programador", "prueba"]
+            },
+            {
+              "id": "riego_goteo",
+              "nombre": "Riego por goteo",
+              "unidad": "m",
+              "opciones": {
+                "tipo": ["manguera porosa", "cinta goteo", "goteros integrados"],
+                "caudal": ["2 L/h", "4 L/h", "8 L/h"],
+                "programacion": ["sin programador", "programador digital"]
+              },
+              "tareas": ["diseño", "cañería principal", "derivaciones", "instalación goteo", "programador", "prueba"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+

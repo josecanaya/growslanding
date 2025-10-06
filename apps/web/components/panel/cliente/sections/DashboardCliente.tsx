@@ -216,7 +216,7 @@ export function DashboardCliente({ user }: DashboardClienteProps) {
                 <CheckCircle className="h-5 w-5 text-green-600" />
               </div>
               <div className="flex-1">
-                <p className="text-oscuro font-medium">Tarea completada: "Replanteo de cimientos"</p>
+                <p className="text-oscuro font-medium">Tarea completada: &quot;Replanteo de cimientos&quot;</p>
                 <p className="text-oscuro/70 text-sm">Casa Familiar - Villa Crespo • Hace 2 horas</p>
               </div>
             </div>

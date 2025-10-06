@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Obra {
+  id           String   @id @default(uuid())
+  nombre       String
+  localizacion String?
+  cliente      String?
+  estado       String   @default("ACTIVA")
+  
+  // Nuevos campos para datos generales
+  cantidad_plantas              Int?
+  superficie_por_planta         Float?
+  superficie_total              Float?
+  ancho_terreno                 Float?
+  largo_terreno                 Float?
+  ancho_planta                  Float?
+  largo_planta                  Float?
+  tipo_proyecto                 String? // Vivienda unifamiliar, Vivienda multifamiliar, Ampliación, Refacción
+  coordenadas_lat               Float?
+  coordenadas_lng               Float?
+  direccion_completa            String?
+  fecha_inicio                  String?
+  presupuesto                   String?
+  descripcion                   String?
+  
+  created_at   DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

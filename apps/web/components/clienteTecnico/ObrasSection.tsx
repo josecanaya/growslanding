@@ -1,373 +1,856 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Eye, AlertCircle, CheckCircle, Clock } from 'lucide-react';
-import { ModalCrearObra } from './modals/ModalCrearObra';
-import { DetalleObra } from './index';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { 
+  Plus, 
+  Building2, 
+  MapPin, 
+  Calendar, 
+  Edit3, 
+  Trash2, 
+  Eye, 
+  MoreVertical, 
+  Search, 
+  Filter,
+  X,
+  Save,
+  AlertCircle
+} from 'lucide-react';
+import { DetalleObra } from './DetalleObra';
 
+// Tipos de datos
 interface Obra {
   id: string;
   nombre: string;
-  ubicacion: string;
-  fechaInicio: string;
-  fechaFin: string;
-  progreso: number;
-  tareasActivas: number;
-  tareasCompletadas: number;
-  estado: 'activa' | 'pausada' | 'finalizada';
+  localizacion?: string;
+  estado: string;
+  created_at: string;
+  updatedAt?: string;
+  fecha_inicio?: string;
+  presupuesto?: number;
+  descripcion?: string;
 }
 
-interface Tarea {
-  id: string;
+interface FormState {
   nombre: string;
-  obraId: string;
-  lider: string;
-  fechaInicio: string;
-  fechaFin: string;
-  plantilla: string;
-  checklist: string[];
-  evidencias: string[];
-  estado: 'pendiente' | 'en_progreso' | 'completada' | 'bloqueada';
-  etapa: 'estructura' | 'obra_gris' | 'terminaciones';
-  precedencia: string[];
+  localizacion: string;
+  estado: string;
+  fecha_inicio: string;
+  presupuesto: string;
+  descripcion: string;
 }
 
-export function ObrasSection() {
+// Estados disponibles
+const ESTADOS = ['ACTIVA', 'PAUSADA', 'FINALIZADA', 'CANCELADA'];
+
+// Estado inicial del formulario
+const initialFormState: FormState = {
+  nombre: '',
+  localizacion: '',
+  estado: 'ACTIVA',
+  fecha_inicio: '',
+  presupuesto: '',
+  descripcion: ''
+};
+
+// Componente para mostrar el estado de la obra
+const EstadoBadge = ({ estado }: { estado: string }) => {
+  const getEstadoStyles = (estado: string) => {
+    switch (estado) {
+      case 'ACTIVA':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'PAUSADA':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'FINALIZADA':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'CANCELADA':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getEstadoStyles(estado)}`}>
+      {estado}
+    </span>
+  );
+};
+
+// Componente para mostrar una card de obra
+const ObraCard = ({ 
+  obra, 
+  onEdit, 
+  onDelete, 
+  onView 
+}: { 
+  obra: Obra; 
+  onEdit: (obra: Obra) => void; 
+  onDelete: (obra: Obra) => void; 
+  onView: (obra: Obra) => void; 
+}) => {
+  const formatearFechaCreacion = (fecha: string) => {
+    return new Date(fecha).toLocaleDateString('es-AR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const obtenerEstado = (estado: string) => {
+    return estado || 'ACTIVA';
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 p-6">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Building2 className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">{obra.nombre}</h3>
+            <div className="flex items-center space-x-2 mt-1">
+              <MapPin className="h-4 w-4 text-gray-400" />
+              <span className="text-sm text-gray-600">
+                {obra.localizacion?.trim() || "Sin ubicación"}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <EstadoBadge estado={obtenerEstado(obra.estado)} />
+          <div className="relative">
+            <button className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+              <MoreVertical className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {obra.descripcion && (
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          {obra.descripcion}
+        </p>
+      )}
+
+      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+        <div className="flex items-center space-x-1">
+          <Calendar className="h-4 w-4" />
+          <span>Creada: {formatearFechaCreacion(obra.created_at)}</span>
+        </div>
+        {obra.fecha_inicio && (
+          <div className="flex items-center space-x-1">
+            <Calendar className="h-4 w-4" />
+            <span>Inicio: {formatearFechaCreacion(obra.fecha_inicio)}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onView(obra)}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            <Eye className="h-4 w-4" />
+            <span>Ver</span>
+          </button>
+          <button
+            onClick={() => onEdit(obra)}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            <Edit3 className="h-4 w-4" />
+            <span>Editar</span>
+          </button>
+        </div>
+        <button
+          onClick={() => onDelete(obra)}
+          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <Trash2 className="h-4 w-4" />
+          <span>Eliminar</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// Componente principal
+export default function ObrasSection() {
+  const router = useRouter();
   const [obras, setObras] = useState<Obra[]>([
     {
-      id: '1',
-      nombre: 'Casa Familiar - Villa Crespo',
-      ubicacion: 'Villa Crespo, CABA',
-      fechaInicio: '2024-08-15',
-      fechaFin: '2024-12-15',
-      progreso: 65,
-      tareasActivas: 3,
-      tareasCompletadas: 18,
-      estado: 'activa'
+      id: "1",
+      nombre: "Casa Familiar Los Robles",
+      localizacion: "Av. Corrientes 1234, CABA",
+      estado: "ACTIVA",
+      created_at: new Date().toISOString(),
+      fecha_inicio: "2024-01-15",
+      presupuesto: 50000,
+      descripcion: "Proyecto de casa familiar de dos plantas"
     },
     {
-      id: '2',
-      nombre: 'Departamento - Palermo',
-      ubicacion: 'Palermo, CABA',
-      fechaInicio: '2024-10-01',
-      fechaFin: '2025-02-01',
-      progreso: 30,
-      tareasActivas: 2,
-      tareasCompletadas: 8,
-      estado: 'activa'
+      id: "2", 
+      nombre: "Edificio Residencial Norte",
+      localizacion: "Calle Norte 567, CABA",
+      estado: "PAUSADA",
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      fecha_inicio: "2024-02-01",
+      presupuesto: 150000,
+      descripcion: "Edificio de 6 plantas con 24 departamentos"
     }
   ]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingObra, setEditingObra] = useState<Obra | null>(null);
+  const [formData, setFormData] = useState<FormState>({ ...initialFormState });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterEstado, setFilterEstado] = useState<string>("");
+  const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
 
-  const [tareas, setTareas] = useState<Tarea[]>([
-    {
-      id: '1',
-      nombre: 'Cimientos',
-      obraId: '1',
-      lider: 'Juan Pérez',
-      fechaInicio: '2024-08-15',
-      fechaFin: '2024-08-25',
-      plantilla: 'estructura',
-      checklist: ['Replanteo', 'Excavación', 'Hormigón', 'Finalización'],
-      evidencias: [],
-      estado: 'completada',
-      etapa: 'estructura',
-      precedencia: []
-    },
-    {
-      id: '2',
-      nombre: 'Paredes',
-      obraId: '1',
-      lider: 'María López',
-      fechaInicio: '2024-08-26',
-      fechaFin: '2024-09-10',
-      plantilla: 'estructura',
-      checklist: ['Replanteo', 'Mampostería', 'Finalización'],
-      evidencias: [],
-      estado: 'en_progreso',
-      etapa: 'estructura',
-      precedencia: ['1']
-    },
-    {
-      id: '3',
-      nombre: 'Techo',
-      obraId: '1',
-      lider: 'Carlos Rodríguez',
-      fechaInicio: '2024-09-11',
-      fechaFin: '2024-09-25',
-      plantilla: 'estructura',
-      checklist: ['Estructura metálica', 'Cubierta', 'Finalización'],
-      evidencias: [],
-      estado: 'pendiente',
-      etapa: 'estructura',
-      precedencia: ['2']
+  // Cargar obras al montar el componente
+  useEffect(() => {
+    console.log('ObrasSection mounted');
+  }, []);
+
+  // Actualizar formulario cuando se edita una obra
+  useEffect(() => {
+    setFormData(mapObraToForm(editingObra));
+  }, [editingObra]);
+
+  // Función para cargar obras desde la API
+  const cargarObras = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("/api/obras");
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      setObras(Array.isArray(data.obras) ? data.obras : []);
+    } catch (err) {
+      console.error("Error al cargar las obras:", err);
+      // En caso de error, mostrar datos de ejemplo para que la aplicación funcione
+      setObras([
+        {
+          id: "1",
+          nombre: "Casa Familiar Los Robles",
+          localizacion: "Av. Corrientes 1234, CABA",
+          estado: "ACTIVA",
+          created_at: new Date().toISOString(),
+          fecha_inicio: "2024-01-15",
+          presupuesto: 50000,
+          descripcion: "Proyecto de casa familiar de dos plantas"
+        },
+        {
+          id: "2", 
+          nombre: "Edificio Residencial Norte",
+          localizacion: "Calle Norte 567, CABA",
+          estado: "PAUSADA",
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          fecha_inicio: "2024-02-01",
+          presupuesto: 150000,
+          descripcion: "Edificio de 6 plantas con 24 departamentos"
+        }
+      ]);
+      setError("Error al cargar desde la API. Mostrando datos de ejemplo.");
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const [showModalObra, setShowModalObra] = useState(false);
-  const [showModalTarea, setShowModalTarea] = useState(false);
-  const [notificaciones, setNotificaciones] = useState<string[]>([]);
-  const [obraSeleccionada, setObraSeleccionada] = useState<Obra | null>(null);
+  // Función para crear una nueva obra
+  const crearObraEnBD = async (datos: FormState) => {
+    try {
+      setSaving(true);
+      setError(null);
+      const payload = mapFormToPayload(datos);
+      const response = await fetch("/api/obras", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-organizacion-id": "demo-org",
+          "x-usuario-id": "user-demo",
+        },
+        body: JSON.stringify(payload),
+      });
 
-  const handleCrearObra = (nuevaObra: Omit<Obra, 'id' | 'progreso' | 'tareasActivas' | 'tareasCompletadas' | 'estado'>) => {
-    const obra: Obra = {
-      ...nuevaObra,
-      id: Date.now().toString(),
-      progreso: 0,
-      tareasActivas: 0,
-      tareasCompletadas: 0,
-      estado: 'activa'
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const nuevaObra = await response.json();
+      setObras(prev => [nuevaObra, ...prev]);
+      cerrarModal();
+      setFormData({ ...initialFormState });
+    } catch (err) {
+      console.error("Error al crear la obra:", err);
+      setError(err instanceof Error ? err.message : "Error al crear la obra");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Función para actualizar una obra existente
+  const actualizarObraEnBD = async (id: string, datos: FormState) => {
+    try {
+      setSaving(true);
+      setError(null);
+      const payload = mapFormToPayload(datos);
+      const response = await fetch(`/api/obras/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-organizacion-id": "demo-org",
+          "x-usuario-id": "user-demo",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      const obraActualizada = await response.json();
+      setObras(prev => prev.map(obra => obra.id === id ? obraActualizada : obra));
+      cerrarModal();
+      setFormData({ ...initialFormState });
+    } catch (err) {
+      console.error("Error al actualizar la obra:", err);
+      setError(err instanceof Error ? err.message : "Error al actualizar la obra");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Función para eliminar una obra
+  const eliminarObraEnBD = async (id: string) => {
+    try {
+      setError(null);
+      const response = await fetch(`/api/obras/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-organizacion-id": "demo-org",
+          "x-usuario-id": "user-demo",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      setObras(prev => prev.filter(obra => obra.id !== id));
+    } catch (err) {
+      console.error("Error al eliminar la obra:", err);
+      setError(err instanceof Error ? err.message : "Error al eliminar la obra");
+    }
+  };
+
+  // Funciones auxiliares
+  const mapObraToForm = (obra: Obra | null): FormState => {
+    if (!obra) return { ...initialFormState };
+    return {
+      nombre: obra.nombre || '',
+      localizacion: obra.localizacion || '',
+      estado: obra.estado || 'ACTIVA',
+      fecha_inicio: obra.fecha_inicio ? obra.fecha_inicio.split('T')[0] : '',
+      presupuesto: obra.presupuesto?.toString() || '',
+      descripcion: obra.descripcion || ''
     };
-    setObras([...obras, obra]);
-    setShowModalObra(false);
+  };
+
+  const mapFormToPayload = (form: FormState) => {
+    return {
+      nombre: form.nombre.trim(),
+      localizacion: form.localizacion.trim() || undefined,
+      estado: form.estado,
+      fecha_inicio: form.fecha_inicio ? new Date(form.fecha_inicio).toISOString() : undefined,
+      presupuesto: form.presupuesto ? parseFloat(form.presupuesto) : undefined,
+      descripcion: form.descripcion.trim() || undefined
+    };
+  };
+
+  const toISOStringFromInput = (inputValue: string) => {
+    if (!inputValue) return undefined;
+    const date = new Date(inputValue);
+    return isNaN(date.getTime()) ? undefined : date.toISOString();
+  };
+
+  // Handlers
+  const abrirModalCrear = () => {
+    setEditingObra(null);
+    setFormData({ ...initialFormState });
+    setIsModalOpen(true);
+  };
+
+  const abrirWizardCrear = () => {
+    router.push('/obras/nueva');
+  };
+
+
+  const abrirModalEditar = (obra: Obra) => {
+    setEditingObra(obra);
+    setIsModalOpen(true);
+  };
+
+  const cerrarModal = () => {
+    setIsModalOpen(false);
+    setEditingObra(null);
+    setFormData({ ...initialFormState });
+    setError(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingObra) {
+      await actualizarObraEnBD(editingObra.id, formData);
+    } else {
+      await crearObraEnBD(formData);
+    }
+  };
+
+  const handleDeleteObra = async (obra: Obra) => {
+    if (window.confirm(`¿Estás seguro de que quieres eliminar la obra "${obra.nombre}"?`)) {
+      await eliminarObraEnBD(obra.id);
+    }
+  };
+
+  const handleViewObra = (obra: Obra) => {
+    setSelectedObra(obra);
+  };
+
+  // Filtrar obras
+  const obrasFiltradas = obras.filter(obra => {
+    const matchesSearch = searchTerm === '' || 
+      obra.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      obra.localizacion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      obra.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Notificación
-    setNotificaciones(prev => [...prev, `Nueva obra creada: ${obra.nombre}`]);
-    setTimeout(() => {
-      setNotificaciones(prev => prev.slice(1));
-    }, 5000);
-  };
+    const matchesEstado = filterEstado === '' || obra.estado === filterEstado;
+    
+    return matchesSearch && matchesEstado;
+  });
 
-  const handleAsignarTarea = (nuevaTarea: Omit<Tarea, 'id' | 'estado' | 'evidencias'>) => {
-    const tarea: Tarea = {
-      ...nuevaTarea,
-      id: Date.now().toString(),
-      estado: 'pendiente',
-      evidencias: []
-    };
-    setTareas([...tareas, tarea]);
-    setShowModalTarea(false);
+  // Debug: Mostrar estado actual
+  console.log('ObrasSection render - loading:', loading, 'obras:', obras.length, 'error:', error);
 
-    // Actualizar obra
-    setObras(obras.map(obra => 
-      obra.id === nuevaTarea.obraId 
-        ? { ...obra, tareasActivas: obra.tareasActivas + 1 }
-        : obra
-    ));
-
-    // Notificación
-    setNotificaciones(prev => [...prev, `Nueva tarea asignada: ${tarea.nombre}`]);
-    setTimeout(() => {
-      setNotificaciones(prev => prev.slice(1));
-    }, 5000);
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'activa':
-        return 'bg-green-100 text-green-800';
-      case 'pausada':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'finalizada':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'activa':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'pausada':
-        return <Clock className="h-4 w-4" />;
-      case 'finalizada':
-        return <CheckCircle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  // Si hay una obra seleccionada, mostrar vista de detalle
-  if (obraSeleccionada) {
+  // Mostrar loading
+  if (loading) {
     return (
-      <DetalleObra 
-        obra={obraSeleccionada}
-        tareas={tareas.filter(t => t.obraId === obraSeleccionada.id)}
-        onVolver={() => setObraSeleccionada(null)}
-        onActualizarTarea={(tareaActualizada: Tarea) => {
-          setTareas(tareas.map(t => t.id === tareaActualizada.id ? tareaActualizada : t));
-          // Notificación de cambio de estado
-          setNotificaciones(prev => [...prev, `Tarea "${tareaActualizada.nombre}" actualizada`]);
-          setTimeout(() => {
-            setNotificaciones(prev => prev.slice(1));
-          }, 5000);
-        }}
-        onCrearTarea={(nuevaTarea: Omit<Tarea, 'id' | 'estado' | 'evidencias'>) => {
-          const tarea: Tarea = {
-            ...nuevaTarea,
-            id: Date.now().toString(),
-            estado: 'pendiente',
-            evidencias: []
-          };
-          setTareas([...tareas, tarea]);
-          
-          // Actualizar obra
-          setObras(obras.map(obra => 
-            obra.id === nuevaTarea.obraId 
-              ? { ...obra, tareasActivas: obra.tareasActivas + 1 }
-              : obra
-          ));
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-xl p-6 shadow-sm">
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          // Notificación
-          setNotificaciones(prev => [...prev, `Nueva tarea creada: ${tarea.nombre}`]);
-          setTimeout(() => {
-            setNotificaciones(prev => prev.slice(1));
-          }, 5000);
-        }}
-        onEliminarTarea={(tareaId: string) => {
-          const tareaEliminada = tareas.find(t => t.id === tareaId);
-          setTareas(tareas.filter(t => t.id !== tareaId));
-          
-          // Actualizar obra
-          if (tareaEliminada) {
-            setObras(obras.map(obra => 
-              obra.id === tareaEliminada.obraId 
-                ? { 
-                    ...obra, 
-                    tareasActivas: Math.max(0, obra.tareasActivas - 1),
-                    tareasCompletadas: tareaEliminada.estado === 'completada' 
-                      ? Math.max(0, obra.tareasCompletadas - 1) 
-                      : obra.tareasCompletadas
-                  }
-                : obra
-            ));
-          }
+  // Si hay una obra seleccionada, mostrar el detalle completo
+  if (selectedObra) {
+    // Mock de tareas para el detalle (en una app real, esto vendría de la API)
+    const tareasMock = [
+      {
+        id: 'tarea-1',
+        nombre: 'Excavación de fundación',
+        obraId: selectedObra.id,
+        lider: 'Juan Pérez',
+        fechaInicio: '2024-01-01',
+        fechaFin: '2024-01-05',
+        plantilla: 'Excavación',
+        checklist: ['Replanteo', 'Excavación', 'Compactación'],
+        evidencias: [],
+        estado: 'pendiente' as const,
+        etapa: 'estructura' as const,
+        precedencia: [],
+        duracion: 5,
+        esCritica: true,
+        holgura: 0,
+        earlyStart: 0,
+        earlyFinish: 5,
+        lateStart: 0,
+        lateFinish: 5,
+        tiempoTemprano: 0,
+        tiempoTardio: 5,
+        x: 100,
+        y: 100
+      }
+    ];
 
-          // Notificación
-          setNotificaciones(prev => [...prev, `Tarea "${tareaEliminada?.nombre}" eliminada`]);
-          setTimeout(() => {
-            setNotificaciones(prev => prev.slice(1));
-          }, 5000);
+    // Mock de obra completa para el detalle
+    const obraCompleta = {
+      ...selectedObra,
+      cliente: 'Cliente Demo',
+      tipoObra: 'nueva' as const,
+      fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
+      progreso: 0,
+      etapa: 'estructura' as const,
+      lider: 'Juan Pérez',
+      tareasActivas: 1,
+      tareasCompletadas: 0,
+      legajoTecnico: [],
+      estado: (selectedObra.estado === 'ACTIVA' ? 'activa' : 
+               selectedObra.estado === 'PAUSADA' ? 'pausada' : 
+               'finalizada') as 'activa' | 'pausada' | 'finalizada'
+    };
+
+    return (
+      <DetalleObra
+        obra={obraCompleta}
+        tareas={tareasMock}
+        onVolver={() => setSelectedObra(null)}
+        onActualizarTarea={(tarea) => {
+          console.log('Actualizar tarea:', tarea);
+          // En una app real, esto llamaría a la API
+        }}
+        onCrearTarea={(tarea) => {
+          console.log('Crear tarea:', tarea);
+          // En una app real, esto llamaría a la API
+        }}
+        onCrearTareas={(tareas) => {
+          console.log('Crear tareas:', tareas);
+          // En una app real, esto llamaría a la API
+        }}
+        onEliminarTarea={(tareaId) => {
+          console.log('Eliminar tarea:', tareaId);
+          // En una app real, esto llamaría a la API
+        }}
+        onActualizarObra={(obra) => {
+          console.log('Actualizar obra:', obra);
+          // En una app real, esto llamaría a la API
         }}
       />
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Notificaciones */}
-      {notificaciones.length > 0 && (
-        <div className="fixed top-4 right-4 z-50 space-y-2">
-          {notificaciones.map((notif, index) => (
-            <div key={index} className="bg-primario text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-in">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">{notif}</span>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header del Dashboard */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard de Obras</h1>
+              <p className="text-gray-600 mt-1">Gestiona todas tus obras de construcción</p>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
-        <div className="bg-claro px-6 py-4 border-b border-claro">
-          <h2 className="text-xl font-semibold text-primario">Obras Activas</h2>
-          <p className="text-sm text-primario/70">Gestiona tus obras y asigna tareas a los socios constructores</p>
-        </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={abrirWizardCrear}
+                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-sm"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Crear Obra Completa</span>
+              </button>
+        <button
+          onClick={abrirModalCrear}
+                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-sm"
+        >
+                <Plus className="h-5 w-5" />
+                <span>Crear Básica</span>
+        </button>
+            </div>
       </div>
 
-      {/* Dashboard de Obras */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-        {obras.length === 0 ? (
-          <div className="col-span-full">
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="text-primario/50 text-6xl mb-4">🏗️</div>
-              <h3 className="text-xl font-semibold text-primario mb-2">No hay obras activas todavía</h3>
-              <p className="text-primario/70 mb-6">Crea tu primera obra para comenzar a gestionar proyectos</p>
-              <button
-                onClick={() => setShowModalObra(true)}
-                className="bg-primario text-white px-6 py-3 rounded-lg font-medium hover:bg-primario/90 transition-colors duration-200"
+          {/* Barra de búsqueda y filtros */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar obras por nombre, ubicación o descripción..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-gray-400" />
+              <select
+                value={filterEstado}
+                onChange={(e) => setFilterEstado(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                Crear Primera Obra
-              </button>
+                <option value="">Todos los estados</option>
+                {ESTADOS.map(estado => (
+                  <option key={estado} value={estado}>{estado}</option>
+                ))}
+              </select>
             </div>
           </div>
-        ) : (
-          obras.map((obra) => (
-            <div key={obra.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-200">
-              <div className="p-6">
-                {/* Header de la obra */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-primario mb-1">{obra.nombre}</h3>
-                    <p className="text-sm text-primario/70 mb-2">{obra.ubicacion}</p>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getEstadoColor(obra.estado)}`}>
-                        {getEstadoIcon(obra.estado)}
-                        <span className="capitalize">{obra.estado}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
+        </div>
 
-                {/* Progreso */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-primario/70">Progreso General</span>
-                    <span className="font-medium text-primario">{obra.progreso}%</span>
-                  </div>
-                  <div className="w-full bg-claro rounded-full h-2">
-                    <div 
-                      className="bg-primario h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${obra.progreso}%` }}
-                    ></div>
-                  </div>
-                </div>
+        {/* Mensaje de error */}
+      {error && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+              <span className="text-red-800">{error}</span>
+            </div>
+          </div>
+        )}
 
-                {/* Estadísticas */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primario">{obra.tareasActivas}</div>
-                    <div className="text-xs text-primario/70">Tareas Activas</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-acento">{obra.tareasCompletadas}</div>
-                    <div className="text-xs text-primario/70">Completadas</div>
-                  </div>
-                </div>
-
-                {/* Fechas */}
-                <div className="space-y-2 mb-4 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-primario/70">Inicio:</span>
-                    <span className="text-primario">{new Date(obra.fechaInicio).toLocaleDateString('es-ES')}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-primario/70">Fin estimado:</span>
-                    <span className="text-primario">{new Date(obra.fechaFin).toLocaleDateString('es-ES')}</span>
-                  </div>
-                </div>
-
-                {/* Botón Ver Detalles */}
-                <button 
-                  onClick={() => setObraSeleccionada(obra)}
-                  className="w-full bg-claro text-primario py-2 px-4 rounded-lg font-medium hover:bg-claro/80 transition-colors duration-200 flex items-center justify-center space-x-2"
-                >
-                  <Eye className="h-4 w-4" />
-                  <span>Ver Detalles</span>
-                </button>
+        {/* Estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Building2 className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Total Obras</p>
+                <p className="text-2xl font-bold text-gray-900">{obras.length}</p>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Building2 className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Activas</p>
+                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'ACTIVA').length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Building2 className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Pausadas</p>
+                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'PAUSADA').length}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Building2 className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Finalizadas</p>
+                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'FINALIZADA').length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* FAB (Floating Action Button) */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <button
-          onClick={() => setShowModalObra(true)}
-          className="bg-primario text-white w-14 h-14 rounded-full shadow-lg hover:bg-primario/90 transition-all duration-200 flex items-center justify-center hover:scale-110"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
-      </div>
-
-      {/* Modales */}
-      {showModalObra && (
-        <ModalCrearObra
-          onClose={() => setShowModalObra(false)}
-          onSave={handleCrearObra}
-        />
+        {/* Lista de obras */}
+        {obrasFiltradas.length === 0 ? (
+          <div className="text-center py-12">
+            <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm || filterEstado ? 'No se encontraron obras' : 'No hay obras creadas'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || filterEstado 
+                ? 'Intenta ajustar los filtros de búsqueda' 
+                : 'Comienza creando tu primera obra'
+              }
+            </p>
+              {!searchTerm && !filterEstado && (
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={abrirWizardCrear}
+                  className="inline-flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Crear Obra Completa</span>
+                </button>
+                <button
+                  onClick={abrirModalCrear}
+                  className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Crear Básica</span>
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {obrasFiltradas.map((obra) => (
+              <ObraCard
+                key={obra.id}
+                obra={obra}
+                onEdit={abrirModalEditar}
+                onDelete={handleDeleteObra}
+                onView={handleViewObra}
+              />
+            ))}
+        </div>
       )}
+
+        {/* Modal para crear/editar obra */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Building2 className="h-5 w-5 text-blue-600" />
+                  </div>
+                <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {editingObra ? 'Editar Obra' : 'Crear Nueva Obra'}
+                    </h2>
+                  <p className="text-sm text-gray-600">
+                      {editingObra ? 'Modifica los datos de la obra' : 'Completa los datos para crear una nueva obra'}
+                  </p>
+                  </div>
+                </div>
+                <button
+                  onClick={cerrarModal}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                    <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre de la Obra *
+                </label>
+                <input
+                      type="text"
+                  id="nombre"
+                  value={formData.nombre}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ej: Casa en Barrio Norte"
+                  required
+                />
+              </div>
+
+              <div>
+                    <label htmlFor="localizacion" className="block text-sm font-medium text-gray-700 mb-2">
+                      Ubicación
+                </label>
+                <input
+                      type="text"
+                  id="localizacion"
+                  value={formData.localizacion}
+                      onChange={(e) => setFormData(prev => ({ ...prev, localizacion: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ej: Av. Corrientes 1234, CABA"
+                />
+              </div>
+
+              <div>
+                    <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado
+                </label>
+                <select
+                  id="estado"
+                  value={formData.estado}
+                      onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {ESTADOS.map(estado => (
+                        <option key={estado} value={estado}>{estado}</option>
+                  ))}
+                </select>
+              </div>
+
+                <div>
+                    <label htmlFor="fecha_inicio" className="block text-sm font-medium text-gray-700 mb-2">
+                      Fecha de Inicio
+                  </label>
+                  <input
+                      type="date"
+                    id="fecha_inicio"
+                    value={formData.fecha_inicio}
+                      onChange={(e) => setFormData(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                    <label htmlFor="presupuesto" className="block text-sm font-medium text-gray-700 mb-2">
+                      Presupuesto (USD)
+                  </label>
+                  <input
+                      type="number"
+                      id="presupuesto"
+                      value={formData.presupuesto}
+                      onChange={(e) => setFormData(prev => ({ ...prev, presupuesto: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Ej: 50000"
+                      min="0"
+                      step="0.01"
+                  />
+                </div>
+              </div>
+
+              <div>
+                  <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción
+                </label>
+                <textarea
+                  id="descripcion"
+                  value={formData.descripcion}
+                    onChange={(e) => setFormData(prev => ({ ...prev, descripcion: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Describe los detalles de la obra..."
+                    rows={4}
+                />
+              </div>
+
+                <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                    className="flex items-center space-x-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg font-medium transition-colors duration-200"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Guardando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4" />
+                        <span>{editingObra ? 'Actualizar' : 'Crear'} Obra</span>
+                      </>
+                    )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      </div>
     </div>
   );
 }
+

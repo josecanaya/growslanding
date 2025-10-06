@@ -1,142 +1,237 @@
 'use client';
 
-import { Bell, DollarSign, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, CheckCircle, AlertTriangle, Info, Clock, Users, Calendar, Award } from 'lucide-react';
 
-interface User {
-  name: string;
-  avatar: string;
-  rating: number;
-  level: string;
+interface Notificacion {
+  id: string;
+  tipo: 'info' | 'warning' | 'success' | 'error';
+  titulo: string;
+  mensaje: string;
+  fecha: string;
+  leida: boolean;
+  accion?: string;
 }
 
-interface MiCuadrillaProps {
-  user: User;
+interface NotificacionesProps {
+  user: {
+    name: string;
+    avatar: string;
+    rating: number;
+    level: string;
+  };
 }
 
-interface Notification {
-  id: number;
-  title: string;
-  message: string;
-  type: 'payment' | 'success' | 'warning' | 'info';
-  date: string;
-  read: boolean;
-}
-
-export function Notificaciones({ user }: MiCuadrillaProps) {
-  const notifications: Notification[] = [
+export function Notificaciones({ user }: NotificacionesProps) {
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([
     {
-      id: 1,
-      title: 'Pago disponible',
-      message: 'Tu pago por la obra "Casa Familiar - San Isidro" está listo para retirar.',
-      type: 'payment',
-      date: '2024-01-15',
-      read: false
+      id: '1',
+      tipo: 'success',
+      titulo: 'Tarea completada',
+      mensaje: 'La tarea "Replanteo de cimientos" ha sido completada exitosamente.',
+      fecha: '2024-03-15T10:30:00',
+      leida: false,
+      accion: 'Ver detalles'
     },
     {
-      id: 2,
-      title: 'Obra aceptada',
-      message: 'Tu propuesta para "Edificio Residencial - Palermo" ha sido aceptada.',
-      type: 'success',
-      date: '2024-01-14',
-      read: false
+      id: '2',
+      tipo: 'warning',
+      titulo: 'Documento próximo a vencer',
+      mensaje: 'El certificado de capacitación vence en 15 días.',
+      fecha: '2024-03-15T09:15:00',
+      leida: false,
+      accion: 'Renovar'
     },
     {
-      id: 3,
-      title: 'Recordatorio de entrega',
-      message: 'La tarea "Replanteo de cimientos" debe completarse antes del 20 de enero.',
-      type: 'warning',
-      date: '2024-01-13',
-      read: true
+      id: '3',
+      tipo: 'info',
+      titulo: 'Nueva obra disponible',
+      mensaje: 'Se ha publicado una nueva obra en tu especialidad: "Casa Familiar Los Robles".',
+      fecha: '2024-03-14T16:45:00',
+      leida: true,
+      accion: 'Ver obra'
     },
     {
-      id: 4,
-      title: 'Nueva oportunidad',
-      message: 'Se ha publicado una nueva obra en tu zona: "Oficinas Corporativas - Puerto Madero".',
-      type: 'info',
-      date: '2024-01-12',
-      read: true
+      id: '4',
+      tipo: 'error',
+      titulo: 'Integrante sin seguro',
+      mensaje: 'Miguel Torres no tiene seguro vigente. Actualizar documentación.',
+      fecha: '2024-03-14T14:20:00',
+      leida: true,
+      accion: 'Actualizar'
     },
     {
-      id: 5,
-      title: 'Actualización de perfil',
-      message: 'Tu nivel ha sido actualizado a Oro. ¡Felicitaciones!',
-      type: 'success',
-      date: '2024-01-10',
-      read: true
+      id: '5',
+      tipo: 'success',
+      titulo: 'Nivel actualizado',
+      mensaje: '¡Felicidades! Has alcanzado el nivel Oro. Desbloqueaste nuevas oportunidades.',
+      fecha: '2024-03-13T11:00:00',
+      leida: true,
+      accion: 'Ver beneficios'
     }
-  ];
+  ]);
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'payment': return <DollarSign className="h-5 w-5 text-green-500" />;
-      case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-      case 'info': return <Info className="h-5 w-5 text-blue-500" />;
-      default: return <Bell className="h-5 w-5 text-gray-500" />;
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'success': return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+      case 'error': return <AlertTriangle className="h-5 w-5 text-red-600" />;
+      case 'info': return <Info className="h-5 w-5 text-blue-600" />;
+      default: return <Bell className="h-5 w-5 text-gray-600" />;
     }
   };
 
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case 'payment': return 'border-l-green-500 bg-green-50';
-      case 'success': return 'border-l-green-500 bg-green-50';
-      case 'warning': return 'border-l-yellow-500 bg-yellow-50';
-      case 'info': return 'border-l-blue-500 bg-blue-50';
-      default: return 'border-l-gray-500 bg-gray-50';
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case 'success': return 'bg-green-50 border-green-200';
+      case 'warning': return 'bg-yellow-50 border-yellow-200';
+      case 'error': return 'bg-red-50 border-red-200';
+      case 'info': return 'bg-blue-50 border-blue-200';
+      default: return 'bg-gray-50 border-gray-200';
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const getTipoTextColor = (tipo: string) => {
+    switch (tipo) {
+      case 'success': return 'text-green-900';
+      case 'warning': return 'text-yellow-900';
+      case 'error': return 'text-red-900';
+      case 'info': return 'text-blue-900';
+      default: return 'text-gray-900';
+    }
+  };
+
+  const marcarComoLeida = (id: string) => {
+    setNotificaciones(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, leida: true } : notif
+      )
+    );
+  };
+
+  const marcarTodasComoLeidas = () => {
+    setNotificaciones(prev => 
+      prev.map(notif => ({ ...notif, leida: true }))
+    );
+  };
+
+  const notificacionesNoLeidas = notificaciones.filter(n => !n.leida).length;
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-dark">Notificaciones</h2>
-        {unreadCount > 0 && (
-          <span className="bg-accent text-dark px-3 py-1 rounded-full text-sm font-medium">
-            {unreadCount} sin leer
-          </span>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Notificaciones</h2>
+          <p className="text-sm text-gray-600">
+            {notificacionesNoLeidas} sin leer
+          </p>
+        </div>
+        {notificacionesNoLeidas > 0 && (
+          <button
+            onClick={marcarTodasComoLeidas}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Marcar todas como leídas
+          </button>
         )}
       </div>
-      
-      <div className="space-y-4">
-        {notifications.map((notification) => (
-          <div 
-            key={notification.id} 
-            className={`
-              bg-white rounded-lg p-4 border-l-4 hover:shadow-md transition-shadow duration-200
-              ${getNotificationColor(notification.type)}
-              ${!notification.read ? 'ring-2 ring-accent/20' : ''}
-            `}
+
+      {/* Estadísticas rápidas */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#1A202C' }}>
+          <div className="text-lg font-bold" style={{ color: '#FEEB70' }}>{notificaciones.length}</div>
+          <div className="text-xs" style={{ color: '#A0AEC0' }}>Total</div>
+        </div>
+        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#008080' }}>
+          <div className="text-lg font-bold" style={{ color: '#FFFFFF' }}>{notificacionesNoLeidas}</div>
+          <div className="text-xs" style={{ color: '#FFFFFF' }}>Sin leer</div>
+        </div>
+        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#FEEB70' }}>
+          <div className="text-lg font-bold" style={{ color: '#1A202C' }}>
+            {notificaciones.filter(n => n.leida).length}
+          </div>
+          <div className="text-xs" style={{ color: '#1A202C' }}>Leídas</div>
+        </div>
+      </div>
+
+      {/* Lista de notificaciones */}
+      <div className="space-y-3">
+        {notificaciones.map((notificacion) => (
+          <div
+            key={notificacion.id}
+            className={`rounded-lg border p-4 transition-all duration-200 ${
+              notificacion.leida 
+                ? 'bg-white border-gray-200' 
+                : `${getTipoColor(notificacion.tipo)} border-l-4`
+            }`}
           >
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0 mt-1">
-                {getNotificationIcon(notification.type)}
+                {getTipoIcon(notificacion.tipo)}
               </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className={`font-semibold ${!notification.read ? 'text-dark' : 'text-dark/70'}`}>
-                    {notification.title}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className={`font-semibold text-sm ${
+                    notificacion.leida ? 'text-gray-900' : getTipoTextColor(notificacion.tipo)
+                  }`}>
+                    {notificacion.titulo}
                   </h3>
-                  <span className="text-sm text-dark/50">{notification.date}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-500">
+                      {new Date(notificacion.fecha).toLocaleDateString()}
+                    </span>
+                    {!notificacion.leida && (
+                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                    )}
+                  </div>
                 </div>
-                <p className={`mt-1 ${!notification.read ? 'text-dark/80' : 'text-dark/60'}`}>
-                  {notification.message}
+                <p className={`text-sm mb-3 ${
+                  notificacion.leida ? 'text-gray-600' : getTipoTextColor(notificacion.tipo)
+                }`}>
+                  {notificacion.mensaje}
                 </p>
+                {notificacion.accion && (
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        marcarComoLeida(notificacion.id);
+                        console.log(`Acción: ${notificacion.accion}`);
+                      }}
+                      className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
+                        notificacion.tipo === 'success' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : notificacion.tipo === 'warning'
+                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                          : notificacion.tipo === 'error'
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                      }`}
+                    >
+                      {notificacion.accion}
+                    </button>
+                    {!notificacion.leida && (
+                      <button
+                        onClick={() => marcarComoLeida(notificacion.id)}
+                        className="text-xs text-gray-500 hover:text-gray-700"
+                      >
+                        Marcar como leída
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
-              {!notification.read && (
-                <div className="w-2 h-2 bg-accent rounded-full flex-shrink-0 mt-2"></div>
-              )}
             </div>
           </div>
         ))}
       </div>
-      
-      {notifications.length === 0 && (
+
+      {/* Mensaje cuando no hay notificaciones */}
+      {notificaciones.length === 0 && (
         <div className="text-center py-12">
-          <Bell className="h-12 w-12 text-dark/30 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-dark/70 mb-2">No hay notificaciones</h3>
-          <p className="text-dark/50">Te notificaremos cuando tengas nuevas actualizaciones.</p>
+          <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay notificaciones</h3>
+          <p className="text-gray-600">Te notificaremos cuando haya novedades importantes.</p>
         </div>
       )}
     </div>

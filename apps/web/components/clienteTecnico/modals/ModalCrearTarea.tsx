@@ -35,6 +35,7 @@ interface Tarea {
 interface ModalCrearTareaProps {
   onClose: () => void;
   onSave: (tarea: Omit<Tarea, 'id' | 'estado' | 'evidencias'>) => void;
+  onSaveMultiple?: (tareas: Omit<Tarea, 'id' | 'estado' | 'evidencias'>[]) => void;
   obra: Obra;
   etapa: 'estructura' | 'obra_gris' | 'terminaciones';
   tareasExistentes: Tarea[];
@@ -48,7 +49,7 @@ const lideresDisponibles = [
   'Pedro Martínez'
 ];
 
-export function ModalCrearTarea({ onClose, onSave, obra, etapa, tareasExistentes }: ModalCrearTareaProps) {
+export function ModalCrearTarea({ onClose, onSave, onSaveMultiple, obra, etapa, tareasExistentes }: ModalCrearTareaProps) {
   // Obtener tareas disponibles para la etapa actual
   const tareasDisponibles = getTareasPorFase(etapa);
   
@@ -91,22 +92,29 @@ export function ModalCrearTarea({ onClose, onSave, obra, etapa, tareasExistentes
     if (formData.lider && tareasConfirmadas.length > 0) {
       console.log('🔴 Creating multiple tasks...');
       
-      // Crear una tarea para cada elemento confirmado
-      tareasConfirmadas.forEach((tareaData, index) => {
-        console.log(`🔴 Creating task ${index + 1}:`, tareaData);
-        
-        onSave({
-          nombre: tareaData.nombre,
-          lider: formData.lider,
-          fechaInicio: new Date().toISOString().split('T')[0], // Fecha actual
-          fechaFin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 días después
-          obraId: obra.id,
-          checklist: ['Seguridad', 'Orden', 'Calidad'], // Checklist básico
-          precedencia: [],
-          etapa,
-          plantilla: tareaData.id
+      // Crear un array de tareas para enviar todas de una vez
+      const tareasParaCrear = tareasConfirmadas.map((tareaData) => ({
+        nombre: tareaData.nombre,
+        lider: formData.lider,
+        fechaInicio: new Date().toISOString().split('T')[0], // Fecha actual
+        fechaFin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 días después
+        obraId: obra.id,
+        checklist: ['Seguridad', 'Orden', 'Calidad'], // Checklist básico
+        precedencia: [],
+        etapa,
+        plantilla: tareaData.id
+      }));
+      
+      console.log('🔴 All tasks prepared:', tareasParaCrear);
+      
+      // Usar onSaveMultiple si está disponible, sino usar onSave para cada tarea
+      if (onSaveMultiple) {
+        onSaveMultiple(tareasParaCrear);
+      } else {
+        tareasParaCrear.forEach((tarea) => {
+          onSave(tarea);
         });
-      });
+      }
       
       console.log('🔴 All tasks created, closing modal');
       // Cerrar el modal

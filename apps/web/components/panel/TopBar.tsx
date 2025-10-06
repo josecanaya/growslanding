@@ -1,6 +1,14 @@
 'use client';
 
-import { Power, Coffee, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { Menu, Home, Users, Bell, User, X } from 'lucide-react';
+
+interface User {
+  name: string;
+  avatar: string;
+  rating: number;
+  level: string;
+}
 
 interface TopBarProps {
   isConnected: boolean;
@@ -8,84 +16,121 @@ interface TopBarProps {
   onConnectionToggle: () => void;
   onBreakToggle: () => void;
   onLogout: () => void;
+  user: User;
+  onSectionChange: (section: string) => void;
 }
 
 export function TopBar({ 
-  isConnected, 
-  isOnBreak, 
-  onConnectionToggle, 
-  onBreakToggle, 
-  onLogout 
+  user,
+  onSectionChange
 }: TopBarProps) {
+  const [showSideMenu, setShowSideMenu] = useState(false);
+
+  const menuItems = [
+    { id: 'tareas', label: 'Tareas', icon: Home },
+    { id: 'cuadrilla', label: 'Cuadrilla', icon: Users },
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'cuenta', label: 'Perfil', icon: User },
+  ];
+
+  const handleMenuClick = (sectionId: string) => {
+    onSectionChange(sectionId);
+    setShowSideMenu(false);
+  };
+
   return (
-    <div className="bg-oscuro text-white p-4 border-b border-white/20">
-      <div className="flex items-center justify-between">
-        {/* Left side - Info */}
-        <div className="flex items-center space-x-6">
-          <div className="text-sm">
-            <span className="text-white/70">Tarea:</span>
-            <span className="ml-2 font-medium">Replanteo de cimientos</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-white/70">Obra:</span>
-            <span className="ml-2 font-medium">Casa Familiar</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-white/70">Tiempo:</span>
-            <span className="ml-2 font-medium">2h 30m</span>
-          </div>
-          <div className="text-sm">
-            <span className="text-white/70">Acumulado:</span>
-            <span className="ml-2 font-medium">$15,200</span>
-          </div>
+    <>
+      {/* Header minimalista - solo avatar */}
+      <header className="sticky top-0 z-40 shadow-lg" style={{ backgroundColor: '#1A202C' }}>
+        <div className="flex items-center justify-between px-4 py-3">
+          {/* Avatar clickeable */}
+          <button
+            onClick={() => setShowSideMenu(true)}
+            className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md hover:shadow-lg transition-shadow"
+            style={{ backgroundColor: '#FFFFFF', color: '#1A202C' }}
+          >
+            {user.avatar}
+          </button>
+          
+          {/* Espacio para balance visual */}
+          <div></div>
         </div>
+      </header>
 
-        {/* Right side - Actions */}
-        <div className="flex items-center space-x-3">
-          {/* Connection Toggle */}
-          <button
-            onClick={onConnectionToggle}
-            className={`
-              flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
-              ${isConnected 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : 'bg-red-600 hover:bg-red-700'
-              }
-            `}
-          >
-            <Power className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {isConnected ? 'Conectado' : 'Desconectado'}
-            </span>
-          </button>
+      {/* Menú lateral (hamburguesa) */}
+      {showSideMenu && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowSideMenu(false)}
+          />
+          
+          {/* Menú lateral */}
+          <div className="fixed top-0 left-0 h-full w-80 shadow-xl z-50 transform transition-transform duration-300 ease-in-out" style={{ backgroundColor: '#1A202C' }}>
+            <div className="flex flex-col h-full">
+              {/* Header del menú */}
+              <div className="p-6 border-b" style={{ borderColor: '#008080' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: '#FFFFFF', color: '#1A202C' }}>
+                      {user.avatar}
+                    </div>
+                    <div>
+                      <h2 className="font-semibold text-lg" style={{ color: '#FFFFFF' }}>{user.name}</h2>
+                      <p className="text-sm" style={{ color: '#A0AEC0' }}>Líder de cuadrilla</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSideMenu(false)}
+                    className="transition-colors"
+                    style={{ color: '#FFFFFF' }}
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+              </div>
 
-          {/* Break Toggle */}
-          <button
-            onClick={onBreakToggle}
-            className={`
-              flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors duration-200
-              ${isOnBreak 
-                ? 'bg-acento text-oscuro hover:bg-acento/90' 
-                : 'bg-white/10 hover:bg-white/20'
-              }
-            `}
-          >
-            <Coffee className="h-4 w-4" />
-            <span className="text-sm font-medium">
-              {isOnBreak ? 'En descanso' : 'Descanso'}
-            </span>
-          </button>
+              {/* Items del menú */}
+              <div className="flex-1 py-6" style={{ backgroundColor: '#1A202C' }}>
+                <nav className="space-y-2">
+                  {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleMenuClick(item.id)}
+                        className="w-full flex items-center space-x-4 px-6 py-4 text-left transition-colors hover:opacity-80"
+                        style={{ backgroundColor: '#1A202C', color: '#FFFFFF' }}
+                      >
+                        <Icon className="h-6 w-6" style={{ color: '#FFFFFF' }} />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
 
-          {/* Logout */}
-          <button
-            onClick={onLogout}
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors duration-200"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="text-sm font-medium">Cerrar sesión</span>
-          </button>
-        </div>
-      </div>
-    </div>
+              {/* Footer del menú */}
+              <div className="p-6 border-t" style={{ borderColor: '#008080', backgroundColor: '#1A202C' }}>
+                <button
+                  onClick={() => {
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('isConnected');
+                    localStorage.removeItem('isOnBreak');
+                    window.location.href = '/auth/login';
+                  }}
+                  className="w-full flex items-center space-x-4 px-4 py-3 text-left rounded-lg transition-colors hover:opacity-80"
+                  style={{ backgroundColor: '#1A202C', color: '#FFFFFF' }}
+                >
+                  <span className="text-lg">🚪</span>
+                  <span className="font-medium">Cerrar sesión</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

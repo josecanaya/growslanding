@@ -145,7 +145,13 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
     if (response.ok) {
       feedback.pushMessage('Guardado correctamente', 'success');
       reset?.();
-      router.refresh();
+      
+      // Si se está creando una obra, redirigir al cliente técnico sección obras
+      if (url === '/api/obras') {
+        router.push('/cliente-tecnico#obras');
+      } else {
+        router.refresh();
+      }
     } else {
       const error = await response.json().catch(() => ({ message: 'Error' }));
       feedback.pushMessage(error.message ?? 'No se pudo guardar', 'error');
@@ -323,9 +329,10 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
             <div className="md:col-span-2">
               <button
                 type="submit"
-                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                disabled={obraForm.formState.isSubmitting}
               >
-                Guardar obra
+                {obraForm.formState.isSubmitting ? 'Guardando…' : 'Guardar obra'}
               </button>
             </div>
           </form>
@@ -363,9 +370,10 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
             <div className="md:col-span-2">
               <button
                 type="submit"
-                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                disabled={socioForm.formState.isSubmitting}
               >
-                Guardar socio
+                {socioForm.formState.isSubmitting ? 'Guardando…' : 'Guardar socio'}
               </button>
             </div>
           </form>
@@ -586,9 +594,9 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
               <button
                 type="submit"
                 className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
-                disabled={obras.length === 0}
+                disabled={obras.length === 0 || tareaForm.formState.isSubmitting}
               >
-                Guardar tarea
+                {tareaForm.formState.isSubmitting ? 'Guardando…' : 'Guardar tarea'}
               </button>
             </div>
           </form>

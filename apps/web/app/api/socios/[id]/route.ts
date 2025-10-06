@@ -1,4 +1,4 @@
-import type { RouteContext } from 'next';
+
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -11,10 +11,10 @@ export const runtime = 'nodejs';
 
 export async function DELETE(
   _request: Request,
-  context: RouteContext<{ id: string }>
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const params = await context.params;
+    const { id } = await params;
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
     const {

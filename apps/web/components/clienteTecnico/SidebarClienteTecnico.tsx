@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Building2, DollarSign, CheckSquare, User } from 'lucide-react';
+import { MessageCircle, Building2, Users, CheckSquare, User, Bell, Calendar, ClipboardList } from 'lucide-react';
 
 interface SidebarClienteTecnicoProps {
   activeSection: string;
@@ -11,10 +11,15 @@ export function SidebarClienteTecnico({ activeSection, onSectionChange }: Sideba
   const menuItems = [
     { id: 'chat', label: 'Chat', icon: MessageCircle },
     { id: 'obras', label: 'Obras', icon: Building2 },
-    { id: 'presupuesto', label: 'Presupuesto', icon: DollarSign },
-    { id: 'validar', label: 'Validar tareas', icon: CheckSquare },
+    { id: 'tareas', label: 'Tareas', icon: ClipboardList },
+    { id: 'cuadrillas', label: 'Cuadrillas', icon: Users },
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
+    { id: 'calendario', label: 'Calendario', icon: Calendar },
     { id: 'cuenta', label: 'Cuenta', icon: User },
   ];
+
+  // Debug: Log para verificar que el sidebar se está renderizando
+  console.log('SidebarClienteTecnico renderizado, activeSection:', activeSection);
 
   return (
     <div className="fixed left-0 top-0 h-full w-[220px] bg-primario text-white flex flex-col">

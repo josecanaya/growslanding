@@ -15,13 +15,4407 @@
    - Environments: .env
 
  ✓ Starting...
- ✓ Ready in 2.2s
+ ✓ Ready in 5.5s
  ○ Compiling / ...
- ✓ Compiled / in 3.2s (545 modules)
- GET / 307 in 3674ms
- ○ Compiling /panel ...
- ✓ Compiled /panel in 2.1s (664 modules)
- GET /panel 200 in 2413ms
- ✓ Compiled /_not-found in 403ms (655 modules)
- GET /landing 404 in 829ms
- ELIFECYCLE  Command failed with exit code 3221225786.
+ ✓ Compiled /cliente-tecnico in 5.5s (730 modules)
+ GET /cliente-tecnico 200 in 2730ms
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 984ms (898 modules)
+ POST /api/obras 201 in 3408ms
+ POST /api/obras 201 in 3408ms
+ POST /api/obras 201 in 3440ms
+ POST /api/obras 201 in 3444ms
+ POST /api/obras 201 in 803ms
+ ✓ Compiled /api/tareas in 486ms (890 modules)
+ POST /api/tareas 201 in 1381ms
+ POST /api/tareas 201 in 1376ms
+ POST /api/tareas 201 in 1382ms
+ POST /api/tareas 201 in 1385ms
+ POST /api/tareas 201 in 1419ms
+ POST /api/tareas 201 in 1512ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 612ms
+ POST /api/tareas 201 in 593ms
+ POST /api/tareas 201 in 635ms
+ POST /api/tareas 201 in 633ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 607ms
+ POST /api/tareas 201 in 625ms
+ POST /api/tareas 201 in 686ms
+ POST /api/tareas 201 in 711ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 526ms
+ POST /api/obras 201 in 402ms
+ POST /api/obras 201 in 422ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 520ms
+ POST /api/obras 201 in 421ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 642ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 729ms
+ POST /api/tareas 201 in 598ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 634ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 879ms
+ POST /api/tareas 201 in 847ms
+ POST /api/tareas 201 in 830ms
+ POST /api/tareas 201 in 891ms
+ POST /api/tareas 201 in 911ms
+ POST /api/tareas 201 in 802ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 609ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 613ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 639ms
+ POST /api/tareas 201 in 567ms
+ POST /api/obras 201 in 394ms
+ POST /api/tareas 201 in 624ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 666ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 543ms
+ POST /api/obras 201 in 370ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 642ms
+ POST /api/tareas 201 in 654ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 680ms
+ POST /api/tareas 201 in 695ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 633ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 706ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 557ms
+ POST /api/obras 201 in 403ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 657ms
+ POST /api/obras 201 in 427ms
+ POST /api/obras 201 in 427ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 642ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 636ms
+ POST /api/tareas 201 in 669ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 655ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 671ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 577ms
+ POST /api/obras 201 in 414ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 582ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 609ms
+ POST /api/tareas 201 in 609ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 616ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 664ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 526ms
+ POST /api/obras 201 in 409ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 641ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 605ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 614ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 538ms
+ POST /api/obras 201 in 407ms
+ POST /api/obras 201 in 440ms
+ POST /api/obras 201 in 447ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 535ms
+ POST /api/obras 201 in 392ms
+ POST /api/obras 201 in 404ms
+ POST /api/obras 201 in 434ms
+ POST /api/obras 201 in 403ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 488ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 481ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 715ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 588ms
+ POST /api/tareas 201 in 765ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 603ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 771ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 800ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 474ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 644ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 490ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 489ms
+ POST /api/tareas 201 in 657ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 470ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 606ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 598ms
+ POST /api/tareas 201 in 474ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 496ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 632ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 678ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 610ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 625ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 682ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 548ms
+ ✓ Compiled in 407ms (319 modules)
+ GET /cliente-tecnico 200 in 151ms
+ ✓ Compiled in 337ms (319 modules)
+ GET /cliente-tecnico 200 in 62ms
+ ✓ Compiled in 318ms (319 modules)
+ GET /cliente-tecnico 200 in 44ms
+ ✓ Compiled in 262ms (319 modules)
+ GET /cliente-tecnico 200 in 38ms
+ POST /api/obras 201 in 941ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 633ms
+ POST /api/tareas 201 in 805ms
+ POST /api/tareas 201 in 807ms
+ POST /api/tareas 201 in 808ms
+ POST /api/tareas 200 in 830ms
+ POST /api/tareas 200 in 251ms
+ GET /cliente-tecnico 200 in 223ms
+ POST /api/obras 201 in 539ms
+ POST /api/obras 201 in 552ms
+ POST /api/obras 201 in 557ms
+ POST /api/obras 201 in 579ms
+ POST /api/obras 201 in 543ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 630ms
+ POST /api/tareas 201 in 638ms
+ POST /api/tareas 201 in 703ms
+ POST /api/tareas 201 in 735ms
+ POST /api/tareas 201 in 782ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 632ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 666ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 693ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 582ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 618ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 606ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 592ms
+ POST /api/obras 201 in 407ms
+ POST /api/tareas 201 in 554ms
+ POST /api/obras 201 in 409ms
+ POST /api/tareas 201 in 602ms
+ POST /api/tareas 201 in 694ms
+ POST /api/obras 201 in 410ms
+ POST /api/obras 201 in 412ms
+ POST /api/obras 201 in 419ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 596ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 593ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 611ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 612ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 588ms
+ POST /api/tareas 201 in 582ms
+ POST /api/tareas 201 in 598ms
+ POST /api/tareas 201 in 647ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 487ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 481ms
+ POST /api/tareas 201 in 492ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 710ms
+ POST /api/tareas 201 in 667ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 673ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 518ms
+ POST /api/obras 201 in 421ms
+ POST /api/tareas 201 in 535ms
+ POST /api/obras 201 in 397ms
+ POST /api/obras 201 in 375ms
+ POST /api/obras 201 in 448ms
+ POST /api/obras 201 in 373ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 615ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 484ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 646ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 665ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 645ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 620ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 599ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 672ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 654ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 492ms
+ POST /api/tareas 201 in 496ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 492ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 532ms
+ ✓ Compiled in 389ms (319 modules)
+ GET /cliente-tecnico 200 in 156ms
+ POST /api/obras 201 in 792ms
+ POST /api/obras 201 in 538ms
+ POST /api/obras 201 in 497ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 618ms
+ POST /api/tareas 201 in 661ms
+ POST /api/tareas 201 in 670ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 582ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 596ms
+ POST /api/tareas 201 in 556ms
+ POST /api/obras 201 in 367ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 723ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 496ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 544ms
+ POST /api/obras 201 in 384ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 487ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 531ms
+ POST /api/obras 201 in 409ms
+ POST /api/obras 201 in 401ms
+ POST /api/tareas 201 in 572ms
+ POST /api/obras 201 in 393ms
+ POST /api/obras 201 in 381ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 600ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 648ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 543ms
+ POST /api/obras 201 in 406ms
+ POST /api/obras 201 in 469ms
+ POST /api/tareas 201 in 560ms
+ POST /api/obras 201 in 402ms
+ POST /api/tareas 201 in 583ms
+ POST /api/obras 201 in 428ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 605ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 624ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 692ms
+ POST /api/tareas 201 in 703ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 614ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 482ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 517ms
+ POST /api/obras 201 in 404ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 515ms
+ POST /api/obras 201 in 445ms
+ POST /api/tareas 201 in 539ms
+ POST /api/obras 201 in 405ms
+ POST /api/obras 201 in 381ms
+ POST /api/obras 201 in 440ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 623ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 496ms
+ POST /api/tareas 201 in 603ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 596ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 593ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 599ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 489ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 619ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 614ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 622ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 548ms
+ POST /api/obras 201 in 378ms
+ POST /api/tareas 201 in 521ms
+ POST /api/obras 201 in 391ms
+ POST /api/obras 201 in 382ms
+ POST /api/obras 201 in 501ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 628ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 488ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 496ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 638ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 654ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 670ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 690ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 476ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 707ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 486ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 646ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 528ms
+ ✓ Compiled in 360ms (319 modules)
+ GET /cliente-tecnico 200 in 72ms
+ ✓ Compiled in 243ms (319 modules)
+ GET /cliente-tecnico 200 in 33ms
+ ✓ Compiled in 287ms (319 modules)
+ GET /cliente-tecnico 200 in 40ms
+ POST /api/obras 201 in 718ms
+ POST /api/obras 201 in 589ms
+ POST /api/obras 201 in 1428ms
+ POST /api/obras 201 in 557ms
+ POST /api/obras 201 in 560ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 639ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 821ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 652ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 606ms
+ POST /api/obras 201 in 511ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 600ms
+ POST /api/tareas 201 in 611ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 588ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 616ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 539ms
+ POST /api/obras 201 in 395ms
+ POST /api/obras 201 in 439ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 698ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 679ms
+ POST /api/tareas 201 in 612ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 509ms
+ POST /api/obras 201 in 394ms
+ POST /api/obras 201 in 427ms
+ POST /api/obras 201 in 442ms
+ POST /api/obras 201 in 432ms
+ POST /api/obras 201 in 403ms
+ POST /api/obras 201 in 423ms
+ POST /api/obras 201 in 450ms
+ POST /api/obras 201 in 628ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 662ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 697ms
+ POST /api/obras 201 in 581ms
+ POST /api/obras 201 in 604ms
+ POST /api/obras 201 in 618ms
+ POST /api/obras 201 in 604ms
+ POST /api/tareas 201 in 866ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 642ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 636ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 483ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 633ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 631ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 613ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 733ms
+ POST /api/tareas 201 in 668ms
+ POST /api/tareas 201 in 635ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 728ms
+ POST /api/tareas 201 in 727ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 652ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 621ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 730ms
+ POST /api/tareas 201 in 716ms
+ POST /api/tareas 201 in 749ms
+ POST /api/tareas 201 in 738ms
+ POST /api/tareas 201 in 690ms
+ POST /api/tareas 201 in 790ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 481ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 485ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 660ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 700ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 619ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 641ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 709ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 650ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 677ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 596ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 672ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 581ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 674ms
+ POST /api/tareas 201 in 580ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 676ms
+ POST /api/tareas 201 in 698ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 680ms
+ POST /api/tareas 201 in 647ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 605ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 690ms
+ POST /api/tareas 201 in 631ms
+ POST /api/tareas 201 in 663ms
+ POST /api/tareas 201 in 680ms
+ POST /api/tareas 201 in 640ms
+ POST /api/tareas 201 in 716ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 636ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 571ms
+ POST /api/obras 201 in 551ms
+ POST /api/tareas 201 in 611ms
+ POST /api/tareas 201 in 646ms
+ POST /api/tareas 201 in 683ms
+ POST /api/tareas 201 in 749ms
+ POST /api/tareas 201 in 761ms
+ POST /api/tareas 201 in 815ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 535ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 591ms
+ GET /cliente-tecnico 200 in 81ms
+ POST /api/obras 201 in 439ms
+ POST /api/obras 201 in 444ms
+ POST /api/obras 201 in 452ms
+ POST /api/obras 201 in 459ms
+ POST /api/obras 201 in 796ms
+ POST /api/obras 201 in 590ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 599ms
+ POST /api/tareas 201 in 625ms
+ POST /api/tareas 201 in 632ms
+ POST /api/tareas 201 in 637ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 669ms
+ POST /api/tareas 201 in 496ms
+ POST /api/obras 201 in 427ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 525ms
+ POST /api/obras 201 in 392ms
+ POST /api/tareas 201 in 535ms
+ POST /api/obras 201 in 430ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 527ms
+ POST /api/obras 201 in 392ms
+ POST /api/obras 201 in 410ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 566ms
+ POST /api/obras 201 in 393ms
+ POST /api/obras 201 in 385ms
+ POST /api/obras 201 in 407ms
+ POST /api/obras 201 in 398ms
+ POST /api/obras 201 in 386ms
+ POST /api/obras 201 in 421ms
+ POST /api/obras 201 in 393ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 631ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 649ms
+ POST /api/tareas 201 in 484ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 617ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 613ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 659ms
+ POST /api/tareas 201 in 696ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 548ms
+ POST /api/obras 201 in 429ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 484ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 483ms
+ POST /api/tareas 201 in 493ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 716ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 603ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 610ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 551ms
+ POST /api/obras 201 in 365ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 525ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 620ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 499ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 488ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 669ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 523ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 634ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 485ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 709ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 488ms
+ POST /api/tareas 201 in 570ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 609ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 615ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 483ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 534ms
+ POST /api/tareas 201 in 509ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 618ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 668ms
+ POST /api/tareas 201 in 654ms
+ POST /api/tareas 201 in 685ms
+ POST /api/tareas 201 in 638ms
+ POST /api/tareas 201 in 735ms
+ POST /api/tareas 201 in 653ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 540ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 596ms
+ POST /api/tareas 201 in 476ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 518ms
+ POST /api/tareas 201 in 494ms
+ POST /api/tareas 201 in 611ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 517ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 603ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 492ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 471ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 474ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 488ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 502ms
+ POST /api/tareas 201 in 489ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 512ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 507ms
+ POST /api/tareas 201 in 505ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 475ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 644ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 483ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 609ms
+ POST /api/tareas 201 in 513ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 562ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 500ms
+ POST /api/tareas 201 in 511ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 516ms
+ POST /api/obras 201 in 404ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 522ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 495ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 498ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 516ms
+ POST /api/tareas 201 in 497ms
+ POST /api/tareas 201 in 501ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 514ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 532ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 491ms
+ POST /api/tareas 201 in 654ms
+ POST /api/tareas 201 in 536ms
+ POST /api/tareas 201 in 487ms
+ POST /api/tareas 201 in 599ms
+ POST /api/tareas 201 in 487ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 530ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 529ms
+ POST /api/tareas 201 in 504ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 521ms
+ POST /api/tareas 201 in 581ms
+ ✓ Compiled in 1229ms (718 modules)
+ GET /cliente-tecnico 200 in 399ms
+ ✓ Compiled in 561ms (718 modules)
+ GET /cliente-tecnico 200 in 220ms
+ ✓ Compiled in 590ms (718 modules)
+ GET /cliente-tecnico 200 in 77ms
+ ✓ Compiled in 338ms (718 modules)
+ GET /cliente-tecnico 200 in 73ms
+ ✓ Compiled in 639ms (718 modules)
+ GET /cliente-tecnico 200 in 156ms
+ ✓ Compiled in 520ms (718 modules)
+ GET /cliente-tecnico 200 in 88ms
+ ✓ Compiled in 372ms (718 modules)
+ GET /cliente-tecnico 200 in 67ms
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 968ms (583 modules)
+ POST /api/obras 201 in 1903ms
+ ✓ Compiled /api/tareas in 229ms (585 modules)
+ POST /api/tareas 201 in 1003ms
+ POST /api/tareas 201 in 1062ms
+ POST /api/tareas 201 in 1065ms
+ POST /api/tareas 201 in 1080ms
+ POST /api/tareas 201 in 1090ms
+ POST /api/tareas 201 in 1104ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 506ms
+ POST /api/tareas 201 in 726ms
+ POST /api/tareas 201 in 706ms
+ POST /api/tareas 201 in 690ms
+ POST /api/tareas 201 in 707ms
+ POST /api/tareas 200 in 238ms
+ GET /cliente-tecnico 200 in 272ms
+ POST /api/obras 201 in 407ms
+ POST /api/obras 201 in 410ms
+ POST /api/obras 201 in 425ms
+ POST /api/obras 201 in 531ms
+ POST /api/obras 201 in 553ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 663ms
+ POST /api/tareas 201 in 662ms
+ POST /api/tareas 201 in 675ms
+ POST /api/tareas 201 in 709ms
+ POST /api/tareas 201 in 748ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 575ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 600ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 543ms
+ POST /api/obras 201 in 409ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 617ms
+ POST /api/obras 201 in 436ms
+ POST /api/obras 201 in 440ms
+ POST /api/obras 201 in 403ms
+ POST /api/obras 201 in 433ms
+ POST /api/obras 201 in 433ms
+ POST /api/obras 201 in 433ms
+ POST /api/obras 201 in 400ms
+ POST /api/tareas 201 in 519ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 662ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 537ms
+ POST /api/tareas 201 in 520ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 558ms
+ POST /api/tareas 201 in 564ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 617ms
+ POST /api/tareas 201 in 606ms
+ POST /api/tareas 201 in 592ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 524ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 550ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 568ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 549ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 594ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 656ms
+ POST /api/tareas 201 in 664ms
+ POST /api/tareas 201 in 544ms
+ POST /api/tareas 201 in 545ms
+ POST /api/tareas 201 in 579ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 637ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 583ms
+ POST /api/tareas 201 in 567ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 604ms
+ POST /api/tareas 201 in 577ms
+ POST /api/tareas 201 in 598ms
+ POST /api/tareas 201 in 632ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 588ms
+ POST /api/tareas 201 in 617ms
+ POST /api/tareas 201 in 624ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 619ms
+ POST /api/tareas 201 in 630ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 602ms
+ POST /api/tareas 201 in 531ms
+ POST /api/tareas 201 in 625ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 587ms
+ POST /api/tareas 201 in 724ms
+ POST /api/tareas 201 in 593ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 590ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 603ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 561ms
+ POST /api/tareas 201 in 638ms
+ POST /api/tareas 201 in 578ms
+ POST /api/tareas 201 in 595ms
+ POST /api/tareas 201 in 560ms
+ POST /api/tareas 201 in 674ms
+ POST /api/tareas 201 in 565ms
+ POST /api/tareas 201 in 547ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 597ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 566ms
+ POST /api/tareas 201 in 616ms
+ POST /api/tareas 201 in 614ms
+ POST /api/tareas 201 in 548ms
+ POST /api/tareas 201 in 602ms
+ POST /api/tareas 201 in 553ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 538ms
+ POST /api/tareas 201 in 591ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 557ms
+ POST /api/tareas 201 in 680ms
+ POST /api/tareas 201 in 613ms
+ POST /api/tareas 201 in 539ms
+ POST /api/tareas 201 in 526ms
+ POST /api/tareas 201 in 601ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 582ms
+ POST /api/tareas 201 in 571ms
+ POST /api/tareas 201 in 546ms
+ POST /api/tareas 201 in 527ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 584ms
+ POST /api/tareas 201 in 574ms
+ POST /api/tareas 201 in 626ms
+ POST /api/tareas 201 in 541ms
+ POST /api/tareas 201 in 573ms
+ POST /api/tareas 201 in 515ms
+ POST /api/tareas 201 in 686ms
+ POST /api/tareas 201 in 563ms
+ POST /api/tareas 201 in 528ms
+ POST /api/tareas 201 in 642ms
+ POST /api/tareas 201 in 569ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 606ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 556ms
+ POST /api/tareas 201 in 601ms
+ ✓ Compiled in 1483ms (904 modules)
+ GET /cliente-tecnico 200 in 194ms
+ ✓ Compiled in 733ms (904 modules)
+ GET /cliente-tecnico 200 in 101ms
+ ✓ Compiled in 449ms (904 modules)
+ GET /cliente-tecnico 200 in 73ms
+ ✓ Compiled in 494ms (718 modules)
+ GET /cliente-tecnico 200 in 163ms
+ ✓ Compiled in 705ms (718 modules)
+ GET /cliente-tecnico 200 in 200ms
+ GET /cliente-tecnico 200 in 175ms
+ ✓ Compiled /api/obras in 168ms (583 modules)
+ POST /api/obras 201 in 1885ms
+ POST /api/obras 201 in 1887ms
+ POST /api/obras 201 in 1891ms
+ POST /api/obras 201 in 1898ms
+ POST /api/obras 201 in 671ms
+ ✓ Compiled /api/tareas in 167ms (585 modules)
+ POST /api/tareas 201 in 956ms
+ POST /api/tareas 201 in 1002ms
+ POST /api/tareas 201 in 1015ms
+ POST /api/tareas 201 in 1029ms
+ POST /api/tareas 201 in 1043ms
+ POST /api/tareas 201 in 1138ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 589ms
+ POST /api/tareas 201 in 576ms
+ POST /api/tareas 201 in 552ms
+ POST /api/tareas 201 in 771ms
+ POST /api/tareas 201 in 608ms
+ POST /api/tareas 201 in 559ms
+ POST /api/tareas 201 in 554ms
+ POST /api/tareas 201 in 870ms
+ POST /api/tareas 201 in 878ms
+ POST /api/tareas 201 in 640ms
+ POST /api/tareas 201 in 661ms
+ ✓ Compiled in 658ms (718 modules)
+ GET /cliente-tecnico 200 in 248ms
+ GET /cliente-tecnico 200 in 180ms
+ ✓ Compiled /api/obras in 262ms (583 modules)
+ POST /api/obras 201 in 1920ms
+ POST /api/obras 201 in 1924ms
+ POST /api/obras 201 in 1927ms
+ POST /api/obras 201 in 1937ms
+ POST /api/obras 201 in 518ms
+ ✓ Compiled /api/tareas in 161ms (585 modules)
+ POST /api/tareas 201 in 888ms
+ POST /api/tareas 201 in 909ms
+ POST /api/tareas 201 in 915ms
+ POST /api/tareas 201 in 929ms
+ POST /api/tareas 201 in 949ms
+ POST /api/tareas 201 in 1007ms
+ POST /api/tareas 201 in 510ms
+ POST /api/tareas 201 in 508ms
+ POST /api/tareas 201 in 503ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 586ms
+ POST /api/tareas 201 in 551ms
+ POST /api/tareas 201 in 675ms
+ POST /api/tareas 201 in 690ms
+ POST /api/tareas 201 in 828ms
+ POST /api/tareas 201 in 857ms
+ POST /api/tareas 201 in 1043ms
+ ✓ Compiled in 1799ms (718 modules)
+ GET /cliente-tecnico 200 in 429ms
+ ✓ Compiled in 990ms (718 modules)
+ GET /cliente-tecnico 200 in 132ms
+ ✓ Compiled /api/tareas in 213ms (583 modules)
+ POST /api/tareas 201 in 1062ms
+ POST /api/tareas 201 in 1149ms
+ POST /api/tareas 201 in 1203ms
+ ✓ Compiled /api/obras in 261ms (583 modules)
+ POST /api/obras 201 in 1332ms
+ ✓ Compiled /api/tareas in 171ms (585 modules)
+ POST /api/tareas 201 in 857ms
+ POST /api/tareas 201 in 862ms
+ POST /api/tareas 201 in 869ms
+ POST /api/tareas 201 in 896ms
+ POST /api/tareas 201 in 914ms
+ POST /api/tareas 201 in 925ms
+ POST /api/tareas 201 in 585ms
+ POST /api/tareas 201 in 631ms
+ POST /api/tareas 201 in 616ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 629ms
+ POST /api/tareas 201 in 612ms
+ POST /api/tareas 201 in 555ms
+ POST /api/tareas 201 in 542ms
+ POST /api/tareas 201 in 537ms
+ ✓ Compiled in 920ms (718 modules)
+ GET /cliente-tecnico 200 in 225ms
+ ✓ Compiled in 1111ms (718 modules)
+ GET /cliente-tecnico 200 in 367ms
+ ✓ Compiled in 725ms (718 modules)
+ GET /cliente-tecnico 200 in 80ms
+ ✓ Compiled in 462ms (718 modules)
+ GET /cliente-tecnico 200 in 74ms
+ ✓ Compiled in 588ms (718 modules)
+ GET /cliente-tecnico 200 in 72ms
+ ○ Compiling /api/tareas ...
+ ✓ Compiled /api/tareas in 1100ms (583 modules)
+ POST /api/tareas 201 in 2529ms
+ POST /api/tareas 201 in 662ms
+ POST /api/tareas 201 in 533ms
+ POST /api/tareas 201 in 725ms
+ POST /api/tareas 201 in 588ms
+ POST /api/tareas 201 in 572ms
+ POST /api/tareas 201 in 543ms
+ POST /api/tareas 201 in 604ms
+ ✓ Compiled /api/obras in 340ms (585 modules)
+ POST /api/obras 201 in 1304ms
+ POST /api/obras 201 in 1307ms
+ POST /api/obras 201 in 1326ms
+ POST /api/obras 201 in 1428ms
+ POST /api/obras 201 in 475ms
+ POST /api/obras 201 in 492ms
+ POST /api/obras 201 in 509ms
+ POST /api/obras 201 in 538ms
+ POST /api/obras 201 in 414ms
+ POST /api/obras 201 in 421ms
+ POST /api/obras 201 in 423ms
+ POST /api/obras 201 in 441ms
+ ✓ Compiled in 1275ms (718 modules)
+ GET /cliente-tecnico 200 in 253ms
+ ✓ Compiled in 238ms (319 modules)
+ GET /cliente-tecnico 200 in 43ms
+ ✓ Compiled in 232ms (319 modules)
+ GET /cliente-tecnico 200 in 29ms
+ ✓ Compiled in 1464ms (718 modules)
+ GET /cliente-tecnico 200 in 308ms
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 911ms (583 modules)
+ POST /api/obras 400 in 3120ms
+ POST /api/obras 400 in 3134ms
+ POST /api/obras 400 in 3131ms
+ POST /api/obras 400 in 3148ms
+ POST /api/obras 400 in 538ms
+ ✓ Compiled /api/tareas in 275ms (585 modules)
+ POST /api/tareas 400 in 465ms
+ POST /api/tareas 400 in 463ms
+ POST /api/tareas 400 in 463ms
+ POST /api/tareas 400 in 459ms
+ POST /api/tareas 400 in 460ms
+ POST /api/tareas 400 in 471ms
+ POST /api/tareas 400 in 46ms
+ POST /api/tareas 400 in 90ms
+ POST /api/tareas 400 in 89ms
+ POST /api/tareas 400 in 89ms
+ POST /api/tareas 400 in 89ms
+ POST /api/tareas 400 in 89ms
+ POST /api/tareas 400 in 89ms
+ POST /api/tareas 400 in 42ms
+ POST /api/tareas 400 in 78ms
+ POST /api/tareas 400 in 78ms
+ POST /api/tareas 400 in 78ms
+ POST /api/tareas 400 in 78ms
+ POST /api/tareas 400 in 58ms
+ GET /cliente-tecnico 200 in 404ms
+ ✓ Compiled in 901ms (718 modules)
+ GET /cliente-tecnico 200 in 223ms
+ ✓ Compiled /api/obras in 274ms (583 modules)
+ POST /api/obras 400 in 1667ms
+ POST /api/obras 400 in 1670ms
+ POST /api/obras 400 in 1675ms
+ POST /api/obras 400 in 1699ms
+ POST /api/obras 400 in 1345ms
+ ✓ Compiled /api/tareas in 274ms (585 modules)
+ POST /api/tareas 400 in 421ms
+ POST /api/tareas 400 in 418ms
+ POST /api/tareas 400 in 417ms
+ POST /api/tareas 400 in 417ms
+ POST /api/tareas 400 in 417ms
+ POST /api/tareas 400 in 428ms
+ POST /api/tareas 400 in 56ms
+ POST /api/tareas 400 in 99ms
+ POST /api/tareas 400 in 98ms
+ POST /api/tareas 400 in 98ms
+ POST /api/tareas 400 in 98ms
+ POST /api/tareas 400 in 98ms
+ POST /api/tareas 400 in 91ms
+ POST /api/tareas 400 in 62ms
+ POST /api/tareas 400 in 93ms
+ POST /api/tareas 400 in 93ms
+ POST /api/tareas 400 in 93ms
+ POST /api/tareas 400 in 93ms
+ POST /api/tareas 400 in 57ms
+ POST /api/tareas 400 in 54ms
+ POST /api/tareas 400 in 31ms
+ ✓ Compiled in 860ms (904 modules)
+ GET /cliente-tecnico 200 in 199ms
+ ✓ Compiled in 382ms (718 modules)
+ GET /cliente-tecnico 200 in 175ms
+ ✓ Compiled in 357ms (718 modules)
+ GET /cliente-tecnico 200 in 66ms
+ ✓ Compiled in 355ms (718 modules)
+ GET /cliente-tecnico 200 in 77ms
+ ✓ Compiled in 345ms (718 modules)
+ GET /cliente-tecnico 200 in 64ms
+ GET /cliente-tecnico 200 in 230ms
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 1115ms (583 modules)
+ POST /api/obras 400 in 2242ms
+ POST /api/obras 400 in 2246ms
+ POST /api/obras 400 in 2247ms
+ POST /api/obras 400 in 2294ms
+ POST /api/obras 400 in 423ms
+ POST /api/obras 400 in 423ms
+ POST /api/obras 400 in 459ms
+ POST /api/obras 400 in 513ms
+ POST /api/obras 400 in 14ms
+ ✓ Compiled /api/tareas in 318ms (585 modules)
+ POST /api/tareas 400 in 471ms
+ POST /api/tareas 400 in 470ms
+ POST /api/tareas 400 in 471ms
+ ✓ Compiled in 999ms (718 modules)
+ GET /cliente-tecnico 200 in 360ms
+ ✓ Compiled in 482ms (718 modules)
+ GET /cliente-tecnico 200 in 110ms
+ ⨯ ./components/clienteTecnico/ObrasSection.tsx
+Error:   [31mx[0m Expression expected
+     ,-[[36;1;4mC:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\apps\web\components\clienteTecnico\ObrasSection.tsx[0m:655:1]
+ [2m652[0m |         onCrearTareas={handleCrearTareas}
+ [2m653[0m |         onEliminarTarea={handleEliminarTarea}
+ [2m654[0m |         onActualizarObra={handleActualizarObra}
+ [2m655[0m |             <span>Crear Obra Nueva</span>
+     : [35;1m            ^[0m
+ [2m656[0m |           </button>
+ [2m657[0m |           <button
+ [2m658[0m |             onClick={() => setShowModalObra(true)}
+     `----
+  [31mx[0m Expected ',', got 'Obra'
+     ,-[[36;1;4mC:\Users\Pc\Desktop\JOSE\Programacion\GROWS SUScripcion\grows\apps\web\components\clienteTecnico\ObrasSection.tsx[0m:655:1]
+ [2m652[0m |         onCrearTareas={handleCrearTareas}
+ [2m653[0m |         onEliminarTarea={handleEliminarTarea}
+ [2m654[0m |         onActualizarObra={handleActualizarObra}
+ [2m655[0m |             <span>Crear Obra Nueva</span>
+     : [35;1m                        ^^^^[0m
+ [2m656[0m |           </button>
+ [2m657[0m |           <button
+ [2m658[0m |             onClick={() => setShowModalObra(true)}
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./components/clienteTecnico/ObrasSection.tsx
+./app/cliente-tecnico/page.tsx
+ ✓ Compiled in 1712ms (718 modules)
+ GET /cliente-tecnico 200 in 134ms
+ ✓ Compiled in 499ms (718 modules)
+ GET /cliente-tecnico 200 in 113ms
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 1154ms (583 modules)
+ POST /api/obras 400 in 2108ms
+ ✓ Compiled /api/tareas in 173ms (585 modules)
+ POST /api/tareas 400 in 364ms
+ POST /api/tareas 400 in 362ms
+ POST /api/tareas 400 in 361ms
+ POST /api/tareas 400 in 360ms
+ POST /api/tareas 400 in 359ms
+ POST /api/tareas 400 in 368ms
+ POST /api/tareas 400 in 33ms
+ POST /api/tareas 400 in 72ms
+ POST /api/tareas 400 in 71ms
+ POST /api/tareas 400 in 71ms
+ POST /api/tareas 400 in 71ms
+ POST /api/tareas 400 in 70ms
+ POST /api/tareas 400 in 51ms
+ POST /api/tareas 400 in 30ms
+ POST /api/tareas 400 in 60ms
+ POST /api/tareas 400 in 60ms
+ POST /api/tareas 400 in 60ms
+ POST /api/tareas 400 in 59ms
+ POST /api/tareas 400 in 63ms
+ POST /api/tareas 400 in 58ms
+ ✓ Compiled in 1754ms (718 modules)
+ GET /cliente-tecnico 200 in 242ms
+ ✓ Compiled in 792ms (718 modules)
+ GET /cliente-tecnico 200 in 160ms
+ ✓ Compiled in 285ms (319 modules)
+ GET /cliente-tecnico 200 in 53ms
+ ✓ Compiled in 238ms (319 modules)
+ GET /cliente-tecnico 200 in 47ms
+ ✓ Compiled in 712ms (718 modules)
+ GET /cliente-tecnico 200 in 156ms
+ GET /cliente-tecnico 200 in 190ms
+ ✓ Compiled /api/obras in 206ms (583 modules)
+ GET /cliente-tecnico 200 in 416ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1615ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1617ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1623ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1683ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 552ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 580ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 516ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 530ms
+Error al crear obra: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 517ms
+ ✓ Compiled in 931ms (902 modules)
+ GET /cliente-tecnico 200 in 183ms
+ ✓ Compiled in 424ms (902 modules)
+ GET /cliente-tecnico 200 in 97ms
+ ✓ Compiled in 398ms (902 modules)
+ GET /cliente-tecnico 200 in 93ms
+ ✓ Compiled in 1210ms (902 modules)
+ GET /cliente-tecnico 200 in 65ms
+📥 Datos recibidos en API de obras: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+✅ Datos validados: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 775ms
+📥 Datos recibidos en API de obras: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+✅ Datos validados: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1162ms
+📥 Datos recibidos en API de obras: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+✅ Datos validados: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 600ms
+ ✓ Compiled in 1361ms (902 modules)
+ GET /cliente-tecnico 200 in 198ms
+ ✓ Compiled in 526ms (718 modules)
+ GET /cliente-tecnico 200 in 213ms
+ ✓ Compiled in 549ms (718 modules)
+ GET /cliente-tecnico 200 in 123ms
+ ✓ Compiled in 336ms (718 modules)
+ GET /cliente-tecnico 200 in 59ms
+ ✓ Compiled /api/obras in 187ms (583 modules)
+📥 Datos recibidos en API de obras: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+✅ Datos validados: {
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+ GET /cliente-tecnico 200 in 263ms
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '213123',
+  cliente: '12312313',
+  localizacion: '1231231312312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '1231231231',
+  descripcion: 'Obra: 213123'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1297ms
+ GET /cliente-tecnico 200 in 179ms
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 757ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 763ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 792ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 799ms
+📥 Datos recibidos en API de obras: {
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+✅ Datos validados: {
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 654ms
+ ✓ Compiled in 1195ms (902 modules)
+ GET /cliente-tecnico 200 in 75ms
+ ✓ Compiled in 870ms (718 modules)
+ GET /cliente-tecnico 200 in 183ms
+ ✓ Compiled /api/obras in 231ms (583 modules)
+📥 Datos recibidos en API de obras: {
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+✅ Datos validados: {
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '1231231',
+  cliente: '123qweqweq',
+  localizacion: 'e12ewqdsadas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-12',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '213',
+  descripcion: 'Obra: 1231231'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1641ms
+ GET /cliente-tecnico 200 in 216ms
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 548ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 565ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 581ms
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 744ms
+📥 Datos recibidos en API de obras: {
+  nombre: 'dsada',
+  cliente: 'dasdasdasdas',
+  localizacion: 'dasdsadasdasdas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-13',
+  numero_permiso: 'sadsdasda',
+  descripcion: 'Obra: dsada'
+}
+✅ Datos validados: {
+  nombre: 'dsada',
+  cliente: 'dasdasdasdas',
+  localizacion: 'dasdsadasdasdas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-13',
+  numero_permiso: 'sadsdasda',
+  descripcion: 'Obra: dsada'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'dsada',
+  cliente: 'dasdasdasdas',
+  localizacion: 'dasdsadasdasdas',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-13',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'sadsdasda',
+  descripcion: 'Obra: dsada'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 497ms
+ ✓ Compiled in 368ms (319 modules)
+ GET /cliente-tecnico 200 in 74ms
+ ✓ Compiled in 238ms (319 modules)
+ GET /cliente-tecnico 200 in 30ms
+ ✓ Compiled in 438ms (718 modules)
+ GET /cliente-tecnico 200 in 226ms
+ ✓ Compiled in 253ms (319 modules)
+ GET /cliente-tecnico 200 in 43ms
+ ✓ Compiled in 208ms (319 modules)
+ GET /cliente-tecnico 200 in 35ms
+ ⨯ ./components/clienteTecnico/ObrasSection.tsx
+Module parse failed: Identifier 'handleCrearObraWizard' has already been declared (514:10)
+|     };
+|     // Función para crear obra completa con tareas (wizard)
+>     const handleCrearObraWizard = async (obra, tareasGeneradas)=>{
+|         try {
+|             console.log('🚀 Iniciando creación de obra completa:', obra);
+
+Import trace for requested module:
+./components/clienteTecnico/ObrasSection.tsx
+./app/cliente-tecnico/page.tsx
+ ⨯ ./components/clienteTecnico/ObrasSection.tsx
+Module parse failed: Identifier 'handleCrearObraWizard' has already been declared (514:10)
+|     };
+|     // Función para crear obra completa con tareas (wizard)
+>     const handleCrearObraWizard = async (obra, tareasGeneradas)=>{
+|         try {
+|             console.log('🚀 Iniciando creación de obra completa:', obra);
+
+Import trace for requested module:
+./components/clienteTecnico/ObrasSection.tsx
+./app/cliente-tecnico/page.tsx
+ ○ Compiling /_error ...
+ ⨯ ./components/clienteTecnico/ObrasSection.tsx
+Module parse failed: Identifier 'handleCrearObraWizard' has already been declared (514:10)
+|     };
+|     // Función para crear obra completa con tareas (wizard)
+>     const handleCrearObraWizard = async (obra, tareasGeneradas)=>{
+|         try {
+|             console.log('🚀 Iniciando creación de obra completa:', obra);
+
+Import trace for requested module:
+./components/clienteTecnico/ObrasSection.tsx
+./app/cliente-tecnico/page.tsx
+ GET /cliente-tecnico 500 in 2941ms
+ GET /cliente-tecnico 200 in 1262ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled /_error in 2.3s (1057 modules)
+ GET /cliente-tecnico 200 in 1050ms
+ ✓ Compiled in 538ms (1057 modules)
+ ○ Compiling /api/obras ...
+ ✓ Compiled /api/obras in 1260ms (783 modules)
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Datos recibidos en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+ GET /cliente-tecnico 200 in 298ms
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 2259ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 2823ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 2827ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 2834ms
+📥 Datos recibidos en API de obras: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+✅ Datos validados: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 739ms
+📥 Datos recibidos en API de obras: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+✅ Datos validados: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Organización: ef211dd0-61cd-4e72-9a62-6e80a539ca4f Rol: owner
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 629ms
+ ✓ Compiled in 821ms (1253 modules)
+ GET /cliente-tecnico 200 in 218ms
+ ✓ Compiled in 400ms (1057 modules)
+ GET /cliente-tecnico 200 in 186ms
+ ✓ Compiled in 525ms (1057 modules)
+ GET /cliente-tecnico 200 in 79ms
+ ✓ Compiled in 463ms (1057 modules)
+ GET /cliente-tecnico 200 in 66ms
+ ✓ Compiled /api/obras in 307ms (783 modules)
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+✅ Datos validados: {
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+ GET /cliente-tecnico 200 in 313ms
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '234234',
+  cliente: '2342342',
+  localizacion: '34234234242',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-10',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '23423423243',
+  descripcion: 'Obra: 234234'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1308ms
+ GET /cliente-tecnico 200 in 179ms
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+🚀 Iniciando POST /api/obras
+🚀 Iniciando POST /api/obras
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Body recibido en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Body recibido en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 501ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 531ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 536ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 541ms
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: '2312312',
+  cliente: '312312312',
+  localizacion: '31231231312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: '1212312',
+  descripcion: 'Obra: 2312312'
+}
+✅ Datos validados: {
+  nombre: '2312312',
+  cliente: '312312312',
+  localizacion: '31231231312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: '1212312',
+  descripcion: 'Obra: 2312312'
+}
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '2312312',
+  cliente: '312312312',
+  localizacion: '31231231312',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: '1212312',
+  descripcion: 'Obra: 2312312'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 485ms
+ ✓ Compiled in 1262ms (1057 modules)
+ GET /cliente-tecnico 200 in 182ms
+ ✓ Compiled in 253ms (470 modules)
+ GET /cliente-tecnico 200 in 43ms
+ ✓ Compiled in 458ms (1057 modules)
+ GET /cliente-tecnico 200 in 62ms
+ ✓ Compiled /api/obras in 242ms (783 modules)
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+✅ Datos validados: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+🍪 CookieStore obtenido
+🔐 Cliente Supabase Auth creado
+ GET /cliente-tecnico 200 in 242ms
+👤 Usuario obtenido: Sí
+👤 Usuario autenticado: josecanaya1889@gmail.com
+🏢 Resolviendo contexto de organización...
+✅ Contexto de organización resuelto: { orgId: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f', role: 'owner' }
+🔧 Creando cliente Supabase de servicio...
+✅ Cliente Supabase de servicio creado
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1472ms
+ ✓ Compiled in 920ms (1057 modules)
+ GET /cliente-tecnico 200 in 102ms
+ ✓ Compiled in 271ms (470 modules)
+ GET /cliente-tecnico 200 in 27ms
+ ✓ Compiled in 320ms (470 modules)
+ GET /cliente-tecnico 200 in 39ms
+ ✓ Compiled in 907ms (1057 modules)
+ GET /cliente-tecnico 200 in 72ms
+ ✓ Compiled in 377ms (1057 modules)
+ GET /cliente-tecnico 200 in 122ms
+ ✓ Compiled /api/obras in 200ms (783 modules)
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+✅ Datos validados: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+ GET /cliente-tecnico 200 in 216ms
+👤 Usuario autenticado: josecanaya1889@gmail.com
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1152ms
+ ✓ Compiled in 907ms (1057 modules)
+ GET /cliente-tecnico 200 in 240ms
+ ✓ Compiled /api/obras in 207ms (783 modules)
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+✅ Datos validados: {
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+ GET /cliente-tecnico 200 in 246ms
+👤 Usuario autenticado: josecanaya1889@gmail.com
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: '34',
+  cliente: '2323',
+  localizacion: '2323232',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-10-03',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: 34'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 1130ms
+ GET /cliente-tecnico 200 in 207ms
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+🚀 Iniciando POST /api/obras
+🚀 Iniciando POST /api/obras
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📥 Body recibido en API de obras: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+✅ Datos validados: {
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📥 Body recibido en API de obras: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+✅ Datos validados: {
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  descripcion: 'Obra: Departamento - Palermo'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+👤 Usuario autenticado: josecanaya1889@gmail.com
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Departamento - Palermo',
+  cliente: 'Maria Gonzalez',
+  localizacion: null,
+  tipo_obra: 'reforma',
+  fecha_inicio: '2024-09-01',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: null,
+  descripcion: 'Obra: Departamento - Palermo'
+}
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'Casa Familiar - Villa Crespo',
+  cliente: 'Juan Perez',
+  localizacion: null,
+  tipo_obra: 'nueva',
+  fecha_inicio: '2024-08-15',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'PO-2024-001234',
+  descripcion: 'Obra: Casa Familiar - Villa Crespo'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 502ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 523ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 532ms
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 550ms
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+✅ Datos validados: {
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+👤 Usuario autenticado: josecanaya1889@gmail.com
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}
+ POST /api/obras 500 in 512ms
+ ✓ Compiled in 989ms (1057 modules)
+ GET /cliente-tecnico 200 in 229ms
+ ✓ Compiled in 243ms (470 modules)
+ GET /cliente-tecnico 200 in 39ms
+ ✓ Compiled in 308ms (470 modules)
+ GET /cliente-tecnico 200 in 28ms
+ ✓ Compiled /api/obras in 214ms (783 modules)
+🚀 Iniciando POST /api/obras
+📥 Body recibido en API de obras: {
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+✅ Datos validados: {
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+ GET /cliente-tecnico 200 in 241ms
+👤 Usuario autenticado: josecanaya1889@gmail.com
+📤 Insertando obra en BD: {
+  org_id: 'ef211dd0-61cd-4e72-9a62-6e80a539ca4f',
+  nombre: 'qweqweqeq',
+  cliente: 'weqweqwe',
+  localizacion: 'qweqeqweq',
+  tipo_obra: 'nueva',
+  fecha_inicio: '2025-09-20',
+  fecha_fin_estimada: null,
+  presupuesto_total: null,
+  numero_permiso: 'qweqweqw',
+  descripcion: 'Obra: qweqweqeq'
+}
+❌ Error al crear obra en BD: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'descripcion' column of 'obras' in the schema cache"
+}

@@ -1,259 +1,246 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Plus, X, Star, Award } from 'lucide-react';
+import { Users, Phone, Mail, MapPin, Calendar, Award, Shield, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
 
-interface User {
-  name: string;
-  avatar: string;
-  rating: number;
-  level: string;
+interface Integrante {
+  id: string;
+  nombre: string;
+  rol: string;
+  telefono: string;
+  seguroVigente: boolean;
+  fechaIngreso: string;
+  especialidad: string;
+}
+
+interface Documento {
+  id: string;
+  tipo: string;
+  nombre: string;
+  vigente: boolean;
+  fechaVencimiento?: string;
 }
 
 interface MiCuadrillaProps {
-  user: User;
-}
-
-interface Member {
-  id: number;
-  name: string;
-  role: string;
-  level: 'Bronce' | 'Plata' | 'Oro' | 'Platino';
-  rating: number;
-  avatar: string;
-  specialties: string[];
+  user: {
+    name: string;
+    avatar: string;
+    rating: number;
+    level: string;
+  };
 }
 
 export function MiCuadrilla({ user }: MiCuadrillaProps) {
-  const [members, setMembers] = useState<Member[]>([
+  const [integrantes, setIntegrantes] = useState<Integrante[]>([
     {
-      id: 1,
-      name: 'Carlos Mendoza',
-      role: 'Albañil Senior',
-      level: 'Oro',
-      rating: 4.7,
-      avatar: '👷‍♂️',
-      specialties: ['Mampostería', 'Hormigón', 'Replanteo']
+      id: '1',
+      nombre: 'Carlos Mendoza',
+      rol: 'Encargado',
+      telefono: '+54 11 1234-5678',
+      seguroVigente: true,
+      fechaIngreso: '2021-03-15',
+      especialidad: 'Albañilería'
     },
     {
-      id: 2,
-      name: 'Ana Rodríguez',
-      role: 'Ayudante',
-      level: 'Plata',
-      rating: 4.2,
-      avatar: '👷‍♀️',
-      specialties: ['Preparación', 'Limpieza', 'Apoyo']
+      id: '2',
+      nombre: 'Roberto Silva',
+      rol: 'Oficial',
+      telefono: '+54 11 2345-6789',
+      seguroVigente: true,
+      fechaIngreso: '2021-06-20',
+      especialidad: 'Albañilería'
     },
     {
-      id: 3,
-      name: 'Miguel Torres',
-      role: 'Especialista en Estructuras',
-      level: 'Platino',
-      rating: 4.9,
-      avatar: '👨‍🔧',
-      specialties: ['Estructuras', 'Hierros', 'Encofrados']
+      id: '3',
+      nombre: 'Miguel Torres',
+      rol: 'Ayudante',
+      telefono: '+54 11 3456-7890',
+      seguroVigente: false,
+      fechaIngreso: '2022-01-10',
+      especialidad: 'Albañilería'
     }
   ]);
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newMember, setNewMember] = useState({
-    name: '',
-    role: '',
-    level: 'Bronce' as 'Bronce' | 'Plata' | 'Oro' | 'Platino',
-    specialties: ''
-  });
-
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Bronce': return 'text-amber-600 bg-amber-100';
-      case 'Plata': return 'text-gray-600 bg-gray-100';
-      case 'Oro': return 'text-yellow-600 bg-yellow-100';
-      case 'Platino': return 'text-purple-600 bg-purple-100';
-      default: return 'text-gray-600 bg-gray-100';
+  const [documentos, setDocumentos] = useState<Documento[]>([
+    {
+      id: '1',
+      tipo: 'ART',
+      nombre: 'ART Albañilería Norte',
+      vigente: true,
+      fechaVencimiento: '2025-12-31'
+    },
+    {
+      id: '2',
+      tipo: 'Seguro',
+      nombre: 'Seguro de Accidentes',
+      vigente: true,
+      fechaVencimiento: '2025-11-01'
+    },
+    {
+      id: '3',
+      tipo: 'Certificado',
+      nombre: 'Certificado de Capacitación',
+      vigente: false
     }
-  };
+  ]);
 
-  const getLevelIcon = (level: string) => {
-    switch (level) {
-      case 'Bronce': return '🥉';
-      case 'Plata': return '🥈';
-      case 'Oro': return '🥇';
-      case 'Platino': return '💎';
-      default: return '⭐';
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={i < Math.floor(rating) ? 'text-accent' : 'text-gray-400'}>
-        ★
-      </span>
-    ));
-  };
-
-  const handleAddMember = () => {
-    if (newMember.name && newMember.role) {
-      const member: Member = {
-        id: members.length + 1,
-        name: newMember.name,
-        role: newMember.role,
-        level: newMember.level,
-        rating: 4.0,
-        avatar: '👷‍♂️',
-        specialties: newMember.specialties.split(',').map(s => s.trim()).filter(s => s)
-      };
-      setMembers([...members, member]);
-      setNewMember({ name: '', role: '', level: 'Bronce', specialties: '' });
-      setShowAddModal(false);
-    }
-  };
-
-  const handleRemoveMember = (id: number) => {
-    setMembers(members.filter(member => member.id !== id));
-  };
+  const integrantesSinSeguro = integrantes.filter(i => !i.seguroVigente);
+  const documentosVencidos = documentos.filter(d => !d.vigente);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-dark">Mi Cuadrilla</h2>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-accent text-dark px-4 py-2 rounded-lg hover:bg-accent/90 transition-colors duration-200 flex items-center space-x-2"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Agregar miembro</span>
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map((member) => (
-          <div key={member.id} className="bg-light rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-dark text-2xl">
-                  {member.avatar}
-                </div>
-                <div>
-                  <h3 className="font-semibold text-dark">{member.name}</h3>
-                  <p className="text-sm text-dark/70">{member.role}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => handleRemoveMember(member.id)}
-                className="text-red-500 hover:text-red-700 transition-colors duration-200"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-dark/70">Nivel:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${getLevelColor(member.level)}`}>
-                  <span>{getLevelIcon(member.level)}</span>
-                  <span>{member.level}</span>
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-dark/70">Rating:</span>
-                <div className="flex items-center space-x-1">
-                  <div className="flex">
-                    {renderStars(member.rating)}
-                  </div>
-                  <span className="text-sm text-dark/70 ml-1">{member.rating}</span>
-                </div>
-              </div>
-              
-              <div>
-                <span className="text-sm text-dark/70">Especialidades:</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {member.specialties.map((specialty, index) => (
-                    <span key={index} className="px-2 py-1 bg-white text-xs text-dark/70 rounded">
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-xl font-bold text-gray-900">Mi Cuadrilla</h2>
+        <p className="text-sm text-gray-600">
+          {integrantes.length} integrantes • {documentos.length} documentos
+        </p>
       </div>
 
-      {/* Modal para agregar miembro */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
-            <div className="p-6">
-              <h3 className="text-xl font-bold text-dark mb-4">Agregar miembro a la cuadrilla</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Nombre</label>
-                  <input
-                    type="text"
-                    value={newMember.name}
-                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Nombre del miembro"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Rol</label>
-                  <input
-                    type="text"
-                    value={newMember.role}
-                    onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
-                    className="w-full px-3 py-2 border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Albañil, Ayudante, etc."
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Nivel</label>
-                  <select
-                    value={newMember.level}
-                    onChange={(e) => setNewMember({ ...newMember, level: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                  >
-                    <option value="Bronce">Bronce</option>
-                    <option value="Plata">Plata</option>
-                    <option value="Oro">Oro</option>
-                    <option value="Platino">Platino</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-dark mb-2">Especialidades</label>
-                  <input
-                    type="text"
-                    value={newMember.specialties}
-                    onChange={(e) => setNewMember({ ...newMember, specialties: e.target.value })}
-                    className="w-full px-3 py-2 border border-light rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Separadas por comas"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex space-x-3 mt-6">
-                <button
-                  onClick={handleAddMember}
-                  className="flex-1 bg-accent text-dark py-2 px-4 rounded-lg hover:bg-accent/90 transition-colors duration-200"
-                >
-                  Agregar
-                </button>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-dark/20 text-dark rounded-lg hover:bg-light transition-colors duration-200"
-                >
-                  Cancelar
-                </button>
-              </div>
+      {/* Estadísticas rápidas */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg p-4" style={{ backgroundColor: '#1A202C' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm" style={{ color: '#A0AEC0' }}>Integrantes</div>
+              <div className="text-2xl font-bold" style={{ color: '#FEEB70' }}>{integrantes.length}</div>
             </div>
+            <Users className="h-8 w-8" style={{ color: '#FEEB70' }} />
           </div>
         </div>
+        <div className="rounded-lg p-4" style={{ backgroundColor: '#008080' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm" style={{ color: '#FFFFFF' }}>Seguros al día</div>
+              <div className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>
+                {integrantes.filter(i => i.seguroVigente).length}
+              </div>
+            </div>
+            <Shield className="h-8 w-8" style={{ color: '#FFFFFF' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Alertas */}
+      {(integrantesSinSeguro.length > 0 || documentosVencidos.length > 0) && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <h3 className="font-semibold text-red-900">Atención requerida</h3>
+          </div>
+          {integrantesSinSeguro.length > 0 && (
+            <p className="text-sm text-red-700 mb-1">
+              {integrantesSinSeguro.length} integrante(s) sin seguro vigente
+            </p>
+          )}
+          {documentosVencidos.length > 0 && (
+            <p className="text-sm text-red-700">
+              {documentosVencidos.length} documento(s) vencido(s)
+            </p>
+          )}
+        </div>
       )}
+
+      {/* Integrantes */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Users className="h-5 w-5 mr-2 text-gray-600" />
+          Integrantes
+        </h3>
+        <div className="space-y-3">
+          {integrantes.map((integrante) => (
+            <div key={integrante.id} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{integrante.nombre}</h4>
+                  <p className="text-sm text-gray-600">{integrante.rol}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {integrante.seguroVigente ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Seguro al día
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Sin seguro
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1 text-sm text-gray-600">
+                <div className="flex items-center">
+                  <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                  <span>{integrante.telefono}</span>
+                </div>
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <span>Ingreso: {new Date(integrante.fechaIngreso).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center">
+                  <Award className="h-4 w-4 mr-2 text-gray-400" />
+                  <span>{integrante.especialidad}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Documentación */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <FileText className="h-5 w-5 mr-2 text-gray-600" />
+          Documentación
+        </h3>
+        <div className="space-y-3">
+          {documentos.map((doc) => (
+            <div key={doc.id} className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{doc.nombre}</h4>
+                  <p className="text-sm text-gray-600">{doc.tipo}</p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {doc.vigente ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Vigente
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Vencido
+                    </span>
+                  )}
+                </div>
+              </div>
+              {doc.fechaVencimiento && (
+                <div className="text-sm text-gray-600">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                  <span>Vencimiento: {new Date(doc.fechaVencimiento).toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Acciones rápidas */}
+      <div className="rounded-lg p-4" style={{ backgroundColor: '#1A202C' }}>
+        <h3 className="font-semibold mb-3" style={{ color: '#FFFFFF' }}>Acciones rápidas</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors" style={{ backgroundColor: '#FEEB70', color: '#1A202C' }}>
+            <Users className="h-4 w-4" />
+            <span>Agregar integrante</span>
+          </button>
+          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors" style={{ backgroundColor: '#008080', color: '#FFFFFF' }}>
+            <FileText className="h-4 w-4" />
+            <span>Subir documento</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

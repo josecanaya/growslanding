@@ -6,9 +6,10 @@ import { X, Save } from 'lucide-react';
 interface Obra {
   id: string;
   nombre: string;
-  ubicacion: string;
+  cliente: string;
+  tipoObra: 'nueva' | 'reforma' | 'ampliacion';
   fechaInicio: string;
-  fechaFin: string;
+  numeroPermiso?: string;
   progreso: number;
   tareasActivas: number;
   tareasCompletadas: number;
@@ -23,19 +24,20 @@ interface ModalCrearObraProps {
 export function ModalCrearObra({ onClose, onSave }: ModalCrearObraProps) {
   const [formData, setFormData] = useState({
     nombre: '',
-    ubicacion: '',
+    cliente: '',
+    tipoObra: 'nueva' as 'nueva' | 'reforma' | 'ampliacion',
     fechaInicio: '',
-    fechaFin: ''
+    numeroPermiso: ''
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.nombre && formData.ubicacion && formData.fechaInicio && formData.fechaFin) {
+    if (formData.nombre && formData.cliente && formData.fechaInicio) {
       onSave(formData);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
@@ -75,17 +77,34 @@ export function ModalCrearObra({ onClose, onSave }: ModalCrearObraProps) {
 
           <div>
             <label className="block text-sm font-medium text-primario mb-2">
-              Ubicación *
+              Cliente *
             </label>
             <input
               type="text"
-              name="ubicacion"
-              value={formData.ubicacion}
+              name="cliente"
+              value={formData.cliente}
               onChange={handleChange}
-              placeholder="Ej: Villa Crespo, CABA"
+              placeholder="Ej: Juan Pérez"
               className="w-full px-4 py-3 border border-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-acento focus:border-transparent text-primario placeholder-primario/50"
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-primario mb-2">
+              Tipo de obra *
+            </label>
+            <select
+              name="tipoObra"
+              value={formData.tipoObra}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-acento focus:border-transparent text-primario"
+              required
+            >
+              <option value="nueva">Nueva</option>
+              <option value="reforma">Reforma</option>
+              <option value="ampliacion">Ampliación</option>
+            </select>
           </div>
 
           <div>
@@ -102,19 +121,21 @@ export function ModalCrearObra({ onClose, onSave }: ModalCrearObraProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-primario mb-2">
-              Fecha estimada de fin *
-            </label>
-            <input
-              type="date"
-              name="fechaFin"
-              value={formData.fechaFin}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-acento focus:border-transparent text-primario"
-              required
-            />
-          </div>
+          {formData.tipoObra === 'nueva' && (
+            <div>
+              <label className="block text-sm font-medium text-primario mb-2">
+                Número de permiso de obra (opcional)
+              </label>
+              <input
+                type="text"
+                name="numeroPermiso"
+                value={formData.numeroPermiso}
+                onChange={handleChange}
+                placeholder="Ej: PO-2024-001234"
+                className="w-full px-4 py-3 border border-claro rounded-lg focus:outline-none focus:ring-2 focus:ring-acento focus:border-transparent text-primario placeholder-primario/50"
+              />
+            </div>
+          )}
 
           {/* Botones */}
           <div className="flex space-x-3 pt-4">

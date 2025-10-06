@@ -1,4 +1,4 @@
-import type { RouteContext } from 'next';
+
 import { z } from 'zod';
 
 import { visitStatusSchema } from '@/lib/fsm';
@@ -41,7 +41,7 @@ const requestSchema = z.object({
 
 export async function POST(
   request: Request,
-  context: RouteContext<{ id: string }>
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;

@@ -1,20 +1,18 @@
-import type { RouteContext } from 'next';
-
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 
 export async function GET(
   _request: Request,
-  context: RouteContext<{ eventoId: string }>
+  { params }: { params: Promise<{ eventoId: string }> }
 ) {
-  const params = await context.params;
+  const { eventoId } = await params;
   const supabase = createServiceSupabaseClient();
 
   const { data: evento, error } = await supabase
     .from('eventos')
     .select('pdf_path')
-    .eq('id', params.eventoId)
+    .eq('id', eventoId)
     .maybeSingle();
 
   if (error) {
@@ -39,7 +37,7 @@ export async function GET(
   return new Response(file, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="acta-${params.eventoId}.pdf"`,
+      'Content-Disposition': `attachment; filename="acta-${eventoId}.pdf"`,
     },
   });
 }

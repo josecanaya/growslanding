@@ -28,6 +28,7 @@ const tareaSchema = z.object({
 const inviteSchema = z.object({
   nombre: z.string().min(2),
   email: z.string().email(),
+  rol: z.string().min(1),
 });
 
 type Org = {
@@ -55,6 +56,7 @@ type Invite = {
   id: string;
   email: string;
   nombre: string;
+  rol: string;
   status: string;
 };
 
@@ -116,7 +118,7 @@ export default function OnboardingClient({
 
   const inviteForm = useForm<z.infer<typeof inviteSchema>>({
     resolver: zodResolver(inviteSchema),
-    defaultValues: { nombre: '', email: '' },
+    defaultValues: { nombre: '', email: '', rol: 'constructor' },
   });
 
   const obraOptions = useMemo(() => obras.map((obra) => ({ value: obra.id, label: obra.nombre })), [obras]);
@@ -229,7 +231,7 @@ export default function OnboardingClient({
         status: 'pending',
       };
       setInvites((prev) => [...prev, newInvite]);
-      inviteForm.reset({ nombre: '', email: '' });
+      inviteForm.reset({ nombre: '', email: '', rol: 'constructor' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {

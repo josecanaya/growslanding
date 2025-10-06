@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sidebar } from '@/components/panel/Sidebar';
 import { TopBar } from '@/components/panel/TopBar';
 import { PanelViewer } from '@/components/panel/PanelViewer';
-import { FooterPanel } from '@/components/panel/FooterPanel';
+import { SwipeUpCameraButton } from '@/components/panel/SwipeUpCameraButton';
 
 export default function PanelPage() {
   const [activeSection, setActiveSection] = useState('tareas');
@@ -54,38 +53,30 @@ export default function PanelPage() {
   };
 
   return (
-    <div className="min-h-screen bg-secundario">
-      <div className="flex">
-        {/* Sidebar */}
-        <Sidebar 
-          user={user}
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-        />
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Top Bar */}
-          <TopBar 
-            isConnected={isConnected}
-            isOnBreak={isOnBreak}
-            onConnectionToggle={handleConnectionToggle}
-            onBreakToggle={handleBreakToggle}
-            onLogout={handleLogout}
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8F8F8' }}>
+      {/* Top Bar Fijo */}
+      <TopBar 
+        isConnected={isConnected}
+        isOnBreak={isOnBreak}
+        onConnectionToggle={handleConnectionToggle}
+        onBreakToggle={handleBreakToggle}
+        onLogout={handleLogout}
+        user={user}
+        onSectionChange={setActiveSection}
+      />
+      
+      {/* Contenido Principal - Una sola columna scrolleable */}
+      <main className="flex-1 overflow-y-auto pb-24">
+        <div className="px-4 py-6 space-y-6">
+          <PanelViewer 
+            activeSection={activeSection}
+            user={user}
           />
-          
-          {/* Panel Viewer */}
-          <div className="flex-1 p-6">
-            <PanelViewer 
-              activeSection={activeSection}
-              user={user}
-            />
-          </div>
-          
-          {/* Footer Panel */}
-          <FooterPanel />
         </div>
-      </div>
+      </main>
+      
+      {/* Botón deslizable para cámara */}
+      <SwipeUpCameraButton />
     </div>
   );
 }

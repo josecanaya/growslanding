@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 // Icono de tarjeta de crédito simplificado
 function CreditCardIcon() {
   return (
-    <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-6 h-6 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
     </svg>
   )
@@ -14,7 +14,7 @@ function CreditCardIcon() {
 // Icono de edificio simplificado
 function BuildingIcon() {
   return (
-    <svg className="w-4 h-4 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className="w-4 h-4 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
     </svg>
   )
@@ -48,24 +48,24 @@ export default function Suscripcion() {
 
   return (
     <div className="transform transition-all duration-300 hover:scale-[1.01]">
-      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-10 shadow-sm hover:shadow-md transition-all">
+      <Card className="bg-[#ffffff] dark:bg-[#1c1a2b] border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-10 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-10">
-          <div className="p-3 bg-[#f1f1f3] rounded-xl">
+          <div className="p-3 bg-[#ede9fb] dark:bg-[#2d2850] rounded-xl">
             <CreditCardIcon />
           </div>
-          <h2 className="text-xl font-semibold">Suscripción</h2>
+          <h2 className="text-xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">Suscripción</h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {planes.map((plan) => (
             <div 
               key={plan.nombre} 
-              className="border border-[#e5e5ea] rounded-2xl p-6 hover:shadow-lg transition-all hover:scale-105"
+              className="border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-6 hover:shadow-lg transition-all hover:scale-105 bg-[#f7f6fb] dark:bg-[#2a263a]"
             >
-              <h3 className="text-lg font-semibold mb-1">{plan.nombre}</h3>
-              <p className="text-[#6b4ce6] font-bold text-xl mb-2">{plan.precio}</p>
-              <p className="text-gray-500 text-sm mb-4">{plan.desc}</p>
-              <ul className="text-sm text-gray-600 space-y-2 mb-6">
+              <h3 className="text-lg font-semibold mb-1 text-[#1d1b29] dark:text-[#f5f3fc]">{plan.nombre}</h3>
+              <p className="text-[#6d4be8] font-bold text-xl mb-2">{plan.precio}</p>
+              <p className="text-[#5b5570] dark:text-[#c2bddb] text-sm mb-4">{plan.desc}</p>
+              <ul className="text-sm text-[#5b5570] dark:text-[#c2bddb] space-y-2 mb-6">
                 {plan.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <BuildingIcon /> {f}
@@ -74,7 +74,7 @@ export default function Suscripcion() {
               </ul>
               <Button 
                 onClick={() => handleChangePlan(plan.nombre)} 
-                className="w-full bg-[#6b4ce6] hover:bg-[#5638d2] text-white transition-all hover:scale-105"
+                className="w-full bg-[#6d4be8] hover:bg-[#5a3fd2] text-white transition-all hover:scale-105"
               >
                 Elegir plan
               </Button>

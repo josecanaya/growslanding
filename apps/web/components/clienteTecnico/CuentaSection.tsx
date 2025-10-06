@@ -178,14 +178,14 @@ function PerfilUsuario() {
 
   return (
     <div className="transform transition-all duration-300 hover:scale-[1.01]">
-      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
+      <Card className="bg-[#ffffff] dark:bg-[#1c1a2b] border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-[#f1f1f3] rounded-xl">
-            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-[#ede9fb] dark:bg-[#2d2850] rounded-xl">
+            <svg className="w-6 h-6 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Datos Profesionales</h2>
+          <h2 className="text-xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">Datos Profesionales</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -194,84 +194,84 @@ function PerfilUsuario() {
             value={form.nombre} 
             onChange={handleChange} 
             placeholder="Nombre" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="apellido" 
             value={form.apellido} 
             onChange={handleChange} 
             placeholder="Apellido" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="estudio" 
             value={form.estudio} 
             onChange={handleChange} 
             placeholder="Nombre del Estudio / Empresa" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="cuit" 
             value={form.cuit} 
             onChange={handleChange} 
             placeholder="CUIT" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="matricula" 
             value={form.matricula} 
             onChange={handleChange} 
             placeholder="Matrícula Profesional" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="correo" 
             value={form.correo} 
             onChange={handleChange} 
             placeholder="Correo Electrónico" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="telefono" 
             value={form.telefono} 
             onChange={handleChange} 
             placeholder="Teléfono" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="ciudad" 
             value={form.ciudad} 
             onChange={handleChange} 
             placeholder="Ciudad" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="provincia" 
             value={form.provincia} 
             onChange={handleChange} 
             placeholder="Provincia" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="especialidad" 
             value={form.especialidad} 
             onChange={handleChange} 
             placeholder="Especialidad (Obra, Diseño, Dirección técnica...)" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
           <Input 
             name="sitioWeb" 
             value={form.sitioWeb} 
             onChange={handleChange} 
             placeholder="Sitio Web / Portfolio" 
-            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+            className="bg-[#f7f6fb] dark:bg-[#2a263a] border border-[#e3dff2] dark:border-[#2a263a] text-[#1d1b29] dark:text-[#f5f3fc] placeholder:text-[#8a83a7] dark:placeholder:text-[#847aaf] focus:ring-2 focus:ring-[#6d4be8] focus:border-[#6d4be8] rounded-lg" 
           />
         </div>
 
         <div className="text-right mt-8">
           <Button 
             onClick={handleSave} 
-            className="bg-[#6b4ce6] hover:bg-[#5638d2] text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+            className="bg-[#6d4be8] hover:bg-[#5a3fd2] text-white font-medium px-6 py-2 rounded-lg shadow-sm transition-all hover:scale-105"
           >
             Guardar cambios
           </Button>
@@ -303,20 +303,20 @@ function Personalizacion() {
 
   return (
     <div className="transform transition-all duration-300 hover:scale-[1.01]">
-      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
+      <Card className="bg-[#ffffff] dark:bg-[#1c1a2b] border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-[#f1f1f3] rounded-xl">
-            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-[#ede9fb] dark:bg-[#2d2850] rounded-xl">
+            <svg className="w-6 h-6 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Personalización</h2>
+          <h2 className="text-xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">Personalización</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Idioma</span>
+            <span className="text-[#5b5570] dark:text-[#c2bddb]">Idioma</span>
             <SimpleSelect value={idioma} onValueChange={setIdioma}>
               <SimpleSelectItem value="es" onSelect={setIdioma}>Español</SimpleSelectItem>
               <SimpleSelectItem value="en" onSelect={setIdioma}>Inglés</SimpleSelectItem>
@@ -324,7 +324,7 @@ function Personalizacion() {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Notificaciones</span>
+            <span className="text-[#5b5570] dark:text-[#c2bddb]">Notificaciones</span>
             <SimpleSwitch checked={notificaciones} onCheckedChange={setNotificaciones} />
           </div>
         </div>
@@ -332,7 +332,7 @@ function Personalizacion() {
         <div className="text-right mt-8">
           <Button 
             onClick={handleSave} 
-            className="bg-[#6b4ce6] hover:bg-[#5638d2] text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+            className="bg-[#6d4be8] hover:bg-[#5a3fd2] text-white font-medium px-6 py-2 rounded-lg shadow-sm transition-all hover:scale-105"
           >
             Guardar cambios
           </Button>
@@ -371,29 +371,29 @@ function Suscripcion() {
 
   return (
     <div className="transform transition-all duration-300 hover:scale-[1.01]">
-      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-10 shadow-sm hover:shadow-md transition-all">
+      <Card className="bg-[#ffffff] dark:bg-[#1c1a2b] border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-10 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-10">
-          <div className="p-3 bg-[#f1f1f3] rounded-xl">
-            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-[#ede9fb] dark:bg-[#2d2850] rounded-xl">
+            <svg className="w-6 h-6 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold">Suscripción</h2>
+          <h2 className="text-xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">Suscripción</h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
           {planes.map((plan) => (
             <div 
               key={plan.nombre} 
-              className="border border-[#e5e5ea] rounded-2xl p-6 hover:shadow-lg transition-all hover:scale-105"
+              className="border border-[#e3dff2] dark:border-[#2a263a] rounded-2xl p-6 hover:shadow-lg transition-all hover:scale-105 bg-[#f7f6fb] dark:bg-[#2a263a]"
             >
-              <h3 className="text-lg font-semibold mb-1">{plan.nombre}</h3>
-              <p className="text-[#6b4ce6] font-bold text-xl mb-2">{plan.precio}</p>
-              <p className="text-gray-500 text-sm mb-4">{plan.desc}</p>
-              <ul className="text-sm text-gray-600 space-y-2 mb-6">
+              <h3 className="text-lg font-semibold mb-1 text-[#1d1b29] dark:text-[#f5f3fc]">{plan.nombre}</h3>
+              <p className="text-[#6d4be8] font-bold text-xl mb-2">{plan.precio}</p>
+              <p className="text-[#5b5570] dark:text-[#c2bddb] text-sm mb-4">{plan.desc}</p>
+              <ul className="text-sm text-[#5b5570] dark:text-[#c2bddb] space-y-2 mb-6">
                 {plan.features.map((f, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     {f}
@@ -402,7 +402,7 @@ function Suscripcion() {
               </ul>
               <Button 
                 onClick={() => handleChangePlan(plan.nombre)} 
-                className="w-full bg-[#6b4ce6] hover:bg-[#5638d2] text-white transition-all hover:scale-105"
+                className="w-full bg-[#6d4be8] hover:bg-[#5a3fd2] text-white transition-all hover:scale-105"
               >
                 Elegir plan
               </Button>
@@ -417,11 +417,11 @@ function Suscripcion() {
 export function CuentaSection() {
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="bg-[#f9f9fb] rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-white px-8 py-6 border-b border-[#e5e5ea]">
-          <h2 className="text-2xl font-semibold text-[#222]">Configuración de Cuenta</h2>
-          <p className="text-sm text-gray-500">Gestioná tu perfil profesional, preferencias y suscripción</p>
-          <div className="w-20 h-[3px] bg-[#6b4ce6] mt-3 rounded-full" />
+      <div className="bg-[#f7f6fb] dark:bg-[#151323] rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-[#ffffff] dark:bg-[#1c1a2b] px-8 py-6 border-b border-[#e3dff2] dark:border-[#2a263a]">
+          <h2 className="text-2xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">Configuración de Cuenta</h2>
+          <p className="text-sm text-[#5b5570] dark:text-[#c2bddb]">Gestioná tu perfil profesional, preferencias y suscripción</p>
+          <div className="w-20 h-[3px] bg-[#6d4be8] mt-3 rounded-full" />
         </div>
         <div className="p-8 space-y-10">
           <PerfilUsuario />

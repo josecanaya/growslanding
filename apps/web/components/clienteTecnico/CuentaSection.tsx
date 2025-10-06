@@ -151,9 +151,15 @@ function PerfilUsuario() {
   const [form, setForm] = useState({
     nombre: "",
     apellido: "",
+    estudio: "",
+    cuit: "",
+    matricula: "",
     correo: "",
     telefono: "",
+    ciudad: "",
+    provincia: "",
     especialidad: "",
+    sitioWeb: "",
   })
 
   useEffect(() => {
@@ -171,15 +177,15 @@ function PerfilUsuario() {
   }
 
   return (
-    <div className="transform transition-all duration-300 hover:scale-[1.02]">
-      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+    <div className="transform transition-all duration-300 hover:scale-[1.01]">
+      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-[#2b2c32] rounded-xl">
-            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-[#f1f1f3] rounded-xl">
+            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">Datos personales</h2>
+          <h2 className="text-xl font-semibold">Datos Profesionales</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -188,42 +194,84 @@ function PerfilUsuario() {
             value={form.nombre} 
             onChange={handleChange} 
             placeholder="Nombre" 
-            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
           />
           <Input 
             name="apellido" 
             value={form.apellido} 
             onChange={handleChange} 
             placeholder="Apellido" 
-            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="estudio" 
+            value={form.estudio} 
+            onChange={handleChange} 
+            placeholder="Nombre del Estudio / Empresa" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="cuit" 
+            value={form.cuit} 
+            onChange={handleChange} 
+            placeholder="CUIT" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="matricula" 
+            value={form.matricula} 
+            onChange={handleChange} 
+            placeholder="Matrícula Profesional" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
           />
           <Input 
             name="correo" 
             value={form.correo} 
             onChange={handleChange} 
-            placeholder="Correo electrónico" 
-            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+            placeholder="Correo Electrónico" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
           />
           <Input 
             name="telefono" 
             value={form.telefono} 
             onChange={handleChange} 
             placeholder="Teléfono" 
-            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="ciudad" 
+            value={form.ciudad} 
+            onChange={handleChange} 
+            placeholder="Ciudad" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="provincia" 
+            value={form.provincia} 
+            onChange={handleChange} 
+            placeholder="Provincia" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
           />
           <Input 
             name="especialidad" 
             value={form.especialidad} 
             onChange={handleChange} 
-            placeholder="Especialidad / Rol" 
-            className="bg-[#2b2c32] border-none text-gray-200 placeholder:text-gray-500 focus:ring-2 focus:ring-[#8b5cf6] rounded-lg md:col-span-2" 
+            placeholder="Especialidad (Obra, Diseño, Dirección técnica...)" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
+          />
+          <Input 
+            name="sitioWeb" 
+            value={form.sitioWeb} 
+            onChange={handleChange} 
+            placeholder="Sitio Web / Portfolio" 
+            className="border border-[#e5e5ea] focus:ring-2 focus:ring-[#6b4ce6] focus:border-[#6b4ce6] rounded-lg" 
           />
         </div>
 
-        <div className="text-right mt-6">
+        <div className="text-right mt-8">
           <Button 
             onClick={handleSave} 
-            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+            className="bg-[#6b4ce6] hover:bg-[#5638d2] text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
           >
             Guardar cambios
           </Button>
@@ -235,8 +283,6 @@ function PerfilUsuario() {
 
 // Componente Personalizacion
 function Personalizacion() {
-  const [darkMode, setDarkMode] = useState(false)
-  const [color, setColor] = useState("azul")
   const [idioma, setIdioma] = useState("es")
   const [notificaciones, setNotificaciones] = useState(true)
 
@@ -244,70 +290,33 @@ function Personalizacion() {
     const stored = localStorage.getItem("preferencias")
     if (stored) {
       const prefs = JSON.parse(stored)
-      setDarkMode(prefs.darkMode || false)
-      setColor(prefs.color || "azul")
       setIdioma(prefs.idioma || "es")
       setNotificaciones(prefs.notificaciones !== false)
     }
   }, [])
 
   const handleSave = () => {
-    const prefs = { darkMode, color, idioma, notificaciones }
+    const prefs = { idioma, notificaciones }
     localStorage.setItem("preferencias", JSON.stringify(prefs))
-    
-    // Aplicar cambios inmediatamente
-    document.documentElement.classList.toggle("dark", darkMode)
-    
-    // Aplicar color al body
-    const body = document.body
-    const colorClasses = ['theme-blue', 'theme-green', 'theme-gray', 'theme-orange']
-    colorClasses.forEach(cls => body.classList.remove(cls))
-    
-    const colorMap: { [key: string]: string } = {
-      'azul': 'theme-blue',
-      'verde': 'theme-green', 
-      'gris': 'theme-gray',
-      'naranja': 'theme-orange'
-    }
-    
-    if (colorMap[color]) {
-      body.classList.add(colorMap[color])
-    }
-    
     alert("Preferencias guardadas correctamente!")
   }
 
   return (
-    <div className="transform transition-all duration-300 hover:scale-[1.02]">
-      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
+    <div className="transform transition-all duration-300 hover:scale-[1.01]">
+      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-[#2b2c32] rounded-xl">
-            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-3 bg-[#f1f1f3] rounded-xl">
+            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">Personalización</h2>
+          <h2 className="text-xl font-semibold">Personalización</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex justify-between items-center">
-            <span className="text-gray-300">Modo oscuro</span>
-            <SimpleSwitch checked={darkMode} onCheckedChange={setDarkMode} />
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-gray-300">Color principal</span>
-            <SimpleSelect value={color} onValueChange={setColor}>
-              <SimpleSelectItem value="azul" onSelect={setColor}>Azul</SimpleSelectItem>
-              <SimpleSelectItem value="verde" onSelect={setColor}>Verde</SimpleSelectItem>
-              <SimpleSelectItem value="gris" onSelect={setColor}>Gris</SimpleSelectItem>
-              <SimpleSelectItem value="naranja" onSelect={setColor}>Naranja</SimpleSelectItem>
-            </SimpleSelect>
-          </div>
-
-          <div className="flex justify-between items-center">
-            <span className="text-gray-300">Idioma</span>
+            <span className="text-gray-700">Idioma</span>
             <SimpleSelect value={idioma} onValueChange={setIdioma}>
               <SimpleSelectItem value="es" onSelect={setIdioma}>Español</SimpleSelectItem>
               <SimpleSelectItem value="en" onSelect={setIdioma}>Inglés</SimpleSelectItem>
@@ -315,15 +324,15 @@ function Personalizacion() {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-gray-300">Notificaciones</span>
+            <span className="text-gray-700">Notificaciones</span>
             <SimpleSwitch checked={notificaciones} onCheckedChange={setNotificaciones} />
           </div>
         </div>
 
-        <div className="text-right mt-6">
+        <div className="text-right mt-8">
           <Button 
             onClick={handleSave} 
-            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
+            className="bg-[#6b4ce6] hover:bg-[#5638d2] text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
           >
             Guardar cambios
           </Button>
@@ -335,112 +344,71 @@ function Personalizacion() {
 
 // Componente Suscripcion
 function Suscripcion() {
-  const [modalOpen, setModalOpen] = useState(false)
-
   const handleChangePlan = (plan: string) => {
     alert(`Plan cambiado a ${plan}`)
   }
 
+  const planes = [
+    {
+      nombre: "Básico",
+      precio: "$9.000 / mes",
+      desc: "Para profesionales independientes.",
+      features: ["1 usuario", "Hasta 5 proyectos", "Soporte por email"],
+    },
+    {
+      nombre: "Profesional",
+      precio: "$15.000 / mes",
+      desc: "Para estudios pequeños o equipos de obra.",
+      features: ["5 usuarios", "Proyectos ilimitados", "Reportes + Dashboard", "Soporte prioritario"],
+    },
+    {
+      nombre: "Premium",
+      precio: "$25.000 / mes",
+      desc: "Para empresas o constructoras medianas.",
+      features: ["Usuarios ilimitados", "Gestión financiera", "API avanzada", "Asesoramiento personalizado"],
+    },
+  ]
+
   return (
-    <div className="transform transition-all duration-300 hover:scale-[1.02]">
-      <Card className="bg-[#1a1b1f]/80 border border-[#2b2c32] rounded-2xl p-8 shadow-2xl backdrop-blur-xl transition-all hover:border-[#8b5cf6]/50">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-[#2b2c32] rounded-xl">
-            <svg className="w-6 h-6 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="transform transition-all duration-300 hover:scale-[1.01]">
+      <Card className="bg-white border border-[#e5e5ea] rounded-2xl p-10 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center gap-3 mb-10">
+          <div className="p-3 bg-[#f1f1f3] rounded-xl">
+            <svg className="w-6 h-6 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">Suscripción</h2>
+          <h2 className="text-xl font-semibold">Suscripción</h2>
         </div>
-        
-        <div className="space-y-4 mb-6">
-          <p className="text-gray-300">
-            Plan actual: <strong className="text-[#8b5cf6]">Profesional</strong>
-          </p>
-          <p className="text-gray-400">
-            Próxima renovación: <strong className="text-gray-200">15/12/2024</strong>
-          </p>
-        </div>
-        
-        <div className="flex gap-3">
-          <Button 
-            onClick={() => setModalOpen(true)} 
-            className="bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] hover:opacity-90 text-white font-medium px-6 py-2 rounded-lg transition-all hover:scale-105"
-          >
-            Editar suscripción
-          </Button>
-          <button className="px-4 py-2 rounded-md border border-[#2b2c32] text-gray-300 hover:bg-[#2b2c32]/70 transition">
-            Descargar facturas
-          </button>
-        </div>
-        
-        <SimpleModal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-semibold text-white">Elige tu plan</h3>
-              <button 
-                onClick={() => setModalOpen(false)} 
-                className="text-gray-400 hover:text-white text-2xl"
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {planes.map((plan) => (
+            <div 
+              key={plan.nombre} 
+              className="border border-[#e5e5ea] rounded-2xl p-6 hover:shadow-lg transition-all hover:scale-105"
+            >
+              <h3 className="text-lg font-semibold mb-1">{plan.nombre}</h3>
+              <p className="text-[#6b4ce6] font-bold text-xl mb-2">{plan.precio}</p>
+              <p className="text-gray-500 text-sm mb-4">{plan.desc}</p>
+              <ul className="text-sm text-gray-600 space-y-2 mb-6">
+                {plan.features.map((f, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-[#6b4ce6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Button 
+                onClick={() => handleChangePlan(plan.nombre)} 
+                className="w-full bg-[#6b4ce6] hover:bg-[#5638d2] text-white transition-all hover:scale-105"
               >
-                ✕
-              </button>
+                Elegir plan
+              </Button>
             </div>
-            <p className="text-gray-400">Seleccioná el plan que mejor se adapte a vos.</p>
-            
-            <div className="grid md:grid-cols-3 gap-6">
-              {[
-                { 
-                  nombre: "Básico", 
-                  precio: "$9.000", 
-                  desc: "Ideal para profesionales individuales.", 
-                  grad: "from-[#3b82f6] to-[#60a5fa]",
-                  features: ["Hasta 3 obras", "Soporte básico", "Reportes básicos"]
-                },
-                { 
-                  nombre: "Profesional", 
-                  precio: "$15.000", 
-                  desc: "Para equipos y pequeñas empresas.", 
-                  grad: "from-[#8b5cf6] to-[#7c3aed]",
-                  features: ["Hasta 10 obras", "Soporte prioritario", "Reportes avanzados", "Integraciones"]
-                },
-                { 
-                  nombre: "Premium", 
-                  precio: "$25.000", 
-                  desc: "Para constructoras grandes o desarrolladoras.", 
-                  grad: "from-[#ec4899] to-[#a855f7]",
-                  features: ["Obras ilimitadas", "Soporte 24/7", "Reportes personalizados", "API completa"]
-                },
-              ].map((plan) => (
-                <div
-                  key={plan.nombre}
-                  className="p-6 rounded-xl border border-[#2b2c32] bg-[#1c1d22]/70 hover:border-[#8b5cf6] transition-all shadow-lg hover:scale-105"
-                >
-                  <h3 className="text-lg font-semibold text-white mb-2">{plan.nombre}</h3>
-                  <p className={`bg-gradient-to-r ${plan.grad} text-transparent bg-clip-text font-bold text-2xl mb-1`}>
-                    {plan.precio}/mes
-                  </p>
-                  <p className="text-gray-400 text-sm mb-4">{plan.desc}</p>
-                  
-                  <ul className="space-y-2 mb-6">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="text-gray-300 text-sm flex items-center">
-                        <span className="w-2 h-2 bg-[#8b5cf6] rounded-full mr-2"></span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <Button 
-                    onClick={() => handleChangePlan(plan.nombre)} 
-                    className={`w-full bg-gradient-to-r ${plan.grad} text-white font-medium hover:opacity-90 transition-all`}
-                  >
-                    Elegir
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </SimpleModal>
+          ))}
+        </div>
       </Card>
     </div>
   )
@@ -448,14 +416,14 @@ function Suscripcion() {
 
 export function CuentaSection() {
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="bg-gradient-to-br from-[#0b0b0d] via-[#0f1014] to-[#16171c] rounded-2xl shadow-2xl overflow-hidden">
-        <div className="bg-[#1a1b1f]/80 px-8 py-6 border-b border-[#2b2c32]">
-          <h2 className="text-2xl font-semibold text-white">Configuración de Cuenta</h2>
-          <p className="text-sm text-gray-400">Gestioná tu perfil, preferencias y suscripción</p>
-          <div className="w-24 h-1 bg-gradient-to-r from-[#8b5cf6] to-[#4f46e5] mt-4 rounded-full" />
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-[#f9f9fb] rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white px-8 py-6 border-b border-[#e5e5ea]">
+          <h2 className="text-2xl font-semibold text-[#222]">Configuración de Cuenta</h2>
+          <p className="text-sm text-gray-500">Gestioná tu perfil profesional, preferencias y suscripción</p>
+          <div className="w-20 h-[3px] bg-[#6b4ce6] mt-3 rounded-full" />
         </div>
-        <div className="p-8 space-y-8">
+        <div className="p-8 space-y-10">
           <PerfilUsuario />
           <Personalizacion />
           <Suscripcion />

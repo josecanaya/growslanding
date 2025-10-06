@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin } from 'lucide-react';
+import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin, Building2, Wrench, Paintbrush } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { EtapasTimeline } from '@/components/EtapasTimeline';
 
@@ -443,7 +443,8 @@ interface TareasDetailPageProps {
 
 // Función para convertir tareas al formato del EtapasTimeline
 const convertirTareasParaTimeline = (tareas: Tarea[], obraId: string) => {
-  return tareas.map(tarea => ({
+  console.log('Convirtiendo tareas:', tareas);
+  const tareasConvertidas = tareas.map(tarea => ({
     id: tarea.id,
     nombre: tarea.nombre,
     obraId: obraId,
@@ -465,6 +466,8 @@ const convertirTareasParaTimeline = (tareas: Tarea[], obraId: string) => {
     tiempoTemprano: 0, // No disponible en el formato actual
     tiempoTardio: 0 // No disponible en el formato actual
   }));
+  console.log('Tareas convertidas:', tareasConvertidas);
+  return tareasConvertidas;
 };
 
 export default function TareasDetailPage({ params }: TareasDetailPageProps) {
@@ -524,13 +527,104 @@ export default function TareasDetailPage({ params }: TareasDetailPageProps) {
             {tabActivo === 'resumen' ? (
               <div className="space-y-6">
                 <EstadisticasTareas tareas={tareas} />
+                
+                {/* TIMELINE DE ETAPAS - VERSIÓN SIMPLE */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Timeline de Etapas</h3>
-                  <EtapasTimeline 
-                    tareas={convertirTareasParaTimeline(tareas, params.obraId)}
-                    obraId={params.obraId}
-                  />
+                  <h3 className="text-xl font-bold text-gray-900 mb-6">Timeline de Etapas de Construcción</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* ESTRUCTURA */}
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-blue-500 text-white rounded-lg">
+                          <Building2 className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-blue-800">Estructura</h4>
+                          <p className="text-sm text-gray-600">Fundaciones, columnas, vigas</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progreso</span>
+                          <span className="font-bold text-blue-800">75%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-blue-500 h-2 rounded-full" style={{width: '75%'}}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>3 tareas</span>
+                          <span>2 completadas</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* OBRA GRIS */}
+                    <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-gray-500 text-white rounded-lg">
+                          <Wrench className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-gray-800">Obra Gris</h4>
+                          <p className="text-sm text-gray-600">Mampostería, instalaciones</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progreso</span>
+                          <span className="font-bold text-gray-800">40%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-gray-500 h-2 rounded-full" style={{width: '40%'}}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>2 tareas</span>
+                          <span>1 completada</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TERMINACIONES */}
+                    <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-3 bg-green-500 text-white rounded-lg">
+                          <Paintbrush className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-green-800">Terminaciones</h4>
+                          <p className="text-sm text-gray-600">Revoques, pintura, acabados</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progreso</span>
+                          <span className="font-bold text-green-800">0%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-green-500 h-2 rounded-full" style={{width: '0%'}}></div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>2 tareas</span>
+                          <span>0 completadas</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* INFO DE DEBUG */}
+                  <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Debug:</strong> {tareas.length} tareas encontradas para la obra {params.obraId}
+                    </p>
+                    <p className="text-sm text-yellow-800">
+                      Estructura: {tareas.filter(t => t.etapa === 'Estructura').length} | 
+                      Obra gris: {tareas.filter(t => t.etapa === 'Obra gris').length} | 
+                      Terminaciones: {tareas.filter(t => t.etapa === 'Terminaciones').length}
+                    </p>
+                  </div>
                 </div>
+
                 <TareasRecientes tareas={tareas} />
               </div>
             ) : (

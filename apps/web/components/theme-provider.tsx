@@ -2,54 +2,38 @@
 
 import { useEffect, useState } from 'react';
 
-const COLOR_CLASSES = ['theme-blue', 'theme-green', 'theme-gray', 'theme-orange'] as const;
-type ColorClass = typeof COLOR_CLASSES[number];
-
-const mapColorToClass = (color: string | undefined | null): ColorClass => {
-  if (!color) return 'theme-blue';
-  const candidate = 'theme-' + color;
-  return (COLOR_CLASSES as readonly string[]).includes(candidate) ? (candidate as ColorClass) : 'theme-blue';
-};
-
 type ThemeProviderProps = {
   children: React.ReactNode;
 };
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [colorClass, setColorClass] = useState<ColorClass>('theme-blue');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const stored = window.localStorage.getItem('preferencias');
-      if (stored) {
-        const prefs = JSON.parse(stored) as { darkMode?: boolean; color?: string };
-        setTheme(prefs.darkMode ? 'dark' : 'light');
-        setColorClass(mapColorToClass(prefs.color));
-      }
-    } catch (error) {
-      console.error('[Cuenta] No se pudieron cargar las preferencias guardadas', error);
+    
+    // Cargar tema guardado
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      setTheme(saved as 'light' | 'dark');
+    } else {
+      // Detectar preferencia del sistema
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
     }
   }, []);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
+    
+    // Aplicar tema al documento
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
   }, [theme]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const body = document.body;
-    COLOR_CLASSES.forEach((cls) => body.classList.remove(cls));
-    body.classList.add(colorClass);
-  }, [colorClass]);
 
   return (
     <div className={theme === 'dark' ? 'dark' : ''}>
-      <div className={colorClass}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

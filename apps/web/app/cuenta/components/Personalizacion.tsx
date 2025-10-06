@@ -1,77 +1,104 @@
-﻿'use client';
+﻿"use client"
+import { useState, useEffect } from "react"
+import { Card } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/components/ui/use-toast"
 
-export default function Personalizacion(): JSX.Element {
+export default function Personalizacion() {
+  const [darkMode, setDarkMode] = useState(false)
+  const [color, setColor] = useState("azul")
+  const [idioma, setIdioma] = useState("es")
+  const [notificaciones, setNotificaciones] = useState(true)
+
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const stored = localStorage.getItem("preferencias")
+    if (stored) {
+      const prefs = JSON.parse(stored)
+      setDarkMode(prefs.darkMode || false)
+      setColor(prefs.color || "azul")
+      setIdioma(prefs.idioma || "es")
+      setNotificaciones(prefs.notificaciones !== false)
+    }
+  }, [])
+
+  const handleSave = () => {
+    const prefs = { darkMode, color, idioma, notificaciones }
+    localStorage.setItem("preferencias", JSON.stringify(prefs))
+    
+    // Aplicar cambios inmediatamente
+    document.documentElement.classList.toggle("dark", darkMode)
+    
+    // Aplicar color al body
+    const body = document.body
+    const colorClasses = ['theme-blue', 'theme-green', 'theme-gray', 'theme-orange']
+    colorClasses.forEach(cls => body.classList.remove(cls))
+    
+    const colorMap: { [key: string]: string } = {
+      'azul': 'theme-blue',
+      'verde': 'theme-green', 
+      'gris': 'theme-gray',
+      'naranja': 'theme-orange'
+    }
+    
+    if (colorMap[color]) {
+      body.classList.add(colorMap[color])
+    }
+    
+    toast({
+      title: "Preferencias guardadas",
+      description: "Tus cambios se aplicaron correctamente.",
+    })
+  }
+
   return (
-    <section className="rounded-2xl border border-white/60 bg-white/80 shadow-md backdrop-blur px-6 py-6">
-      <header className="mb-4 flex items-center gap-3">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-500">🎨</span>
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900">Preferencias de la aplicación</h2>
-          <p className="text-sm text-gray-500">Personalizá el aspecto visual y la experiencia general de la plataforma.</p>
-        </div>
-      </header>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="space-y-3 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Tema</h3>
-          <p className="text-sm text-gray-500">Elegí entre modo claro u oscuro según tus preferencias.</p>
-          <div className="flex gap-3">
-            <button className="rounded-xl border border-blue-500 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600">
-              Tema claro
-            </button>
-            <button className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600">
-              Tema oscuro
-            </button>
-          </div>
+    <Card className="p-6 space-y-6">
+      <h2 className="text-xl font-semibold">🎨 Personalización</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex justify-between items-center">
+          <span>Modo oscuro</span>
+          <Switch checked={darkMode} onCheckedChange={setDarkMode} />
         </div>
 
-        <div className="space-y-3 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Idioma</h3>
-          <p className="text-sm text-gray-500">Definí el idioma principal de la interfaz.</p>
-          <div className="flex gap-3">
-            <button className="rounded-xl border border-blue-500 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-600">
-              Español
-            </button>
-            <button className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600">
-              Inglés
-            </button>
-          </div>
+        <div className="flex justify-between items-center">
+          <span>Color principal</span>
+          <Select value={color} onValueChange={setColor}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Elegir color" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="azul">Azul</SelectItem>
+              <SelectItem value="verde">Verde</SelectItem>
+              <SelectItem value="gris">Gris</SelectItem>
+              <SelectItem value="naranja">Naranja</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span>Idioma</span>
+          <Select value={idioma} onValueChange={setIdioma}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Seleccionar idioma" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="es">Español</SelectItem>
+              <SelectItem value="en">Inglés</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span>Notificaciones</span>
+          <Switch checked={notificaciones} onCheckedChange={setNotificaciones} />
         </div>
       </div>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <div className="space-y-2 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Color principal</h3>
-          <div className="flex flex-wrap gap-2">
-            {['Azul', 'Verde', 'Gris', 'Naranja'].map((color) => (
-              <span
-                key={color}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600"
-              >
-                {color}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="space-y-2 rounded-2xl border border-gray-100 bg-white/90 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-900">Notificaciones</h3>
-          <ul className="space-y-2 text-sm text-gray-600">
-            <li>Notificaciones en la app — Activadas</li>
-            <li>Alertas por email — Pendiente</li>
-            <li>Tareas validadas — Activadas</li>
-            <li>Nuevas obras asignadas — Activadas</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
-          Guardar preferencias
-        </button>
-        <button className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-800">
-          Restablecer valores
-        </button>
-      </div>
-    </section>
-  );
+      <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">
+        Guardar cambios
+      </Button>
+    </Card>
+  )
 }

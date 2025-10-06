@@ -3,7 +3,6 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
 
 export default function PerfilUsuario() {
   const [form, setForm] = useState({
@@ -13,8 +12,6 @@ export default function PerfilUsuario() {
     telefono: "",
     especialidad: "",
   })
-
-  const { toast } = useToast()
 
   useEffect(() => {
     const saved = localStorage.getItem("perfilUsuario")
@@ -27,10 +24,7 @@ export default function PerfilUsuario() {
 
   const handleSave = () => {
     localStorage.setItem("perfilUsuario", JSON.stringify(form))
-    toast({
-      title: "Perfil actualizado",
-      description: "Los cambios fueron guardados correctamente.",
-    })
+    alert("Perfil actualizado correctamente!")
   }
 
   return (

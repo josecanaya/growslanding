@@ -1,18 +1,66 @@
 ﻿"use client"
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+
+// Switch simplificado sin Radix UI
+function SimpleSwitch({ checked, onCheckedChange }: { checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onCheckedChange(!checked)}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+        checked ? 'bg-blue-600' : 'bg-gray-200'
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+          checked ? 'translate-x-6' : 'translate-x-1'
+        }`}
+      />
+    </button>
+  )
+}
+
+// Select simplificado sin Radix UI
+function SimpleSelect({ value, onValueChange, children }: { value: string; onValueChange: (value: string) => void; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false)
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex h-10 w-[150px] items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <span>{value}</span>
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-300 bg-white shadow-lg">
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SimpleSelectItem({ value, children, onSelect }: { value: string; children: React.ReactNode; onSelect: (value: string) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(value)}
+      className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+    >
+      {children}
+    </button>
+  )
+}
 
 export default function Personalizacion() {
   const [darkMode, setDarkMode] = useState(false)
   const [color, setColor] = useState("azul")
   const [idioma, setIdioma] = useState("es")
   const [notificaciones, setNotificaciones] = useState(true)
-
-  const { toast } = useToast()
 
   useEffect(() => {
     const stored = localStorage.getItem("preferencias")
@@ -48,10 +96,7 @@ export default function Personalizacion() {
       body.classList.add(colorMap[color])
     }
     
-    toast({
-      title: "Preferencias guardadas",
-      description: "Tus cambios se aplicaron correctamente.",
-    })
+    alert("Preferencias guardadas correctamente!")
   }
 
   return (
@@ -60,40 +105,30 @@ export default function Personalizacion() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex justify-between items-center">
           <span>Modo oscuro</span>
-          <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+          <SimpleSwitch checked={darkMode} onCheckedChange={setDarkMode} />
         </div>
 
         <div className="flex justify-between items-center">
           <span>Color principal</span>
-          <Select value={color} onValueChange={setColor}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Elegir color" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="azul">Azul</SelectItem>
-              <SelectItem value="verde">Verde</SelectItem>
-              <SelectItem value="gris">Gris</SelectItem>
-              <SelectItem value="naranja">Naranja</SelectItem>
-            </SelectContent>
-          </Select>
+          <SimpleSelect value={color} onValueChange={setColor}>
+            <SimpleSelectItem value="azul" onSelect={setColor}>Azul</SimpleSelectItem>
+            <SimpleSelectItem value="verde" onSelect={setColor}>Verde</SimpleSelectItem>
+            <SimpleSelectItem value="gris" onSelect={setColor}>Gris</SimpleSelectItem>
+            <SimpleSelectItem value="naranja" onSelect={setColor}>Naranja</SimpleSelectItem>
+          </SimpleSelect>
         </div>
 
         <div className="flex justify-between items-center">
           <span>Idioma</span>
-          <Select value={idioma} onValueChange={setIdioma}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Seleccionar idioma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="es">Español</SelectItem>
-              <SelectItem value="en">Inglés</SelectItem>
-            </SelectContent>
-          </Select>
+          <SimpleSelect value={idioma} onValueChange={setIdioma}>
+            <SimpleSelectItem value="es" onSelect={setIdioma}>Español</SimpleSelectItem>
+            <SimpleSelectItem value="en" onSelect={setIdioma}>Inglés</SimpleSelectItem>
+          </SimpleSelect>
         </div>
 
         <div className="flex justify-between items-center">
           <span>Notificaciones</span>
-          <Switch checked={notificaciones} onCheckedChange={setNotificaciones} />
+          <SimpleSwitch checked={notificaciones} onCheckedChange={setNotificaciones} />
         </div>
       </div>
       <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 text-white">

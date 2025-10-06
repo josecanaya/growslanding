@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   CheckSquare, 
   Building2, 
@@ -10,7 +10,9 @@ import {
   Wallet, 
   User,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface User {
@@ -28,6 +30,27 @@ interface SidebarProps {
 
 export function Sidebar({ user, activeSection, onSectionChange }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Cargar tema guardado
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      setTheme(saved as 'light' | 'dark');
+    } else {
+      // Detectar preferencia del sistema
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    // Aplicar tema inmediatamente
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    localStorage.setItem('theme', newTheme);
+  };
 
   const menuItems = [
     { id: 'tareas', label: 'Tareas en curso', icon: CheckSquare },
@@ -127,6 +150,21 @@ export function Sidebar({ user, activeSection, onSectionChange }: SidebarProps) 
 
           {/* Footer */}
           <div className="p-4 border-t border-white/20">
+            {/* Theme Toggle */}
+            <div className="flex justify-center mb-3">
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg border border-white/20 hover:bg-white/10 transition-colors duration-200"
+                title={`Cambiar a modo ${theme === 'light' ? 'oscuro' : 'claro'}`}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-yellow-400" />
+                ) : (
+                  <Moon className="h-5 w-5 text-blue-300" />
+                )}
+              </button>
+            </div>
+            
             <div className="text-center">
               <p className="text-xs text-white/50">GROWS Panel</p>
               <p className="text-xs text-white/50">v1.0.0</p>

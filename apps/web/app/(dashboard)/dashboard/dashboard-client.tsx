@@ -213,29 +213,29 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
   }));
 
   return (
-    <div className="flex min-h-[calc(100vh-80px)] bg-muted/10">
-      <aside className="sticky top-[80px] hidden h-[calc(100vh-80px)] w-72 flex-shrink-0 flex-col gap-6 border-r border-border bg-card/70 p-6 backdrop-blur lg:flex">
+    <div className="flex min-h-[calc(100vh-80px)] bg-claro-fondo">
+      <aside className="sticky top-[80px] hidden h-[calc(100vh-80px)] w-72 flex-shrink-0 flex-col gap-6 border-r border-corporativo bg-secundario p-6 lg:flex">
         <div>
-          <p className="text-xs uppercase text-muted-foreground">Cliente</p>
-          <h2 className="text-lg font-semibold">{org.name}</h2>
+          <p className="text-xs uppercase text-oscuro/60 font-medium">Cliente</p>
+          <h2 className="text-lg font-semibold text-oscuro">{org.name}</h2>
         </div>
         <nav className="flex flex-col gap-3 text-sm">
-          <a className="text-muted-foreground transition hover:text-foreground" href="#resumen">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#resumen">
             Resumen
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#crear-obra">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#crear-obra">
             Crear obra
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#crear-socio">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#crear-socio">
             Crear socio
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#invitar-socio">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#invitar-socio">
             Invitar socio constructor
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#crear-tarea">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#crear-tarea">
             Crear tarea
           </a>
-          <a className="text-muted-foreground transition hover:text-foreground" href="#tareas">
+          <a className="text-oscuro/70 transition-smooth hover:text-primario font-medium" href="#tareas">
             Tareas y actas
           </a>
         </nav>
@@ -269,31 +269,31 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
               {feedback.message}
             </p>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <article className="rounded border border-border bg-card p-4 shadow-sm">
-              <p className="text-xs uppercase text-muted-foreground">Obras activas</p>
-              <p className="mt-2 text-2xl font-semibold">{obras.length}</p>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <article className="rounded-xl border border-corporativo bg-secundario p-6 shadow-sm hover-sombra transition-smooth cursor-pointer">
+              <p className="text-xs uppercase text-oscuro/60 font-medium">Obras activas</p>
+              <p className="mt-2 text-2xl font-bold text-primario">{obras.length}</p>
             </article>
-            <article className="rounded border border-border bg-card p-4 shadow-sm">
-              <p className="text-xs uppercase text-muted-foreground">Socios registrados</p>
-              <p className="mt-2 text-2xl font-semibold">{socios.length}</p>
+            <article className="rounded-xl border border-corporativo bg-secundario p-6 shadow-sm hover-sombra transition-smooth cursor-pointer">
+              <p className="text-xs uppercase text-oscuro/60 font-medium">Socios registrados</p>
+              <p className="mt-2 text-2xl font-bold text-primario">{socios.length}</p>
             </article>
-            <article className="rounded border border-border bg-card p-4 shadow-sm">
-              <p className="text-xs uppercase text-muted-foreground">Tareas totales</p>
-              <p className="mt-2 text-2xl font-semibold">{totalTareas}</p>
+            <article className="rounded-xl border border-corporativo bg-secundario p-6 shadow-sm hover-sombra transition-smooth cursor-pointer">
+              <p className="text-xs uppercase text-oscuro/60 font-medium">Tareas totales</p>
+              <p className="mt-2 text-2xl font-bold text-primario">{totalTareas}</p>
             </article>
             {tareasPorEstado.map(({ estado, total }) => (
-              <article key={estado} className="rounded border border-border bg-card p-4 shadow-sm">
-                <p className="text-xs uppercase text-muted-foreground">{estado}</p>
-                <p className="mt-2 text-xl font-semibold">{total}</p>
+              <article key={estado} className="rounded-xl border border-corporativo bg-secundario p-6 shadow-sm hover-sombra transition-smooth cursor-pointer">
+                <p className="text-xs uppercase text-oscuro/60 font-medium">{estado}</p>
+                <p className="mt-2 text-xl font-bold text-primario">{total}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section id="crear-obra" className="rounded border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Crear obra</h2>
-          <p className="text-sm text-muted-foreground">
+        <section id="crear-obra" className="rounded-xl border border-corporativo bg-secundario p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-oscuro">Crear obra</h2>
+          <p className="text-sm text-oscuro/70">
             Cada obra agrupa las tareas y evidencia asociada a un proyecto específico.
           </p>
           <form
@@ -329,7 +329,7 @@ export default function DashboardClient({ org, obras, socios, tareas, invites }:
             <div className="md:col-span-2">
               <button
                 type="submit"
-                className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                className="rounded-lg bg-primario px-6 py-3 text-sm font-semibold text-white hover-primario transition-smooth disabled:opacity-60"
                 disabled={obraForm.formState.isSubmitting}
               >
                 {obraForm.formState.isSubmitting ? 'Guardando…' : 'Guardar obra'}

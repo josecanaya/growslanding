@@ -41,13 +41,12 @@ export function TopBar({
   return (
     <>
       {/* Header minimalista - solo avatar */}
-      <header className="sticky top-0 z-40 shadow-lg" style={{ backgroundColor: '#1A202C' }}>
+      <header className="sticky top-0 z-40 shadow-lg bg-primario">
         <div className="flex items-center justify-between px-4 py-3">
           {/* Avatar clickeable */}
           <button
             onClick={() => setShowSideMenu(true)}
-            className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md hover:shadow-lg transition-shadow"
-            style={{ backgroundColor: '#FFFFFF', color: '#1A202C' }}
+            className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md hover:shadow-lg transition-smooth bg-acento text-oscuro"
           >
             {user.avatar}
           </button>
@@ -67,24 +66,23 @@ export function TopBar({
           />
           
           {/* Menú lateral */}
-          <div className="fixed top-0 left-0 h-full w-80 shadow-xl z-50 transform transition-transform duration-300 ease-in-out" style={{ backgroundColor: '#1A202C' }}>
+          <div className="fixed top-0 left-0 h-full w-80 shadow-xl z-50 transform transition-transform duration-300 ease-in-out bg-primario">
             <div className="flex flex-col h-full">
               {/* Header del menú */}
-              <div className="p-6 border-b" style={{ borderColor: '#008080' }}>
+              <div className="p-6 border-b border-white/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: '#FFFFFF', color: '#1A202C' }}>
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl bg-acento text-oscuro">
                       {user.avatar}
                     </div>
                     <div>
-                      <h2 className="font-semibold text-lg" style={{ color: '#FFFFFF' }}>{user.name}</h2>
-                      <p className="text-sm" style={{ color: '#A0AEC0' }}>Líder de cuadrilla</p>
+                      <h2 className="font-semibold text-lg text-white">{user.name}</h2>
+                      <p className="text-sm text-white/70">Líder de cuadrilla</p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowSideMenu(false)}
-                    className="transition-colors"
-                    style={{ color: '#FFFFFF' }}
+                    className="transition-smooth text-white"
                   >
                     <X className="h-6 w-6" />
                   </button>
@@ -92,7 +90,7 @@ export function TopBar({
               </div>
 
               {/* Items del menú */}
-              <div className="flex-1 py-6" style={{ backgroundColor: '#1A202C' }}>
+              <div className="flex-1 py-6 bg-primario">
                 <nav className="space-y-2">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -100,10 +98,9 @@ export function TopBar({
                       <button
                         key={item.id}
                         onClick={() => handleMenuClick(item.id)}
-                        className="w-full flex items-center space-x-4 px-6 py-4 text-left transition-colors hover:opacity-80"
-                        style={{ backgroundColor: '#1A202C', color: '#FFFFFF' }}
+                        className="w-full flex items-center space-x-4 px-6 py-4 text-left transition-smooth hover:bg-white/10 text-white"
                       >
-                        <Icon className="h-6 w-6" style={{ color: '#FFFFFF' }} />
+                        <Icon className="h-6 w-6 text-white" />
                         <span className="font-medium">{item.label}</span>
                       </button>
                     );
@@ -112,7 +109,7 @@ export function TopBar({
               </div>
 
               {/* Footer del menú */}
-              <div className="p-6 border-t" style={{ borderColor: '#008080', backgroundColor: '#1A202C' }}>
+              <div className="p-6 border-t border-white/20 bg-primario">
                 <button
                   onClick={() => {
                     localStorage.removeItem('user');
@@ -120,8 +117,7 @@ export function TopBar({
                     localStorage.removeItem('isOnBreak');
                     window.location.href = '/auth/login';
                   }}
-                  className="w-full flex items-center space-x-4 px-4 py-3 text-left rounded-lg transition-colors hover:opacity-80"
-                  style={{ backgroundColor: '#1A202C', color: '#FFFFFF' }}
+                  className="w-full flex items-center space-x-4 px-4 py-3 text-left rounded-lg transition-smooth hover:bg-white/10 text-white"
                 >
                   <span className="text-lg">🚪</span>
                   <span className="font-medium">Cerrar sesión</span>

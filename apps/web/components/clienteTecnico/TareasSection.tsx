@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush } from 'lucide-react';
+import { TimelineInteractivo } from './TimelineInteractivo';
+import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
 
 // Tipos de datos
 interface Obra {
@@ -71,41 +73,362 @@ const obrasMock: Obra[] = [
 ];
 
 const tareasMock: Tarea[] = [
+  // ====== ETAPA 1: ESTRUCTURA ======
+  // Inicio del proyecto
   {
-    id: '1',
-    nombre: 'Excavación y fundaciones',
-    descripcion: 'Excavación de cimientos y colocación de fundaciones',
+    id: 'E01',
+    nombre: 'Replanteo y nivelación',
+    descripcion: 'Marcado de ejes, niveles y límites del terreno',
     estado: 'Finalizada',
-    responsable: 'Carlos Pérez',
+    responsable: 'Arq. Carlos Pérez',
     etapa: 'Estructura',
     fechaInicio: '2024-01-15',
-    fechaFin: '2024-01-30',
+    fechaFin: '2024-01-18',
     prioridad: 'Alta',
-    presupuesto: 45000
+    presupuesto: 18000,
+    dependencias: []
   },
   {
-    id: '2',
-    nombre: 'Estructura de hormigón',
-    descripcion: 'Construcción de estructura portante en hormigón armado',
-    estado: 'En curso',
-    responsable: 'María González',
+    id: 'E02',
+    nombre: 'Excavación y preparación de terreno',
+    descripcion: 'Excavación de fundaciones y nivelación del terreno',
+    estado: 'Finalizada',
+    responsable: 'Ing. Juan Molina',
     etapa: 'Estructura',
-    fechaInicio: '2024-02-01',
-    fechaFin: '2024-03-15',
+    fechaInicio: '2024-01-19',
+    fechaFin: '2024-01-26',
     prioridad: 'Alta',
-    presupuesto: 120000
+    presupuesto: 42000,
+    dependencias: ['E01']
   },
   {
-    id: '3',
-    nombre: 'Instalaciones eléctricas',
-    descripcion: 'Instalación completa del sistema eléctrico',
+    id: 'E03',
+    nombre: 'Armado y hormigonado de bases',
+    descripcion: 'Colocación de armaduras y hormigonado de zapatas y vigas de fundación',
+    estado: 'Finalizada',
+    responsable: 'Ing. María González',
+    etapa: 'Estructura',
+    fechaInicio: '2024-01-27',
+    fechaFin: '2024-02-05',
+    prioridad: 'Alta',
+    presupuesto: 95000,
+    dependencias: ['E02']
+  },
+  {
+    id: 'E04',
+    nombre: 'Estructura de columnas - Planta Baja',
+    descripcion: 'Encofrado, armado y hormigonado de columnas de PB',
+    estado: 'En curso',
+    responsable: 'Ing. María González',
+    etapa: 'Estructura',
+    fechaInicio: '2024-02-06',
+    fechaFin: '2024-02-20',
+    prioridad: 'Alta',
+    presupuesto: 125000,
+    dependencias: ['E03']
+  },
+  {
+    id: 'E05',
+    nombre: 'Losa de entrepiso - Planta Baja',
+    descripcion: 'Encofrado, armado y hormigonado de losa sobre PB',
     estado: 'Pendiente',
-    responsable: 'Roberto Silva',
-    etapa: 'Instalaciones',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-03-20',
+    responsable: 'Ing. María González',
+    etapa: 'Estructura',
+    fechaInicio: '2024-02-21',
+    fechaFin: '2024-03-05',
+    prioridad: 'Alta',
+    presupuesto: 180000,
+    dependencias: ['E04']
+  },
+  {
+    id: 'E06',
+    nombre: 'Estructura de columnas - Planta Alta',
+    descripcion: 'Encofrado, armado y hormigonado de columnas de PA',
+    estado: 'Pendiente',
+    responsable: 'Ing. María González',
+    etapa: 'Estructura',
+    fechaInicio: '2024-03-06',
+    fechaFin: '2024-03-18',
+    prioridad: 'Alta',
+    presupuesto: 110000,
+    dependencias: ['E05']
+  },
+  {
+    id: 'E07',
+    nombre: 'Losa de techo - Cubierta',
+    descripcion: 'Encofrado, armado y hormigonado de losa de cubierta',
+    estado: 'Pendiente',
+    responsable: 'Ing. María González',
+    etapa: 'Estructura',
+    fechaInicio: '2024-03-19',
+    fechaFin: '2024-04-02',
+    prioridad: 'Alta',
+    presupuesto: 195000,
+    dependencias: ['E06']
+  },
+
+  // ====== ETAPA 2: OBRA GRIS ======
+  {
+    id: 'OG01',
+    nombre: 'Mampostería exterior - Planta Baja',
+    descripcion: 'Construcción de muros exteriores de ladrillo en PB',
+    estado: 'Pendiente',
+    responsable: 'Maestro Roberto Silva',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-04-03',
+    fechaFin: '2024-04-18',
     prioridad: 'Media',
-    presupuesto: 35000
+    presupuesto: 85000,
+    dependencias: ['E07']
+  },
+  {
+    id: 'OG02',
+    nombre: 'Mampostería exterior - Planta Alta',
+    descripcion: 'Construcción de muros exteriores de ladrillo en PA',
+    estado: 'Pendiente',
+    responsable: 'Maestro Roberto Silva',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-04-19',
+    fechaFin: '2024-05-03',
+    prioridad: 'Media',
+    presupuesto: 78000,
+    dependencias: ['E07']
+  },
+  {
+    id: 'OG03',
+    nombre: 'Mampostería interior - Divisiones',
+    descripcion: 'Construcción de muros internos en ambas plantas',
+    estado: 'Pendiente',
+    responsable: 'Maestro Roberto Silva',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-05-04',
+    fechaFin: '2024-05-20',
+    prioridad: 'Media',
+    presupuesto: 62000,
+    dependencias: ['OG01', 'OG02']
+  },
+  {
+    id: 'OG04',
+    nombre: 'Instalación eléctrica - Cableado',
+    descripcion: 'Tendido de cables, cajas y cañerías eléctricas',
+    estado: 'Pendiente',
+    responsable: 'Elec. Ana García',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-05-21',
+    fechaFin: '2024-06-05',
+    prioridad: 'Media',
+    presupuesto: 72000,
+    dependencias: ['OG03']
+  },
+  {
+    id: 'OG05',
+    nombre: 'Instalación sanitaria - Agua y desagüe',
+    descripcion: 'Tendido de cañerías de agua fría, caliente y desagües cloacales',
+    estado: 'Pendiente',
+    responsable: 'Plomero Pedro Martínez',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-05-21',
+    fechaFin: '2024-06-08',
+    prioridad: 'Media',
+    presupuesto: 68000,
+    dependencias: ['OG03']
+  },
+  {
+    id: 'OG06',
+    nombre: 'Instalación de gas',
+    descripcion: 'Tendido de cañerías de gas y ventilaciones',
+    estado: 'Pendiente',
+    responsable: 'Gasista Luis Torres',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-06-09',
+    fechaFin: '2024-06-18',
+    prioridad: 'Media',
+    presupuesto: 38000,
+    dependencias: ['OG04', 'OG05']
+  },
+  {
+    id: 'OG07',
+    nombre: 'Revoque grueso exterior',
+    descripcion: 'Aplicación de revoque exterior en fachadas',
+    estado: 'Pendiente',
+    responsable: 'Revocador Luis Fernández',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-06-19',
+    fechaFin: '2024-07-05',
+    prioridad: 'Media',
+    presupuesto: 55000,
+    dependencias: ['OG06']
+  },
+  {
+    id: 'OG08',
+    nombre: 'Revoque grueso interior',
+    descripcion: 'Aplicación de revoque grueso en muros interiores',
+    estado: 'Pendiente',
+    responsable: 'Revocador Luis Fernández',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-07-06',
+    fechaFin: '2024-07-22',
+    prioridad: 'Media',
+    presupuesto: 62000,
+    dependencias: ['OG06']
+  },
+  {
+    id: 'OG09',
+    nombre: 'Contrapiso y carpeta',
+    descripcion: 'Ejecución de contrapisos nivelados para pisos',
+    estado: 'Pendiente',
+    responsable: 'Maestro Roberto Silva',
+    etapa: 'Obra gris',
+    fechaInicio: '2024-07-23',
+    fechaFin: '2024-08-08',
+    prioridad: 'Media',
+    presupuesto: 48000,
+    dependencias: ['OG08']
+  },
+
+  // ====== ETAPA 3: TERMINACIONES ======
+  {
+    id: 'T01',
+    nombre: 'Revoque fino y enduído interior',
+    descripcion: 'Aplicación de revoque fino y alisado en interiores',
+    estado: 'Pendiente',
+    responsable: 'Revocador Luis Fernández',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-08-09',
+    fechaFin: '2024-08-28',
+    prioridad: 'Baja',
+    presupuesto: 58000,
+    dependencias: ['OG09']
+  },
+  {
+    id: 'T02',
+    nombre: 'Carpintería de aluminio - Aberturas exteriores',
+    descripcion: 'Instalación de ventanas y puertas exteriores',
+    estado: 'Pendiente',
+    responsable: 'Carpintero Jorge López',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-08-29',
+    fechaFin: '2024-09-15',
+    prioridad: 'Baja',
+    presupuesto: 125000,
+    dependencias: ['T01']
+  },
+  {
+    id: 'T03',
+    nombre: 'Carpintería de madera - Puertas interiores',
+    descripcion: 'Colocación de puertas placas interiores',
+    estado: 'Pendiente',
+    responsable: 'Carpintero Jorge López',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-09-16',
+    fechaFin: '2024-09-28',
+    prioridad: 'Baja',
+    presupuesto: 68000,
+    dependencias: ['T01']
+  },
+  {
+    id: 'T04',
+    nombre: 'Revestimientos cerámicos - Baños y cocina',
+    descripcion: 'Colocación de cerámicos en pisos y paredes húmedas',
+    estado: 'Pendiente',
+    responsable: 'Colocador Raúl Castro',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-09-29',
+    fechaFin: '2024-10-15',
+    prioridad: 'Baja',
+    presupuesto: 82000,
+    dependencias: ['T03']
+  },
+  {
+    id: 'T05',
+    nombre: 'Porcelanato - Ambientes principales',
+    descripcion: 'Colocación de porcelanato en living, comedor y dormitorios',
+    estado: 'Pendiente',
+    responsable: 'Colocador Raúl Castro',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-10-16',
+    fechaFin: '2024-10-30',
+    prioridad: 'Baja',
+    presupuesto: 95000,
+    dependencias: ['T04']
+  },
+  {
+    id: 'T06',
+    nombre: 'Artefactos sanitarios',
+    descripcion: 'Instalación de inodoros, lavatorios, duchas y griferías',
+    estado: 'Pendiente',
+    responsable: 'Plomero Pedro Martínez',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-10-31',
+    fechaFin: '2024-11-08',
+    prioridad: 'Baja',
+    presupuesto: 58000,
+    dependencias: ['T05']
+  },
+  {
+    id: 'T07',
+    nombre: 'Artefactos eléctricos y luminarias',
+    descripcion: 'Colocación de llaves, tomas, spots y artefactos de luz',
+    estado: 'Pendiente',
+    responsable: 'Elec. Ana García',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-10-31',
+    fechaFin: '2024-11-08',
+    prioridad: 'Baja',
+    presupuesto: 48000,
+    dependencias: ['T05']
+  },
+  {
+    id: 'T08',
+    nombre: 'Pintura - Interiores',
+    descripcion: 'Pintura látex en muros y cielorrasos interiores',
+    estado: 'Pendiente',
+    responsable: 'Pintor Sofía Ruiz',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-11-09',
+    fechaFin: '2024-11-25',
+    prioridad: 'Baja',
+    presupuesto: 62000,
+    dependencias: ['T06', 'T07']
+  },
+  {
+    id: 'T09',
+    nombre: 'Pintura - Exteriores',
+    descripcion: 'Pintura acrílica en fachadas y cielorrasos exteriores',
+    estado: 'Pendiente',
+    responsable: 'Pintor Sofía Ruiz',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-11-26',
+    fechaFin: '2024-12-08',
+    prioridad: 'Baja',
+    presupuesto: 55000,
+    dependencias: ['T08']
+  },
+  {
+    id: 'T10',
+    nombre: 'Limpieza final y detalles',
+    descripcion: 'Limpieza profunda, reparación de detalles y retoques finales',
+    estado: 'Pendiente',
+    responsable: 'Coordinadora Mónica Vargas',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-12-09',
+    fechaFin: '2024-12-15',
+    prioridad: 'Alta',
+    presupuesto: 18000,
+    dependencias: ['T09']
+  },
+  {
+    id: 'T11',
+    nombre: 'Entrega y habilitación',
+    descripcion: 'Inspección final, entrega de llaves y documentación al cliente',
+    estado: 'Pendiente',
+    responsable: 'Dir. Obra Carlos Pérez',
+    etapa: 'Terminaciones',
+    fechaInicio: '2024-12-16',
+    fechaFin: '2024-12-18',
+    prioridad: 'Alta',
+    presupuesto: 8000,
+    dependencias: ['T10']
   }
 ];
 
@@ -117,10 +440,30 @@ interface ObraResumenCardProps {
 function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'activa': return 'bg-green-100 text-green-800 border-green-200';
-      case 'pausada': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'finalizada': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'activa': 
+        return {
+          backgroundColor: '#e8f5e8',
+          color: '#2d5a2d',
+          borderColor: '#a8d8a8'
+        };
+      case 'pausada': 
+        return {
+          backgroundColor: '#fffbf0',
+          color: '#8b6914',
+          borderColor: '#f4d03f'
+        };
+      case 'finalizada': 
+        return {
+          backgroundColor: '#f4e27e',
+          color: '#1B263B',
+          borderColor: '#d4af37'
+        };
+      default: 
+        return {
+          backgroundColor: '#f5f7fa',
+          color: '#1B263B',
+          borderColor: '#dce3ea'
+        };
     }
   };
 
@@ -134,24 +477,41 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-md">
+    <div 
+      className="bg-white rounded-xl border transition-all duration-300 hover:shadow-md"
+      style={{borderColor: '#dce3ea'}}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+        e.currentTarget.style.borderColor = '#1B263B';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.borderColor = '#dce3ea';
+      }}
+    >
       <div className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <div 
+              className="h-12 w-12 rounded-lg flex items-center justify-center"
+              style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}
+            >
+              <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{obra.nombre}</h3>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
-                <MapPin className="h-4 w-4" />
-                <span>{obra.direccion}</span>
+              <h3 className="text-lg font-semibold" style={{color: '#10161a'}}>{obra.nombre}</h3>
+              <div className="flex items-center gap-1 text-sm mt-1">
+                <MapPin className="h-4 w-4" style={{color: '#5b5f6a'}} />
+                <span style={{color: '#5b5f6a'}}>{obra.direccion}</span>
               </div>
             </div>
           </div>
           
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getEstadoColor(obra.estado)}`}>
+          <span 
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
+            style={getEstadoColor(obra.estado)}
+          >
             {getEstadoIcon(obra.estado)}
             {obra.estado.charAt(0).toUpperCase() + obra.estado.slice(1)}
           </span>
@@ -159,26 +519,29 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
 
         {/* Información del cliente */}
         <div className="mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <User className="h-4 w-4" />
-            <span className="font-medium">Cliente:</span>
-            <span>{obra.cliente}</span>
+          <div className="flex items-center gap-2 text-sm">
+            <User className="h-4 w-4" style={{color: '#5b5f6a'}} />
+            <span className="font-medium" style={{color: '#5b5f6a'}}>Cliente:</span>
+            <span style={{color: '#5b5f6a'}}>{obra.cliente}</span>
           </div>
         </div>
 
         {/* Progreso */}
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Progreso general</span>
-            <span className="text-sm text-gray-600">{obra.avance}%</span>
+            <span className="text-sm font-medium" style={{color: '#1B263B'}}>Progreso general</span>
+            <span className="text-sm" style={{color: '#5b5f6a'}}>{obra.avance}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full rounded-full h-2" style={{backgroundColor: '#f5f7fa'}}>
             <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${obra.avance}%` }}
+              className="h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${obra.avance}%`,
+                backgroundColor: '#1B263B'
+              }}
             ></div>
           </div>
-          <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
+          <div className="flex items-center justify-between mt-1 text-xs" style={{color: '#5b5f6a'}}>
             <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
           </div>
         </div>
@@ -186,7 +549,14 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
         {/* Botón de acción */}
         <button
           onClick={() => onVerPlanificacion(obra.id)}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg transition-colors font-medium"
+          style={{backgroundColor: '#1B263B'}}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#162033';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#1B263B';
+          }}
         >
           <span>Ver planificación</span>
           <ArrowRight className="h-4 w-4" />
@@ -371,32 +741,39 @@ export function TareasSection() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* ESTRUCTURA */}
-                      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div 
+                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                        style={{backgroundColor: '#f0e0d6', borderColor: '#d4af37'}}
+                      >
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="p-3 bg-blue-500 text-white rounded-lg">
+                          <div 
+                            className="p-3 text-white rounded-lg"
+                            style={{backgroundColor: '#d4af37'}}
+                          >
                             <Building2 className="h-6 w-6" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-blue-800">Estructura</h4>
-                            <p className="text-sm text-gray-600">Fundaciones, columnas, vigas</p>
+                            <h4 className="text-lg font-bold" style={{color: '#8b4513'}}>Estructura</h4>
+                            <p className="text-sm" style={{color: '#5b5f6a'}}>Fundaciones, columnas, vigas</p>
                           </div>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span>Progreso</span>
-                            <span className="font-bold text-blue-800">
+                            <span style={{color: '#5b5f6a'}}>Progreso</span>
+                            <span className="font-bold" style={{color: '#8b4513'}}>
                               {Math.round((tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Estructura').length, 1)) * 100)}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
                             <div 
-                              className="bg-blue-500 h-2 rounded-full" 
+                              className="h-2 rounded-full" 
                               style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Estructura').length, 1)) * 100)}%`
+                                width: `${Math.round((tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Estructura').length, 1)) * 100)}%`,
+                                backgroundColor: '#d4af37'
                               }}
                             ></div>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-600">
+                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
                             <span>{tareas.filter(t => t.etapa === 'Estructura').length} tareas</span>
                             <span>{tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
                           </div>
@@ -404,32 +781,39 @@ export function TareasSection() {
                       </div>
 
                       {/* OBRA GRIS */}
-                      <div className="bg-gray-50 border-2 border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div 
+                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                        style={{backgroundColor: '#f5f7fa', borderColor: '#dce3ea'}}
+                      >
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="p-3 bg-gray-500 text-white rounded-lg">
+                          <div 
+                            className="p-3 text-white rounded-lg"
+                            style={{backgroundColor: '#6b7280'}}
+                          >
                             <Wrench className="h-6 w-6" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-gray-800">Obra Gris</h4>
-                            <p className="text-sm text-gray-600">Mampostería, instalaciones</p>
+                            <h4 className="text-lg font-bold" style={{color: '#1B263B'}}>Obra Gris</h4>
+                            <p className="text-sm" style={{color: '#5b5f6a'}}>Mampostería, instalaciones</p>
                           </div>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span>Progreso</span>
-                            <span className="font-bold text-gray-800">
+                            <span style={{color: '#5b5f6a'}}>Progreso</span>
+                            <span className="font-bold" style={{color: '#1B263B'}}>
                               {Math.round((tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Obra gris').length, 1)) * 100)}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
                             <div 
-                              className="bg-gray-500 h-2 rounded-full" 
+                              className="h-2 rounded-full" 
                               style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Obra gris').length, 1)) * 100)}%`
+                                width: `${Math.round((tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Obra gris').length, 1)) * 100)}%`,
+                                backgroundColor: '#6b7280'
                               }}
                             ></div>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-600">
+                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
                             <span>{tareas.filter(t => t.etapa === 'Obra gris').length} tareas</span>
                             <span>{tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
                           </div>
@@ -437,32 +821,39 @@ export function TareasSection() {
                       </div>
 
                       {/* TERMINACIONES */}
-                      <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer">
+                      <div 
+                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                        style={{backgroundColor: '#d4edda', borderColor: '#28a745'}}
+                      >
                         <div className="flex items-center gap-3 mb-4">
-                          <div className="p-3 bg-green-500 text-white rounded-lg">
+                          <div 
+                            className="p-3 text-white rounded-lg"
+                            style={{backgroundColor: '#28a745'}}
+                          >
                             <Paintbrush className="h-6 w-6" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-green-800">Terminaciones</h4>
-                            <p className="text-sm text-gray-600">Revoques, pintura, acabados</p>
+                            <h4 className="text-lg font-bold" style={{color: '#155724'}}>Terminaciones</h4>
+                            <p className="text-sm" style={{color: '#5b5f6a'}}>Revoques, pintura, acabados</p>
                           </div>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
-                            <span>Progreso</span>
-                            <span className="font-bold text-green-800">
+                            <span style={{color: '#5b5f6a'}}>Progreso</span>
+                            <span className="font-bold" style={{color: '#155724'}}>
                               {Math.round((tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Terminaciones').length, 1)) * 100)}%
                             </span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
                             <div 
-                              className="bg-green-500 h-2 rounded-full" 
+                              className="h-2 rounded-full" 
                               style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Terminaciones').length, 1)) * 100)}%`
+                                width: `${Math.round((tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Terminaciones').length, 1)) * 100)}%`,
+                                backgroundColor: '#28a745'
                               }}
                             ></div>
                           </div>
-                          <div className="flex justify-between text-xs text-gray-600">
+                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
                             <span>{tareas.filter(t => t.etapa === 'Terminaciones').length} tareas</span>
                             <span>{tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
                           </div>
@@ -471,26 +862,40 @@ export function TareasSection() {
                     </div>
                   </div>
 
-                  {/* Tareas recientes */}
-                  <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Tareas recientes</h3>
-                    <div className="space-y-3">
-                      {tareas.slice(0, 3).map(tarea => (
-                        <div key={tarea.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{tarea.nombre}</h4>
-                            <p className="text-sm text-gray-600">{tarea.etapa}</p>
-                          </div>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            tarea.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                            tarea.estado === 'En curso' ? 'bg-blue-100 text-blue-800' :
-                            tarea.estado === 'Finalizada' ? 'bg-green-100 text-green-800' :
-                            'bg-purple-100 text-purple-800'
-                          }`}>
-                            {tarea.estado}
-                          </span>
-                        </div>
-                      ))}
+                  {/* Timeline Interactivo */}
+                  <div className="rounded-lg border p-6 h-full flex flex-col" style={{backgroundColor: '#ffffff', borderColor: '#dce3ea'}}>
+                    <h3 className="text-lg font-semibold mb-6" style={{color: '#1B263B'}}>Timeline de Desarrollo</h3>
+                    <div className="flex-1">
+                      <TimelineInteractivo
+                      tareas={tareas.map(tarea => ({
+                        id: tarea.id,
+                        nombre: tarea.nombre,
+                        descripcion: tarea.descripcion,
+                        fechaInicio: tarea.fechaInicio,
+                        fechaFin: tarea.fechaFin,
+                        progreso: tarea.estado === 'Finalizada' ? 100 : 
+                                 tarea.estado === 'En curso' ? 50 : 
+                                 tarea.estado === 'Aprobada' ? 100 : 0,
+                        estado: tarea.estado === 'Finalizada' ? 'completada' :
+                               tarea.estado === 'En curso' ? 'en_progreso' :
+                               tarea.estado === 'Aprobada' ? 'completada' : 'pendiente',
+                        lider: tarea.responsable,
+                        costo: tarea.presupuesto,
+                        etapa: tarea.etapa
+                      }))}
+                      onTareaClick={(tarea) => {
+                        console.log('Tarea clickeada:', tarea);
+                        // Aquí podrías abrir un modal o panel lateral
+                      }}
+                      onEditarPlanificacion={() => {
+                        console.log('Editar planificación');
+                        // Aquí podrías abrir el editor Gantt
+                      }}
+                      onVerDependencias={() => {
+                        console.log('Ver dependencias');
+                        // Aquí podrías mostrar las dependencias
+                      }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -663,113 +1068,34 @@ export function TareasSection() {
                   )}
 
                   {modoTareas === 'editor-visual' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                      {/* Panel lateral */}
-                      <div className="lg:col-span-1">
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Editor Visual</h3>
-                          
-                          {/* Resumen rápido */}
-                          <div className="space-y-4 mb-6">
-                            <div className="bg-blue-50 rounded-lg p-4">
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-blue-600">5d</div>
-                                <div className="text-sm text-gray-600">Tiempo Total</div>
-                              </div>
-                            </div>
-                            <div className="bg-green-50 rounded-lg p-4">
-                              <div className="text-center">
-                                <div className="text-2xl font-bold text-green-600">{tareas.length}</div>
-                                <div className="text-sm text-gray-600">Tareas</div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Controles de zoom */}
-                          <div className="space-y-4 mb-6">
-                            <h4 className="font-medium text-gray-900">Zoom</h4>
-                            <div className="flex items-center gap-2">
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                              <span className="text-sm text-gray-600 min-w-[3rem] text-center">100%</span>
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Lista de tareas */}
-                          <div className="space-y-4">
-                            <h4 className="font-medium text-gray-900">Lista de tareas</h4>
-                            <div className="space-y-2">
-                              {tareas.map(tarea => (
-                                <div key={tarea.id} className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                                  <div className="text-sm font-medium text-gray-900">{tarea.nombre}</div>
-                                  <div className="text-xs text-gray-600">5d • {tarea.estado}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Canvas del editor */}
-                      <div className="lg:col-span-3">
-                        <div className="bg-white rounded-lg border border-gray-200 p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Canvas del Editor</h3>
-                            <div className="flex gap-2">
-                              <button className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <Plus className="h-4 w-4" />
-                              </button>
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex gap-2">
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                              <span className="text-sm text-gray-600">100%</span>
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                                <TrendingUp className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Canvas visual */}
-                          <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 p-8 min-h-[400px] relative">
-                            {tareas.map((tarea, index) => (
-                              <div
-                                key={tarea.id}
-                                className="absolute bg-white rounded-lg border border-gray-200 p-3 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                                style={{
-                                  left: `${50 + index * 20}px`,
-                                  top: `${50 + index * 30}px`,
-                                  width: '200px'
-                                }}
-                              >
-                                <div className="flex items-center gap-2 mb-2">
-                                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                                </div>
-                                <div className="text-sm font-medium text-gray-900 mb-1">{tarea.nombre}</div>
-                                <div className="text-xs text-gray-600">5 días</div>
-                                <div className="text-xs text-gray-600">{tarea.responsable}</div>
-                                <div className="w-2 h-2 bg-blue-500 rounded-full mx-auto mt-2"></div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <EditorVisualTareasN8N
+                      tareas={tareas.map(t => ({
+                        ...t,
+                        obraId: obraSeleccionada?.id || '',
+                        lider: t.responsable,
+                        plantilla: '',
+                        checklist: [],
+                        evidencias: [],
+                        estado: t.estado === 'Finalizada' || t.estado === 'Aprobada' ? 'completada' :
+                                t.estado === 'En curso' ? 'en_progreso' : 'pendiente',
+                        etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
+                        precedencia: t.dependencias || [],
+                        duracion: 5,
+                        esCritica: false,
+                        holgura: 0,
+                        earlyStart: 0,
+                        earlyFinish: 0,
+                        lateStart: 0,
+                        lateFinish: 0,
+                        x: 0,
+                        y: 0,
+                        dependencias: t.dependencias || []
+                      }))}
+                      etapa={'estructura'}
+                      onActualizarTarea={() => {}}
+                      onEliminarTarea={() => {}}
+                      onCrearTarea={() => {}}
+                    />
                   )}
                 </div>
               )}
@@ -879,16 +1205,22 @@ export function TareasSection() {
 
     default: // 'lista-obras'
       return (
-        <div className="space-y-6">
+        <div className="space-y-6" style={{backgroundColor: '#eaf0f6'}}>
           {/* Encabezado */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div 
+            className="bg-white rounded-xl shadow-sm border p-6"
+            style={{borderColor: '#dce3ea'}}
+          >
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div 
+                className="h-12 w-12 rounded-lg flex items-center justify-center"
+                style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}
+              >
+                <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Gestión de Tareas</h1>
-                <p className="text-gray-600 mt-1">Seleccioná una obra para ver su progreso y planificación</p>
+                <h1 className="text-2xl font-bold" style={{color: '#10161a'}}>Gestión de Tareas</h1>
+                <p className="mt-1" style={{color: '#5b5f6a'}}>Seleccioná una obra para ver su progreso y planificación</p>
               </div>
             </div>
           </div>
@@ -896,10 +1228,13 @@ export function TareasSection() {
           {/* Grid de obras */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {obrasActivas.length === 0 ? (
-              <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay obras activas disponibles</h3>
-                <p className="text-gray-600">Todas las obras están pausadas o finalizadas</p>
+              <div 
+                className="col-span-full bg-white rounded-xl shadow-sm border p-12 text-center"
+                style={{borderColor: '#dce3ea'}}
+              >
+                <Building2 className="h-16 w-16 mx-auto mb-4" style={{color: '#dce3ea'}} />
+                <h3 className="text-lg font-semibold mb-2" style={{color: '#1B263B'}}>No hay obras activas disponibles</h3>
+                <p style={{color: '#5b5f6a'}}>Todas las obras están pausadas o finalizadas</p>
               </div>
             ) : (
               obrasActivas.map(obra => (
@@ -914,24 +1249,27 @@ export function TareasSection() {
 
           {/* Estadísticas generales */}
           {obrasActivas.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen general</h3>
+            <div 
+              className="bg-white rounded-xl shadow-sm border p-6"
+              style={{borderColor: '#dce3ea'}}
+            >
+              <h3 className="text-lg font-semibold mb-4" style={{color: '#1B263B'}}>Resumen general</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{obrasActivas.length}</div>
-                  <div className="text-sm text-gray-600">Obras activas</div>
+                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>{obrasActivas.length}</div>
+                  <div className="text-sm" style={{color: '#5b5f6a'}}>Obras activas</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>
                     {Math.round(obrasActivas.reduce((acc, obra) => acc + obra.avance, 0) / obrasActivas.length)}%
                   </div>
-                  <div className="text-sm text-gray-600">Progreso promedio</div>
+                  <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso promedio</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>
                     {obrasActivas.reduce((acc, obra) => acc + obra.tareasTotal, 0)}
                   </div>
-                  <div className="text-sm text-gray-600">Total de tareas</div>
+                  <div className="text-sm" style={{color: '#5b5f6a'}}>Total de tareas</div>
                 </div>
               </div>
             </div>

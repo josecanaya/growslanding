@@ -15,7 +15,8 @@ import {
 import { PasoDatosGeneralesMejorado } from './PasoDatosGeneralesMejorado';
 import { PasoTipoObra } from './PasoTipoObra';
 import { PasoNumeroPlantas } from './PasoNumeroPlantas';
-import { WizardPlanta } from './WizardPlanta';
+// COMPONENTES DE PLANTAS COMENTADOS - NO SE USAN MÁS (solo el diseño del plano)
+// import { WizardPlanta } from './WizardPlanta';
 import { PasoElementosPlanta } from './PasoElementosPlanta';
 
 // Tipos de datos
@@ -118,21 +119,18 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
     { id: 'datos_generales', title: 'Datos Generales', icon: Building2 },
     { id: 'tipo_obra', title: 'Tipo de Obra', icon: Layers },
     { id: 'numero_plantas', title: 'Número de Plantas', icon: Settings },
-    { id: 'configuracion_plantas', title: 'Configuración de Plantas', icon: Home },
     { id: 'elementos_plantas', title: 'Elementos por Planta', icon: CheckCircle }
   ];
 
   const getCurrentStepTitle = () => {
     if (currentStep === 3) {
-      return `Planta ${currentPlanta + 1} - Configuración`;
-    } else if (currentStep === 4) {
       return `Planta ${currentPlanta + 1} - Elementos`;
     }
     return steps[currentStep]?.title || '';
   };
 
   const getCurrentStepIcon = () => {
-    if (currentStep === 3 || currentStep === 4) {
+    if (currentStep === 3) {
       return Home;
     }
     return steps[currentStep]?.icon || Building2;
@@ -221,13 +219,8 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
     if (currentPlanta < obraData.numero_plantas.cantidad_plantas - 1) {
       setCurrentPlanta(prev => prev + 1);
     } else {
-      // Terminar configuración de plantas
-      if (currentStep === 3) {
-        setCurrentStep(4); // Ir a elementos
-        setCurrentPlanta(0); // Resetear a primera planta
-      } else {
-        handleFinish();
-      }
+      // Terminar configuración de elementos
+      handleFinish();
     }
   };
 
@@ -236,12 +229,7 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
       setCurrentPlanta(prev => prev - 1);
     } else {
       // Volver al paso anterior
-      if (currentStep === 4) {
-        setCurrentStep(3); // Volver a configuración
-        setCurrentPlanta(obraData.numero_plantas.cantidad_plantas - 1); // Última planta
-      } else {
-        handlePrevious();
-      }
+      handlePrevious();
     }
   };
 
@@ -295,21 +283,7 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
           />
         );
       
-      case 3: // Configuración de Plantas
-        const plantaConfig = obraData.plantas[currentPlanta];
-        if (!plantaConfig) return null;
-        
-        return (
-          <WizardPlanta
-            data={plantaConfig}
-            onChange={handlePlantaChange}
-            onNext={handleNextPlanta}
-            onPrevious={handlePreviousPlanta}
-            isLastPlanta={currentPlanta === obraData.numero_plantas.cantidad_plantas - 1}
-          />
-        );
-      
-      case 4: // Elementos por Planta
+      case 3: // Elementos por Planta
         const plantaElementos = obraData.plantas[currentPlanta];
         if (!plantaElementos) return null;
         
@@ -347,12 +321,6 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
       const baseProgress = (3 / steps.length) * 100;
       const plantaProgress = (plantasCompletadas / totalPlantas) * (1 / steps.length) * 100;
       return baseProgress + plantaProgress;
-    } else if (currentStep === 4) {
-      const plantasCompletadas = currentPlanta;
-      const totalPlantas = obraData.numero_plantas.cantidad_plantas;
-      const baseProgress = (4 / steps.length) * 100;
-      const plantaProgress = (plantasCompletadas / totalPlantas) * (1 / steps.length) * 100;
-      return baseProgress + plantaProgress;
     }
     return 100;
   };
@@ -369,7 +337,7 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Crear Nueva Obra</h1>
               <p className="text-sm text-gray-600">
-                {currentStep === 3 || currentStep === 4 
+                {currentStep === 3 
                   ? `Paso ${currentStep + 1}: ${getCurrentStepTitle()}`
                   : `Paso ${currentStep + 1} de ${steps.length}: ${getCurrentStepTitle()}`
                 }
@@ -400,7 +368,7 @@ export function WizardCrearObraMejorado({ onSuccess, onCancel }: WizardCrearObra
           </div>
           
           {/* Indicador de plantas actuales */}
-          {(currentStep === 3 || currentStep === 4) && (
+          {currentStep === 3 && (
             <div className="mt-2 text-xs text-gray-500">
               Planta {currentPlanta + 1} de {obraData.numero_plantas.cantidad_plantas}
             </div>

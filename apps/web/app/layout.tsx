@@ -16,7 +16,13 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='es' className='light'>
-      <body className='bg-[#f7f6fb] dark:bg-[#151323] text-[#1d1b29] dark:text-[#f5f3fc] transition-colors duration-500'>
+      <body 
+        className='dark:text-secundario transition-all duration-300 ease-in-out'
+        style={{
+          backgroundColor: '#eaf0f6',
+          color: '#10161a'
+        }}
+      >
         <ThemeProvider>
           <main className='min-h-screen'>{children}</main>
           <Toaster />

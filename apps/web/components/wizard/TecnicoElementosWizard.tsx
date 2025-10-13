@@ -78,7 +78,19 @@ export function TecnicoElementosWizard({
   const [showResumen, setShowResumen] = useState(false);
 
   const etapa = ETAPAS_CONSTRUCCION[etapaActual];
-  const categoria = elementos.find(cat => cat.categoria === etapa.nombre);
+  // Mapeo correcto de nombres de etapas a categorías
+  const mapeoEtapas: { [key: string]: string } = {
+    'Fundaciones y Estructuras': 'Fundaciones y Estructuras',
+    'Muros': 'Muros',
+    'Instalaciones': 'Instalaciones',
+    'Cubiertas': 'Cubiertas',
+    'Pisos': 'Pisos',
+    'Carpinterías': 'Carpinterías',
+    'Parquizado': 'Parquizado'
+  };
+  
+  const nombreCategoria = mapeoEtapas[etapa.nombre] || etapa.nombre;
+  const categoria = elementos.find(cat => cat.categoria === nombreCategoria);
 
   const handleElementoSeleccionado = (seleccion: Seleccion) => {
     const nuevasSelecciones = [...elementosSeleccionados, seleccion];
@@ -204,8 +216,17 @@ export function TecnicoElementosWizard({
           )}
         </div>
 
+        {/* Debug Info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <strong>Debug:</strong> Etapa: {etapa?.nombre} | Categoría encontrada: {categoria ? 'Sí' : 'No'} | Índice: {etapaActual}
+            </p>
+          </div>
+        )}
+
         {/* Grid de Elementos */}
-        {categoria && (
+        {categoria ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {categoria.tipos.map((elemento) => {
               const yaSeleccionado = elementosSeleccionados.some(s => 
@@ -288,6 +309,25 @@ export function TecnicoElementosWizard({
                 </div>
               );
             })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Error: Categoría no encontrada</h3>
+              <p className="text-red-600 mb-4">
+                No se pudo encontrar la categoría "{nombreCategoria}" para la etapa "{etapa?.nombre}".
+              </p>
+              <div className="text-sm text-red-500">
+                <p><strong>Índice de etapa:</strong> {etapaActual}</p>
+                <p><strong>Etapa:</strong> {etapa?.nombre}</p>
+                <p><strong>Categorías disponibles:</strong></p>
+                <ul className="list-disc list-inside mt-2">
+                  {elementos.map((cat, index) => (
+                    <li key={index}>{cat.categoria}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         )}
       </div>

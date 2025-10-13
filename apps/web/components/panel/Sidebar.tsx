@@ -84,22 +84,32 @@ export function Sidebar({ user, activeSection, onSectionChange }: SidebarProps) 
     <>
       {/* Mobile menu button */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-50 bg-primario text-white p-2 rounded-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 text-white p-2 rounded-lg"
+        style={{backgroundColor: '#1B263B'}}
         onClick={() => setIsMobileOpen(!isMobileOpen)}
       >
         {isMobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
       </button>
 
       {/* Sidebar */}
-      <div className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-64 bg-oscuro text-white transform transition-transform duration-300 ease-in-out
-        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      <div 
+        className={`
+          fixed lg:static inset-y-0 left-0 z-40 w-64 text-white transform transition-transform duration-300 ease-in-out
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        style={{backgroundColor: '#1B263B'}}
+      >
         <div className="flex flex-col h-full">
           {/* User Profile */}
           <div className="p-6 border-b border-white/20">
             <div className="flex items-center space-x-3 mb-4">
-              <div className="w-12 h-12 bg-acento rounded-full flex items-center justify-center text-oscuro text-2xl">
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
+                style={{
+                  backgroundColor: '#f4e27e',
+                  color: '#10161a'
+                }}
+              >
                 {user.avatar}
               </div>
               <div>
@@ -131,13 +141,24 @@ export function Sidebar({ user, activeSection, onSectionChange }: SidebarProps) 
                         onSectionChange(item.id);
                         setIsMobileOpen(false);
                       }}
-                      className={`
-                        w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors duration-200
-                        ${activeSection === item.id 
-                          ? 'bg-acento text-oscuro font-semibold' 
-                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                      className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-300 ease-in-out font-medium"
+                      style={{
+                        backgroundColor: activeSection === item.id ? '#f4e27e' : 'transparent',
+                        color: activeSection === item.id ? '#10161a' : 'rgba(255, 255, 255, 0.9)',
+                        fontWeight: activeSection === item.id ? '600' : '500'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (activeSection !== item.id) {
+                          e.currentTarget.style.backgroundColor = '#24324D';
+                          e.currentTarget.style.color = 'white';
                         }
-                      `}
+                      }}
+                      onMouseLeave={(e) => {
+                        if (activeSection !== item.id) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = 'rgba(255, 255, 255, 0.9)';
+                        }
+                      }}
                     >
                       <Icon className="h-5 w-5" />
                       <span>{item.label}</span>

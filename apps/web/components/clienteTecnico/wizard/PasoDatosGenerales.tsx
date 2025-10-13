@@ -470,7 +470,7 @@ export function PasoDatosGenerales({ data, onChange, onNext }: PasoDatosGenerale
           onClick={handleNext}
           className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-medium transition-colors duration-200 shadow-lg"
         >
-          <span>Continuar con Elementos</span>
+          <span>Seleccionar Elementos Constructivos</span>
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>

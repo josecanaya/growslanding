@@ -15,7 +15,11 @@ import {
   Filter,
   X,
   Save,
-  AlertCircle
+  AlertCircle,
+  PlayCircle,
+  PauseCircle,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { DetalleObra } from './DetalleObra';
 
@@ -59,20 +63,43 @@ const EstadoBadge = ({ estado }: { estado: string }) => {
   const getEstadoStyles = (estado: string) => {
     switch (estado) {
       case 'ACTIVA':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return {
+          backgroundColor: '#e8f5e8',
+          color: '#2d5a2d',
+          borderColor: '#a8d8a8'
+        };
       case 'PAUSADA':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return {
+          backgroundColor: '#fffbf0',
+          color: '#8b6914',
+          borderColor: '#f4d03f'
+        };
       case 'FINALIZADA':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return {
+          backgroundColor: '#f4e27e',
+          color: '#1B263B',
+          borderColor: '#d4af37'
+        };
       case 'CANCELADA':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return {
+          backgroundColor: '#ffeaea',
+          color: '#8B0000',
+          borderColor: '#ffb3b3'
+        };
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return {
+          backgroundColor: '#f5f7fa',
+          color: '#1B263B',
+          borderColor: '#dce3ea'
+        };
     }
   };
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getEstadoStyles(estado)}`}>
+    <span 
+      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border"
+      style={getEstadoStyles(estado)}
+    >
       {estado}
     </span>
   );
@@ -103,17 +130,29 @@ const ObraCard = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 p-6">
+    <div 
+      className="bg-white rounded-xl shadow-sm border p-6 cursor-pointer transition-all duration-300 ease-in-out"
+      style={{borderColor: '#dce3ea'}}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+        e.currentTarget.style.borderColor = '#1B263B';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = 'none';
+        e.currentTarget.style.borderColor = '#dce3ea';
+      }}
+      onClick={() => onView(obra)}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <Building2 className="h-5 w-5 text-blue-600" />
+          <div className="p-2 bg-white rounded-lg border" style={{borderColor: '#dce3ea'}}>
+            <Building2 className="h-5 w-5" style={{color: '#1B263B'}} />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">{obra.nombre}</h3>
+            <h3 className="text-lg font-semibold" style={{color: '#10161a'}}>{obra.nombre}</h3>
             <div className="flex items-center space-x-2 mt-1">
-              <MapPin className="h-4 w-4 text-gray-400" />
-              <span className="text-sm text-gray-600">
+              <MapPin className="h-4 w-4" style={{color: '#5b5f6a'}} />
+              <span className="text-sm" style={{color: '#5b5f6a'}}>
                 {obra.localizacion?.trim() || "Sin ubicación"}
               </span>
             </div>
@@ -122,7 +161,19 @@ const ObraCard = ({
         <div className="flex items-center space-x-2">
           <EstadoBadge estado={obtenerEstado(obra.estado)} />
           <div className="relative">
-            <button className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+            <button 
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 rounded-lg transition-all duration-300 ease-in-out"
+              style={{color: '#5b5f6a'}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f7fa';
+                e.currentTarget.style.color = '#1B263B';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#5b5f6a';
+              }}
+            >
               <MoreVertical className="h-4 w-4" />
             </button>
           </div>
@@ -130,12 +181,12 @@ const ObraCard = ({
       </div>
 
       {obra.descripcion && (
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+        <p className="text-sm mb-4 line-clamp-2" style={{color: '#5b5f6a'}}>
           {obra.descripcion}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+      <div className="flex items-center justify-between text-sm mb-4" style={{color: '#5b5f6a'}}>
         <div className="flex items-center space-x-1">
           <Calendar className="h-4 w-4" />
           <span>Creada: {formatearFechaCreacion(obra.created_at)}</span>
@@ -148,26 +199,56 @@ const ObraCard = ({
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+      <div className="flex items-center justify-between pt-4 border-t" style={{borderColor: '#dce3ea'}}>
         <div className="flex space-x-2">
           <button
-            onClick={() => onView(obra)}
-            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onView(obra);
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm rounded-lg transition-all duration-300 ease-in-out"
+            style={{color: '#1B263B'}}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f5f7fa';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <Eye className="h-4 w-4" />
             <span>Ver</span>
           </button>
           <button
-            onClick={() => onEdit(obra)}
-            className="flex items-center space-x-1 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(obra);
+            }}
+            className="flex items-center space-x-1 px-3 py-1.5 text-sm rounded-lg transition-all duration-300 ease-in-out"
+            style={{color: '#1B263B'}}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f5f7fa';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <Edit3 className="h-4 w-4" />
             <span>Editar</span>
           </button>
         </div>
         <button
-          onClick={() => onDelete(obra)}
-          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(obra);
+          }}
+          className="flex items-center space-x-1 px-3 py-1.5 text-sm rounded-lg transition-all duration-300 ease-in-out"
+          style={{color: '#8B0000'}}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(139, 0, 0, 0.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
         >
           <Trash2 className="h-4 w-4" />
           <span>Eliminar</span>
@@ -186,20 +267,100 @@ export default function ObrasSection() {
       nombre: "Casa Familiar Los Robles",
       localizacion: "Av. Corrientes 1234, CABA",
       estado: "ACTIVA",
-      created_at: new Date().toISOString(),
+      created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
       fecha_inicio: "2024-01-15",
-      presupuesto: 50000,
-      descripcion: "Proyecto de casa familiar de dos plantas"
+      presupuesto: 85000,
+      descripcion: "Proyecto de casa familiar de dos plantas con jardín y garaje"
     },
     {
       id: "2", 
       nombre: "Edificio Residencial Norte",
       localizacion: "Calle Norte 567, CABA",
       estado: "PAUSADA",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
+      created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
       fecha_inicio: "2024-02-01",
-      presupuesto: 150000,
-      descripcion: "Edificio de 6 plantas con 24 departamentos"
+      presupuesto: 250000,
+      descripcion: "Edificio de 6 plantas con 24 departamentos y amenities"
+    },
+    {
+      id: "3",
+      nombre: "Complejo Comercial Plaza Sur",
+      localizacion: "Av. Santa Fe 2450, Palermo",
+      estado: "FINALIZADA",
+      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+      fecha_inicio: "2023-11-01",
+      presupuesto: 180000,
+      descripcion: "Centro comercial con 15 locales y estacionamiento"
+    },
+    {
+      id: "4",
+      nombre: "Torre Corporativa Microcentro",
+      localizacion: "Av. 9 de Julio 1200, Microcentro",
+      estado: "ACTIVA",
+      created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+      fecha_inicio: "2024-03-10",
+      presupuesto: 450000,
+      descripcion: "Torre de oficinas de 20 pisos con tecnología inteligente"
+    },
+    {
+      id: "5",
+      nombre: "Casa de Campo Estancia Verde",
+      localizacion: "Ruta 9 km 45, Pilar",
+      estado: "CANCELADA",
+      created_at: new Date(Date.now() - 86400000 * 45).toISOString(),
+      fecha_inicio: "2023-09-15",
+      presupuesto: 120000,
+      descripcion: "Casa de campo con piscina y quincho"
+    },
+    {
+      id: "6",
+      nombre: "Condominio Las Flores",
+      localizacion: "Av. Las Flores 3200, San Isidro",
+      estado: "ACTIVA",
+      created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
+      fecha_inicio: "2024-02-20",
+      presupuesto: 320000,
+      descripcion: "Conjunto de 4 casas dúplex con jardín común"
+    },
+    {
+      id: "7",
+      nombre: "Refacción Hospital San Martín",
+      localizacion: "Av. Libertador 4800, Vicente López",
+      estado: "PAUSADA",
+      created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
+      fecha_inicio: "2024-01-05",
+      presupuesto: 280000,
+      descripcion: "Refacción integral de 3 pisos del hospital"
+    },
+    {
+      id: "8",
+      nombre: "Escuela Técnica Industrial",
+      localizacion: "Calle Industrial 1500, La Matanza",
+      estado: "FINALIZADA",
+      created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
+      fecha_inicio: "2023-08-01",
+      presupuesto: 190000,
+      descripcion: "Construcción de escuela técnica con talleres especializados"
+    },
+    {
+      id: "9",
+      nombre: "Oficinas Empresariales Puerto Madero",
+      localizacion: "Av. Alicia Moreau de Justo 1850, Puerto Madero",
+      estado: "ACTIVA",
+      created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+      fecha_inicio: "2024-03-25",
+      presupuesto: 380000,
+      descripcion: "Complejo de oficinas clase A con vista al río"
+    },
+    {
+      id: "10",
+      nombre: "Residencial Universitario",
+      localizacion: "Av. Córdoba 4200, Villa Crespo",
+      estado: "PAUSADA",
+      created_at: new Date(Date.now() - 86400000 * 35).toISOString(),
+      fecha_inicio: "2023-12-10",
+      presupuesto: 220000,
+      descripcion: "Residencia estudiantil con 150 habitaciones y servicios"
     }
   ]);
   const [loading, setLoading] = useState(false);
@@ -445,16 +606,16 @@ export default function ObrasSection() {
   // Mostrar loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen p-6" style={{backgroundColor: '#eaf0f6'}}>
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-48 mb-6"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="h-8 rounded w-48 mb-6" style={{backgroundColor: '#dce3ea'}}></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-xl p-6 shadow-sm">
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                <div key={i} className="bg-white rounded-xl p-6 shadow-sm border" style={{borderColor: '#dce3ea'}}>
+                  <div className="h-6 rounded w-3/4 mb-4" style={{backgroundColor: '#dce3ea'}}></div>
+                  <div className="h-4 rounded w-1/2 mb-2" style={{backgroundColor: '#dce3ea'}}></div>
+                  <div className="h-4 rounded w-2/3" style={{backgroundColor: '#dce3ea'}}></div>
                 </div>
               ))}
             </div>
@@ -542,117 +703,172 @@ export default function ObrasSection() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header del Dashboard */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard de Obras</h1>
-              <p className="text-gray-600 mt-1">Gestiona todas tus obras de construcción</p>
+              <h1 className="text-3xl font-bold" style={{color: '#10161a'}}>Obras</h1>
+              <p className="mt-1" style={{color: '#5b5f6a'}}>Gestiona todas tus obras de construcción</p>
             </div>
             <div className="flex items-center space-x-3">
               <button
                 onClick={abrirWizardCrear}
-                className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-sm"
+                className="flex items-center space-x-2 text-white px-6 py-3 rounded-lg font-medium transition-all duration-300 ease-in-out shadow-sm"
+                style={{backgroundColor: '#1B263B'}}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#162033';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#1B263B';
+                }}
               >
                 <Plus className="h-5 w-5" />
                 <span>Crear Obra Completa</span>
               </button>
-        <button
-          onClick={abrirModalCrear}
-                className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 shadow-sm"
-        >
-                <Plus className="h-5 w-5" />
-                <span>Crear Básica</span>
-        </button>
-            </div>
-      </div>
-
-          {/* Barra de búsqueda y filtros */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar obras por nombre, ubicación o descripción..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-400" />
-              <select
-                value={filterEstado}
-                onChange={(e) => setFilterEstado(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Todos los estados</option>
-                {ESTADOS.map(estado => (
-                  <option key={estado} value={estado}>{estado}</option>
-                ))}
-              </select>
             </div>
           </div>
         </div>
 
         {/* Mensaje de error */}
       {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div 
+            className="mb-6 border rounded-lg p-4"
+            style={{
+              backgroundColor: 'rgba(139, 0, 0, 0.1)',
+              borderColor: 'rgba(139, 0, 0, 0.3)'
+            }}
+          >
             <div className="flex items-center">
-              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-              <span className="text-red-800">{error}</span>
+              <AlertCircle className="h-5 w-5 mr-2" style={{color: '#8B0000'}} />
+              <span style={{color: '#8B0000'}}>{error}</span>
             </div>
           </div>
         )}
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+          <a 
+            href="/obras"
+            className="rounded-lg shadow-sm border p-6 cursor-pointer block transition-all duration-300 ease-in-out"
+            style={{
+              backgroundColor: '#f5f7fa',
+              borderColor: '#dce3ea'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div className="p-2 rounded-lg bg-white">
+                <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Obras</p>
-                <p className="text-2xl font-bold text-gray-900">{obras.length}</p>
+                <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Total Obras</p>
+                <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obras.length}</p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          </a>
+          <a 
+            href="/obras?estado=activas"
+            className="rounded-lg shadow-sm border p-6 cursor-pointer block transition-all duration-300 ease-in-out"
+            style={{
+              backgroundColor: '#f5f7fa',
+              borderColor: '#dce3ea'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Building2 className="h-6 w-6 text-green-600" />
+              <div className="p-2 rounded-lg bg-white">
+                <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Activas</p>
-                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'ACTIVA').length}</p>
+                <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Activas</p>
+                <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obras.filter(o => o.estado === 'ACTIVA').length}</p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          </a>
+          <a 
+            href="/obras?estado=pausadas"
+            className="rounded-lg shadow-sm border p-6 cursor-pointer block transition-all duration-300 ease-in-out"
+            style={{
+              backgroundColor: '#f5f7fa',
+              borderColor: '#dce3ea'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Building2 className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 rounded-lg bg-white">
+                <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pausadas</p>
-                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'PAUSADA').length}</p>
+                <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Pausadas</p>
+                <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obras.filter(o => o.estado === 'PAUSADA').length}</p>
               </div>
             </div>
-          </div>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          </a>
+          <a 
+            href="/obras?estado=finalizadas"
+            className="rounded-lg shadow-sm border p-6 cursor-pointer block transition-all duration-300 ease-in-out"
+            style={{
+              backgroundColor: '#f5f7fa',
+              borderColor: '#dce3ea'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div className="p-2 rounded-lg bg-white">
+                <CheckCircle className="h-6 w-6" style={{color: '#1B263B'}} />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Finalizadas</p>
-                <p className="text-2xl font-bold text-gray-900">{obras.filter(o => o.estado === 'FINALIZADA').length}</p>
+                <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Finalizadas</p>
+                <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obras.filter(o => o.estado === 'FINALIZADA').length}</p>
               </div>
             </div>
-          </div>
+          </a>
+          <a 
+            href="/obras?estado=canceladas"
+            className="rounded-lg shadow-sm border p-6 cursor-pointer block transition-all duration-300 ease-in-out"
+            style={{
+              backgroundColor: '#f5f7fa',
+              borderColor: '#dce3ea'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div className="flex items-center">
+              <div className="p-2 rounded-lg bg-white">
+                <XCircle className="h-6 w-6" style={{color: '#1B263B'}} />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Canceladas</p>
+                <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obras.filter(o => o.estado === 'CANCELADA').length}</p>
+              </div>
+            </div>
+          </a>
         </div>
 
         {/* Lista de obras */}
@@ -688,7 +904,7 @@ export default function ObrasSection() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {obrasFiltradas.map((obra) => (
               <ObraCard
                 key={obra.id}

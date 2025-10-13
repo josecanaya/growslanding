@@ -1,39 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 type ThemeProviderProps = {
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    setMounted(true);
     
     // Cargar tema guardado
     const saved = localStorage.getItem('theme');
     if (saved) {
-      setTheme(saved as 'light' | 'dark');
+      document.documentElement.classList.toggle('dark', saved === 'dark');
     } else {
       // Detectar preferencia del sistema
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDark ? 'dark' : 'light');
+      document.documentElement.classList.toggle('dark', prefersDark);
+      localStorage.setItem('theme', prefersDark ? 'dark' : 'light');
     }
   }, []);
 
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    
-    // Aplicar tema al documento
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
-  return (
-    <div className={theme === 'dark' ? 'dark' : ''}>
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }

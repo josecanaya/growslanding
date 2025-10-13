@@ -1,4 +1,6 @@
-﻿'use client';
+﻿// ⚠️ COMPONENTE DESHABILITADO - NO SE USA MÁS
+// Este componente contiene la funcionalidad de elementos por planta que fue eliminada del wizard
+// 'use client';
 
 import { useState, useEffect } from 'react';
 import { 

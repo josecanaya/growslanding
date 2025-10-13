@@ -33,3 +33,56 @@ model Obra {
   created_at   DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+// Tablas del Roadmap
+model RoadmapObjetivo {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String?
+  prioridad   String   @default("MEDIA")
+  estado      String   @default("PENDIENTE")
+  progreso    Float    @default(0)
+  startWeek   Int?
+  endWeek     Int?
+  targetWeeks Int?
+  dueDate     DateTime?
+  collapsed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  tareas      RoadmapTarea[]
+  gruposTareas RoadmapGrupoTareas[]
+}
+
+model RoadmapGrupoTareas {
+  id          String   @id @default(uuid())
+  titulo      String
+  descripcion String?
+  objetivoId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  objetivo    RoadmapObjetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  tareas      RoadmapTarea[]
+}
+
+model RoadmapTarea {
+  id          String   @id @default(uuid())
+  texto       String
+  estado      String   @default("pending")
+  done        Boolean  @default(false)
+  estimateHrs Int?
+  owner       String?
+  prioridad   String   @default("MEDIA")
+  dueDate     DateTime?
+  objetivoId  String?
+  grupoId     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  objetivo    RoadmapObjetivo? @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  grupo       RoadmapGrupoTareas? @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+}

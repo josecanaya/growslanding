@@ -1,0 +1,1312 @@
+{
+  "projects": [
+    {
+      "projectName": "GROWS",
+      "version": "0.3.0",
+      "updatedAt": "2025-10-13T12:00:00.000Z",
+      "objectives": [
+        {
+          "id": "grows-obj-1",
+          "title": "🧩 Autenticación y Organización",
+          "description": "Sistema completo de autenticación, multi-tenancy y gestión de roles. Incluye modo desarrollador para testing.",
+          "category": "CORE_SISTEMA",
+          "priority": "ALTA",
+          "status": "EN_CURSO",
+          "targetWeeks": 2,
+          "startWeek": 1,
+          "endWeek": 2,
+          "taskGroups": [
+            {
+              "id": "auth-group-1",
+              "title": "Autenticación Base",
+              "description": "Login, logout y gestión de sesiones",
+              "tasks": [
+                {
+                  "id": "auth-task-1",
+                  "text": "Login y logout funcional con Supabase Auth",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "auth-task-2",
+                  "text": "Middleware de autenticación implementado (auth.ts)",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "auth-task-3",
+                  "text": "Protección de rutas Next.js App Router",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "auth-task-4",
+                  "text": "Gestión completa de sesiones de usuario",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "auth-group-2",
+              "title": "Roles y Multi-tenancy",
+              "description": "Sistema de roles y organizaciones",
+              "tasks": [
+                {
+                  "id": "roles-task-1",
+                  "text": "Sistema de roles implementado: ADMIN, CLIENTE_TECNICO, SOCIO, LIDER",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "roles-task-2",
+                  "text": "Onboarding de organizaciones funcional (wizard inicial)",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "roles-task-3",
+                  "text": "Multi-tenancy implementado (una organización = un entorno aislado)",
+                  "done": true,
+                  "estimateHrs": 16,
+                  "owner": "Full Stack"
+                },
+                {
+                  "id": "roles-task-4",
+                  "text": "Sistema de invitaciones con email operativo",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "auth-group-3",
+              "title": "🆕 Modo Desarrollador (Dev Access Layer)",
+              "description": "Acceso de desarrollo sin login para testing",
+              "tasks": [
+                {
+                  "id": "dev-task-1",
+                  "text": "Crear middleware o toggle (NEXT_PUBLIC_DEV_MODE) que omita autenticación",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Full Stack",
+                  "priority": "CRITICA"
+                },
+                {
+                  "id": "dev-task-2",
+                  "text": "Usuario fantasma (Fake User Context) para pruebas",
+                  "done": false,
+                  "estimateHrs": 4,
+                  "owner": "Frontend Team",
+                  "priority": "CRITICA"
+                },
+                {
+                  "id": "dev-task-3",
+                  "text": "Aviso visible '🧠 Modo Desarrollador Activo'",
+                  "done": false,
+                  "estimateHrs": 2,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "dev-task-4",
+                  "text": "Conmutador UI (Debug Panel opcional) para activar/desactivar modo dev",
+                  "done": false,
+                  "estimateHrs": 4,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "dev-task-5",
+                  "text": "Documentar en README cómo usar modo desarrollador",
+                  "done": false,
+                  "estimateHrs": 2,
+                  "owner": "Product Team"
+                }
+              ]
+            },
+            {
+              "id": "auth-group-4",
+              "title": "Mejoras Sugeridas",
+              "description": "Seguridad y optimizaciones",
+              "tasks": [
+                {
+                  "id": "auth-improve-1",
+                  "text": "Control de expiración de invitaciones (48h)",
+                  "done": false,
+                  "estimateHrs": 4,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "auth-improve-2",
+                  "text": "Seguridad 2FA (Supabase OTP o Authenticator)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-2",
+          "title": "Backend Core y Lógica de Negocio",
+          "description": "APIs, FSM, CPM y generación de PDFs/QR",
+          "category": "CORE_SISTEMA",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 3,
+          "endWeek": 4,
+          "targetWeeks": 3,
+          "taskGroups": [
+            {
+              "id": "backend-group-1",
+              "title": "APIs Core",
+              "description": "CRUD de obras y sistema de auditoría",
+              "tasks": [
+                {
+                  "id": "api-task-1",
+                  "text": "CRUD completo de obras (/api/obras con GET/POST/PATCH/DELETE)",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-task-2",
+                  "text": "Sistema de auditoría de eventos y notificaciones",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-task-3",
+                  "text": "API de notificaciones y eventos in-app funcional",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "backend-group-2",
+              "title": "FSM y CPM",
+              "description": "Máquina de estados y algoritmo de ruta crítica",
+              "tasks": [
+                {
+                  "id": "fsm-task-1",
+                  "text": "Máquina de estados (FSM) de tareas lista con estados completos",
+                  "done": true,
+                  "estimateHrs": 16,
+                  "owner": "Full Stack"
+                },
+                {
+                  "id": "cpm-task-1",
+                  "text": "Algoritmo CPM (Critical Path Method) funcional con forward y backward pass",
+                  "done": true,
+                  "estimateHrs": 20,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "backend-group-3",
+              "title": "QR y PDFs",
+              "description": "Generación de QR para tareas y PDFs de reportes",
+              "tasks": [
+                {
+                  "id": "qr-task-1",
+                  "text": "API de generación de QR para tareas (/api/qr/resolve)",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "pdf-task-1",
+                  "text": "Generación de PDFs (actas, evidencias, reportes)",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "storage-task-1",
+                  "text": "Gestión de Storage con Supabase (subida de evidencias y archivos)",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "backend-group-4",
+              "title": "Mejoras Sugeridas",
+              "description": "Optimizaciones backend",
+              "tasks": [
+                {
+                  "id": "backend-improve-1",
+                  "text": "Endpoint /api/reports para resumen de KPIs de obra (tiempos, costos, avances)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-3",
+          "title": "API Routes Funcionales",
+          "description": "Todos los endpoints REST implementados con validación",
+          "category": "CORE_SISTEMA",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 15,
+          "endWeek": 16,
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "api-routes-group-1",
+              "title": "Endpoints Principales",
+              "description": "APIs de obras, tareas, socios y más",
+              "tasks": [
+                {
+                  "id": "api-route-1",
+                  "text": "/api/obras (GET/POST/PATCH/DELETE)",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-2",
+                  "text": "/api/tareas (CRUD + cambio de estado + asignación)",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-3",
+                  "text": "/api/socios (GET/POST/PATCH)",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-4",
+                  "text": "/api/presupuestos/[id]/aprobar",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-5",
+                  "text": "/api/notificaciones, /api/eventos, /api/invites",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-6",
+                  "text": "/api/suscripciones/limites",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-7",
+                  "text": "/api/actas/[eventoId]/pdf",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "api-route-8",
+                  "text": "/api/qr/resolve",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "api-routes-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Manejo de errores y validación",
+              "tasks": [
+                {
+                  "id": "api-improve-1",
+                  "text": "Unificar errores en middleware global errorHandler.ts",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-4",
+          "title": "Catálogos y Base de Datos",
+          "description": "Catálogo maestro y schema Prisma completo con auditoría",
+          "category": "CORE_SISTEMA",
+          "priority": "ALTA",
+          "status": "EN_CURSO",
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "db-group-1",
+              "title": "Catálogos y Seeds",
+              "description": "Datos maestros y plantillas",
+              "tasks": [
+                {
+                  "id": "db-task-1",
+                  "text": "Catálogo maestro de elementos constructivos",
+                  "done": true,
+                  "estimateHrs": 16,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "db-task-2",
+                  "text": "Plantillas de especialidades (6 especialidades)",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "db-task-3",
+                  "text": "Tablas principales Prisma (orgs, obras, socios, tareas, eventos)",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "db-task-4",
+                  "text": "Seeds iniciales cargadas correctamente",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "db-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Auditoría y trazabilidad",
+              "tasks": [
+                {
+                  "id": "db-improve-1",
+                  "text": "Agregar historial_cambios o audit trail para trazabilidad (por obra y tarea)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-5",
+          "title": "Pagos & Suscripciones",
+          "description": "Sistema de pagos, límites por plan y webhooks",
+          "category": "CORE_SISTEMA",
+          "priority": "MEDIA",
+          "status": "PENDIENTE",
+          "targetWeeks": 1,
+          "taskGroups": [
+            {
+              "id": "payments-group-1",
+              "title": "Sistema de Pagos",
+              "description": "Límites por plan y pagos",
+              "tasks": [
+                {
+                  "id": "payments-task-1",
+                  "text": "Validar límites por plan (Starter/Pro/Enterprise)",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team",
+                  "dueDate": "2025-10-18"
+                },
+                {
+                  "id": "payments-task-2",
+                  "text": "Integrar Stripe o Mercado Pago",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team",
+                  "dueDate": "2025-10-25"
+                },
+                {
+                  "id": "payments-task-3",
+                  "text": "UI de estado de suscripción en /cuenta",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team",
+                  "dueDate": "2025-10-22"
+                },
+                {
+                  "id": "payments-task-4",
+                  "text": "Flujo de upgrade al alcanzar límite",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Full Stack",
+                  "dueDate": "2025-10-28"
+                }
+              ]
+            },
+            {
+              "id": "payments-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Webhooks y simulador",
+              "tasks": [
+                {
+                  "id": "payments-improve-1",
+                  "text": "Incluir webhook /api/payments/webhook",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "payments-improve-2",
+                  "text": "Agregar simulador de precios y upgrades en Configuración de Cuenta",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-6",
+          "title": "Frontend - Interfaces Funcionales",
+          "description": "Autenticación, Dashboard y Onboarding con modo demo",
+          "category": "UX_UI",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 5,
+          "endWeek": 6,
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "frontend-group-1",
+              "title": "Autenticación y Dashboard",
+              "description": "Login, callback y dashboard principal",
+              "tasks": [
+                {
+                  "id": "ui-auth-1",
+                  "text": "Página /auth/login operativa con conexión Supabase",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-auth-2",
+                  "text": "Callback /auth/callback implementada",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-auth-3",
+                  "text": "Onboarding inicial (/onboarding) con wizard completo",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-auth-4",
+                  "text": "Dashboard principal /dashboard mostrando KPIs reales",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Frontend Team"
+                }
+              ]
+            },
+            {
+              "id": "frontend-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Modo demo y testing",
+              "tasks": [
+                {
+                  "id": "frontend-improve-1",
+                  "text": "Incorporar modo demo (mock data) para testers sin registro",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-7",
+          "title": "Panel de Socio (versión móvil)",
+          "description": "Interfaz táctil y responsive para socios en obra con estadísticas",
+          "category": "UX_UI",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 7,
+          "endWeek": 8,
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "panel-group-1",
+              "title": "Interfaz Móvil",
+              "description": "UI táctil y navegación",
+              "tasks": [
+                {
+                  "id": "panel-task-1",
+                  "text": "Interfaz táctil y responsive completa",
+                  "done": true,
+                  "estimateHrs": 16,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "panel-task-2",
+                  "text": "Sistema de conexión/desconexión/descanso funcional",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "panel-task-3",
+                  "text": "Navegación dinámica entre secciones (Tareas, Obras, Cuadrilla, etc.)",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "panel-task-4",
+                  "text": "LocalStorage de estado y preferencias",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "panel-task-5",
+                  "text": "Gamificación (rating y niveles)",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Frontend Team"
+                }
+              ]
+            },
+            {
+              "id": "panel-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Estadísticas de rendimiento",
+              "tasks": [
+                {
+                  "id": "panel-improve-1",
+                  "text": "Integrar estadísticas de rendimiento quincenal (API /api/stats)",
+                  "done": false,
+                  "estimateHrs": 10,
+                  "owner": "Full Stack"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-8",
+          "title": "Gestión de Cuadrillas",
+          "description": "CRM completo con drag & drop, KPIs y duplicación de plantillas",
+          "category": "UX_UI",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 9,
+          "endWeek": 10,
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "cuadrillas-group-1",
+              "title": "CRM y Visualización",
+              "description": "Sistema completo de gestión de cuadrillas",
+              "tasks": [
+                {
+                  "id": "cuadrillas-task-1",
+                  "text": "CRM completo para cuadrillas: 6 especialidades, drag & drop funcional",
+                  "done": true,
+                  "estimateHrs": 20,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "cuadrillas-task-2",
+                  "text": "KPIs clickeables y visores especializados (Activas, Ejecución, Cumplimiento, Riesgo)",
+                  "done": true,
+                  "estimateHrs": 14,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "cuadrillas-task-3",
+                  "text": "Sistema de estado visual por cuadrilla (disponible / en obra / inactiva)",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "cuadrillas-task-4",
+                  "text": "Store global cuadrillasStore.ts con Zustand",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                }
+              ]
+            },
+            {
+              "id": "cuadrillas-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Duplicación y plantillas",
+              "tasks": [
+                {
+                  "id": "cuadrillas-improve-1",
+                  "text": "Permitir duplicar cuadrillas o tareas tipo plantilla",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-9",
+          "title": "Wizard de Obras",
+          "description": "Wizard completo de creación de obras con catálogo y revisión previa",
+          "category": "UX_UI",
+          "priority": "ALTA",
+          "status": "COMPLETO",
+          "startWeek": 11,
+          "endWeek": 12,
+          "targetWeeks": 3,
+          "taskGroups": [
+            {
+              "id": "wizard-group-1",
+              "title": "Wizard Completo",
+              "description": "9 pasos con catálogo y presupuesto",
+              "tasks": [
+                {
+                  "id": "wizard-task-1",
+                  "text": "Wizard completo de 9 pasos para creación de obra",
+                  "done": true,
+                  "estimateHrs": 24,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "wizard-task-2",
+                  "text": "Catálogo de más de 1800 tareas constructivas cargado",
+                  "done": true,
+                  "estimateHrs": 16,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "wizard-task-3",
+                  "text": "Cálculo automático de presupuesto y tareas por elemento",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Full Stack"
+                },
+                {
+                  "id": "wizard-task-4",
+                  "text": "Validación técnica y dependencias por tarea",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Backend Team"
+                }
+              ]
+            },
+            {
+              "id": "wizard-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Revisión y validación",
+              "tasks": [
+                {
+                  "id": "wizard-improve-1",
+                  "text": "Sumar 'revisión antes de crear' (resumen previo con validación de datos)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-10",
+          "title": "Configuración de Cuenta",
+          "description": "Perfil, preferencias y gestión de suscripción",
+          "category": "UX_UI",
+          "priority": "MEDIA",
+          "status": "COMPLETO",
+          "startWeek": 13,
+          "endWeek": 14,
+          "targetWeeks": 1,
+          "taskGroups": [
+            {
+              "id": "config-group-1",
+              "title": "Configuración Usuario",
+              "description": "Perfil y preferencias",
+              "tasks": [
+                {
+                  "id": "config-task-1",
+                  "text": "Perfil de usuario editable",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "config-task-2",
+                  "text": "Preferencias UI (modo claro/oscuro)",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "config-task-3",
+                  "text": "Gestión de suscripción y plan",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Full Stack"
+                },
+                {
+                  "id": "config-task-4",
+                  "text": "Modal de cambio de plan (ModalSuscripcion.tsx)",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-11",
+          "title": "UI/UX y Componentes Globales",
+          "description": "Sistema visual completo con Tailwind + Radix UI y librería de componentes",
+          "category": "UX_UI",
+          "priority": "MEDIA",
+          "status": "EN_CURSO",
+          "targetWeeks": 1,
+          "taskGroups": [
+            {
+              "id": "ui-group-1",
+              "title": "Sistema de Diseño",
+              "description": "Componentes y estilo global",
+              "tasks": [
+                {
+                  "id": "ui-task-1",
+                  "text": "Sistema visual implementado con Tailwind + Radix UI + shadcn",
+                  "done": true,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-task-2",
+                  "text": "Composición de componentes (Slot, clsx, class-variance-authority)",
+                  "done": true,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-task-3",
+                  "text": "Formularios validados con react-hook-form + zod",
+                  "done": true,
+                  "estimateHrs": 10,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-task-4",
+                  "text": "Animaciones básicas y estados de carga (tailwind-animate)",
+                  "done": true,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "ui-task-5",
+                  "text": "Paleta de color corporativa aplicada (azul, gris, amarillo)",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Frontend Team"
+                }
+              ]
+            },
+            {
+              "id": "ui-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Librería de componentes",
+              "tasks": [
+                {
+                  "id": "ui-improve-1",
+                  "text": "Crear librería interna de componentes reutilizables (ui/), exportable para futuras apps",
+                  "done": false,
+                  "estimateHrs": 16,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-12",
+          "title": "Comunicación & Coordinación Operativa",
+          "description": "Chat, notificaciones y evidencias en tiempo real con centro de notificaciones",
+          "category": "OPERATIVOS",
+          "priority": "ALTA",
+          "status": "PENDIENTE",
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "comm-group-1",
+              "title": "Comunicación en Tiempo Real",
+              "description": "Chat y notificaciones",
+              "tasks": [
+                {
+                  "id": "comm-task-1",
+                  "text": "Chat en tiempo real (Supabase Realtime)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team",
+                  "dueDate": "2025-10-20"
+                },
+                {
+                  "id": "comm-task-2",
+                  "text": "Notificaciones email (SendGrid o Resend)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team",
+                  "dueDate": "2025-10-20"
+                },
+                {
+                  "id": "comm-task-3",
+                  "text": "Sistema de evidencias: visualización mejorada",
+                  "done": false,
+                  "estimateHrs": 10,
+                  "owner": "Full Stack",
+                  "dueDate": "2025-10-25"
+                },
+                {
+                  "id": "comm-task-4",
+                  "text": "Reportes avanzados de obra/socio (KPIs + gráficos)",
+                  "done": false,
+                  "estimateHrs": 14,
+                  "owner": "Full Stack",
+                  "dueDate": "2025-10-30"
+                }
+              ]
+            },
+            {
+              "id": "comm-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Centro de notificaciones",
+              "tasks": [
+                {
+                  "id": "comm-improve-1",
+                  "text": "Incluir 'centro de notificaciones' global (🔔) con feed cronológico",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-13",
+          "title": "Documentación Interna",
+          "description": "README y documentos técnicos del proyecto con guías para devs",
+          "category": "OPERATIVOS",
+          "priority": "BAJA",
+          "status": "EN_CURSO",
+          "targetWeeks": 1,
+          "taskGroups": [
+            {
+              "id": "docs-group-1",
+              "title": "Documentación Técnica",
+              "description": "Guías y readmes",
+              "tasks": [
+                {
+                  "id": "docs-task-1",
+                  "text": "README.md principal actualizado",
+                  "done": true,
+                  "estimateHrs": 4,
+                  "owner": "Product Team"
+                },
+                {
+                  "id": "docs-task-2",
+                  "text": "ESTRUCTURA-PANEL-SOCIO.md",
+                  "done": true,
+                  "estimateHrs": 3,
+                  "owner": "Product Team"
+                },
+                {
+                  "id": "docs-task-3",
+                  "text": "IMPLEMENTACION-CUADRILLAS.md",
+                  "done": true,
+                  "estimateHrs": 3,
+                  "owner": "Product Team"
+                },
+                {
+                  "id": "docs-task-4",
+                  "text": "VERIFICACION-CATALOGO.md",
+                  "done": true,
+                  "estimateHrs": 2,
+                  "owner": "Product Team"
+                },
+                {
+                  "id": "docs-task-5",
+                  "text": "to-do.md con pendientes actualizados",
+                  "done": true,
+                  "estimateHrs": 2,
+                  "owner": "Product Team"
+                }
+              ]
+            },
+            {
+              "id": "docs-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Guías de desarrollo",
+              "tasks": [
+                {
+                  "id": "docs-improve-1",
+                  "text": "Crear carpeta /docs con guías para nuevos devs (setup, deploy, migraciones, naming conventions)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Product Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-14",
+          "title": "Testing & Documentación API",
+          "description": "Tests unitarios, E2E y documentación completa con CI automatizado",
+          "category": "OPERATIVOS",
+          "priority": "MEDIA",
+          "status": "PENDIENTE",
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "testing-group-1",
+              "title": "Testing",
+              "description": "Tests unitarios y E2E",
+              "tasks": [
+                {
+                  "id": "testing-task-1",
+                  "text": "Tests unitarios servicios críticos (auth, obras, tareas, cpm.service)",
+                  "done": false,
+                  "estimateHrs": 16,
+                  "owner": "QA Team",
+                  "dueDate": "2025-11-05"
+                },
+                {
+                  "id": "testing-task-2",
+                  "text": "E2E básicos de flujos principales (Playwright)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "QA Team",
+                  "dueDate": "2025-11-08"
+                },
+                {
+                  "id": "testing-task-3",
+                  "text": "Docs de API (Markdown simple en /docs/api.md)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Backend Team",
+                  "dueDate": "2025-11-05"
+                },
+                {
+                  "id": "testing-task-4",
+                  "text": "Revisar performance: SSR, dynamic imports (Three/Konva)",
+                  "done": false,
+                  "estimateHrs": 10,
+                  "owner": "Frontend Team",
+                  "dueDate": "2025-11-10"
+                }
+              ]
+            },
+            {
+              "id": "testing-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Automatización CI",
+              "tasks": [
+                {
+                  "id": "testing-improve-1",
+                  "text": "Automatizar con script npm run test:ci antes de deploy",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "DevOps"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-15",
+          "title": "Deploy & Beta Pública",
+          "description": "Lanzamiento público con usuarios beta y feedback widget",
+          "category": "OPERATIVOS",
+          "priority": "ALTA",
+          "status": "PENDIENTE",
+          "targetWeeks": 1,
+          "dueDate": "2025-11-15",
+          "taskGroups": [
+            {
+              "id": "deploy-group-1",
+              "title": "Deploy y Monitoreo",
+              "description": "Vercel, analytics y backups",
+              "tasks": [
+                {
+                  "id": "deploy-task-1",
+                  "text": "Deploy en Vercel + Supabase Postgres (RLS verificado)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "DevOps",
+                  "dueDate": "2025-11-10"
+                },
+                {
+                  "id": "deploy-task-2",
+                  "text": "Analytics (Posthog o Umami)",
+                  "done": false,
+                  "estimateHrs": 4,
+                  "owner": "Full Stack",
+                  "dueDate": "2025-11-12"
+                },
+                {
+                  "id": "deploy-task-3",
+                  "text": "Backups automáticos y logs mínimos",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "DevOps",
+                  "dueDate": "2025-11-12"
+                },
+                {
+                  "id": "deploy-task-4",
+                  "text": "Página /beta en landing con acceso limitado",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team",
+                  "dueDate": "2025-11-13"
+                },
+                {
+                  "id": "deploy-task-5",
+                  "text": "Test con 5–10 usuarios reales (checklist /docs/beta-checklist.md)",
+                  "done": false,
+                  "estimateHrs": 20,
+                  "owner": "Product Team",
+                  "dueDate": "2025-11-15"
+                }
+              ]
+            },
+            {
+              "id": "deploy-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Feedback y monitoreo",
+              "tasks": [
+                {
+                  "id": "deploy-improve-1",
+                  "text": "Integrar Feedback Widget in-app (comentarios directos en producción)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Frontend Team"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-16",
+          "title": "(Opcional) BIM: Importación & 3D",
+          "description": "Importación IFC y visualización 3D - No bloqueante para GO-LIVE",
+          "category": "FUTUROS",
+          "priority": "BAJA",
+          "status": "PENDIENTE",
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "bim-group-1",
+              "title": "BIM y 3D",
+              "description": "Funcionalidad opcional de visualización 3D",
+              "tasks": [
+                {
+                  "id": "bim-task-1",
+                  "text": "Completar reader IFC + mapeos mínimos",
+                  "done": false,
+                  "estimateHrs": 16,
+                  "owner": "3D Team"
+                },
+                {
+                  "id": "bim-task-2",
+                  "text": "Visualización 3D (lazy, sólo demo)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "bim-task-3",
+                  "text": "Documentar limitaciones de MVP",
+                  "done": false,
+                  "estimateHrs": 4,
+                  "owner": "Product Team"
+                }
+              ]
+            },
+            {
+              "id": "bim-group-2",
+              "title": "Mejoras Sugeridas",
+              "description": "Separación modular",
+              "tasks": [
+                {
+                  "id": "bim-improve-1",
+                  "text": "Separar módulo BIM en /app/bim como feature standalone para etapa 2",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "Full Stack"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "grows-obj-17",
+          "title": "🆕 Métricas & Rendimiento",
+          "description": "Sistema de monitoreo, logs y optimización de performance",
+          "category": "FUTUROS",
+          "priority": "MEDIA",
+          "status": "PENDIENTE",
+          "targetWeeks": 2,
+          "taskGroups": [
+            {
+              "id": "metrics-group-1",
+              "title": "Observabilidad",
+              "description": "Logs, errores y performance",
+              "tasks": [
+                {
+                  "id": "metrics-task-1",
+                  "text": "Logs de errores y performance (Sentry)",
+                  "done": false,
+                  "estimateHrs": 8,
+                  "owner": "DevOps"
+                },
+                {
+                  "id": "metrics-task-2",
+                  "text": "Medición de tiempos de carga (Web Vitals)",
+                  "done": false,
+                  "estimateHrs": 6,
+                  "owner": "Frontend Team"
+                },
+                {
+                  "id": "metrics-task-3",
+                  "text": "Monitoreo de uso de API (rate limiting, endpoints más usados)",
+                  "done": false,
+                  "estimateHrs": 10,
+                  "owner": "Backend Team"
+                },
+                {
+                  "id": "metrics-task-4",
+                  "text": "Optimización de queries Prisma (indexado, paginación)",
+                  "done": false,
+                  "estimateHrs": 12,
+                  "owner": "Backend Team"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "projectName": "OTRO_MVP",
+      "version": "0.1.0",
+      "updatedAt": "2025-10-09T00:00:00.000Z",
+      "objectives": [
+        {
+          "id": "otro-obj-1",
+          "title": "Definición de Alcance",
+          "description": "Establecer claramente el alcance del MVP y los criterios de éxito",
+          "priority": "ALTA",
+          "status": "PENDIENTE",
+          "targetWeeks": 1,
+          "tasks": [
+            {
+              "id": "otro-task-1-1",
+              "text": "Documentar problema y usuario objetivo",
+              "done": false,
+              "estimateHrs": 4
+            },
+            {
+              "id": "otro-task-1-2",
+              "text": "Definir 3 flujos críticos end-to-end",
+              "done": false,
+              "estimateHrs": 6
+            },
+            {
+              "id": "otro-task-1-3",
+              "text": "Criterios de 'MVP usable'",
+              "done": false,
+              "estimateHrs": 3
+            }
+          ]
+        },
+        {
+          "id": "otro-obj-2",
+          "title": "Implementación Core",
+          "description": "Desarrollar las funcionalidades mínimas esenciales del producto",
+          "priority": "ALTA",
+          "status": "PENDIENTE",
+          "targetWeeks": 2,
+          "tasks": [
+            {
+              "id": "otro-task-2-1",
+              "text": "Modelo de datos mínimo",
+              "done": false,
+              "estimateHrs": 8
+            },
+            {
+              "id": "otro-task-2-2",
+              "text": "3 pantallas funcionales con datos persistentes",
+              "done": false,
+              "estimateHrs": 16
+            },
+            {
+              "id": "otro-task-2-3",
+              "text": "Autenticación básica",
+              "done": false,
+              "estimateHrs": 6
+            }
+          ]
+        },
+        {
+          "id": "otro-obj-3",
+          "title": "Validación & Lanzamiento",
+          "description": "Validar el producto con usuarios reales y preparar el lanzamiento",
+          "priority": "MEDIA",
+          "status": "PENDIENTE",
+          "targetWeeks": 1,
+          "tasks": [
+            {
+              "id": "otro-task-3-1",
+              "text": "Test con 3–5 usuarios",
+              "done": false,
+              "estimateHrs": 10
+            },
+            {
+              "id": "otro-task-3-2",
+              "text": "Métricas básicas de uso",
+              "done": false,
+              "estimateHrs": 6
+            },
+            {
+              "id": "otro-task-3-3",
+              "text": "Página de onboarding/FAQ",
+              "done": false,
+              "estimateHrs": 8
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

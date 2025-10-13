@@ -522,9 +522,8 @@ export function WizardCrearObraNuevo({ onComplete, onCancel }: WizardCrearObraNu
     if (mostrarWizardManual) {
       return (
         <WizardCrearObraMejorado
-          onComplete={handleWizardManualCompletado}
+          onSuccess={handleWizardManualCompletado}
           onCancel={handleVolverAMetodo}
-          datosGenerales={wizardData.datos_generales}
         />
       );
     }

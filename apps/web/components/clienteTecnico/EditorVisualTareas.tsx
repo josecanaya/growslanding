@@ -2,23 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  Plus, 
-  Trash2, 
-  Edit, 
-  CheckCircle, 
-  Clock, 
-  Play, 
-  Pause, 
-  X, 
-  Save, 
-  Settings, 
   ZoomIn, 
   ZoomOut, 
   RotateCcw,
-  Move,
-  Link,
-  Eye,
-  EyeOff
+  Circle,
+  Link2,
+  X,
+  Check
 } from 'lucide-react';
 
 interface Tarea {
@@ -36,19 +26,14 @@ interface Tarea {
   precedencia: string[];
   duracion: number;
   esCritica: boolean;
-  holgura: number; // LS - ES
-  earlyStart: number; // ES
-  earlyFinish: number; // EF
-  lateStart: number; // LS
-  lateFinish: number; // LF
+  holgura: number;
+  earlyStart: number;
+  earlyFinish: number;
+  lateStart: number;
+  lateFinish: number;
   x: number;
   y: number;
-}
-
-interface Conexion {
-  id: string;
-  desde: string;
-  hasta: string;
+  dependencias?: string[];
 }
 
 interface EditorVisualTareasProps {
@@ -60,619 +45,527 @@ interface EditorVisualTareasProps {
 }
 
 export function EditorVisualTareas({ 
-  tareas, 
+  tareas: tareasIniciales, 
   etapa, 
   onActualizarTarea, 
   onEliminarTarea, 
   onCrearTarea 
 }: EditorVisualTareasProps) {
+  console.log('🚀 COMPONENTE ACTUALIZADO - EditorVisualTareas con FILTROS, PRECARGA y EDICIÓN');
+  console.log('📊 Tareas recibidas:', tareasIniciales.length, tareasIniciales);
+  
   const canvasRef = useRef<HTMLDivElement>(null);
-  const [nodos, setNodos] = useState<Tarea[]>(tareas);
-  const [conexiones, setConexiones] = useState<Conexion[]>([]);
-  const [nodoSeleccionado, setNodoSeleccionado] = useState<Tarea | null>(null);
-  const [nodoEditando, setNodoEditando] = useState<Tarea | null>(null);
-  const [showModalCrear, setShowModalCrear] = useState(false);
-  const [conexionCreando, setConexionCreando] = useState<{ desde: string; x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [nodos, setNodos] = useState<Tarea[]>([]);
   const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [draggedNode, setDraggedNode] = useState<string | null>(null);
+  const [filtroEtapa, setFiltroEtapa] = useState<string | null>(null);
+  const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
+  const [modalEdicionAbierto, setModalEdicionAbierto] = useState(false);
 
   // Colores por etapa
   const getColorEtapa = (etapa: string) => {
     switch (etapa) {
       case 'estructura':
-        return 'bg-blue-500';
+        return '#D4A017'; // Dorado
       case 'obra_gris':
-        return 'bg-gray-500';
+        return '#555A5F'; // Gris
       case 'terminaciones':
-        return 'bg-green-500';
+        return '#2ECC71'; // Verde
       default:
-        return 'bg-gray-500';
+        return '#dce0e5';
     }
   };
 
+  // Color del estado
   const getColorEstado = (estado: string) => {
     switch (estado) {
       case 'completada':
-        return 'bg-green-100 text-green-800';
+        return '#2ecc71';
       case 'en_progreso':
-        return 'bg-blue-100 text-blue-800';
+        return '#f4e27e';
+      case 'pendiente':
+        return '#e67e22';
       case 'bloqueada':
-        return 'bg-red-100 text-red-800';
+        return '#e74c3c';
       default:
-        return 'bg-yellow-100 text-yellow-800';
+        return '#dce0e5';
     }
   };
 
-  const getIconoEstado = (estado: string) => {
-    switch (estado) {
-      case 'completada':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'en_progreso':
-        return <Play className="h-3 w-3" />;
-      case 'bloqueada':
-        return <Pause className="h-3 w-3" />;
-      default:
-        return <Clock className="h-3 w-3" />;
-    }
-  };
-
-  // Algoritmo CPM completo con Early Start/Finish y Late Start/Finish
-  const calcularCaminoCritico = useCallback((tareas: Tarea[]) => {
-    const tareasConCPM = [...tareas];
+  // Precarga lógica por etapas
+  const precargaLogicaPorEtapas = useCallback((tareas: Tarea[]) => {
+    const ordenEtapas = ['estructura', 'obra_gris', 'terminaciones'];
+    const posicionesIniciales = {
+      'estructura': { x: 100, y: 100 },
+      'obra_gris': { x: 800, y: 100 },
+      'terminaciones': { x: 1500, y: 100 }
+    };
     
-    // Inicializar tiempos
-    tareasConCPM.forEach(tarea => {
-      tarea.earlyStart = 0;
-      tarea.earlyFinish = 0;
-      tarea.lateStart = 0;
-      tarea.lateFinish = 0;
-      tarea.holgura = 0;
-      tarea.esCritica = false;
-    });
-
-    // Forward Pass - Calcular Early Start (ES) y Early Finish (EF)
-    const calcularEarlyTimes = (tarea: Tarea) => {
-      if (tarea.earlyStart > 0) return tarea.earlyStart;
+    const tareasConPosicion: Tarea[] = [];
+    
+    ordenEtapas.forEach((etapaActual) => {
+      const tareasEtapa = tareas.filter(t => t.etapa === etapaActual);
+      const posInicial = posicionesIniciales[etapaActual as keyof typeof posicionesIniciales];
       
-      let maxEarlyFinish = 0;
-      tarea.precedencia.forEach(idPrecedencia => {
-        const tareaPrecedencia = tareasConCPM.find(t => t.id === idPrecedencia);
-        if (tareaPrecedencia) {
-          const esPrecedencia = calcularEarlyTimes(tareaPrecedencia);
-          const efPrecedencia = esPrecedencia + tareaPrecedencia.duracion;
-          maxEarlyFinish = Math.max(maxEarlyFinish, efPrecedencia);
+      let offsetY = 0;
+      
+      tareasEtapa.forEach((tarea, index) => {
+        const deps = tarea.dependencias || [];
+        let x = posInicial.x;
+        let y = posInicial.y + offsetY;
+        
+        // Si tiene dependencias, calcular posición relativa
+        if (deps.length > 0) {
+          const tareasDepYaCargadas = tareasConPosicion.filter(t => deps.includes(t.id));
+          
+          if (tareasDepYaCargadas.length > 0) {
+            const maxX = Math.max(...tareasDepYaCargadas.map(t => t.x));
+            const avgY = tareasDepYaCargadas.reduce((sum, t) => sum + t.y, 0) / tareasDepYaCargadas.length;
+            
+            x = maxX + 300;
+            y = avgY;
+          }
         }
-      });
-      
-      tarea.earlyStart = maxEarlyFinish;
-      tarea.earlyFinish = tarea.earlyStart + tarea.duracion;
-      return tarea.earlyStart;
-    };
-
-    // Backward Pass - Calcular Late Start (LS) y Late Finish (LF)
-    const calcularLateTimes = (tarea: Tarea) => {
-      if (tarea.lateStart > 0) return tarea.lateStart;
-      
-      // Encontrar tareas que dependen de esta
-      const tareasDependientes = tareasConCPM.filter(t => t.precedencia.includes(tarea.id));
-      
-      if (tareasDependientes.length === 0) {
-        // Tarea final - LF = EF del proyecto
-        const proyectoEF = Math.max(...tareasConCPM.map(t => t.earlyFinish));
-        tarea.lateFinish = proyectoEF;
-        tarea.lateStart = tarea.lateFinish - tarea.duracion;
-      } else {
-        // LF = mÃ­nimo LS de las tareas dependientes
-        let minLateStart = Infinity;
-        tareasDependientes.forEach(tareaDep => {
-          const lsDependiente = calcularLateTimes(tareaDep);
-          minLateStart = Math.min(minLateStart, lsDependiente);
+        
+        tareasConPosicion.push({
+          ...tarea,
+          x: tarea.x || x,
+          y: tarea.y || y
         });
-        tarea.lateFinish = minLateStart;
-        tarea.lateStart = tarea.lateFinish - tarea.duracion;
-      }
-      
-      return tarea.lateStart;
-    };
-
-    // Ejecutar cÃ¡lculos
-    tareasConCPM.forEach(calcularEarlyTimes);
-    tareasConCPM.forEach(calcularLateTimes);
-
-    // Calcular holgura y identificar camino crÃ­tico
-    tareasConCPM.forEach(tarea => {
-      tarea.holgura = tarea.lateStart - tarea.earlyStart;
-      tarea.esCritica = tarea.holgura === 0;
+        
+        offsetY += 150;
+      });
     });
-
-    return tareasConCPM;
+    
+    return tareasConPosicion;
   }, []);
 
-  // Actualizar nodos cuando cambien las tareas
+  // Layout inicial
   useEffect(() => {
-    const tareasConPosicion = tareas.map((tarea, index) => ({
-      ...tarea,
-      x: tarea.x || 100 + (index % 3) * 200,
-      y: tarea.y || 100 + Math.floor(index / 3) * 150
-    }));
-    setNodos(calcularCaminoCritico(tareasConPosicion));
-  }, [tareas, calcularCaminoCritico]);
-
-  // Generar conexiones desde precedencias
-  useEffect(() => {
-    const nuevasConexiones: Conexion[] = [];
-    nodos.forEach(nodo => {
-      nodo.precedencia.forEach(idPrecedencia => {
-        nuevasConexiones.push({
-          id: `${idPrecedencia}-${nodo.id}`,
-          desde: idPrecedencia,
-          hasta: nodo.id
-        });
-      });
-    });
-    setConexiones(nuevasConexiones);
-  }, [nodos]);
-
-  // Obtener tiempo total del proyecto
-  const obtenerTiempoTotalProyecto = () => {
-    return Math.max(...nodos.map(t => t.earlyFinish));
-  };
-
-  // Obtener tareas crÃ­ticas
-  const obtenerTareasCriticas = () => {
-    return nodos.filter(t => t.esCritica);
-  };
-
-  // Obtener tareas con holgura
-  const obtenerTareasConHolgura = () => {
-    return nodos.filter(t => !t.esCritica && t.holgura > 0);
-  };
-
-  // Manejar drag del canvas
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
-    if (e.target === canvasRef.current) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    console.log('🎨 Aplicando layout a', tareasIniciales.length, 'tareas');
+    if (tareasIniciales.length > 0) {
+      const nodosConPosicion = precargaLogicaPorEtapas(tareasIniciales);
+      console.log('✅ Nodos posicionados:', nodosConPosicion.length, nodosConPosicion);
+      setNodos(nodosConPosicion);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tareasIniciales]);
 
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      setOffset({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  };
+  // Tareas visibles según filtro
+  const tareasVisibles = filtroEtapa
+    ? nodos.filter(t => t.etapa === filtroEtapa)
+    : nodos;
 
-  const handleCanvasMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomStep = 0.1;
-    setZoom((prevZoom) => {
-      const nextZoom = e.deltaY < 0
-        ? Math.min(2, prevZoom + zoomStep)
-        : Math.max(0.5, prevZoom - zoomStep);
-      return Number(nextZoom.toFixed(2));
-    });
-  };
-
-  // Manejar clic en nodos
-  const handleNodoClick = (e: React.MouseEvent, nodo: Tarea) => {
-    e.stopPropagation();
-    setNodoSeleccionado(nodo);
-    setNodoEditando(nodo);
-  };
-
-  // Manejar drag de nodos
-  const handleNodoMouseDown = (e: React.MouseEvent, nodo: Tarea) => {
-    e.stopPropagation();
-    setNodoSeleccionado(nodo);
+  // Renderizar conexiones
+  const renderConexiones = () => {
+    const conexiones: JSX.Element[] = [];
     
-    const startX = e.clientX - nodo.x;
-    const startY = e.clientY - nodo.y;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      const newX = e.clientX - startX;
-      const newY = e.clientY - startY;
+    tareasVisibles.forEach(tarea => {
+      const deps = tarea.dependencias || [];
       
-      setNodos(prev => prev.map(n => 
-        n.id === nodo.id ? { ...n, x: newX, y: newY } : n
-      ));
-    };
+      deps.forEach((dependenciaId, index) => {
+        const tareaOrigen = nodos.find(t => t.id === dependenciaId);
+        
+        // Solo mostrar si ambos nodos están visibles
+        const origenVisible = tareasVisibles.some(t => t.id === dependenciaId);
+        if (!tareaOrigen || !origenVisible) return;
+        
+        const x1 = tareaOrigen.x + 230;
+        const y1 = tareaOrigen.y + 50;
+        const x2 = tarea.x;
+        const y2 = tarea.y + 50;
+        
+        const offsetY = (index - (deps.length - 1) / 2) * 15;
+        const controlPointX1 = x1 + 100;
+        const controlPointY1 = y1 + offsetY;
+        const controlPointX2 = x2 - 100;
+        const controlPointY2 = y2 + offsetY;
+        
+        const path = `M ${x1},${y1} C ${controlPointX1},${controlPointY1} ${controlPointX2},${controlPointY2} ${x2},${y2}`;
+        
+        conexiones.push(
+          <path
+            key={`${dependenciaId}-${tarea.id}-${index}`}
+            d={path}
+            stroke="#f4e27e"
+            strokeWidth="2.5"
+            fill="none"
+            opacity="0.9"
+            strokeLinecap="round"
+          />
+        );
+      });
+    });
+    
+    return conexiones;
+  };
 
-    const handleMouseUp = () => {
+  // Drag & Drop
+  const handleMouseDown = (e: React.MouseEvent, tareaId: string) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDraggedNode(tareaId);
+    setDragStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging || !draggedNode) return;
+
+    const deltaX = (e.clientX - dragStart.x) / zoom;
+    const deltaY = (e.clientY - dragStart.y) / zoom;
+
+    setNodos(prevNodos => 
+      prevNodos.map(nodo => 
+        nodo.id === draggedNode 
+          ? { ...nodo, x: nodo.x + deltaX, y: nodo.y + deltaY }
+          : nodo
+      )
+    );
+
+    setDragStart({ x: e.clientX, y: e.clientY });
+  }, [isDragging, draggedNode, dragStart, zoom]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDraggedNode(null);
+  }, []);
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-
-  // Crear nueva tarea
-  const handleCrearTarea = (datosTarea: any) => {
-    const nuevaTarea: Omit<Tarea, 'id' | 'x' | 'y'> = {
-      nombre: datosTarea.nombre,
-      obraId: tareas[0]?.obraId || '',
-      lider: datosTarea.lider,
-      fechaInicio: new Date().toISOString(),
-      fechaFin: new Date(Date.now() + datosTarea.duracion * 24 * 60 * 60 * 1000).toISOString(),
-      plantilla: '',
-      checklist: datosTarea.checklist || [],
-      evidencias: [],
-      estado: 'pendiente',
-      etapa: datosTarea.etapa,
-      precedencia: [],
-      duracion: datosTarea.duracion,
-      esCritica: false,
-      holgura: 0,
-      earlyStart: 0,
-      earlyFinish: 0,
-      lateStart: 0,
-      lateFinish: 0
-    };
-
-    onCrearTarea(nuevaTarea);
-    setShowModalCrear(false);
-  };
-
-  // Eliminar tarea
-  const handleEliminarTarea = (nodoId: string) => {
-    if (confirm('Â¿EstÃ¡s seguro de que quieres eliminar esta tarea?')) {
-      onEliminarTarea(nodoId);
-      setNodoSeleccionado(null);
+  // Abrir modal de edición
+  const handleClickNodo = (tarea: Tarea) => {
+    if (!isDragging) {
+      setTareaSeleccionada(tarea);
+      setModalEdicionAbierto(true);
     }
   };
 
-  // Renderizar conexiones SVG
-  const renderConexiones = () => {
-    return conexiones.map(conexion => {
-      const nodoDesde = nodos.find(n => n.id === conexion.desde);
-      const nodoHasta = nodos.find(n => n.id === conexion.hasta);
-      
-      if (!nodoDesde || !nodoHasta) return null;
+  // Actualizar dependencias
+  const actualizarDependencias = (tareaId: string, nuevasDeps: string[]) => {
+    setNodos(prevNodos =>
+      prevNodos.map(nodo =>
+        nodo.id === tareaId
+          ? { ...nodo, dependencias: nuevasDeps }
+          : nodo
+      )
+    );
+  };
 
-      const x1 = nodoDesde.x + 100; // Centro del nodo
-      const y1 = nodoDesde.y + 30;
-      const x2 = nodoHasta.x + 100;
-      const y2 = nodoHasta.y + 30;
+  // Toggle filtro etapa
+  const toggleFiltroEtapa = (etapa: string) => {
+    setFiltroEtapa(prev => prev === etapa ? null : etapa);
+  };
 
-      const esCritica = nodoDesde.esCritica && nodoHasta.esCritica;
-
-      return (
-        <g key={conexion.id}>
-          <line
-            x1={x1}
-            y1={y1}
-            x2={x2}
-            y2={y2}
-            stroke={esCritica ? '#ef4444' : '#6b7280'}
-            strokeWidth={esCritica ? 3 : 2}
-            markerEnd="url(#arrowhead)"
-          />
-          {/* Flecha */}
-          <polygon
-            points={`${x2-5},${y2-3} ${x2},${y2} ${x2-5},${y2+3}`}
-            fill={esCritica ? '#ef4444' : '#6b7280'}
-          />
-        </g>
-      );
-    });
+  // Controles de zoom
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
+  const handleReset = () => {
+    setZoom(1);
+    const nodosConPosicion = precargaLogicaPorEtapas(tareasIniciales);
+    setNodos(nodosConPosicion);
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Panel lateral mejorado */}
-      <div className="w-80 bg-white border-r border-gray-200 shadow-sm">
-        {/* Header del panel */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Editor Visual</h3>
-            <div className="flex space-x-2">
+    <div className="h-full w-full relative" style={{backgroundColor: '#eaf0f6'}}>
+      {/* Toolbar superior */}
+      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-2" style={{borderColor: '#dce3ea'}}>
+        <div className="flex items-center space-x-4">
+          {/* Filtros por etapa */}
+          <div className="flex items-center space-x-2 pr-4 border-r" style={{borderColor: '#dce3ea'}}>
             <button
-              onClick={handleCrearTarea}
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                title="Crear nueva tarea"
+              onClick={() => toggleFiltroEtapa('estructura')}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: filtroEtapa === 'estructura' ? '#D4A017' : '#f0e0d6',
+                color: filtroEtapa === 'estructura' ? 'white' : '#8b4513',
+                border: `2px solid ${filtroEtapa === 'estructura' ? '#D4A017' : '#d4af37'}`
+              }}
             >
-              <Plus className="h-4 w-4" />
+              Estructura
             </button>
-              <button
-                onClick={() => setOffset({ x: 0, y: 0 })}
-                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Centrar vista"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              onClick={() => toggleFiltroEtapa('obra_gris')}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: filtroEtapa === 'obra_gris' ? '#555A5F' : '#f5f7fa',
+                color: filtroEtapa === 'obra_gris' ? 'white' : '#1B263B',
+                border: `2px solid ${filtroEtapa === 'obra_gris' ? '#555A5F' : '#dce3ea'}`
+              }}
+            >
+              Obra Gris
+            </button>
+            <button
+              onClick={() => toggleFiltroEtapa('terminaciones')}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: filtroEtapa === 'terminaciones' ? '#2ECC71' : '#d4edda',
+                color: filtroEtapa === 'terminaciones' ? 'white' : '#155724',
+                border: `2px solid ${filtroEtapa === 'terminaciones' ? '#2ECC71' : '#28a745'}`
+              }}
+            >
+              Terminaciones
+            </button>
           </div>
 
-          {/* EstadÃ­sticas del proyecto */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-blue-50 rounded-lg p-3">
-              <div className="text-xs text-blue-600 font-medium">Tiempo Total</div>
-              <div className="text-lg font-bold text-blue-900">{obtenerTiempoTotalProyecto()}d</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-3">
-              <div className="text-xs text-green-600 font-medium">Tareas</div>
-              <div className="text-lg font-bold text-green-900">{nodos.length}</div>
-            </div>
-          </div>
-          </div>
-
-        {/* Controles de zoom */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Zoom</span>
-            <span className="text-sm text-gray-500">{Math.round(zoom * 100)}%</span>
-                </div>
+          {/* Controles de zoom */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
+              onClick={handleZoomOut}
+              className="p-2 rounded transition-colors"
+              style={{color: '#1B263B'}}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <ZoomOut className="h-4 w-4" />
             </button>
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-200"
-                style={{ width: `${((zoom - 0.5) / 1.5) * 100}%` }}
-              ></div>
-            </div>
-            <button
-              onClick={() => setZoom(Math.min(2, zoom + 0.1))}
-              className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-            >
-              <ZoomIn className="h-4 w-4" />
-            </button>
-            </div>
-          </div>
-
-        {/* Lista de tareas */}
-        <div className="flex-1 overflow-y-auto p-4">
-            <div className="space-y-2">
-            {nodos.map((tarea) => (
-              <div
-                key={tarea.id}
-                onClick={() => setNodoSeleccionado(tarea)}
-                className={`p-3 rounded-lg border cursor-pointer transition-all ${
-                  nodoSeleccionado?.id === tarea.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${getColorEstado(tarea.estado).split(' ')[0]}`}></div>
-                    <span className="text-sm font-medium text-gray-900 truncate">{tarea.nombre}</span>
-                  </div>
-                  <div className="flex space-x-1">
-                <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setNodoEditando(tarea);
-                      }}
-                      className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Edit className="h-3 w-3" />
-                </button>
-                <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEliminarTarea(tarea.id);
-                      }}
-                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                </button>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-500">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{tarea.duracion}d</span>
-                  </div>
-                  <div className="mt-1">{tarea.lider}</div>
-                </div>
-              </div>
-            ))}
-            </div>
-        </div>
-      </div>
-
-      {/* Canvas principal */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Toolbar superior */}
-        <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border border-gray-200 p-2">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-              title="Alejar"
-            >
-              <ZoomOut className="h-4 w-4" />
-            </button>
-            <span className="text-sm font-medium text-gray-700 min-w-[3rem] text-center">
+            <span className="text-sm font-medium min-w-[3rem] text-center" style={{color: '#1B263B'}}>
               {Math.round(zoom * 100)}%
             </span>
             <button
-              onClick={() => setZoom(Math.min(2, zoom + 0.1))}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-              title="Acercar"
+              onClick={handleZoomIn}
+              className="p-2 rounded transition-colors"
+              style={{color: '#1B263B'}}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <ZoomIn className="h-4 w-4" />
             </button>
-            <div className="w-px h-6 bg-gray-300"></div>
+            <div className="w-px h-6" style={{backgroundColor: '#dce3ea'}}></div>
             <button
-              onClick={() => setOffset({ x: 0, y: 0 })}
-              className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded transition-colors"
-              title="Centrar vista"
+              onClick={handleReset}
+              className="p-2 rounded transition-colors"
+              style={{color: '#1B263B'}}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f7fa'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <RotateCcw className="h-4 w-4" />
             </button>
           </div>
+          </div>
         </div>
 
-        {/* Canvas SVG */}
+      {/* Canvas del Editor */}
         <div
           ref={canvasRef}
-          className="w-full h-full cursor-grab active:cursor-grabbing"
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          onWheel={handleWheel}
-        >
-          <svg
-            width="100%"
-            height="100%"
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
-            transformOrigin: '0 0'
+        className="w-full h-full relative overflow-auto"
+        style={{
+          background: '#eaf0f6',
+          minHeight: '700px'
+        }}
+        onWheel={(e) => {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            setZoom(prev => Math.max(0.5, Math.min(2, prev + delta)));
+          }
+        }}
+      >
+        {/* SVG para conexiones */}
+        <svg
+          ref={svgRef}
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ 
+            zIndex: 0,
+            minWidth: '2500px',
+            minHeight: '1500px'
           }}
         >
-            {/* Definir marcadores de flecha */}
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="7"
-                refX="9"
-                refY="3.5"
-                orient="auto"
+          {renderConexiones()}
+        </svg>
+
+        {/* Nodos (tareas) */}
+        <div 
+          className="relative"
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: 'top left',
+            minWidth: '2500px',
+            minHeight: '1500px'
+          }}
+        >
+          {tareasVisibles.map((tarea) => (
+            <div
+              key={tarea.id}
+              className="absolute cursor-move select-none"
+              style={{
+                left: `${tarea.x}px`,
+                top: `${tarea.y}px`,
+                zIndex: 1
+              }}
+              onMouseDown={(e) => handleMouseDown(e, tarea.id)}
+              onClick={(e) => {
+                if (!isDragging) {
+                  e.stopPropagation();
+                  handleClickNodo(tarea);
+                }
+              }}
+            >
+              {/* Nodo de tarea */}
+              <div
+                className="rounded-lg shadow-sm transition-all"
+                style={{
+                  width: '230px',
+                  height: '100px',
+                  backgroundColor: '#ffffff',
+                  border: `2px solid ${getColorEtapa(tarea.etapa)}`,
+                  borderRadius: '10px',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                  padding: '12px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 0 6px rgba(0,0,0,0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
+                }}
               >
-                <polygon
-                  points="0 0, 10 3.5, 0 7"
-                  fill="#6b7280"
-                />
-              </marker>
-            </defs>
-
-            {/* Renderizar conexiones */}
-            {renderConexiones()}
-
-            {/* Renderizar nodos */}
-            {nodos.map((tarea) => (
-              <g key={tarea.id}>
-                {/* Nodo principal */}
-                <rect
-                  x={tarea.x}
-                  y={tarea.y}
-                  width="200"
-                  height="80"
-                  rx="8"
-                  ry="8"
-                  fill="white"
-                  stroke={nodoSeleccionado?.id === tarea.id ? '#3b82f6' : '#e5e7eb'}
-                  strokeWidth={nodoSeleccionado?.id === tarea.id ? '2' : '1'}
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => setNodoSeleccionado(tarea)}
-                />
-
-                {/* Indicador de estado */}
-                <rect
-                  x={tarea.x + 8}
-                  y={tarea.y + 8}
-                  width="4"
-                  height="4"
-                  rx="2"
-                  fill={tarea.estado === 'completada' ? '#10b981' : 
-                        tarea.estado === 'en_progreso' ? '#3b82f6' : 
-                        tarea.estado === 'bloqueada' ? '#ef4444' : '#f59e0b'}
-                />
-
-                {/* Nombre de la tarea */}
-                <text
-                  x={tarea.x + 20}
-                  y={tarea.y + 20}
-                  fontSize="12"
-                  fontWeight="600"
-                  fill="#111827"
-                  className="select-none"
-                >
-                  {tarea.nombre.length > 20 ? tarea.nombre.substring(0, 20) + '...' : tarea.nombre}
-                </text>
-
-                {/* DuraciÃ³n */}
-                <text
-                  x={tarea.x + 20}
-                  y={tarea.y + 35}
-                  fontSize="10"
-                  fill="#6b7280"
-                  className="select-none"
-                >
-                  {tarea.duracion} dÃ­as
-                </text>
-
-                {/* LÃ­der */}
-                <text
-                  x={tarea.x + 20}
-                  y={tarea.y + 50}
-                  fontSize="10"
-                  fill="#6b7280"
-                  className="select-none"
-                >
-                  {tarea.lider}
-                </text>
-
-                {/* Indicador crÃ­tico */}
-                {tarea.esCritica && (
-                  <circle
-                    cx={tarea.x + 190}
-                    cy={tarea.y + 20}
-                    r="6"
-                    fill="#ef4444"
-                    stroke="white"
-                    strokeWidth="2"
+                <div className="flex items-start mb-2">
+                  <Circle 
+                    className="w-2 h-2 mt-1 mr-2" 
+                    style={{color: getColorEstado(tarea.estado)}}
+                    fill={getColorEstado(tarea.estado)}
                   />
-                )}
-
-                {/* Puntos de conexiÃ³n */}
-                <circle
-                  cx={tarea.x + 100}
-                  cy={tarea.y}
-                  r="4"
-                  fill="#3b82f6"
-                  className="cursor-pointer hover:r-6 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConexionCreando({ desde: tarea.id, x: tarea.x + 100, y: tarea.y });
-                  }}
-                />
-                <circle
-                  cx={tarea.x + 100}
-                  cy={tarea.y + 80}
-                  r="4"
-                  fill="#3b82f6"
-                  className="cursor-pointer hover:r-6 transition-all"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConexionCreando({ desde: tarea.id, x: tarea.x + 100, y: tarea.y + 80 });
-                  }}
-                />
-              </g>
-            ))}
-
-            {/* LÃ­nea de conexiÃ³n temporal */}
-            {conexionCreando && (
-              <line
-                x1={conexionCreando.x}
-                y1={conexionCreando.y}
-                x2={conexionCreando.x}
-                y2={conexionCreando.y}
-                stroke="#3b82f6"
-                strokeWidth="2"
-                strokeDasharray="5,5"
-              />
-            )}
-          </svg>
+                  <h4 className="text-sm font-semibold truncate flex-1" style={{color: '#1B263B'}}>
+                    {tarea.nombre}
+                  </h4>
+                </div>
+                
+                <p className="text-xs mb-1" style={{color: '#4a4e57'}}>
+                  {tarea.lider}
+                </p>
+                
+                <p className="text-xs mb-1" style={{color: '#4a4e57'}}>
+                  {tarea.duracion}d
+                </p>
+                
+                <div className="flex items-center justify-between">
+                  <span 
+                    className="text-xs px-2 py-1 rounded-full"
+                    style={{
+                      backgroundColor: getColorEstado(tarea.estado) + '20',
+                      color: getColorEstado(tarea.estado)
+                    }}
+                  >
+                    {tarea.estado}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* Modal de edición de dependencias */}
+      {modalEdicionAbierto && tareaSeleccionada && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={() => setModalEdicionAbierto(false)}
+        >
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full m-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold" style={{color: '#1B263B'}}>
+                Editar Dependencias
+              </h3>
+              <button
+                onClick={() => setModalEdicionAbierto(false)}
+                className="p-1 rounded hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm font-medium mb-2" style={{color: '#1B263B'}}>
+                Tarea: {tareaSeleccionada.nombre}
+              </p>
+              <p className="text-xs mb-2" style={{color: '#5b5f6a'}}>
+                Responsable: {tareaSeleccionada.lider}
+              </p>
+              <p className="text-xs mb-4" style={{color: '#5b5f6a'}}>
+                Etapa: {tareaSeleccionada.etapa}
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>
+                Tareas Previas (Dependencias):
+              </label>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {nodos
+                  .filter(t => t.id !== tareaSeleccionada.id)
+                  .map(tarea => {
+                    const isSelected = (tareaSeleccionada.dependencias || []).includes(tarea.id);
+                    return (
+                      <label
+                        key={tarea.id}
+                        className="flex items-center p-2 rounded cursor-pointer hover:bg-gray-50"
+                        style={{
+                          backgroundColor: isSelected ? '#f0f9ff' : 'white',
+                          border: `1px solid ${isSelected ? '#3b82f6' : '#e5e7eb'}`
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            const deps = tareaSeleccionada.dependencias || [];
+                            const newDeps = e.target.checked
+                              ? [...deps, tarea.id]
+                              : deps.filter(id => id !== tarea.id);
+                            actualizarDependencias(tareaSeleccionada.id, newDeps);
+                            setTareaSeleccionada({ ...tareaSeleccionada, dependencias: newDeps });
+                          }}
+                          className="mr-2"
+                        />
+                        <span className="text-sm" style={{color: '#1B263B'}}>
+                          {tarea.nombre}
+                        </span>
+                        <span 
+                          className="ml-auto text-xs px-2 py-1 rounded"
+                          style={{
+                            backgroundColor: getColorEtapa(tarea.etapa) + '20',
+                            color: getColorEtapa(tarea.etapa)
+                          }}
+                        >
+                          {tarea.etapa}
+                        </span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setModalEdicionAbierto(false)}
+                className="flex-1 px-4 py-2 rounded-lg text-white font-medium transition-colors"
+                style={{backgroundColor: '#1B263B'}}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#162033'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#1B263B'}
+              >
+                <Check className="h-4 w-4 inline mr-2" />
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

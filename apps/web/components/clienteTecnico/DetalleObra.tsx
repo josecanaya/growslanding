@@ -140,6 +140,17 @@ export function DetalleObra({
   const [elementoParaModal, setElementoParaModal] = useState<any>(null);
   const [tareasCreadas, setTareasCreadas] = useState<any[]>([]);
   const [mostrarResultado, setMostrarResultado] = useState(false);
+  
+  // Estados para el modal de edición
+  const [showModalEditar, setShowModalEditar] = useState(false);
+  const [formData, setFormData] = useState({
+    nombre: obra.nombre,
+    cliente: obra.cliente,
+    tipoObra: obra.tipoObra,
+    fechaInicio: obra.fechaInicio,
+    fechaFin: obra.fechaFin || '',
+    descripcion: obra.descripcion || ''
+  });
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -600,23 +611,65 @@ export function DetalleObra({
     }, 0);
   };
 
+  // Funciones para el modal de edición
+  const handleAbrirModalEditar = () => {
+    setFormData({
+      nombre: obra.nombre,
+      cliente: obra.cliente,
+      tipoObra: obra.tipoObra,
+      fechaInicio: obra.fechaInicio,
+      fechaFin: obra.fechaFin || '',
+      descripcion: obra.descripcion || ''
+    });
+    setShowModalEditar(true);
+  };
+
+  const handleCerrarModalEditar = () => {
+    setShowModalEditar(false);
+  };
+
+  const handleGuardarCambios = () => {
+    const obraActualizada = {
+      ...obra,
+      ...formData
+    };
+    onActualizarObra(obraActualizada);
+    setShowModalEditar(false);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Principal */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#f5f7fa', borderColor: '#dce3ea'}}>
           <div className="px-6 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={onVolver}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 rounded-lg transition-all duration-300 ease-in-out"
+                  style={{color: '#5b5f6a'}}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f5f7fa';
+                    e.currentTarget.style.color = '#1B263B';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#5b5f6a';
+                  }}
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{obra.nombre}</h1>
-                  <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+                  <h1 className="text-2xl font-bold" style={{color: '#1B263B'}}>{obra.nombre}</h1>
+                  <div className="flex items-center space-x-4 mt-2 text-sm" style={{color: '#4a4e57'}}>
                     <div className="flex items-center space-x-1">
                       <Users className="h-4 w-4" />
                       <span>Cliente: {obra.cliente}</span>
@@ -634,14 +687,32 @@ export function DetalleObra({
               </div>
               <div className="flex items-center space-x-4">
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-600">{obra.progreso}%</div>
-                  <div className="text-sm text-gray-600">Progreso General</div>
+                  <div className="text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
+                  <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
                 </div>
                 <div className="flex space-x-2">
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                    <Settings className="h-5 w-5" />
+                  <button 
+                    onClick={handleAbrirModalEditar}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                    style={{backgroundColor: '#1B263B', color: 'white'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#162033';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1B263B';
+                    }}
+                  >
+                    <Edit3 className="h-4 w-4" />
+                    <span>Editar información</span>
                   </button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button className="p-2 rounded-lg transition-all duration-300 ease-in-out" style={{color: '#5b5f6a'}} onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f5f7fa';
+                    e.currentTarget.style.color = '#1B263B';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = '#5b5f6a';
+                  }}>
                     <Download className="h-5 w-5" />
                   </button>
                 </div>
@@ -651,23 +722,36 @@ export function DetalleObra({
         </div>
 
         {/* Tabs de Navegación */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-          <div className="border-b border-gray-200">
+        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
+          <div style={{borderBottomColor: '#dce3ea'}} className="border-b">
             <nav className="flex space-x-8 px-6">
               {[
                 { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                 { key: 'elementos', label: 'Elementos', icon: Layers },
-                { key: 'tareas', label: 'Tareas', icon: CheckCircle },
                 { key: 'legajo', label: 'Legajo', icon: FileText }
               ].map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setVistaActual(key as any)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ease-in-out ${
                     vistaActual === key
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-b-2'
+                      : 'border-transparent'
                   }`}
+                  style={{
+                    borderBottomColor: vistaActual === key ? '#1B263B' : 'transparent',
+                    color: vistaActual === key ? '#1B263B' : '#5b5f6a'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (vistaActual !== key) {
+                      e.currentTarget.style.color = '#1B263B';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (vistaActual !== key) {
+                      e.currentTarget.style.color = '#5b5f6a';
+                    }
+                  }}
                 >
                   <Icon className="h-4 w-4" />
                   <span>{label}</span>
@@ -678,56 +762,56 @@ export function DetalleObra({
         </div>
 
         {/* Contenido de las Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="rounded-xl shadow-sm border" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
           {/* Tab: Resumen */}
           {vistaActual === 'resumen' && (
             <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
                 {/* Estadísticas Generales */}
-                <div className="bg-blue-50 rounded-lg p-6">
+                <div className="rounded-lg p-6" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
                   <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <CheckCircle className="h-6 w-6 text-blue-600" />
+                    <div className="p-2 rounded-lg" style={{backgroundColor: 'white'}}>
+                      <CheckCircle className="h-6 w-6" style={{color: '#1B263B'}} />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Total Tareas</p>
-                      <p className="text-2xl font-bold text-gray-900">{tareas.length}</p>
+                      <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Total Tareas</p>
+                      <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{tareas.length}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-green-50 rounded-lg p-6">
+                <div className="rounded-lg p-6" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
                   <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    <div className="p-2 rounded-lg" style={{backgroundColor: 'white'}}>
+                      <CheckCircle className="h-6 w-6" style={{color: '#1B263B'}} />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Completadas</p>
-                      <p className="text-2xl font-bold text-gray-900">{obra.tareasCompletadas}</p>
+                      <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Completadas</p>
+                      <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obra.tareasCompletadas}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-yellow-50 rounded-lg p-6">
+                <div className="rounded-lg p-6" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
                   <div className="flex items-center">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      <Clock className="h-6 w-6 text-yellow-600" />
+                    <div className="p-2 rounded-lg" style={{backgroundColor: 'white'}}>
+                      <Clock className="h-6 w-6" style={{color: '#1B263B'}} />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">En Progreso</p>
-                      <p className="text-2xl font-bold text-gray-900">{obra.tareasActivas}</p>
+                      <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>En Progreso</p>
+                      <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obra.tareasActivas}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-purple-50 rounded-lg p-6">
+                <div className="rounded-lg p-6" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
                   <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <FileText className="h-6 w-6 text-purple-600" />
+                    <div className="p-2 rounded-lg" style={{backgroundColor: 'white'}}>
+                      <FileText className="h-6 w-6" style={{color: '#1B263B'}} />
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">Documentos</p>
-                      <p className="text-2xl font-bold text-gray-900">{obra.legajoTecnico.length}</p>
+                      <p className="text-sm font-medium" style={{color: '#5b5f6a'}}>Documentos</p>
+                      <p className="text-2xl font-bold" style={{color: '#1B263B'}}>{obra.legajoTecnico.length}</p>
                     </div>
                   </div>
                 </div>
@@ -735,7 +819,7 @@ export function DetalleObra({
 
               {/* Progreso por Etapas */}
               <div className="mb-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Progreso por Etapas</h3>
+                <h3 className="text-lg font-semibold mb-4" style={{color: '#1B263B'}}>Progreso por Etapas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {etapas.map((etapa) => {
                     const IconComponent = etapa.icon;
@@ -745,25 +829,28 @@ export function DetalleObra({
                     const progresoEtapa = total > 0 ? (completadas / total) * 100 : 0;
 
                     return (
-                      <div key={etapa.key} className="bg-gray-50 rounded-lg p-6">
+                      <div key={etapa.key} className="rounded-lg p-6" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-3">
-                            <div className={`p-2 rounded-lg ${etapa.color}`}>
-                              <IconComponent className="h-5 w-5" />
+                            <div className="p-2 rounded-lg" style={{backgroundColor: 'white', border: '1px solid #dce3ea'}}>
+                              <IconComponent className="h-5 w-5" style={{color: '#1B263B'}} />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{etapa.nombre}</h4>
-                              <p className="text-sm text-gray-600">{completadas}/{total} tareas</p>
+                              <h4 className="font-medium" style={{color: '#1B263B'}}>{etapa.nombre}</h4>
+                              <p className="text-sm" style={{color: '#5b5f6a'}}>{completadas}/{total} tareas</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="text-2xl font-bold text-gray-900">{Math.round(progresoEtapa)}%</div>
+                            <div className="text-2xl font-bold" style={{color: '#1B263B'}}>{Math.round(progresoEtapa)}%</div>
                           </div>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
                           <div 
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                            style={{ width: `${progresoEtapa}%` }}
+                            className="h-2 rounded-full transition-all duration-300" 
+                            style={{ 
+                              width: `${progresoEtapa}%`,
+                              backgroundColor: '#f4e27e'
+                            }}
                           ></div>
                         </div>
                       </div>
@@ -775,36 +862,40 @@ export function DetalleObra({
               {/* Tareas Recientes */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Tareas Recientes</h3>
+                  <h3 className="text-lg font-semibold" style={{color: '#1B263B'}}>Tareas Recientes</h3>
                   <button
                     onClick={() => setVistaActual('tareas')}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    className="text-sm font-medium transition-all duration-300 ease-in-out"
+                    style={{color: '#1B263B'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#162033';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#1B263B';
+                    }}
                   >
                     Ver todas →
                   </button>
                 </div>
                 <div className="space-y-3">
                   {tareas.slice(0, 5).map((tarea) => (
-                    <div key={tarea.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={tarea.id} className="flex items-center justify-between p-4 rounded-lg transition-all duration-300 ease-in-out" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}} onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#e8ecf0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f5f7fa';
+                    }}>
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
-                          tarea.estado === 'completada' ? 'bg-green-100 text-green-600' :
-                          tarea.estado === 'en_progreso' ? 'bg-blue-100 text-blue-600' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          <CheckCircle className="h-4 w-4" />
+                        <div className="p-2 rounded-lg" style={{backgroundColor: 'white', border: '1px solid #dce3ea'}}>
+                          <CheckCircle className="h-4 w-4" style={{color: '#1B263B'}} />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{tarea.nombre}</p>
-                          <p className="text-sm text-gray-600">{tarea.lider}</p>
+                          <p className="font-medium" style={{color: '#1B263B'}}>{tarea.nombre}</p>
+                          <p className="text-sm" style={{color: '#5b5f6a'}}>{tarea.lider}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          tarea.estado === 'completada' ? 'bg-green-100 text-green-800' :
-                          tarea.estado === 'en_progreso' ? 'bg-blue-100 text-blue-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border" style={{backgroundColor: '#f5f7fa', color: '#1B263B', borderColor: '#dce3ea'}}>
                           {tarea.estado.replace('_', ' ')}
                         </span>
                       </div>
@@ -981,103 +1072,256 @@ export function DetalleObra({
             </div>
           )}
 
-          {/* Tab: Tareas */}
-          {vistaActual === 'tareas' && (
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Gestión de Tareas</h3>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => setVistaTareas('lista')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      vistaTareas === 'lista' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Lista
-                  </button>
-                  <button
-                    onClick={() => setVistaTareas('timeline')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      vistaTareas === 'timeline' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Timeline
-                  </button>
-                  <button
-                    onClick={() => setVistaTareas('editor')}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      vistaTareas === 'editor' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Editor Visual
-                  </button>
-                </div>
-              </div>
-
-              {vistaTareas === 'editor' ? (
-                <EditorVisualTareas
-                  tareas={tareas.filter(t => t.etapa === etapaSeleccionada)}
-                  etapa={etapaSeleccionada}
-                  onActualizarTarea={onActualizarTarea}
-                  onEliminarTarea={onEliminarTarea}
-                  onCrearTarea={onCrearTarea}
-                />
-              ) : (
-                <div className="space-y-4">
-                  {tareas.filter(t => t.etapa === etapaSeleccionada).map((tarea) => (
-                    <div key={tarea.id} className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`p-2 rounded-lg ${
-                            tarea.estado === 'completada' ? 'bg-green-100 text-green-600' :
-                            tarea.estado === 'en_progreso' ? 'bg-blue-100 text-blue-600' :
-                            'bg-gray-100 text-gray-600'
-                          }`}>
-                            <CheckCircle className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium text-gray-900">{tarea.nombre}</h4>
-                            <p className="text-sm text-gray-600">{tarea.lider}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            tarea.estado === 'completada' ? 'bg-green-100 text-green-800' :
-                            tarea.estado === 'en_progreso' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {tarea.estado.replace('_', ' ')}
-                          </span>
-                          <button className="p-1 text-gray-400 hover:text-gray-600">
-                            <Edit3 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Tab: Legajo */}
           {vistaActual === 'legajo' && (
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Legajo Técnico</h3>
-                <button className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <h3 className="text-lg font-semibold" style={{color: '#1B263B'}}>Legajo Técnico</h3>
+                <button 
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                  style={{backgroundColor: '#1B263B', color: 'white'}}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#162033';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#1B263B';
+                  }}
+                >
                   <Upload className="h-4 w-4" />
                   <span>Subir Documento</span>
                 </button>
               </div>
-              <div className="text-center py-12">
-                <Building className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Legajo Técnico</h3>
-                <p className="text-gray-600">Esta sección estará disponible próximamente</p>
+              
+              {/* Grid de documentos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {obra.legajoTecnico.map((documento) => (
+                  <div 
+                    key={documento.id} 
+                    className="rounded-lg p-4 border transition-all duration-300 ease-in-out"
+                    style={{backgroundColor: 'white', borderColor: '#dce3ea'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
+                      e.currentTarget.style.borderColor = '#f4e27e';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = '#dce3ea';
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 rounded-lg" style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}>
+                        <FileText className="h-5 w-5" style={{color: '#1B263B'}} />
+                      </div>
+                      <button className="p-1 rounded transition-all duration-300 ease-in-out" style={{color: '#5b5f6a'}} onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f5f7fa';
+                        e.currentTarget.style.color = '#1B263B';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#5b5f6a';
+                      }}>
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <h4 className="font-medium mb-1" style={{color: '#1B263B'}}>{documento.nombre}</h4>
+                      <p className="text-sm" style={{color: '#5b5f6a'}}>{new Date(documento.fechaSubida).toLocaleDateString('es-AR')}</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border" style={{backgroundColor: '#f5f7fa', color: '#1B263B', borderColor: '#dce3ea'}}>
+                        {documento.estado}
+                      </span>
+                      <button className="text-sm font-medium transition-all duration-300 ease-in-out" style={{color: '#1B263B'}} onMouseEnter={(e) => {
+                        e.currentTarget.style.color = '#162033';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = '#1B263B';
+                      }}>
+                        Descargar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
+
+              {obra.legajoTecnico.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 mx-auto mb-4" style={{color: '#dce3ea'}} />
+                  <h3 className="text-lg font-semibold mb-2" style={{color: '#1B263B'}}>No hay documentos</h3>
+                  <p style={{color: '#5b5f6a'}}>Comienza subiendo tu primer documento al legajo técnico</p>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Modal Editar Información */}
+        {showModalEditar && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold" style={{color: '#1B263B'}}>Editar información de obra</h2>
+                  <button
+                    onClick={handleCerrarModalEditar}
+                    className="p-2 rounded-lg transition-all duration-300 ease-in-out"
+                    style={{color: '#5b5f6a'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f5f7fa';
+                      e.currentTarget.style.color = '#1B263B';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#5b5f6a';
+                    }}
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Nombre de obra</label>
+                    <input
+                      type="text"
+                      value={formData.nombre}
+                      onChange={(e) => handleInputChange('nombre', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Cliente</label>
+                    <input
+                      type="text"
+                      value={formData.cliente}
+                      onChange={(e) => handleInputChange('cliente', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Tipo de proyecto</label>
+                    <select
+                      value={formData.tipoObra}
+                      onChange={(e) => handleInputChange('tipoObra', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    >
+                      <option value="nueva">Nueva</option>
+                      <option value="reforma">Reforma</option>
+                      <option value="ampliacion">Ampliación</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Fecha de inicio</label>
+                      <input
+                        type="date"
+                        value={formData.fechaInicio}
+                        onChange={(e) => handleInputChange('fechaInicio', e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                        style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#1B263B';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#d3dae3';
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Fecha de fin</label>
+                      <input
+                        type="date"
+                        value={formData.fechaFin}
+                        onChange={(e) => handleInputChange('fechaFin', e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                        style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = '#1B263B';
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = '#d3dae3';
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Descripción breve</label>
+                    <textarea
+                      value={formData.descripcion}
+                      onChange={(e) => handleInputChange('descripcion', e.target.value)}
+                      rows={3}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out resize-none"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 mt-6 pt-6 border-t" style={{borderTopColor: '#dce3ea'}}>
+                  <button
+                    onClick={handleCerrarModalEditar}
+                    className="px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                    style={{backgroundColor: '#f5f7fa', color: '#1B263B', border: '1px solid #dce3ea'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#e8ecf0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f5f7fa';
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleGuardarCambios}
+                    className="px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                    style={{backgroundColor: '#1B263B', color: 'white'}}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#162033';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#1B263B';
+                    }}
+                  >
+                    Guardar cambios
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

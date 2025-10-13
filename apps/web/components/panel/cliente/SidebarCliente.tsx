@@ -76,7 +76,7 @@ export function SidebarCliente({ user, activeSection, onSectionChange }: Sidebar
 
       {/* Sidebar */}
       <div className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-64 bg-oscuro text-white transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-40 w-64 bg-primario text-white transform transition-transform duration-300 ease-in-out
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
@@ -134,10 +134,10 @@ export function SidebarCliente({ user, activeSection, onSectionChange }: Sidebar
                         setIsMobileOpen(false);
                       }}
                       className={`
-                        w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors duration-200
+                        w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-smooth font-medium
                         ${activeSection === item.id
                           ? 'bg-acento text-oscuro font-semibold'
-                          : 'text-white/70 hover:text-white hover:bg-white/10'
+                          : 'text-white/70 hover:text-white hover:bg-gradient-to-r hover:from-primario hover:to-[#24324D]'
                         }
                       `}
                     >

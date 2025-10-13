@@ -1,4 +1,6 @@
-'use client';
+// ⚠️ COMPONENTE DESHABILITADO - NO SE USA MÁS
+// Este componente contiene la funcionalidad de diseño de planos que fue eliminada del wizard
+// 'use client';
 
 import { useState } from 'react';
 import { 

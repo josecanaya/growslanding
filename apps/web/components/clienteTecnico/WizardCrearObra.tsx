@@ -111,7 +111,6 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
 
   const steps = [
     { id: 'datos', title: 'Datos Generales', icon: Building2 },
-    { id: 'confirmacion', title: 'Confirmación', icon: CheckCircle },
     { id: 'fundacion', title: 'Fundación', icon: Layers },
     { id: 'muros', title: 'Muros', icon: Layers },
     { id: 'instalaciones', title: 'Instalaciones', icon: Settings },
@@ -130,13 +129,25 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      try {
+        setCurrentStep(currentStep + 1);
+        console.log(`✅ Navegando al paso ${currentStep + 1}: ${steps[currentStep + 1]?.title}`);
+      } catch (error) {
+        console.error('❌ Error al navegar al siguiente paso:', error);
+        alert('Error al avanzar al siguiente paso. Por favor, intenta nuevamente.');
+      }
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      try {
+        setCurrentStep(currentStep - 1);
+        console.log(`✅ Navegando al paso ${currentStep - 1}: ${steps[currentStep - 1]?.title}`);
+      } catch (error) {
+        console.error('❌ Error al navegar al paso anterior:', error);
+        alert('Error al retroceder. Por favor, intenta nuevamente.');
+      }
     }
   };
 
@@ -176,23 +187,25 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
   };
 
   const handleEditarCategoria = (categoria: string) => {
-    // Mapear categoría al paso correcto (ajustado por los nuevos pasos)
+    // Mapear categoría al paso correcto
     const categoriaToStep: { [key: string]: number } = {
-      'Fundaciones y Estructuras': 2,
-      'Muros': 3,
-      'Instalaciones': 4,
-      'Cubiertas': 5,
-      'Pisos': 6,
-      'Carpinterías': 7,
-      'Parquizado': 8
+      'Fundaciones y Estructuras': 1,
+      'Muros': 2,
+      'Instalaciones': 3,
+      'Cubiertas': 4,
+      'Pisos': 5,
+      'Carpinterías': 6,
+      'Parquizado': 7
     };
-    
-    const step = categoriaToStep[categoria] || 2;
+    const step = categoriaToStep[categoria] || 1; // Default a Fundación
     setCurrentStep(step);
   };
 
   const renderStepContent = () => {
-    switch (currentStep) {
+    try {
+      console.log(`🎯 Renderizando paso ${currentStep}: ${steps[currentStep]?.title}`);
+      
+      switch (currentStep) {
       case 0: // Datos Generales
         return (
           <PasoDatosBasicos
@@ -201,15 +214,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             onNext={handleNext}
           />
         );
-      case 1: // Confirmación
-        return (
-          <PasoConfirmacion
-            data={obraData}
-            onEdit={() => setCurrentStep(0)}
-            onConfirm={handleNext}
-          />
-        );
-      case 2: // Fundación
+      case 1: // Fundación
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -217,7 +222,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={0} // Fundación
           />
         );
-      case 3: // Muros
+      case 2: // Muros
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -225,7 +230,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={1} // Muros
           />
         );
-      case 4: // Instalaciones
+      case 3: // Instalaciones
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -233,7 +238,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={2} // Instalaciones
           />
         );
-      case 5: // Cubiertas
+      case 4: // Cubiertas
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -241,7 +246,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={3} // Cubiertas
           />
         );
-      case 6: // Suelos
+      case 5: // Suelos
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -249,7 +254,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={4} // Suelos (Pisos)
           />
         );
-      case 7: // Amenities
+      case 6: // Amenities
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
@@ -257,15 +262,15 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             etapaActual={5} // Amenities (Carpinterías)
           />
         );
-      case 8: // Parquizado
+      case 7: // Parquizado
         return (
           <PasoElementosConstructivos
             elementosSeleccionados={elementos}
             onElementosChange={setElementos}
-            etapaActual={6} // Parquizado (placeholder)
+            etapaActual={6} // Parquizado
           />
         );
-      case 9: // Resumen
+      case 8: // Resumen
         return (
           <PasoResumenSeleccion
             elementosSeleccionados={elementos}
@@ -274,7 +279,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             onConfirmar={handleNext}
           />
         );
-      case 10: // Tareas
+      case 9: // Tareas
         return (
           <PasoRevisionTareas
             elementos={elementos}
@@ -284,7 +289,7 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
             onPrevious={handlePrevious}
           />
         );
-      case 11: // Dependencias
+      case 10: // Dependencias
         return (
           <PasoConfiguracionDependencias
             tareas={tareas}
@@ -294,7 +299,35 @@ export default function WizardCrearObra({ isOpen, onClose, onSuccess }: WizardCr
           />
         );
       default:
-        return null;
+        return (
+          <div className="p-8 text-center">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Error: Paso no encontrado</h3>
+              <p className="text-red-600">No se pudo renderizar el paso {currentStep}.</p>
+            </div>
+          </div>
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error al renderizar paso:', error);
+      return (
+        <div className="p-8 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-red-800 mb-2">Error de Renderizado</h3>
+            <p className="text-red-600 mb-4">Ocurrió un error al cargar este paso del wizard.</p>
+            <div className="text-sm text-red-500">
+              <p><strong>Paso:</strong> {currentStep}</p>
+              <p><strong>Error:</strong> {error instanceof Error ? error.message : 'Error desconocido'}</p>
+            </div>
+            <button
+              onClick={() => setCurrentStep(0)}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+      );
     }
   };
 

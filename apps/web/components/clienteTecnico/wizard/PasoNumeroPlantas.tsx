@@ -1,4 +1,6 @@
-'use client';
+// ⚠️ COMPONENTE DESHABILITADO - NO SE USA MÁS
+// Este componente contiene la selección de número de plantas que fue integrada en PasoDatosGenerales
+// 'use client';
 
 import { useState } from 'react';
 import { 

@@ -53,7 +53,7 @@ export default function PanelPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F8F8F8' }}>
+    <div className="min-h-screen flex flex-col bg-claro">
       {/* Top Bar Fijo */}
       <TopBar 
         isConnected={isConnected}

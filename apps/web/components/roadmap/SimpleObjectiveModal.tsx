@@ -135,7 +135,7 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
                     className={`h-2 rounded-full transition-all duration-500 ${
                       stats.progress === 100 ? 'bg-[#4ade80]' : 
                       stats.progress >= 70 ? 'bg-[#6c63ff]' : 
-                      stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#facc15]'
+                      stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#C7D2FE]'
                     }`}
                     style={{ width: `${stats.progress}%` }}
                   />
@@ -156,7 +156,7 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
                   className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
                     stats.progress === 100 ? 'bg-[#4ade80] text-white' :
                     stats.progress >= 70 ? 'bg-[#6c63ff] text-white' :
-                    stats.progress >= 30 ? 'bg-[#6c63ff] text-white' : 'bg-[#facc15] text-[#1b263b]'
+                    stats.progress >= 30 ? 'bg-[#6c63ff] text-white' : 'bg-[#E0E7FF] text-[#1b263b]'
                   }`}
                 >
                   {stats.progress === 100 ? '✅ Completado' :

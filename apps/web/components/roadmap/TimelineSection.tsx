@@ -32,7 +32,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
     if (progress === 100) return 'text-white bg-[#4ade80]';
     if (progress >= 70) return 'text-white bg-[#6c63ff]';
     if (progress >= 30) return 'text-white bg-[#6c63ff]';
-    return 'text-[#1b263b] bg-[#facc15]';
+    return 'text-[#1b263b] bg-[#E0E7FF]';
   };
 
   if (viewMode === 'horizontal') {
@@ -55,7 +55,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
                     stats.progress === 100 ? 'border-l-[#4ade80]' :
                     stats.progress >= 70 ? 'border-l-[#6c63ff]' :
                     stats.progress >= 30 ? 'border-l-[#6c63ff]' :
-                    'border-l-[#facc15]'
+                    'border-l-[#C7D2FE]'
                   }`}
                   onClick={() => onObjectiveClick(objective)}
                 >
@@ -93,7 +93,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
                         className={`h-3 rounded-full transition-all duration-500 ${
                           stats.progress === 100 ? 'bg-[#4ade80]' : 
                           stats.progress >= 70 ? 'bg-[#6c63ff]' : 
-                          stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#facc15]'
+                          stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#C7D2FE]'
                         }`}
                         style={{ width: `${stats.progress}%` }}
                       />
@@ -174,7 +174,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
                   stats.progress === 100 ? 'bg-[#4ade80]' :
                   stats.progress >= 70 ? 'bg-[#6c63ff]' :
                   stats.progress >= 30 ? 'bg-[#6c63ff]' :
-                  'bg-[#facc15]'
+                  'bg-[#E0E7FF]'
                 }`}>
                   {index + 1}
                 </div>
@@ -184,7 +184,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
                     stats.progress === 100 ? 'border-l-4 border-l-[#4ade80]' :
                     stats.progress >= 70 ? 'border-l-4 border-l-[#6c63ff]' :
                     stats.progress >= 30 ? 'border-l-4 border-l-[#6c63ff]' :
-                    'border-l-4 border-l-[#facc15]'
+                    'border-l-4 border-l-[#C7D2FE]'
                   }`}
                   onClick={() => onObjectiveClick(objective)}
                 >
@@ -207,7 +207,7 @@ export function TimelineSection({ objectives, onObjectiveClick, viewMode }: Time
                         className={`h-2 rounded-full transition-all duration-500 ${
                           stats.progress === 100 ? 'bg-[#4ade80]' : 
                           stats.progress >= 70 ? 'bg-[#6c63ff]' : 
-                          stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#facc15]'
+                          stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#C7D2FE]'
                         }`}
                         style={{ width: `${stats.progress}%` }}
                       />

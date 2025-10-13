@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import DevBanner from '@/components/DevBanner';
+import DevToolsPanel from '@/components/DevToolsPanel';
+import { DevModeProvider } from '@/lib/dev-mode-context';
 import './globals.css';
 
 type RootLayoutProps = {
@@ -23,10 +26,14 @@ export default function RootLayout({ children }: RootLayoutProps) {
           color: '#10161a'
         }}
       >
-        <ThemeProvider>
-          <main className='min-h-screen'>{children}</main>
-          <Toaster />
-        </ThemeProvider>
+        <DevModeProvider>
+          <ThemeProvider>
+            <main className='min-h-screen'>{children}</main>
+            <DevBanner />
+            <DevToolsPanel />
+            <Toaster />
+          </ThemeProvider>
+        </DevModeProvider>
       </body>
     </html>
   );

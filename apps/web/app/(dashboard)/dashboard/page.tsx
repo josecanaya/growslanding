@@ -1,55 +1,72 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
-import DashboardClient from "./dashboard-client";
-import { ensureOrgForUser } from "@/lib/orgs";
-import { createServiceSupabaseClient } from "@/lib/supabase-server";
-import type { Database } from "@/lib/types/supabase.gen";
+import DashboardClient from './dashboard-client';
+import { IS_DEV_MODE } from '@/lib/config';
+import { mockUser } from '@/lib/mockUser';
+import { ensureOrgForUser } from '@/lib/orgs';
+import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import type { Database } from '@/lib/types/supabase.gen';
 
 export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const supabaseAuth = createServerComponentClient<Database>({
-    cookies: () => cookieStore,
-  });
-  const {
-    data: { user },
-  } = await supabaseAuth.auth.getUser();
+  const isDevMode = IS_DEV_MODE;
+  let userId: string;
+  let userEmail: string | null;
+  let displayName: string;
 
-  if (!user) {
-    redirect("/auth/login");
+  if (isDevMode) {
+    userId = mockUser.id;
+    userEmail = mockUser.email;
+    displayName = mockUser.name;
+  } else {
+    const cookieStore = await cookies();
+    const supabaseAuth = createServerComponentClient<Database>({
+      cookies: () => cookieStore,
+    });
+    const {
+      data: { user },
+    } = await supabaseAuth.auth.getUser();
+
+    if (!user) {
+      redirect('/auth/login');
+    }
+
+    userId = user!.id;
+    userEmail = user!.email;
+    displayName =
+      user!.user_metadata?.full_name ?? user!.email ?? 'Organización';
   }
+
   const serviceClient = createServiceSupabaseClient();
   const { data: existingOrg } = await serviceClient
-    .from("orgs")
-    .select("id, name, owner_user_id, onboarding_completed")
-    .eq("owner_user_id", user.id)
+    .from('orgs')
+    .select('id, name, owner_user_id, onboarding_completed')
+    .eq('owner_user_id', userId)
     .maybeSingle();
 
-  if (!existingOrg) {
-    if (user.email) {
-      const { data: leaderInvite } = await serviceClient
-        .from("leader_invites")
-        .select("id")
-        .eq("email", user.email)
-        .eq("status", "accepted")
-        .maybeSingle();
+  if (!existingOrg && !isDevMode && userEmail) {
+    const { data: leaderInvite } = await serviceClient
+      .from('leader_invites')
+      .select('id')
+      .eq('email', userEmail)
+      .eq('status', 'accepted')
+      .maybeSingle();
 
-      if (leaderInvite) {
-        redirect("/lider");
-      }
+    if (leaderInvite) {
+      redirect('/lider');
     }
   }
 
   const org =
     existingOrg ??
     (await ensureOrgForUser(
-      user.id,
-      user.user_metadata?.full_name ?? user.email ?? "Organización"
+      userId,
+      displayName
     ));
 
   if (!org.onboarding_completed) {
-    redirect("/onboarding");
+    redirect('/onboarding');
   }
 
   const [
@@ -59,30 +76,30 @@ export default async function DashboardPage() {
     { data: invites = [] },
   ] = await Promise.all([
     serviceClient
-      .from("obras")
-      .select("id, org_id, nombre, cliente, localizacion")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: true }),
+      .from('obras')
+      .select('id, org_id, nombre, cliente, localizacion')
+      .eq('org_id', org.id)
+      .order('created_at', { ascending: true }),
     serviceClient
-      .from("socios")
-      .select("id, org_id, nombre, contacto, status, rol")
-      .eq("org_id", org.id)
-      .eq("status", "activo")
-      .order("nombre", { ascending: true }),
+      .from('socios')
+      .select('id, org_id, nombre, contacto, status, rol')
+      .eq('org_id', org.id)
+      .eq('status', 'activo')
+      .order('nombre', { ascending: true }),
     serviceClient
-      .from("tareas")
+      .from('tareas')
       .select(
         `id, obra_id, tipo, descripcion, estado, referente_id, socio_ids,
            obra:obras(id, nombre),
            eventos(id, nuevo_estado, actor_name, created_at, notas, pdf_path)`
       )
-      .eq("obra.org_id", org.id)
-      .order("created_at", { ascending: true }),
+      .eq('obra.org_id', org.id)
+      .order('created_at', { ascending: true }),
     serviceClient
-      .from("leader_invites")
-      .select("id, email, nombre, rol, status, created_at")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false }),
+      .from('leader_invites')
+      .select('id, email, nombre, rol, status, created_at')
+      .eq('org_id', org.id)
+      .order('created_at', { ascending: false }),
   ]);
 
   return (

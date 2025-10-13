@@ -531,7 +531,7 @@ export default function RoadmapEditorPage() {
               const stats = getObjectiveStats(objective);
               const statusColor = objective.status === 'COMPLETO' ? 'border-l-4 border-[#4ade80]' :
                                 objective.status === 'EN_CURSO' ? 'border-l-4 border-[#6c63ff]' :
-                                'border-l-4 border-[#C7D2FE]';
+                                'border-l-4 border-[#3B82F6]';
               
               return (
                 <div
@@ -565,7 +565,7 @@ export default function RoadmapEditorPage() {
                           className={`h-2 rounded-full transition-all duration-500 ${
                             stats.progress === 100 ? 'bg-[#4ade80]' : 
                             stats.progress >= 70 ? 'bg-[#6c63ff]' : 
-                            stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#C7D2FE]'
+                            stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#3B82F6]'
                           }`}
                           style={{ width: `${stats.progress}%` }}
                         />
@@ -580,7 +580,7 @@ export default function RoadmapEditorPage() {
                         className={`px-3 py-1 rounded-lg font-medium ${
                           objective.status === 'COMPLETO' ? 'bg-[#4ade80] text-white' :
                           objective.status === 'EN_CURSO' ? 'bg-[#6c63ff] text-white' :
-                          'bg-[#E0E7FF] text-[#1b263b]'
+                          'bg-[#3B82F6] text-white'
                         }`}
                       >
                         {objective.status}
@@ -631,7 +631,7 @@ export default function RoadmapEditorPage() {
                           className={`h-2 rounded-full transition-all duration-500 ${
                             stats.progress === 100 ? 'bg-[#4ade80]' : 
                             stats.progress >= 70 ? 'bg-[#6c63ff]' : 
-                            stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#C7D2FE]'
+                            stats.progress >= 30 ? 'bg-[#6c63ff]' : 'bg-[#3B82F6]'
                           }`}
                           style={{ width: `${stats.progress}%` }}
                         />

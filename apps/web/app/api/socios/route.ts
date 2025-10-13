@@ -2,6 +2,8 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 
+import { IS_DEV_MODE } from '@/lib/config';
+import { mockUser } from '@/lib/mockUser';
 import { resolveOrgContext } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -17,6 +19,17 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const payload = schema.parse(body);
+
+    if (IS_DEV_MODE) {
+      return new Response(
+        JSON.stringify({
+          id: `dev-socio-${Date.now()}`,
+          devMode: true,
+          orgId: mockUser.orgId,
+        }),
+        { status: 201 }
+      );
+    }
 
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });

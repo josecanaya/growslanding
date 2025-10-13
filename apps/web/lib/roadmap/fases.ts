@@ -48,7 +48,7 @@ export const FASES: Fase[] = [
     id: 4,
     nombre: "CONTROL Y OPTIMIZACIÓN",
     descripcion: "Testing, documentación y rendimiento",
-    color: "#E0E7FF", // azul muy clarito
+    color: "#3B82F6", // azul sólido
     objetivos: [
       "grows-obj-14", // Testing & Documentación API
       "grows-obj-13", // Documentación Interna

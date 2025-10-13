@@ -3,9 +3,15 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
 
-const protectedMatchers = ['/dashboard', '/lider'];
+const DEV_MODE_ENABLED =
+  process.env.NEXT_PUBLIC_DEV_MODE?.toLowerCase() === 'true';
+const protectedMatchers = ['/dashboard', '/lider', '/panel-socio'];
 
 export async function middleware(req: NextRequest) {
+  if (DEV_MODE_ENABLED) {
+    return NextResponse.next();
+  }
+
   const res = NextResponse.next();
   const supabase = createMiddlewareClient<Database>({ req, res });
   const {
@@ -31,5 +37,10 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/lider/:path*', '/auth/login'],
+  matcher: [
+    '/dashboard/:path*',
+    '/lider/:path*',
+    '/panel-socio/:path*',
+    '/auth/login',
+  ],
 };

@@ -1,129 +1,271 @@
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { prisma } from '@/lib/prisma';
+import { auditEvent } from '@/lib/audit';
 
-import { resolveOrgContext } from '@/lib/orgs';
-import type { Database } from '@/lib/types/supabase.gen';
-import { ObraService } from '@/lib/services/obra.service';
-import { ObraQuerySchema } from '@/lib/schemas';
+export const dynamic = 'force-dynamic';
 
-export const runtime = 'nodejs';
-
-const obraSchema = z.object({
-  nombre: z.string().min(2),
-  localizacion: z.string().optional().nullable(),
-  cliente: z.string().optional().nullable(),
-  
-  // Nuevos campos para datos generales
-  cantidad_plantas: z.number().optional().nullable(),
-  superficie_por_planta: z.number().optional().nullable(),
-  superficie_total: z.number().optional().nullable(),
-  ancho_terreno: z.number().optional().nullable(),
-  largo_terreno: z.number().optional().nullable(),
-  ancho_planta: z.number().optional().nullable(),
-  largo_planta: z.number().optional().nullable(),
-  tipo_proyecto: z.string().optional().nullable(),
-  coordenadas_lat: z.number().optional().nullable(),
-  coordenadas_lng: z.number().optional().nullable(),
-  direccion_completa: z.string().optional().nullable(),
-  fecha_inicio: z.string().optional().nullable(),
-  presupuesto: z.string().optional().nullable(),
-  descripcion: z.string().optional().nullable(),
-});
-
-export async function GET(request: Request) {
+/**
+ * GET /api/obras
+ * Devuelve todas las obras ordenadas por createdAt desc
+ */
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const query = {
-      estado: searchParams.get('estado') ?? undefined,
-      limit: Number(searchParams.get('limit') ?? '20'),
-      offset: Number(searchParams.get('offset') ?? '0'),
-      search: searchParams.get('search') ?? undefined,
-    };
-
-    const validatedQuery = ObraQuerySchema.safeParse(query);
-    if (!validatedQuery.success) {
-      return NextResponse.json(
-        {
-          message: 'Error de validacion',
-          errors: validatedQuery.error.flatten(),
+    const obras = await prisma.obra.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-        { status: 400 },
-      );
-    }
-
-    const resultado = await ObraService.obtenerObras(validatedQuery.data, 'demo-org');
+        _count: {
+          select: {
+            tareas: true,
+          },
+        },
+      },
+    });
 
     return NextResponse.json({
-      obras: resultado.obras,
-      paginacion: resultado.paginacion,
-    });
-  } catch (err: unknown) {
-    console.error('Error en GET /api/obras:', err);
-    const isDev = process.env.NODE_ENV !== 'production';
-    const message = err instanceof Error ? err.message : 'Error interno';
+      success: true,
+      data: obras,
+      count: obras.length,
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Error en GET /api/obras:', error);
     return NextResponse.json(
       {
-        message,
-        stack: isDev && err instanceof Error ? err.stack : undefined,
+        success: false,
+        message: 'Error interno del servidor',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
+/**
+ * POST /api/obras
+ * Crea una nueva obra
+ */
 export async function POST(request: Request) {
   try {
-    const body = await request.json().catch(() => ({}));
-    const parsed = obraSchema.safeParse(body);
+    const body = await request.json();
+    const { orgId, name, address, estado } = body;
 
-    if (!parsed.success) {
+    // Validaciones
+    if (!orgId || !name) {
       return NextResponse.json(
         {
-          message: 'Error de validacion',
-          errors: parsed.error.flatten(),
+          success: false,
+          message: 'orgId y name son obligatorios',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const data = parsed.data;
-    const obraPayload = {
-      nombre: data.nombre,
-      localizacion: data.localizacion ?? undefined,
-      cliente: data.cliente ?? undefined,
-      
-      // Nuevos campos para datos generales
-      cantidad_plantas: data.cantidad_plantas ?? undefined,
-      superficie_por_planta: data.superficie_por_planta ?? undefined,
-      superficie_total: data.superficie_total ?? undefined,
-      ancho_terreno: data.ancho_terreno ?? undefined,
-      largo_terreno: data.largo_terreno ?? undefined,
-      ancho_planta: data.ancho_planta ?? undefined,
-      largo_planta: data.largo_planta ?? undefined,
-      tipo_proyecto: data.tipo_proyecto ?? undefined,
-      coordenadas_lat: data.coordenadas_lat ?? undefined,
-      coordenadas_lng: data.coordenadas_lng ?? undefined,
-      direccion_completa: data.direccion_completa ?? undefined,
-      fecha_inicio: data.fecha_inicio ?? undefined,
-      presupuesto: data.presupuesto ?? undefined,
-      descripcion: data.descripcion ?? undefined,
-    };
-    const obra = await ObraService.crearObra(obraPayload as any, 'demo-org');
+    // Verificar que la organización existe
+    const organization = await prisma.organization.findUnique({
+      where: { id: orgId },
+    });
 
-    return NextResponse.json(obra, { status: 201 });
-  } catch (err: unknown) {
-    console.error('Error en POST /api/obras:', err);
-    const isDev = process.env.NODE_ENV !== 'production';
+    if (!organization) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'La organización especificada no existe',
+        },
+        { status: 404 }
+      );
+    }
 
-    const message = err instanceof Error ? err.message : 'Error interno';
+    // Crear la obra
+    const obra = await prisma.obra.create({
+      data: {
+        orgId,
+        name,
+        address: address || null,
+        estado: estado || 'pendiente',
+      },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            tareas: true,
+          },
+        },
+      },
+    });
+
+    // Auditoría: registrar creación de obra
+    await auditEvent({ orgId, tipo: "OBRA_CREADA", descripcion: obra.name });
+
     return NextResponse.json(
       {
-        message,
-        stack: isDev && err instanceof Error ? err.stack : undefined,
+        success: true,
+        message: 'Obra creada exitosamente',
+        data: obra,
       },
-      { status: 500 },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error('Error en POST /api/obras:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Error interno del servidor',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/obras
+ * Actualiza una obra existente
+ */
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, name, address, estado } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'id es obligatorio',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la obra existe
+    const existingObra = await prisma.obra.findUnique({
+      where: { id },
+    });
+
+    if (!existingObra) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'La obra especificada no existe',
+        },
+        { status: 404 }
+      );
+    }
+
+    // Preparar datos de actualización
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (address !== undefined) updateData.address = address;
+    if (estado !== undefined) updateData.estado = estado;
+
+    // Actualizar la obra
+    const updatedObra = await prisma.obra.update({
+      where: { id },
+      data: updateData,
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            tareas: true,
+          },
+        },
+      },
+    });
+
+    // Auditoría: registrar actualización de obra
+    await auditEvent({ orgId: updatedObra.orgId, tipo: "OBRA_ACTUALIZADA", descripcion: updatedObra.name });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Obra actualizada exitosamente',
+        data: updatedObra,
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error en PATCH /api/obras:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Error interno del servidor',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/obras
+ * Elimina una obra por ID
+ */
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'id es obligatorio',
+        },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la obra existe
+    const existingObra = await prisma.obra.findUnique({
+      where: { id },
+    });
+
+    if (!existingObra) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'La obra especificada no existe',
+        },
+        { status: 404 }
+      );
+    }
+
+    // Auditoría: registrar eliminación de obra (antes de eliminar)
+    await auditEvent({ orgId: existingObra.orgId, tipo: "OBRA_ELIMINADA", descripcion: existingObra.name });
+
+    // Eliminar la obra
+    await prisma.obra.delete({
+      where: { id },
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Obra eliminada exitosamente',
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Error en DELETE /api/obras:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Error interno del servidor',
+      },
+      { status: 500 }
     );
   }
 }

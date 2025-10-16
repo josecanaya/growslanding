@@ -2,6 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Users, UserCheck, FileText, MapPin, Calendar, MoreVertical, Edit3, Trash2, Eye } from 'lucide-react';
+import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
+import { usePlanLimitGuard } from '@/lib/subscriptions';
+import { usePlanUsage } from '@/lib/subscriptions/use-plan-usage';
+import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 
 // Interfaces para los datos mock
 interface Integrante {
@@ -55,6 +59,63 @@ export default function CuadrillasSection() {
   const [cuadrillaSeleccionada, setCuadrillaSeleccionada] = useState<Cuadrilla | null>(null);
   const [obras, setObras] = useState<Obra[]>([]);
   const [tareas, setTareas] = useState<Tarea[]>([]);
+  const upgradeModal = useUpgradeModal();
+  const cuadrillasGuard = usePlanLimitGuard('cuadrillas');
+  const cuadrillasUsage = usePlanUsage('cuadrillas');
+
+  const activeCuadrillasCount = cuadrillas.filter(
+    (item) => item.estado !== 'inactiva'
+  ).length;
+  const usageCount =
+    cuadrillasGuard.threshold === 0 || cuadrillasUsage.error
+      ? activeCuadrillasCount
+      : cuadrillasUsage.usage ?? activeCuadrillasCount;
+  const cuadrillasBloqueadas = cuadrillasGuard.threshold === 0;
+  const cuadrillasAlLimite =
+    cuadrillasGuard.threshold !== null &&
+    cuadrillasGuard.threshold > 0 &&
+    usageCount >= cuadrillasGuard.threshold;
+
+  const cuadrillasLimitLabel =
+    cuadrillasGuard.threshold === null
+      ? SUBSCRIPTION_UI_COPY.usageUnlimited
+      : `${cuadrillasGuard.threshold} ${cuadrillasGuard.rule?.unit ?? 'cuadrillas'}`;
+
+  const cuadrillasUsageSummary =
+    cuadrillasGuard.threshold === 0
+      ? SUBSCRIPTION_UI_COPY.readOnlyBadge
+      : cuadrillasUsage.isLoading
+      ? SUBSCRIPTION_UI_COPY.usageLoading
+      : cuadrillasUsage.error
+      ? SUBSCRIPTION_UI_COPY.usageFallback
+      : SUBSCRIPTION_UI_COPY.usageLabel(usageCount, cuadrillasLimitLabel);
+
+  const requestCuadrillasUpgrade = (source: string) => {
+    upgradeModal.open({
+      targetPlanId: cuadrillasGuard.upgradeTarget ?? 'PRO',
+      limitId: 'cuadrillas',
+      source,
+      contextCopy:
+        cuadrillasGuard.rule?.blockedCopy ??
+        'Necesit\u00e1s un plan superior para gestionar cuadrillas reales.',
+    });
+  };
+
+  const canCrearCuadrilla = () => {
+    if (cuadrillasGuard.shouldBlock(usageCount, 1)) {
+      requestCuadrillasUpgrade('cuadrillas-create');
+      return false;
+    }
+    return true;
+  };
+
+  const bloqueoInteractivo = (source: string) => {
+    if (cuadrillasBloqueadas) {
+      requestCuadrillasUpgrade(source);
+      return true;
+    }
+    return false;
+  };
 
   // Datos mock iniciales
   useEffect(() => {
@@ -62,12 +123,12 @@ export default function CuadrillasSection() {
     const cuadrillasMock: Cuadrilla[] = [
       {
         id: '1',
-        nombre: 'Cuadrilla Alba√±iler√≠a Norte',
+        nombre: 'Cuadrilla AlbaÒilerÌa Norte',
         encargado: 'Carlos Mendoza',
-        especialidad: 'Alba√±iler√≠a',
+        especialidad: 'AlbaÒilerÌa',
         integrantes: [
           { id: '1', nombre: 'Carlos Mendoza', rol: 'Encargado', telefono: '+54 11 1234-5678' },
-          { id: '2', nombre: 'Roberto Silva', rol: 'Alba√±il', telefono: '+54 11 2345-6789' },
+          { id: '2', nombre: 'Roberto Silva', rol: 'AlbaÒil', telefono: '+54 11 2345-6789' },
           { id: '3', nombre: 'Miguel Torres', rol: 'Ayudante', telefono: '+54 11 3456-7890' }
         ],
         documentos: [
@@ -81,12 +142,12 @@ export default function CuadrillasSection() {
       },
       {
         id: '2',
-        nombre: 'Cuadrilla Yeser√≠a Sur',
-        encargado: 'Ana Garc√≠a',
-        especialidad: 'Yeser√≠a',
+        nombre: 'Cuadrilla YeserÌa Sur',
+        encargado: 'Ana GarcÌa',
+        especialidad: 'YeserÌa',
         integrantes: [
-          { id: '1', nombre: 'Ana Garc√≠a', rol: 'Encargada', telefono: '+54 11 4567-8901' },
-          { id: '2', nombre: 'Luis Fern√°ndez', rol: 'Yesero', telefono: '+54 11 5678-9012' }
+          { id: '1', nombre: 'Ana GarcÌa', rol: 'Encargada', telefono: '+54 11 4567-8901' },
+          { id: '2', nombre: 'Luis Fern·ndez', rol: 'Yesero', telefono: '+54 11 5678-9012' }
         ],
         documentos: [
           { id: '1', nombre: 'Seguro de Accidentes', tipo: 'Seguro', fecha: '2024-01-20' },
@@ -99,12 +160,12 @@ export default function CuadrillasSection() {
       },
       {
         id: '3',
-        nombre: 'Cuadrilla Carpinter√≠a Centro',
-        encargado: 'Diego L√≥pez',
-        especialidad: 'Carpinter√≠a',
+        nombre: 'Cuadrilla CarpinterÌa Centro',
+        encargado: 'Diego LÛpez',
+        especialidad: 'CarpinterÌa',
         integrantes: [
-          { id: '1', nombre: 'Diego L√≥pez', rol: 'Encargado', telefono: '+54 11 6789-0123' },
-          { id: '2', nombre: 'Pedro Mart√≠nez', rol: 'Carpintero', telefono: '+54 11 7890-1234' },
+          { id: '1', nombre: 'Diego LÛpez', rol: 'Encargado', telefono: '+54 11 6789-0123' },
+          { id: '2', nombre: 'Pedro MartÌnez', rol: 'Carpintero', telefono: '+54 11 7890-1234' },
           { id: '3', nombre: 'Sergio Ruiz', rol: 'Ayudante', telefono: '+54 11 8901-2345' }
         ],
         documentos: [
@@ -121,16 +182,16 @@ export default function CuadrillasSection() {
     const obrasMock: Obra[] = [
       { id: '1', nombre: 'Casa Familiar Los Robles', estado: 'ACTIVA' },
       { id: '2', nombre: 'Edificio Residencial Norte', estado: 'ACTIVA' },
-      { id: '3', nombre: 'Ampliaci√≥n Comercial Centro', estado: 'ACTIVA' }
+      { id: '3', nombre: 'AmpliaciÛn Comercial Centro', estado: 'ACTIVA' }
     ];
 
     // Mock de tareas
     const tareasMock: Tarea[] = [
-      { id: '1', nombre: 'Excavaci√≥n de fundaci√≥n', obraId: '1', etapa: 'Fundaci√≥n', estado: 'PENDIENTE' },
-      { id: '2', nombre: 'Hormig√≥n de fundaci√≥n', obraId: '1', etapa: 'Fundaci√≥n', estado: 'PENDIENTE' },
+      { id: '1', nombre: 'ExcavaciÛn de fundaciÛn', obraId: '1', etapa: 'FundaciÛn', estado: 'PENDIENTE' },
+      { id: '2', nombre: 'HormigÛn de fundaciÛn', obraId: '1', etapa: 'FundaciÛn', estado: 'PENDIENTE' },
       { id: '3', nombre: 'Muros exteriores', obraId: '1', etapa: 'Estructura', estado: 'EN_PROGRESO' },
       { id: '4', nombre: 'Revoque grueso', obraId: '2', etapa: 'Terminaciones', estado: 'PENDIENTE' },
-      { id: '5', nombre: 'Instalaci√≥n de puertas', obraId: '2', etapa: 'Terminaciones', estado: 'PENDIENTE' }
+      { id: '5', nombre: 'InstalaciÛn de puertas', obraId: '2', etapa: 'Terminaciones', estado: 'PENDIENTE' }
     ];
 
     setCuadrillas(cuadrillasMock);
@@ -149,21 +210,27 @@ export default function CuadrillasSection() {
 
   const getEspecialidadIcon = (especialidad: string) => {
     const iconos = {
-      'Alba√±iler√≠a': 'üß±',
-      'Yeser√≠a': 'üé®',
-      'Carpinter√≠a': 'üî®',
-      'Electricidad': '‚ö°',
-      'Plomer√≠a': 'üîß'
+      'AlbaÒilerÌa': '??',
+      'YeserÌa': '??',
+      'CarpinterÌa': '??',
+      'Electricidad': '?',
+      'PlomerÌa': '??'
     };
-    return iconos[especialidad as keyof typeof iconos] || 'üë∑‚Äç‚ôÇÔ∏è';
+    return iconos[especialidad as keyof typeof iconos] || '?????';
   };
 
   const handleVerDetalle = (cuadrilla: Cuadrilla) => {
+    if (bloqueoInteractivo('cuadrillas-detalle')) {
+      return;
+    }
     setCuadrillaSeleccionada(cuadrilla);
     setShowModalDetalle(true);
   };
 
   const handleAsignarTarea = (cuadrilla: Cuadrilla) => {
+    if (bloqueoInteractivo('cuadrillas-asignacion')) {
+      return;
+    }
     setCuadrillaSeleccionada(cuadrilla);
     setShowModalAsignacion(true);
   };
@@ -178,11 +245,21 @@ export default function CuadrillasSection() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gesti√≥n de Cuadrillas</h1>
+          <h1 className="text-3xl font-bold text-gray-900">GestiÛn de Cuadrillas</h1>
           <p className="text-gray-600 mt-2">Administra cuadrillas, integrantes y asignaciones de tareas</p>
+          <p className='text-xs font-semibold text-gray-700 mt-1'>Uso actual: {cuadrillasUsageSummary}</p>
         </div>
         <button
-          onClick={() => setShowModalNueva(true)}
+          onClick={() => {
+            if (cuadrillasBloqueadas) {
+              requestCuadrillasUpgrade('cuadrillas-button');
+              return;
+            }
+            if (!canCrearCuadrilla()) {
+              return;
+            }
+            setShowModalNueva(true);
+          }}
           className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
         >
           <Plus className="h-5 w-5" />
@@ -190,7 +267,7 @@ export default function CuadrillasSection() {
         </button>
       </div>
 
-      {/* Estad√≠sticas generales */}
+      {/* EstadÌsticas generales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center">
@@ -274,7 +351,7 @@ export default function CuadrillasSection() {
                 </div>
               </div>
 
-              {/* Informaci√≥n de la cuadrilla */}
+              {/* InformaciÛn de la cuadrilla */}
               <div className="space-y-3 mb-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <span className="font-medium">Especialidad:</span>
@@ -290,7 +367,7 @@ export default function CuadrillasSection() {
                 </div>
               </div>
 
-              {/* Estad√≠sticas de tareas */}
+              {/* EstadÌsticas de tareas */}
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-700">Progreso de Tareas</span>
@@ -311,14 +388,14 @@ export default function CuadrillasSection() {
                 </p>
               </div>
 
-              {/* Botones de acci√≥n */}
+              {/* Botones de acciÛn */}
               <div className="flex space-x-2">
                 <button
                   onClick={() => handleVerDetalle(cuadrilla)}
                   className="flex-1 flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
                 >
                   <Eye className="h-4 w-4" />
-                  <span>Ver m√°s</span>
+                  <span>Ver m·s</span>
                 </button>
                 <button
                   onClick={() => handleAsignarTarea(cuadrilla)}
@@ -338,6 +415,10 @@ export default function CuadrillasSection() {
         <ModalNuevaCuadrilla
           onClose={() => setShowModalNueva(false)}
           onGuardar={(nuevaCuadrilla) => {
+            if (cuadrillasGuard.shouldBlock(usageCount, 1)) {
+              requestCuadrillasUpgrade('cuadrillas-guardar');
+              return;
+            }
             setCuadrillas(prev => [...prev, nuevaCuadrilla]);
             setShowModalNueva(false);
           }}
@@ -356,7 +437,7 @@ export default function CuadrillasSection() {
         />
       )}
 
-      {/* Modal Asignaci√≥n de Tareas */}
+      {/* Modal AsignaciÛn de Tareas */}
       {showModalAsignacion && cuadrillaSeleccionada && (
         <ModalAsignacionTareas
           cuadrilla={cuadrillaSeleccionada}
@@ -364,7 +445,7 @@ export default function CuadrillasSection() {
           tareas={tareas}
           onClose={() => setShowModalAsignacion(false)}
           onAsignar={(tareaId) => {
-            // Mock de asignaci√≥n
+            // Mock de asignaciÛn
             setCuadrillas(prev => prev.map(c => 
               c.id === cuadrillaSeleccionada.id 
                 ? { ...c, tareasAsignadas: c.tareasAsignadas + 1 }
@@ -388,7 +469,7 @@ function ModalNuevaCuadrilla({ onClose, onGuardar }: { onClose: () => void; onGu
   const [integrantes, setIntegrantes] = useState<Integrante[]>([]);
   const [nuevoIntegrante, setNuevoIntegrante] = useState({ nombre: '', rol: '', telefono: '' });
 
-  const especialidades = ['Alba√±iler√≠a', 'Yeser√≠a', 'Carpinter√≠a', 'Electricidad', 'Plomer√≠a'];
+  const especialidades = ['AlbaÒilerÌa', 'YeserÌa', 'CarpinterÌa', 'Electricidad', 'PlomerÌa'];
 
   const handleAgregarIntegrante = () => {
     if (nuevoIntegrante.nombre && nuevoIntegrante.rol) {
@@ -439,7 +520,7 @@ function ModalNuevaCuadrilla({ onClose, onGuardar }: { onClose: () => void; onGu
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Datos b√°sicos */}
+          {/* Datos b·sicos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de la Cuadrilla</label>
@@ -448,7 +529,7 @@ function ModalNuevaCuadrilla({ onClose, onGuardar }: { onClose: () => void; onGu
                 value={formData.nombre}
                 onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Ej: Cuadrilla Alba√±iler√≠a Norte"
+                placeholder="Ej: Cuadrilla AlbaÒilerÌa Norte"
               />
             </div>
             <div>
@@ -501,11 +582,11 @@ function ModalNuevaCuadrilla({ onClose, onGuardar }: { onClose: () => void; onGu
                     value={nuevoIntegrante.rol}
                     onChange={(e) => setNuevoIntegrante(prev => ({ ...prev, rol: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Ej: Alba√±il, Ayudante"
+                    placeholder="Ej: AlbaÒil, Ayudante"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tel√©fono</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">TelÈfono</label>
                   <input
                     type="text"
                     value={nuevoIntegrante.telefono}
@@ -634,9 +715,9 @@ function ModalDetalleCuadrilla({ cuadrilla, onClose, onAsignarTarea }: {
             </div>
           </div>
 
-          {/* Estad√≠sticas */}
+          {/* EstadÌsticas */}
           <div className="mt-6 bg-gray-50 rounded-lg p-4">
-            <h4 className="text-lg font-medium text-gray-900 mb-4">Estad√≠sticas</h4>
+            <h4 className="text-lg font-medium text-gray-900 mb-4">EstadÌsticas</h4>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{cuadrilla.tareasAsignadas}</p>
@@ -677,7 +758,7 @@ function ModalDetalleCuadrilla({ cuadrilla, onClose, onAsignarTarea }: {
   );
 }
 
-// Componente Modal Asignaci√≥n de Tareas
+// Componente Modal AsignaciÛn de Tareas
 function ModalAsignacionTareas({ cuadrilla, obras, tareas, onClose, onAsignar }: {
   cuadrilla: Cuadrilla;
   obras: Obra[];
@@ -710,7 +791,7 @@ function ModalAsignacionTareas({ cuadrilla, obras, tareas, onClose, onAsignar }:
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Selecci√≥n de Obra */}
+          {/* SelecciÛn de Obra */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Seleccionar Obra</label>
             <select
@@ -728,7 +809,7 @@ function ModalAsignacionTareas({ cuadrilla, obras, tareas, onClose, onAsignar }:
             </select>
           </div>
 
-          {/* Selecci√≥n de Tarea */}
+          {/* SelecciÛn de Tarea */}
           {obraSeleccionada && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Seleccionar Tarea</label>
@@ -745,10 +826,10 @@ function ModalAsignacionTareas({ cuadrilla, obras, tareas, onClose, onAsignar }:
             </div>
           )}
 
-          {/* Informaci√≥n de la tarea seleccionada */}
+          {/* InformaciÛn de la tarea seleccionada */}
           {tareaSeleccionada && (
             <div className="bg-gray-50 rounded-lg p-4">
-              <h4 className="font-medium text-gray-900 mb-2">Informaci√≥n de la Tarea</h4>
+              <h4 className="font-medium text-gray-900 mb-2">InformaciÛn de la Tarea</h4>
               {(() => {
                 const tarea = tareasFiltradas.find(t => t.id === tareaSeleccionada);
                 return tarea ? (

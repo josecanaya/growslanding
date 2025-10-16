@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const code = url.searchParams.get('code');
   const inviteId = url.searchParams.get('invite');
   const token = url.searchParams.get('token');
-  const target = url.searchParams.get('target') ?? '/lider';
+  const target = url.searchParams.get('target') ?? '/socio';
 
   const redirectToTarget = () => NextResponse.redirect(new URL(target, url.origin));
   const redirectToLogin = () => NextResponse.redirect(new URL('/auth/login', url.origin));

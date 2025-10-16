@@ -3,32 +3,46 @@
 @tailwind utilities;
 
 :root {
+  /* Variables GROWS - Nueva paleta verde-neutral con acento dorado */
+  --grows-primary: #1B5E20;      /* Verde oscuro corporativo */
+  --grows-secondary: #E8C547;    /* Dorado suave (nuevo acento principal) */
+  --grows-background: #F5F7F5;   /* Fondo gris verdoso suave */
+  --grows-surface: #FFFFFF;      /* Superficie principal */
+  --grows-border: #E0E0E0;       /* Líneas y separadores */
+  --grows-text-primary: #1A1A1A; /* Texto principal */
+  --grows-text-secondary: #444444; /* Texto secundario */
+  --grows-error: #B71C1C;        /* Rojo más apagado y elegante */
+  --grows-success: #388E3C;      /* Éxito */
+  --grows-warning: #FBC02D;      /* Advertencia puntual */
+  --grows-neutral: #F0F2F0;      /* Neutral base */
+  
+  /* Variables legacy - mantener para compatibilidad */
   --color-primario: #1B263B;
   --color-secundario: #f5f7fa;
-  --color-acento: #f4e27e;
+  --color-acento: #9CCC65;
   --color-claro-fondo: #eaf0f6;
   --color-oscuro: #10161a;
   
   /* Variables para compatibilidad con shadcn/ui */
-  --background: 234 240 246; /* claro-fondo */
-  --foreground: 16 22 26; /* oscuro */
-  --muted: 234 240 246; /* claro-fondo */
-  --muted-foreground: 16 22 26; /* oscuro */
-  --popover: 245 247 250; /* secundario */
-  --popover-foreground: 16 22 26; /* oscuro */
-  --card: 245 247 250; /* secundario */
-  --card-foreground: 16 22 26; /* oscuro */
-  --border: 220 227 234; /* #dce3ea */
-  --input: 234 240 246; /* claro-fondo */
-  --primary: 27 38 59; /* primario */
+  --background: 245 247 245; /* grows-background */
+  --foreground: 26 26 26; /* grows-text-primary */
+  --muted: 240 242 240; /* grows-neutral */
+  --muted-foreground: 68 68 68; /* grows-text-secondary */
+  --popover: 255 255 255; /* grows-surface */
+  --popover-foreground: 26 26 26; /* grows-text-primary */
+  --card: 255 255 255; /* grows-surface */
+  --card-foreground: 26 26 26; /* grows-text-primary */
+  --border: 224 224 224; /* grows-border */
+  --input: 245 247 245; /* grows-background */
+  --primary: 27 94 32; /* grows-primary */
   --primary-foreground: 255 255 255;
-  --secondary: 245 247 250; /* secundario */
-  --secondary-foreground: 16 22 26; /* oscuro */
-  --accent: 244 226 126; /* acento */
-  --accent-foreground: 16 22 26; /* oscuro */
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --ring: 27 38 59; /* primario */
+  --secondary: 232 197 71; /* grows-secondary - nuevo dorado */
+  --secondary-foreground: 26 26 26; /* grows-text-primary */
+  --accent: 232 197 71; /* grows-secondary - nuevo dorado */
+  --accent-foreground: 26 26 26; /* grows-text-primary */
+  --destructive: 183 28 28; /* grows-error - nuevo rojo apagado */
+  --destructive-foreground: 255 255 255;
+  --ring: 27 94 32; /* grows-primary */
   --radius: 0.5rem;
 }
 
@@ -71,6 +85,7 @@
 
 /* Clases de la paleta corporativa GROWS */
 @layer utilities {
+  /* Clases legacy - mantener para compatibilidad */
   .bg-primario { background-color: var(--color-primario); }
   .bg-secundario { background-color: var(--color-secundario); }
   .bg-acento { background-color: var(--color-acento); }
@@ -90,12 +105,59 @@
   .border-oscuro { border-color: var(--color-oscuro); }
   .border-corporativo { border-color: #dce3ea; }
   
-  /* Hover effects */
-  .hover-primario:hover { background-color: #162033; }
-  .hover-acento:hover { background-color: #f7e85a; }
-  .hover-sombra:hover { 
-    box-shadow: 0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05);
-  }
+  /* Clases GROWS - Nueva paleta verde-neutral */
+  .bg-grows-primary { background-color: var(--grows-primary); }
+  .bg-grows-secondary { background-color: var(--grows-secondary); }
+  .bg-grows-background { background-color: var(--grows-background); }
+  .bg-grows-surface { background-color: var(--grows-surface); }
+  .bg-grows-neutral { background-color: var(--grows-neutral); }
+  .bg-grows-error { background-color: var(--grows-error); }
+  .bg-grows-success { background-color: var(--grows-success); }
+  .bg-grows-warning { background-color: var(--grows-warning); }
+  
+  .text-grows-primary { color: var(--grows-primary); }
+  .text-grows-secondary { color: var(--grows-secondary); }
+  .text-grows-text-primary { color: var(--grows-text-primary); }
+  .text-grows-text-secondary { color: var(--grows-text-secondary); }
+  .text-grows-error { color: var(--grows-error); }
+  .text-grows-success { color: var(--grows-success); }
+  .text-grows-warning { color: var(--grows-warning); }
+  
+  .border-grows-primary { border-color: var(--grows-primary); }
+  .border-grows-secondary { border-color: var(--grows-secondary); }
+  .border-grows-border { border-color: var(--grows-border); }
+  
+  /* Sombras GROWS */
+  .shadow-grows-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+  .shadow-grows-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+  .shadow-grows-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15); }
+  .shadow-grows-xl { box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2); }
+  
+  /* Bordes GROWS */
+  .rounded-grows-sm { border-radius: 0.25rem; }
+  .rounded-grows-md { border-radius: 0.5rem; }
+  .rounded-grows-lg { border-radius: 1rem; }
+  .rounded-grows-xl { border-radius: 1.5rem; }
+  
+  /* Espaciado GROWS */
+  .p-grows-xs { padding: 0.25rem; }
+  .p-grows-sm { padding: 0.5rem; }
+  .p-grows-md { padding: 1rem; }
+  .p-grows-lg { padding: 1.5rem; }
+  .p-grows-xl { padding: 2rem; }
+  
+  .m-grows-xs { margin: 0.25rem; }
+  .m-grows-sm { margin: 0.5rem; }
+  .m-grows-md { margin: 1rem; }
+  .m-grows-lg { margin: 1.5rem; }
+  .m-grows-xl { margin: 2rem; }
+  
+          /* Hover effects GROWS */
+          .hover-grows-primary:hover { background-color: #0d4a13; }
+          .hover-grows-secondary:hover { background-color: #D1AF33; }
+          .hover-grows-shadow:hover { 
+            box-shadow: 0 10px 15px -3px rgba(27, 94, 32, 0.1), 0 4px 6px -2px rgba(27, 94, 32, 0.05);
+          }
   
   /* Transiciones suaves */
   .transition-smooth { transition: all 0.3s ease-in-out; }

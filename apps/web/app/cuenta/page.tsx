@@ -1,67 +1,103 @@
-﻿"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import PerfilUsuario from "./components/PerfilUsuario"
-import Personalizacion from "./components/Personalizacion"
-import Suscripcion from "./components/Suscripcion"
+import { useEffect, useState } from "react";
+
+import PerfilUsuario from "./components/PerfilUsuario";
+import Personalizacion from "./components/Personalizacion";
+import Suscripcion from "./components/Suscripcion";
+import DeveloperModePanel from "./components/DeveloperMode";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { SUBSCRIPTION_UI_COPY } from "@/lib/subscriptions/texts";
 
 // Iconos simplificados
 function SunIcon() {
   return (
-    <svg className="w-5 h-5 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+    <svg
+      className="h-5 w-5 text-[#6d4be8]"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+      />
     </svg>
-  )
+  );
 }
 
 function MoonIcon() {
   return (
-    <svg className="w-5 h-5 text-[#6d4be8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    <svg
+      className="h-5 w-5 text-[#6d4be8]"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+      />
     </svg>
-  )
+  );
 }
 
 export default function CuentaPage() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const currentUser = useCurrentUser();
+  const isAdmin = currentUser?.role === "ADMIN";
 
   useEffect(() => {
-    // Cargar tema guardado
-    const saved = localStorage.getItem('theme')
+    const saved = window.localStorage.getItem("theme") as
+      | "light"
+      | "dark"
+      | null;
+    let initialTheme: "light" | "dark" = "light";
+
     if (saved) {
-      setTheme(saved as 'light' | 'dark')
+      initialTheme = saved;
     } else {
-      // Detectar preferencia del sistema
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(prefersDark ? 'dark' : 'light')
+      const prefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches;
+      initialTheme = prefersDark ? "dark" : "light";
     }
-  }, [])
+
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle(
+      "dark",
+      initialTheme === "dark"
+    );
+  }, []);
 
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    // Aplicar tema inmediatamente
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-    localStorage.setItem('theme', newTheme)
-  }
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+    window.localStorage.setItem("theme", newTheme);
+  };
 
   return (
-    <div className="min-h-screen transition-colors duration-500 bg-[#f7f6fb] dark:bg-[#151323] p-10">
-      <div className="max-w-6xl mx-auto space-y-12">
-        <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-[#f7f6fb] p-10 transition-colors duration-500 dark:bg-[#151323]">
+      <div className="mx-auto max-w-6xl space-y-12">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-semibold mb-2 text-[#1d1b29] dark:text-[#f5f3fc]">
-              Configuración de Cuenta
+            <h1 className="mb-2 text-4xl font-semibold text-[#1d1b29] dark:text-[#f5f3fc]">
+              {SUBSCRIPTION_UI_COPY.accountHeading}
             </h1>
             <p className="text-[#5b5570] dark:text-[#c2bddb]">
-              Gestioná tu perfil profesional, preferencias y suscripción
+              {SUBSCRIPTION_UI_COPY.accountSubheading}
             </p>
-            <div className="w-20 h-[3px] bg-[#6d4be8] mt-3 rounded-full" />
+            <div className="mt-3 h-[3px] w-20 rounded-full bg-[#6d4be8]" />
           </div>
 
           <button
             onClick={toggleTheme}
-            className="p-3 rounded-full border border-[#e3dff2] dark:border-[#2a263a] hover:bg-[#ede9fb] dark:hover:bg-[#2d2850] transition"
+            className="rounded-full border border-[#e3dff2] p-3 transition hover:bg-[#ede9fb] dark:border-[#2a263a] dark:hover:bg-[#2d2850]"
           >
             {theme === "dark" ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -71,8 +107,9 @@ export default function CuentaPage() {
           <PerfilUsuario />
           <Personalizacion />
           <Suscripcion />
+          {isAdmin ? <DeveloperModePanel /> : null}
         </div>
       </div>
     </div>
-  )
+  );
 }

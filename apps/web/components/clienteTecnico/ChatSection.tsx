@@ -1,177 +1,95 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, MessageCircle, Building2, DollarSign, CheckSquare, User, ArrowRight } from 'lucide-react';
+import { Send, MessageCircle, Bot, AlertCircle } from 'lucide-react';
 
 interface Message {
-  id: number;
-  text: string;
+  id: string;
+  content: string;
   isUser: boolean;
   timestamp: Date;
-  action?: {
-    type: 'navigate' | 'suggest';
-    target: string;
-    label: string;
-  };
 }
 
 interface ChatSectionProps {
-  onNavigate?: (section: string) => void;
+  userName?: string;
 }
 
-export function ChatSection({ onNavigate }: ChatSectionProps) {
+export function ChatSection({ userName = 'Usuario' }: ChatSectionProps) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Mensaje inicial automático
-  useEffect(() => {
-    const initialMessage: Message = {
-      id: 1,
-      text: "¡Hola! 👋 Soy GrowsBot, tu asistente inteligente para gestión de obras. Puedo ayudarte a navegar por el panel, gestionar tareas, revisar obras, validar trabajos y mucho más. ¿En qué puedo ayudarte hoy?",
-      isUser: false,
-      timestamp: new Date()
-    };
-    setMessages([initialMessage]);
-  }, []);
-
-  // Scroll automático al final
-  useEffect(() => {
+  // Auto-scroll al último mensaje
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
-  const getBotResponse = (userMessage: string): { text: string; action?: Message['action'] } => {
-    const message = userMessage.toLowerCase();
+  // Focus en el input al cargar
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
-    // Navegación por secciones
-    if (message.includes('obras') || message.includes('proyecto') || message.includes('construcción')) {
-      return {
-        text: "🏗️ Perfecto, te llevo a la sección de Obras donde puedes:\n• Ver todas tus obras activas\n• Crear nuevos proyectos\n• Gestionar tareas por etapa\n• Revisar el progreso\n\n¿Te gustaría que te muestre cómo crear una nueva obra?",
-        action: { type: 'navigate', target: 'obras', label: 'Ir a Obras' }
-      };
-    }
-
-    if (message.includes('validar') || message.includes('revisar') || message.includes('control')) {
-      return {
-        text: "✅ Te llevo a Validar Tareas donde puedes:\n• Revisar trabajos completados\n• Aprobar o rechazar tareas\n• Dejar comentarios y calificaciones\n• Subir evidencias fotográficas\n\n¿Tienes tareas pendientes de validación?",
-        action: { type: 'navigate', target: 'validar', label: 'Ir a Validar Tareas' }
-      };
-    }
-
-    if (message.includes('presupuesto') || message.includes('costo') || message.includes('dinero') || message.includes('gasto')) {
-      return {
-        text: "💰 Te muestro la sección de Presupuesto donde puedes:\n• Ver costos por obra\n• Calcular presupuestos\n• Revisar gastos por etapa\n• Generar reportes financieros\n\n¿Necesitas calcular el costo de alguna obra específica?",
-        action: { type: 'navigate', target: 'presupuesto', label: 'Ir a Presupuesto' }
-      };
-    }
-
-    if (message.includes('cuenta') || message.includes('perfil') || message.includes('configuración')) {
-      return {
-        text: "👤 Te llevo a tu Cuenta donde puedes:\n• Ver tu información personal\n• Configurar notificaciones\n• Cambiar contraseña\n• Revisar historial de actividades\n\n¿Qué configuración te gustaría revisar?",
-        action: { type: 'navigate', target: 'cuenta', label: 'Ir a Cuenta' }
-      };
-    }
-
-    // Consultas específicas sobre tareas
-    if (message.includes('tarea') && (message.includes('crear') || message.includes('agregar') || message.includes('nueva'))) {
-      return {
-        text: "🔨 Para crear una nueva tarea:\n1. Ve a la sección 'Obras'\n2. Selecciona una obra\n3. Haz clic en 'Agregar Tarea'\n4. Elige la etapa (Estructura, Obra Gris, Terminaciones)\n5. Selecciona el tipo de trabajo\n6. Configura cantidad y líder\n\n¿Te guío paso a paso?",
-        action: { type: 'navigate', target: 'obras', label: 'Crear Nueva Tarea' }
-      };
-    }
-
-    if (message.includes('tarea') && (message.includes('estado') || message.includes('progreso') || message.includes('avance'))) {
-      return {
-        text: "📊 Para revisar el estado de las tareas:\n• Ve a 'Obras' para ver el progreso general\n• Cada obra muestra % completado\n• Las tareas tienen estados: Pendiente, En Progreso, Completada\n• Puedes filtrar por etapa o líder\n\n¿Quieres revisar alguna obra específica?",
-        action: { type: 'navigate', target: 'obras', label: 'Ver Estado de Tareas' }
-      };
-    }
-
-    // Consultas sobre obras
-    if (message.includes('obra') && (message.includes('nueva') || message.includes('crear') || message.includes('iniciar'))) {
-      return {
-        text: "🏗️ Para crear una nueva obra:\n1. Ve a la sección 'Obras'\n2. Haz clic en el botón '+' (Crear Proyecto)\n3. Completa: Nombre, Ubicación, Fechas\n4. La obra se creará con 3 etapas básicas\n5. Luego puedes agregar tareas específicas\n\n¿Te ayudo a crear tu primera obra?",
-        action: { type: 'navigate', target: 'obras', label: 'Crear Nueva Obra' }
-      };
-    }
-
-    // Consultas sobre validación
-    if (message.includes('pendiente') || message.includes('esperando') || message.includes('revisión')) {
-      return {
-        text: "⏳ Tienes tareas pendientes de validación:\n• Revoque - Obra #238 (Juan Pérez)\n• Instalación eléctrica - Obra #241 (María López)\n• Mampostería - Obra #245 (Carlos Ruiz)\n\nVe a 'Validar Tareas' para revisarlas y aprobarlas.",
-        action: { type: 'navigate', target: 'validar', label: 'Revisar Tareas Pendientes' }
-      };
-    }
-
-    // Consultas sobre presupuesto
-    if (message.includes('cuánto') || message.includes('costo') || message.includes('precio')) {
-      return {
-        text: "💰 Para calcular costos:\n• Ve a 'Presupuesto'\n• Selecciona una obra\n• El sistema calcula automáticamente:\n  - Costo por tarea (cantidad × coeficiente)\n  - Días estimados de trabajo\n  - Costo total por etapa\n\n¿Quieres calcular el presupuesto de alguna obra?",
-        action: { type: 'navigate', target: 'presupuesto', label: 'Calcular Presupuesto' }
-      };
-    }
-
-    // Sugerencias de navegación
-    if (message.includes('ayuda') || message.includes('qué puedo') || message.includes('opciones')) {
-      return {
-        text: "🤖 Puedo ayudarte con:\n\n📋 **Navegación:**\n• 'Llévame a obras' - Gestionar proyectos\n• 'Quiero validar tareas' - Revisar trabajos\n• 'Muéstrame el presupuesto' - Ver costos\n• 'Ve a mi cuenta' - Configuración\n\n🔧 **Acciones:**\n• 'Crear nueva obra'\n• 'Agregar tarea'\n• 'Revisar progreso'\n• 'Calcular costos'\n\n¿Qué te gustaría hacer?",
-        action: undefined
-      };
-    }
-
-    // Respuestas inteligentes por defecto
-    const smartResponses = [
-      {
-        text: "Entiendo que necesitas ayuda. Puedo guiarte a cualquier sección del panel. ¿Te gustaría que te lleve a Obras, Validar Tareas, Presupuesto o Cuenta?",
-        action: { type: 'suggest', target: 'obras', label: 'Sugerencias' }
-      },
-      {
-        text: "Estoy aquí para ayudarte a navegar por el sistema. Puedes pedirme que te lleve a cualquier sección o que te explique cómo hacer algo específico. ¿Qué necesitas?",
-        action: undefined
-      },
-      {
-        text: "Como tu asistente, puedo ayudarte a gestionar obras, validar tareas, revisar presupuestos y configurar tu cuenta. ¿En qué sección te gustaría que te ayude?",
-        action: undefined
-      }
-    ];
+  // Simular respuesta del bot con manejo de errores
+  const simulateBotResponse = (userMessage: string) => {
+    setIsTyping(true);
+    setError(null);
     
-    return smartResponses[Math.floor(Math.random() * smartResponses.length)];
+    try {
+      setTimeout(() => {
+        const responses = [
+          `Hola ${userName}! Soy GrowsBot, tu asistente de construcción. ¿En qué puedo ayudarte hoy?`,
+          `Perfecto, entiendo tu consulta sobre "${userMessage}". Te puedo ayudar con planificación de obras, gestión de cuadrillas, o cualquier tema relacionado con construcción.`,
+          `Excelente pregunta! Para proyectos de construcción como el tuyo, te recomiendo revisar la planificación de tareas y el estado de las cuadrillas disponibles.`,
+          `Como asistente especializado en construcción, puedo ayudarte con: gestión de obras, planificación de tareas, coordinación de cuadrillas, y seguimiento de proyectos. ¿Qué te interesa más?`,
+          `Entiendo perfectamente. En GROWS, puedes gestionar todos estos aspectos de manera integrada. ¿Te gustaría que te muestre alguna funcionalidad específica?`
+        ];
+        
+        const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+        
+        const botMessage: Message = {
+          id: Date.now().toString(),
+          content: randomResponse,
+          isUser: false,
+          timestamp: new Date()
+        };
+        
+        setMessages(prev => [...prev, botMessage]);
+        setIsTyping(false);
+      }, 1500 + Math.random() * 1000);
+    } catch (err) {
+      console.error('Error en simulateBotResponse:', err);
+      setError('Error al procesar la respuesta del bot');
+      setIsTyping(false);
+    }
   };
 
   const handleSendMessage = () => {
-    if (!inputText.trim()) return;
+    if (!inputValue.trim()) return;
 
-    const userMessage: Message = {
-      id: messages.length + 1,
-      text: inputText,
-      isUser: true,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
-    setIsTyping(true);
-
-    // Simular delay de respuesta como ChatGPT
-    setTimeout(() => {
-      const response = getBotResponse(inputText);
-      const botResponse: Message = {
-        id: messages.length + 2,
-        text: response.text,
-        isUser: false,
-        timestamp: new Date(),
-        action: response.action
+    try {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        content: inputValue.trim(),
+        isUser: true,
+        timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000); // 1-3 segundos de delay
-  };
-
-  const handleActionClick = (action: Message['action']) => {
-    if (action && onNavigate) {
-      onNavigate(action.target);
+      setMessages(prev => [...prev, userMessage]);
+      setInputValue('');
+      setError(null);
+      
+      // Simular respuesta del bot
+      simulateBotResponse(inputValue.trim());
+    } catch (err) {
+      console.error('Error en handleSendMessage:', err);
+      setError('Error al enviar el mensaje');
     }
   };
 
@@ -183,123 +101,148 @@ export function ChatSection({ onNavigate }: ChatSectionProps) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primario to-primario/90 px-6 py-4 text-white">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-acento rounded-full flex items-center justify-center">
-              <MessageCircle className="h-6 w-6 text-primario" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">GrowsBot</h2>
-              <p className="text-sm text-white/80">Asistente inteligente para gestión de obras</p>
-            </div>
+    <div className="min-h-screen bg-white relative">
+      {/* Mostrar error si existe */}
+      {error && (
+        <div className="fixed top-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 max-w-sm z-50">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-500" />
+            <span className="text-red-700 text-sm">{error}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700"
+            >
+              ×
+            </button>
           </div>
         </div>
+      )}
 
-        {/* Messages Container */}
-        <div className="h-[500px] overflow-y-auto p-6 space-y-4 bg-gray-50">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+      {/* Estado vacío - Saludo inicial estilo Gemini */}
+      {messages.length === 0 && (
+        <div className="flex items-center justify-center min-h-screen px-6">
+          <div className="text-center animate-fade-in">
+            {/* Saludo principal centrado */}
+            <h1 
+              className="text-4xl md:text-5xl font-semibold text-[#0C1D36] mb-8"
+              style={{ fontFamily: 'Rubik, sans-serif' }}
             >
-              <div className="flex items-start space-x-2 max-w-[80%]">
+              Hola, {userName}
+            </h1>
+          </div>
+        </div>
+      )}
+
+      {/* Contenedor de mensajes */}
+      {messages.length > 0 && (
+        <div className="pt-12 pb-32">
+          <div className="max-w-[750px] w-full mx-auto space-y-6 px-6">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex items-start gap-3 animate-fade-in ${
+                  message.isUser ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {/* Ícono del bot (solo para mensajes del bot) */}
                 {!message.isUser && (
-                  <div className="w-8 h-8 bg-acento rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                    <MessageCircle className="h-4 w-4 text-primario" />
+                  <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#E8C547] text-[#0C1D36] font-bold text-xs animate-fade-in flex-shrink-0 mt-1">
+                    G
                   </div>
                 )}
+                
+                {/* Mensaje */}
                 <div
-                  className={`
-                    px-4 py-3 rounded-2xl shadow-sm
-                    ${message.isUser
-                      ? 'bg-primario text-white rounded-br-md'
-                      : 'bg-white text-primario border border-gray-200 rounded-bl-md'
-                    }
-                  `}
+                  className={`max-w-[70%] px-5 py-3 rounded-2xl ${
+                    message.isUser
+                      ? 'bg-[#0C1D36] text-white'
+                      : 'bg-[#F7F8FA] text-[#0C1D36] border border-gray-100'
+                  }`}
                 >
-                  <p className="text-sm whitespace-pre-line leading-relaxed">{message.text}</p>
-                  
-                  {/* Action Button */}
-                  {message.action && (
-                    <button
-                      onClick={() => handleActionClick(message.action)}
-                      className="mt-3 bg-acento text-primario px-4 py-2 rounded-lg text-sm font-medium hover:bg-acento/90 transition-colors duration-200 flex items-center space-x-2"
-                    >
-                      <span>{message.action.label}</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  )}
-                  
-                  <p className={`text-xs mt-2 ${message.isUser ? 'text-white/70' : 'text-primario/60'}`}>
-                    {message.timestamp.toLocaleTimeString('es-ES', { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </p>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
               </div>
-            </div>
-          ))}
-          
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-start space-x-2">
-                <div className="w-8 h-8 bg-acento rounded-full flex items-center justify-center">
-                  <MessageCircle className="h-4 w-4 text-primario" />
+            ))}
+            
+            {/* Indicador de escritura */}
+            {isTyping && (
+              <div className="flex items-start gap-3 animate-fade-in">
+                <div className="w-6 h-6 flex items-center justify-center rounded-full bg-[#E8C547] text-[#0C1D36] font-bold text-xs flex-shrink-0 mt-1">
+                  G
                 </div>
-                <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-primario/60 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-primario/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-primario/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="bg-[#F7F8FA] text-[#0C1D36] border border-gray-100 rounded-2xl px-5 py-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-[#E8C547] rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-[#E8C547] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-[#E8C547] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
         </div>
+      )}
 
-        {/* Input */}
-        <div className="bg-white px-6 py-4 border-t border-gray-200">
-          <div className="flex space-x-3">
+      {/* Input inferior - centrado cuando no hay mensajes, fijo cuando hay conversación */}
+      {messages.length === 0 ? (
+        <div className="absolute bottom-12 left-0 right-0 flex items-center justify-center px-6">
+          <div className="flex items-center bg-white rounded-full border border-gray-200 shadow-sm px-6 py-3 w-full max-w-[750px] md:max-w-[750px] max-w-[95%]">
             <input
+              ref={inputRef}
               type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Escribe tu mensaje... (ej: 'Llévame a obras', 'Crear nueva tarea')"
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primario focus:border-transparent text-primario placeholder-primario/50"
+              placeholder="Pregunta a GrowsBot"
+              className="flex-1 bg-transparent outline-none placeholder:text-gray-400 text-[#0C1D36] text-sm"
+              disabled={isTyping}
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputText.trim() || isTyping}
-              className="bg-primario text-white px-6 py-3 rounded-xl hover:bg-primario/90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              disabled={!inputValue.trim() || isTyping}
+              className="bg-[#0C1D36] text-white p-3 rounded-full hover:bg-[#132a52] transition-colors ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Send className="h-4 w-4" />
-              <span>Enviar</span>
+              <Send className="w-5 h-5" />
             </button>
           </div>
-          
-          {/* Quick Actions */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            {['Llévame a obras', 'Validar tareas', 'Ver presupuesto', 'Crear nueva obra'].map((suggestion) => (
-              <button
-                key={suggestion}
-                onClick={() => setInputText(suggestion)}
-                className="text-xs bg-gray-100 text-primario px-3 py-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
-              >
-                {suggestion}
-              </button>
-            ))}
+        </div>
+      ) : (
+        <div className="fixed bottom-12 left-0 right-0 flex items-center justify-center px-6">
+          <div className="flex items-center bg-white rounded-full border border-gray-200 shadow-sm px-6 py-3 w-full max-w-[750px] md:max-w-[750px] max-w-[95%]">
+            <input
+              ref={inputRef}
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Escribí tu mensaje..."
+              className="flex-1 bg-transparent outline-none placeholder:text-gray-400 text-[#0C1D36] text-sm"
+              disabled={isTyping}
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!inputValue.trim() || isTyping}
+              className="bg-[#0C1D36] text-white p-3 rounded-full hover:bg-[#132a52] transition-colors ml-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Responsive adjustments */}
+      <style jsx>{`
+        @media (max-width: 768px) {
+          .max-w-\\[750px\\] {
+            max-width: 90%;
+          }
+          .pt-12 {
+            padding-top: 3rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

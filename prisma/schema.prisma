@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Obra {
+  id           String   @id
+  nombre       String
+  localizacion String?
+  estado       String   @default("ACTIVA")
+  created_at   DateTime @default(now())
+  updatedAt    DateTime
+}
+
+model roadmap_grupos_tareas {
+  id                String            @id
+  titulo            String
+  descripcion       String?
+  objetivoId        String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  roadmap_objetivos roadmap_objetivos @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  roadmap_tareas    roadmap_tareas[]
+}
+
+model roadmap_objetivos {
+  id                    String                  @id
+  titulo                String
+  descripcion           String?
+  prioridad             String                  @default("MEDIA")
+  estado                String                  @default("pending")
+  progreso              Float                   @default(0)
+  startWeek             Int?
+  endWeek               Int?
+  targetWeeks           Int?
+  dueDate               String?
+  collapsed             Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  roadmap_grupos_tareas roadmap_grupos_tareas[]
+  roadmap_tareas        roadmap_tareas[]
+}
+
+model roadmap_tareas {
+  id                    String                 @id
+  texto                 String
+  descripcion           String?
+  estado                String                 @default("pending")
+  done                  Boolean                @default(false)
+  estimateHrs           Int?
+  responsable           String?
+  objetivoId            String?
+  grupoId               String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime
+  roadmap_grupos_tareas roadmap_grupos_tareas? @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  roadmap_objetivos     roadmap_objetivos?     @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+}

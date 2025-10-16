@@ -1,14 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Menu, Home, Users, Bell, User, X } from 'lucide-react';
-
-interface User {
-  name: string;
-  avatar: string;
-  rating: number;
-  level: string;
-}
+import { Home, Users, Bell, User, X } from 'lucide-react';
 
 interface TopBarProps {
   isConnected: boolean;
@@ -16,13 +9,18 @@ interface TopBarProps {
   onConnectionToggle: () => void;
   onBreakToggle: () => void;
   onLogout: () => void;
-  user: User;
+  user: {
+    name: string;
+    avatar: string;
+  };
+  roleLabel?: string;
   onSectionChange: (section: string) => void;
 }
 
-export function TopBar({ 
+export function TopBar({
   user,
-  onSectionChange
+  roleLabel,
+  onSectionChange,
 }: TopBarProps) {
   const [showSideMenu, setShowSideMenu] = useState(false);
 
@@ -40,57 +38,53 @@ export function TopBar({
 
   return (
     <>
-      {/* Header minimalista - solo avatar */}
-      <header className="sticky top-0 z-40 shadow-lg bg-primario">
+      <header className="sticky top-0 z-40 bg-primario shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
-          {/* Avatar clickeable */}
           <button
             onClick={() => setShowSideMenu(true)}
-            className="w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-md hover:shadow-lg transition-smooth bg-acento text-oscuro"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-acento text-xl text-oscuro shadow-md transition hover:shadow-lg"
+            aria-label="Abrir menu"
           >
             {user.avatar}
           </button>
-          
-          {/* Espacio para balance visual */}
-          <div></div>
+          <div />
         </div>
       </header>
 
-      {/* Menú lateral (hamburguesa) */}
-      {showSideMenu && (
+      {showSideMenu ? (
         <>
-          {/* Overlay */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+          <div
+            className="fixed inset-0 z-50 bg-black/50"
             onClick={() => setShowSideMenu(false)}
           />
-          
-          {/* Menú lateral */}
-          <div className="fixed top-0 left-0 h-full w-80 shadow-xl z-50 transform transition-transform duration-300 ease-in-out bg-primario">
-            <div className="flex flex-col h-full">
-              {/* Header del menú */}
-              <div className="p-6 border-b border-white/20">
+          <aside className="fixed top-0 left-0 z-50 h-full w-80 bg-primario shadow-xl">
+            <div className="flex h-full flex-col">
+              <div className="border-b border-white/20 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-xl bg-acento text-oscuro">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-acento text-xl text-oscuro">
                       {user.avatar}
                     </div>
                     <div>
-                      <h2 className="font-semibold text-lg text-white">{user.name}</h2>
-                      <p className="text-sm text-white/70">Líder de cuadrilla</p>
+                      <h2 className="text-lg font-semibold text-white">
+                        {user.name}
+                      </h2>
+                      <p className="text-sm text-white/70">
+                        {roleLabel ?? 'Socio'}
+                      </p>
                     </div>
                   </div>
                   <button
                     onClick={() => setShowSideMenu(false)}
-                    className="transition-smooth text-white"
+                    className="text-white transition hover:text-white/70"
+                    aria-label="Cerrar menu"
                   >
                     <X className="h-6 w-6" />
                   </button>
                 </div>
               </div>
 
-              {/* Items del menú */}
-              <div className="flex-1 py-6 bg-primario">
+              <div className="flex-1 bg-primario py-6">
                 <nav className="space-y-2">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -98,9 +92,9 @@ export function TopBar({
                       <button
                         key={item.id}
                         onClick={() => handleMenuClick(item.id)}
-                        className="w-full flex items-center space-x-4 px-6 py-4 text-left transition-smooth hover:bg-white/10 text-white"
+                        className="flex w-full items-center space-x-4 px-6 py-4 text-left text-white transition hover:bg-white/10"
                       >
-                        <Icon className="h-6 w-6 text-white" />
+                        <Icon className="h-6 w-6" />
                         <span className="font-medium">{item.label}</span>
                       </button>
                     );
@@ -108,25 +102,19 @@ export function TopBar({
                 </nav>
               </div>
 
-              {/* Footer del menú */}
-              <div className="p-6 border-t border-white/20 bg-primario">
+              <div className="border-t border-white/20 bg-primario p-6">
                 <button
-                  onClick={() => {
-                    localStorage.removeItem('user');
-                    localStorage.removeItem('isConnected');
-                    localStorage.removeItem('isOnBreak');
-                    window.location.href = '/auth/login';
-                  }}
-                  className="w-full flex items-center space-x-4 px-4 py-3 text-left rounded-lg transition-smooth hover:bg-white/10 text-white"
+                  onClick={onLogout}
+                  className="flex w-full items-center space-x-4 rounded-lg px-4 py-3 text-left text-white transition hover:bg-white/10"
                 >
-                  <span className="text-lg">🚪</span>
-                  <span className="font-medium">Cerrar sesión</span>
+                  <span className="text-lg">↩</span>
+                  <span className="font-medium">Cerrar sesion</span>
                 </button>
               </div>
             </div>
-          </div>
+          </aside>
         </>
-      )}
+      ) : null}
     </>
   );
 }

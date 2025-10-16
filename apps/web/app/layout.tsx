@@ -5,6 +5,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import DevBanner from '@/components/DevBanner';
 import DevToolsPanel from '@/components/DevToolsPanel';
 import { DevModeProvider } from '@/lib/dev-mode-context';
+import { SubscriptionProvider } from '@/lib/subscriptions/subscription-context';
+import { UpgradeModalProvider } from '@/components/subscriptions/UpgradeModal';
 import './globals.css';
 
 type RootLayoutProps = {
@@ -20,19 +22,23 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang='es' className='light'>
       <body 
-        className='dark:text-secundario transition-all duration-300 ease-in-out'
+        className='bg-grows-background text-grows-text-primary transition-all duration-300 ease-in-out'
         style={{
-          backgroundColor: '#eaf0f6',
-          color: '#10161a'
+          backgroundColor: '#F5F7F5', // grows-background
+          color: '#1A1A1A' // grows-text-primary
         }}
       >
         <DevModeProvider>
-          <ThemeProvider>
-            <main className='min-h-screen'>{children}</main>
-            <DevBanner />
-            <DevToolsPanel />
-            <Toaster />
-          </ThemeProvider>
+          <SubscriptionProvider>
+            <UpgradeModalProvider>
+              <ThemeProvider>
+                <main className='min-h-screen'>{children}</main>
+                <DevBanner />
+                <DevToolsPanel />
+                <Toaster />
+              </ThemeProvider>
+            </UpgradeModalProvider>
+          </SubscriptionProvider>
         </DevModeProvider>
       </body>
     </html>

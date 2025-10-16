@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { Card, Button, Badge, EmptyState, SectionLayout } from '@/components/ui/grows';
 
 // Tipos de datos
 interface Obra {
@@ -64,15 +65,6 @@ interface ObraResumenCardProps {
 }
 
 function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'activa': return 'bg-green-100 text-green-800 border-green-200';
-      case 'pausada': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'finalizada': return 'bg-gray-100 text-gray-800 border-gray-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   const getEstadoIcon = (estado: string) => {
     switch (estado) {
       case 'activa': return <TrendingUp className="h-4 w-4" />;
@@ -83,65 +75,46 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 transition-all duration-300 hover:shadow-md">
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{obra.nombre}</h3>
-              <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
-                <MapPin className="h-4 w-4" />
-                <span>{obra.direccion}</span>
-              </div>
-            </div>
-          </div>
-          
-          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getEstadoColor(obra.estado)}`}>
-            {getEstadoIcon(obra.estado)}
-            {obra.estado.charAt(0).toUpperCase() + obra.estado.slice(1)}
-          </span>
+    <Card
+      title={obra.nombre}
+      subtitle={obra.direccion}
+      status={obra.estado}
+      icon={<Building2 className="h-6 w-6" />}
+      onClick={() => onVerPlanificacion(obra.id)}
+    >
+      {/* Información del cliente */}
+      <div className="mb-4">
+        <div className="flex items-center gap-2 text-sm text-grows-text-secondary">
+          <User className="h-4 w-4" />
+          <span className="font-medium">Cliente:</span>
+          <span>{obra.cliente}</span>
         </div>
-
-        {/* Información del cliente */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <User className="h-4 w-4" />
-            <span className="font-medium">Cliente:</span>
-            <span>{obra.cliente}</span>
-          </div>
-        </div>
-
-        {/* Progreso */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Progreso general</span>
-            <span className="text-sm text-gray-600">{obra.avance}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${obra.avance}%` }}
-            ></div>
-          </div>
-          <div className="flex items-center justify-between mt-1 text-xs text-gray-500">
-            <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
-          </div>
-        </div>
-
-        {/* Botón de acción */}
-        <button
-          onClick={() => onVerPlanificacion(obra.id)}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          <span>Ver planificación</span>
-          <ArrowRight className="h-4 w-4" />
-        </button>
       </div>
-    </div>
+
+      {/* Progreso */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-grows-text-primary">Progreso general</span>
+          <span className="text-sm text-grows-text-secondary">{obra.avance}%</span>
+        </div>
+        <div className="w-full bg-grows-neutral rounded-full h-2">
+          <div 
+            className="bg-grows-secondary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${obra.avance}%` }}
+          ></div>
+        </div>
+        <div className="flex items-center justify-between mt-1 text-xs text-grows-text-secondary">
+          <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
+        </div>
+      </div>
+
+      {/* Footer con botón */}
+      <div className="flex justify-end">
+        <Button variant="primary" size="sm" icon={<ArrowRight className="h-4 w-4" />}>
+          Ver planificación
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -157,65 +130,59 @@ export default function TareasPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Gestión de Tareas</h1>
-              <p className="text-gray-600 mt-1">Seleccioná una obra para ver su progreso y planificación</p>
-            </div>
+    <SectionLayout
+      title="Gestión de Tareas"
+      subtitle="Seleccioná una obra para ver su progreso y planificación"
+    >
+      {/* Grid de obras */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {obrasActivas.length === 0 ? (
+          <div className="col-span-full">
+            <EmptyState
+              title="No hay obras activas disponibles"
+              description="Todas las obras están pausadas o finalizadas"
+              icon={<Building2 className="h-16 w-16" />}
+              action={
+                <Button variant="primary">
+                  Crear nueva obra
+                </Button>
+              }
+            />
           </div>
-        </div>
-
-        {/* Grid de obras */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {obrasActivas.length === 0 ? (
-            <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay obras activas disponibles</h3>
-              <p className="text-gray-600">Todas las obras están pausadas o finalizadas</p>
-            </div>
-          ) : (
-            obrasActivas.map(obra => (
-              <ObraResumenCard
-                key={obra.id}
-                obra={obra}
-                onVerPlanificacion={handleVerPlanificacion}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Estadísticas generales */}
-        {obrasActivas.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumen general</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{obrasActivas.length}</div>
-                <div className="text-sm text-gray-600">Obras activas</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {Math.round(obrasActivas.reduce((acc, obra) => acc + obra.avance, 0) / obrasActivas.length)}%
-                </div>
-                <div className="text-sm text-gray-600">Progreso promedio</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
-                  {obrasActivas.reduce((acc, obra) => acc + obra.tareasTotal, 0)}
-                </div>
-                <div className="text-sm text-gray-600">Total de tareas</div>
-              </div>
-            </div>
-          </div>
+        ) : (
+          obrasActivas.map(obra => (
+            <ObraResumenCard
+              key={obra.id}
+              obra={obra}
+              onVerPlanificacion={handleVerPlanificacion}
+            />
+          ))
         )}
       </div>
-    </div>
+
+      {/* Estadísticas generales */}
+      {obrasActivas.length > 0 && (
+        <Card title="Resumen general">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-grows-primary">{obrasActivas.length}</div>
+              <div className="text-sm text-grows-text-secondary">Obras activas</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-grows-secondary">
+                {Math.round(obrasActivas.reduce((acc, obra) => acc + obra.avance, 0) / obrasActivas.length)}%
+              </div>
+              <div className="text-sm text-grows-text-secondary">Progreso promedio</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-grows-primary">
+                {obrasActivas.reduce((acc, obra) => acc + obra.tareasTotal, 0)}
+              </div>
+              <div className="text-sm text-grows-text-secondary">Total de tareas</div>
+            </div>
+          </div>
+        </Card>
+      )}
+    </SectionLayout>
   );
 }

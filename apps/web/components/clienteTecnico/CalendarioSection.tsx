@@ -1,20 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Filter, Clock, MapPin, Users } from 'lucide-react';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react';
+import { Card, Button, Badge, SectionLayout } from '@/components/ui/grows';
 
-// Tipos de datos
 interface EventoCalendario {
   id: string;
   titulo: string;
-  descripcion: string;
   fecha: string;
   hora: string;
-  duracion: number; // en minutos
-  tipo: 'reunion' | 'inspeccion' | 'entrega' | 'recordatorio';
-  obra: string;
-  participantes: string[];
+  tipo: 'obra' | 'reunion' | 'entrega' | 'otro';
+  descripcion?: string;
   ubicacion?: string;
+  participantes?: string[];
   completado: boolean;
 }
 
@@ -26,47 +24,50 @@ interface TareaCalendario {
   obra: string;
   responsable: string;
   estado: 'pendiente' | 'en_curso' | 'completada';
-  prioridad: 'baja' | 'media' | 'alta';
+  prioridad: 'alta' | 'media' | 'baja';
 }
 
-// Datos mock
 const eventosMock: EventoCalendario[] = [
   {
     id: '1',
-    titulo: 'Inspección eléctrica',
-    descripcion: 'Revisión de instalaciones eléctricas en planta baja',
-    fecha: '2024-01-28',
+    titulo: 'Reunión de planificación - Casa Residencial Norte',
+    fecha: '2024-01-25',
     hora: '09:00',
-    duracion: 120,
-    tipo: 'inspeccion',
-    obra: 'Casa Residencial Norte',
-    participantes: ['Carlos Pérez', 'Inspector Técnico'],
-    ubicacion: 'Casa Residencial Norte - Planta Baja',
+    tipo: 'reunion',
+    descripcion: 'Reunión semanal para revisar el progreso del proyecto',
+    ubicacion: 'Oficina Central',
+    participantes: ['Carlos Pérez', 'María González', 'Roberto Silva'],
     completado: false
   },
   {
     id: '2',
-    titulo: 'Entrega de materiales',
-    descripcion: 'Llegada de materiales para pintura exterior',
-    fecha: '2024-01-30',
+    titulo: 'Entrega de materiales - Edificio Comercial Centro',
+    fecha: '2024-01-26',
     hora: '14:00',
-    duracion: 60,
     tipo: 'entrega',
-    obra: 'Villa Familiar Sur',
-    participantes: ['Roberto Silva', 'Proveedor'],
-    ubicacion: 'Villa Familiar Sur - Almacén',
+    descripcion: 'Entrega de materiales para la fase de estructura',
+    ubicacion: 'Obra Edificio Comercial Centro',
+    participantes: ['Proveedor ABC', 'Carlos Pérez'],
     completado: false
   },
   {
     id: '3',
-    titulo: 'Reunión de coordinación',
-    descripcion: 'Seguimiento semanal del progreso de obra',
-    fecha: '2024-02-01',
+    titulo: 'Inspección técnica - Villa Familiar Sur',
+    fecha: '2024-01-28',
     hora: '10:00',
-    duracion: 90,
+    tipo: 'obra',
+    descripcion: 'Inspección técnica de la estructura completada',
+    ubicacion: 'Obra Villa Familiar Sur',
+    participantes: ['Inspector Municipal', 'Roberto Silva'],
+    completado: false
+  },
+  {
+    id: '4',
+    titulo: 'Reunión cliente - Casa Residencial Norte',
+    fecha: '2024-01-30',
+    hora: '16:00',
     tipo: 'reunion',
-    obra: 'Edificio Comercial Centro',
-    participantes: ['María González', 'Cliente Técnico', 'Supervisor'],
+    descripcion: 'Reunión con el cliente para mostrar avances',
     ubicacion: 'Oficina Central',
     completado: false
   }
@@ -141,83 +142,109 @@ export function CalendarioSection() {
   const generarDiasMes = () => {
     const año = fechaActual.getFullYear();
     const mes = fechaActual.getMonth();
+    
     const primerDia = new Date(año, mes, 1);
     const ultimoDia = new Date(año, mes + 1, 0);
     const diasEnMes = ultimoDia.getDate();
+    
     const primerDiaSemana = primerDia.getDay();
-
     const dias = [];
     
     // Días del mes anterior
     for (let i = primerDiaSemana - 1; i >= 0; i--) {
-      const dia = new Date(año, mes, -i);
-      dias.push({ fecha: dia, esDelMes: false });
+      const fecha = new Date(año, mes, -i);
+      dias.push({
+        fecha,
+        esDelMesActual: false,
+        esHoy: false,
+        eventos: getEventosPorFecha(fecha.toISOString().split('T')[0]),
+        tareas: getTareasPorFecha(fecha.toISOString().split('T')[0])
+      });
     }
     
     // Días del mes actual
     for (let dia = 1; dia <= diasEnMes; dia++) {
       const fecha = new Date(año, mes, dia);
-      dias.push({ fecha, esDelMes: true });
+      const hoy = new Date();
+      const esHoy = fecha.toDateString() === hoy.toDateString();
+      
+      dias.push({
+        fecha,
+        esDelMesActual: true,
+        esHoy,
+        eventos: getEventosPorFecha(fecha.toISOString().split('T')[0]),
+        tareas: getTareasPorFecha(fecha.toISOString().split('T')[0])
+      });
     }
     
-    // Días del mes siguiente
+    // Completar la semana
     const diasRestantes = 42 - dias.length;
-    for (let dia = 1; dia <= diasRestantes; dia++) {
-      const fecha = new Date(año, mes + 1, dia);
-      dias.push({ fecha, esDelMes: false });
+    for (let i = 1; i <= diasRestantes; i++) {
+      const fecha = new Date(año, mes + 1, i);
+      dias.push({
+        fecha,
+        esDelMesActual: false,
+        esHoy: false,
+        eventos: getEventosPorFecha(fecha.toISOString().split('T')[0]),
+        tareas: getTareasPorFecha(fecha.toISOString().split('T')[0])
+      });
     }
     
     return dias;
   };
 
-  const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case 'reunion': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'inspeccion': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'entrega': return 'bg-green-100 text-green-800 border-green-200';
-      case 'recordatorio': return 'bg-purple-100 text-purple-800 border-purple-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'pendiente': return 'bg-yellow-100 text-yellow-800';
-      case 'en_curso': return 'bg-blue-100 text-blue-800';
-      case 'completada': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
+  const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   const dias = generarDiasMes();
   const nombreMes = fechaActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
+  const getTipoEventoVariant = (tipo: string) => {
+    switch (tipo) {
+      case 'obra': return 'info';
+      case 'reunion': return 'success';
+      case 'entrega': return 'warning';
+      case 'otro': return 'default';
+      default: return 'default';
+    }
+  };
+
+  const getEstadoTareaVariant = (estado: string) => {
+    switch (estado) {
+      case 'completada': return 'success';
+      case 'en_curso': return 'warning';
+      case 'pendiente': return 'default';
+      default: return 'default';
+    }
+  };
+
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-6">
-      {/* Encabezado */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <SectionLayout
+      title="Calendario"
+      subtitle="Organización cronológica interactiva"
+    >
+      {/* Controles de navegación */}
+      <Card className="mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <Calendar className="h-5 w-5 text-green-600" />
+            <div className="h-10 w-10 bg-grows-secondary/10 rounded-grows-lg flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-grows-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Calendario</h1>
-              <p className="text-gray-600">Organización cronológica interactiva</p>
+              <h2 className="text-xl font-semibold text-grows-primary">{nombreMes}</h2>
+              <p className="text-grows-text-secondary">Gestiona eventos y tareas</p>
             </div>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Selector de vista */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-grows-neutral rounded-grows-lg p-1">
               {['semana', 'mes', 'timeline'].map(vistaOption => (
                 <button
                   key={vistaOption}
                   onClick={() => setVista(vistaOption as any)}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  className={`px-3 py-1 text-sm rounded-grows-md transition-colors ${
                     vista === vistaOption
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-grows-surface text-grows-primary shadow-grows-sm'
+                      : 'text-grows-text-secondary hover:text-grows-primary'
                   }`}
                 >
                   {vistaOption.charAt(0).toUpperCase() + vistaOption.slice(1)}
@@ -226,206 +253,183 @@ export function CalendarioSection() {
             </div>
 
             {/* Botón nuevo evento */}
-            <button
+            <Button
               onClick={() => setMostrarModalNuevo(true)}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              variant="primary"
+              icon={<Plus className="h-4 w-4" />}
             >
-              <Plus className="h-4 w-4 mr-2" />
               Nuevo Evento
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
+
+      {/* Vista de calendario semanal */}
+      {vista === 'semana' && (
+        <Card title="Vista Semanal">
+          <div className="grid grid-cols-7 gap-2">
+            {diasSemana.map((dia) => (
+              <div key={dia} className="p-3 text-center font-medium text-grows-text-secondary text-sm border-b border-grows-border">
+                {dia}
+              </div>
+            ))}
+            {dias.slice(0, 7).map((dia, index) => (
+              <div
+                key={index}
+                className={`min-h-[120px] p-3 border border-grows-border rounded-grows-md ${
+                  dia.esHoy ? 'bg-grows-secondary/10 border-grows-secondary' : 'bg-grows-surface'
+                }`}
+              >
+                <div className={`text-sm font-medium mb-2 ${
+                  dia.esHoy ? 'text-grows-primary font-bold' : 'text-grows-text-primary'
+                }`}>
+                  {dia.fecha.getDate()}
+                </div>
+                
+                <div className="space-y-1">
+                  {dia.eventos.slice(0, 2).map((evento) => (
+                    <Badge
+                      key={evento.id}
+                      variant={getTipoEventoVariant(evento.tipo)}
+                      className="text-xs w-full justify-start"
+                    >
+                      {evento.titulo}
+                    </Badge>
+                  ))}
+                  {dia.tareas.slice(0, 1).map((tarea) => (
+                    <Badge
+                      key={tarea.id}
+                      variant={getEstadoTareaVariant(tarea.estado)}
+                      className="text-xs w-full justify-start"
+                    >
+                      {tarea.nombre}
+                    </Badge>
+                  ))}
+                  {(dia.eventos.length + dia.tareas.length) > 3 && (
+                    <div className="text-xs text-grows-text-secondary">
+                      +{(dia.eventos.length + dia.tareas.length) - 3} más
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Vista de calendario mensual */}
       {vista === 'mes' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          {/* Navegación del mes */}
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 capitalize">
-                {nombreMes}
-              </h2>
-              <div className="flex items-center gap-2">
+        <Card title="Vista Mensual">
+          <div className="grid grid-cols-7 gap-1">
+            {diasSemana.map((dia) => (
+              <div key={dia} className="p-3 text-center font-medium text-grows-text-secondary text-sm border-b border-grows-border">
+                {dia}
+              </div>
+            ))}
+            {dias.map((dia, index) => (
+              <div
+                key={index}
+                className={`min-h-[100px] p-2 border border-grows-border ${
+                  dia.esDelMesActual ? 'bg-grows-surface' : 'bg-grows-neutral/30'
+                } ${dia.esHoy ? 'bg-grows-secondary/10' : ''}`}
+              >
+                <div className={`text-sm font-medium mb-1 ${
+                  dia.esDelMesActual ? 'text-grows-text-primary' : 'text-grows-text-secondary'
+                } ${dia.esHoy ? 'text-grows-primary font-bold' : ''}`}>
+                  {dia.fecha.getDate()}
+                </div>
+                
+                <div className="space-y-1">
+                  {dia.eventos.slice(0, 2).map((evento) => (
+                    <div
+                      key={evento.id}
+                      className="text-xs p-1 rounded bg-grows-secondary/10 text-grows-primary truncate"
+                    >
+                      {evento.titulo}
+                    </div>
+                  ))}
+                  {dia.tareas.slice(0, 1).map((tarea) => (
+                    <div
+                      key={tarea.id}
+                      className="text-xs p-1 rounded bg-grows-primary/10 text-grows-primary truncate"
+                    >
+                      {tarea.nombre}
+                    </div>
+                  ))}
+                  {(dia.eventos.length + dia.tareas.length) > 3 && (
+                    <div className="text-xs text-grows-text-secondary">
+                      +{(dia.eventos.length + dia.tareas.length) - 3} más
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Lista de eventos próximos */}
+      <Card title="Eventos Próximos">
+        <div className="space-y-4">
+          {eventos.slice(0, 5).map((evento) => (
+            <div key={evento.id} className="flex items-center space-x-3 p-3 border border-grows-border rounded-grows-md">
+              <div className="p-2 bg-grows-secondary/10 rounded-grows-md">
+                <Calendar className="h-4 w-4 text-grows-primary" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-grows-primary">{evento.titulo}</h4>
+                <div className="flex items-center space-x-4 text-sm text-grows-text-secondary">
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{evento.hora}</span>
+                  </div>
+                  {evento.ubicacion && (
+                    <div className="flex items-center space-x-1">
+                      <MapPin className="h-3 w-3" />
+                      <span>{evento.ubicacion}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Badge variant={getTipoEventoVariant(evento.tipo)}>
+                {evento.tipo}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Modal para nuevo evento */}
+      {mostrarModalNuevo && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-grows-surface rounded-grows-lg shadow-grows-lg max-w-md w-full mx-4">
+            <div className="p-6 border-b border-grows-border">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-grows-primary">Nuevo Evento</h3>
                 <button
-                  onClick={() => cambiarMes('anterior')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setMostrarModalNuevo(false)}
+                  className="text-grows-text-secondary hover:text-grows-primary transition-colors"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setFechaActual(new Date())}
-                  className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Hoy
-                </button>
-                <button
-                  onClick={() => cambiarMes('siguiente')}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4" />
+                  ×
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Grid del calendario */}
-          <div className="p-6">
-            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
-              {/* Días de la semana */}
-              {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(dia => (
-                <div key={dia} className="bg-gray-100 p-3 text-center text-sm font-medium text-gray-700">
-                  {dia}
-                </div>
-              ))}
-              
-              {/* Días del mes */}
-              {dias.map((dia, index) => {
-                const fechaStr = dia.fecha.toISOString().split('T')[0];
-                const eventosDia = getEventosPorFecha(fechaStr);
-                const tareasDia = getTareasPorFecha(fechaStr);
-                const esHoy = dia.fecha.toDateString() === new Date().toDateString();
-                
-                return (
-                  <div
-                    key={index}
-                    className={`bg-white p-2 min-h-[120px] ${
-                      !dia.esDelMes ? 'text-gray-300' : 'text-gray-900'
-                    } ${esHoy ? 'bg-blue-50' : ''}`}
-                  >
-                    <div className={`text-sm font-medium mb-2 ${esHoy ? 'text-blue-600' : ''}`}>
-                      {dia.fecha.getDate()}
-                    </div>
-                    
-                    <div className="space-y-1">
-                      {eventosDia.slice(0, 2).map(evento => (
-                        <div
-                          key={evento.id}
-                          className={`text-xs p-1 rounded border ${getTipoColor(evento.tipo)}`}
-                          title={evento.titulo}
-                        >
-                          {evento.hora} - {evento.titulo}
-                        </div>
-                      ))}
-                      {eventosDia.length > 2 && (
-                        <div className="text-xs text-gray-500">
-                          +{eventosDia.length - 2} más
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="p-6">
+              <p className="text-grows-text-secondary text-center py-8">
+                Formulario de nuevo evento en desarrollo...
+              </p>
+              <div className="flex justify-end space-x-3">
+                <Button variant="ghost" onClick={() => setMostrarModalNuevo(false)}>
+                  Cancelar
+                </Button>
+                <Button variant="primary">
+                  Crear Evento
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Vista de timeline */}
-      {vista === 'timeline' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Timeline de Tareas</h2>
-          </div>
-          
-          <div className="p-6">
-            <div className="space-y-4">
-              {tareas.map(tarea => (
-                <div key={tarea.id} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">{tarea.nombre}</h3>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEstadoColor(tarea.estado)}`}>
-                      {tarea.estado.replace('_', ' ')}
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {new Date(tarea.fechaInicio).toLocaleDateString()} - {new Date(tarea.fechaFin).toLocaleDateString()}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {tarea.responsable}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {tarea.obra}
-                    </span>
-                  </div>
-                  
-                  {/* Barra de progreso */}
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className={`h-2 rounded-full ${
-                        tarea.estado === 'completada' ? 'bg-green-600' :
-                        tarea.estado === 'en_curso' ? 'bg-blue-600' : 'bg-yellow-500'
-                      }`}
-                      style={{
-                        width: tarea.estado === 'completada' ? '100%' :
-                               tarea.estado === 'en_curso' ? '60%' : '20%'
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vista de semana */}
-      {vista === 'semana' && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Vista Semanal</h2>
-          </div>
-          
-          <div className="p-6">
-            <div className="grid grid-cols-7 gap-4">
-              {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((dia, index) => {
-                const fecha = new Date(fechaActual);
-                fecha.setDate(fechaActual.getDate() - fechaActual.getDay() + index + 1);
-                const fechaStr = fecha.toISOString().split('T')[0];
-                const eventosDia = getEventosPorFecha(fechaStr);
-                
-                return (
-                  <div key={dia} className="border border-gray-200 rounded-lg p-3">
-                    <h3 className="font-semibold text-gray-900 mb-3">{dia}</h3>
-                    <div className="space-y-2">
-                      {eventosDia.map(evento => (
-                        <div
-                          key={evento.id}
-                          className={`text-xs p-2 rounded border ${getTipoColor(evento.tipo)}`}
-                        >
-                          <div className="font-medium">{evento.titulo}</div>
-                          <div className="text-xs opacity-75">{evento.hora}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal nuevo evento (placeholder) */}
-      {mostrarModalNuevo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Nuevo Evento</h3>
-            <p className="text-gray-600 mb-4">Modal de creación de evento (por implementar)</p>
-            <button
-              onClick={() => setMostrarModalNuevo(false)}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400"
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    </SectionLayout>
   );
 }

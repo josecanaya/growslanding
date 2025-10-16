@@ -15,6 +15,7 @@ import {
   getAllTasksFromObjective,
   getObjectiveStats,
   getTaskStatusConfig,
+  normalizeTaskStatus as normalizeTaskStatusGlobal,
 } from '@/lib/roadmap/types';
 
 interface SimpleObjectiveModalProps {
@@ -41,18 +42,26 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
   const allTasks = getAllTasksFromObjective(editedObjective);
 
   // Helper functions for task status
-  const getTaskStatusDisplay = (status: TaskStatus | undefined) => {
-    const config = getTaskStatusConfig(status);
-    // Adaptar a los colores corporativos
-    switch (status) {
-      case 'done': return { icon: '✅', label: 'Completada', color: 'text-green-500' };
-      case 'inProgress': return { icon: '🟣', label: 'En curso', color: 'text-[#6c63ff]' };
-      case 'pending': return { icon: '🔴', label: 'Pendiente', color: 'text-red-500' };
-      default: return { icon: '🔴', label: 'Pendiente', color: 'text-red-500' };
+  const getNormalizedTaskStatus = (task: Task): TaskStatus => {
+    return normalizeTaskStatusGlobal(task.status, task.done);
+  };
+
+  const getTaskStatusDisplay = (task: Task) => {
+    const normalized = getNormalizedTaskStatus(task);
+    const config = getTaskStatusConfig(normalized);
+    switch (normalized) {
+      case 'done':
+        return { icon: '✅', label: config.label, color: 'text-green-500' };
+      case 'inProgress':
+        return { icon: '🚧', label: config.label, color: 'text-[#6c63ff]' };
+      case 'review':
+        return { icon: '🔎', label: config.label, color: 'text-purple-500' };
+      default:
+        return { icon: '⏳', label: config.label, color: 'text-red-500' };
     }
   };
 
-  const handleTaskToggle = (taskId: string, groupId: string | null) => {
+const handleTaskToggle = (taskId: string, groupId: string | null) => {
     const updated = { ...editedObjective };
     
     if (groupId && updated.taskGroups) {
@@ -60,13 +69,17 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
       if (group) {
         const task = group.tasks.find(t => t.id === taskId);
         if (task) {
+          const previousStatus = getNormalizedTaskStatus(task);
           task.done = !task.done;
+          task.status = task.done ? 'done' : (previousStatus !== 'done' ? previousStatus : 'inProgress');
         }
       }
     } else if (updated.tasks) {
       const task = updated.tasks.find(t => t.id === taskId);
       if (task) {
+        const previousStatus = getNormalizedTaskStatus(task);
         task.done = !task.done;
+        task.status = task.done ? 'done' : (previousStatus !== 'done' ? previousStatus : 'inProgress');
       }
     }
     
@@ -160,8 +173,8 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
                   }`}
                 >
                   {stats.progress === 100 ? '✅ Completado' :
-                   stats.progress >= 70 ? '🟣 En Progreso' :
-                   stats.progress >= 30 ? '🔵 En Curso' : '🟡 Pendiente'}
+                   stats.progress >= 70 ? '🚧 En Progreso' :
+                   stats.progress >= 30 ? '🚧 En Curso' : '⏳ Pendiente'}
                 </span>
               </div>
             </div>
@@ -185,18 +198,19 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
                   
                   <div className="space-y-2">
                     {group.tasks.map((task) => {
-                      const statusDisplay = getTaskStatusDisplay(task.status);
+                      const statusDisplay = getTaskStatusDisplay(task);
                       return (
                         <div key={task.id} className="flex items-center space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded border border-[#e0e3eb]">
                           {editMode ? (
                             <select
-                              value={task.status || 'pending'}
+                              value={getNormalizedTaskStatus(task)}
                               onChange={(e) => handleStatusChange(task.id, group.id, e.target.value as TaskStatus)}
                               className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-[#6c63ff] focus:border-[#6c63ff] min-w-[140px]"
                             >
-                              <option value="pending">🔴 Pendiente</option>
-                              <option value="inProgress">🟣 En curso</option>
-                              <option value="done">✅ Completada</option>
+                              <option value="pending">Pendiente</option>
+                              <option value="inProgress">En curso</option>
+                              <option value="review">En revisión</option>
+                              <option value="done">Completada</option>
                             </select>
                           ) : (
                             <Checkbox
@@ -233,18 +247,19 @@ export function SimpleObjectiveModal({ objective, isOpen, onClose, onSave, onDel
                 <h3 className="text-lg font-semibold">📋 Tareas Directas</h3>
                 <div className="space-y-2">
                   {editedObjective.tasks.map((task) => {
-                    const statusDisplay = getTaskStatusDisplay(task.status);
+                    const statusDisplay = getTaskStatusDisplay(task);
                     return (
                       <div key={task.id} className="flex items-center space-x-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 rounded border border-[#e0e3eb]">
                         {editMode ? (
                           <select
-                            value={task.status || 'pending'}
+                            value={getNormalizedTaskStatus(task)}
                             onChange={(e) => handleStatusChange(task.id, null, e.target.value as TaskStatus)}
                             className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:ring-[#6c63ff] focus:border-[#6c63ff] min-w-[140px]"
                           >
-                            <option value="pending">🔴 Pendiente</option>
-                            <option value="inProgress">🟣 En curso</option>
-                            <option value="done">✅ Completada</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="inProgress">En curso</option>
+                            <option value="review">En revisión</option>
+                            <option value="done">Completada</option>
                           </select>
                         ) : (
                           <Checkbox

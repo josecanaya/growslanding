@@ -68,11 +68,19 @@ export default function LoginClient() {
       // Supabase redirige automáticamente, no continuamos flujo local.
     } catch (err) {
       console.error('[GOOGLE_LOGIN_ERROR]', err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'No se pudo iniciar sesión con Google. Intenta nuevamente.'
-      );
+      
+      // Manejar específicamente el error de proveedor no habilitado
+      if (err instanceof Error && err.message.includes('provider is not enabled')) {
+        setError(
+          'Google OAuth no está configurado en este momento. Por favor, usa el enlace mágico con tu correo electrónico.'
+        );
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'No se pudo iniciar sesión con Google. Intenta nuevamente.'
+        );
+      }
       setGoogleLoading(false);
     }
   }
@@ -126,9 +134,13 @@ export default function LoginClient() {
           onClick={handleGoogleLogin}
           className="w-full rounded border border-border bg-background px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-60"
           disabled={googleLoading}
+          title="Google OAuth puede no estar disponible en este momento"
         >
           {googleLoading ? 'Redirigiendo a Google…' : 'Continuar con Google'}
         </button>
+        <p className="text-center text-xs text-muted-foreground">
+          Si Google no funciona, usa el enlace mágico arriba ⬆️
+        </p>
       </div>
     </div>
   );

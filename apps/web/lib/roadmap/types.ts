@@ -50,7 +50,7 @@ export interface ProjectRoadmap {
 // Helpers para TaskGroup
 export function calculateTaskGroupProgress(taskGroup: TaskGroup): number {
   if (taskGroup.tasks.length === 0) return 0;
-  const doneTasks = taskGroup.tasks.filter(t => t.done).length;
+  const doneTasks = taskGroup.tasks.filter(t => normalizeTaskStatus(t.status, t.done) === "done").length;
   return Math.round((doneTasks / taskGroup.tasks.length) * 100);
 }
 
@@ -67,10 +67,35 @@ export function getAllTasksFromObjective(objective: Objective): Task[] {
   return [];
 }
 
+export function normalizeTaskStatus(status?: string | null, done?: boolean): TaskStatus {
+  if (done) {
+    return "done";
+  }
+
+  const value = (status ?? "").toString().trim().toLowerCase();
+  if (!value) {
+    return "pending";
+  }
+
+  if (value === "done" || value.includes("complet")) {
+    return "done";
+  }
+
+  if (value === "inprogress" || value.includes("curso") || value.includes("progress")) {
+    return "inProgress";
+  }
+
+  if (value === "review" || value.includes("revis")) {
+    return "review";
+  }
+
+  return "pending";
+}
+
 export function calculateObjectiveProgress(objective: Objective): number {
   const allTasks = getAllTasksFromObjective(objective);
   if (allTasks.length === 0) return 0;
-  const doneTasks = allTasks.filter(t => t.done).length;
+  const doneTasks = allTasks.filter(t => normalizeTaskStatus(t.status, t.done) === "done").length;
   return Math.round((doneTasks / allTasks.length) * 100);
 }
 
@@ -88,7 +113,7 @@ export function calculateProjectProgress(roadmap: ProjectRoadmap): number {
   if (totalTasks === 0) return 0;
   
   const doneTasks = roadmap.objectives.reduce(
-    (sum, obj) => sum + getAllTasksFromObjective(obj).filter(t => t.done).length,
+    (sum, obj) => sum + getAllTasksFromObjective(obj).filter(t => normalizeTaskStatus(t.status, t.done) === "done").length,
     0
   );
   
@@ -98,7 +123,7 @@ export function calculateProjectProgress(roadmap: ProjectRoadmap): number {
 export function getTotalTasks(roadmap: ProjectRoadmap): { total: number; done: number } {
   const total = roadmap.objectives.reduce((sum, obj) => sum + getAllTasksFromObjective(obj).length, 0);
   const done = roadmap.objectives.reduce(
-    (sum, obj) => sum + getAllTasksFromObjective(obj).filter(t => t.done).length,
+    (sum, obj) => sum + getAllTasksFromObjective(obj).filter(t => normalizeTaskStatus(t.status, t.done) === "done").length,
     0
   );
   return { total, done };
@@ -112,7 +137,7 @@ export function getTotalEstimatedHours(roadmap: ProjectRoadmap): { total: number
     getAllTasksFromObjective(obj).forEach(task => {
       if (task.estimateHrs) {
         total += task.estimateHrs;
-        if (task.done) done += task.estimateHrs;
+        if (normalizeTaskStatus(task.status, task.done) === 'done') done += task.estimateHrs;
       }
     });
   });
@@ -124,7 +149,7 @@ export function getTotalEstimatedHours(roadmap: ProjectRoadmap): { total: number
 export function getObjectiveStats(objective: Objective): { total: number; completed: number; progress: number } {
   const allTasks = getAllTasksFromObjective(objective);
   const total = allTasks.length;
-  const completed = allTasks.filter(task => task.done || task.status === 'done').length;
+  const completed = allTasks.filter(task => normalizeTaskStatus(task.status, task.done) === "done").length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
   
   return { total, completed, progress };
@@ -132,7 +157,7 @@ export function getObjectiveStats(objective: Objective): { total: number; comple
 
 // Función para obtener ícono y color según el estado de la tarea
 export function getTaskStatusConfig(status?: TaskStatus): { icon: string; label: string; color: string; bgColor: string } {
-  switch (status) {
+  switch (normalizeTaskStatus(status)) {
     case 'done':
       return { icon: '✅', label: 'Completada', color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/20' };
     case 'inProgress':

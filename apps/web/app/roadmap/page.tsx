@@ -39,7 +39,7 @@ export default function RoadmapEditorPage() {
   // Estados para formularios CRUD
   const [isFormObjetivoOpen, setIsFormObjetivoOpen] = useState(false);
   const [objetivoToEdit, setObjetivoToEdit] = useState<Objective | null>(null);
-  const [useDatabase, setUseDatabase] = useState(false); // Toggle para usar DB o localStorage
+  const useDatabase = true; // Forzamos uso de DB para evitar datos desactualizados en cache
 
   // Load project from localStorage or DB
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function RoadmapEditorPage() {
     } else {
       loadProject(currentProjectName);
     }
-  }, [currentProjectName, useDatabase]);
+  }, [currentProjectName]);
 
   // Auto-save on roadmap changes
   useEffect(() => {
@@ -117,10 +117,26 @@ export default function RoadmapEditorPage() {
   // Cargar objetivos desde la base de datos
   async function loadFromDatabase() {
     try {
-      const response = await fetch('/api/roadmap/objetivos');
-      if (!response.ok) throw new Error('Error al cargar objetivos');
+      const response = await fetch(`/api/roadmap/objetivos?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error en API /roadmap/objetivos:', errorData);
+        throw new Error(`Error al cargar objetivos: ${response.status} ${response.statusText}`);
+      }
       
       const objetivos = await response.json();
+      console.log('📊 Objetivos cargados desde API:', objetivos.length, 'objetivos');
+      console.log('📋 Primeros 3 objetivos:', objetivos.slice(0, 3).map(obj => ({
+        id: obj.id,
+        titulo: obj.titulo,
+        estado: obj.estado,
+        progreso: obj.progreso
+      })));
       
       // Convertir formato DB a formato Roadmap
       const roadmapData: ProjectRoadmap = {
@@ -132,8 +148,11 @@ export default function RoadmapEditorPage() {
       
       setRoadmap(roadmapData);
     } catch (error) {
-      console.error('Error al cargar desde DB:', error);
-      // Fallback a localStorage
+      console.error('⚠️ Error al cargar desde DB, usando localStorage como fallback:', error);
+      console.log('💡 Para usar la base de datos, ejecuta las migraciones:');
+      console.log('   cd apps/web && npx prisma migrate deploy');
+      console.log('   cd apps/web && npx ts-node prisma/seed-roadmap.ts');
+      // Fallback a localStorage (modo DB forzado para evitar datos en cache)
       loadProject(currentProjectName);
     }
   }
@@ -202,6 +221,10 @@ export default function RoadmapEditorPage() {
       if (useDatabase) {
         const response = await fetch(`/api/roadmap/objetivos?id=${id}`, {
           method: 'DELETE',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-store',
+          },
         });
         if (!response.ok) throw new Error('Error al eliminar');
         await refetchData();
@@ -238,7 +261,11 @@ export default function RoadmapEditorPage() {
         for (const task of allTasks) {
           await fetch('/api/roadmap/tareas', {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store',
+            },
+            cache: 'no-store',
             body: JSON.stringify({
               id: task.id,
               texto: task.text,
@@ -401,11 +428,12 @@ export default function RoadmapEditorPage() {
                 <input
                   type="checkbox"
                   checked={useDatabase}
-                  onChange={(e) => setUseDatabase(e.target.checked)}
-                  className="w-4 h-4 text-[#6c63ff] border-gray-300 rounded focus:ring-[#6c63ff]"
+                  readOnly
+                  disabled
+                  className="w-4 h-4 text-[#6c63ff] border-gray-300 rounded focus:ring-[#6c63ff] opacity-60 cursor-not-allowed"
                 />
                 <span className="text-xs text-[#1b263b] font-medium">
-                  {useDatabase ? '💾 DB' : '📦 Local'}
+                  DB activo
                 </span>
               </div>
 

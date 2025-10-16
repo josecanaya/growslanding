@@ -10,13 +10,22 @@ import type { Database } from '@/lib/types/supabase.gen';
 
 export default async function LeaderPage() {
   const isDevMode = IS_DEV_MODE;
-  const supabase = createServiceSupabaseClient();
+  if (isDevMode) {
+    return (
+      <LeaderClient
+        socios={[]}
+        tareas={[]}
+        tokens={[]}
+        obras={[]}
+        invites={[]}
+      />
+    );
+  }
 
+  const supabase = createServiceSupabaseClient();
   let orgId: string | null = null;
 
-  if (isDevMode) {
-    orgId = mockUser.orgId;
-  } else {
+  {
     const cookieStore = await cookies();
     const supabaseAuth = createServerComponentClient<Database>({
       cookies: () => cookieStore,

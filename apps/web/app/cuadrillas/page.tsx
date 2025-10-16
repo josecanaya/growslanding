@@ -13,6 +13,7 @@ import { VisorTareasEjecucion } from '@/components/cuadrillas/VisorTareasEjecuci
 import { VisorCumplimientoGeneral } from '@/components/cuadrillas/VisorCumplimientoGeneral';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useRouter } from 'next/navigation';
+import { Button, SectionLayout } from '@/components/ui/grows';
 
 export default function CuadrillasPage() {
   const router = useRouter();
@@ -42,7 +43,7 @@ export default function CuadrillasPage() {
   }, [filtros.especialidad]);
 
   return (
-    <div className="min-h-screen bg-secundario flex">
+    <div className="min-h-screen bg-grows-background flex">
       {/* Sidebar */}
       <SidebarClienteTecnico 
         activeSection="cuadrillas"
@@ -60,19 +61,10 @@ export default function CuadrillasPage() {
           <>
             {/* Vista de Grid (grupos) */}
             {!vistaDetalle && (
-              <div className="p-8" style={{ backgroundColor: '#eaf0f6' }}>
-                {/* Header simplificado */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-bold" style={{ color: '#10161a' }}>Gestión de Cuadrillas</h1>
-                      <p className="mt-1" style={{ color: '#5b5f6a' }}>
-                        Seleccioná una especialidad para ver sus cuadrillas
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
+              <SectionLayout
+                title="Gestión de Cuadrillas"
+                subtitle="Seleccioná una especialidad para ver sus cuadrillas"
+              >
                 {/* KPIs esenciales */}
                 <TopStats onOpenVisor={handleOpenVisor} />
 
@@ -81,49 +73,30 @@ export default function CuadrillasPage() {
 
                 {/* Bloque de alertas */}
                 <AlertasBloque />
-              </div>
+              </SectionLayout>
             )}
 
             {/* Vista de detalle (cuadrillas de una especialidad) */}
             {vistaDetalle && (
-              <div className="p-8">
-                {/* Header con botón volver */}
-                <div className="mb-6">
-                  <button
-                    onClick={handleVolverAGrid}
-                    className="mb-4 flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200"
-                    style={{
-                      backgroundColor: '#f5f7fa',
-                      color: '#1B263B',
-                      border: '1px solid #dce3ea'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#e8ecf0';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f5f7fa';
-                    }}
-                  >
-                    <span>←</span>
-                    <span>Volver a especialidades</span>
-                  </button>
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-bold text-gray-900">{filtros.especialidad}</h1>
-                      <p className="text-gray-600 mt-1">
-                        Gestiona las cuadrillas de esta especialidad
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <SectionLayout
+                title={filtros.especialidad || 'Especialidad'}
+                subtitle="Gestiona las cuadrillas de esta especialidad"
+              >
+                {/* Botón volver */}
+                <Button
+                  variant="ghost"
+                  onClick={handleVolverAGrid}
+                  className="mb-4"
+                >
+                  ← Volver a especialidades
+                </Button>
 
                 {/* KPIs esenciales */}
                 <TopStats onOpenVisor={handleOpenVisor} />
 
                 {/* Tablero Kanban (solo muestra la especialidad filtrada) */}
                 <Kanban />
-              </div>
+              </SectionLayout>
             )}
           </>
         )}

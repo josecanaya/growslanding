@@ -1,181 +1,235 @@
-# 🚀 Roadmap Interactivo (v0.3.0)
+# 🗺️ Roadmap Editor - Documentación
 
-Módulo independiente de gestión de roadmaps de proyectos con persistencia local.
+## Descripción
 
-## 🆕 Novedades v0.3.0
+Editor interactivo del roadmap de desarrollo con soporte para:
+- ✅ Almacenamiento en **localStorage** (por defecto)
+- 🗄️ Almacenamiento en **Base de Datos PostgreSQL** (opcional)
+- 📊 Visualización por fases, timeline y módulos
+- ✏️ Edición en vivo de objetivos y tareas
+- 📤 Exportación/Importación JSON
 
-- ✅ **17 objetivos** organizados en 4 categorías (Core, UX/UI, Operativos, Futuros)
-- ✅ **Objetivo #17 nuevo**: Métricas & Rendimiento
-- ✅ **Objetivo #1 ampliado**: Modo Desarrollador (Dev Access Layer)
-- ✅ **Mejoras sugeridas** agregadas a cada objetivo
-- ✅ Categorización visual por tipo de objetivo
+## Configuración Inicial
 
-## 📁 Archivos Creados
+### Opción 1: Usar localStorage (Recomendado para desarrollo)
 
+Por defecto, el roadmap se carga desde `data/roadmap.initial.json` y se almacena en el navegador.
+
+**No requiere configuración adicional** - ¡Simplemente abre `/roadmap` y empieza a trabajar!
+
+### Opción 2: Usar Base de Datos PostgreSQL
+
+Si deseas persistir el roadmap en la base de datos de Supabase, sigue estos pasos:
+
+#### 1. Ejecutar las migraciones
+
+```bash
+cd apps/web
+npx prisma migrate deploy
 ```
-apps/web/
-├── app/roadmap/
-│   ├── page.tsx           # Página principal (client component)
-│   └── README.md          # Esta documentación
-├── lib/roadmap/
-│   └── types.ts           # Tipos TypeScript
-├── data/
-│   └── roadmap.initial.json  # Datos iniciales (seed)
-└── components/ui/
-    ├── progress.tsx       # Componente Progress
-    ├── checkbox.tsx       # Componente Checkbox
-    └── badge.tsx          # Componente Badge
+
+#### 2. Sembrar los datos iniciales
+
+```bash
+cd apps/web
+npx ts-node prisma/seed-roadmap.ts
 ```
 
-## ✨ Funcionalidades
+O con tsx:
 
-### Gestión de Proyectos
-- ✅ Selector de proyectos (GROWS, OTRO_MVP, + personalizados)
-- ✅ Crear nuevos proyectos
-- ✅ Persistencia automática en localStorage por proyecto
-- ✅ Exportar/Importar JSON
-- ✅ Resetear al estado inicial (seed)
+```bash
+cd apps/web
+npx tsx prisma/seed-roadmap.ts
+```
 
-### Objetivos y Tareas
-- ✅ Checklists interactivas por objetivo
-- ✅ Agregar/Eliminar tareas inline
-- ✅ Cálculo automático de progreso (% por objetivo y total)
-- ✅ Estado automático (PENDIENTE → EN_CURSO → COMPLETO)
-- ✅ Duplicar objetivos
-- ✅ Eliminar objetivos
+#### 3. Generar el cliente de Prisma
 
-### Filtros y Búsqueda
-- ✅ Búsqueda por texto (títulos de objetivos y tareas)
-- ✅ Filtro por estado (Pendiente/En Curso/Completo)
-- ✅ Filtro por prioridad (Alta/Media/Baja)
-- ✅ Ordenamiento por:
-  - Prioridad (Alta → Baja)
-  - Progreso ascendente
-  - Progreso descendente
+```bash
+cd apps/web
+npx prisma generate
+```
 
-### KPIs y Métricas
-- ✅ Progreso total del proyecto
-- ✅ Tareas completadas vs totales
-- ✅ Total de objetivos
-- ✅ Horas estimadas (si están definidas)
+#### 4. Activar el modo DB en la interfaz
 
-## 🎨 UI/UX
+En la página del roadmap, activa el toggle **"💾 DB"** en la esquina superior derecha.
 
-- **Responsive**: Mobile-first, adaptado a tablets y desktop
-- **Accesible**: Labels ARIA, navegación por teclado, roles semánticos
-- **Modo claro**: Respeta el tema global si existe
-- **Paleta consistente**: Usa variables Tailwind del proyecto
+## Solución de Problemas
 
-## 🔄 Persistencia
+### Error: "Error al cargar objetivos"
 
-**Storage Key Pattern**: `roadmap:<projectName>`
+**Causa:** Las tablas del roadmap no existen en la base de datos.
 
-**Auto-save**: Cualquier cambio (marcar tarea, agregar/eliminar) se guarda automáticamente.
+**Solución:**
+1. Asegúrate de haber ejecutado las migraciones (paso 1 arriba)
+2. Ejecuta el seed para cargar los datos iniciales (paso 2 arriba)
+3. Reinicia el servidor de desarrollo
 
-**Manual Save**: Botón "Guardar" disponible para confirmación visual.
+### Error: "P1000: Authentication failed"
 
-## 📊 Modelo de Datos
+**Causa:** Las credenciales de la base de datos en el archivo `.env` no son válidas.
 
-### Status Calculation
+**Solución:**
+1. Verifica que `DATABASE_URL` en `apps/web/.env` sea correcta
+2. Asegúrate de tener conexión a Supabase
+3. Si no tienes acceso a la DB, usa el modo localStorage
+
+### El toggle DB se desactiva automáticamente
+
+**Comportamiento esperado:** Si hay un error al cargar desde la base de datos, el sistema automáticamente vuelve a localStorage y desactiva el toggle.
+
+**Para usar DB nuevamente:** Corrige el error de conexión y reactiva el toggle manualmente.
+
+## Estructura de Datos
+
+### Modelos de Base de Datos
+
+#### RoadmapObjetivo
+- `id`: UUID
+- `titulo`: Texto del objetivo
+- `descripcion`: Descripción detallada
+- `prioridad`: ALTA | MEDIA | BAJA
+- `estado`: pending | inProgress | done
+- `progreso`: 0-100 (se calcula automáticamente)
+- `startWeek`, `endWeek`, `targetWeeks`: Planificación temporal
+- `dueDate`: Fecha límite (opcional)
+- `collapsed`: Estado de la UI
+
+#### RoadmapGrupoTareas
+- `id`: UUID
+- `titulo`: Nombre del grupo
+- `descripcion`: Descripción
+- `objetivoId`: Relación con objetivo padre
+
+#### RoadmapTarea
+- `id`: UUID
+- `texto`: Descripción de la tarea
+- `estado`: pending | inProgress | done | review
+- `done`: Boolean
+- `estimateHrs`: Horas estimadas
+- `responsable`: Equipo responsable
+- `objetivoId`: Relación directa con objetivo (opcional)
+- `grupoId`: Relación con grupo de tareas (opcional)
+
+### Formato JSON (localStorage)
+
 ```typescript
-0% de tareas completadas    → PENDIENTE
-100% de tareas completadas  → COMPLETO
-Cualquier otro %            → EN_CURSO
+interface ProjectRoadmap {
+  projectName: string;
+  version: string;
+  updatedAt: string;
+  objectives: Objective[];
+}
+
+interface Objective {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'ALTA' | 'MEDIA' | 'BAJA';
+  status: 'PENDIENTE' | 'EN_CURSO' | 'COMPLETO';
+  targetWeeks?: number;
+  startWeek?: number;
+  endWeek?: number;
+  dueDate?: string;
+  collapsed?: boolean;
+  tasks?: Task[];
+  taskGroups?: TaskGroup[];
+}
 ```
 
-### Progress Calculation
-```typescript
-Objetivo:  (tareas.done / tareas.total) * 100
-Proyecto:  Promedio ponderado por cantidad de tareas
+## API Endpoints
+
+### GET /api/roadmap/objetivos
+Obtiene todos los objetivos con sus tareas y grupos.
+
+### POST /api/roadmap/objetivos
+Crea un nuevo objetivo.
+
+**Body:**
+```json
+{
+  "titulo": "Nombre del objetivo",
+  "descripcion": "Descripción detallada",
+  "prioridad": "ALTA",
+  "estado": "pending"
+}
 ```
 
-## 🚀 Uso
+### PATCH /api/roadmap/objetivos
+Actualiza un objetivo existente.
 
-### Acceso
+**Body:**
+```json
+{
+  "id": "uuid-del-objetivo",
+  "titulo": "Nuevo título",
+  ...
+}
 ```
-http://localhost:3000/roadmap
+
+### DELETE /api/roadmap/objetivos?id={uuid}
+Elimina un objetivo y todas sus tareas asociadas.
+
+### POST /api/roadmap/tareas
+Crea una nueva tarea.
+
+### PATCH /api/roadmap/tareas
+Actualiza una tarea existente.
+
+### DELETE /api/roadmap/tareas?id={uuid}
+Elimina una tarea.
+
+## Características
+
+### Vistas Disponibles
+
+1. **Timeline Horizontal/Vertical**: Visualización temporal del proyecto
+2. **Por Fases**: Agrupación de objetivos según las 5 fases del MVP
+3. **Por Módulos**: Vista de tarjetas compacta
+4. **Mapa Completo**: Vista general del proyecto
+
+### Funcionalidades
+
+- ✅ Crear, editar y eliminar objetivos
+- ✅ Marcar tareas como completadas
+- ✅ Calcular progreso automáticamente
+- ✅ Exportar/Importar roadmap completo
+- ✅ Auto-guardado en localStorage
+- ✅ Sincronización con base de datos (opcional)
+- ✅ Visualización de fases del MVP
+- ✅ KPIs y métricas globales
+
+## Scripts Útiles
+
+### Limpiar datos de desarrollo
+
+```bash
+# Eliminar datos de localStorage
+# Abre la consola del navegador y ejecuta:
+localStorage.clear()
+
+# Reiniciar la base de datos (CUIDADO: Elimina todos los datos)
+cd apps/web
+npx prisma migrate reset
 ```
 
-### Proyectos Incluidos
+### Re-sembrar datos
 
-**1. GROWS** (17 objetivos, ~150+ tareas)
+```bash
+cd apps/web
+npx ts-node prisma/seed-roadmap.ts
+```
 
-**🧩 Core del Sistema** (5 objetivos)
-- Autenticación y Organización (+ Modo Desarrollador)
-- Backend Core y Lógica de Negocio
-- API Routes Funcionales
-- Catálogos y Base de Datos
-- Pagos & Suscripciones
+## Contribuir
 
-**🧠 UX/UI Frontend** (6 objetivos)
-- Frontend - Interfaces Funcionales
-- Panel de Socio (móvil)
-- Gestión de Cuadrillas
-- Wizard de Obras
-- Configuración de Cuenta
-- UI/UX y Componentes Globales
+Para agregar nuevos objetivos o modificar la estructura:
 
-**🔄 Operativos** (4 objetivos)
-- Comunicación & Coordinación Operativa
-- Documentación Interna
-- Testing & Documentación API
-- Deploy & Beta Pública
+1. Edita `apps/web/data/roadmap.initial.json`
+2. Si usas DB, ejecuta el seed nuevamente
+3. Exporta el JSON actualizado para respaldo
 
-**🧠 Futuros** (2 objetivos)
-- BIM: Importación & 3D (opcional)
-- Métricas & Rendimiento (nuevo)
+## Soporte
 
-**2. OTRO_MVP** (3 objetivos, plantilla)
-- Definición de Alcance
-- Implementación Core
-- Validación & Lanzamiento
-
-### Crear Nuevo Proyecto
-1. Click en "+ Nuevo Proyecto"
-2. Ingresar nombre
-3. Empezar a agregar objetivos
-
-### Import/Export
-**Exportar**: Descarga JSON del proyecto actual
-**Importar**: Sube JSON y reemplaza proyecto actual
-
-### Resetear
-Click en "Resetear" para volver al estado inicial del seed (requiere confirmación).
-
-## 🔧 Extensiones Futuras
-
-- [x] Agregar nuevos objetivos desde UI ✅
-- [x] Editar objetivos inline ✅
-- [ ] Asignar fechas límite (parcial)
-- [ ] Notificaciones de vencimientos
-- [x] Integración con backend ✅
-- [ ] Colaboración en tiempo real
-- [ ] Historial de cambios
-- [ ] Filtros por categoría (Core, UX/UI, Operativos, Futuros)
-- [ ] Vista Kanban por categoría
-- [ ] Exportar roadmap a formato Gantt
-
-## 📝 Notas Técnicas
-
-- **No requiere backend**: 100% frontend con localStorage
-- **No modifica configuraciones globales**: Módulo independiente
-- **Compatible con Next.js 15**: Usa App Router y client components
-- **Type-safe**: TypeScript completo con tipos exportados
-
-## 🎯 Criterios de Aceptación
-
-- [x] Cambiar entre proyectos sin errores
-- [x] Marcar/desmarcar tareas actualiza progreso
-- [x] Status se calcula automáticamente
-- [x] Búsqueda y filtros funcionan correctamente
-- [x] Ordenamiento funciona en todas las opciones
-- [x] Export/Import preserva datos
-- [x] Resetear restaura seed
-- [x] Persistencia en localStorage funciona
-- [x] UI responsive y accesible
-- [x] Usa paleta del proyecto
-
----
-
-**✅ Implementación completa y lista para usar**
-
+Para problemas o dudas, consulta:
+- 📖 Documentación de Prisma: https://www.prisma.io/docs
+- 🗺️ Formato del roadmap: Ver `lib/roadmap/types.ts`
+- 🎨 Fases del MVP: Ver `lib/roadmap/fases.ts`

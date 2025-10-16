@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush } from 'lucide-react';
 import { TimelineInteractivo } from './TimelineInteractivo';
 import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
+import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
+import { usePlanLimitGuard } from '@/lib/subscriptions';
+import { usePlanUsage } from '@/lib/subscriptions/use-plan-usage';
+import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 
 // Tipos de datos
 interface Obra {

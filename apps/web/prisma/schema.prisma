@@ -3,86 +3,132 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String   @db.Text
+  cuit       String?  @db.Text
+  address    String?  @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  obras   Obra[]
+  tareas  Tarea[]
+  socios  Socio[]
+  eventos Evento[]
+
+  @@map("organizations")
 }
 
 model Obra {
-  id           String   @id @default(uuid())
-  nombre       String
-  localizacion String?
-  cliente      String?
-  estado       String   @default("ACTIVA")
-  
-  // Nuevos campos para datos generales
-  cantidad_plantas              Int?
-  superficie_por_planta         Float?
-  superficie_total              Float?
-  ancho_terreno                 Float?
-  largo_terreno                 Float?
-  ancho_planta                  Float?
-  largo_planta                  Float?
-  tipo_proyecto                 String? // Vivienda unifamiliar, Vivienda multifamiliar, Ampliación, Refacción
-  coordenadas_lat               Float?
-  coordenadas_lng               Float?
-  direccion_completa            String?
-  fecha_inicio                  String?
-  presupuesto                   String?
-  descripcion                   String?
-  
-  created_at   DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  name      String   @db.Text
+  address   String?  @db.Text
+  estado    String   @default("pendiente") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  tareas       Tarea[]
+
+  @@map("obras")
 }
 
-// Tablas del Roadmap
+model Tarea {
+  id          String    @id @default(uuid()) @db.Uuid
+  orgId       String    @map("org_id") @db.Uuid
+  obraId      String    @map("obra_id") @db.Uuid
+  title       String    @db.Text
+  descripcion String?   @db.Text
+  estado      String    @default("pendiente") @db.Text
+  responsable String?   @db.Text
+  fechaInicio DateTime? @map("fecha_inicio") @db.Timestamptz(6)
+  fechaFin    DateTime? @map("fecha_fin") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  obra         Obra         @relation(fields: [obraId], references: [id], onDelete: Cascade)
+
+  @@map("tareas")
+}
+
+model Socio {
+  id        String   @id @default(uuid()) @db.Uuid
+  orgId     String   @map("org_id") @db.Uuid
+  nombre    String?  @db.Text
+  telefono  String?  @db.Text
+  email     String?  @db.Text
+  rol       String   @default("socio") @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("socios")
+}
+
+model Evento {
+  id          String   @id @default(uuid()) @db.Uuid
+  orgId       String   @map("org_id") @db.Uuid
+  tipo        String?  @db.Text
+  descripcion String?  @db.Text
+  fecha       DateTime @default(now()) @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@map("eventos")
+}
+
+// Modelos para Roadmap MVP
 model RoadmapObjetivo {
-  id          String   @id @default(uuid())
-  titulo      String
-  descripcion String?
-  prioridad   String   @default("MEDIA")
-  estado      String   @default("PENDIENTE")
-  progreso    Float    @default(0)
-  startWeek   Int?
-  endWeek     Int?
-  targetWeeks Int?
-  dueDate     DateTime?
-  collapsed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
-  tareas      RoadmapTarea[]
+  id           String               @id @default(uuid()) @db.Uuid
+  titulo       String               @db.Text
+  descripcion  String?              @db.Text
+  prioridad    String               @default("MEDIA") @db.Text
+  estado       String               @default("pending") @db.Text
+  progreso     Float                @default(0) @db.Real
+  startWeek    Int?                 @map("start_week")
+  endWeek      Int?                 @map("end_week")
+  targetWeeks  Int?                 @map("target_weeks")
+  dueDate      String?              @map("due_date") @db.Text
+  collapsed    Boolean              @default(false)
+  tareas       RoadmapTarea[]
   gruposTareas RoadmapGrupoTareas[]
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("roadmap_objetivos")
 }
 
 model RoadmapGrupoTareas {
-  id          String   @id @default(uuid())
-  titulo      String
-  descripcion String?
-  objetivoId  String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
+  id          String          @id @default(uuid()) @db.Uuid
+  titulo      String          @db.Text
+  descripcion String?         @db.Text
+  objetivoId  String          @map("objetivo_id") @db.Uuid
   objetivo    RoadmapObjetivo @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
   tareas      RoadmapTarea[]
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("roadmap_grupos_tareas")
 }
 
 model RoadmapTarea {
-  id          String   @id @default(uuid())
-  texto       String
-  estado      String   @default("pending")
-  done        Boolean  @default(false)
-  estimateHrs Int?
-  owner       String?
-  prioridad   String   @default("MEDIA")
-  dueDate     DateTime?
-  objetivoId  String?
-  grupoId     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relaciones
-  objetivo    RoadmapObjetivo? @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  id          String              @id @default(uuid()) @db.Uuid
+  texto       String              @db.Text
+  descripcion String?             @db.Text
+  estado      String              @default("pending") @db.Text
+  done        Boolean             @default(false)
+  estimateHrs Int?                 @map("estimate_hrs")
+  responsable String?             @db.Text
+  objetivoId  String?             @map("objetivo_id") @db.Uuid
+  objetivo    RoadmapObjetivo?    @relation(fields: [objetivoId], references: [id], onDelete: Cascade)
+  grupoId     String?             @map("grupo_id") @db.Uuid
   grupo       RoadmapGrupoTareas? @relation(fields: [grupoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("roadmap_tareas")
 }

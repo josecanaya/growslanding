@@ -9,7 +9,7 @@ export default function ObrasPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-secundario flex">
+    <div className="min-h-screen bg-grows-background flex">
       {/* Sidebar */}
       <SidebarClienteTecnico 
         activeSection="obras"
@@ -21,7 +21,7 @@ export default function ObrasPage() {
       />
       
       {/* Contenedor principal */}
-      <div className="flex-1 ml-[220px] p-8">
+      <div className="flex-1 ml-[220px]">
         <ObrasSection />
       </div>
     </div>

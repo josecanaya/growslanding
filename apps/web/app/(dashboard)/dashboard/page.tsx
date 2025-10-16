@@ -11,15 +11,31 @@ import type { Database } from '@/lib/types/supabase.gen';
 
 export default async function DashboardPage() {
   const isDevMode = IS_DEV_MODE;
+
+  if (isDevMode) {
+    const org = {
+      id: mockUser.orgId,
+      name: mockUser.orgName,
+      owner_user_id: mockUser.id,
+      onboarding_completed: true,
+    };
+
+    return (
+      <DashboardClient
+        org={org}
+        obras={[]}
+        socios={[]}
+        tareas={[]}
+        invites={[]}
+      />
+    );
+  }
+
   let userId: string;
   let userEmail: string | null;
   let displayName: string;
 
-  if (isDevMode) {
-    userId = mockUser.id;
-    userEmail = mockUser.email;
-    displayName = mockUser.name;
-  } else {
+  {
     const cookieStore = await cookies();
     const supabaseAuth = createServerComponentClient<Database>({
       cookies: () => cookieStore,
@@ -54,7 +70,7 @@ export default async function DashboardPage() {
       .maybeSingle();
 
     if (leaderInvite) {
-      redirect('/lider');
+      redirect('/socio');
     }
   }
 

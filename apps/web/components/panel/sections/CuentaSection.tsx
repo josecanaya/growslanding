@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { User, Star, Award, Calendar, MapPin, Phone, Mail, Settings, LogOut, Shield, FileText, TrendingUp, Bell } from 'lucide-react';
+
+import { logout } from '@/lib/auth';
 
 interface CuentaSectionProps {
   user: {
@@ -13,6 +16,7 @@ interface CuentaSectionProps {
 }
 
 export function CuentaSection({ user }: CuentaSectionProps) {
+  const router = useRouter();
   const [userData, setUserData] = useState({
     ...user,
     email: 'juan.perez@email.com',
@@ -44,10 +48,7 @@ export function CuentaSection({ user }: CuentaSectionProps) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isConnected');
-    localStorage.removeItem('isOnBreak');
-    window.location.href = '/auth/login';
+    logout({ router });
   };
 
   return (

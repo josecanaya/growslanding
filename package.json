@@ -1,20 +1,37 @@
 {
-  "name": "grows",
-  "private": true,
-  "packageManager": "pnpm@9.1.2",
+  "name": "grows-backend",
+  "version": "1.0.0",
+  "description": "Backend GROWS con Next.js + Prisma + PostgreSQL",
   "scripts": {
-    "prepare": "husky install",
-    "dev": "turbo dev --filter=apps/web",
-    "dev:web": "turbo dev --filter=apps/web",
-    "dev:landing": "turbo dev --filter=apps/landing",
-    "build": "turbo build --filter=apps/web",
-    "build:web": "turbo build --filter=apps/web",
-    "lint": "turbo lint --filter=apps/web",
-    "lint:web": "turbo lint --filter=apps/web",
-    "test": "pnpm --filter apps/web test"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "prisma db seed",
+    "test": "vitest",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
-    "husky": "^9.1.6",
-    "turbo": "latest"
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "^14.0.4",
+    "prisma": "^5.7.1",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "ts-node": "^10.9.2"
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   }
 }

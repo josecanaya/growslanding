@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 import { SidebarClienteTecnico } from '@/components/clienteTecnico/SidebarClienteTecnico';
 import { ChatSection } from '@/components/clienteTecnico/ChatSection';
 import ObrasSection from '@/components/clienteTecnico/ObrasSection';
@@ -10,15 +12,30 @@ import { CuentaSection } from '@/components/clienteTecnico/CuentaSection';
 import { TareasSection } from '@/components/clienteTecnico/TareasSection';
 import { NotificacionesSection } from '@/components/clienteTecnico/NotificacionesSection';
 import { CalendarioSection } from '@/components/clienteTecnico/CalendarioSection';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { normalizeRole } from '@/lib/roles';
 
 export default function ClienteTecnicoPage() {
-  const [activeSection, setActiveSection] = useState('obras');
+  const router = useRouter();
+  const currentUser = useCurrentUser();
+  const [activeSection, setActiveSection] = useState('chat');
 
-  // Debug: Log para verificar que la página se está renderizando
-  console.log('ClienteTecnicoPage renderizado, activeSection:', activeSection);
+  const normalizedRole = useMemo(
+    () => normalizeRole(currentUser?.role),
+    [currentUser?.role]
+  );
+
+  useEffect(() => {
+    if (!currentUser || currentUser.isDevUser) {
+      return;
+    }
+
+    if (normalizedRole === 'CLIENTE_TECNICO' && !currentUser.orgId) {
+      router.replace('/onboarding');
+    }
+  }, [currentUser, normalizedRole, router]);
 
   const renderSection = () => {
-    console.log('Renderizando sección:', activeSection);
     switch (activeSection) {
       case 'chat':
         return <ChatSection onNavigate={setActiveSection} />;
@@ -39,18 +56,22 @@ export default function ClienteTecnicoPage() {
     }
   };
 
+  if (!currentUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-secundario text-white">
+        <p className="text-sm text-white/70">Cargando panel…</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-secundario flex">
-      {/* Sidebar */}
-      <SidebarClienteTecnico 
+    <div className="flex min-h-screen bg-secundario">
+      <SidebarClienteTecnico
         activeSection={activeSection}
         onSectionChange={setActiveSection}
       />
-      
-      {/* Contenedor principal */}
-      <div className="flex-1 ml-[220px] p-8">
-        {renderSection()}
-      </div>
+
+      <div className="ml-[220px] flex-1 p-8">{renderSection()}</div>
     </div>
   );
 }

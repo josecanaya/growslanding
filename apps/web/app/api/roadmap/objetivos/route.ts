@@ -1,26 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import initialData from '@/data/roadmap.initial.json';
+
+// Función para calcular el progreso real basado en tareas completadas
+function calculateRealProgress(obj: any): number {
+  // Si el estado es COMPLETO, devolver 100%
+  if (obj.status === 'COMPLETO') {
+    return 100;
+  }
+
+  if (!obj.taskGroups || obj.taskGroups.length === 0) {
+    return obj.status === 'EN_CURSO' ? 50 : 0;
+  }
+
+  const totalTasks = obj.taskGroups.reduce((sum: number, group: any) => 
+    sum + (group.tasks?.length || 0), 0
+  );
+  
+  if (totalTasks === 0) return 0;
+  
+  const completedTasks = obj.taskGroups.reduce((sum: number, group: any) => 
+    sum + (group.tasks?.filter((task: any) => task.done).length || 0), 0
+  );
+  
+  return Math.round((completedTasks / totalTasks) * 100);
+}
 
 // GET - Obtener todos los objetivos con sus tareas
 export async function GET() {
   try {
-    const objetivos = await prisma.roadmapObjetivo.findMany({
-      include: {
-        tareas: true,
-        gruposTareas: {
-          include: {
-            tareas: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
+    // Usar los datos originales del roadmap
+    const growsProject = initialData.projects.find(p => p.projectName === 'GROWS');
+    if (!growsProject) {
+      throw new Error('Proyecto GROWS no encontrado');
+    }
+
+    // Convertir los objetivos del formato inicial al formato esperado por la API
+    const objetivos = growsProject.objectives.map(obj => ({
+      id: obj.id,
+      titulo: obj.title,
+      descripcion: obj.description,
+      prioridad: obj.priority,
+      estado: obj.status,
+      progreso: calculateRealProgress(obj),
+      startWeek: obj.startWeek || null,
+      endWeek: obj.endWeek || null,
+      targetWeeks: obj.targetWeeks || null,
+      dueDate: obj.dueDate || null,
+      collapsed: false,
+      createdAt: growsProject.updatedAt,
+      updatedAt: growsProject.updatedAt,
+      tareas: obj.taskGroups?.flatMap(group => 
+        group.tasks?.map(task => ({
+          id: task.id,
+          texto: task.text,
+          descripcion: task.description || '',
+          estado: task.done ? 'completed' : 'pending',
+          done: task.done,
+          estimateHrs: task.estimateHrs,
+          responsable: task.owner,
+          objetivoId: obj.id,
+          grupoId: group.id,
+          createdAt: growsProject.updatedAt,
+          updatedAt: growsProject.updatedAt,
+        })) || []
+      ) || [],
+      gruposTareas: obj.taskGroups?.map(group => ({
+        id: group.id,
+        titulo: group.title,
+        descripcion: group.description,
+        tareas: group.tasks?.map(task => ({
+          id: task.id,
+          texto: task.text,
+          descripcion: task.description || '',
+          estado: task.done ? 'completed' : 'pending',
+          done: task.done,
+          estimateHrs: task.estimateHrs,
+          responsable: task.owner,
+          objetivoId: obj.id,
+          grupoId: group.id,
+          createdAt: growsProject.updatedAt,
+          updatedAt: growsProject.updatedAt,
+        })) || [],
+      })) || [],
+    }));
 
     return NextResponse.json(objetivos);
   } catch (error) {
     console.error('Error al obtener objetivos:', error);
     return NextResponse.json(
-      { error: 'Error al obtener objetivos' },
+      { error: 'Error al obtener objetivos', details: error.message },
       { status: 500 }
     );
   }
@@ -38,13 +106,22 @@ export async function POST(req: NextRequest) {
         prioridad: data.prioridad || 'MEDIA',
         estado: data.estado || 'pending',
         progreso: data.progreso || 0,
-        startWeek: data.startWeek,
-        endWeek: data.endWeek,
-        targetWeeks: data.targetWeeks,
-        dueDate: data.dueDate,
+        // startWeek: data.startWeek,     // Temporalmente comentado
+        // endWeek: data.endWeek,         // Temporalmente comentado
+        // targetWeeks: data.targetWeeks, // Temporalmente comentado
+        // dueDate: data.dueDate,        // Temporalmente comentado
         collapsed: data.collapsed || false,
       },
-      include: {
+      select: {
+        id: true,
+        titulo: true,
+        descripcion: true,
+        prioridad: true,
+        estado: true,
+        progreso: true,
+        collapsed: true,
+        createdAt: true,
+        updatedAt: true,
         tareas: true,
         gruposTareas: {
           include: {
@@ -84,13 +161,22 @@ export async function PATCH(req: NextRequest) {
         prioridad: data.prioridad,
         estado: data.estado,
         progreso: data.progreso,
-        startWeek: data.startWeek,
-        endWeek: data.endWeek,
-        targetWeeks: data.targetWeeks,
-        dueDate: data.dueDate,
+        // startWeek: data.startWeek,     // Temporalmente comentado
+        // endWeek: data.endWeek,         // Temporalmente comentado
+        // targetWeeks: data.targetWeeks, // Temporalmente comentado
+        // dueDate: data.dueDate,        // Temporalmente comentado
         collapsed: data.collapsed,
       },
-      include: {
+      select: {
+        id: true,
+        titulo: true,
+        descripcion: true,
+        prioridad: true,
+        estado: true,
+        progreso: true,
+        collapsed: true,
+        createdAt: true,
+        updatedAt: true,
         tareas: true,
         gruposTareas: {
           include: {

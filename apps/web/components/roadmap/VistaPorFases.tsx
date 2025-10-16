@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { FASES, calcularProgresoFase, getEstadoFase } from '@/lib/roadmap/fases';
+import { FASES } from '@/lib/roadmap/fases';
 import { Objective, getObjectiveStats } from '@/lib/roadmap/types';
 import { SimpleObjectiveModal } from './SimpleObjectiveModal';
 
@@ -33,23 +33,76 @@ export function VistaPorFases({
     );
   };
 
+  const normalizeObjectiveStatus = (objective: Objective): 'COMPLETO' | 'EN_CURSO' | 'PENDIENTE' => {
+    const rawStatus = (objective.status ?? (objective as unknown as { estado?: string }).estado ?? '')
+      .toString()
+      .toUpperCase();
+
+    if (rawStatus.includes('COMPLE')) {
+      return 'COMPLETO';
+    }
+
+    if (rawStatus.includes('CUR') || rawStatus.includes('REV')) {
+      return 'EN_CURSO';
+    }
+
+    const stats = getObjectiveStats(objective);
+    if (stats.progress >= 100) {
+      return 'COMPLETO';
+    }
+
+    if (stats.progress > 0) {
+      return 'EN_CURSO';
+    }
+
+    return 'PENDIENTE';
+  };
+
   return (
     <div className="space-y-6">
       {FASES.map((fase) => {
         const objetivosFase = objetivos.filter(obj => fase.objetivos.includes(obj.id));
-        const progreso = calcularProgresoFase(fase.id, objetivos);
-        const estado = getEstadoFase(fase.id, objetivos);
+        const objetivosEnFase = objetivosFase.map((objetivo) => ({
+          objetivo,
+          stats: getObjectiveStats(objetivo),
+          status: normalizeObjectiveStatus(objetivo),
+        }));
+
+        const progreso = objetivosEnFase.length
+          ? Math.round(
+              objetivosEnFase.reduce((sum, entry) => sum + entry.stats.progress, 0) /
+              objetivosEnFase.length
+            )
+          : 0;
+
+        const estado =
+          progreso >= 100
+            ? 'COMPLETO'
+            : progreso > 0 || objetivosEnFase.some(entry => entry.status === 'EN_CURSO')
+              ? 'EN_CURSO'
+              : 'PENDIENTE';
+
+        console.log(`[roadmap:fases] Fase ${fase.id} (${fase.nombre})`, {
+          objetivosFase: objetivosEnFase.length,
+          progreso,
+          estado,
+          objetivos: objetivosEnFase.map(entry => ({
+            id: entry.objetivo.id,
+            status: entry.status,
+            progreso: entry.stats.progress,
+          })),
+        });
         const isOpen = openFases.includes(fase.id);
         
         return (
           <Card 
             key={fase.id} 
-            className="border-l-4 shadow-sm"
-            style={{ borderLeftColor: fase.color }}
+            className="border border-[#e0e3eb] shadow-sm bg-white/90 backdrop-blur-sm"
+            style={{ borderLeft: `4px solid ${fase.color}` }}
           >
             <Collapsible open={isOpen} onOpenChange={() => toggleFase(fase.id)}>
               <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardHeader className="cursor-pointer hover:bg-[#f8f9fc] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div 
@@ -90,15 +143,15 @@ export function VistaPorFases({
               <CollapsibleContent>
                 <CardContent className="pt-0">
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {objetivosFase.map((objetivo) => {
-                      const stats = getObjectiveStats(objetivo);
-                      const tareasCompletadas = stats.totalTasks > 0 ? stats.completedTasks : 0;
-                      const progresoObjetivo = stats.totalTasks > 0 ? Math.round((tareasCompletadas / stats.totalTasks) * 100) : 0;
+                    {objetivosEnFase.map(({ objetivo, stats, status }) => {
+                      const totalTareas = stats.total;
+                      const tareasCompletadas = stats.completed;
+                      const progresoObjetivo = stats.progress;
                       
                       return (
                         <Card 
                           key={objetivo.id}
-                          className="cursor-pointer hover:shadow-md transition-shadow border-2 hover:border-gray-300"
+                          className="cursor-pointer bg-white border border-[#e0e3eb] hover:border-[#cfd6e0] hover:shadow-md transition-all"
                           onClick={() => onObjectiveClick(objetivo)}
                         >
                           <CardHeader className="pb-3">
@@ -112,10 +165,10 @@ export function VistaPorFases({
                                 </p>
                               </div>
                               <Badge 
-                                variant={objetivo.status === 'COMPLETO' ? 'default' : objetivo.status === 'EN_CURSO' ? 'secondary' : 'outline'}
+                                variant={status === 'COMPLETO' ? 'default' : status === 'EN_CURSO' ? 'secondary' : 'outline'}
                                 className="ml-2 text-xs"
                               >
-                                {objetivo.status}
+                                {status}
                               </Badge>
                             </div>
                           </CardHeader>
@@ -124,7 +177,7 @@ export function VistaPorFases({
                             <div className="space-y-2">
                               <div className="flex items-center justify-between text-xs">
                                 <span>Tareas</span>
-                                <span>{tareasCompletadas}/{stats.totalTasks}</span>
+                                <span>{tareasCompletadas}/{totalTareas}</span>
                               </div>
                               <Progress value={progresoObjetivo} className="h-2" />
                               <div className="flex items-center justify-between text-xs text-gray-600">

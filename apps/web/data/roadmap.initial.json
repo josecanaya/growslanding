@@ -11,7 +11,7 @@
           "description": "Sistema completo de autenticación, multi-tenancy y gestión de roles. Incluye modo desarrollador para testing.",
           "category": "CORE_SISTEMA",
           "priority": "ALTA",
-          "status": "EN_CURSO",
+          "status": "COMPLETO",
           "targetWeeks": 2,
           "startWeek": 1,
           "endWeek": 2,
@@ -94,7 +94,7 @@
                 {
                   "id": "dev-task-1",
                   "text": "Crear middleware o toggle (NEXT_PUBLIC_DEV_MODE) que omita autenticación",
-                  "done": false,
+                  "done": true,
                   "estimateHrs": 6,
                   "owner": "Full Stack",
                   "priority": "CRITICA"
@@ -102,7 +102,7 @@
                 {
                   "id": "dev-task-2",
                   "text": "Usuario fantasma (Fake User Context) para pruebas",
-                  "done": false,
+                  "done": true,
                   "estimateHrs": 4,
                   "owner": "Frontend Team",
                   "priority": "CRITICA"
@@ -110,21 +110,21 @@
                 {
                   "id": "dev-task-3",
                   "text": "Aviso visible '🧠 Modo Desarrollador Activo'",
-                  "done": false,
+                  "done": true,
                   "estimateHrs": 2,
                   "owner": "Frontend Team"
                 },
                 {
                   "id": "dev-task-4",
                   "text": "Conmutador UI (Debug Panel opcional) para activar/desactivar modo dev",
-                  "done": false,
+                  "done": true,
                   "estimateHrs": 4,
                   "owner": "Frontend Team"
                 },
                 {
                   "id": "dev-task-5",
                   "text": "Documentar en README cómo usar modo desarrollador",
-                  "done": false,
+                  "done": true,
                   "estimateHrs": 2,
                   "owner": "Product Team"
                 }
@@ -353,7 +353,7 @@
           "description": "Catálogo maestro y schema Prisma completo con auditoría",
           "category": "CORE_SISTEMA",
           "priority": "ALTA",
-          "status": "EN_CURSO",
+          "status": "COMPLETO",
           "targetWeeks": 2,
           "taskGroups": [
             {
@@ -413,7 +413,7 @@
           "description": "Sistema de pagos, límites por plan y webhooks",
           "category": "CORE_SISTEMA",
           "priority": "MEDIA",
-          "status": "PENDIENTE",
+          "status": "EN_CURSO",
           "targetWeeks": 1,
           "taskGroups": [
             {
@@ -739,7 +739,7 @@
           "description": "Perfil, preferencias y gestión de suscripción",
           "category": "UX_UI",
           "priority": "MEDIA",
-          "status": "COMPLETO",
+          "status": "EN_CURSO",
           "startWeek": 13,
           "endWeek": 14,
           "targetWeeks": 1,
@@ -787,7 +787,7 @@
           "description": "Sistema visual completo con Tailwind + Radix UI y librería de componentes",
           "category": "UX_UI",
           "priority": "MEDIA",
-          "status": "EN_CURSO",
+          "status": "COMPLETO",
           "targetWeeks": 1,
           "taskGroups": [
             {
@@ -854,7 +854,7 @@
           "description": "Chat, notificaciones y evidencias en tiempo real con centro de notificaciones",
           "category": "OPERATIVOS",
           "priority": "ALTA",
-          "status": "PENDIENTE",
+          "status": "EN_CURSO",
           "targetWeeks": 2,
           "taskGroups": [
             {
@@ -985,7 +985,7 @@
           "description": "Tests unitarios, E2E y documentación completa con CI automatizado",
           "category": "OPERATIVOS",
           "priority": "MEDIA",
-          "status": "PENDIENTE",
+          "status": "EN_CURSO",
           "targetWeeks": 2,
           "taskGroups": [
             {
@@ -1175,7 +1175,7 @@
           "description": "Sistema de monitoreo, logs y optimización de performance",
           "category": "FUTUROS",
           "priority": "MEDIA",
-          "status": "PENDIENTE",
+          "status": "EN_CURSO",
           "targetWeeks": 2,
           "taskGroups": [
             {

@@ -12,6 +12,14 @@ const nextConfig: NextConfig = {
       asyncWebAssembly: true,
       layers: true
     };
+
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings ?? []),
+      {
+        module: /web-ifc/,
+        message: /Critical dependency: require function is used in a way/,
+      },
+    ];
     
     if (!isServer) {
       config.resolve.fallback = { 

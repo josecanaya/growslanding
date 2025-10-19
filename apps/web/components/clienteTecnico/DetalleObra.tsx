@@ -672,11 +672,11 @@ export function DetalleObra({
                   <div className="flex items-center space-x-4 mt-2 text-sm" style={{color: '#4a4e57'}}>
                     <div className="flex items-center space-x-1">
                       <Users className="h-4 w-4" />
-                      <span>Cliente: {obra.cliente}</span>
+                      <span>Cliente: {obra.cliente || 'No especificado'}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Building className="h-4 w-4" />
-                      <span>Tipo: {obra.tipoObra.charAt(0).toUpperCase() + obra.tipoObra.slice(1)}</span>
+                      <span>Tipo: {obra.tipoObra ? obra.tipoObra.charAt(0).toUpperCase() + obra.tipoObra.slice(1) : 'No especificado'}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Calendar className="h-4 w-4" />

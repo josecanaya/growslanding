@@ -1,0 +1,115 @@
+{
+  "name": "GROWS Chat Bot - Con Base de Conocimiento",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "Growsbot",
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook-node",
+      "name": "Webhook GROWS",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "knowledgeBase": {
+          "name": "GROWS Knowledge Base",
+          "description": "Base de conocimiento completa de GROWS - plataforma de gestión de obras",
+          "source": "knowledge/grows_context.json"
+        },
+        "query": "{{ $json.message }}",
+        "context": {
+          "userName": "{{ $json.userName }}",
+          "sessionId": "{{ $json.sessionId }}",
+          "timestamp": "{{ $json.timestamp }}"
+        }
+      },
+      "id": "knowledge-base-node",
+      "name": "Base de Conocimiento GROWS",
+      "type": "n8n-nodes-base.knowledgeBase",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-3.5-turbo",
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Eres GrowsBot, un asistente técnico experto en construcción y gestión de obras.\n\nCONTEXTO DE GROWS:\nGROWS es una plataforma B2B de gestión inteligente de obras que centraliza la planificación, ejecución y control de proyectos de construcción de pequeña y mediana escala.\n\nFUNCIONALIDADES PRINCIPALES:\n- Gestión de obras y proyectos de construcción\n- Catálogo de más de 1800 tareas constructivas\n- Plantillas de elementos reutilizables\n- Gestión de cuadrillas y especialidades\n- Sistema de notificaciones y calendario\n- Control de costos y plazos\n\nROLES EN LA PLATAFORMA:\n1. Socio Constructor: Ejecuta tareas, reporta avances, gestiona cuadrillas\n2. Supervisor: Audita calidad, valida entregables, autoriza hitos\n3. Cliente Técnico: Planifica obras, coordina equipos, toma decisiones\n\nESPECIALIDADES DE CUADRILLAS:\n- Albañilería\n- Yesería\n- Carpintería\n- Pintura\n- Instalaciones\n\nESTADOS DE TAREAS:\n- Propuesta → Presupuestada → Asignada → En Ejecución → Terminada → Validada\n\nINSTRUCCIONES:\n- Responde siempre en español con tono profesional\n- Usa terminología técnica de construcción\n- Proporciona consejos prácticos y específicos\n- Si no sabes algo específico de GROWS, dilo claramente\n- Mantén las respuestas concisas pero completas\n\nINFORMACIÓN ADICIONAL DE LA BASE DE CONOCIMIENTO:\n{{ $json.knowledge }}"
+            },
+            {
+              "role": "user",
+              "content": "{{ $json.message }}"
+            }
+          ]
+        }
+      },
+      "id": "openai-node",
+      "name": "OpenAI GPT",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"response\": \"{{ $json.message }}\"\n}"
+      },
+      "id": "respond-node",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook GROWS": {
+      "main": [
+        [
+          {
+            "node": "Base de Conocimiento GROWS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base de Conocimiento GROWS": {
+      "main": [
+        [
+          {
+            "node": "OpenAI GPT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI GPT": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "9rLKASIssMG1Lo0X",
+  "tags": ["GROWS", "Chat", "Construction", "Knowledge Base"]
+}

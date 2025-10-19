@@ -11,7 +11,6 @@ import {
   Trash2, 
   Eye, 
   MoreVertical, 
-  Search, 
   Filter,
   X,
   Save,
@@ -39,6 +38,13 @@ interface Obra {
   fecha_inicio?: string;
   presupuesto?: number;
   descripcion?: string;
+  cliente?: string;
+  tipoObra?: 'nueva' | 'reforma' | 'ampliacion';
+  numeroPermiso?: string;
+  progreso?: number;
+  tareasActivas?: number;
+  tareasCompletadas?: number;
+  legajoTecnico?: any[];
 }
 
 interface FormState {
@@ -207,93 +213,20 @@ export default function ObrasSection() {
   const [obras, setObras] = useState<Obra[]>([
     {
       id: "1",
-      nombre: "Casa Familiar Los Robles",
-      localizacion: "Av. Corrientes 1234, CABA",
+      nombre: "Obra de Prueba",
+      localizacion: "Ubicación de prueba",
       estado: "ACTIVA",
       created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
       fecha_inicio: "2024-01-15",
-      presupuesto: 85000,
-      descripcion: "Proyecto de casa familiar de dos plantas con jardín y garaje"
-    },
-    {
-      id: "2", 
-      nombre: "Edificio Residencial Norte",
-      localizacion: "Calle Norte 567, CABA",
-      estado: "PAUSADA",
-      created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
-      fecha_inicio: "2024-02-01",
-      presupuesto: 250000,
-      descripcion: "Edificio de 6 plantas con 24 departamentos y amenities"
-    },
-    {
-      id: "3",
-      nombre: "Complejo Comercial Plaza Sur",
-      localizacion: "Av. Santa Fe 2450, Palermo",
-      estado: "FINALIZADA",
-      created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-      fecha_inicio: "2023-11-01",
-      presupuesto: 180000,
-      descripcion: "Centro comercial con 15 locales y estacionamiento"
-    },
-    {
-      id: "4",
-      nombre: "Torre Corporativa Microcentro",
-      localizacion: "Av. 9 de Julio 1200, Microcentro",
-      estado: "ACTIVA",
-      created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
-      fecha_inicio: "2024-03-10",
-      presupuesto: 450000,
-      descripcion: "Torre de oficinas de 20 pisos con tecnología inteligente"
-    },
-    {
-      id: "5",
-      nombre: "Casa de Campo Estancia Verde",
-      localizacion: "Ruta 9 km 45, Pilar",
-      estado: "CANCELADA",
-      created_at: new Date(Date.now() - 86400000 * 45).toISOString(),
-      fecha_inicio: "2023-09-15",
-      presupuesto: 120000,
-      descripcion: "Casa de campo con piscina y quincho"
-    },
-    {
-      id: "6",
-      nombre: "Condominio Las Flores",
-      localizacion: "Av. Libertador 3200, Vicente López",
-      estado: "ACTIVA",
-      created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
-      fecha_inicio: "2024-02-15",
-      presupuesto: 320000,
-      descripcion: "Complejo residencial de 4 torres con amenities premium"
-    },
-    {
-      id: "7",
-      nombre: "Refacción Hospital San Martín",
-      localizacion: "Av. Córdoba 1800, Palermo",
-      estado: "PAUSADA",
-      created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
-      fecha_inicio: "2023-12-01",
-      presupuesto: 180000,
-      descripcion: "Refacción integral de hospital público"
-    },
-    {
-      id: "8",
-      nombre: "Escuela Técnica Industrial",
-      localizacion: "Av. Rivadavia 4500, Caballito",
-      estado: "FINALIZADA",
-      created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
-      fecha_inicio: "2023-08-01",
-      presupuesto: 280000,
-      descripcion: "Construcción de escuela técnica con talleres especializados"
-    },
-    {
-      id: "9",
-      nombre: "Oficinas Empresariales Puerto Madero",
-      localizacion: "Av. Alicia Moreau de Justo 1200, Puerto Madero",
-      estado: "ACTIVA",
-      created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-      fecha_inicio: "2024-03-20",
-      presupuesto: 520000,
-      descripcion: "Edificio de oficinas clase A con certificación LEED"
+      presupuesto: 100000,
+      descripcion: "Esta es una obra de prueba para desarrollo",
+      cliente: "Cliente de Prueba",
+      tipoObra: "nueva" as const,
+      numeroPermiso: "PERM-001",
+      progreso: 25,
+      tareasActivas: 3,
+      tareasCompletadas: 1,
+      legajoTecnico: []
     }
   ]);
 
@@ -301,23 +234,16 @@ export default function ObrasSection() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formState, setFormState] = useState<FormState>(initialFormState);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterEstado, setFilterEstado] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Hooks para suscripciones
   const { showUpgradeModal } = useUpgradeModal();
-  const { checkLimit } = usePlanLimitGuard();
+  const obrasLimitGuard = usePlanLimitGuard('obras');
   const { usageSummary } = usePlanUsage();
 
-  // Filtrar obras
-  const obrasFiltradas = obras.filter(obra => {
-    const matchesSearch = obra.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         obra.localizacion?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = !filterEstado || obra.estado === filterEstado;
-    return matchesSearch && matchesFilter;
-  });
+  // Mostrar todas las obras (sin filtros)
+  const obrasFiltradas = obras;
 
   // Funciones del modal
   const abrirModalCrear = () => {
@@ -396,11 +322,11 @@ export default function ObrasSection() {
 
   const abrirWizardCrear = () => {
     // Verificar límites de suscripción
-    if (!checkLimit('obras')) {
+    if (obrasLimitGuard.shouldBlock(obras.length)) {
       showUpgradeModal();
       return;
     }
-    router.push('/wizard/crear-obra');
+    router.push('/obras/nueva');
   };
 
   // Loading state
@@ -452,8 +378,15 @@ export default function ObrasSection() {
 
     const obraCompleta = {
       ...selectedObra,
+      cliente: selectedObra.cliente || "Cliente por defecto",
+      tipoObra: selectedObra.tipoObra || "nueva",
+      fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
+      numeroPermiso: selectedObra.numeroPermiso || "SIN-PERMISO",
+      progreso: selectedObra.progreso || 0,
+      tareasActivas: selectedObra.tareasActivas || 0,
+      tareasCompletadas: selectedObra.tareasCompletadas || 0,
+      legajoTecnico: selectedObra.legajoTecnico || [],
       tareas: tareasMock,
-      progreso: 35,
       fechaFinEstimada: '2024-12-31'
     };
 
@@ -527,61 +460,18 @@ export default function ObrasSection() {
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card title="Filtros" className="mb-6">
-        <div className="flex flex-wrap gap-4">
-          <div className="flex-1 min-w-64">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-grows-text-secondary" />
-              <input
-                type="text"
-                placeholder="Buscar obras..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={filterEstado === 'ACTIVA' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilterEstado(filterEstado === 'ACTIVA' ? '' : 'ACTIVA')}
-            >
-              Activas
-            </Button>
-            <Button
-              variant={filterEstado === 'PAUSADA' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilterEstado(filterEstado === 'PAUSADA' ? '' : 'PAUSADA')}
-            >
-              Pausadas
-            </Button>
-            <Button
-              variant={filterEstado === 'FINALIZADA' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setFilterEstado(filterEstado === 'FINALIZADA' ? '' : 'FINALIZADA')}
-            >
-              Finalizadas
-            </Button>
-          </div>
-        </div>
-      </Card>
 
       {/* Lista de obras */}
       {obrasFiltradas.length === 0 ? (
         <Card className="text-center py-12">
           <Building2 className="h-12 w-12 text-grows-text-secondary mx-auto mb-4" />
           <h3 className="text-lg font-medium text-grows-primary mb-2">
-            {searchTerm || filterEstado ? 'No se encontraron obras' : 'No hay obras creadas'}
+            No hay obras creadas
           </h3>
           <p className="text-grows-text-secondary mb-6">
-            {searchTerm || filterEstado 
-              ? 'Intenta ajustar los filtros de búsqueda' 
-              : 'Comienza creando tu primera obra'
-            }
+            Comienza creando tu primera obra
           </p>
-          {!searchTerm && !filterEstado && (
+          {(
             <div className="flex items-center justify-center space-x-3">
               <Button
                 onClick={abrirWizardCrear}

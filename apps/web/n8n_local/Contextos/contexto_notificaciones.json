@@ -1,0 +1,41 @@
+{
+  "modulo": "notificaciones",
+  "descripcion": "Sistema de avisos internos sobre tareas, aprobaciones y problemas, sincronizado con eventos de auditoria.",
+  "tipos": [
+    "info",
+    "success",
+    "warning",
+    "error"
+  ],
+  "canales": [
+    "in_app",
+    "email",
+    "push"
+  ],
+  "gatillos": [
+    "tarea_asignada",
+    "presupuesto_subido",
+    "cambio_estado",
+    "alerta_supervision"
+  ],
+  "procesos_clave": {
+    "control_calidad": [
+      "Supervisor revisa checklist y evidencias por tarea.",
+      "Puede emitir alertas tipo warning o error para correcciones.",
+      "Validacion genera registro de evento y actualiza metricas de reputacion."
+    ],
+    "ciclo_tarea": [
+      "Asignacion a cuadrilla con checklist de inicio y notificacion automatica.",
+      "Ejecucion con carga de avances, fotos y comentarios.",
+      "Revision del supervisor y validacion final que dispara pagos y actualiza KPIs."
+    ]
+  },
+  "dependencias": [
+    "tareas",
+    "pagos",
+    "calendario",
+    "obras",
+    "reportes"
+  ],
+  "contexto_resumido": "Distribuye alertas clave para que cada rol actue en tiempo y forma.\nEscucha los cambios de estado en tareas, pagos y agenda del calendario.\nMantiene trazabilidad para reportes y auditorias internas del sistema."
+}

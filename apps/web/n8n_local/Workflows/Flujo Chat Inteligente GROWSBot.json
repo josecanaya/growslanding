@@ -1,0 +1,512 @@
+{
+  "name": "Flujo Chat Inteligente GROWSBot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/webhook/Growsbot",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -544,
+        -560
+      ],
+      "id": "607b2ded-6717-49df-8673-6f88b54535cf",
+      "name": "Webhook",
+      "webhookId": "e4449378-953c-4392-a12e-007aef7c9ce3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -656,
+        -192
+      ],
+      "id": "8f5ab283-217a-4b3c-a75b-d1e7755b8aca",
+      "name": "When chat message received",
+      "webhookId": "767d1a90-3a2a-4fdc-b63a-2b94210f6f7d"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.contexto.chatInput }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=Sos **GrowsBot**, un asistente técnico del sistema **GROWS**, una plataforma B2B de gestión inteligente de obras que centraliza la planificación, ejecución y control de proyectos de construcción de pequeña y mediana escala. \nBasate estrictamente en el siguiente contexto del modelo GROWS (no inventes nada fuera de este texto):\n\n---\n{{ JSON.stringify($json.contexto, null, 2) }}\n---\n\nRespondé en español, con tono profesional y claro. \nSi el usuario pregunta por algo que no está dentro del contexto, indicá: \n“Esa función no forma parte del modelo actual de GROWS”.\n\nUsuario: {{ $json.contexto.chatInput }}"
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=Usuario: {{ $json.contexto.chatInput }}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1184,
+        -384
+      ],
+      "id": "0f90ff6f-7250-448d-a186-d32a79d54162",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "gpt-3.5-turbo"
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1056,
+        -224
+      ],
+      "id": "233b5db8-1f84-44ee-8bf4-e21b00ee2bf6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "mUziCndAo08Ii6uF",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": "={{ $json.data.response || $json.response || $json.text }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2032,
+        -336
+      ],
+      "id": "afb093d8-a22c-4770-ba24-f3b35efe1bd8",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "filePath": "C:\\Users\\Pc\\Desktop\\JOSE\\Programacion\\GROWS_SUSCRIPCIONES\\GROWS_COPIA\\knowledge\\grows_context.json"
+      },
+      "id": "ee8c3025-bd0b-499e-9a5d-39de224ddd3f",
+      "name": "Leer Archivo Local",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        -192
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee el contexto desde $binary (base64) o desde $json (objeto o string)\nconst binKeys = Object.keys($binary || {});\n\nlet base64 = null;\nif (typeof $binary?.data === 'string') {\n  base64 = $binary.data;\n} else if (typeof $binary?.data?.data === 'string') {\n  base64 = $binary.data.data;\n}\n\nlet texto = null;\nlet contexto = null;\nlet parseError = null;\nlet fuente = null;\n\nif (base64) {\n  // Caso 1: viene como binario base64\n  try {\n    texto = Buffer.from(base64, 'base64').toString('utf8');\n    contexto = JSON.parse(texto);\n    fuente = 'binary';\n  } catch (e) {\n    parseError = e.message;\n    fuente = 'binary';\n  }\n} else {\n  // Caso 2: no hay base64; intentamos con $json\n  if (typeof $json === 'string') {\n    texto = $json;\n    try {\n      contexto = JSON.parse(texto);\n      fuente = 'json-string';\n    } catch (e) {\n      parseError = e.message;\n      fuente = 'json-string';\n    }\n  } else if ($json && typeof $json === 'object' && Object.keys($json).length) {\n    // Ya está parseado\n    contexto = $json;\n    texto = JSON.stringify($json);\n    fuente = 'json-object';\n  } else {\n    return [{\n      json: {\n        ok: false,\n        error: 'No se encontró contenido en $binary ni en $json.',\n        binaryKeys: binKeys,\n        rawType: typeof $binary?.data\n      }\n    }];\n  }\n}\n\nreturn [{\n  json: {\n    ok: true,\n    fuente,\n    binaryKeys: binKeys,\n    length: texto ? texto.length : null,\n    contexto,        // Objeto listo para usar en el siguiente nodo\n    textoPlano: texto,\n    parseError       // null si parseó ok\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        -192
+      ],
+      "id": "7dd4f179-c001-4528-80af-47a0240697b1",
+      "name": "Code in JavaScript",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.categoria }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "fuera_de_tema"
+            },
+            {
+              "value2": "construccion_general",
+              "output": 1
+            },
+            {
+              "value2": "grows_textual",
+              "output": 2
+            },
+            {
+              "value2": "grows_accion",
+              "output": 3
+            },
+            {
+              "value2": "grows_consulta",
+              "output": 3
+            }
+          ]
+        }
+      },
+      "id": "f1873bd2-c511-45a0-9707-57a027915020",
+      "name": "Switch Tipo de Consulta",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "541cfaf3-0eb8-42f7-b030-cb26e3ba20a7",
+      "name": "Responder fuera de tema",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -784
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "const entidad = $json.entidad || 'obra';\nlet data = '';\n\nswitch (entidad) {\n  case 'obra':\n    data = `🏗️ Obras activas:\n- Casa López\n- P.Mitre\n- Jardines de Esther`;\n    break;\n\n  case 'tarea':\n    data = `📋 Tareas en ejecución: 12\nFinalizadas: 2\nEn revisión: 1`;\n    break;\n\n  case 'calendario':\n    data = `🗓️ Próximas inspecciones:\n- 21/10\n- 23/10`;\n    break;\n\n  default:\n    data = `⚠️ Consulta no reconocida.`;\n    break;\n}\n\nreturn [{ json: { respuesta: data } }];\n"
+      },
+      "id": "16072cb6-a882-47c2-bf62-bfd055407253",
+      "name": "Responder datos GROWS",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Extraer correctamente el texto del mensaje ---\nconst msg = $json.contexto?.chatInput || $json.chatInput || $json.message || $json.body || '';\nlet categoria = 'fuera_de_tema';\nlet accion = null;\n\n// --- Clasificación simple por palabras clave ---\nif (/arquitectura|materiales|estructura|presupuesto/i.test(msg))\n  categoria = 'construccion_general';\n\nif (/obra|tarea|cuadrilla|notificacion|calendario|pago|reporte|cuenta/i.test(msg))\n  categoria = 'grows_textual';\n\nif (/crear|nueva|agregar/i.test(msg)) {\n  categoria = 'grows_accion';\n  accion = 'crear';\n}\n\nif (/asignar|vincular|enviar/i.test(msg)) {\n  categoria = 'grows_accion';\n  accion = 'asignar';\n}\n\nif (/estado|avance|cómo va|qué pasa/i.test(msg))\n  categoria = 'grows_consulta';\n\n// --- Debug log (opcional) ---\nconsole.log(\"Texto detectado:\", msg);\nconsole.log(\"Categoría:\", categoria, \"Acción:\", accion);\n\n// --- Salida ---\nreturn [{ json: { categoria, accion, chatInput: msg } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -32,
+        -192
+      ],
+      "id": "33fc9537-a6ae-44c2-a5ad-9f0b5be86694",
+      "name": "Clasificar tipo de consulta",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "functionCode": "const accion = $json.accion || '';\nconst entidad = $json.entidad || 'obra';\nlet response = '';\n\nif (accion === 'crear' && entidad === 'obra') {\n  response = '✅ Obra creada correctamente.';\n} else if (accion === 'asignar' && entidad === 'tarea') {\n  response = '🧱 Tarea asignada correctamente.';\n} else if (accion === 'asignar' && entidad === 'cuadrilla') {\n  response = '👷‍♂️ Cuadrilla asignada correctamente.';\n} else {\n  response = '⚠️ Acción no reconocida o pendiente.';\n}\n\nreturn [{ json: { respuesta: response } }];\n"
+      },
+      "id": "e4120489-bc55-4d27-a83e-0e020e6b7c29",
+      "name": "Ejecutar acción GROWS",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Eres GrowsBot, asistente técnico de la app GROWS.\nUsa la información del contexto cargado ({{ $json.contexto }}) \npara responder con precisión qué puede hacer el usuario en esa sección.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1200,
+        -576
+      ],
+      "id": "a1f73b80-0b3f-4974-aad1-00cee4110118",
+      "name": "Basic LLM Chain2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        -464
+      ],
+      "id": "9f02ec6e-487d-4098-b870-c2e94600dcde",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "mUziCndAo08Ii6uF",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "grows_accion",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "3e0e0b0f-3151-4550-b93f-695fb15be0e1"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "49135e49-a34e-49ef-96b0-381d21581036",
+                    "leftValue": "={{ $json.categoria }}",
+                    "rightValue": "grows_consulta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.3,
+      "position": [
+        400,
+        -32
+      ],
+      "id": "f27a2140-3e4a-4fd4-98a3-4ef42de6d247",
+      "name": "Switch"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Leer Archivo Local",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Archivo Local": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Clasificar tipo de consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Tipo de Consulta": {
+      "main": [
+        [
+          {
+            "node": "Responder fuera de tema",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar tipo de consulta": {
+      "main": [
+        [
+          {
+            "node": "Switch Tipo de Consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder fuera de tema": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ejecutar acción GROWS": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder datos GROWS": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Ejecutar acción GROWS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder datos GROWS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "22b8686b-3a08-40d0-86f4-af72c14adb30",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4c114e77270aafcd617a6e343586be0b21af921cfd087d6d9c10d14bc00a206d"
+  },
+  "id": "9rLKASIssMG1Lo0X",
+  "tags": []
+}

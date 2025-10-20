@@ -1,0 +1,30 @@
+{
+  "modulo": "cuadrillas",
+  "descripcion": "Agrupacion de obreros con especialidades para asignar a tareas y medir rendimiento.",
+  "especialidades": [
+    "albanileria",
+    "yeseria",
+    "carpinteria",
+    "pintura",
+    "instalaciones"
+  ],
+  "funcionalidades": [
+    "Gestion de integrantes, niveles de experiencia y disponibilidad.",
+    "Calculo de coeficiente operativo segun composicion del equipo.",
+    "Historial de tareas ejecutadas y reputacion por estrellas."
+  ],
+  "procesos_clave": {
+    "gestion_cuadrillas": [
+      "Lider define microcuadrillas segun especialidad y disponibilidad.",
+      "Sistema calcula coeficiente operativo y sugiere ajustes de capacidad.",
+      "Cuadrilla recibe agenda diaria en el calendario y notificaciones push."
+    ]
+  },
+  "dependencias": [
+    "tareas",
+    "calendario",
+    "roles",
+    "obras"
+  ],
+  "contexto_resumido": "Centraliza la disponibilidad y composicion de los equipos operativos de campo.\nSincroniza agendas con el calendario para evitar sobreasignaciones y retrasos.\nRetroalimenta reportes y reputacion segun resultados y alertas de calidad."
+}

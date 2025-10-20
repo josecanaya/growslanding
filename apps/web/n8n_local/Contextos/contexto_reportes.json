@@ -1,0 +1,35 @@
+{
+  "modulo": "reportes",
+  "descripcion": "Modulo analitico con KPIs de progreso, costos y productividad.",
+  "formatos": [
+    "dashboard_interactivo",
+    "exportacion_pdf",
+    "datos_crudos_csv"
+  ],
+  "indicadores": [
+    "avance_fisico",
+    "desviacion_plazos",
+    "costos_vs_presupuesto",
+    "rendimiento_cuadrillas"
+  ],
+  "procesos_clave": {
+    "ciclo_tarea": [
+      "Ejecucion con carga de avances, fotos y comentarios.",
+      "Revision del supervisor y validacion final que dispara pagos y actualiza KPIs."
+    ],
+    "gestion_cuadrillas": [
+      "Sistema calcula coeficiente operativo y sugiere ajustes de capacidad."
+    ],
+    "control_calidad": [
+      "Validacion genera registro de evento y actualiza metricas de reputacion."
+    ]
+  },
+  "dependencias": [
+    "obras",
+    "tareas",
+    "pagos",
+    "cuadrillas",
+    "planes"
+  ],
+  "contexto_resumido": "Consolida informacion operativa y financiera en tableros accionables.\nUsa eventos de tareas, pagos y cuadrillas para recalcular indicadores clave.\nPermite evaluar cumplimiento de planes y priorizar decisiones estrategicas."
+}

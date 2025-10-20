@@ -21,6 +21,7 @@ export function TopBar({
   user,
   roleLabel,
   onSectionChange,
+  onLogout,
 }: TopBarProps) {
   const [showSideMenu, setShowSideMenu] = useState(false);
 

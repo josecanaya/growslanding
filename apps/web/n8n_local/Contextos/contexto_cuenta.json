@@ -1,0 +1,24 @@
+{
+  "modulo": "cuenta",
+  "descripcion": "Configuracion de usuario, suscripcion, idioma, zona horaria y preferencias de notificaciones.",
+  "opciones": [
+    "perfil_personal",
+    "preferencias_comunicacion",
+    "gestion_equipo",
+    "facturacion"
+  ],
+  "procesos_clave": {
+    "onboarding_organizacion": [
+      "Cliente profesional inicia flujo `/onboarding` y crea su organizacion multi-tenant.",
+      "Invita a miembros con roles especificos (socio, supervisor, admin).",
+      "Selecciona plan de suscripcion y configura limites operativos."
+    ]
+  },
+  "dependencias": [
+    "roles",
+    "planes",
+    "notificaciones",
+    "pagos"
+  ],
+  "contexto_resumido": "Centraliza la autogestion de datos del cliente profesional y su organizacion.\nRegula limites operativos segun el plan vigente y usuarios habilitados.\nSincroniza preferencias con notificaciones y la facturacion emitida."
+}

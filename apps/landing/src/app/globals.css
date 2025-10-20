@@ -5,6 +5,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
+  /* Variables GROWS - Paleta correcta (azul + amarillo) */
+  --grows-primary: #1B263B;
+  --grows-secondary: #f4e27e;
+  --grows-background: #f5f7fa;
+  --grows-surface: #FFFFFF;
+  --grows-border: #e0e0e0;
+  --grows-text-primary: #10161a;
+  --grows-text-secondary: #444444;
+  --grows-error: #B71C1C;
+  --grows-success: #388E3C;
+  --grows-warning: #FBC02D;
+  --grows-neutral: #eaf0f6;
+  
+  /* Variables legacy - mantener para compatibilidad */
   --color-primario: #1B263B;
   --color-secundario: #f5f7fa;
   --color-acento: #f4e27e;
@@ -13,8 +27,14 @@
 }
 
 body {
-  color: var(--color-oscuro);
-  background: var(--color-secundario);
+  color: var(--grows-text-primary);
+  background: var(--grows-background);
+  font-family: 'Inter', 'Nunito', 'Poppins', system-ui, -apple-system, sans-serif;
+  font-weight: 500;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
 }
 
 @layer utilities {

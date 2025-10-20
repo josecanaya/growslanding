@@ -1,0 +1,34 @@
+{
+  "modulo": "calendario",
+  "descripcion": "Vista integrada de fechas de ejecucion, inspeccion y entregas con sincronizacion del camino critico.",
+  "eventos": [
+    "reuniones",
+    "inspecciones",
+    "entregas",
+    "recordatorios"
+  ],
+  "funcionalidades": [
+    "Integracion con dependencias para recalcular plazos automaticamente.",
+    "Vista por obra, por cuadrilla o por responsable.",
+    "Exportacion de hitos clave a formatos estandar (ICS, PDF)."
+  ],
+  "procesos_clave": {
+    "ciclo_tarea": [
+      "Creacion desde catalogo y definicion de dependencias.",
+      "Asignacion a cuadrilla con checklist de inicio y notificacion automatica.",
+      "Ejecucion con carga de avances, fotos y comentarios."
+    ],
+    "gestion_cuadrillas": [
+      "Lider define microcuadrillas segun especialidad y disponibilidad.",
+      "Sistema calcula coeficiente operativo y sugiere ajustes de capacidad.",
+      "Cuadrilla recibe agenda diaria en el calendario y notificaciones push."
+    ]
+  },
+  "dependencias": [
+    "obras",
+    "tareas",
+    "cuadrillas",
+    "notificaciones"
+  ],
+  "contexto_resumido": "Orquesta la planificacion temporal de obras, tareas y recursos compartidos.\nRecalcula fechas criticas en funcion de dependencias y alertas recibidas.\nSirve como fuente unica para agendas operativas y capacidad disponible."
+}

@@ -1,103 +1,187 @@
 {
   "hero": {
-    "title": "GROWS – Plataforma de Gestión Inteligente para la Construcción",
-    "subtitle": "Organiza y estandariza las tareas de obra mediante plantillas constructivas, cronogramas automáticos y seguimiento visual",
-    "description": "GROWS es una plataforma digital B2B diseñada para estudios de arquitectura, arquitectos independientes y pequeñas constructoras dedicadas a obras de pequeña y mediana escala.",
-    "cta": "Solicitar Demo",
-    "learnMore": "Conocer más"
+    "badge": "Ahora con IA integrada · GrowsBot",
+    "title": "GROWS – Plataforma B2B de Gestión Inteligente con IA",
+    "subtitle": "Obras de pequeña y mediana escala con control profesional",
+    "description": "Centraliza planificación, ejecución y control con GrowsBot (IA), +1800 catálogos constructivos y cronogramas automáticos por CPM",
+    "ctaPrimary": "Empezar gratis",
+    "ctaSecondary": "Ver demo en vivo",
+    "stats": {
+      "tasks": "Tareas Estandarizadas",
+      "traceability": "Trazabilidad FSM",
+      "support": "Soporte con GrowsBot"
+    }
   },
   "problem": {
-    "title": "El problema en la construcción",
-    "subtitle": "Métodos informales y falta de herramientas adecuadas",
+    "title": "El problema en la construcción de pequeña y mediana escala",
+    "subtitle": "Métodos informales, herramientas inadecuadas y coordinación deficiente",
     "issues": {
       "informal": {
-        "title": "Métodos informales",
-        "description": "Las obras residenciales de pequeña y mediana escala suelen operar con métodos informales, ausencia de planificación sistemática y falta de registros confiables."
+        "title": "Métodos Informales",
+        "description": "Ausencia de planificación sistemática, registros confiables y trazabilidad de decisiones operativas"
       },
       "tools": {
-        "title": "Falta de herramientas",
-        "description": "Las plataformas existentes están orientadas a grandes constructoras, dejando sin herramientas específicas a estudios de arquitectura y pequeñas constructoras."
+        "title": "Herramientas Inadecuadas",
+        "description": "Las plataformas existentes están pensadas para grandes constructoras; estudios de arquitectura y pequeñas empresas quedan sin soluciones"
       },
       "consequences": {
-        "title": "Consecuencias",
-        "description": "Esta situación genera conflictos, sobrecostos y baja productividad en las obras."
+        "title": "Consecuencias Operativas",
+        "description": "Sobrecostos, baja productividad, conflictos entre actores y falta de datos para tomar decisiones informadas"
       }
+    },
+    "cta": {
+      "title": "¿Te suena familiar?",
+      "description": "Si gestionás obras con estudios, cuadrillas externas y necesitás control operativo real, GROWS tiene la solución B2B que estabas buscando.",
+      "button": "Ver la Solución"
     }
   },
   "solution": {
-    "title": "La solución GROWS",
-    "subtitle": "Gestión centralizada y eficiente para Clientes Técnicos",
-    "description": "GROWS cubre este vacío ofreciendo una solución digital B2B que permite a los Clientes Técnicos gestionar, asignar y controlar a sus líderes de cuadrilla de manera centralizada y eficiente.",
+    "title": "La solución integral GROWS",
+    "subtitle": "Gestión centralizada B2B con IA, catálogos estandarizados y automatizaciones",
+    "description": "GROWS digitaliza y profesionaliza obras de pequeña y mediana escala con tecnología enterprise accesible para estudios de arquitectura y constructoras",
     "features": {
       "templates": {
         "title": "Plantillas Constructivas",
-        "description": "Tareas predefinidas y estandarizadas para cada fase de obra"
+        "description": "Más de 1800 tareas predefinidas y estandarizadas para cada fase de obra"
       },
       "scheduling": {
         "title": "Cronogramas Automáticos",
-        "description": "Planificación inteligente que se ajusta automáticamente"
+        "description": "Planificación inteligente que se ajusta automáticamente según dependencias (CPM)"
       },
       "tracking": {
         "title": "Seguimiento Visual",
-        "description": "Control en tiempo real del avance de cada tarea"
+        "description": "Control en tiempo real del avance físico, financiero y operativo de cada tarea"
       },
       "centralized": {
         "title": "Gestión Centralizada",
-        "description": "Un solo lugar para gestionar todas tus obras y cuadrillas"
+        "description": "Un solo panel B2B multi-tenant para gestionar todas tus obras, socios y cuadrillas"
+      },
+      "growsbot": {
+        "title": "GrowsBot (IA)",
+        "description": "Asistente inteligente 24/7 que responde consultas técnicas y sugiere optimizaciones"
+      },
+      "multitenant": {
+        "title": "Multi-tenant Seguro",
+        "description": "Organizaciones aisladas con usuarios globales. Gestión segura por cliente técnico"
+      },
+      "cpm": {
+        "title": "CPM Automático",
+        "description": "Cálculo on-demand del camino crítico. Agregá tareas y recalculamos plazos automáticamente"
+      },
+      "payments": {
+        "title": "Pagos Automatizados",
+        "description": "Validar tarea dispara pago, notifica a cuadrilla y actualiza KPIs sin intervención manual"
+      }
+    }
+  },
+  "pricing": {
+    "title": "Planes para cada etapa de tu negocio",
+    "subtitle": "Empezá gratis y escalá cuando lo necesites. Sin sorpresas.",
+    "toggle": {
+      "monthly": "Mensual",
+      "annual": "Anual",
+      "discount": "-20%"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "price": "$0",
+        "period": "para siempre",
+        "description": "Ideal para explorar la plataforma",
+        "cta": "Empezar gratis"
+      },
+      "starter": {
+        "name": "Starter",
+        "price": "$49",
+        "priceAnnual": "$39",
+        "period": "por mes",
+        "description": "Para estudios pequeños",
+        "cta": "Contratar Starter"
+      },
+      "pro": {
+        "name": "Pro",
+        "price": "$99",
+        "priceAnnual": "$79",
+        "period": "por mes",
+        "description": "Funciones avanzadas completas",
+        "badge": "Más popular",
+        "cta": "Contratar Pro"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "price": "$200",
+        "priceAnnual": "$160",
+        "period": "por mes",
+        "description": "Grandes volúmenes y personalizaciones",
+        "badge": "En desarrollo",
+        "cta": "Acceso anticipado"
       }
     }
   },
   "users": {
     "title": "Perfiles de Usuario",
-    "subtitle": "Cada tipo de usuario trabaja en un entorno digital claro y adaptado a su rol",
-    "cliente": {
-      "title": "Cliente Técnico",
+    "subtitle": "Cada rol trabaja en un entorno digital claro y adaptado a sus responsabilidades",
+    "coordinador": {
+      "title": "Coordinador de Obra",
       "subtitle": "Estudios de arquitectura, arquitectos independientes y pequeñas constructoras",
       "features": [
-        "Dashboard general con barra de progreso para cada obra activa",
-        "Plantillas constructivas predefinidas aplicables con un clic",
-        "Checklist digital integrado para cada tarea",
-        "Notificaciones push sobre cambios de estado"
-      ]
-    },
-    "lider": {
-      "title": "Líder de Cuadrilla",
-      "subtitle": "Coordinadores operativos que ejecutan tareas asignadas",
-      "features": [
-        "Lista de tareas pendientes con filtros por obra y fecha",
-        "Checklist de preparación y seguridad simplificado",
-        "Subida de fotos como evidencia del trabajo realizado",
-        "Gestión de microcuadrillas de hasta 4 personas"
+        "Dashboard general con progreso, costos y KPIs por obra activa",
+        "Plantillas constructivas aplicables con un clic desde catálogo +1800",
+        "Asignación de socios constructores con control de límites por plan",
+        "Notificaciones push sobre cambios de estado y alertas operativas"
       ]
     },
     "socio": {
-      "title": "Socio",
-      "subtitle": "Trabajadores que acumulan experiencia y reputación",
+      "title": "Socio Constructor",
+      "subtitle": "Profesional o cuadrilla externa que ejecuta, reporta y mantiene su reputación",
       "features": [
-        "Sistema de niveles basado en horas trabajadas",
-        "Acumulación de puntos por desempeño",
-        "Reputación visible en la plataforma",
-        "Progresión desde Hierro hasta Oro"
+        "Crear obras y gestionar tareas asignadas con checklist digital",
+        "Subir presupuestos con evidencia fotográfica geolocalizada",
+        "Asignar cuadrillas (microcuadrillas hasta 4 personas) y controlar progreso",
+        "Sistema de reputación (⭐ 0-5) y niveles (Hierro → Oro) por horas acumuladas"
       ]
     }
   },
   "cta": {
-    "title": "¿Listo para transformar tu gestión de obra?",
-    "subtitle": "Únete a la revolución digital de la construcción",
+    "title": "Empezá gratis y escalá cuando lo necesites",
+    "subtitle": "Plan Free sin límite de tiempo. Probá GROWS con 2 obras, familiarizate con el flujo y activá funciones premium cuando quieras.",
     "emailPlaceholder": "Tu email profesional",
-    "submitButton": "Solicitar Demo Gratuita",
+    "submitButton": "Crear cuenta gratis",
+    "submitSecondary": "Ver demo en vivo",
     "privacy": "Respetamos tu privacidad. Sin spam, solo información valiosa.",
-    "success": "¡Gracias! Te contactaremos pronto con más información.",
-    "error": "Hubo un error. Por favor, intenta nuevamente."
+    "success": "¡Gracias! Te contactaremos pronto con acceso early access.",
+    "error": "Hubo un error. Por favor, intenta nuevamente.",
+    "stats": {
+      "trial": "Sin límite en Free",
+      "setup": "5 minutos de setup",
+      "support": "Chat con GrowsBot 24/7"
+    }
   },
   "footer": {
-    "description": "GROWS - Plataforma de Gestión Inteligente para la Construcción",
-    "rights": "Todos los derechos reservados"
+    "description": "GROWS - Plataforma B2B de Gestión Inteligente para Obras de Construcción con IA",
+    "resources": {
+      "title": "Recursos",
+      "blog": "Blog",
+      "docs": "Documentación",
+      "guides": "Guías",
+      "roadmap": "Roadmap Público"
+    },
+    "newsletter": {
+      "title": "Newsletter",
+      "placeholder": "Tu email",
+      "button": "Suscribirse"
+    },
+    "rights": "Todos los derechos reservados",
+    "legal": {
+      "privacy": "Política de Privacidad",
+      "terms": "Términos de Servicio"
+    }
   },
   "navigation": {
     "home": "Inicio",
     "problem": "Problema",
     "solution": "Solución",
+    "pricing": "Precios",
     "users": "Usuarios",
     "contact": "Contacto"
   }

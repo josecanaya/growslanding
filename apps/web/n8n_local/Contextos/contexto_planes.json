@@ -1,0 +1,62 @@
+{
+  "categoria": "planes_y_suscripciones",
+  "planes": {
+    "free": {
+      "descripcion": "Modo gratuito para explorar la plataforma y familiarizarse con el flujo de obras.",
+      "limitaciones": [
+        "no puede vincular tareas con obreros",
+        "solo 2 obras activas",
+        "sin acceso a catalogo completo ni automatizaciones"
+      ],
+      "recomendado_para": "Equipos en etapa de evaluacion o capacitacion inicial."
+    },
+    "starter": {
+      "descripcion": "Plan orientado a estudios pequenos que necesitan coordinar cuadrillas y tareas basicas.",
+      "ventajas": [
+        "automatizaciones basicas",
+        "reportes simples"
+      ],
+      "limitaciones": [
+        "hasta 5 obras activas",
+        "maximo 3 tareas simultaneas",
+        "hasta 3 socios habilitados"
+      ],
+      "recomendado_para": "Clientes tecnicos con cartera de obras acotada y equipos reducidos."
+    },
+    "pro": {
+      "descripcion": "Acceso completo a funciones avanzadas, informes y soporte prioritario.",
+      "ventajas": [
+        "automatizaciones rapidas",
+        "exportacion de datos",
+        "asistencia tecnica prioritaria"
+      ],
+      "limitaciones": [
+        "hasta 10 obras activas",
+        "hasta 10 tareas simultaneas",
+        "hasta 25 socios por organizacion"
+      ],
+      "recomendado_para": "Constructoras medianas que requieren control exhaustivo de costos y cronogramas."
+    },
+    "enterprise": {
+      "descripcion": "Version personalizada en desarrollo para grandes constructoras con necesidades especificas.",
+      "ventajas": [
+        "integraciones externas",
+        "multiples usuarios",
+        "dashboard avanzado"
+      ],
+      "limitaciones": [
+        "capacidades definidas en conjunto con el cliente",
+        "despliegues dedicados y soporte gerenciado"
+      ],
+      "recomendado_para": "Organizaciones con altos volumenes de obras y requerimientos de integracion corporativa."
+    }
+  },
+  "dependencias": [
+    "obras",
+    "tareas",
+    "cuadrillas",
+    "cuenta",
+    "pagos"
+  ],
+  "contexto_resumido": "Define los limites operativos y beneficios disponibles para cada organizacion.\nImpacta la cantidad de obras, tareas y socios que pueden gestionarse en la plataforma.\nGuia decisiones comerciales y recomendaciones de upgrade segun uso real."
+}

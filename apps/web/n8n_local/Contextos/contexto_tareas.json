@@ -1,0 +1,48 @@
+{
+  "modulo": "tareas",
+  "descripcion": "Gestion de tareas por obra: dependencias, asignaciones y seguimiento con evidencia digital.",
+  "estados": [
+    "propuesta",
+    "presupuestada",
+    "asignada",
+    "en_ejecucion",
+    "terminada",
+    "validada"
+  ],
+  "atributos": [
+    "nombre",
+    "descripcion",
+    "obra_asociada",
+    "responsable",
+    "fecha_inicio",
+    "fecha_fin"
+  ],
+  "funcionalidades": [
+    "FSM controlada por API con validacion de roles y permisos.",
+    "Checklist previo de seguridad y requisitos tecnicos.",
+    "Carga de presupuestos, evidencias fotograficas y comentarios.",
+    "Calculo automatico de horas y progreso por dependencia."
+  ],
+  "procesos_clave": {
+    "ciclo_tarea": [
+      "Creacion desde catalogo y definicion de dependencias.",
+      "Presupuestacion por socio y aprobacion del cliente profesional.",
+      "Asignacion a cuadrilla con checklist de inicio y notificacion automatica.",
+      "Ejecucion con carga de avances, fotos y comentarios.",
+      "Revision del supervisor y validacion final que dispara pagos y actualiza KPIs."
+    ],
+    "control_calidad": [
+      "Supervisor revisa checklist y evidencias por tarea.",
+      "Puede emitir alertas tipo warning o error para correcciones.",
+      "Validacion genera registro de evento y actualiza metricas de reputacion."
+    ]
+  },
+  "dependencias": [
+    "obras",
+    "cuadrillas",
+    "notificaciones",
+    "pagos",
+    "calendario"
+  ],
+  "contexto_resumido": "Orquesta el trabajo diario dentro de cada obra, controlando dependencias y roles.\nActiva notificaciones, pagos y recalculos de calendario segun avances registrados.\nExpone KPIs operativos que alimentan reportes y decisiones de priorizacion."
+}

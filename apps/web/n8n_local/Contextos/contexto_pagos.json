@@ -1,0 +1,26 @@
+{
+  "modulo": "pagos",
+  "descripcion": "Generacion y seguimiento de pagos vinculados a la validacion de tareas y aprobacion de presupuestos.",
+  "funcionalidades": [
+    "Emision automatica al marcar tarea como validada.",
+    "Control de estado (pendiente, pagado, observado).",
+    "Historial financiero por socio y por obra."
+  ],
+  "procesos_clave": {
+    "ciclo_tarea": [
+      "Presupuestacion por socio y aprobacion del cliente profesional.",
+      "Revision del supervisor y validacion final que dispara pagos y actualiza KPIs."
+    ],
+    "control_calidad": [
+      "Supervisor revisa checklist y evidencias por tarea.",
+      "Validacion genera registro de evento y actualiza metricas de reputacion."
+    ]
+  },
+  "dependencias": [
+    "tareas",
+    "obras",
+    "cuenta",
+    "reportes"
+  ],
+  "contexto_resumido": "Liquida compensaciones segun hitos validados dentro de cada obra.\nRefleja el estado financiero para socios y clientes tecnicos con trazabilidad completa.\nAlimenta reportes economicos y controles de facturacion de la cuenta."
+}

@@ -2,60 +2,115 @@
 
 import { AlertTriangle, Wrench, TrendingDown, ArrowRight, CheckCircle, Zap, Users, BarChart3, Bot, Shield, Calendar, CreditCard, MessageCircle, Clock, Lightbulb } from 'lucide-react';
 
-// Componente para burbujas de problemas
-function ChatBubble({ icon: Icon, text, delay = 0, position = 'left' }: { 
+// Componente para conversaciones estilo WhatsApp
+function WhatsAppChat({ 
+  icon: Icon, 
+  messages, 
+  delay = 0, 
+  contact,
+  lastSeen = 'en línea'
+}: { 
   icon: React.ComponentType<any>, 
-  text: string, 
+  messages: Array<{ text: string, time: string, sent: boolean, delivered?: boolean, read?: boolean }>,
   delay?: number, 
-  position?: 'left' | 'right' 
+  contact: string,
+  lastSeen?: string
 }) {
   return (
     <div 
-      className={`flex items-start gap-3 ${position === 'right' ? 'flex-row-reverse' : ''}`}
+      className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden"
       style={{
         animationDelay: `${delay}ms`,
         animation: 'fadeInUp 0.6s ease-out forwards',
         opacity: 0,
       }}
     >
-      <div className="w-10 h-10 bg-grows-background border border-grows-border rounded-full flex items-center justify-center flex-shrink-0">
-        <Icon className="w-5 h-5 text-grows-error" />
+      {/* Header estilo WhatsApp */}
+      <div className="bg-[#075E54] px-3 py-2.5 flex items-center gap-3">
+        <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+          <Icon className="w-5 h-5 text-[#075E54]" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-sm text-white truncate">{contact}</h4>
+          <p className="text-xs text-green-100">{lastSeen}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+          <span className="text-xs text-green-100">Activo</span>
+        </div>
       </div>
-      <div className={`bg-grows-background border border-grows-border rounded-2xl px-4 py-3 max-w-xs ${
-        position === 'right' ? 'rounded-br-md' : 'rounded-bl-md'
-      }`}>
-        <p className="text-sm text-grows-text-primary leading-relaxed">{text}</p>
+      
+      {/* Área de mensajes */}
+      <div className="p-3 bg-[#ECE5DD] space-y-2 min-h-[180px]">
+        {messages.map((message, index) => (
+          <div key={index} className={`flex ${message.sent ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[85%] px-2.5 py-1.5 rounded-lg shadow-sm ${
+              message.sent 
+                ? 'bg-[#DCF8C6] rounded-br-none' 
+                : 'bg-white rounded-bl-none'
+            }`}>
+              <p className="text-sm text-gray-800 leading-relaxed">{message.text}</p>
+              <div className="flex items-center justify-end gap-1 mt-0.5">
+                <p className="text-[10px] text-gray-500">{message.time}</p>
+                {message.sent && (
+                  <div className="flex items-center">
+                    {message.delivered && (
+                      <svg className="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                      </svg>
+                    )}
+                    {message.read && (
+                      <svg className="w-3 h-3 text-blue-500 ml-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/>
+                      </svg>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 export function IntegratedSolutionSection() {
-  // Datos de burbujas de problemas
-  const problemBubbles = [
+  // Datos de conversaciones estilo WhatsApp
+  const whatsappChats = [
     {
-      icon: Clock,
-      text: "Otra vez se atrasó el revoque, no coordinamos con el plomero.",
-      position: 'left' as const,
-      delay: 0
+      icon: Users,
+      contact: 'Equipo Obra Casa',
+      lastSeen: 'en línea',
+      delay: 0,
+      messages: [
+        { text: 'Se atrasó el revoque otra vez', time: '10:23', sent: false, delivered: false },
+        { text: 'No coordinamos con el plomero 😓', time: '10:23', sent: false, delivered: false },
+        { text: '¿Cuándo puede venir?', time: '10:24', sent: true, delivered: true, read: true },
+        { text: 'Recién el jueves...', time: '10:25', sent: false, delivered: false }
+      ]
     },
     {
       icon: AlertTriangle,
-      text: "Nadie sabe cuánto falta para terminar.",
-      position: 'right' as const,
-      delay: 200
-    },
-    {
-      icon: TrendingDown,
-      text: "Se compró de más, y ahora no alcanza para las aberturas.",
-      position: 'left' as const,
-      delay: 400
+      contact: 'Capataz Condominio',
+      lastSeen: 'hace 2 min',
+      delay: 200,
+      messages: [
+        { text: 'El cliente pregunta cuánto falta', time: '11:45', sent: true, delivered: true, read: true },
+        { text: 'No tengo idea, nadie me dice nada', time: '11:47', sent: false, delivered: false },
+        { text: 'Necesitamos un cronograma urgente', time: '11:48', sent: true, delivered: true, read: false }
+      ]
     },
     {
       icon: MessageCircle,
-      text: "El cliente pregunta por el presupuesto y no sé qué responder.",
-      position: 'right' as const,
-      delay: 600
+      contact: 'Cliente Local',
+      lastSeen: 'escribiendo...',
+      delay: 400,
+      messages: [
+        { text: '¿Cómo va el presupuesto?', time: '14:30', sent: false, delivered: false },
+        { text: '¿Cuánto llevamos gastado?', time: '14:31', sent: false, delivered: false },
+        { text: 'Déjame revisar y te confirmo', time: '14:35', sent: true, delivered: true, read: true }
+      ]
     }
   ];
 
@@ -176,23 +231,6 @@ export function IntegratedSolutionSection() {
     }
   ];
 
-  const processSteps = [
-    {
-      number: "1",
-      title: "Carga tu Obra",
-      description: "Define tu proyecto y selecciona tareas del catálogo +1800"
-    },
-    {
-      number: "2", 
-      title: "Asigna Socios",
-      description: "Designa constructores y forma cuadrillas de trabajo"
-    },
-    {
-      number: "3",
-      title: "Sigue el Progreso", 
-      description: "Monitorea avance en tiempo real con IA y reportes automáticos"
-    }
-  ];
 
   return (
     <>
@@ -222,26 +260,29 @@ export function IntegratedSolutionSection() {
               <span className="text-sm font-semibold text-grows-text-primary">Solución Integral</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-grows-text-primary mb-6 leading-tight">
-              De problemas comunes a
-              <br />
-              <span className="text-grows-primary">gestión profesional</span>
+              De problemas comunes a <span className="text-grows-primary">gestión profesional</span>
             </h2>
             <p className="text-lg text-grows-text-secondary max-w-3xl mx-auto leading-relaxed mb-16">
               GROWS transforma la gestión de obras con tecnología enterprise accesible para estudios de arquitectura y constructoras
             </p>
 
-            {/* Burbujas de Problemas */}
-            <div className="max-w-4xl mx-auto mb-16">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {problemBubbles.map((bubble, index) => (
-                  <div key={index} className={`${bubble.position === 'right' ? 'md:ml-auto' : ''}`}>
-                    <ChatBubble 
-                      icon={bubble.icon}
-                      text={bubble.text}
-                      delay={bubble.delay}
-                      position={bubble.position}
-                    />
-                  </div>
+            {/* Chats Individuales */}
+            <div className="max-w-6xl mx-auto mb-16">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-semibold text-grows-text-primary mb-2">Problemas reales de obras pequeñas</h3>
+                <p className="text-grows-text-secondary">Conversaciones típicas que enfrentan profesionales del sector</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {whatsappChats.map((chat, index) => (
+                  <WhatsAppChat 
+                    key={index}
+                    icon={chat.icon}
+                    messages={chat.messages}
+                    delay={chat.delay}
+                    contact={chat.contact}
+                    lastSeen={chat.lastSeen}
+                  />
                 ))}
               </div>
             </div>
@@ -311,55 +352,7 @@ export function IntegratedSolutionSection() {
             </div>
           </div>
 
-          {/* CTA Contextual */}
-          <div className="text-center mb-20">
-            <div className="bg-gradient-to-r from-grows-primary to-grows-primary/90 rounded-2xl p-8 max-w-4xl mx-auto shadow-grows-lg">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="w-12 h-12 bg-grows-secondary rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-grows-text-primary" />
-                </div>
-                <h3 className="text-2xl font-bold text-grows-text-primary">Descubrí cómo GROWS puede ordenar tu próxima obra</h3>
-              </div>
-              <p className="text-grows-text-secondary mb-6 text-lg">Únete a cientos de profesionales que ya gestionan sus obras con precisión</p>
-              <button className="bg-grows-secondary hover:bg-grows-secondary/90 text-grows-text-primary font-semibold px-8 py-4 rounded-xl transition-all duration-300 hover:shadow-grows-lg hover:scale-105 flex items-center gap-2 mx-auto">
-                Probar gratis
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
 
-          {/* Proceso de 3 Pasos */}
-          <div className="mb-20">
-            <div className="text-center mb-12">
-              <h3 className="text-2xl font-bold text-grows-text-primary mb-2">¿Cómo funciona?</h3>
-              <p className="text-base text-grows-text-secondary">Un proceso simple en 3 pasos</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {processSteps.map((step, index) => (
-                <div
-                  key={index}
-                  className="text-center group"
-                  style={{
-                    animationDelay: `${index * 300}ms`,
-                    animation: 'fadeInUp 0.8s ease-out forwards',
-                    opacity: 0,
-                  }}
-                >
-                  <div className="relative mb-6">
-                    <div className="w-16 h-16 bg-grows-primary text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto group-hover:scale-110 transition-transform duration-300">
-                      {step.number}
-                    </div>
-                    {index < processSteps.length - 1 && (
-                      <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-grows-border transform translate-x-4"></div>
-                    )}
-                  </div>
-                  <h4 className="text-lg font-bold text-grows-text-primary mb-3">{step.title}</h4>
-                  <p className="text-grows-text-secondary text-sm leading-relaxed">{step.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* CTA Final */}
           <div className="text-center">

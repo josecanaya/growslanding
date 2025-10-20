@@ -3,6 +3,7 @@ import { Hero } from "../../components/Hero";
 import { IntegratedSolutionSection } from "../../components/IntegratedSolutionSection";
 import { PricingSection } from "../../components/PricingSection";
 import { UserProfiles } from "../../components/UserProfiles";
+import { EcosystemSection } from "../../components/EcosystemSection";
 import { CTASection } from "../../components/CTASection";
 import { Footer } from "../../components/Footer";
 import { setRequestLocale } from "next-intl/server";
@@ -17,8 +18,9 @@ export default function HomePage({ params: { locale } }: Props) {
       <main>
         <Hero />
         <IntegratedSolutionSection />
-        <PricingSection />
         <UserProfiles />
+        <EcosystemSection />
+        <PricingSection />
         <CTASection />
       </main>
       <Footer />

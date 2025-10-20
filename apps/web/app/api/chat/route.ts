@@ -9,6 +9,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error en /api/chat:', error);
     const message = error instanceof Error ? error.message : 'Error desconocido';
-    return NextResponse.json({ success: false, error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message });
   }
 }

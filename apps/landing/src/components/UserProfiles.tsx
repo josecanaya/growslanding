@@ -1,7 +1,7 @@
 'use client';
 
-import {useTranslations} from 'next-intl';
-import {Building2, UserCheck, CheckCircle} from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Building2, UserCheck, CheckCircle, ArrowRight, Star, Award, TrendingUp, Users, Zap, Home, Shield, Target } from 'lucide-react';
 
 export function UserProfiles() {
   const t = useTranslations('users');
@@ -10,147 +10,210 @@ export function UserProfiles() {
     {
       key: 'coordinador',
       icon: Building2,
+      color: 'grows-primary',
+      bgGradient: 'from-grows-primary/5 to-grows-primary/10',
+      borderColor: 'border-grows-primary/20',
+      iconBg: 'bg-grows-primary/10',
+      iconColor: 'text-grows-primary',
+      badge: 'Para Líderes',
+      badgeBg: 'bg-grows-primary',
+      badgeText: 'text-grows-secondary'
     },
     {
       key: 'socio',
       icon: UserCheck,
+      color: 'grows-secondary',
+      bgGradient: 'from-grows-secondary/5 to-grows-secondary/10',
+      borderColor: 'border-grows-secondary/20',
+      iconBg: 'bg-grows-secondary/10',
+      iconColor: 'text-grows-secondary',
+      badge: 'Para Ejecutores',
+      badgeBg: 'bg-grows-secondary',
+      badgeText: 'text-grows-text-primary'
     },
   ];
 
+  const reputationLevels = [
+    { level: 'Hierro', description: 'Estructura básica', hours: '0h', color: 'bg-gray-100', textColor: 'text-gray-700' },
+    { level: 'Bronce', description: 'Estructura / Obra gris', hours: '180h', color: 'bg-orange-100', textColor: 'text-orange-700' },
+    { level: 'Plata', description: 'Estructura / Obra gris', hours: '300h', color: 'bg-gray-200', textColor: 'text-gray-600' },
+    { level: 'Platino', description: 'Todas las etapas', hours: '700h', color: 'bg-blue-100', textColor: 'text-blue-700' },
+    { level: 'Oro', description: 'Líder habilitado', hours: '1200h', color: 'bg-yellow-100', textColor: 'text-yellow-700' }
+  ];
+
+  const keyBenefits = [
+    { icon: CheckCircle, text: 'Estandarización de procesos con +1800 catálogos' },
+    { icon: CheckCircle, text: 'Trazabilidad completa con FSM' },
+    { icon: CheckCircle, text: 'Planificación automática con CPM' },
+    { icon: CheckCircle, text: 'Asistencia IA 24/7 con GrowsBot' }
+  ];
+
   return (
-    <section id="users" className="py-20 bg-grows-background">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-grows-text-primary mb-4">
-            {t('title')}
+    <section id="users" className="py-24 bg-grows-surface">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        
+        {/* Header Elegante */}
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-grows-background border border-grows-border rounded-full mb-8">
+            <Users className="h-4 w-4 text-grows-primary" />
+            <span className="text-sm font-semibold text-grows-text-primary">Perfiles de Usuario</span>
+          </div>
+          <h2 className="text-4xl md:text-5xl font-bold text-grows-text-primary mb-6 leading-tight">
+            Cada rol trabaja en un entorno digital
+            <br />
+            <span className="text-grows-primary">claro y adaptado</span>
           </h2>
-          <p className="text-xl text-grows-text-secondary max-w-3xl mx-auto">
-            {t('subtitle')}
+          <p className="text-lg text-grows-text-secondary max-w-3xl mx-auto leading-relaxed">
+            GROWS se adapta a las necesidades específicas de cada profesional en la cadena de construcción
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-          {userTypes.map((userType) => {
+        {/* Cards de Usuarios Elegantes */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto mb-20">
+          {userTypes.map((userType, index) => {
             const Icon = userType.icon;
             return (
               <div
                 key={userType.key}
-                className="p-8 rounded-grows-lg border-2 border-grows-border bg-white transition-all duration-300 hover:shadow-grows-xl hover:-translate-y-2"
+                className="group relative bg-grows-surface rounded-3xl border border-grows-border shadow-grows-sm hover:shadow-grows-lg transition-all duration-500 overflow-hidden"
+                style={{
+                  animationDelay: `${index * 200}ms`,
+                  animation: 'fadeInUp 0.8s ease-out forwards',
+                  opacity: 0,
+                }}
               >
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 rounded-full bg-grows-background flex items-center justify-center mx-auto mb-4">
-                    <Icon className="h-8 w-8 text-grows-primary" />
-                  </div>
-                  
-                  <h3 className="text-2xl font-bold text-grows-text-primary mb-2">
-                    {t(`${userType.key}.title`)}
-                  </h3>
-                  
-                  <p className="text-grows-text-secondary mb-6">
-                    {t(`${userType.key}.subtitle`)}
-                  </p>
+                {/* Badge Superior */}
+                <div className="absolute top-6 right-6 z-10">
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${userType.badgeBg} ${userType.badgeText}`}>
+                    {userType.badge}
+                  </span>
                 </div>
 
-                <div className="space-y-4">
-                  {[0, 1, 2, 3].map((index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <CheckCircle className="h-5 w-5 text-grows-secondary mt-0.5 flex-shrink-0" />
-                      <p className="text-grows-text-primary/80 text-sm leading-relaxed">
-                        {t(`${userType.key}.features.${index}`)}
-                      </p>
+                {/* Contenido Principal */}
+                <div className="p-8">
+                  {/* Header */}
+                  <div className="text-center mb-8">
+                    <div className={`w-20 h-20 ${userType.iconBg} rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className={`h-10 w-10 ${userType.iconColor}`} />
                     </div>
-                  ))}
-                </div>
+                    
+                    <h3 className="text-2xl font-bold text-grows-text-primary mb-3">
+                      {t(`${userType.key}.title`)}
+                    </h3>
+                    
+                    <p className="text-grows-text-secondary text-base leading-relaxed">
+                      {t(`${userType.key}.subtitle`)}
+                    </p>
+                  </div>
 
-                <div className="mt-8 text-center">
-                  <a
-                    href="#pricing"
-                    className="inline-block px-6 py-3 rounded-grows-md font-semibold bg-grows-primary text-white hover:bg-grows-primary/90 hover:shadow-grows-md transition-all duration-200"
-                  >
-                    Ver planes
-                  </a>
+                  {/* Features */}
+                  <div className="space-y-4 mb-8">
+                    {[0, 1, 2, 3].map((featureIndex) => (
+                      <div key={featureIndex} className="flex items-start gap-4 group/item">
+                        <div className={`w-6 h-6 ${userType.iconBg} rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 group-hover/item:scale-110 transition-transform duration-200`}>
+                          <CheckCircle className={`h-4 w-4 ${userType.iconColor}`} />
+                        </div>
+                        <p className="text-grows-text-primary leading-relaxed group-hover/item:text-grows-text-primary transition-colors duration-200">
+                          {t(`${userType.key}.features.${featureIndex}`)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Botón */}
+                  <div className="text-center">
+                    <a
+                      href="#pricing"
+                      className={`group/btn inline-flex items-center gap-2 px-8 py-4 ${userType.iconBg} ${userType.iconColor} font-semibold rounded-xl hover:shadow-grows-lg transition-all duration-300 hover:scale-105 border border-grows-border`}
+                    >
+                      Ver planes
+                      <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
+                    </a>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Additional info about the ecosystem */}
-        <div className="mt-16 bg-white rounded-grows-lg p-8 shadow-grows-lg">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-grows-text-primary mb-4">
+        {/* Ecosistema Completo Elegante */}
+        <div className="bg-grows-surface rounded-3xl border border-grows-border shadow-grows-lg overflow-hidden">
+          {/* Header del Ecosistema */}
+          <div className="bg-gradient-to-r from-grows-background to-grows-neutral p-8 text-center border-b border-grows-border">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-grows-primary rounded-full mb-6">
+              <Zap className="h-4 w-4 text-grows-secondary" />
+              <span className="text-sm font-semibold text-grows-secondary">Ecosistema Completo</span>
+            </div>
+            <h3 className="text-3xl font-bold text-grows-text-primary mb-4">
               Un Ecosistema Completo
             </h3>
-            <p className="text-lg text-grows-text-secondary max-w-3xl mx-auto">
+            <p className="text-lg text-grows-text-secondary max-w-3xl mx-auto leading-relaxed">
               GROWS conecta coordinadores de obra y socios constructores en una plataforma unificada con IA
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h4 className="text-lg font-semibold text-grows-text-primary mb-4">
-                Sistema de Niveles y Reputación
-              </h4>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-grows-secondary rounded-full"></div>
-                  <span className="text-grows-text-primary/80">Hierro: Estructura básica (0h)</span>
+          {/* Contenido Principal */}
+          <div className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              
+              {/* Sistema de Niveles */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-grows-primary rounded-xl flex items-center justify-center">
+                    <Award className="h-5 w-5 text-grows-secondary" />
+                  </div>
+                  <h4 className="text-xl font-bold text-grows-text-primary">Sistema de Niveles y Reputación</h4>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-grows-secondary rounded-full"></div>
-                  <span className="text-grows-text-primary/80">Bronce: Estructura / Obra gris (180h)</span>
+                <div className="space-y-3">
+                  {reputationLevels.map((level, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 rounded-xl hover:bg-grows-background transition-colors duration-200">
+                      <div className={`w-10 h-10 ${level.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                        <Star className={`h-5 w-5 ${level.textColor}`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h5 className="font-semibold text-grows-text-primary">{level.level}</h5>
+                          <span className="text-sm text-grows-text-secondary">({level.hours})</span>
+                        </div>
+                        <p className="text-sm text-grows-text-secondary">{level.description}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-grows-secondary rounded-full"></div>
-                  <span className="text-grows-text-primary/80">Plata: Estructura / Obra gris (300h)</span>
+              </div>
+
+              {/* Beneficios Clave */}
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-grows-primary rounded-xl flex items-center justify-center">
+                    <TrendingUp className="h-5 w-5 text-grows-secondary" />
+                  </div>
+                  <h4 className="text-xl font-bold text-grows-text-primary">Beneficios Clave</h4>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-grows-secondary rounded-full"></div>
-                  <span className="text-grows-text-primary/80">Platino: Todas las etapas (700h)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-grows-secondary rounded-full"></div>
-                  <span className="text-grows-text-primary/80">Oro: Líder habilitado (1200h)</span>
+                <div className="space-y-3">
+                  {keyBenefits.map((benefit, index) => {
+                    const Icon = benefit.icon;
+                    return (
+                      <div key={index} className="flex items-start gap-4 p-4 rounded-xl hover:bg-grows-background transition-colors duration-200">
+                        <div className="w-8 h-8 bg-grows-primary rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Icon className="h-4 w-4 text-grows-secondary" />
+                        </div>
+                        <p className="text-grows-text-primary leading-relaxed">{benefit.text}</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div>
-              <h4 className="text-lg font-semibold text-grows-text-primary mb-4">
-                Beneficios Clave
-              </h4>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-grows-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-grows-text-primary/80">Estandarización de procesos con +1800 catálogos</span>
+            {/* Resultados Reales Elegante */}
+            <div className="mt-12">
+              <div className="bg-gradient-to-r from-grows-background to-grows-neutral rounded-2xl p-8 text-center">
+                <div className="w-16 h-16 bg-grows-secondary rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <Home className="h-8 w-8 text-grows-text-primary" />
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-grows-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-grows-text-primary/80">Trazabilidad completa con FSM</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-grows-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-grows-text-primary/80">Planificación automática con CPM</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="h-5 w-5 text-grows-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-grows-text-primary/80">Asistencia IA 24/7 con GrowsBot</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Contenido adicional sin imagen */}
-          <div className="mt-12 flex justify-center">
-            <div className="w-full max-w-lg h-96 rounded-grows-lg bg-grows-neutral flex items-center justify-center shadow-grows-md">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-grows-secondary rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-2xl">🏠</span>
-                </div>
-                <h4 className="text-xl font-semibold text-grows-text-primary mb-2">
-                  Resultados Reales
-                </h4>
-                <p className="text-grows-text-secondary">
+                <h4 className="text-2xl font-bold text-grows-text-primary mb-4">Resultados Reales</h4>
+                <p className="text-grows-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
                   Familias felices con sus nuevas casas construidas eficientemente
                 </p>
               </div>
@@ -158,6 +221,19 @@ export function UserProfiles() {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }

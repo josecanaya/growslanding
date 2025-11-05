@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter apps/landing build",
+  "buildCommand": "cd apps/landing && pnpm run build",
   "outputDirectory": "apps/landing/.next",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": "nextjs"

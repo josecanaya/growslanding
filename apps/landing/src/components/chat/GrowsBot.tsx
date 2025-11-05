@@ -44,7 +44,7 @@ const suggestedTopics = [
 ];
 
 const normalizeText = (value: string) =>
-  value.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 export function GrowsBot({ onCommand }: GrowsBotProps) {
   const [isOpen, setIsOpen] = useState(false);

@@ -130,7 +130,7 @@ export function EcosystemDiagram({ variant, className = '' }: EcosystemDiagramPr
         <h2 className="text-6xl font-bold text-[#1E293B] mb-6 tracking-tight leading-tight">
           {config.title}
         </h2>
-        {config.subtitle && (
+        {'subtitle' in config && config.subtitle && (
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
             {config.subtitle}
           </p>

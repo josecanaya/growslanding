@@ -2,18 +2,18 @@
   "name": "grows-backend",
   "version": "1.0.0",
   "description": "Backend GROWS con Next.js + Prisma + PostgreSQL",
-  "scripts": {
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "prisma db seed",
-    "test": "vitest",
+ "scripts": {
+  "prisma:generate": "prisma generate",
+  "prisma:migrate": "prisma migrate dev",
+  "prisma:seed": "prisma db seed",
+  "test": "vitest",
 
-    "dev": "cd apps/landing && npm run dev",
-    "build": "cd apps/landing && npm run build",
-    "start": "cd apps/landing && npm run start",
-    "lint": "cd apps/landing && npm run lint"
-  },
-  "dependencies": {
+  "dev": "cd apps/landing && npm run dev",
+  "build": "cd apps/landing && npm install && npm run build",
+  "start": "cd apps/landing && npm run start",
+  "lint": "cd apps/landing && npm run lint"
+},
+ "dependencies": {
     "@prisma/client": "^5.7.1",
     "next": "^14.0.4",
     "react": "^18.2.0",

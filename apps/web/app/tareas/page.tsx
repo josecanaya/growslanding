@@ -65,23 +65,48 @@ interface ObraResumenCardProps {
 }
 
 function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
-  const getEstadoIcon = (estado: string) => {
+  const getEstadoVariant = (estado: string) => {
     switch (estado) {
-      case 'activa': return <TrendingUp className="h-4 w-4" />;
-      case 'pausada': return <Clock className="h-4 w-4" />;
-      case 'finalizada': return <Building2 className="h-4 w-4" />;
-      default: return <Building2 className="h-4 w-4" />;
+      case 'activa': return 'success';
+      case 'pausada': return 'warning';
+      case 'finalizada': return 'info';
+      default: return 'default';
     }
   };
 
   return (
     <Card
-      title={obra.nombre}
-      subtitle={obra.direccion}
-      status={obra.estado}
-      icon={<Building2 className="h-6 w-6" />}
       onClick={() => onVerPlanificacion(obra.id)}
+      footer={
+        <div className="flex justify-end">
+          <Button variant="primary" size="sm" icon={<ArrowRight className="h-4 w-4" />}>
+            Ver planificación
+          </Button>
+        </div>
+      }
     >
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="rounded-grows-md border border-grows-border bg-grows-secondary/10 p-2">
+            <Building2 className="h-5 w-5 text-grows-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-grows-primary">
+              {obra.nombre}
+            </h3>
+            <div className="mt-1 flex items-center space-x-2">
+              <MapPin className="h-4 w-4 text-grows-text-secondary" />
+              <span className="text-sm text-grows-text-secondary">
+                {obra.direccion}
+              </span>
+            </div>
+          </div>
+        </div>
+        <Badge variant={getEstadoVariant(obra.estado)}>
+          {obra.estado}
+        </Badge>
+      </div>
+
       {/* Información del cliente */}
       <div className="mb-4">
         <div className="flex items-center gap-2 text-sm text-grows-text-secondary">
@@ -107,13 +132,6 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
           <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
         </div>
       </div>
-
-      {/* Footer con botón */}
-      <div className="flex justify-end">
-        <Button variant="primary" size="sm" icon={<ArrowRight className="h-4 w-4" />}>
-          Ver planificación
-        </Button>
-      </div>
     </Card>
   );
 }
@@ -135,7 +153,7 @@ export default function TareasPage() {
       subtitle="Seleccioná una obra para ver su progreso y planificación"
     >
       {/* Grid de obras */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {obrasActivas.length === 0 ? (
           <div className="col-span-full">
             <EmptyState

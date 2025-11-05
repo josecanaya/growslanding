@@ -43,7 +43,7 @@ export function AccordionItem({ title, children, defaultOpen = false, icon, badg
       
       {isOpen && (
         <div className="px-4 pb-4 border-t border-gray-100">
-          <div className="pt-4">
+          <div className="pt-3">
             {children}
           </div>
         </div>

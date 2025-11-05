@@ -1,0 +1,123 @@
+/* Tipografía moderna con degradado dorado */
+.title-gradient {
+  background: linear-gradient(135deg, #FFD54F 0%, #FFF1C1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 20px rgba(255, 215, 79, 0.3),
+               0 4px 40px rgba(0, 0, 0, 0.5),
+               2px 2px 4px rgba(0, 0, 0, 0.2);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.1em;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Efecto degradado dorado para "FALTAN" - versión pequeña */
+.title-gradient-small {
+  background: linear-gradient(135deg, #FFD54F 0%, #FFF1C1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 10px rgba(255, 215, 79, 0.3),
+               0 2px 20px rgba(0, 0, 0, 0.5),
+               1px 1px 2px rgba(0, 0, 0, 0.2);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0.1em;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Efecto hover para "FALTAN" */
+.title-gradient-small:hover {
+  animation: flicker 1.5s infinite;
+}
+
+/* Efecto hover - parpadeo luminoso dorado */
+.title-gradient:hover {
+  animation: flicker 1.5s infinite;
+}
+
+@keyframes flicker {
+  0%, 100% {
+    filter: drop-shadow(0 2px 8px rgba(255, 215, 79, 0.3)) 
+            drop-shadow(0 0 20px rgba(255, 215, 79, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 2px 12px rgba(255, 215, 79, 0.8)) 
+            drop-shadow(0 0 30px rgba(255, 215, 79, 0.5));
+  }
+}
+
+/* Línea de energía dorada animada */
+.glow-line {
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 215, 79, 0.3) 20%,
+    rgba(255, 195, 0, 0.8) 50%,
+    rgba(255, 215, 79, 0.3) 80%,
+    transparent 100%
+  );
+  filter: blur(1px);
+}
+
+/* Caja del contador - Fondo negro opaco con borde dorado */
+.countdown-box {
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid #FFD54F !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  transition: all 0.3s ease;
+}
+
+/* Números dorados brillantes con tipografía digital */
+.number-gold {
+  color: #FFC300 !important;
+  font-family: 'Space Grotesk', 'Orbitron', monospace !important;
+  font-weight: 900;
+  text-shadow: 
+    0 0 10px rgba(255, 195, 0, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.8);
+  transition: all 0.3s ease;
+}
+
+/* Etiquetas en gris claro */
+.label-text {
+  color: #C0C0C0 !important;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.15em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Heartbeat glow animation para el contador */
+@keyframes heartbeat {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 
+      0 4px 12px rgba(0, 0, 0, 0.5),
+      0 0 20px rgba(255, 195, 0, 0.4),
+      0 0 40px rgba(255, 195, 0, 0.2);
+  }
+}
+
+/* Aplicar heartbeat cada 5 segundos - se aplica via inline styles en el componente */
+/* .countdown-box {
+  animation: heartbeat 5s ease-in-out infinite;
+} */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .title-gradient {
+    font-size: 2.5rem;
+  }
+  
+  .countdown-box {
+    min-width: 65px !important;
+    padding: 12px !important;
+  }
+  
+  .number-gold {
+    font-size: 1.75rem !important;
+  }
+}

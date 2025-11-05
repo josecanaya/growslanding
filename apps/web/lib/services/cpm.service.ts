@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { createServiceSupabaseClient } from '../supabase-server';
 
 const prisma = new PrismaClient();
 
@@ -285,5 +286,104 @@ export class CPMService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Calcula el CPM desde Supabase
+   */
+  static async calcularCPMDesdeSupabase(obraId: string): Promise<{
+    caminoCritico: string[];
+    tareasConHolguras: TareaCPM[];
+    duracionTotal: number;
+  }> {
+    const supabase = createServiceSupabaseClient();
+
+    // Obtener tareas de la obra
+    const { data: tareas, error: tareasError } = await supabase
+      .from('tareas')
+      .select('id, title, fecha_inicio_estimada, fecha_fin_estimada, obra_id')
+      .eq('obra_id', obraId);
+
+    if (tareasError) {
+      throw new Error(`Error obteniendo tareas: ${tareasError.message}`);
+    }
+
+    if (!tareas || tareas.length === 0) {
+      return {
+        caminoCritico: [],
+        tareasConHolguras: [],
+        duracionTotal: 0,
+      };
+    }
+
+    // Calcular duración en días para cada tarea
+    const tareasConDuracion = tareas.map(tarea => {
+      let duracion = 1; // Default
+
+      if (tarea.fecha_inicio_estimada && tarea.fecha_fin_estimada) {
+        const inicio = new Date(tarea.fecha_inicio_estimada);
+        const fin = new Date(tarea.fecha_fin_estimada);
+        const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+        duracion = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        duracion = Math.max(1, duracion); // Mínimo 1 día
+      }
+
+      return {
+        ...tarea,
+        duracion,
+      };
+    });
+
+    // Obtener precedencias
+    const tareaIds = tareasConDuracion.map(t => t.id);
+    const { data: precedencias, error: precedenciasError } = await supabase
+      .from('tarea_precedencias')
+      .select('tarea_id, depende_de, lag_dias')
+      .in('tarea_id', tareaIds);
+
+    if (precedenciasError) {
+      throw new Error(`Error obteniendo precedencias: ${precedenciasError.message}`);
+    }
+
+    // Construir mapa de precedencias
+    const precedenciasMap = new Map<string, string[]>();
+    const lagDiasMap = new Map<string, number>();
+
+    (precedencias || []).forEach(prec => {
+      if (!precedenciasMap.has(prec.tarea_id)) {
+        precedenciasMap.set(prec.tarea_id, []);
+      }
+      precedenciasMap.get(prec.tarea_id)!.push(prec.depende_de);
+      lagDiasMap.set(`${prec.tarea_id}-${prec.depende_de}`, prec.lag_dias || 0);
+    });
+
+    // Convertir a formato CPM
+    const tareasCPM: TareaCPM[] = tareasConDuracion.map(tarea => ({
+      id: tarea.id,
+      nombre: tarea.title || 'Sin nombre',
+      duracionEstimada: tarea.duracion,
+      precedencias: precedenciasMap.get(tarea.id) || [],
+    }));
+
+    // Calcular fechas tempranas (forward pass)
+    this.calcularFechasTempranas(tareasCPM);
+
+    // Calcular fechas tardías (backward pass)
+    this.calcularFechasTardias(tareasCPM);
+
+    // Calcular holguras
+    this.calcularHolguras(tareasCPM);
+
+    // Identificar camino crítico
+    const caminoCritico = this.identificarCaminoCritico(tareasCPM);
+
+    // Calcular duración total
+    const duracionTotal = Math.max(...tareasCPM.map(t => t.fechaFinTemprana || 0));
+
+    return {
+      caminoCritico,
+      tareasConHolguras: tareasCPM,
+      duracionTotal,
+    };
   }
 }

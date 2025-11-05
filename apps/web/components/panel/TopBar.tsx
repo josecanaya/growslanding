@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Home, Users, Bell, User, X } from 'lucide-react';
+import { Home, Users, Bell, User, X, ClipboardList } from 'lucide-react';
 
 interface TopBarProps {
   isConnected: boolean;
@@ -27,6 +27,7 @@ export function TopBar({
 
   const menuItems = [
     { id: 'tareas', label: 'Tareas', icon: Home },
+    { id: 'mis-tareas', label: 'Mis Tareas', icon: ClipboardList },
     { id: 'cuadrilla', label: 'Cuadrilla', icon: Users },
     { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
     { id: 'cuenta', label: 'Perfil', icon: User },

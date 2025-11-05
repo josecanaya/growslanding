@@ -3,9 +3,11 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "../globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope" });
 
 const locales = ["en", "es"];
 
@@ -26,7 +28,7 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${manrope.variable} ${inter.className}`}>
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

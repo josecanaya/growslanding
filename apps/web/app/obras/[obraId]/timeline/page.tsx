@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { EtapasTimelineWrapper } from '@/components/EtapasTimelineWrapper';
+import { EtapasTimelineWrapper } from '@/components/cliente/EtapasTimelineWrapper';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 
 interface Tarea {

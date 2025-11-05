@@ -1,7 +1,9 @@
 'use client';
 
 import { create } from 'zustand';
-import { Cuadrilla, Especialidad, EstadoCuadrilla, FiltrosCuadrillas, Obra, Tarea } from '../types/cuadrillas';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
+import { Cuadrilla, Especialidad, EstadoCuadrilla, FiltrosCuadrillas, Obra, Tarea, Integrante } from '../types/cuadrillas';
 
 interface CuadrillasState {
   cuadrillas: Cuadrilla[];
@@ -11,8 +13,13 @@ interface CuadrillasState {
   cuadrillaSeleccionada: Cuadrilla | null;
   showDrawer: boolean;
   showModalAsignacion: boolean;
+  isLoading: boolean;
+  error: string | null;
   
   // Acciones
+  fetchCuadrillas: (orgId: string) => Promise<void>;
+  crearCuadrilla: (cuadrillaData: Partial<Cuadrilla>, orgId: string) => Promise<Cuadrilla | null>;
+  eliminarCuadrilla: (cuadrillaId: string, orgId: string) => Promise<boolean>;
   setFiltros: (filtros: Partial<FiltrosCuadrillas>) => void;
   moverCuadrilla: (cuadrillaId: string, nuevaEspecialidad: Especialidad) => void;
   seleccionarCuadrilla: (cuadrilla: Cuadrilla | null) => void;
@@ -24,447 +31,391 @@ interface CuadrillasState {
   actualizarCuadrilla: (cuadrillaId: string, updates: Partial<Cuadrilla>) => void;
 }
 
-// Datos mock iniciales
-const cuadrillasMock: Cuadrilla[] = [
-  {
-    id: '1',
-    nombre: 'Cuadrilla Albañilería Norte',
-    encargado: 'Carlos Mendoza',
-    telefonoEncargado: '+54 11 1234-5678',
-    whatsappEncargado: '+54 11 1234-5678',
-    emailEncargado: 'carlos.mendoza@email.com',
-    fotoEncargado: '/images/avatar-carlos.jpg',
-    especialidad: 'Albañilería / Estructura',
-    estado: 'Disponible',
-    antiguedad: '3 años y 8 obras',
-    valoracionPromedio: 4.5,
-    obrasParticipadas: 8,
-    cumplimientoTiempo: 92,
-    seguridadAlDia: true,
-    integrantes: [
-      { 
-        id: '1', 
-        nombre: 'Carlos Mendoza', 
-        rol: 'Encargado', 
-        seguroVigente: true,
-        telefono: '+54 11 1234-5678',
-        whatsapp: '+54 11 1234-5678',
-        email: 'carlos.mendoza@email.com',
-        dni: '12345678',
-        fechaIngreso: '2021-03-15'
-      },
-      { 
-        id: '2', 
-        nombre: 'Roberto Silva', 
-        rol: 'Oficial', 
-        seguroVigente: true,
-        telefono: '+54 11 2345-6789',
-        whatsapp: '+54 11 2345-6789',
-        dni: '23456789',
-        fechaIngreso: '2021-06-20'
-      },
-      { 
-        id: '3', 
-        nombre: 'Miguel Torres', 
-        rol: 'Ayudante', 
-        seguroVigente: true,
-        telefono: '+54 11 3456-7890',
-        whatsapp: '+54 11 3456-7890',
-        dni: '34567890',
-        fechaIngreso: '2022-01-10'
-      }
-    ],
-    documentos: [
-      { id: '1', tipo: 'ART', nombre: 'ART Albañilería Norte', vigente: true },
-      { id: '2', tipo: 'Seguro', nombre: 'Seguro de Accidentes', vigente: true },
-      { id: '3', tipo: 'Certificado', nombre: 'Certificado de Capacitación', vigente: true }
-    ],
-    kpi: {
-      tareasAsignadas: 8,
-      tareasEnEjecucion: 3,
-      tareasTerminadas: 5,
-      cumplimientoPct: 62
-    },
-    feedback: [
-      {
-        id: '1',
-        fecha: '2024-01-15',
-        obraNombre: 'Casa Familiar Los Robles',
-        puntuacion: 5,
-        comentario: 'Excelente trabajo, muy puntual y calidad impecable.',
-        autor: 'Arq. María González'
-      },
-      {
-        id: '2',
-        fecha: '2023-11-20',
-        obraNombre: 'Edificio Residencial Norte',
-        puntuacion: 4,
-        comentario: 'Buen desempeño, algunos retrasos menores.',
-        autor: 'Arq. Juan Pérez'
-      }
-    ],
-    badges: [
-      {
-        id: '1',
-        tipo: 'cumplimiento',
-        titulo: '🏆 Cumplió 10 obras a tiempo',
-        descripcion: 'Más de 10 obras completadas en tiempo',
-        icono: '🏆',
-        fechaObtenido: '2024-01-10'
-      },
-      {
-        id: '2',
-        tipo: 'antiguedad',
-        titulo: '⭐ Socio de confianza',
-        descripcion: 'Más de 2 años trabajando juntos',
-        icono: '⭐',
-        fechaObtenido: '2023-03-15'
-      }
-    ],
-    asignaciones: [
-      {
-        obraNombre: 'Casa Familiar Los Robles',
-        tareaNombre: 'Muros exteriores 30cm',
-        etapa: 'estructura',
-        estado: 'EN_EJECUCION',
-        fechaInicio: '2024-01-20',
-        fechaFinEstimada: '2024-02-15'
-      },
-      {
-        obraNombre: 'Edificio Residencial Norte',
-        tareaNombre: 'Excavación de fundación',
-        etapa: 'estructura',
-        estado: 'TERMINADA',
-        fechaInicio: '2023-12-01',
-        fechaFinEstimada: '2023-12-20'
-      }
-    ]
-  },
-  {
-    id: '2',
-    nombre: 'Cuadrilla Yesería Sur',
-    encargado: 'Ana García',
-    telefonoEncargado: '+54 11 4567-8901',
-    whatsappEncargado: '+54 11 4567-8901',
-    emailEncargado: 'ana.garcia@email.com',
-    fotoEncargado: '/images/avatar-ana.jpg',
-    especialidad: 'Yesería / Terminaciones',
-    estado: 'En obra',
-    antiguedad: '2 años y 6 obras',
-    valoracionPromedio: 4.2,
-    obrasParticipadas: 6,
-    cumplimientoTiempo: 88,
-    seguridadAlDia: true,
-    integrantes: [
-      { 
-        id: '1', 
-        nombre: 'Ana García', 
-        rol: 'Encargada', 
-        seguroVigente: true,
-        telefono: '+54 11 4567-8901',
-        whatsapp: '+54 11 4567-8901',
-        email: 'ana.garcia@email.com',
-        dni: '45678901',
-        fechaIngreso: '2022-02-10'
-      },
-      { 
-        id: '2', 
-        nombre: 'Luis Fernández', 
-        rol: 'Yesero', 
-        seguroVigente: true,
-        telefono: '+54 11 5678-9012',
-        whatsapp: '+54 11 5678-9012',
-        dni: '56789012',
-        fechaIngreso: '2022-05-15'
-      }
-    ],
-    documentos: [
-      { id: '1', tipo: 'ART', nombre: 'ART Yesería Sur', vigente: true },
-      { id: '2', tipo: 'Certificado', nombre: 'Certificado de Salud', vigente: true }
-    ],
-    kpi: {
-      tareasAsignadas: 5,
-      tareasEnEjecucion: 2,
-      tareasTerminadas: 3,
-      cumplimientoPct: 60
-    },
-    feedback: [
-      {
-        id: '1',
-        fecha: '2024-01-10',
-        obraNombre: 'Casa Unifamiliar Sur',
-        puntuacion: 4,
-        comentario: 'Trabajo muy limpio y detallado.',
-        autor: 'Arq. Roberto López'
-      }
-    ],
-    badges: [
-      {
-        id: '1',
-        tipo: 'velocidad',
-        titulo: '⏱️ Récord de rapidez',
-        descripcion: 'Completó obra en tiempo récord',
-        icono: '⏱️',
-        fechaObtenido: '2023-12-15'
-      }
-    ],
-    asignaciones: [
-      {
-        obraNombre: 'Casa Familiar Los Robles',
-        tareaNombre: 'Revoque grueso exterior',
-        etapa: 'terminaciones',
-        estado: 'EN_EJECUCION',
-        fechaInicio: '2024-01-25',
-        fechaFinEstimada: '2024-02-10'
-      }
-    ]
-  },
-  {
-    id: '3',
-    nombre: 'Cuadrilla Carpintería Centro',
-    encargado: 'Diego López',
-    telefonoEncargado: '+54 11 6789-0123',
-    whatsappEncargado: '+54 11 6789-0123',
-    emailEncargado: 'diego.lopez@email.com',
-    fotoEncargado: '/images/avatar-diego.jpg',
-    especialidad: 'Carpintería',
-    estado: 'Ocupada',
-    antiguedad: '4 años y 12 obras',
-    valoracionPromedio: 4.8,
-    obrasParticipadas: 12,
-    cumplimientoTiempo: 95,
-    seguridadAlDia: false,
-    integrantes: [
-      { 
-        id: '1', 
-        nombre: 'Diego López', 
-        rol: 'Encargado', 
-        seguroVigente: true,
-        telefono: '+54 11 6789-0123',
-        whatsapp: '+54 11 6789-0123',
-        email: 'diego.lopez@email.com',
-        dni: '67890123',
-        fechaIngreso: '2020-08-15'
-      },
-      { 
-        id: '2', 
-        nombre: 'Pedro Martínez', 
-        rol: 'Carpintero', 
-        seguroVigente: true,
-        telefono: '+54 11 7890-1234',
-        whatsapp: '+54 11 7890-1234',
-        dni: '78901234',
-        fechaIngreso: '2021-03-20'
-      },
-      { 
-        id: '3', 
-        nombre: 'Sergio Ruiz', 
-        rol: 'Ayudante', 
-        seguroVigente: false,
-        telefono: '+54 11 8901-2345',
-        whatsapp: '+54 11 8901-2345',
-        dni: '89012345',
-        fechaIngreso: '2022-09-10'
-      }
-    ],
-    documentos: [
-      { id: '1', tipo: 'ART', nombre: 'ART Carpintería Centro', vigente: false },
-      { id: '2', tipo: 'Seguro', nombre: 'Seguro de Responsabilidad Civil', vigente: true }
-    ],
-    kpi: {
-      tareasAsignadas: 3,
-      tareasEnEjecucion: 0,
-      tareasTerminadas: 1,
-      cumplimientoPct: 33
-    },
-    feedback: [
-      {
-        id: '1',
-        fecha: '2024-01-05',
-        obraNombre: 'Ampliación Comercial Centro',
-        puntuacion: 5,
-        comentario: 'Excelente carpintería, muy profesional.',
-        autor: 'Arq. Laura Martín'
-      }
-    ],
-    badges: [
-      {
-        id: '1',
-        tipo: 'calidad',
-        titulo: '🎯 Maestro carpintero',
-        descripcion: 'Reconocido por su calidad excepcional',
-        icono: '🎯',
-        fechaObtenido: '2023-10-20'
-      }
-    ]
-  },
-  {
-    id: '4',
-    nombre: 'Cuadrilla Electricidad Este',
-    encargado: 'María González',
-    telefonoEncargado: '+54 11 9012-3456',
-    whatsappEncargado: '+54 11 9012-3456',
-    emailEncargado: 'maria.gonzalez@email.com',
-    fotoEncargado: '/images/avatar-maria.jpg',
-    especialidad: 'Electricidad',
-    estado: 'Disponible',
-    antiguedad: '2 años y 5 obras',
-    valoracionPromedio: 4.3,
-    obrasParticipadas: 5,
-    cumplimientoTiempo: 90,
-    seguridadAlDia: true,
-    integrantes: [
-      { 
-        id: '1', 
-        nombre: 'María González', 
-        rol: 'Encargada', 
-        seguroVigente: true,
-        telefono: '+54 11 9012-3456',
-        whatsapp: '+54 11 9012-3456',
-        email: 'maria.gonzalez@email.com',
-        dni: '90123456',
-        fechaIngreso: '2022-04-12'
-      },
-      { 
-        id: '2', 
-        nombre: 'Jorge Herrera', 
-        rol: 'Electricista', 
-        seguroVigente: true,
-        telefono: '+54 11 0123-4567',
-        whatsapp: '+54 11 0123-4567',
-        dni: '01234567',
-        fechaIngreso: '2022-07-08'
-      }
-    ],
-    documentos: [
-      { id: '1', tipo: 'ART', nombre: 'ART Electricidad Este', vigente: true },
-      { id: '2', tipo: 'Certificado', nombre: 'Certificado Técnico', vigente: true }
-    ],
-    kpi: {
-      tareasAsignadas: 6,
-      tareasEnEjecucion: 2,
-      tareasTerminadas: 4,
-      cumplimientoPct: 67
-    },
-    feedback: [
-      {
-        id: '1',
-        fecha: '2024-01-12',
-        obraNombre: 'Edificio Residencial Norte',
-        puntuacion: 4,
-        comentario: 'Instalación eléctrica muy bien ejecutada.',
-        autor: 'Arq. Carlos Ruiz'
-      }
-    ],
-    badges: [
-      {
-        id: '1',
-        tipo: 'antiguedad',
-        titulo: '🔌 Especialista eléctrico',
-        descripcion: 'Experto en instalaciones complejas',
-        icono: '🔌',
-        fechaObtenido: '2023-08-15'
-      }
-    ],
-    asignaciones: [
-      {
-        obraNombre: 'Edificio Residencial Norte',
-        tareaNombre: 'Instalación eléctrica baños',
-        etapa: 'obra_gris',
-        estado: 'EN_EJECUCION',
-        fechaInicio: '2024-01-18',
-        fechaFinEstimada: '2024-02-05'
-      }
-    ]
-  },
-  {
-    id: '5',
-    nombre: 'Cuadrilla Plomería Oeste',
-    encargado: 'Ricardo Morales',
-    telefonoEncargado: '+54 11 1234-9876',
-    whatsappEncargado: '+54 11 1234-9876',
-    emailEncargado: 'ricardo.morales@email.com',
-    fotoEncargado: '/images/avatar-ricardo.jpg',
-    especialidad: 'Plomería / Gas',
-    estado: 'Inactiva',
-    antiguedad: '1 año y 3 obras',
-    valoracionPromedio: 3.8,
-    obrasParticipadas: 3,
-    cumplimientoTiempo: 75,
-    seguridadAlDia: false,
-    integrantes: [
-      { 
-        id: '1', 
-        nombre: 'Ricardo Morales', 
-        rol: 'Encargado', 
-        seguroVigente: true,
-        telefono: '+54 11 1234-9876',
-        whatsapp: '+54 11 1234-9876',
-        email: 'ricardo.morales@email.com',
-        dni: '12349876',
-        fechaIngreso: '2023-01-20'
-      },
-      { 
-        id: '2', 
-        nombre: 'Fernando Castro', 
-        rol: 'Plomero', 
-        seguroVigente: false,
-        telefono: '+54 11 2345-8765',
-        whatsapp: '+54 11 2345-8765',
-        dni: '23458765',
-        fechaIngreso: '2023-03-15'
-      }
-    ],
-    documentos: [
-      { id: '1', tipo: 'ART', nombre: 'ART Plomería Oeste', vigente: false },
-      { id: '2', tipo: 'Certificado', nombre: 'Certificado de Competencias', vigente: true }
-    ],
-    kpi: {
-      tareasAsignadas: 2,
-      tareasEnEjecucion: 0,
-      tareasTerminadas: 1,
-      cumplimientoPct: 50
-    },
-    feedback: [
-      {
-        id: '1',
-        fecha: '2023-12-10',
-        obraNombre: 'Casa Unifamiliar Sur',
-        puntuacion: 3,
-        comentario: 'Trabajo aceptable, pero con algunos retrasos.',
-        autor: 'Arq. Patricia Silva'
-      }
-    ],
-    badges: []
-  }
-];
+// Helper para mapear datos de Supabase a Cuadrilla
+function mapearCuadrillaDesdeSupabase(data: any): Cuadrilla {
+  // Mapear integrantes (desde cuadrilla_socios o cuadrilla_integrantes)
+  const integrantes: Integrante[] = (data.socios || data.integrantes || []).map((s: any) => ({
+    id: s.socio?.id || s.id || '',
+    nombre: s.socio?.nombre || s.nombre || '',
+    rol: s.rol || s.rol_en_cuadrilla || '',
+    telefono: s.socio?.telefono || s.telefono || '',
+    whatsapp: s.socio?.whatsapp || s.whatsapp || '',
+    email: s.socio?.email || s.email || '',
+    dni: s.socio?.dni || s.dni || '',
+    fechaIngreso: s.fecha_ingreso || '',
+    seguroVigente: s.socio?.seguro_vigente || s.seguro_vigente || false,
+  }));
 
-const obrasMock: Obra[] = [
-  { id: '1', nombre: 'Casa Familiar Los Robles', estado: 'ACTIVA' },
-  { id: '2', nombre: 'Edificio Residencial Norte', estado: 'ACTIVA' },
-  { id: '3', nombre: 'Ampliación Comercial Centro', estado: 'ACTIVA' },
-  { id: '4', nombre: 'Casa Unifamiliar Sur', estado: 'ACTIVA' }
-];
+  // Valores por defecto para campos calculados
+  const antiguedad = calcularAntiguedad(data.created_at);
+  const obrasParticipadas = data.obras_participadas || 0;
+  const valoracionPromedio = data.valoracion_promedio || 0;
+  const cumplimientoTiempo = data.cumplimiento_tiempo || 0;
+  const seguridadAlDia = data.seguridad_al_dia || false;
 
-const tareasMock: Tarea[] = [
-  { id: '1', nombre: 'Excavación de fundación', obraId: '1', etapa: 'estructura', estado: 'PENDIENTE' },
-  { id: '2', nombre: 'Hormigón de fundación', obraId: '1', etapa: 'estructura', estado: 'PENDIENTE' },
-  { id: '3', nombre: 'Muros exteriores 30cm', obraId: '1', etapa: 'estructura', estado: 'EN_EJECUCION', cuadrillaId: '1' },
-  { id: '4', nombre: 'Instalación eléctrica baños', obraId: '2', etapa: 'obra_gris', estado: 'EN_EJECUCION', cuadrillaId: '4' },
-  { id: '5', nombre: 'Revoque grueso exterior', obraId: '1', etapa: 'terminaciones', estado: 'EN_EJECUCION', cuadrillaId: '2' },
-  { id: '6', nombre: 'Instalación de puertas', obraId: '2', etapa: 'terminaciones', estado: 'PENDIENTE' },
-  { id: '7', nombre: 'Pintura exterior', obraId: '3', etapa: 'terminaciones', estado: 'PENDIENTE' },
-  { id: '8', nombre: 'Instalación sanitaria', obraId: '4', etapa: 'obra_gris', estado: 'PENDIENTE' }
-];
+  return {
+    id: data.id,
+    nombre: data.nombre,
+    encargado: data.encargado,
+    telefonoEncargado: data.telefono_encargado || undefined,
+    whatsappEncargado: data.whatsapp_encargado || undefined,
+    emailEncargado: data.email_encargado || undefined,
+    fotoEncargado: data.foto_encargado || undefined,
+    especialidad: data.especialidad as Especialidad,
+    estado: (data.estado || 'Disponible') as EstadoCuadrilla,
+    antiguedad,
+    valoracionPromedio: Number(valoracionPromedio),
+    obrasParticipadas,
+    cumplimientoTiempo,
+    seguridadAlDia,
+    integrantes,
+    documentos: data.documentos || [],
+    kpi: {
+      tareasAsignadas: 0, // Se calculará desde tareas
+      tareasEnEjecucion: 0,
+      tareasTerminadas: 0,
+      cumplimientoPct: 0,
+    },
+    feedback: data.feedback || [],
+    badges: data.badges || [],
+    asignaciones: [],
+  };
+}
+
+function calcularAntiguedad(createdAt: string): string {
+  if (!createdAt) return 'Nueva';
+  const fecha = new Date(createdAt);
+  const ahora = new Date();
+  const años = Math.floor((ahora.getTime() - fecha.getTime()) / (1000 * 60 * 60 * 24 * 365));
+  if (años === 0) return 'Menos de un año';
+  if (años === 1) return '1 año';
+  return `${años} años`;
+}
 
 export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
-  cuadrillas: cuadrillasMock,
-  obras: obrasMock,
-  tareas: tareasMock,
+  cuadrillas: [],
+  obras: [],
+  tareas: [],
   filtros: {},
   cuadrillaSeleccionada: null,
   showDrawer: false,
   showModalAsignacion: false,
+  isLoading: false,
+  error: null,
+
+  fetchCuadrillas: async (orgId: string) => {
+    if (!orgId) {
+      set({ error: 'No hay organización seleccionada' });
+      return;
+    }
+
+    set({ isLoading: true, error: null });
+    const supabase = createClientComponentClient<Database>();
+
+    try {
+      // Query inicial: incluir todos los campos que podrían existir en un solo select
+      // Si algún campo no existe, Supabase lo ignorará pero no fallará
+      const { data: cuadrillasData, error: cuadrillasError } = await supabase
+        .from('cuadrillas')
+        .select('id, nombre, encargado, especialidad, estado, org_id, obra_id, created_at, updated_at')
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+
+      if (cuadrillasError) {
+        // Log detallado del error
+        const errorInfo: any = {
+          message: cuadrillasError?.message || 'Error desconocido',
+          details: cuadrillasError?.details || null,
+          hint: cuadrillasError?.hint || null,
+          code: cuadrillasError?.code || null,
+          errorObject: cuadrillasError,
+          errorType: typeof cuadrillasError,
+          errorKeys: cuadrillasError ? Object.keys(cuadrillasError) : [],
+          orgId: orgId
+        };
+        
+        try {
+          console.error('[FETCH_CUADRILLAS_ERROR]', JSON.stringify(errorInfo, null, 2));
+        } catch (e) {
+          console.error('[FETCH_CUADRILLAS_ERROR]', errorInfo);
+        }
+        
+        // Mensaje de error más descriptivo
+        let errorMessage = 'Error al cargar cuadrillas';
+        if (cuadrillasError?.message) {
+          errorMessage = cuadrillasError.message;
+        } else if (cuadrillasError?.code === 'PGRST116') {
+          errorMessage = 'No tienes permisos para ver cuadrillas. Verifica tu autenticación.';
+        } else if (cuadrillasError && Object.keys(cuadrillasError).length === 0) {
+          errorMessage = 'Error de permisos: Verifica que tengas acceso para ver cuadrillas en esta organización';
+        }
+        
+        set({ error: errorMessage, isLoading: false });
+        return;
+      }
+
+      // Si no hay datos pero tampoco hay error, puede ser que simplemente no haya cuadrillas
+      if (!cuadrillasData) {
+        set({ cuadrillas: [], isLoading: false });
+        return;
+      }
+
+      // Usar directamente los datos obtenidos sin queries adicionales
+      // Las queries opcionales a campos/tablas que no existen causan errores 400/404
+      // Por ahora, solo usamos los campos básicos que sabemos que existen
+      const cuadrillasCompletas = cuadrillasData || [];
+
+      // Cargar tareas para calcular KPIs
+      const cuadrillaIds = cuadrillasCompletas.map(c => c.id);
+      let tareasPorCuadrilla: Record<string, any[]> = {};
+
+      if (cuadrillaIds.length > 0) {
+        const { data: tareasData, error: tareasError } = await supabase
+          .from('tareas')
+          .select('id, cuadrilla_id, estado, avance')
+          .eq('org_id', orgId)
+          .in('cuadrilla_id', cuadrillaIds);
+
+        if (!tareasError && tareasData) {
+          // Agrupar tareas por cuadrilla_id
+          tareasPorCuadrilla = tareasData.reduce((acc: Record<string, any[]>, tarea) => {
+            if (tarea.cuadrilla_id) {
+              if (!acc[tarea.cuadrilla_id]) {
+                acc[tarea.cuadrilla_id] = [];
+              }
+              acc[tarea.cuadrilla_id].push(tarea);
+            }
+            return acc;
+          }, {});
+        } else if (tareasError) {
+          console.warn('[FETCH_TAREAS_FOR_KPI_WARNING]', tareasError);
+        }
+      }
+
+      // Mapear cuadrillas y calcular KPIs desde tareas reales
+      const cuadrillasMapeadas: Cuadrilla[] = cuadrillasCompletas.map(cuadrilla => {
+        const cuadrillaMapeada = mapearCuadrillaDesdeSupabase(cuadrilla);
+        const tareas = tareasPorCuadrilla[cuadrilla.id] || [];
+        
+        // Calcular KPIs desde tareas reales
+        const tareasAsignadas = tareas.length;
+        const tareasEnEjecucion = tareas.filter(t => 
+          t.estado === 'en_progreso' || t.estado === 'en curso'
+        ).length;
+        const tareasTerminadas = tareas.filter(t => 
+          t.estado === 'finalizado' || t.estado === 'validado'
+        ).length;
+        const cumplimientoPct = tareasAsignadas > 0 
+          ? Math.round((tareasTerminadas / tareasAsignadas) * 100)
+          : 0;
+
+        return {
+          ...cuadrillaMapeada,
+          kpi: {
+            tareasAsignadas,
+            tareasEnEjecucion,
+            tareasTerminadas,
+            cumplimientoPct,
+          },
+        };
+      });
+
+      set({ cuadrillas: cuadrillasMapeadas, isLoading: false });
+    } catch (err) {
+      console.error('[FETCH_CUADRILLAS_EXCEPTION]', err);
+      set({ error: 'Error inesperado al cargar cuadrillas', isLoading: false });
+    }
+  },
+
+  crearCuadrilla: async (cuadrillaData: Partial<Cuadrilla>, orgId: string) => {
+    if (!orgId) {
+      set({ error: 'No hay organización seleccionada' });
+      return null;
+    }
+
+    set({ isLoading: true, error: null });
+    const supabase = createClientComponentClient<Database>();
+
+    try {
+      // Validar campos requeridos
+      if (!cuadrillaData.nombre || !cuadrillaData.encargado || !cuadrillaData.especialidad) {
+        const missingFields = [];
+        if (!cuadrillaData.nombre) missingFields.push('nombre');
+        if (!cuadrillaData.encargado) missingFields.push('encargado');
+        if (!cuadrillaData.especialidad) missingFields.push('especialidad');
+        set({ error: `Campos requeridos faltantes: ${missingFields.join(', ')}`, isLoading: false });
+        return null;
+      }
+
+      // Solo insertar los campos mínimos - el resto lo completará el encargado
+      // Solo incluir campos que existen en la tabla de Supabase
+      const nuevaCuadrilla: any = {
+        org_id: orgId,
+        obra_id: null, // Por defecto null, se puede asignar después
+        nombre: cuadrillaData.nombre,
+        encargado: cuadrillaData.encargado,
+        especialidad: cuadrillaData.especialidad,
+        estado: 'Disponible', // Siempre 'Disponible' al crear
+        // Campos que NO se completan aquí (los completará el encargado):
+        // telefono_encargado, whatsapp_encargado, email_encargado, foto_encargado
+        // Estos quedan como NULL y el encargado los actualizará desde su app
+        // Nota: valoracion_promedio, obras_participadas, cumplimiento_tiempo, seguridad_al_dia
+        // pueden no existir en la tabla o tener valores por defecto, no los incluimos en el insert
+      };
+
+      console.log('[CREAR_CUADRILLA] Intentando crear:', { nuevaCuadrilla, orgId });
+
+      // Verificar que orgId es válido
+      if (!orgId || typeof orgId !== 'string') {
+        console.error('[CREAR_CUADRILLA_ERROR] orgId inválido:', orgId);
+        set({ error: 'ID de organización inválido', isLoading: false });
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('cuadrillas')
+        .insert([nuevaCuadrilla])
+        .select()
+        .single();
+
+      // Verificar si hay error - incluso si el objeto está vacío
+      if (error || (error !== null && Object.keys(error).length === 0)) {
+        // Log detallado del error
+        const errorInfo: any = {
+          message: error?.message || 'Error desconocido',
+          details: error?.details || null,
+          hint: error?.hint || null,
+          code: error?.code || null,
+          errorObject: error,
+          errorType: typeof error,
+          errorKeys: error ? Object.keys(error) : [],
+          payload: nuevaCuadrilla,
+          orgId: orgId
+        };
+        
+        // Intentar serializar el error completo
+        try {
+          console.error('[CREAR_CUADRILLA_ERROR] Error completo:', JSON.stringify(errorInfo, null, 2));
+        } catch (e) {
+          console.error('[CREAR_CUADRILLA_ERROR] Error al serializar:', errorInfo);
+        }
+        
+        // Intentar obtener más información del error
+        let errorMessage = 'Error al crear la cuadrilla';
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (error?.details) {
+          errorMessage = error.details;
+        } else if (error?.code) {
+          errorMessage = `Error ${error.code}: No se pudo crear la cuadrilla`;
+        } else if (error && Object.keys(error).length === 0) {
+          errorMessage = 'Error de permisos: Verifica que tengas acceso para crear cuadrillas en esta organización';
+        }
+        
+        set({ 
+          error: errorMessage, 
+          isLoading: false 
+        });
+        return null;
+      }
+
+      if (!data) {
+        console.error('[CREAR_CUADRILLA_ERROR] No se recibió data después del insert');
+        set({ error: 'No se recibió respuesta del servidor', isLoading: false });
+        return null;
+      }
+
+      console.log('[CREAR_CUADRILLA] Cuadrilla creada exitosamente:', data);
+
+      // Si hay integrantes, insertarlos en cuadrilla_socios o cuadrilla_integrantes
+      if (cuadrillaData.integrantes && cuadrillaData.integrantes.length > 0) {
+        // Intentar insertar en cuadrilla_socios primero
+        const integrantesData = cuadrillaData.integrantes.map(integrante => ({
+          cuadrilla_id: data.id,
+          socio_id: integrante.id || null,
+          rol: integrante.rol || '',
+          fecha_ingreso: integrante.fechaIngreso || new Date().toISOString().split('T')[0],
+          activo: true,
+        }));
+
+        const { error: integrantesError } = await supabase
+          .from('cuadrilla_socios')
+          .insert(integrantesData);
+
+        if (integrantesError) {
+          console.warn('[CREAR_INTEGRANTES_WARNING]', integrantesError);
+          // Si falla, intentar con cuadrilla_integrantes
+          const integrantesDataAlt = cuadrillaData.integrantes.map(integrante => ({
+            cuadrilla_id: data.id,
+            nombre: integrante.nombre || '',
+            rol: integrante.rol || '',
+            telefono: integrante.telefono || null,
+            whatsapp: integrante.whatsapp || null,
+            email: integrante.email || null,
+            dni: integrante.dni || null,
+            seguro_vigente: integrante.seguroVigente || false,
+            fecha_ingreso: integrante.fechaIngreso || new Date().toISOString().split('T')[0],
+            activo: true,
+          }));
+
+          const { error: integrantesErrorAlt } = await supabase
+            .from('cuadrilla_integrantes')
+            .insert(integrantesDataAlt);
+
+          if (integrantesErrorAlt) {
+            console.warn('[CREAR_INTEGRANTES_ALT_WARNING]', integrantesErrorAlt);
+          }
+        }
+      }
+
+      // Refrescar la lista
+      await get().fetchCuadrillas(orgId);
+      set({ isLoading: false });
+      
+      return mapearCuadrillaDesdeSupabase(data);
+    } catch (err: any) {
+      console.error('[CREAR_CUADRILLA_EXCEPTION]', {
+        error: err,
+        message: err?.message,
+        stack: err?.stack
+      });
+      set({ 
+        error: err?.message || 'Error inesperado al crear cuadrilla', 
+        isLoading: false 
+      });
+      return null;
+    }
+  },
+
+  eliminarCuadrilla: async (cuadrillaId: string, orgId: string) => {
+    set({ isLoading: true, error: null });
+    const supabase = createClientComponentClient<Database>();
+    try {
+      const { error } = await supabase
+        .from('cuadrillas')
+        .delete()
+        .eq('id', cuadrillaId)
+        .eq('org_id', orgId);
+
+      if (error) {
+        console.error('[ELIMINAR_CUADRILLA_ERROR]', error);
+        set({ error: error.message, isLoading: false });
+        return false;
+      }
+      
+      // Actualizar el estado local eliminando la cuadrilla
+      set((state) => ({
+        cuadrillas: state.cuadrillas.filter((c) => c.id !== cuadrillaId),
+        isLoading: false,
+      }));
+      
+      return true;
+    } catch (err: any) {
+      console.error('[ELIMINAR_CUADRILLA_EXCEPTION]', err);
+      set({ error: err.message || 'Error inesperado al eliminar cuadrilla', isLoading: false });
+      return false;
+    }
+  },
 
   setFiltros: (nuevosFiltros) => {
     set((state) => ({
@@ -502,7 +453,9 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
     set({ showModalAsignacion: false });
   },
 
-  asignarTarea: (cuadrillaId, tareaId) => {
+  asignarTarea: async (cuadrillaId: string, tareaId: string) => {
+    // Esta función se implementará en el componente que llama a la API
+    // Por ahora, solo actualiza el estado local
     set((state) => ({
       tareas: state.tareas.map(tarea =>
         tarea.id === tareaId

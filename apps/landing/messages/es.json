@@ -1,8 +1,20 @@
 {
   "hero": {
+    "altText": "Construcción hiperrealista",
+    "title": {
+      "part1": "MAKE IT",
+      "part2": "BETTER",
+      "part3": "MAKE IT",
+      "part4": "GROWS"
+    },
+    "subtitle": {
+      "line1": "Construcción inteligente",
+      "line2": "impulsada por IA"
+    },
+    "ctaButton": "Explorar GROWS",
     "badge": "Ahora con IA integrada · GrowsBot",
-    "title": "GROWS – Plataforma B2B de Gestión Inteligente con IA",
-    "subtitle": "Obras de pequeña y mediana escala con control profesional",
+    "titleOld": "GROWS – Plataforma B2B de Gestión Inteligente con IA",
+    "subtitleOld": "Obras de pequeña y mediana escala con control profesional",
     "description": "Centraliza planificación, ejecución y control con GrowsBot (IA), +1800 catálogos constructivos y cronogramas automáticos por CPM",
     "ctaPrimary": "Empezar gratis",
     "ctaSecondary": "Ver demo en vivo",
@@ -119,27 +131,26 @@
     }
   },
   "users": {
-    "title": "Perfiles de Usuario",
-    "subtitle": "Cada rol trabaja en un entorno digital claro y adaptado a sus responsabilidades",
+    "title": "Cada rol trabaja en un entorno digital",
+    "titleHighlight": "claro y adaptado",
+    "description": "Grows conecta líderes y ejecutores de manera visual, clara y precisa.",
     "coordinador": {
-      "title": "Coordinador de Obra",
-      "subtitle": "Estudios de arquitectura, arquitectos independientes y pequeñas constructoras",
-      "features": [
-        "Dashboard general con progreso, costos y KPIs por obra activa",
-        "Plantillas constructivas aplicables con un clic desde catálogo +1800",
-        "Asignación de socios constructores con control de límites por plan",
-        "Notificaciones push sobre cambios de estado y alertas operativas"
-      ]
+      "badge": "Para Líderes",
+      "title": "Arquitecto/Tecnico",
+      "description": "Planifica, mide y optimiza tus obras.",
+      "imageSrc": "/images/Tecnico.png",
+      "placeholder": "Imagen IA: Arquitecto/coordinador en obra con tablet o planos",
+      "infoLink": "+info",
+      "ctaButton": "Regístrate"
     },
     "socio": {
+      "badge": "Para Ejecutores",
       "title": "Socio Constructor",
-      "subtitle": "Profesional o cuadrilla externa que ejecuta, reporta y mantiene su reputación",
-      "features": [
-        "Crear obras y gestionar tareas asignadas con checklist digital",
-        "Subir presupuestos con evidencia fotográfica geolocalizada",
-        "Asignar cuadrillas (microcuadrillas hasta 4 personas) y controlar progreso",
-        "Sistema de reputación (⭐ 0-5) y niveles (Hierro → Oro) por horas acumuladas"
-      ]
+      "description": "Construí, reportá y crecé con tu equipo.",
+      "imageSrc": "/images/Socio.jpg",
+      "placeholder": "Imagen IA: Obrero/jefa de cuadrilla trabajando o reportando en smartphone",
+      "infoLink": "+info",
+      "ctaButton": "Regístrate"
     }
   },
   "cta": {

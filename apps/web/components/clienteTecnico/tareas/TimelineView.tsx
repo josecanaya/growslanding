@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Calendar, Eye, DollarSign, Users, CheckCircle, Clock, User, MapPin, Play, Pause, CheckCircle2 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 // Tipos de datos
 interface Tarea {
@@ -15,6 +17,12 @@ interface Tarea {
   prioridad: 'Baja' | 'Media' | 'Alta';
   presupuesto?: number;
   dependencias?: string[];
+  elemento?: {
+    id: string;
+    nombre: string;
+    categoria: string;
+    subcategoria?: string;
+  };
 }
 
 interface Obra {
@@ -27,91 +35,6 @@ interface Obra {
   fechaFin?: string;
 }
 
-// Datos mock
-const obraMock: Obra = {
-  id: '1',
-  nombre: 'Casa Residencial Norte',
-  direccion: 'Av. Libertador 1234, CABA',
-  estado: 'activa',
-  responsable: 'Carlos Pérez',
-  fechaInicio: '2024-01-15',
-  fechaFin: '2024-06-30'
-};
-
-const tareasMock: Tarea[] = [
-  {
-    id: '1',
-    nombre: 'Excavación y fundaciones',
-    descripcion: 'Excavación de cimientos y colocación de fundaciones',
-    estado: 'Finalizada',
-    responsable: 'Carlos Pérez',
-    fechaInicio: '2024-01-15',
-    fechaFin: '2024-01-30',
-    prioridad: 'Alta',
-    presupuesto: 45000
-  },
-  {
-    id: '2',
-    nombre: 'Estructura de hormigón',
-    descripcion: 'Construcción de estructura portante en hormigón armado',
-    estado: 'En curso',
-    responsable: 'María González',
-    fechaInicio: '2024-02-01',
-    fechaFin: '2024-03-15',
-    prioridad: 'Alta',
-    presupuesto: 120000,
-    dependencias: ['1']
-  },
-  {
-    id: '3',
-    nombre: 'Instalaciones eléctricas',
-    descripcion: 'Instalación completa del sistema eléctrico',
-    estado: 'Pendiente',
-    responsable: 'Roberto Silva',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-03-20',
-    prioridad: 'Media',
-    presupuesto: 35000,
-    dependencias: ['2']
-  },
-  {
-    id: '4',
-    nombre: 'Instalaciones sanitarias',
-    descripcion: 'Instalación de plomería y sistemas sanitarios',
-    estado: 'Pendiente',
-    responsable: 'Ana Martínez',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-03-25',
-    prioridad: 'Media',
-    presupuesto: 28000,
-    dependencias: ['2']
-  },
-  {
-    id: '5',
-    nombre: 'Mampostería y revoques',
-    descripcion: 'Construcción de muros y aplicación de revoques',
-    estado: 'Pendiente',
-    responsable: 'Luis Rodríguez',
-    fechaInicio: '2024-03-20',
-    fechaFin: '2024-04-15',
-    prioridad: 'Media',
-    presupuesto: 55000,
-    dependencias: ['3', '4']
-  },
-  {
-    id: '6',
-    nombre: 'Pintura y terminaciones',
-    descripcion: 'Aplicación de pintura y terminaciones finales',
-    estado: 'Pendiente',
-    responsable: 'Elena Fernández',
-    fechaInicio: '2024-04-20',
-    fechaFin: '2024-05-15',
-    prioridad: 'Baja',
-    presupuesto: 25000,
-    dependencias: ['5']
-  }
-];
-
 interface TimelineViewProps {
   obraId: string;
   onVolver: () => void;
@@ -119,9 +42,144 @@ interface TimelineViewProps {
 }
 
 export function TimelineView({ obraId, onVolver, onEditarGantt }: TimelineViewProps) {
-  const [obra] = useState<Obra>(obraMock);
-  const [tareas] = useState<Tarea[]>(tareasMock);
+  const [obra, setObra] = useState<Obra | null>(null);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  
+  const supabase = createClientComponentClient();
+  const currentUser = useCurrentUser();
+
+  // Cargar obra desde Supabase
+  useEffect(() => {
+    const cargarObra = async () => {
+      if (!obraId || !currentUser?.orgId) return;
+
+      try {
+        const { data: obraData, error: obraError } = await supabase
+          .from('obras')
+          .select('id, name, address, estado, propietario, created_at')
+          .eq('id', obraId)
+          .eq('org_id', currentUser.orgId)
+          .single();
+
+        if (obraError || !obraData) {
+          console.error('Error cargando obra:', obraError);
+          return;
+        }
+
+        setObra({
+          id: obraData.id,
+          nombre: obraData.name || 'Sin nombre',
+          direccion: obraData.address || 'Sin dirección',
+          estado: (obraData.estado?.toLowerCase() === 'activa' || obraData.estado === 'ACTIVA') ? 'activa' :
+                  (obraData.estado?.toLowerCase() === 'pausada' || obraData.estado === 'PAUSADA') ? 'pausada' : 'finalizada',
+          responsable: obraData.propietario || 'Sin responsable',
+          fechaInicio: obraData.created_at || new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error('Error en cargarObra:', error);
+      }
+    };
+
+    cargarObra();
+  }, [obraId, currentUser?.orgId, supabase]);
+
+  // Cargar tareas desde Supabase
+  useEffect(() => {
+    const cargarTareas = async () => {
+      if (!obraId || !currentUser?.orgId) {
+        setTareas([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        const { data: tareasData, error: tareasError } = await supabase
+          .from('tareas')
+          .select(`
+            id,
+            title,
+            descripcion,
+            estado,
+            responsable,
+            fecha_inicio_estimada,
+            fecha_fin_estimada,
+            fecha_inicio_real,
+            fecha_fin_real,
+            prioridad,
+            elemento_id,
+            elemento:elementos(id, nombre, categoria, subcategoria)
+          `)
+          .eq('obra_id', obraId)
+          .eq('org_id', currentUser.orgId)
+          .order('fecha_inicio_estimada', { ascending: true })
+          .order('created_at', { ascending: false });
+
+        if (tareasError) {
+          console.error('Error cargando tareas:', tareasError);
+          setTareas([]);
+          return;
+        }
+
+        // Mapear tareas al formato esperado
+        const tareasFormateadas: Tarea[] = (tareasData || []).map((tarea: any) => {
+          // Mapear estados
+          let estado: 'Pendiente' | 'En curso' | 'Finalizada' | 'Aprobada' = 'Pendiente';
+          const estadoSupabase = (tarea.estado || '').toLowerCase();
+          if (estadoSupabase === 'validado' || estadoSupabase === 'finalizado') {
+            estado = 'Finalizada';
+          } else if (estadoSupabase === 'en_progreso' || estadoSupabase === 'en curso') {
+            estado = 'En curso';
+          } else if (estadoSupabase === 'pendiente') {
+            estado = 'Pendiente';
+          }
+
+          // Mapear prioridad
+          const prioridadMap: Record<string, 'Baja' | 'Media' | 'Alta'> = {
+            'BAJA': 'Baja',
+            'MEDIA': 'Media',
+            'ALTA': 'Alta',
+          };
+          const prioridad = prioridadMap[tarea.prioridad?.toUpperCase() || 'MEDIA'] || 'Media';
+
+          // Usar fecha_inicio_real si está disponible, sino fecha_inicio_estimada
+          const fechaInicio = tarea.fecha_inicio_real || tarea.fecha_inicio_estimada;
+          const fechaFin = tarea.fecha_fin_real || tarea.fecha_fin_estimada;
+
+          return {
+            id: tarea.id,
+            nombre: tarea.title || 'Sin nombre',
+            descripcion: tarea.descripcion || '',
+            estado,
+            responsable: tarea.responsable || 'Por asignar',
+            fechaInicio: fechaInicio ? new Date(fechaInicio).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            fechaFin: fechaFin ? new Date(fechaFin).toISOString().split('T')[0] : '',
+            prioridad,
+            presupuesto: undefined,
+            dependencias: [],
+            elemento: tarea.elemento ? {
+              id: tarea.elemento.id,
+              nombre: tarea.elemento.nombre,
+              categoria: tarea.elemento.categoria,
+              subcategoria: tarea.elemento.subcategoria,
+            } : undefined,
+          };
+        });
+
+        setTareas(tareasFormateadas);
+      } catch (error) {
+        console.error('Error en cargarTareas:', error);
+        setTareas([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarTareas();
+  }, [obraId, currentUser?.orgId, supabase]);
 
   // Filtrar tareas
   const tareasFiltradas = tareas.filter(tarea => 
@@ -180,6 +238,33 @@ export function TimelineView({ obraId, onVolver, onEditarGantt }: TimelineViewPr
     const completadas = tareas.filter(t => t.estado === 'Finalizada' || t.estado === 'Aprobada').length;
     return Math.round((completadas / total) * 100);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="text-center py-12">
+          <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300 animate-spin" />
+          <p className="text-gray-500">Cargando tareas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!obra) {
+    return (
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="text-center py-12">
+          <p className="text-gray-500">Obra no encontrada</p>
+          <button
+            onClick={onVolver}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">

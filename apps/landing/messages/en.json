@@ -1,7 +1,19 @@
 {
   "hero": {
-    "title": "GROWS – Intelligent Construction Management Platform",
-    "subtitle": "Organize and standardize construction tasks through construction templates, automatic schedules and visual tracking",
+    "altText": "Hyperrealistic construction",
+    "title": {
+      "part1": "MAKE IT",
+      "part2": "BETTER",
+      "part3": "MAKE IT",
+      "part4": "GROWS"
+    },
+    "subtitle": {
+      "line1": "Intelligent construction",
+      "line2": "powered by AI"
+    },
+    "ctaButton": "Explore GROWS",
+    "titleOld": "GROWS – Intelligent Construction Management Platform",
+    "subtitleOld": "Organize and standardize construction tasks through construction templates, automatic schedules and visual tracking",
     "description": "GROWS is a B2B digital platform designed for architecture studios, independent architects and small construction companies dedicated to small and medium-scale works.",
     "cta": "Request Demo",
     "learnMore": "Learn More"
@@ -48,37 +60,26 @@
     }
   },
   "users": {
-    "title": "User Profiles",
-    "subtitle": "Each type of user works in a clear digital environment adapted to their role",
-    "cliente": {
-      "title": "Technical Client",
-      "subtitle": "Architecture studios, independent architects and small construction companies",
-      "features": [
-        "General dashboard with progress bar for each active work",
-        "Predefined construction templates applicable with one click",
-        "Integrated digital checklist for each task",
-        "Push notifications about status changes"
-      ]
-    },
-    "lider": {
-      "title": "Crew Leader",
-      "subtitle": "Operational coordinators who execute assigned tasks",
-      "features": [
-        "List of pending tasks with filters by work and date",
-        "Simplified preparation and safety checklist",
-        "Photo upload as evidence of work performed",
-        "Management of micro-crews of up to 4 people"
-      ]
+    "title": "Each role works in a digital environment",
+    "titleHighlight": "clear and adapted",
+    "description": "Grows connects leaders and executors visually, clearly and precisely.",
+    "coordinador": {
+      "badge": "For Leaders",
+      "title": "Architect/Technical",
+      "description": "Plan, measure and optimize your works.",
+      "imageSrc": "/images/Tecnico.png",
+      "placeholder": "AI Image: Architect/coordinator on site with tablet or plans",
+      "infoLink": "+info",
+      "ctaButton": "Sign Up"
     },
     "socio": {
-      "title": "Partner",
-      "subtitle": "Workers who accumulate experience and reputation",
-      "features": [
-        "Level system based on hours worked",
-        "Point accumulation for performance",
-        "Visible reputation on the platform",
-        "Progression from Iron to Gold"
-      ]
+      "badge": "For Executors",
+      "title": "Construction Partner",
+      "description": "Build, report and grow with your team.",
+      "imageSrc": "/images/Socio.jpg",
+      "placeholder": "AI Image: Worker/squad leader working or reporting on smartphone",
+      "infoLink": "+info",
+      "ctaButton": "Sign Up"
     }
   },
   "cta": {

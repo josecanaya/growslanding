@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin, Building2, Wrench, Paintbrush } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { EtapasTimeline } from '@/components/EtapasTimeline';
+import { EtapasTimeline } from '@/components/cliente/EtapasTimeline';
 
 // Tipos de datos
 interface Obra {

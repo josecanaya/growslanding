@@ -25,10 +25,13 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  BadgeCheck
+  BadgeCheck,
+  Trash2
 } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { useToast } from '@/components/ui/use-toast';
 
 interface CuadrillaCardProps {
   cuadrilla: Cuadrilla;
@@ -76,7 +79,9 @@ const EstadoBadge: React.FC<{ estado: EstadoCuadrilla }> = ({ estado }) => {
 };
 
 export function CuadrillaCard({ cuadrilla }: CuadrillaCardProps) {
-  const { seleccionarCuadrilla, abrirDrawer, abrirModalAsignacion } = useCuadrillasStore();
+  const { seleccionarCuadrilla, abrirDrawer, abrirModalAsignacion, eliminarCuadrilla } = useCuadrillasStore();
+  const currentUser = useCurrentUser();
+  const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const {
@@ -107,6 +112,44 @@ export function CuadrillaCard({ cuadrilla }: CuadrillaCardProps) {
     return 'border-gray-200';
   };
 
+  const handleEliminar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    if (!currentUser?.orgId) {
+      toast({
+        title: 'Error',
+        description: 'No estás autenticado',
+      });
+      return;
+    }
+
+    if (!window.confirm(`¿Estás seguro de eliminar la cuadrilla "${cuadrilla.nombre}"?`)) {
+      return;
+    }
+
+    try {
+      const exito = await eliminarCuadrilla(cuadrilla.id, currentUser.orgId);
+      if (exito) {
+        toast({
+          title: 'Cuadrilla eliminada',
+          description: 'La cuadrilla fue eliminada correctamente.',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'No se pudo eliminar la cuadrilla',
+        });
+      }
+    } catch (error) {
+      console.error('[ERROR_ELIMINAR_CUADRILLA]', error);
+      toast({
+        title: 'Error',
+        description: 'Error inesperado al eliminar la cuadrilla',
+      });
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -127,7 +170,18 @@ export function CuadrillaCard({ cuadrilla }: CuadrillaCardProps) {
               <p className="text-sm text-gray-600">{cuadrilla.encargado}</p>
             </div>
           </div>
-          <EstadoBadge estado={cuadrilla.estado} />
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <EstadoBadge estado={cuadrilla.estado} />
+            <button
+              onClick={handleEliminar}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="p-1.5 hover:bg-red-50 rounded-lg transition-colors z-10 relative"
+              title="Eliminar cuadrilla"
+              type="button"
+            >
+              <Trash2 className="h-4 w-4 text-red-500 hover:text-red-700" />
+            </button>
+          </div>
         </div>
 
         {/* Información esencial */}

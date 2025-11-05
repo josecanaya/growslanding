@@ -1,24 +1,197 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Search, Filter, MapPin, Calendar } from 'lucide-react';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
+import { useToast } from '@/components/ui/use-toast';
+
+interface Obra {
+  id: string;
+  nombre: string;
+  estado: string;
+}
+
+interface Tarea {
+  id: string;
+  nombre: string;
+  obraId: string;
+  etapa: string;
+  estado: string;
+  cuadrillaId?: string;
+}
 
 export function AsignarModal() {
   const { 
     showModalAsignacion, 
     cerrarModalAsignacion, 
-    cuadrillaSeleccionada, 
-    obras, 
-    tareas, 
+    cuadrillaSeleccionada,
     asignarTarea 
   } = useCuadrillasStore();
+  
+  const currentUser = useCurrentUser();
+  const { toast } = useToast();
+  const supabase = createClientComponentClient<Database>();
 
+  const [obras, setObras] = useState<Obra[]>([]);
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [loadingObras, setLoadingObras] = useState(false);
+  const [loadingTareas, setLoadingTareas] = useState(false);
   const [busquedaObra, setBusquedaObra] = useState('');
   const [busquedaTarea, setBusquedaTarea] = useState('');
   const [obraSeleccionada, setObraSeleccionada] = useState<string>('');
   const [etapaFiltro, setEtapaFiltro] = useState<string>('');
   const [tareaSeleccionada, setTareaSeleccionada] = useState<string>('');
+
+  // Cargar obras desde Supabase cuando se abre el modal
+  useEffect(() => {
+    const cargarObras = async () => {
+      if (!showModalAsignacion || !currentUser?.orgId) return;
+      
+      setLoadingObras(true);
+      try {
+        const { data, error } = await supabase
+          .from('obras')
+          .select('id, name, estado')
+          .eq('org_id', currentUser.orgId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[ERROR_CARGAR_OBRAS]', error);
+          toast({
+            title: 'Error',
+            description: 'No se pudieron cargar las obras',
+            variant: 'destructive',
+          });
+        } else {
+          setObras((data || []).map(obra => ({
+            id: obra.id,
+            nombre: obra.name,
+            estado: obra.estado || 'activa'
+          })));
+        }
+      } catch (err) {
+        console.error('[ERROR_CARGAR_OBRAS_EXCEPTION]', err);
+      } finally {
+        setLoadingObras(false);
+      }
+    };
+
+    cargarObras();
+  }, [showModalAsignacion, currentUser?.orgId, supabase, toast]);
+
+  // Cargar tareas desde Supabase cuando se selecciona una obra
+  useEffect(() => {
+    const cargarTareas = async () => {
+      if (!showModalAsignacion || !currentUser?.orgId) return;
+      
+      setLoadingTareas(true);
+      try {
+        // Primero intentar query simple sin joins para verificar permisos
+        let query = supabase
+          .from('tareas')
+          .select('id, title, descripcion, estado, obra_id, elemento_id, cuadrilla_id')
+          .eq('org_id', currentUser.orgId)
+          .is('cuadrilla_id', null); // Solo tareas sin asignar
+
+        // Filtrar por obra si está seleccionada
+        if (obraSeleccionada) {
+          query = query.eq('obra_id', obraSeleccionada);
+        }
+
+        // Excluir tareas finalizadas o validadas
+        query = query.not('estado', 'eq', 'finalizado').not('estado', 'eq', 'validado');
+        query = query.order('created_at', { ascending: false });
+
+        const { data, error } = await query;
+
+        if (error) {
+          // Log detallado del error
+          const errorInfo: any = {
+            message: error?.message || 'Error desconocido',
+            details: error?.details || null,
+            hint: error?.hint || null,
+            code: error?.code || null,
+            errorObject: error,
+            errorType: typeof error,
+            errorKeys: error ? Object.keys(error) : [],
+            orgId: currentUser.orgId,
+            obraSeleccionada: obraSeleccionada || 'todas'
+          };
+          
+          try {
+            console.error('[ERROR_CARGAR_TAREAS]', JSON.stringify(errorInfo, null, 2));
+          } catch (e) {
+            console.error('[ERROR_CARGAR_TAREAS]', errorInfo);
+          }
+
+          // Si el error está vacío, puede ser un problema de permisos RLS
+          if (error && Object.keys(error).length === 0) {
+            console.warn('[ERROR_CARGAR_TAREAS] Error vacío - posible problema de permisos RLS');
+          }
+
+          toast({
+            title: 'Error',
+            description: 'No se pudieron cargar las tareas. Verifica los permisos.',
+            variant: 'destructive',
+          });
+        } else {
+          // Si hay datos, intentar obtener información adicional de elementos
+          if (data && data.length > 0) {
+            // Intentar obtener categorías de elementos (opcional, no crítico)
+            const elementoIds = data.map(t => t.elemento_id).filter(Boolean);
+            let categoriasMap: Record<string, string> = {};
+            
+            if (elementoIds.length > 0) {
+              try {
+                const { data: elementosData } = await supabase
+                  .from('elementos')
+                  .select('id, categoria')
+                  .in('id', elementoIds);
+                
+                if (elementosData) {
+                  elementosData.forEach(elem => {
+                    if (elem.id) categoriasMap[elem.id] = elem.categoria || 'estructura';
+                  });
+                }
+              } catch (e) {
+                // Ignorar error al obtener categorías, usar default
+                console.warn('[WARNING] No se pudieron obtener categorías de elementos');
+              }
+            }
+
+            setTareas(data.map(tarea => ({
+              id: tarea.id,
+              nombre: tarea.title,
+              obraId: tarea.obra_id,
+              etapa: categoriasMap[tarea.elemento_id || '']?.toLowerCase() || 'estructura',
+              estado: tarea.estado || 'pendiente',
+              cuadrillaId: tarea.cuadrilla_id || undefined
+            })));
+          } else {
+            setTareas([]);
+          }
+        }
+      } catch (err: any) {
+        console.error('[ERROR_CARGAR_TAREAS_EXCEPTION]', {
+          message: err?.message,
+          stack: err?.stack,
+          error: err
+        });
+        toast({
+          title: 'Error',
+          description: 'Error inesperado al cargar tareas',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoadingTareas(false);
+      }
+    };
+
+    cargarTareas();
+  }, [showModalAsignacion, currentUser?.orgId, obraSeleccionada, supabase, toast]);
 
   if (!showModalAsignacion || !cuadrillaSeleccionada) return null;
 
@@ -59,16 +232,169 @@ export function AsignarModal() {
     return colores[estado as keyof typeof colores] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleAsignar = () => {
-    if (tareaSeleccionada) {
-      asignarTarea(cuadrillaSeleccionada.id, tareaSeleccionada);
-      cerrarModalAsignacion();
-      // Reset form
-      setObraSeleccionada('');
-      setTareaSeleccionada('');
-      setBusquedaObra('');
-      setBusquedaTarea('');
-      setEtapaFiltro('');
+  const handleAsignar = async () => {
+    if (!tareaSeleccionada || !currentUser?.orgId) {
+      toast({
+        title: 'Error',
+        description: 'Debes seleccionar una tarea',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!cuadrillaSeleccionada?.id) {
+      toast({
+        title: 'Error',
+        description: 'Debes seleccionar una cuadrilla',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      // Validar que el ID de la cuadrilla sea un UUID válido
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(cuadrillaSeleccionada.id)) {
+        toast({
+          title: 'Error',
+          description: 'ID de cuadrilla inválido',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Logs para debugging
+      console.log('[ASIGNAR_TAREA] Asignando tarea a cuadrilla:', {
+        tareaId: tareaSeleccionada,
+        cuadrilla_id: cuadrillaSeleccionada.id,
+        cuadrilla_nombre: cuadrillaSeleccionada.nombre,
+        orgId: currentUser.orgId,
+        usuarioId: currentUser.id,
+      });
+
+      // Llamar a la API para asignar la tarea a la cuadrilla
+      const response = await fetch(`/api/tareas/${tareaSeleccionada}/asignar-cuadrilla`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-organizacion-id': currentUser.orgId,
+          'x-usuario-id': currentUser.id,
+        },
+        body: JSON.stringify({
+          cuadrilla_id: cuadrillaSeleccionada.id,
+        }),
+      });
+
+      console.log('[ASIGNAR_TAREA] Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        contentType: response.headers.get('content-type'),
+      });
+
+      // Clonar la respuesta para poder leerla múltiples veces si es necesario
+      const contentType = response.headers.get('content-type');
+      
+      // Verificar status antes de procesar
+      if (!response.ok) {
+        // Si es JSON, parsearlo y mostrar el error
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('[ERROR_ASIGNAR_TAREA] Error del servidor:', {
+            status: response.status,
+            error: errorData.error,
+            details: errorData.details,
+            fullResponse: errorData,
+          });
+          
+          // Mostrar toast con error específico
+          toast({
+            title: 'Error al asignar tarea',
+            description: errorData.error || errorData.details || `Error ${response.status}: ${response.statusText}`,
+            variant: 'destructive',
+          });
+          
+          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+        }
+        
+        // Si no es JSON, intentar leer como texto (clonar primero)
+        const clonedResponse = response.clone();
+        const text = await clonedResponse.text();
+        console.error('[ERROR_ASIGNAR_TAREA] Respuesta no es JSON:', {
+          status: response.status,
+          statusText: response.statusText,
+          contentType,
+          bodyPreview: text.substring(0, 500),
+          url: response.url
+        });
+        
+        // Intentar extraer información útil del HTML si es posible
+        let errorMessage = `Error del servidor: ${response.status} ${response.statusText}`;
+        if (text.includes('Error')) {
+          const match = text.match(/<title>(.*?)<\/title>/i);
+          if (match) {
+            errorMessage = match[1];
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Verificar que la respuesta sea JSON
+      if (!contentType || !contentType.includes('application/json')) {
+        const clonedResponse = response.clone();
+        const text = await clonedResponse.text();
+        console.error('[ERROR_ASIGNAR_TAREA] Respuesta no es JSON después de OK:', {
+          status: response.status,
+          contentType,
+          bodyPreview: text.substring(0, 200)
+        });
+        throw new Error('La respuesta del servidor no es válida');
+      }
+
+      // Parsear JSON
+      let result;
+      try {
+        result = await response.json();
+      } catch (jsonError: any) {
+        console.error('[ERROR_PARSE_JSON]', jsonError);
+        throw new Error('Error al procesar respuesta del servidor');
+      }
+
+      if (result.success) {
+        console.log('[ASIGNAR_TAREA] Asignación exitosa:', result.data);
+        
+        toast({
+          title: 'Tarea asignada',
+          description: result.message || `La tarea fue asignada correctamente a la cuadrilla ${cuadrillaSeleccionada.nombre}.`,
+        });
+        
+        // Recargar tareas para actualizar la lista
+        setTareas(prev => prev.filter(t => t.id !== tareaSeleccionada));
+        
+        // Reset form
+        setObraSeleccionada('');
+        setTareaSeleccionada('');
+        setBusquedaObra('');
+        setBusquedaTarea('');
+        setEtapaFiltro('');
+        
+        cerrarModalAsignacion();
+      } else {
+        console.error('[ASIGNAR_TAREA] Error en respuesta:', result);
+        toast({
+          title: 'Error',
+          description: result.error || 'No se pudo asignar la tarea',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('[ERROR_ASIGNAR_TAREA]', err);
+      toast({
+        title: 'Error',
+        description: 'Error al asignar la tarea',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -117,7 +443,16 @@ export function AsignarModal() {
 
               {/* Lista de obras */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {obrasFiltradas.map((obra) => (
+                {loadingObras ? (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Cargando obras...
+                  </div>
+                ) : obrasFiltradas.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No hay obras disponibles
+                  </div>
+                ) : (
+                  obrasFiltradas.map((obra) => (
                   <button
                     key={obra.id}
                     onClick={() => setObraSeleccionada(obra.id)}
@@ -141,7 +476,8 @@ export function AsignarModal() {
                       </div>
                     </div>
                   </button>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
@@ -184,7 +520,18 @@ export function AsignarModal() {
 
               {/* Lista de tareas */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {tareasFiltradas.map((tarea) => {
+                {loadingTareas ? (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    Cargando tareas...
+                  </div>
+                ) : tareasFiltradas.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm">No hay tareas disponibles</p>
+                    <p className="text-xs mt-1">Selecciona una obra para ver las tareas</p>
+                  </div>
+                ) : (
+                  tareasFiltradas.map((tarea) => {
                   const obra = obras.find(o => o.id === tarea.obraId);
                   return (
                     <button
@@ -212,14 +559,7 @@ export function AsignarModal() {
                       </div>
                     </button>
                   );
-                })}
-                
-                {tareasFiltradas.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm">No hay tareas disponibles</p>
-                    <p className="text-xs mt-1">Selecciona una obra para ver las tareas</p>
-                  </div>
+                })
                 )}
               </div>
             </div>

@@ -2,5 +2,5 @@ import { redirect } from "next/navigation";
 
 export default function HomePage() {
   // Redirigir directamente al panel de socio
-  redirect("/panel");
+  redirect("/socio/panel");
 }

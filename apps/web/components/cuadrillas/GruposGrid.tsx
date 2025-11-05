@@ -139,21 +139,23 @@ function DetalleGrupo({ especialidad, cuadrillas, onBack }: DetalleGrupoProps) {
           <Card
             key={cuadrilla.id}
             title={cuadrilla.nombre}
-            subtitle={`Líder: ${cuadrilla.lider}`}
+            subtitle={`Encargado: ${cuadrilla.encargado}`}
             status={cuadrilla.estado}
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-grows-text-secondary">Miembros:</span>
-                <span className="font-medium text-grows-primary">{cuadrilla.miembros.length}</span>
+                <span className="text-grows-text-secondary">Integrantes:</span>
+                <span className="font-medium text-grows-primary">{cuadrilla.integrantes?.length || 0}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-grows-text-secondary">Tareas activas:</span>
-                <span className="font-medium text-grows-primary">{cuadrilla.kpi.tareasEnEjecucion}</span>
+                <span className="font-medium text-grows-primary">{cuadrilla.kpi?.tareasEnEjecucion || 0}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-grows-text-secondary">Cumplimiento:</span>
-                <span className="font-medium text-grows-primary">{cuadrilla.kpi.cumplimiento}%</span>
+                <span className="font-medium text-grows-primary">
+                  {cuadrilla.kpi?.cumplimientoPct || 0}%
+                </span>
               </div>
             </div>
           </Card>
@@ -180,16 +182,18 @@ export function GruposGrid() {
   // Calcular estadísticas por especialidad
   const getEstadisticasGrupo = (especialidad: Especialidad) => {
     const cuadrillasGrupo = cuadrillas.filter(c => c.especialidad === especialidad);
-    const disponibles = cuadrillasGrupo.filter(c => c.estado === 'Disponible').length;
+    const disponibles = cuadrillasGrupo.filter(c => c.estado === 'Disponible' || c.estado === 'disponible').length;
     
-    // Simular tareas activas y alertas
+    // Calcular tareas activas desde los KPIs reales
     const tareasActivas = cuadrillasGrupo.reduce((sum, c) => {
-      return sum + (c.estado === 'Ocupado' ? 1 : 0);
+      return sum + (c.kpi?.tareasEnEjecucion || 0);
     }, 0);
     
-    const alertas = cuadrillasGrupo.reduce((sum, c) => {
-      return sum + (c.estado === 'Inactivo' ? 1 : 0);
-    }, 0);
+    // Calcular alertas (cuadrillas inactivas o con problemas)
+    const alertas = cuadrillasGrupo.filter(c => {
+      return c.estado === 'Inactiva' || c.estado === 'inactiva' || 
+             (!c.telefonoEncargado && !c.emailEncargado); // Datos incompletos
+    }).length;
 
     return {
       totalCuadrillas: cuadrillasGrupo.length,

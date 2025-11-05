@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { supabase } from './supabase';
+import { createServiceSupabaseClient } from './supabase-server';
 
 type UploadResult = {
   path: string;
@@ -20,6 +20,7 @@ async function uploadToBucket(bucket: string, dataUrl: string): Promise<UploadRe
   const { mime, buffer } = decodeDataUrl(dataUrl);
   const extension = mime.split('/')[1] ?? 'bin';
   const fileName = `${randomUUID()}.${extension}`;
+  const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase.storage
     .from(bucket)
     .upload(fileName, buffer, { contentType: mime, upsert: false });
@@ -41,6 +42,7 @@ export async function uploadSignature(dataUrl: string) {
 
 export async function uploadActaPdf(pdfBytes: Uint8Array, path: string) {
   const targetPath = path.startsWith('actas/') ? path : `actas/${path}`;
+  const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase.storage
     .from('actas')
     .upload(targetPath.replace(/^actas\//, ''), pdfBytes, {

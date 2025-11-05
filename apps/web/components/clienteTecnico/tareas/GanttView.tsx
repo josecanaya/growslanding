@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Save, Plus, Trash2, Link, Unlink, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, Plus, Trash2, Link, Unlink, ZoomIn, ZoomOut, Move, Clock } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 // Tipos de datos
 interface TareaGantt {
@@ -28,85 +30,100 @@ interface Conexion {
   y2: number;
 }
 
-// Datos mock
-const tareasIniciales: TareaGantt[] = [
-  {
-    id: '1',
-    nombre: 'Excavación y fundaciones',
-    estado: 'Finalizada',
-    fechaInicio: '2024-01-15',
-    fechaFin: '2024-01-30',
-    x: 50,
-    y: 100,
-    width: 200,
-    height: 40,
-    dependencias: [],
-    color: '#10B981'
-  },
-  {
-    id: '2',
-    nombre: 'Estructura de hormigón',
-    estado: 'En curso',
-    fechaInicio: '2024-02-01',
-    fechaFin: '2024-03-15',
-    x: 300,
-    y: 100,
-    width: 300,
-    height: 40,
-    dependencias: ['1'],
-    color: '#3B82F6'
-  },
-  {
-    id: '3',
-    nombre: 'Instalaciones eléctricas',
-    estado: 'Pendiente',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-03-20',
-    x: 650,
-    y: 100,
-    width: 200,
-    height: 40,
-    dependencias: ['2'],
-    color: '#F59E0B'
-  },
-  {
-    id: '4',
-    nombre: 'Instalaciones sanitarias',
-    estado: 'Pendiente',
-    fechaInicio: '2024-03-01',
-    fechaFin: '2024-03-25',
-    x: 650,
-    y: 180,
-    width: 250,
-    height: 40,
-    dependencias: ['2'],
-    color: '#F59E0B'
-  },
-  {
-    id: '5',
-    nombre: 'Mampostería y revoques',
-    estado: 'Pendiente',
-    fechaInicio: '2024-03-20',
-    fechaFin: '2024-04-15',
-    x: 950,
-    y: 140,
-    width: 250,
-    height: 40,
-    dependencias: ['3', '4'],
-    color: '#F59E0B'
-  }
-];
-
 interface GanttViewProps {
+  obraId: string;
   onVolver: () => void;
   onGuardar: (tareas: TareaGantt[], conexiones: Conexion[]) => void;
 }
 
-export function GanttView({ onVolver, onGuardar }: GanttViewProps) {
-  const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
+export function GanttView({ obraId, onVolver, onGuardar }: GanttViewProps) {
+  const [tareas, setTareas] = useState<TareaGantt[]>([]);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<string | null>(null);
   const [modoEdicion, setModoEdicion] = useState<'seleccion' | 'conexion' | 'nueva'>('seleccion');
+  const [loading, setLoading] = useState(true);
+  
+  const supabase = createClientComponentClient();
+  const currentUser = useCurrentUser();
+
+  // Cargar tareas desde Supabase
+  useEffect(() => {
+    const cargarTareas = async () => {
+      if (!obraId || !currentUser?.orgId) {
+        setTareas([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        const { data: tareasData, error: tareasError } = await supabase
+          .from('tareas')
+          .select(`
+            id,
+            title,
+            estado,
+            fecha_inicio_estimada,
+            fecha_fin_estimada,
+            fecha_inicio_real,
+            fecha_fin_real
+          `)
+          .eq('obra_id', obraId)
+          .eq('org_id', currentUser.orgId);
+
+        if (tareasError) {
+          console.error('Error cargando tareas:', tareasError);
+          setTareas([]);
+          return;
+        }
+
+        // Mapear tareas al formato Gantt
+        const tareasGantt: TareaGantt[] = (tareasData || []).map((tarea: any, index: number) => {
+          // Mapear estados
+          let estado: 'Pendiente' | 'En curso' | 'Finalizada' | 'Aprobada' = 'Pendiente';
+          const estadoSupabase = (tarea.estado || '').toLowerCase();
+          if (estadoSupabase === 'validado' || estadoSupabase === 'finalizado') {
+            estado = 'Finalizada';
+          } else if (estadoSupabase === 'en_progreso' || estadoSupabase === 'en curso') {
+            estado = 'En curso';
+          } else if (estadoSupabase === 'pendiente') {
+            estado = 'Pendiente';
+          }
+
+          // Usar fechas reales si están disponibles, sino estimadas
+          const fechaInicio = tarea.fecha_inicio_real || tarea.fecha_inicio_estimada || new Date().toISOString().split('T')[0];
+          const fechaFin = tarea.fecha_fin_real || tarea.fecha_fin_estimada || new Date().toISOString().split('T')[0];
+
+          // Calcular días entre inicio y fin para el ancho
+          const dias = Math.max(1, Math.ceil((new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24)));
+
+          return {
+            id: tarea.id,
+            nombre: tarea.title || 'Sin nombre',
+            estado,
+            fechaInicio,
+            fechaFin,
+            x: 50 + (index * 300), // Posición inicial (se puede mejorar)
+            y: 100 + (index * 80),
+            width: Math.max(150, dias * 10), // 10px por día mínimo
+            height: 40,
+            dependencias: [], // TODO: Cargar desde tarea_precedencias
+            color: getEstadoColor(estado),
+          };
+        });
+
+        setTareas(tareasGantt);
+      } catch (error) {
+        console.error('Error en cargarTareas:', error);
+        setTareas([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarTareas();
+  }, [obraId, currentUser?.orgId, supabase]);
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
@@ -115,6 +132,29 @@ export function GanttView({ onVolver, onGuardar }: GanttViewProps) {
       case 'Finalizada': return '#10B981';
       case 'Aprobada': return '#8B5CF6';
       default: return '#6B7280';
+    }
+  };
+
+  // Guardar cambios de fechas en Supabase
+  const guardarFechasEnSupabase = async (tareaId: string, fechaInicio: string, fechaFin: string) => {
+    if (!currentUser?.orgId) return;
+
+    try {
+      const { error } = await supabase
+        .from('tareas')
+        .update({
+          fecha_inicio_estimada: fechaInicio,
+          fecha_fin_estimada: fechaFin,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', tareaId)
+        .eq('org_id', currentUser.orgId);
+
+      if (error) {
+        console.error('Error guardando fechas:', error);
+      }
+    } catch (error) {
+      console.error('Error en guardarFechasEnSupabase:', error);
     }
   };
 
@@ -151,9 +191,24 @@ export function GanttView({ onVolver, onGuardar }: GanttViewProps) {
     }
   };
 
-  const handleGuardar = () => {
+  const handleGuardar = async () => {
+    // Guardar todas las fechas modificadas en Supabase
+    for (const tarea of tareas) {
+      await guardarFechasEnSupabase(tarea.id, tarea.fechaInicio, tarea.fechaFin);
+    }
     onGuardar(tareas, conexiones);
   };
+
+  if (loading) {
+    return (
+      <div className="max-w-full mx-auto p-6">
+        <div className="text-center py-12">
+          <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300 animate-spin" />
+          <p className="text-gray-500">Cargando tareas...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-full mx-auto p-6 space-y-6">

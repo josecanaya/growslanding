@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Cuadrilla } from '@/lib/types/cuadrillas';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { ModalAgregarSocio } from './ModalAgregarSocio';
 import { 
   X, 
   Users, 
@@ -30,8 +33,57 @@ interface CuadrillaDrawerProps {
   cuadrilla: Cuadrilla | null;
 }
 
+interface SocioEnCuadrilla {
+  id: string;
+  rol_cuadrilla: string;
+  activo: boolean;
+  socio: {
+    id: string;
+    nombre: string;
+    email: string | null;
+    telefono: string | null;
+    rol: string;
+    status: string;
+  };
+}
+
 export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
   const { showDrawer, cerrarDrawer, abrirModalAsignacion } = useCuadrillasStore();
+  const currentUser = useCurrentUser();
+  const [showModalSocios, setShowModalSocios] = useState(false);
+  const [sociosEnCuadrilla, setSociosEnCuadrilla] = useState<SocioEnCuadrilla[]>([]);
+  const [loadingSocios, setLoadingSocios] = useState(false);
+
+  // Cargar socios de la cuadrilla
+  useEffect(() => {
+    const cargarSocios = async () => {
+      if (!cuadrilla?.id || !currentUser?.orgId) return;
+
+      try {
+        setLoadingSocios(true);
+        const response = await fetch(`/api/cuadrillas/${cuadrilla.id}/socios`, {
+          headers: {
+            'x-organizacion-id': currentUser.orgId,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success) {
+            setSociosEnCuadrilla(result.data || []);
+          }
+        }
+      } catch (error) {
+        console.error('[CUADRILLA_DRAWER] Error al cargar socios:', error);
+      } finally {
+        setLoadingSocios(false);
+      }
+    };
+
+    if (showDrawer && cuadrilla) {
+      cargarSocios();
+    }
+  }, [cuadrilla?.id, currentUser?.orgId, showDrawer]);
 
   if (!showDrawer || !cuadrilla) return null;
 
@@ -236,61 +288,134 @@ export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
               </div>
             )}
 
-            {/* Integrantes */}
+            {/* Socios de la cuadrilla (nuevo sistema con tabla cuadrilla_socios) */}
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-gray-900 flex items-center">
                   <Users className="h-4 w-4 mr-2" />
-                  Integrantes ({cuadrilla.integrantes.length})
+                  Socios ({sociosEnCuadrilla.length})
                 </h3>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                  <Plus className="h-4 w-4 mr-1 inline" />
-                  Agregar
+                <button 
+                  onClick={() => setShowModalSocios(true)}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Agregar socio
                 </button>
               </div>
-              <div className="space-y-3">
-                {cuadrilla.integrantes.map((integrante) => (
-                  <div key={integrante.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-medium text-blue-600">
-                          {integrante.nombre.charAt(0)}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 text-sm">{integrante.nombre}</p>
-                        <p className="text-xs text-gray-600">{integrante.rol}</p>
-                        {integrante.telefono && (
-                          <p className="text-xs text-gray-500">{integrante.telefono}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {integrante.seguroVigente ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
-                      )}
-                      <button className="text-gray-400 hover:text-gray-600">
-                        <Settings className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
               
-              {/* Alertas de seguros */}
-              {integrantesSinSeguro.length > 0 && (
-                <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center space-x-2 text-red-700">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm font-medium">
-                      {integrantesSinSeguro.length} integrante(s) sin seguro vigente
-                    </span>
-                  </div>
+              {loadingSocios ? (
+                <div className="text-center py-4 text-gray-500">
+                  Cargando socios...
+                </div>
+              ) : sociosEnCuadrilla.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm">No hay socios asignados a esta cuadrilla</p>
+                  <button
+                    onClick={() => setShowModalSocios(true)}
+                    className="mt-3 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    Agregar primer socio
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {sociosEnCuadrilla.map((item) => {
+                    const socio = item.socio;
+                    const rolBadgeColor = item.rol_cuadrilla === 'encargado' 
+                      ? 'bg-blue-100 text-blue-800'
+                      : item.rol_cuadrilla === 'oficial'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800';
+                    
+                    return (
+                      <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-blue-600">
+                              {socio.nombre?.charAt(0).toUpperCase() || '?'}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <p className="font-medium text-gray-900 text-sm">{socio.nombre}</p>
+                              <span className={`px-2 py-0.5 text-xs rounded ${rolBadgeColor}`}>
+                                {item.rol_cuadrilla}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-600">
+                              {socio.email || socio.telefono || 'Sin contacto'}
+                            </p>
+                            {socio.rol && (
+                              <p className="text-xs text-gray-500 mt-0.5">Rol: {socio.rol}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {item.activo ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" title="Activo" />
+                          ) : (
+                            <AlertTriangle className="h-4 w-4 text-yellow-500" title="Inactivo" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
+
+            {/* Integrantes */}
+            {cuadrilla.integrantes && cuadrilla.integrantes.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-900 flex items-center">
+                    <Users className="h-4 w-4 mr-2" />
+                    Integrantes adicionales ({cuadrilla.integrantes.length})
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {cuadrilla.integrantes.map((integrante) => (
+                    <div key={integrante.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-blue-600">
+                            {integrante.nombre.charAt(0)}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">{integrante.nombre}</p>
+                          <p className="text-xs text-gray-600">{integrante.rol}</p>
+                          {integrante.telefono && (
+                            <p className="text-xs text-gray-500">{integrante.telefono}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {integrante.seguroVigente ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertTriangle className="h-4 w-4 text-red-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Alertas de seguros */}
+                {integrantesSinSeguro.length > 0 && (
+                  <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="flex items-center space-x-2 text-red-700">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">
+                        {integrantesSinSeguro.length} integrante(s) sin seguro vigente
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Documentos */}
             <div>
@@ -447,6 +572,45 @@ export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
           </div>
         </div>
       </div>
+
+      {/* Modal para gestionar socios */}
+      {showModalSocios && cuadrilla && (
+        <ModalAgregarSocio
+          cuadrillaId={cuadrilla.id}
+          cuadrillaNombre={cuadrilla.nombre}
+          onClose={() => {
+            setShowModalSocios(false);
+            // Recargar socios después de cerrar
+            if (cuadrilla?.id && currentUser?.orgId) {
+              fetch(`/api/cuadrillas/${cuadrilla.id}/socios`, {
+                headers: { 'x-organizacion-id': currentUser.orgId },
+              })
+                .then(res => res.json())
+                .then(result => {
+                  if (result.success) {
+                    setSociosEnCuadrilla(result.data || []);
+                  }
+                })
+                .catch(console.error);
+            }
+          }}
+          onSocioAgregado={() => {
+            // Recargar socios
+            if (cuadrilla?.id && currentUser?.orgId) {
+              fetch(`/api/cuadrillas/${cuadrilla.id}/socios`, {
+                headers: { 'x-organizacion-id': currentUser.orgId },
+              })
+                .then(res => res.json())
+                .then(result => {
+                  if (result.success) {
+                    setSociosEnCuadrilla(result.data || []);
+                  }
+                })
+                .catch(console.error);
+            }
+          }}
+        />
+      )}
     </>
   );
 }

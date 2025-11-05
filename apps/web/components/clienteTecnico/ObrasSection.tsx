@@ -1,6 +1,7 @@
+// LEGACY: mantener referencia, no borrar.
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Plus, 
@@ -20,6 +21,9 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { DetalleObra } from './DetalleObra';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
@@ -210,37 +214,74 @@ const ObraCard = ({
 // Componente principal
 export default function ObrasSection() {
   const router = useRouter();
-  const [obras, setObras] = useState<Obra[]>([
-    {
-      id: "1",
-      nombre: "Obra de Prueba",
-      localizacion: "Ubicación de prueba",
-      estado: "ACTIVA",
-      created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-      fecha_inicio: "2024-01-15",
-      presupuesto: 100000,
-      descripcion: "Esta es una obra de prueba para desarrollo",
-      cliente: "Cliente de Prueba",
-      tipoObra: "nueva" as const,
-      numeroPermiso: "PERM-001",
-      progreso: 25,
-      tareasActivas: 3,
-      tareasCompletadas: 1,
-      legajoTecnico: []
-    }
-  ]);
-
+  const currentUser = useCurrentUser();
+  const supabase = createClientComponentClient<Database>();
+  const [obras, setObras] = useState<Obra[]>([]);
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Hooks para suscripciones
-  const { showUpgradeModal } = useUpgradeModal();
+  const upgradeModal = useUpgradeModal();
   const obrasLimitGuard = usePlanLimitGuard('obras');
   const { usageSummary } = usePlanUsage();
+
+  // Función para cargar obras desde Supabase
+  const loadObras = useCallback(async () => {
+    if (!currentUser?.orgId) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { data, error: fetchError } = await supabase
+        .from('obras')
+        .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra')
+        .eq('org_id', currentUser.orgId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('[LOAD_OBRAS_ERROR]', fetchError);
+        setError('Error al cargar las obras');
+        return;
+      }
+
+      // Mapear datos de Supabase al formato Obra
+      const obrasMapeadas: Obra[] = (data || []).map((obra) => ({
+        id: obra.id,
+        nombre: obra.name || 'Sin nombre',
+        localizacion: obra.address || '',
+        estado: (obra.estado?.toUpperCase() as 'ACTIVA' | 'PAUSADA' | 'FINALIZADA' | 'CANCELADA') || 'ACTIVA',
+        created_at: obra.created_at || new Date().toISOString(),
+        fecha_inicio: undefined,
+        presupuesto: undefined,
+        descripcion: '',
+        cliente: obra.propietario || undefined,
+        tipoObra: obra.tipo_obra as 'nueva' | 'reforma' | 'ampliacion' || 'nueva',
+        numeroPermiso: undefined,
+        progreso: 0,
+        tareasActivas: 0,
+        tareasCompletadas: 0,
+        legajoTecnico: [],
+      }));
+
+      setObras(obrasMapeadas);
+    } catch (err) {
+      console.error('[LOAD_OBRAS_ERROR]', err);
+      setError('Error al cargar las obras');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentUser?.orgId, supabase]);
+
+  // Cargar obras al montar y cuando cambia el orgId
+  useEffect(() => {
+    loadObras();
+  }, [loadObras]);
 
   // Mostrar todas las obras (sin filtros)
   const obrasFiltradas = obras;
@@ -253,6 +294,7 @@ export default function ObrasSection() {
   };
 
   const abrirModalEditar = (obra: Obra) => {
+    setSelectedObra(obra);
     setIsEditing(true);
     setFormState({
       nombre: obra.nombre,
@@ -268,6 +310,8 @@ export default function ObrasSection() {
     setIsModalOpen(false);
     setFormState(initialFormState);
     setError(null);
+    // No limpiar selectedObra aquí porque puede estar siendo usado para mostrar el detalle
+    // Se limpiará cuando se cierre el detalle
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -275,44 +319,106 @@ export default function ObrasSection() {
     setIsLoading(true);
     setError(null);
 
+    if (!currentUser?.orgId) {
+      setError('No se pudo identificar tu organización');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (isEditing) {
         // Actualizar obra existente
-        const obraIndex = obras.findIndex(o => o.nombre === formState.nombre);
-        if (obraIndex !== -1) {
-          const obraActualizada = {
-            ...obras[obraIndex],
-            ...formState,
-            presupuesto: formState.presupuesto ? parseFloat(formState.presupuesto) : undefined,
-            updatedAt: new Date().toISOString()
-          };
-          setObras(prev => prev.map(o => o.id === obraActualizada.id ? obraActualizada : o));
+        if (!selectedObra) {
+          setError('No se encontró la obra a actualizar');
+          setIsLoading(false);
+          return;
         }
+
+        const { error: updateError } = await supabase
+          .from('obras')
+          .update({
+            name: formState.nombre,
+            address: formState.localizacion || null,
+          })
+          .eq('id', selectedObra.id)
+          .eq('org_id', currentUser.orgId);
+
+        if (updateError) {
+          console.error('[UPDATE_OBRA_ERROR]', updateError);
+          setError('Error al actualizar la obra');
+          setIsLoading(false);
+          return;
+        }
+
+        // Recargar obras después de actualizar
+        await loadObras();
+        cerrarModal();
       } else {
         // Crear nueva obra
-        const nuevaObra: Obra = {
-          id: Date.now().toString(),
-          nombre: formState.nombre,
-          localizacion: formState.localizacion,
-          estado: 'ACTIVA',
-          created_at: new Date().toISOString(),
-          fecha_inicio: formState.fecha_inicio,
-          presupuesto: formState.presupuesto ? parseFloat(formState.presupuesto) : undefined,
-          descripcion: formState.descripcion
-        };
-        setObras(prev => [...prev, nuevaObra]);
+        const { data, error: insertError } = await supabase
+          .from('obras')
+          .insert({
+            org_id: currentUser.orgId,
+            name: formState.nombre,
+            address: formState.localizacion || null,
+            estado: 'pendiente',
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('[CREATE_OBRA_ERROR]', insertError);
+          setError('Error al crear la obra');
+          setIsLoading(false);
+          return;
+        }
+
+        // Recargar obras después de crear
+        await loadObras();
+        cerrarModal();
       }
-      cerrarModal();
     } catch (err) {
+      console.error('[SUBMIT_OBRA_ERROR]', err);
       setError('Error al guardar la obra');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDeleteObra = (obra: Obra) => {
-    if (window.confirm(`¿Estás seguro de que querés eliminar la obra "${obra.nombre}"?`)) {
-      setObras(prev => prev.filter(o => o.id !== obra.id));
+  const handleDeleteObra = async (obra: Obra) => {
+    if (!window.confirm(`¿Estás seguro de que querés eliminar la obra "${obra.nombre}"?`)) {
+      return;
+    }
+
+    if (!currentUser?.orgId) {
+      setError('No se pudo identificar tu organización');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('obras')
+        .delete()
+        .eq('id', obra.id)
+        .eq('org_id', currentUser.orgId);
+
+      if (deleteError) {
+        console.error('[DELETE_OBRA_ERROR]', deleteError);
+        setError('Error al eliminar la obra');
+        setIsLoading(false);
+        return;
+      }
+
+      // Recargar obras después de eliminar
+      await loadObras();
+    } catch (err) {
+      console.error('[DELETE_OBRA_ERROR]', err);
+      setError('Error al eliminar la obra');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -323,11 +429,40 @@ export default function ObrasSection() {
   const abrirWizardCrear = () => {
     // Verificar límites de suscripción
     if (obrasLimitGuard.shouldBlock(obras.length)) {
-      showUpgradeModal();
+      upgradeModal.open({
+        targetPlanId: obrasLimitGuard.upgradeTarget || 'STARTER',
+        limitId: 'obras',
+        source: 'obras-section',
+        reason: 'Alcanzaste el límite de obras en tu plan actual.',
+      });
       return;
     }
     router.push('/obras/nueva');
   };
+
+
+  function handleAddMock() {
+    setObras(prev => ([
+      {
+        id: Date.now().toString(),
+        nombre: 'Demo Wizard - Casa Moderna',
+        localizacion: 'San Martín 550, Pueblo Esther',
+        estado: 'ACTIVA',
+        created_at: new Date().toISOString(),
+        fecha_inicio: '2025-01-10',
+        presupuesto: 180000,
+        descripcion: 'Generada con el nuevo flujo (mock para pruebas visuales).',
+        cliente: 'Cliente Demo',
+        tipoObra: 'nueva',
+        numeroPermiso: 'MOCK-2025',
+        progreso: 8,
+        tareasActivas: 0,
+        tareasCompletadas: 0,
+        legajoTecnico: []
+      },
+      ...prev
+    ]));
+  }
 
   // Loading state
   if (isLoading) {
@@ -420,7 +555,10 @@ export default function ObrasSection() {
       subtitle="Gestiona todas tus obras de construcción"
     >
       {/* Botón de crear obra */}
-      <div className="flex justify-end mb-6">
+      <div className="flex justify-end mb-6 gap-3">
+        <Button variant="secondary" onClick={handleAddMock}>
+          Agregar demo
+        </Button>
         <Button
           onClick={abrirWizardCrear}
           variant="primary"

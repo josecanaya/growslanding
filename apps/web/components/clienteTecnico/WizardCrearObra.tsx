@@ -11,13 +11,13 @@ import {
   Settings,
   X
 } from 'lucide-react';
-import { PasoElementosConstructivos } from './wizard/PasoElementosConstructivos';
-import { PasoResumenSeleccion } from './wizard/PasoResumenSeleccion';
-import { Seleccion } from './wizard/SubgrupoAccordion';
+import { PasoElementosConstructivos } from './PasoElementosConstructivos';
+import { PasoResumenSeleccion } from './PasoResumenSeleccion';
+import { Seleccion } from '@/components/cliente/SubgrupoAccordion';
 import PasoRevisionTareas from './PasoRevisionTareas';
 import PasoConfiguracionDependencias from './PasoConfiguracionDependencias';
-import { PasoDatosGenerales } from './wizard/PasoDatosGenerales';
-import { PasoConfirmacion } from './wizard/PasoConfirmacion';
+import { PasoDatosGenerales } from './PasoDatosGenerales';
+import { PasoConfirmacion } from './PasoConfirmacion';
 
 // Tipos de datos
 interface ObraData {

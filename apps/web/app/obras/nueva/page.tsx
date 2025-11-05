@@ -2,18 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 import { SidebarClienteTecnico } from '@/components/clienteTecnico/SidebarClienteTecnico';
-import { WizardCrearObraNuevo } from '@/components/clienteTecnico/wizard/WizardCrearObraNuevo';
+import { WizardCrearObraLayout } from '@/components/obras/wizardNuevo/WizardCrearObraLayout';
+// LEGACY: mantener referencia al wizard anterior.
+// import { WizardCrearObraNuevo } from '@/components/clienteTecnico/wizard/WizardCrearObraNuevo';
 
 export default function NuevaObraPage() {
   const router = useRouter();
 
   const handleSuccess = (obra: any) => {
-    // Redirigir al dashboard de obras después de crear exitosamente
+    // Redirigir al listado de obras despuÃ©s de crear exitosamente
     router.push('/obras');
   };
 
   const handleCancel = () => {
-    // Redirigir al dashboard de obras al cancelar
+    // Redirigir al listado de obras al cancelar
     router.push('/obras');
   };
 
@@ -33,7 +35,7 @@ export default function NuevaObraPage() {
       
       {/* Contenedor principal - Wizard */}
       <div className="flex-1 ml-[220px]">
-        <WizardCrearObraNuevo 
+        <WizardCrearObraLayout 
           onComplete={handleSuccess}
           onCancel={handleCancel}
         />

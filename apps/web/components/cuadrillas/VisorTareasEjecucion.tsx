@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { 
   X, 
   Clock, 
@@ -25,6 +27,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 interface VisorTareasEjecucionProps {
   onClose: () => void;
+  cuadrillaId?: string; // Opcional: filtrar por cuadrilla específica
 }
 
 interface TareaKanban {
@@ -38,67 +41,7 @@ interface TareaKanban {
   prioridad: 'ALTA' | 'MEDIA' | 'BAJA';
 }
 
-// Mock de tareas para el Kanban
-const tareasMock: TareaKanban[] = [
-  {
-    id: '1',
-    nombre: 'Excavación de cimientos',
-    obra: 'Casa Familiar Los Robles',
-    cuadrilla: 'Cuadrilla Albañilería Norte',
-    estado: 'EN_EJECUCION',
-    fechaInicio: '2024-03-01',
-    fechaFinEstimada: '2024-03-05',
-    prioridad: 'ALTA'
-  },
-  {
-    id: '2',
-    nombre: 'Instalación eléctrica baño',
-    obra: 'Edificio Residencial Norte',
-    cuadrilla: 'Cuadrilla Electricidad Este',
-    estado: 'EN_EJECUCION',
-    fechaInicio: '2024-03-02',
-    fechaFinEstimada: '2024-03-08',
-    prioridad: 'MEDIA'
-  },
-  {
-    id: '3',
-    nombre: 'Revestimiento exterior',
-    obra: 'Casa Familiar Los Robles',
-    cuadrilla: 'Cuadrilla Yesería Sur',
-    estado: 'PENDIENTE',
-    fechaFinEstimada: '2024-03-15',
-    prioridad: 'BAJA'
-  },
-  {
-    id: '4',
-    nombre: 'Instalación de cañerías',
-    obra: 'Edificio Residencial Norte',
-    cuadrilla: 'Cuadrilla Plomería Oeste',
-    estado: 'TERMINADA',
-    fechaInicio: '2024-02-20',
-    fechaFinEstimada: '2024-02-28',
-    prioridad: 'ALTA'
-  },
-  {
-    id: '5',
-    nombre: 'Armado de vigas',
-    obra: 'Casa Familiar Los Robles',
-    cuadrilla: 'Cuadrilla Albañilería Norte',
-    estado: 'PENDIENTE',
-    fechaFinEstimada: '2024-03-20',
-    prioridad: 'ALTA'
-  },
-  {
-    id: '6',
-    nombre: 'Pintura de interiores',
-    obra: 'Edificio Residencial Norte',
-    cuadrilla: 'Cuadrilla Pintura Centro',
-    estado: 'EN_EJECUCION',
-    fechaInicio: '2024-03-03',
-    fechaFinEstimada: '2024-03-12',
-    prioridad: 'MEDIA'
-  }
-];
+// No hay mocks - se cargan desde Supabase
 
 const TareaCard: React.FC<{ tarea: TareaKanban }> = ({ tarea }) => {
   const getPrioridadColor = (prioridad: string) => {
@@ -170,9 +113,100 @@ const TareaCard: React.FC<{ tarea: TareaKanban }> = ({ tarea }) => {
   );
 };
 
-export function VisorTareasEjecucion({ onClose }: VisorTareasEjecucionProps) {
-  const [tareas, setTareas] = useState<TareaKanban[]>(tareasMock);
+export function VisorTareasEjecucion({ onClose, cuadrillaId }: VisorTareasEjecucionProps) {
+  const [tareas, setTareas] = useState<TareaKanban[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  const supabase = createClientComponentClient();
+  const currentUser = useCurrentUser();
+
+  // Cargar tareas desde Supabase
+  useEffect(() => {
+    const cargarTareas = async () => {
+      if (!currentUser?.orgId) {
+        setTareas([]);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        let query = supabase
+          .from('tareas')
+          .select(`
+            id,
+            title,
+            estado,
+            fecha_inicio_estimada,
+            fecha_fin_estimada,
+            fecha_inicio_real,
+            prioridad,
+            cuadrilla_id,
+            obra_id,
+            obra:obras(name, address),
+            cuadrilla:cuadrillas(nombre)
+          `)
+          .eq('org_id', currentUser.orgId);
+
+        // Filtrar por cuadrilla si se proporciona
+        if (cuadrillaId) {
+          query = query.eq('cuadrilla_id', cuadrillaId);
+        }
+
+        const { data: tareasData, error: tareasError } = await query;
+
+        if (tareasError) {
+          console.error('Error cargando tareas:', tareasError);
+          setTareas([]);
+          return;
+        }
+
+        // Mapear tareas al formato Kanban
+        const tareasKanban: TareaKanban[] = (tareasData || []).map((tarea: any) => {
+          // Mapear estados
+          let estado: 'PENDIENTE' | 'EN_EJECUCION' | 'TERMINADA' = 'PENDIENTE';
+          const estadoSupabase = (tarea.estado || '').toLowerCase();
+          if (estadoSupabase === 'finalizado' || estadoSupabase === 'validado') {
+            estado = 'TERMINADA';
+          } else if (estadoSupabase === 'en_progreso' || estadoSupabase === 'en curso') {
+            estado = 'EN_EJECUCION';
+          } else {
+            estado = 'PENDIENTE';
+          }
+
+          // Mapear prioridad
+          const prioridadMap: Record<string, 'ALTA' | 'MEDIA' | 'BAJA'> = {
+            'BAJA': 'BAJA',
+            'MEDIA': 'MEDIA',
+            'ALTA': 'ALTA',
+          };
+          const prioridad = prioridadMap[tarea.prioridad?.toUpperCase() || 'MEDIA'] || 'MEDIA';
+
+          return {
+            id: tarea.id,
+            nombre: tarea.title || 'Sin nombre',
+            obra: tarea.obra?.name || 'Sin obra',
+            cuadrilla: tarea.cuadrilla?.nombre || 'Sin cuadrilla',
+            estado,
+            fechaInicio: tarea.fecha_inicio_real || tarea.fecha_inicio_estimada,
+            fechaFinEstimada: tarea.fecha_fin_estimada,
+            prioridad,
+          };
+        });
+
+        setTareas(tareasKanban);
+      } catch (error) {
+        console.error('Error en cargarTareas:', error);
+        setTareas([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarTareas();
+  }, [currentUser?.orgId, cuadrillaId, supabase]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -193,7 +227,34 @@ export function VisorTareasEjecucion({ onClose }: VisorTareasEjecucionProps) {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Actualizar estado de tarea en Supabase
+  const actualizarEstadoTarea = async (tareaId: string, nuevoEstado: 'PENDIENTE' | 'EN_EJECUCION' | 'TERMINADA') => {
+    if (!currentUser?.orgId) return;
+
+    try {
+      // Mapear estado a formato Supabase
+      const estadoSupabase = nuevoEstado === 'TERMINADA' ? 'finalizado' :
+                            nuevoEstado === 'EN_EJECUCION' ? 'en_progreso' : 'pendiente';
+
+      const { error } = await supabase
+        .from('tareas')
+        .update({
+          estado: estadoSupabase,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', tareaId)
+        .eq('org_id', currentUser.orgId);
+
+      if (error) {
+        console.error('Error actualizando estado:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error en actualizarEstadoTarea:', error);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
     if (!over) return;
@@ -201,6 +262,10 @@ export function VisorTareasEjecucion({ onClose }: VisorTareasEjecucionProps) {
     const tareaId = active.id as string;
     const nuevoEstado = over.id as 'PENDIENTE' | 'EN_EJECUCION' | 'TERMINADA';
 
+    // Actualizar estado en Supabase
+    await actualizarEstadoTarea(tareaId, nuevoEstado);
+
+    // Actualizar estado local
     setTareas(prev => prev.map(tarea => 
       tarea.id === tareaId ? { ...tarea, estado: nuevoEstado } : tarea
     ));

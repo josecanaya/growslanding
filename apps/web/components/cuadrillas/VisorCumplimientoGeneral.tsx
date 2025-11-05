@@ -172,15 +172,9 @@ export function VisorCumplimientoGeneral({ onClose }: VisorCumplimientoGeneralPr
     { label: 'Regular (<75%)', value: cuadrillasRegulares, color: '#EF4444' }
   ];
 
-  // Histórico de obras (mock)
-  const historicoObras = [
-    { mes: 'Ene', obras: 8, cumplimiento: 85 },
-    { mes: 'Feb', obras: 12, cumplimiento: 92 },
-    { mes: 'Mar', obras: 15, cumplimiento: 88 },
-    { mes: 'Abr', obras: 18, cumplimiento: 95 },
-    { mes: 'May', obras: 14, cumplimiento: 90 },
-    { mes: 'Jun', obras: 16, cumplimiento: 87 }
-  ];
+  // Histórico de obras - se cargará desde Supabase cuando se implemente
+  // TODO: Implementar carga de histórico de obras desde Supabase
+  const historicoObras: Array<{ mes: string; obras: number; cumplimiento: number }> = [];
 
   return (
     <div className="absolute inset-0 bg-white z-40 overflow-y-auto">
@@ -269,32 +263,43 @@ export function VisorCumplimientoGeneral({ onClose }: VisorCumplimientoGeneralPr
             title="Cumplimiento por Cuadrilla"
           />
 
-          {/* Histórico de obras */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Histórico de Obras</h3>
-            <div className="space-y-4">
-              {historicoObras.map((mes, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium text-gray-900">{mes.mes}</span>
-                  </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{mes.obras} obras</p>
-                      <p className="text-xs text-gray-500">Completadas</p>
+          {/* Histórico de obras - Se mostrará cuando haya datos cargados desde Supabase */}
+          {historicoObras.length > 0 ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Histórico de Obras</h3>
+              <div className="space-y-4">
+                {historicoObras.map((mes, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm font-medium text-gray-900">{mes.mes}</span>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-sm font-medium ${mes.cumplimiento >= 90 ? 'text-green-600' : mes.cumplimiento >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {mes.cumplimiento}%
-                      </p>
-                      <p className="text-xs text-gray-500">Cumplimiento</p>
+                    <div className="flex items-center space-x-4">
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">{mes.obras} obras</p>
+                        <p className="text-xs text-gray-500">Completadas</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-medium ${mes.cumplimiento >= 90 ? 'text-green-600' : mes.cumplimiento >= 75 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {mes.cumplimiento}%
+                        </p>
+                        <p className="text-xs text-gray-500">Cumplimiento</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Histórico de Obras</h3>
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-sm">No hay datos históricos disponibles</p>
+                <p className="text-xs text-gray-400 mt-2">Los datos se cargarán automáticamente cuando estén disponibles</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Tabla de ranking de cuadrillas */}

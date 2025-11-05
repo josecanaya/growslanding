@@ -1,3 +1,7 @@
 'use client';
 
-export { default } from '@/app/panel/page';
+import { redirect } from 'next/navigation';
+
+export default function SocioPage() {
+  redirect('/socio/panel');
+}

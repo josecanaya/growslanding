@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarClienteTecnico } from '@/components/clienteTecnico/SidebarClienteTecnico';
-import ObrasSection from '@/components/clienteTecnico/ObrasSection';
+import { ObrasListContainer } from '@/components/obras/containers/ObrasListContainer';
 
 export default function ObrasPage() {
   const router = useRouter();
@@ -22,7 +21,7 @@ export default function ObrasPage() {
       
       {/* Contenedor principal */}
       <div className="flex-1 ml-[220px]">
-        <ObrasSection />
+        <ObrasListContainer />
       </div>
     </div>
   );

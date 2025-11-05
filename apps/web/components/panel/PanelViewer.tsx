@@ -1,10 +1,11 @@
 'use client';
 
-import { TareasEnCurso } from './sections/TareasEnCurso';
-import { Obras } from './sections/Obras';
-import { MiCuadrilla } from './sections/MiCuadrilla';
-import { Notificaciones } from './sections/Notificaciones';
-import { CuentaSection } from './sections/CuentaSection';
+import { TareasEnCurso } from '../panel/sections/TareasEnCurso';
+import { Obras } from '../panel/sections/Obras';
+import { MiCuadrilla } from '../panel/sections/MiCuadrilla';
+import { Notificaciones } from '../panel/sections/Notificaciones';
+import { CuentaSection } from '../panel/sections/CuentaSection';
+import { MisTareas } from '../panel/sections/MisTareas';
 
 interface User {
   name: string;
@@ -23,6 +24,8 @@ export function PanelViewer({ activeSection, user }: PanelViewerProps) {
     switch (activeSection) {
       case 'tareas':
         return <TareasEnCurso user={user} />;
+      case 'mis-tareas':
+        return <MisTareas user={user} />;
       case 'cuadrilla':
         return <MiCuadrilla user={user} />;
       case 'notificaciones':

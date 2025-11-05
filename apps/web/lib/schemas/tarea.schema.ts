@@ -35,6 +35,13 @@ export const ActualizarTareaSchema = z.object({
   duracionEstimada: z.number().int().positive().optional(),
   costoEstimado: z.number().positive().optional(),
   costoReal: z.number().positive().optional(),
+  responsable: z.string().optional(),
+  prioridad: z.enum(['BAJA', 'MEDIA', 'ALTA']).optional(),
+  fecha_inicio_estimada: z.string().optional(),
+  fecha_fin_estimada: z.string().optional(),
+  fecha_inicio_real: z.string().optional(),
+  fecha_fin_real: z.string().optional(),
+  avance: z.number().int().min(0).max(100).optional(),
 });
 
 export const AsignarSocioSchema = z.object({

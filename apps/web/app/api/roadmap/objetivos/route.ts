@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import initialData from '@/data/roadmap.initial.json';
+import { prisma } from '@/lib/prisma';
 
 // Función para calcular el progreso real basado en tareas completadas
 function calculateRealProgress(obj: any): number {

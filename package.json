@@ -8,11 +8,12 @@
   "prisma:seed": "prisma db seed",
   "test": "vitest",
 
-  "dev": "cd apps/landing && npm run dev",
-  "build": "cd apps/landing && npm install && npm run build",
-  "start": "cd apps/landing && npm run start",
-  "lint": "cd apps/landing && npm run lint"
-},
+  "dev": "npm --prefix apps/landing run dev",
+  "build": "npm --prefix apps/landing install && npm --prefix apps/landing run build",
+  "start": "npm --prefix apps/landing run start",
+  "lint": "npm --prefix apps/landing run lint"
+}
+
  "dependencies": {
     "@prisma/client": "^5.7.1",
     "next": "^14.0.4",

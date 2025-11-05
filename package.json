@@ -8,7 +8,7 @@
     "prisma:seed": "prisma db seed",
     "test": "vitest",
     "dev": "cd apps/landing && npm run dev",
-    "build": "cd apps/landing && pnpm install && pnpm run build",
+    "build": "pnpm --filter apps/landing build",
     "start": "cd apps/landing && npm run start",
     "lint": "cd apps/landing && npm run lint"
   },

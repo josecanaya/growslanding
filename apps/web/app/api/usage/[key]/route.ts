@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const runtime = "nodejs";
+
 const MOCK_USAGE: Record<string, number> = {
   obras: 2,
   tareas: 3,
@@ -10,10 +12,11 @@ const MOCK_USAGE: Record<string, number> = {
 
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { key: string } }
+  context: { params: Promise<{ key: string }> }
 ) {
-  const key = params.key.toLowerCase();
-  if (!(key in MOCK_USAGE)) {
+  const { key } = await context.params;
+  const normalizedKey = key.toLowerCase();
+  if (!(normalizedKey in MOCK_USAGE)) {
     return NextResponse.json(
       { success: false, error: "Uso no encontrado" },
       { status: 404 }
@@ -22,6 +25,6 @@ export async function GET(
 
   return NextResponse.json({
     success: true,
-    count: MOCK_USAGE[key],
+    count: MOCK_USAGE[normalizedKey],
   });
 }

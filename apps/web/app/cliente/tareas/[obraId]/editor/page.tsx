@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useState } from 'react';
 import { ArrowLeft, Save, Plus, Trash2, ZoomIn, ZoomOut, Move, Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -290,22 +290,8 @@ function PanelLateral({ tareas, onNuevaTarea, onEliminarTarea, tareaSeleccionada
   );
 }
 
-interface TareasEditorPageProps {
-  params: { obraId: string };
-}
-
-export default function TareasEditorPage(props: TareasEditorPageProps | { params: Promise<{ obraId: string }> }) {
-  const [obraId, setObraId] = useState('');
-
-  const paramsInput = (props as any).params;
-
-  useEffect(() => {
-    const resolveParams = async () => {
-      const resolved = await Promise.resolve(paramsInput);
-      setObraId(resolved?.obraId ?? '');
-    };
-    resolveParams();
-  }, [paramsInput]);
+export default function TareasEditorPage({ params }: { params: Promise<{ obraId: string }> }) {
+  const { obraId } = use(params);
   const router = useRouter();
   const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);

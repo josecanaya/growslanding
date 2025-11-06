@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin, Building2, Wrench, Paintbrush } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { EtapasTimeline } from '@/components/cliente/EtapasTimeline';
@@ -435,13 +435,8 @@ function TareasList({ tareas, filtroEstado, onFiltroChange }: TareasListProps) {
   );
 }
 
-interface TareasDetailPageProps {
-  params: {
-    obraId: string;
-  };
-}
-
-export default function TareasDetailPage({ params }: TareasDetailPageProps) {
+export default function TareasDetailPage({ params }: { params: Promise<{ obraId: string }> }) {
+  const { obraId } = use(params);
   const router = useRouter();
   const [obra] = useState<Obra>(obraMock);
   const [tareas] = useState<Tarea[]>(tareasMock);
@@ -453,7 +448,7 @@ export default function TareasDetailPage({ params }: TareasDetailPageProps) {
   };
 
   const handleEditarPlanificacion = () => {
-    router.push(`/cliente/tareas/${params.obraId}/editor`);
+    router.push(`/cliente/tareas/${obraId}/editor`);
   };
 
   const handleNuevaTarea = () => {
@@ -586,7 +581,7 @@ export default function TareasDetailPage({ params }: TareasDetailPageProps) {
                   {/* INFO DE DEBUG */}
                   <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Debug:</strong> {tareas.length} tareas encontradas para la obra {params.obraId}
+                      <strong>Debug:</strong> {tareas.length} tareas encontradas para la obra {obraId}
                     </p>
                     <p className="text-sm text-yellow-800">
                       Estructura: {tareas.filter(t => t.etapa === 'Estructura').length} | 

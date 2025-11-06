@@ -627,7 +627,7 @@ function ModalInvitarSocio({ onClose, onInvitar }: {
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Si seleccionás una especialidad y el rol es "Líder de Cuadrilla", se creará automáticamente una cuadrilla.
+                Si seleccionás una especialidad y el rol es &quot;Líder de Cuadrilla&quot;, se creará automáticamente una cuadrilla.
               </p>
             </div>
 
@@ -988,7 +988,7 @@ function ModalAsignacionTareas({ cuadrilla, obras, tareas, onClose, onAsignar }:
         ) : tareasFiltradas.length === 0 ? (
           <div className="bg-yellow-50 rounded-lg p-4 mb-4 text-center text-yellow-700">
             <p>No hay tareas disponibles para la obra seleccionada</p>
-            <p className="text-sm text-yellow-600 mt-1">Selecciona otra obra o "Todas las obras"</p>
+            <p className="text-sm text-yellow-600 mt-1">Selecciona otra obra o &quot;Todas las obras&quot;</p>
           </div>
         ) : (
           <div className="space-y-2 mb-4 max-h-96 overflow-y-auto">

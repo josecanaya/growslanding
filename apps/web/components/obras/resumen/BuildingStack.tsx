@@ -372,7 +372,7 @@ export default function BuildingStack({
                     <Layers className="h-12 w-12 text-gray-300 mb-4" />
                     <p className="text-gray-500 font-medium">Sin elementos configurados</p>
                     <p className="text-sm text-gray-400 mt-2">
-                      Agregá elementos desde la pestaña "Elementos"
+                      Agregá elementos desde la pestaña &quot;Elementos&quot;
                     </p>
                   </div>
                 )}

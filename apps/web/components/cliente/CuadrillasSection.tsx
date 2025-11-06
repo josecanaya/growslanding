@@ -332,7 +332,7 @@ function ModalInvitarSocio({ onClose, onInvitar }: {
                 ))}
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Si seleccionás una especialidad y el rol es "Líder de Cuadrilla", se creará automáticamente una cuadrilla.
+                Si seleccionás una especialidad y el rol es &quot;Líder de Cuadrilla&quot;, se creará automáticamente una cuadrilla.
               </p>
             </div>
 

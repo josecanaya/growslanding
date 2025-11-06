@@ -139,7 +139,7 @@ export function DiagnosticTool() {
       <Card title="🔧 Herramienta de Diagnóstico - Failed to Fetch">
         <div className="space-y-4">
           <p className="text-grows-text-secondary">
-            Esta herramienta ayuda a identificar la causa del error "Failed to fetch" en Next.js 15.5.4
+            Esta herramienta ayuda a identificar la causa del error &quot;Failed to fetch&quot; en Next.js 15.5.4
           </p>
 
           {/* Información del sistema */}

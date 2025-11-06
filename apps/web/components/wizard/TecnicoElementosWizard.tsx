@@ -315,7 +315,7 @@ export function TecnicoElementosWizard({
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-red-800 mb-2">Error: Categoría no encontrada</h3>
               <p className="text-red-600 mb-4">
-                No se pudo encontrar la categoría "{nombreCategoria}" para la etapa "{etapa?.nombre}".
+                No se pudo encontrar la categoría &quot;{nombreCategoria}&quot; para la etapa &quot;{etapa?.nombre}&quot;.
               </p>
               <div className="text-sm text-red-500">
                 <p><strong>Índice de etapa:</strong> {etapaActual}</p>

@@ -8,9 +8,13 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
     "dev": "cd apps/landing && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
     "build": "cd apps/landing && npm install && npm run build",
+    "build:web": "cd apps/web && npm install && npm run build",
     "start": "cd apps/landing && npm run start",
+    "start:web": "cd apps/web && npm run start",
     "lint": "cd apps/landing && npm run lint",
+    "lint:web": "cd apps/web && npm run lint",
     "test": "vitest"
   },
   "dependencies": {

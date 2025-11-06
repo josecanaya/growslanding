@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush } from 'lucide-react';
+import { Card, Button, Badge, EmptyState } from '@/components/ui/grows';
 import { TimelineInteractivo } from './TimelineInteractivo';
 import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
@@ -411,136 +412,80 @@ interface ObraResumenCardProps {
 }
 
 function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
-  const getEstadoColor = (estado: string) => {
+  const getEstadoVariant = (estado: string) => {
     switch (estado) {
-      case 'activa': 
-        return {
-          backgroundColor: '#e8f5e8',
-          color: '#2d5a2d',
-          borderColor: '#a8d8a8'
-        };
-      case 'pausada': 
-        return {
-          backgroundColor: '#fffbf0',
-          color: '#8b6914',
-          borderColor: '#f4d03f'
-        };
-      case 'finalizada': 
-        return {
-          backgroundColor: '#f4e27e',
-          color: '#1B263B',
-          borderColor: '#d4af37'
-        };
-      default: 
-        return {
-          backgroundColor: '#f5f7fa',
-          color: '#1B263B',
-          borderColor: '#dce3ea'
-        };
-    }
-  };
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'activa': return <TrendingUp className="h-4 w-4" />;
-      case 'pausada': return <Clock className="h-4 w-4" />;
-      case 'finalizada': return <Building2 className="h-4 w-4" />;
-      default: return <Building2 className="h-4 w-4" />;
+      case 'activa': return 'success';
+      case 'pausada': return 'warning';
+      case 'finalizada': return 'info';
+      default: return 'default';
     }
   };
 
   return (
-    <div 
-      className="bg-white rounded-xl border transition-all duration-300 hover:shadow-md"
-      style={{borderColor: '#dce3ea'}}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(27, 38, 59, 0.1), 0 4px 6px -2px rgba(27, 38, 59, 0.05)';
-        e.currentTarget.style.borderColor = '#1B263B';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.borderColor = '#dce3ea';
-      }}
-    >
-      <div className="p-6">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div 
-              className="h-12 w-12 rounded-lg flex items-center justify-center"
-              style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}
-            >
-              <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold" style={{color: '#10161a'}}>{obra.nombre}</h3>
-              <div className="flex items-center gap-1 text-sm mt-1">
-                <MapPin className="h-4 w-4" style={{color: '#5b5f6a'}} />
-                <span style={{color: '#5b5f6a'}}>{obra.direccion}</span>
-              </div>
-            </div>
-          </div>
-          
-          <span 
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border"
-            style={getEstadoColor(obra.estado)}
-          >
-            {getEstadoIcon(obra.estado)}
-            {obra.estado.charAt(0).toUpperCase() + obra.estado.slice(1)}
-          </span>
-        </div>
-
-        {/* Información del cliente */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 text-sm">
-            <User className="h-4 w-4" style={{color: '#5b5f6a'}} />
-            <span className="font-medium" style={{color: '#5b5f6a'}}>Cliente:</span>
-            <span style={{color: '#5b5f6a'}}>{obra.cliente}</span>
-          </div>
-        </div>
-
-        {/* Progreso */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium" style={{color: '#1B263B'}}>Progreso general</span>
-            <span className="text-sm" style={{color: '#5b5f6a'}}>{obra.avance}%</span>
-          </div>
-          <div className="w-full rounded-full h-2" style={{backgroundColor: '#f5f7fa'}}>
-            <div 
-              className="h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${obra.avance}%`,
-                backgroundColor: '#1B263B'
-              }}
-            ></div>
-          </div>
-          <div className="flex items-center justify-between mt-1 text-xs" style={{color: '#5b5f6a'}}>
-            <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
-          </div>
-        </div>
-
-        {/* Botón de acción */}
-        <button
+    <Card
+      footer={
+        <Button
+          variant="primary"
+          size="sm"
           onClick={() => onVerPlanificacion(obra.id)}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-white rounded-lg transition-colors font-medium"
-          style={{backgroundColor: '#1B263B'}}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#162033';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#1B263B';
-          }}
+          icon={<ArrowRight className="h-4 w-4" />}
+          className="w-full"
         >
-          <span>Ver planificación</span>
-          <ArrowRight className="h-4 w-4" />
-        </button>
+          Ver planificación
+        </Button>
+      }
+    >
+      <div className="mb-4 flex items-start justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="rounded-grows-md border border-grows-border bg-grows-secondary/10 p-2">
+            <Building2 className="h-5 w-5 text-grows-primary" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-grows-primary">
+              {obra.nombre}
+            </h3>
+            <div className="mt-1 flex items-center space-x-2">
+              <MapPin className="h-4 w-4 text-grows-text-secondary" />
+              <span className="text-sm text-grows-text-secondary">
+                {obra.direccion}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Badge variant={getEstadoVariant(obra.estado)}>
+            {obra.estado.charAt(0).toUpperCase() + obra.estado.slice(1)}
+          </Badge>
+        </div>
       </div>
-    </div>
+
+      <div className="mb-4 flex items-center space-x-2 text-sm text-grows-text-secondary">
+        <User className="h-4 w-4" />
+        <span className="font-medium">Cliente:</span>
+        <span>{obra.cliente}</span>
+      </div>
+
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-grows-primary">Progreso general</span>
+          <span className="text-sm text-grows-text-secondary">{obra.avance}%</span>
+        </div>
+        <div className="w-full rounded-full h-2 bg-grows-neutral">
+          <div 
+            className="h-2 rounded-full bg-grows-primary transition-all duration-300"
+            style={{ width: `${obra.avance}%` }}
+          ></div>
+        </div>
+        <div className="flex items-center justify-between mt-1 text-xs text-grows-text-secondary">
+          <span>{obra.tareasCompletadas} de {obra.tareasTotal} tareas</span>
+        </div>
+      </div>
+    </Card>
   );
 }
 
 type VistaTareas = 'lista-obras' | 'detalle-obra' | 'editor-gantt';
-type TabPrincipal = 'resumen' | 'elementos' | 'tareas' | 'legajo';
+type TabPrincipal = 'resumen' | 'elementos' | 'tareas' | 'presupuesto' | 'legajo';
 type ModoTareas = 'lista' | 'timeline' | 'editor-visual';
 
 export function TareasSection() {
@@ -865,6 +810,7 @@ export function TareasSection() {
                   { id: 'resumen', label: 'Resumen' },
                   { id: 'elementos', label: 'Elementos' },
                   { id: 'tareas', label: 'Tareas' },
+                  { id: 'presupuesto', label: 'Presupuesto' },
                   { id: 'legajo', label: 'Legajo' }
                 ].map(tab => (
                   <button
@@ -885,6 +831,51 @@ export function TareasSection() {
             <div className="p-6">
               {tabPrincipal === 'resumen' && (
                 <div className="space-y-6">
+                  <Card className="mb-6">
+                    {loadingTareas ? (
+                      <div className="py-8 text-center text-grows-text-secondary">
+                        Cargando tareas...
+                      </div>
+                    ) : tareas.length === 0 ? (
+                      <div className="py-8 text-center text-grows-text-secondary">
+                        No hay tareas para esta obra
+                      </div>
+                    ) : (
+                      <EditorVisualTareasN8N
+                        tareas={tareas.map(t => ({
+                          ...t,
+                          obraId: obraSeleccionada || '',
+                          lider: t.responsable,
+                          plantilla: '',
+                          checklist: [],
+                          evidencias: [],
+                          estado:
+                            t.estado === 'Finalizada' || t.estado === 'Aprobada'
+                              ? 'completada'
+                              : t.estado === 'En curso'
+                              ? 'en_progreso'
+                              : 'pendiente',
+                          etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
+                          precedencia: t.dependencias || [],
+                          duracion: 5,
+                          esCritica: false,
+                          holgura: 0,
+                          earlyStart: 0,
+                          earlyFinish: 0,
+                          lateStart: 0,
+                          lateFinish: 0,
+                          x: 0,
+                          y: 0,
+                          dependencias: t.dependencias || [],
+                        }))}
+                        etapa="estructura"
+                        onActualizarTarea={() => {}}
+                        onEliminarTarea={() => {}}
+                        onCrearTarea={() => {}}
+                      />
+                    )}
+                  </Card>
+
                   {/* Estadísticas */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -1122,141 +1113,138 @@ export function TareasSection() {
                 <div className="space-y-6">
                   {/* Header de Gestión de Tareas */}
                   <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">Gestión de Tareas</h2>
-                    <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+                    <h2 className="text-xl font-semibold text-grows-primary">Gestión de Tareas</h2>
+                    <div className="flex gap-2">
                       {[
                         { id: 'lista', label: 'Lista' },
                         { id: 'timeline', label: 'Timeline' },
                         { id: 'editor-visual', label: 'Editor Visual' }
                       ].map(modo => (
-                        <button
+                        <Button
                           key={modo.id}
+                          variant={modoTareas === modo.id ? 'primary' : 'outline'}
+                          size="sm"
                           onClick={() => setModoTareas(modo.id as ModoTareas)}
-                          className={`px-3 py-1 text-sm rounded transition-colors ${
-                            modoTareas === modo.id
-                              ? 'bg-blue-600 text-white' 
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
                         >
                           {modo.label}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
 
                   {/* Contenido según el modo seleccionado */}
                   {modoTareas === 'lista' && (
-                    <div className="space-y-4">
-                      {/* Filtros */}
-                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium text-gray-700">Filtrar por estado:</span>
-                          <div className="flex gap-2 bg-white rounded-lg p-1">
+                    <Card>
+                      <div className="space-y-4">
+                        {/* Filtros */}
+                        <div className="flex items-center gap-4 pb-4 border-b border-grows-border">
+                          <span className="text-sm font-medium text-grows-text-secondary">Filtrar por estado:</span>
+                          <div className="flex gap-2">
                             {['todos', 'pendiente', 'en_curso', 'finalizada', 'aprobada'].map(estado => (
-                              <button
+                              <Button
                                 key={estado}
+                                variant={filtroEstado === estado ? 'primary' : 'outline'}
+                                size="sm"
                                 onClick={() => setFiltroEstado(estado)}
-                                className={`px-3 py-1 text-sm rounded transition-colors ${
-                                  filtroEstado === estado 
-                                    ? 'bg-blue-600 text-white' 
-                                    : 'text-gray-600 hover:text-gray-900'
-                                }`}
                               >
                                 {estado === 'todos' ? 'Todos' : 
                                  estado === 'en_curso' ? 'En curso' :
                                  estado.replace('_', ' ').charAt(0).toUpperCase() + estado.replace('_', ' ').slice(1)}
-                              </button>
+                              </Button>
                             ))}
                           </div>
                         </div>
-                      </div>
 
-                      {/* Lista de tareas */}
-                      <div className="space-y-4">
-                        {loadingTareas ? (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500">Cargando tareas...</p>
-                          </div>
-                        ) : tareas.length === 0 ? (
-                          <div className="text-center py-8">
-                            <p className="text-gray-500">No hay tareas para esta obra</p>
-                          </div>
-                        ) : (
-                          tareas.filter(tarea => 
-                            filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
-                          ).map(tarea => (
-                          <div key={tarea.id} className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="text-lg font-semibold text-gray-900">{tarea.nombre}</h3>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    tarea.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                    tarea.estado === 'En curso' ? 'bg-blue-100 text-blue-800' :
-                                    tarea.estado === 'Finalizada' ? 'bg-green-100 text-green-800' :
-                                    'bg-purple-100 text-purple-800'
-                                  }`}>
-                                    {tarea.estado}
-                                  </span>
-                                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                    tarea.etapa === 'Estructura' ? 'bg-red-100 text-red-800' :
-                                    tarea.etapa === 'Obra gris' ? 'bg-gray-100 text-gray-800' :
-                                    tarea.etapa === 'Instalaciones' ? 'bg-blue-100 text-blue-800' :
-                                    'bg-green-100 text-green-800'
-                                  }`}>
-                                    {tarea.etapa}
-                                  </span>
-                                </div>
-                                
-                                <p className="text-gray-600 mb-3">{tarea.descripcion}</p>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                                  <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4" />
-                                    <span>{tarea.responsable}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Calendar className="h-4 w-4" />
-                                    <span>
-                                      {new Date(tarea.fechaInicio).toLocaleDateString()} - {new Date(tarea.fechaFin).toLocaleDateString()}
-                                    </span>
-                                  </div>
-                                  {tarea.presupuesto && (
-                                    <div className="flex items-center gap-2">
-                                      <DollarSign className="h-4 w-4" />
-                                      <span>${tarea.presupuesto.toLocaleString()}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Acciones */}
-                              <div className="flex flex-wrap gap-2">
-                                <button className="inline-flex items-center px-3 py-1.5 text-sm text-gray-700 bg-white rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Ver
-                                </button>
-                                <button className="inline-flex items-center px-3 py-1.5 text-sm text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-                                  <DollarSign className="h-4 w-4 mr-1" />
-                                  Presupuesto
-                                </button>
-                                <button className="inline-flex items-center px-3 py-1.5 text-sm text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-                                  <Users className="h-4 w-4 mr-1" />
-                                  Asignar
-                                </button>
-                                {tarea.estado === 'Finalizada' && (
-                                  <button className="inline-flex items-center px-3 py-1.5 text-sm text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Validar
-                                  </button>
-                                )}
-                              </div>
+                        {/* Lista de tareas */}
+                        <div className="space-y-4">
+                          {loadingTareas ? (
+                            <div className="text-center py-8">
+                              <p className="text-grows-text-secondary">Cargando tareas...</p>
                             </div>
-                          </div>
-                        ))
-                        )}
+                          ) : tareas.length === 0 ? (
+                            <EmptyState
+                              title="No hay tareas"
+                              description="No hay tareas para esta obra"
+                            />
+                          ) : tareas.filter(tarea => 
+                            filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
+                          ).length === 0 ? (
+                            <EmptyState
+                              title="No hay tareas con este filtro"
+                              description={`No se encontraron tareas con el estado "${filtroEstado}"`}
+                            />
+                          ) : (
+                            tareas.filter(tarea => 
+                              filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
+                            ).map(tarea => {
+                              const getEstadoStatus = (estado: string) => {
+                                if (estado === 'Pendiente') return 'pending';
+                                if (estado === 'En curso') return 'in_progress';
+                                if (estado === 'Finalizada' || estado === 'Aprobada') return 'completed';
+                                return 'default';
+                              };
+
+                              return (
+                                <Card key={tarea.id}>
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-lg font-semibold text-grows-primary">{tarea.nombre}</h3>
+                                        <Badge status={getEstadoStatus(tarea.estado)}>
+                                          {tarea.estado}
+                                        </Badge>
+                                        <Badge variant="default">
+                                          {tarea.etapa}
+                                        </Badge>
+                                      </div>
+                                      
+                                      <p className="text-grows-text-secondary mb-3">{tarea.descripcion}</p>
+                                      
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-grows-text-secondary">
+                                        <div className="flex items-center space-x-2">
+                                          <User className="h-4 w-4" />
+                                          <span>{tarea.responsable}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2">
+                                          <Calendar className="h-4 w-4" />
+                                          <span>
+                                            {new Date(tarea.fechaInicio).toLocaleDateString()} - {new Date(tarea.fechaFin).toLocaleDateString()}
+                                          </span>
+                                        </div>
+                                        {tarea.presupuesto && (
+                                          <div className="flex items-center space-x-2">
+                                            <DollarSign className="h-4 w-4" />
+                                            <span>${tarea.presupuesto.toLocaleString()}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Acciones */}
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button variant="ghost" size="sm" icon={<Eye className="h-4 w-4" />}>
+                                        Ver
+                                      </Button>
+                                      <Button variant="ghost" size="sm" icon={<DollarSign className="h-4 w-4" />}>
+                                        Presupuesto
+                                      </Button>
+                                      <Button variant="ghost" size="sm" icon={<Users className="h-4 w-4" />}>
+                                        Asignar
+                                      </Button>
+                                      {tarea.estado === 'Finalizada' && (
+                                        <Button variant="ghost" size="sm" icon={<CheckCircle className="h-4 w-4" />}>
+                                          Validar
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </Card>
+                              );
+                            })
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {modoTareas === 'timeline' && (
@@ -1304,47 +1292,18 @@ export function TareasSection() {
                     </div>
                   )}
 
-                  {modoTareas === 'editor-visual' && (
-                    loadingTareas ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">Cargando tareas...</p>
-                      </div>
-                    ) : tareas.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No hay tareas para esta obra</p>
-                      </div>
-                    ) : (
-                      <EditorVisualTareasN8N
-                        tareas={tareas.map(t => ({
-                          ...t,
-                          obraId: obraSeleccionada || '',
-                          lider: t.responsable,
-                          plantilla: '',
-                          checklist: [],
-                          evidencias: [],
-                          estado: t.estado === 'Finalizada' || t.estado === 'Aprobada' ? 'completada' :
-                                  t.estado === 'En curso' ? 'en_progreso' : 'pendiente',
-                          etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
-                          precedencia: t.dependencias || [],
-                          duracion: 5,
-                          esCritica: false,
-                          holgura: 0,
-                          earlyStart: 0,
-                          earlyFinish: 0,
-                          lateStart: 0,
-                          lateFinish: 0,
-                          x: 0,
-                          y: 0,
-                          dependencias: t.dependencias || []
-                        }))}
-                        etapa="estructura"
-                        onActualizarTarea={() => {}}
-                        onEliminarTarea={() => {}}
-                        onCrearTarea={() => {}}
-                      />
-                    )
-                  )}
                 </div>
+              )}
+
+              {tabPrincipal === 'presupuesto' && (
+                <Card>
+                  <h2 className="text-lg font-semibold text-grows-primary mb-4">Presupuesto de tareas</h2>
+                  <p className="text-grows-muted mb-6">Vista preliminar. (Sin lógica nueva)</p>
+                  <EmptyState
+                    title="Todavía no cargaste presupuestos"
+                    description="Acá vas a poder ver y solicitar presupuestos de tareas."
+                  />
+                </Card>
               )}
 
               {tabPrincipal === 'elementos' && (

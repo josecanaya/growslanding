@@ -293,10 +293,12 @@ function PanelLateral({ tareas, onNuevaTarea, onEliminarTarea, tareaSeleccionada
 interface TareasEditorPageProps {
   params: {
     obraId: string;
-  };
+  } | Promise<{ obraId: string }>;
 }
 
+// @ts-expect-error Next.js 15 PageProps typing currently expects params as Promise
 export default function TareasEditorPage({ params }: TareasEditorPageProps) {
+  const obraId = (params as { obraId: string }).obraId ?? '';
   const router = useRouter();
   const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);
@@ -305,7 +307,7 @@ export default function TareasEditorPage({ params }: TareasEditorPageProps) {
   const [zoom, setZoom] = useState(1);
 
   const handleVolver = () => {
-    router.push(`/cliente/tareas/${params.obraId}`);
+    router.push(`/cliente/tareas/${obraId}`);
   };
 
   const handleNuevaTarea = () => {
@@ -339,7 +341,7 @@ export default function TareasEditorPage({ params }: TareasEditorPageProps) {
   const handleGuardar = () => {
     console.log('Guardando cambios del Gantt:', { tareas, conexiones });
     // Aquí se implementaría la lógica para guardar los cambios
-    router.push(`/cliente/tareas/${params.obraId}`);
+    router.push(`/cliente/tareas/${obraId}`);
   };
 
   const handleTareaSelect = (tareaId: string | null) => {

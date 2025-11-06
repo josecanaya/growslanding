@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { ArrowLeft, Save, Plus, Trash2, ZoomIn, ZoomOut, Move, Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -290,13 +290,8 @@ function PanelLateral({ tareas, onNuevaTarea, onEliminarTarea, tareaSeleccionada
   );
 }
 
-interface TareasEditorPageProps {
-  params: {
-    obraId: string;
-  };
-}
-
-export default function TareasEditorPage({ params }: TareasEditorPageProps) {
+export default function TareasEditorPage({ params }: { params: Promise<{ obraId: string }> }) {
+  const { obraId } = use(params);
   const router = useRouter();
   const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);
@@ -305,7 +300,7 @@ export default function TareasEditorPage({ params }: TareasEditorPageProps) {
   const [zoom, setZoom] = useState(1);
 
   const handleVolver = () => {
-    router.push(`/tareas/${params.obraId}`);
+    router.push(`/tareas/${obraId}`);
   };
 
   const handleNuevaTarea = () => {
@@ -339,7 +334,7 @@ export default function TareasEditorPage({ params }: TareasEditorPageProps) {
   const handleGuardar = () => {
     console.log('Guardando cambios del Gantt:', { tareas, conexiones });
     // Aquí se implementaría la lógica para guardar los cambios
-    router.push(`/tareas/${params.obraId}`);
+    router.push(`/tareas/${obraId}`);
   };
 
   const handleTareaSelect = (tareaId: string | null) => {

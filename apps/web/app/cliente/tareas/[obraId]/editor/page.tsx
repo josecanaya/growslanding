@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Save, Plus, Trash2, ZoomIn, ZoomOut, Move, Link } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -291,14 +291,21 @@ function PanelLateral({ tareas, onNuevaTarea, onEliminarTarea, tareaSeleccionada
 }
 
 interface TareasEditorPageProps {
-  params: {
-    obraId: string;
-  } | Promise<{ obraId: string }>;
+  params: { obraId: string };
 }
 
-// @ts-expect-error Next.js 15 PageProps typing currently expects params as Promise
-export default function TareasEditorPage({ params }: TareasEditorPageProps) {
-  const obraId = (params as { obraId: string }).obraId ?? '';
+export default function TareasEditorPage(props: TareasEditorPageProps | { params: Promise<{ obraId: string }> }) {
+  const [obraId, setObraId] = useState('');
+
+  const paramsInput = (props as any).params;
+
+  useEffect(() => {
+    const resolveParams = async () => {
+      const resolved = await Promise.resolve(paramsInput);
+      setObraId(resolved?.obraId ?? '');
+    };
+    resolveParams();
+  }, [paramsInput]);
   const router = useRouter();
   const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);

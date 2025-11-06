@@ -1,7 +1,6 @@
 {
-  "buildCommand": "pnpm --filter apps/landing build",
-  "outputDirectory": ".next",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "framework": "nextjs",
-  "rootDirectory": "apps/landing"
+  "buildCommand": "cd apps/landing && npm install && npm run build",
+  "outputDirectory": "apps/landing/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
 }

@@ -1,30 +1,24 @@
 {
-  "name": "grows-backend",
+  "name": "grows-monorepo",
   "version": "1.0.0",
-  "description": "Backend GROWS con Next.js + Prisma + PostgreSQL",
+  "description": "Monorepo GROWS con Next.js + Prisma + PostgreSQL",
+  "private": true,
   "scripts": {
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "prisma db seed",
-    "test": "vitest",
-    "dev": "cd apps/landing && npm run dev",
+    "dev": "pnpm --filter apps/landing dev",
     "build": "pnpm --filter apps/landing build",
-    "start": "cd apps/landing && npm run start",
-    "lint": "cd apps/landing && npm run lint"
+    "start": "pnpm --filter apps/landing start",
+    "lint": "pnpm --filter apps/landing lint",
+    "test": "vitest"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
-    "next": "^14.0.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "^14.0.4",
     "prisma": "^5.7.1",
     "tsx": "^4.6.2",
     "typescript": "^5.3.3",

@@ -36,7 +36,7 @@ export default async function DashboardPage() {
   let displayName: string;
 
   {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabaseAuth = createServerComponentClient<Database>({
       cookies: () => cookieStore,
     });

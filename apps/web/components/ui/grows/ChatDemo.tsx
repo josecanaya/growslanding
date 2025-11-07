@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatSection } from '@/components/clienteTecnico/ChatSection';
+import { ChatSection } from '@/components/cliente/ChatSection';
 import { Card, Button, SectionLayout } from '@/components/ui/grows';
 import { MessageCircle, Bot, Send, User } from 'lucide-react';
 
@@ -103,7 +103,7 @@ export function ChatDemo() {
           <Card title="Código de Ejemplo">
             <div className="bg-grows-neutral/30 rounded-grows-lg p-4">
               <pre className="text-sm text-grows-text-secondary overflow-x-auto">
-{`import { ChatSection } from '@/components/clienteTecnico/ChatSection';
+{`import { ChatSection } from '@/components/cliente/ChatSection';
 
 export default function MiChat() {
   return (

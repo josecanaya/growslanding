@@ -1,10 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { SidebarClienteTecnico } from '@/components/clienteTecnico/SidebarClienteTecnico';
+import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { WizardCrearObraLayout } from '@/components/obras/wizardNuevo/WizardCrearObraLayout';
 // LEGACY: mantener referencia al wizard anterior.
-// import { WizardCrearObraNuevo } from '@/components/clienteTecnico/wizard/WizardCrearObraNuevo';
+// import { WizardCrearObraNuevo } from '@/components/cliente/WizardCrearObraNuevo';
 
 export default function NuevaObraPage() {
   const router = useRouter();

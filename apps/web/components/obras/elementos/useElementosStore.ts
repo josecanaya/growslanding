@@ -1,175 +1,113 @@
-"use client";
+import { create } from 'zustand';
 
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-
-export type ConfiguracionTecnica = Record<string, any>;
-
-export type ElementoConfigurado = {
-  id: string;
-  nombreElemento: string;
-  grupo: string; // "Fundaciones y Estructuras", "Muros", etc.
-  plantaId?: string; // e.g., "PB", "1", etc.
-  unidad: string;
-  cantidad: number;
-  configuraciones: ConfiguracionTecnica;
-  tareas: {
-    estructura: string[];
-    obra_gris: string[];
-    terminaciones: string[];
-  };
-  precedencias: Record<string, string[]>; // codigoTarea -> [codigosPrecedencias]
-  fechaCreacion: string;
-};
-
-export type TareaObra = {
+export interface TareaObra {
   id: string;
   nombre: string;
-  codigo?: string;
-  elementoId?: string; // ID del elemento que la generó
+  codigo?: string | null;
+  fases?: {
+    estructura?: string[];
+    obra_gris?: string[];
+    terminaciones?: string[];
+  };
+}
+
+export interface ElementoObra {
+  id: string;
+  nombreElemento: string;
+  grupo: string;
+  plantaId?: string;
+  unidad?: string;
+  cantidad?: number;
+  configuraciones?: Record<string, unknown>;
+  tareas?: Record<string, unknown>;
+  precedencias?: Record<string, string[]>;
+  fechaCreacion: string;
+}
+
+type ElementoInput = Omit<ElementoObra, 'id' | 'fechaCreacion'> & {
+  id?: string;
+  fechaCreacion?: string;
 };
 
-type ElementosState = {
-  elementos: ElementoConfigurado[];
-  tareas: TareaObra[];
-};
-
-type ElementosActions = {
-  addElemento: (e: Omit<ElementoConfigurado, 'id' | 'fechaCreacion'>) => void;
-  updateElemento: (id: string, updates: Partial<ElementoConfigurado>) => void;
+interface ElementosStore {
+  elementos: ElementoObra[];
+  tareasObra: TareaObra[];
+  addElemento: (elemento: ElementoInput) => ElementoObra;
+  updateElemento: (id: string, data: Partial<ElementoObra>) => void;
   removeElemento: (id: string) => void;
-  getElementosPorPlanta: (plantaId?: string) => ElementoConfigurado[];
-  getElementoPorNombre: (nombre: string, plantaId?: string) => ElementoConfigurado | undefined;
+  setElementos: (elementos: ElementoObra[]) => void;
+  getElementoPorNombre: (nombre: string) => ElementoObra | undefined;
+  updatePrecedencias: (id: string, codigoTarea: string | null, precedencias: string[]) => void;
+  setTareasObra: (tareas: TareaObra[]) => void;
   getTareasObra: () => TareaObra[];
-  updatePrecedencias: (elementoId: string, codigoTarea: string, precedencias: string[]) => void;
-};
-
-function genId() {
-  return Math.random().toString(36).slice(2, 10);
 }
 
-// Genera tareas a partir de un elemento configurado
-function generarTareasDeElemento(elemento: ElementoConfigurado): TareaObra[] {
-  const tareas: TareaObra[] = [];
-  const todasLasTareas = [
-    ...elemento.tareas.estructura,
-    ...elemento.tareas.obra_gris,
-    ...elemento.tareas.terminaciones
-  ];
-  
-  todasLasTareas.forEach((codigo) => {
-    tareas.push({
-      id: `${elemento.id}-${codigo}`,
-      nombre: codigo, // El componente se encargará de traducir a nombre
-      codigo,
-      elementoId: elemento.id,
-    });
-  });
-  
-  return tareas;
-}
+export const useElementosStore = create<ElementosStore>((set, get) => ({
+  elementos: [],
+  tareasObra: [],
 
-export const useElementosStore = create<ElementosState & ElementosActions>()(
-  persist(
-    (set, get) => ({
-      elementos: [],
-      tareas: [],
-      
-      addElemento: (e) => {
-        const nuevoElemento: ElementoConfigurado = {
-          ...e,
-          id: genId(),
-          fechaCreacion: new Date().toISOString(),
-        };
-        
-        set((s) => {
-          // Verificar si ya existe un elemento con el mismo nombre en la misma planta
-          const existente = s.elementos.find(
-            el => el.nombreElemento === e.nombreElemento && el.plantaId === e.plantaId
-          );
-          
-          if (existente) {
-            // Actualizar el existente en lugar de crear uno nuevo
-            return {
-              elementos: s.elementos.map(el => 
-                el.id === existente.id ? nuevoElemento : el
-              ),
-              tareas: [
-                ...s.tareas.filter(t => t.elementoId !== existente.id),
-                ...generarTareasDeElemento(nuevoElemento)
-              ],
-            };
-          }
-          
-          return {
-            elementos: [...s.elementos, nuevoElemento],
-            tareas: [
-              ...s.tareas,
-              ...generarTareasDeElemento(nuevoElemento)
-            ],
-          };
-        });
-      },
-      
-      updateElemento: (id, updates) => {
-        set((s) => {
-          const elementoActualizado = s.elementos.find(el => el.id === id);
-          if (!elementoActualizado) return s;
-          
-          const actualizado = { ...elementoActualizado, ...updates };
-          
-          return {
-            elementos: s.elementos.map(el => el.id === id ? actualizado : el),
-            tareas: [
-              ...s.tareas.filter(t => t.elementoId !== id),
-              ...generarTareasDeElemento(actualizado)
-            ],
-          };
-        });
-      },
-      
-      removeElemento: (id) => {
-        set((s) => ({
-          elementos: s.elementos.filter(el => el.id !== id),
-          tareas: s.tareas.filter(t => t.elementoId !== id),
-        }));
-      },
-      
-      getElementosPorPlanta: (plantaId) => {
-        const all = get().elementos;
-        if (!plantaId) return all;
-        return all.filter((e) => e.plantaId === plantaId || (!e.plantaId && !plantaId));
-      },
-      
-      getElementoPorNombre: (nombre, plantaId) => {
-        return get().elementos.find(
-          el => el.nombreElemento === nombre && el.plantaId === plantaId
-        );
-      },
-      
-      getTareasObra: () => {
-        return get().tareas;
-      },
-      
-      updatePrecedencias: (elementoId, codigoTarea, precedencias) => {
-        set((s) => ({
-          elementos: s.elementos.map(el => 
-            el.id === elementoId
-              ? {
-                  ...el,
-                  precedencias: {
-                    ...el.precedencias,
-                    [codigoTarea]: precedencias,
-                  },
-                }
-              : el
-          ),
-        }));
-      },
-    }),
-    {
-      name: 'grows-elementos-storage',
-      version: 1,
-    }
-  )
-);
+  addElemento: (elemento) => {
+    const createId = () => {
+      if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+      }
+      return `elem_${Math.random().toString(36).slice(2, 10)}`;
+    };
+
+    const nuevoElemento: ElementoObra = {
+      id: elemento.id ?? createId(),
+      fechaCreacion: elemento.fechaCreacion ?? new Date().toISOString(),
+      nombreElemento: elemento.nombreElemento,
+      grupo: elemento.grupo,
+      plantaId: elemento.plantaId,
+      unidad: elemento.unidad,
+      cantidad: elemento.cantidad,
+      configuraciones: elemento.configuraciones ?? {},
+      tareas: elemento.tareas ?? {},
+      precedencias: elemento.precedencias ?? {},
+    };
+
+    set((state) => ({ elementos: [...state.elementos, nuevoElemento] }));
+    return nuevoElemento;
+  },
+
+  updateElemento: (id, data) => {
+    set((state) => ({
+      elementos: state.elementos.map((elem) => (elem.id === id ? { ...elem, ...data } : elem)),
+    }));
+  },
+
+  removeElemento: (id) => {
+    set((state) => ({ elementos: state.elementos.filter((elem) => elem.id !== id) }));
+  },
+
+  setElementos: (elementos) => {
+    set({ elementos: elementos ?? [] });
+  },
+
+  getElementoPorNombre: (nombre) => {
+    return get().elementos.find((elem) => elem.nombreElemento === nombre);
+  },
+
+  updatePrecedencias: (id, codigoTarea, precedencias) => {
+    if (!codigoTarea) return;
+
+    set((state) => ({
+      elementos: state.elementos.map((elem) =>
+        elem.id === id
+          ? {
+              ...elem,
+              precedencias: {
+                ...(elem.precedencias ?? {}),
+                [codigoTarea]: precedencias,
+              },
+            }
+          : elem,
+      ),
+    }));
+  },
+
+  setTareasObra: (tareas) => set({ tareasObra: tareas ?? [] }),
+
+  getTareasObra: () => get().tareasObra,
+}));

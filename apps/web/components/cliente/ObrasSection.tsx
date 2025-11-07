@@ -3,23 +3,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, 
-  Building2, 
-  MapPin, 
-  Calendar, 
-  Edit3, 
-  Trash2, 
-  Eye, 
-  MoreVertical, 
-  Filter,
+import {
+  Plus,
+  Building2,
+  MapPin,
+  Calendar,
+  Edit3,
+  Trash2,
+  Eye,
   X,
   Save,
   AlertCircle,
-  PlayCircle,
-  PauseCircle,
-  CheckCircle,
-  XCircle
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -27,9 +21,8 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { DetalleObra } from '@/components/cliente/DetalleObra';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
-import { usePlanUsage } from '@/lib/subscriptions/use-plan-usage';
 import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
-import { Button, Card, Badge, SectionLayout } from '@/components/ui/grows';
+import { Button, SectionLayout } from '@/components/ui/grows';
 
 // Tipos de datos
 interface Obra {
@@ -70,144 +63,141 @@ const initialFormState: FormState = {
 
 // Componente para mostrar el estado de la obra usando el sistema GROWS
 const EstadoBadge = ({ estado }: { estado: string }) => {
-  const getEstadoVariant = (estado: string) => {
-    switch (estado) {
-      case 'ACTIVA':
-        return 'success';
-      case 'PAUSADA':
-        return 'warning';
-      case 'FINALIZADA':
-        return 'info';
-      case 'CANCELADA':
-        return 'error';
-      default:
-        return 'default';
-    }
+  const styles: Record<string, string> = {
+    ACTIVA: 'bg-blue-50 text-[#0052CC] border-blue-200',
+    PAUSADA: 'bg-amber-50 text-amber-600 border-amber-200',
+    FINALIZADA: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    CANCELADA: 'bg-rose-50 text-rose-600 border-rose-200',
   };
 
+  const badgeClasses = styles[estado] ?? 'bg-slate-100 text-slate-600 border-slate-200';
+
   return (
-    <Badge variant={getEstadoVariant(estado)}>
+    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide ${badgeClasses}`}>
+      <span
+        className={`h-2 w-2 rounded-full ${
+          estado === 'PAUSADA'
+            ? 'bg-amber-500'
+            : estado === 'FINALIZADA'
+            ? 'bg-emerald-500'
+            : estado === 'CANCELADA'
+            ? 'bg-rose-500'
+            : 'bg-[#0052CC]'
+        }`}
+      />
       {estado}
-    </Badge>
+    </span>
   );
 };
 
 // Componente para mostrar una card de obra
-const ObraCard = ({ 
-  obra, 
-  onEdit, 
-  onDelete, 
-  onView 
-}: { 
-  obra: Obra; 
-  onEdit: (obra: Obra) => void; 
-  onDelete: (obra: Obra) => void; 
-  onView: (obra: Obra) => void; 
+const ObraCard = ({
+  obra,
+  onEdit,
+  onDelete,
+  onView,
+}: {
+  obra: Obra;
+  onEdit: (obra: Obra) => void;
+  onDelete: (obra: Obra) => void;
+  onView: (obra: Obra) => void;
 }) => {
-  const formatearFechaCreacion = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-AR', {
+  const formatearFecha = (fecha: string) =>
+    new Date(fecha).toLocaleDateString('es-AR', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
-  };
 
-  const obtenerEstado = (estado: string) => {
-    return estado || 'ACTIVA';
-  };
+  const estado = obra.estado || 'ACTIVA';
 
   return (
-    <Card
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onView(obra)}
-      footer={
-        <div className="flex items-center justify-between">
-          <div className="flex space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(obra);
-              }}
-              icon={<Eye className="h-4 w-4" />}
-            >
-              Ver
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(obra);
-              }}
-              icon={<Edit3 className="h-4 w-4" />}
-            >
-              Editar
-            </Button>
-          </div>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(obra);
-            }}
-            icon={<Trash2 className="h-4 w-4" />}
-          >
-            Eliminar
-          </Button>
-        </div>
-      }
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onView(obra);
+        }
+      }}
+      className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0052CC]"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-grows-secondary/10 rounded-grows-md border border-grows-border">
-            <Building2 className="h-5 w-5 text-grows-primary" />
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-[#0052CC]">
+            <Building2 className="h-5 w-5" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-grows-primary">{obra.nombre}</h3>
-            <div className="flex items-center space-x-2 mt-1">
-              <MapPin className="h-4 w-4 text-grows-text-secondary" />
-              <span className="text-sm text-grows-text-secondary">
-                {obra.localizacion?.trim() || "Sin ubicación"}
-              </span>
+            <h3 className="text-lg font-semibold text-slate-900">{obra.nombre}</h3>
+            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+              <MapPin className="h-4 w-4 text-slate-400" />
+              <span>{obra.localizacion?.trim() || 'Sin ubicación definida'}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <EstadoBadge estado={obtenerEstado(obra.estado)} />
-          <div className="relative">
-            <Button 
-              variant="ghost"
-              size="sm"
-              onClick={(e) => e.stopPropagation()}
-              className="!p-1"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <EstadoBadge estado={estado} />
       </div>
 
       {obra.descripcion && (
-        <p className="text-sm mb-4 line-clamp-2 text-grows-text-secondary">
-          {obra.descripcion}
-        </p>
+        <p className="mt-4 line-clamp-2 text-sm text-slate-600">{obra.descripcion}</p>
       )}
 
-      <div className="flex items-center justify-between text-sm mb-4 text-grows-text-secondary">
-        <div className="flex items-center space-x-1">
-          <Calendar className="h-4 w-4" />
-          <span>Creada: {formatearFechaCreacion(obra.created_at)}</span>
+      <div className="mt-4 flex flex-col gap-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-[#0052CC]" />
+          <span>Creada: {formatearFecha(obra.created_at)}</span>
         </div>
         {obra.fecha_inicio && (
-          <div className="flex items-center space-x-1">
-            <Calendar className="h-4 w-4" />
-            <span>Inicio: {formatearFechaCreacion(obra.fecha_inicio)}</span>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-[#0052CC]" />
+            <span>Inicio: {formatearFecha(obra.fecha_inicio)}</span>
           </div>
         )}
       </div>
-    </Card>
+
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onView(obra);
+            }}
+            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+            icon={<Eye className="h-4 w-4" />}
+          >
+            Ver
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(obra);
+            }}
+            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+            icon={<Edit3 className="h-4 w-4" />}
+          >
+            Editar
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(obra);
+          }}
+          className="!rounded-lg !px-3 !py-1.5 !text-rose-600 hover:!bg-rose-50"
+          icon={<Trash2 className="h-4 w-4" />}
+        >
+          Eliminar
+        </Button>
+      </div>
+    </div>
   );
 };
 
@@ -227,7 +217,6 @@ export default function ObrasSection() {
   // Hooks para suscripciones
   const upgradeModal = useUpgradeModal();
   const obrasLimitGuard = usePlanLimitGuard('obras');
-  const { usageSummary } = usePlanUsage();
 
   // Función para cargar obras desde Supabase
   const loadObras = useCallback(async () => {
@@ -467,14 +456,24 @@ export default function ObrasSection() {
   // Loading state
   if (isLoading) {
     return (
-      <SectionLayout title="Cargando..." subtitle="Preparando tus obras">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <div className="h-6 bg-grows-neutral rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-grows-neutral rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-grows-neutral rounded w-2/3"></div>
-            </Card>
+      <SectionLayout
+        title="Cargando..."
+        subtitle="Preparando tus obras"
+        titleAlign="center"
+        titleClassName="text-2xl font-semibold text-slate-900"
+        subtitleClassName="text-sm text-slate-500"
+        className="bg-[#F8FAFC]"
+      >
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="h-40 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            >
+              <div className="h-6 w-3/4 animate-pulse rounded-full bg-slate-200/60" />
+              <div className="mt-4 h-4 w-1/2 animate-pulse rounded-full bg-slate-200/50" />
+              <div className="mt-3 h-4 w-2/3 animate-pulse rounded-full bg-slate-200/30" />
+            </div>
           ))}
         </div>
       </SectionLayout>
@@ -549,89 +548,117 @@ export default function ObrasSection() {
     );
   }
 
+  const totalObras = obras.length;
+  const totalActivas = obras.filter((o) => o.estado === 'ACTIVA').length;
+  const totalPausadas = obras.filter((o) => o.estado === 'PAUSADA').length;
+  const totalFinalizadas = obras.filter((o) => o.estado === 'FINALIZADA').length;
+  const totalCanceladas = obras.filter((o) => o.estado === 'CANCELADA').length;
+
   return (
     <SectionLayout
       title="Obras"
-      subtitle="Gestiona todas tus obras de construcción"
+      subtitle="Gestioná tus proyectos activos"
+      titleAlign="center"
+      titleClassName="text-2xl font-semibold text-slate-900"
+      subtitleClassName="text-sm text-slate-500"
+      className="bg-[#F8FAFC]"
     >
-      {/* Botón de crear obra */}
-      <div className="flex justify-end mb-6 gap-3">
-        <Button variant="secondary" onClick={handleAddMock}>
-          Agregar demo
-        </Button>
-        <Button
-          onClick={abrirWizardCrear}
-          variant="primary"
-          size="lg"
-          icon={<Plus className="h-5 w-5" />}
-        >
-          Crear Obra Completa
-        </Button>
+      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="text-center text-sm text-slate-500 md:text-left">
+          {totalObras > 0
+            ? `Tenés ${totalObras} ${totalObras === 1 ? 'obra' : 'obras'} activas en tu cuenta.`
+            : 'Aún no registraste obras en tu organización.'}
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
+          <Button
+            variant="ghost"
+            className="!border !border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900 !rounded-xl"
+            onClick={handleAddMock}
+          >
+            Agregar demo
+          </Button>
+          <Button
+            onClick={abrirWizardCrear}
+            variant="primary"
+            size="lg"
+            icon={<Plus className="h-5 w-5" />}
+            className="!rounded-xl !bg-[#22C55E] !px-6 !py-3 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
+          >
+            Crear obra
+          </Button>
+        </div>
       </div>
 
-      {/* Mensaje de error */}
       {error && (
-        <div className="mb-6 border border-grows-error/30 rounded-grows-lg p-4 bg-grows-error/10">
-          <div className="flex items-center">
-            <AlertCircle className="h-5 w-5 mr-2 text-grows-error" />
-            <span className="text-grows-error font-medium">{error}</span>
+        <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <span>{error}</span>
           </div>
         </div>
       )}
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <Card title="Total Obras" className="text-center">
-          <div className="text-2xl font-bold text-grows-primary">{obras.length}</div>
-        </Card>
-        <Card title="Activas" className="text-center">
-          <div className="text-2xl font-bold text-grows-secondary">{obras.filter(o => o.estado === 'ACTIVA').length}</div>
-        </Card>
-        <Card title="Pausadas" className="text-center">
-          <div className="text-2xl font-bold text-grows-warning">{obras.filter(o => o.estado === 'PAUSADA').length}</div>
-        </Card>
-        <Card title="Finalizadas" className="text-center">
-          <div className="text-2xl font-bold text-grows-primary">{obras.filter(o => o.estado === 'FINALIZADA').length}</div>
-        </Card>
-        <Card title="Canceladas" className="text-center">
-          <div className="text-2xl font-bold text-grows-error">{obras.filter(o => o.estado === 'CANCELADA').length}</div>
-        </Card>
+      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        {[{
+          label: 'Total de obras',
+          value: totalObras,
+        },
+        {
+          label: 'Activas',
+          value: totalActivas,
+        },
+        {
+          label: 'Pausadas',
+          value: totalPausadas,
+        },
+        {
+          label: 'Finalizadas',
+          value: totalFinalizadas,
+        },
+        {
+          label: 'Canceladas',
+          value: totalCanceladas,
+        }].map(({ label, value }) => (
+          <div
+            key={label}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <span className="text-sm font-medium text-slate-500">{label}</span>
+            <p className="mt-2 text-3xl font-semibold text-slate-900">{value}</p>
+          </div>
+        ))}
       </div>
 
-
-      {/* Lista de obras */}
       {obrasFiltradas.length === 0 ? (
-        <Card className="text-center py-12">
-          <Building2 className="h-12 w-12 text-grows-text-secondary mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-grows-primary mb-2">
-            No hay obras creadas
-          </h3>
-          <p className="text-grows-text-secondary mb-6">
-            Comienza creando tu primera obra
-          </p>
-          {(
-            <div className="flex items-center justify-center space-x-3">
-              <Button
-                onClick={abrirWizardCrear}
-                variant="primary"
-                size="lg"
-                icon={<Plus className="h-5 w-5" />}
-              >
-                Crear Obra Completa
-              </Button>
-              <Button
-                onClick={abrirModalCrear}
-                variant="secondary"
-                size="lg"
-                icon={<Plus className="h-5 w-5" />}
-              >
-                Crear Básica
-              </Button>
-            </div>
-          )}
-        </Card>
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-8 py-16 text-center shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-blue-100 bg-blue-50 text-[#0052CC]">
+            <Building2 className="h-7 w-7" />
+          </div>
+          <h3 className="mt-6 text-xl font-semibold text-slate-900">No hay obras registradas</h3>
+          <p className="mt-2 text-sm text-slate-500">Creá tu primera obra para empezar a planificar y asignar tareas.</p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button
+              onClick={abrirWizardCrear}
+              variant="primary"
+              size="lg"
+              icon={<Plus className="h-5 w-5" />}
+              className="!rounded-xl !bg-[#22C55E] !px-6 !py-3 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
+            >
+              Crear obra
+            </Button>
+            <Button
+              onClick={abrirModalCrear}
+              variant="ghost"
+              size="lg"
+              className="!rounded-xl !border !border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-100"
+              icon={<Plus className="h-5 w-5" />}
+            >
+              Crear rápida
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {obrasFiltradas.map((obra) => (
             <ObraCard
               key={obra.id}
@@ -644,92 +671,101 @@ export default function ObrasSection() {
         </div>
       )}
 
-      {/* Modal para crear/editar obra */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-grows-surface rounded-grows-lg shadow-grows-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-grows-border">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-grows-primary">
-                  {isEditing ? 'Editar Obra' : 'Crear Nueva Obra'}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {isEditing ? 'Editar obra' : 'Crear nueva obra'}
                 </h2>
-                <button
-                  onClick={cerrarModal}
-                  className="text-grows-text-secondary hover:text-grows-primary transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
+                <p className="text-sm text-slate-500">
+                  Completá la información básica para administrar el proyecto.
+                </p>
               </div>
+              <button
+                onClick={cerrarModal}
+                type="button"
+                className="rounded-full border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-grows-primary mb-1">
+
+            <form onSubmit={handleSubmit} className="px-6 py-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-nombre">
                     Nombre de la obra *
                   </label>
                   <input
+                    id="obra-nombre"
                     type="text"
                     required
                     value={formState.nombre}
-                    onChange={(e) => setFormState({...formState, nombre: e.target.value})}
-                    className="w-full px-3 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
+                    onChange={(event) => setFormState({ ...formState, nombre: event.target.value })}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-grows-primary mb-1">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-ubicacion">
                     Ubicación
                   </label>
                   <input
+                    id="obra-ubicacion"
                     type="text"
                     value={formState.localizacion}
-                    onChange={(e) => setFormState({...formState, localizacion: e.target.value})}
-                    className="w-full px-3 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
+                    onChange={(event) => setFormState({ ...formState, localizacion: event.target.value })}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-grows-primary mb-1">
+
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-fecha">
                     Fecha de inicio
                   </label>
                   <input
+                    id="obra-fecha"
                     type="date"
                     value={formState.fecha_inicio}
-                    onChange={(e) => setFormState({...formState, fecha_inicio: e.target.value})}
-                    className="w-full px-3 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
+                    onChange={(event) => setFormState({ ...formState, fecha_inicio: event.target.value })}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-grows-primary mb-1">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-presupuesto">
                     Presupuesto
                   </label>
                   <input
+                    id="obra-presupuesto"
                     type="number"
                     value={formState.presupuesto}
-                    onChange={(e) => setFormState({...formState, presupuesto: e.target.value})}
-                    className="w-full px-3 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
+                    onChange={(event) => setFormState({ ...formState, presupuesto: event.target.value })}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
                 </div>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-grows-primary mb-1">
+
+              <div className="mt-4 flex flex-col gap-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="obra-descripcion">
                   Descripción
                 </label>
                 <textarea
+                  id="obra-descripcion"
                   value={formState.descripcion}
-                  onChange={(e) => setFormState({...formState, descripcion: e.target.value})}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-grows-border rounded-grows-md focus:ring-2 focus:ring-grows-secondary focus:border-transparent"
+                  onChange={(event) => setFormState({ ...formState, descripcion: event.target.value })}
+                  rows={4}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                 />
               </div>
-              
-              <div className="flex justify-end space-x-3 pt-4">
+
+              <div className="mt-6 flex items-center justify-end gap-3">
                 <Button
                   type="button"
                   variant="ghost"
+                  className="!rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 !text-slate-600 hover:!bg-slate-100"
                   onClick={cerrarModal}
                 >
                   Cancelar
@@ -739,8 +775,9 @@ export default function ObrasSection() {
                   variant="primary"
                   icon={<Save className="h-4 w-4" />}
                   loading={isLoading}
+                  className="!rounded-xl !bg-[#22C55E] !px-5 !py-2.5 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
                 >
-                  {isEditing ? 'Actualizar' : 'Crear'} Obra
+                  {isEditing ? 'Actualizar obra' : 'Crear obra'}
                 </Button>
               </div>
             </form>

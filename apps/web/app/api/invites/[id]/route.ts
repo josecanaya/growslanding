@@ -21,8 +21,9 @@ export async function DELETE(
       return NextResponse.json({ ok: true, devMode: true });
     }
 
-    const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: cookies as unknown as () => ReturnType<typeof cookies>,
+    });
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();

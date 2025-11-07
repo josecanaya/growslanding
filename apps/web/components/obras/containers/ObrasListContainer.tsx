@@ -6,7 +6,7 @@ import { Plus, AlertCircle, Save, X } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { DetalleObra } from '@/components/clienteTecnico/DetalleObra';
+import { DetalleObra } from '@/components/cliente/DetalleObra';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { Button, Card, SectionLayout } from '@/components/ui/grows';

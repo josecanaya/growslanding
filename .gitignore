@@ -8,3 +8,7 @@ out
 .DS_Store
 .idea
 .vscode
+*.db
+*.db-journal
+tmp_*
+testfile.txt

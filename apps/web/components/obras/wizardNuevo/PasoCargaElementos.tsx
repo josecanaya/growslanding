@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useWizardStore } from './useWizardStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { crearObra } from '@/services/obrasService';
-import { DetalleObra } from '@/components/clienteTecnico/DetalleObra';
+import { DetalleObra } from '@/components/cliente/DetalleObra';
 
 type PasoCargaElementosProps = {
   onPrev: () => void;

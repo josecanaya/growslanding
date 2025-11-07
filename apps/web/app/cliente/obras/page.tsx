@@ -8,7 +8,7 @@ export default function ObrasPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-grows-background flex">
+    <div className="flex min-h-screen bg-[#F8FAFC]">
       {/* Sidebar */}
       <SidebarClienteTecnico 
         activeSection="obras"

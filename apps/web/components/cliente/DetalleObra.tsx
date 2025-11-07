@@ -35,7 +35,7 @@ import { ModalCrearTarea } from './modals/ModalCrearTarea';
 // import { LegajoTecnicoSection } from './LegajoTecnicoSection';
 import { EditorVisualTareas } from './EditorVisualTareas';
 import { PasoElementosConstructivos } from './PasoElementosConstructivos';
-import ElementosContainer from '@/components/obras/elementos/ElementosContainer';
+import CargaElementosPanel from '@/components/cliente/CargaElementosPanel';
 import ObraResumenContainer from '@/components/obras/resumen/ObraResumenContainer';
 import LegajoOrganizado from './LegajoOrganizado';
 import type { Seleccion } from '@/components/cliente/SubgrupoAccordion';
@@ -802,9 +802,12 @@ export function DetalleObra({
           {/* Tab: Elementos */}
           {vistaActual === 'elementos' && (
             <div className="p-0">
-              <ElementosContainer 
+              <CargaElementosPanel
                 obraId={obra.id}
-                plantas={[{ id: 'PB', nombre: 'PB' }, { id: '1', nombre: '1er Piso' }]} 
+                plantas={[
+                  { id: 'PB', nombre: 'PB' },
+                  { id: '1', nombre: '1er Piso' },
+                ]}
               />
             </div>
           )}

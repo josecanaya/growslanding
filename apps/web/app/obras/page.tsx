@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { SidebarClienteTecnico } from '@/components/clienteTecnico/SidebarClienteTecnico';
+import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { ObrasListContainer } from '@/components/obras/containers/ObrasListContainer';
 
 export default function ObrasPage() {

@@ -304,7 +304,7 @@ export async function DELETE(
       );
     }
 
-    const supabase = createServiceSupabaseClient();
+    const supabase = createServiceSupabaseClient() as any;
 
     // Verificar que la cuadrilla existe y pertenece a la organización
     const { data: cuadrilla, error: cuadrillaError } = await supabase

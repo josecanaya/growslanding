@@ -22,7 +22,7 @@ export default function NuevaObraPage() {
         localizacion: localizacion || undefined,
       });
 
-      setMsg(`✅ Obra creada: ${obra.nombre} (${obra.id})`);
+      setMsg(`✅ Obra creada: ${obra.name || nombre} (${obra.id})`);
       setOrg('');
       setNombre('');
       setLocalizacion('');

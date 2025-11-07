@@ -23,10 +23,10 @@ export async function GET(
       );
     }
 
-    const supabase = createServiceSupabaseClient();
+    const supabase = createServiceSupabaseClient() as any;
 
     // Verificar que la cuadrilla existe y pertenece a la organización
-    const { data: cuadrilla, error: cuadrillaError } = await (supabase as any)
+    const { data: cuadrilla, error: cuadrillaError } = await supabase
       .from('cuadrillas')
       .select('id, org_id')
       .eq('id', cuadrillaId)
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // Obtener socios de la cuadrilla con sus datos completos
-    const { data: relaciones, error: relacionesError } = await (supabase as any)
+    const { data: relaciones, error: relacionesError } = await supabase
       .from('cuadrilla_socios')
       .select(`
         id,
@@ -122,10 +122,10 @@ export async function POST(
 
     const { socio_id, rol } = schema.parse(body);
 
-    const supabase = createServiceSupabaseClient();
+    const supabase = createServiceSupabaseClient() as any;
 
     // Verificar que la cuadrilla existe y pertenece a la organización
-    const { data: cuadrilla, error: cuadrillaError } = await (supabase as any)
+    const { data: cuadrilla, error: cuadrillaError } = await supabase
       .from('cuadrillas')
       .select('id, org_id')
       .eq('id', cuadrillaId)

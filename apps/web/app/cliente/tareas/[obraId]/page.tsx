@@ -1,8 +1,8 @@
 'use client';
 
-import { use, useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin, Building2, Wrench, Paintbrush } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { EtapasTimeline } from '@/components/cliente/EtapasTimeline';
 
 // Tipos de datos
@@ -435,9 +435,10 @@ function TareasList({ tareas, filtroEstado, onFiltroChange }: TareasListProps) {
   );
 }
 
-export default function TareasDetailPage({ params }: { params: Promise<{ obraId: string }> }) {
-  const { obraId } = use(params);
+export default function TareasDetailPage() {
   const router = useRouter();
+  const params = useParams<{ obraId: string }>();
+  const obraId = params?.obraId ?? '0';
   const [obra] = useState<Obra>(obraMock);
   const [tareas] = useState<Tarea[]>(tareasMock);
   const [tabActivo, setTabActivo] = useState<'resumen' | 'tareas'>('resumen');

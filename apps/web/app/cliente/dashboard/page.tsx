@@ -9,7 +9,7 @@ import ObrasSection from '@/components/cliente/ObrasSection';
 import { CuadrillasSection } from '@/components/cliente/CuadrillasSection';
 import { ValidarTareasSection } from '@/components/cliente/ValidarTareasSection';
 import { CuentaSection } from '@/components/cliente/CuentaSection';
-import { TareasSection } from '@/components/cliente/TareasSection';
+import { TareasSection} from '@/components/clienteTecnico/TareasSection';
 import { NotificacionesSection } from '@/components/cliente/NotificacionesSection';
 import { CalendarioSection } from '@/components/cliente/CalendarioSection';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, Calendar, Plus, TrendingUp, CheckCircle, Clock, AlertCircle, User, MapPin, Building2, Wrench, Paintbrush } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { EtapasTimeline } from '@/components/cliente/EtapasTimeline';
 
 // Tipos de datos
@@ -435,12 +435,6 @@ function TareasList({ tareas, filtroEstado, onFiltroChange }: TareasListProps) {
   );
 }
 
-interface TareasDetailPageProps {
-  params: {
-    obraId: string;
-  };
-}
-
 // Función para convertir tareas al formato del EtapasTimeline
 const convertirTareasParaTimeline = (tareas: Tarea[], obraId: string) => {
   console.log('Convirtiendo tareas:', tareas);
@@ -470,8 +464,10 @@ const convertirTareasParaTimeline = (tareas: Tarea[], obraId: string) => {
   return tareasConvertidas;
 };
 
-export default function TareasDetailPage({ params }: TareasDetailPageProps) {
+export default function TareasDetailPage() {
   const router = useRouter();
+  const params = useParams<{ obraId: string }>();
+  const obraId = params?.obraId ?? '0';
   const [obra] = useState<Obra>(obraMock);
   const [tareas] = useState<Tarea[]>(tareasMock);
   const [tabActivo, setTabActivo] = useState<'resumen' | 'tareas'>('resumen');
@@ -482,7 +478,7 @@ export default function TareasDetailPage({ params }: TareasDetailPageProps) {
   };
 
   const handleEditarPlanificacion = () => {
-    router.push(`/tareas/${params.obraId}/editor`);
+    router.push(`/tareas/${obraId}/editor`);
   };
 
   const handleNuevaTarea = () => {

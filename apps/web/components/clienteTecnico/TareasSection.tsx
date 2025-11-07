@@ -485,14 +485,14 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
 }
 
 type VistaTareas = 'lista-obras' | 'detalle-obra' | 'editor-gantt';
-type TabPrincipal = 'resumen' | 'elementos' | 'tareas' | 'presupuesto' | 'legajo';
+type TabPrincipal = 'resumen' | 'elementos' | 'tareas' | 'presupuesto';
 type ModoTareas = 'lista' | 'timeline' | 'editor-visual';
 
 export function TareasSection() {
   const [vistaActual, setVistaActual] = useState<VistaTareas>('lista-obras');
   const [obraSeleccionada, setObraSeleccionada] = useState<string>('');
   const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>('resumen');
-  const [modoTareas, setModoTareas] = useState<ModoTareas>('lista');
+  const [modoTareas, setModoTareas] = useState<ModoTareas>('editor-visual');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   
   const [obras, setObras] = useState<Obra[]>([]);
@@ -757,6 +757,47 @@ export function TareasSection() {
 
   // Renderizar vista según el estado actual
   switch (vistaActual) {
+    case 'lista-obras': {
+      const hayObras = obrasActivas.length > 0;
+
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold text-grows-primary">Obras activas</h1>
+              <p className="text-grows-text-secondary">Seleccioná una obra para ver sus tareas y planificación</p>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={`obra-skeleton-${index}`}
+                  className="h-60 animate-pulse rounded-grows-lg border border-grows-border bg-grows-surface"
+                />
+              ))}
+            </div>
+          ) : hayObras ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {obrasActivas.map((obra) => (
+                <ObraResumenCard
+                  key={obra.id}
+                  obra={obra}
+                  onVerPlanificacion={handleVerPlanificacion}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={<Building2 className="h-10 w-10" />}
+              title="Todavía no cargaste obras"
+              description="Cuando generes tu primera obra, vas a poder gestionar sus tareas desde acá."
+            />
+          )}
+        </div>
+      );
+    }
     case 'detalle-obra':
       return (
         <div className="space-y-6">
@@ -810,8 +851,7 @@ export function TareasSection() {
                   { id: 'resumen', label: 'Resumen' },
                   { id: 'elementos', label: 'Elementos' },
                   { id: 'tareas', label: 'Tareas' },
-                  { id: 'presupuesto', label: 'Presupuesto' },
-                  { id: 'legajo', label: 'Legajo' }
+                  { id: 'presupuesto', label: 'Presupuesto' }
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -831,51 +871,6 @@ export function TareasSection() {
             <div className="p-6">
               {tabPrincipal === 'resumen' && (
                 <div className="space-y-6">
-                  <Card className="mb-6">
-                    {loadingTareas ? (
-                      <div className="py-8 text-center text-grows-text-secondary">
-                        Cargando tareas...
-                      </div>
-                    ) : tareas.length === 0 ? (
-                      <div className="py-8 text-center text-grows-text-secondary">
-                        No hay tareas para esta obra
-                      </div>
-                    ) : (
-                      <EditorVisualTareasN8N
-                        tareas={tareas.map(t => ({
-                          ...t,
-                          obraId: obraSeleccionada || '',
-                          lider: t.responsable,
-                          plantilla: '',
-                          checklist: [],
-                          evidencias: [],
-                          estado:
-                            t.estado === 'Finalizada' || t.estado === 'Aprobada'
-                              ? 'completada'
-                              : t.estado === 'En curso'
-                              ? 'en_progreso'
-                              : 'pendiente',
-                          etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
-                          precedencia: t.dependencias || [],
-                          duracion: 5,
-                          esCritica: false,
-                          holgura: 0,
-                          earlyStart: 0,
-                          earlyFinish: 0,
-                          lateStart: 0,
-                          lateFinish: 0,
-                          x: 0,
-                          y: 0,
-                          dependencias: t.dependencias || [],
-                        }))}
-                        etapa="estructura"
-                        onActualizarTarea={() => {}}
-                        onEliminarTarea={() => {}}
-                        onCrearTarea={() => {}}
-                      />
-                    )}
-                  </Card>
-
                   {/* Estadísticas */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -1129,6 +1124,7 @@ export function TareasSection() {
                           {modo.label}
                         </Button>
                       ))}
+                     
                     </div>
                   </div>
 
@@ -1292,6 +1288,53 @@ export function TareasSection() {
                     </div>
                   )}
 
+                  {modoTareas === 'editor-visual' && (
+                    <Card>
+                      {loadingTareas ? (
+                        <div className="py-8 text-center text-grows-text-secondary">
+                          Cargando tareas...
+                        </div>
+                      ) : tareas.length === 0 ? (
+                        <div className="py-8 text-center text-grows-text-secondary">
+                          No hay tareas para esta obra
+                        </div>
+                      ) : (
+                        <EditorVisualTareasN8N
+                          tareas={tareas.map(t => ({
+                            ...t,
+                            obraId: obraSeleccionada || '',
+                            lider: t.responsable,
+                            plantilla: '',
+                            checklist: [],
+                            evidencias: [],
+                            estado:
+                              t.estado === 'Finalizada' || t.estado === 'Aprobada'
+                                ? 'completada'
+                                : t.estado === 'En curso'
+                                ? 'en_progreso'
+                                : 'pendiente',
+                            etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
+                            precedencia: t.dependencias || [],
+                            duracion: 5,
+                            esCritica: false,
+                            holgura: 0,
+                            earlyStart: 0,
+                            earlyFinish: 0,
+                            lateStart: 0,
+                            lateFinish: 0,
+                            x: 0,
+                            y: 0,
+                            dependencias: t.dependencias || [],
+                          }))}
+                          etapa="estructura"
+                          onActualizarTarea={() => {}}
+                          onEliminarTarea={() => {}}
+                          onCrearTarea={() => {}}
+                        />
+                      )}
+                    </Card>
+                  )}
+
                 </div>
               )}
 
@@ -1310,14 +1353,6 @@ export function TareasSection() {
                 <div className="text-center py-12">
                   <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Elementos</h3>
-                  <p className="text-gray-600">Esta sección estará disponible próximamente</p>
-                </div>
-              )}
-
-              {tabPrincipal === 'legajo' && (
-                <div className="text-center py-12">
-                  <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Legajo</h3>
                   <p className="text-gray-600">Esta sección estará disponible próximamente</p>
                 </div>
               )}
@@ -1372,33 +1407,16 @@ export function TareasSection() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded ${
-                        tarea.estado === 'Pendiente' ? 'bg-yellow-500' :
-                        tarea.estado === 'En curso' ? 'bg-blue-500' :
-                        tarea.estado === 'Finalizada' ? 'bg-green-500' :
-                        'bg-purple-500'
-                      }`}></div>
-                    </div>
-                  </div>
-                  
-                  {/* Barra de duración visual */}
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                      <span>{tarea.fechaInicio}</span>
-                      <span>→</span>
-                      <span>{tarea.fechaFin}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3 relative">
-                      <div 
-                        className={`h-3 rounded-full transition-all duration-300 ${
-                          tarea.estado === 'Pendiente' ? 'bg-yellow-500' :
-                          tarea.estado === 'En curso' ? 'bg-blue-500' :
-                          tarea.estado === 'Finalizada' ? 'bg-green-500' :
-                          'bg-purple-500'
+                      <div
+                        className={`w-4 h-4 rounded ${
+                          tarea.estado === 'Pendiente'
+                            ? 'bg-yellow-500'
+                            : tarea.estado === 'En curso'
+                            ? 'bg-blue-500'
+                            : tarea.estado === 'Finalizada'
+                            ? 'bg-green-500'
+                            : 'bg-purple-500'
                         }`}
-                        style={{ 
-                          width: tarea.estado === 'Finalizada' || tarea.estado === 'Aprobada' ? '100%' : '60%'
-                        }}
                       ></div>
                     </div>
                   </div>
@@ -1406,80 +1424,6 @@ export function TareasSection() {
               ))}
             </div>
           </div>
-        </div>
-      );
-
-    default: // 'lista-obras'
-      return (
-        <div className="space-y-6" style={{backgroundColor: '#eaf0f6'}}>
-          {/* Encabezado */}
-          <div 
-            className="bg-white rounded-xl shadow-sm border p-6"
-            style={{borderColor: '#dce3ea'}}
-          >
-            <div className="flex items-center gap-3">
-              <div 
-                className="h-12 w-12 rounded-lg flex items-center justify-center"
-                style={{backgroundColor: '#f5f7fa', border: '1px solid #dce3ea'}}
-              >
-                <Building2 className="h-6 w-6" style={{color: '#1B263B'}} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold" style={{color: '#10161a'}}>Gestión de Tareas</h1>
-                <p className="mt-1" style={{color: '#5b5f6a'}}>Seleccioná una obra para ver su progreso y planificación</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Grid de obras */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {obrasActivas.length === 0 ? (
-              <div 
-                className="col-span-full bg-white rounded-xl shadow-sm border p-12 text-center"
-                style={{borderColor: '#dce3ea'}}
-              >
-                <Building2 className="h-16 w-16 mx-auto mb-4" style={{color: '#dce3ea'}} />
-                <h3 className="text-lg font-semibold mb-2" style={{color: '#1B263B'}}>No hay obras activas disponibles</h3>
-                <p style={{color: '#5b5f6a'}}>Todas las obras están pausadas o finalizadas</p>
-              </div>
-            ) : (
-              obrasActivas.map(obra => (
-                <ObraResumenCard
-                  key={obra.id}
-                  obra={obra}
-                  onVerPlanificacion={handleVerPlanificacion}
-                />
-              ))
-            )}
-          </div>
-
-          {/* Estadísticas generales */}
-          {obrasActivas.length > 0 && (
-            <div 
-              className="bg-white rounded-xl shadow-sm border p-6"
-              style={{borderColor: '#dce3ea'}}
-            >
-              <h3 className="text-lg font-semibold mb-4" style={{color: '#1B263B'}}>Resumen general</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>{obrasActivas.length}</div>
-                  <div className="text-sm" style={{color: '#5b5f6a'}}>Obras activas</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>
-                    {obrasActivas.length > 0 ? Math.round(obrasActivas.reduce((acc, obra) => acc + obra.avance, 0) / obrasActivas.length) : 0}%
-                  </div>
-                  <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso promedio</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold" style={{color: '#1B263B'}}>
-                    {obrasActivas.reduce((acc, obra) => acc + obra.tareasTotal, 0)}
-                  </div>
-                  <div className="text-sm" style={{color: '#5b5f6a'}}>Total de tareas</div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       );
   }

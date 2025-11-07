@@ -26,7 +26,7 @@ export default async function LeaderPage() {
   let orgId: string | null = null;
 
   {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabaseAuth = createServerComponentClient<Database>({
       cookies: () => cookieStore,
     });
@@ -38,7 +38,7 @@ export default async function LeaderPage() {
       redirect('/auth/login');
     }
 
-    const leaderEmail = user!.email;
+    const leaderEmail = user!.email ?? null;
     if (!leaderEmail) {
       redirect('/auth/login');
     }

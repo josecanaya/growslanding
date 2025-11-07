@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     }
 
     userId = user!.id;
-    userEmail = user!.email;
+    userEmail = user!.email ?? null;
     displayName =
       user!.user_metadata?.full_name ?? user!.email ?? 'Organización';
   }

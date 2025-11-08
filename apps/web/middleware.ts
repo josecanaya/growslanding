@@ -5,6 +5,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 
 const DEV_MODE_ENABLED =
+  process.env.NODE_ENV !== 'production' ||
   process.env.NEXT_PUBLIC_DEV_MODE?.toLowerCase() === 'true';
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';

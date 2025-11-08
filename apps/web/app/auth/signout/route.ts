@@ -5,7 +5,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 
 export async function POST(request: Request) {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
   await supabase.auth.signOut();
 
   const requestUrl = new URL(request.url);

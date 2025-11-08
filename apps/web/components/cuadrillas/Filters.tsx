@@ -10,10 +10,15 @@ export function Filters() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const especialidades: Especialidad[] = [
-    'AlbaÃ±ilerÃ­a', 'YeserÃ­a', 'CarpinterÃ­a', 'Electricidad', 'PlomerÃ­a', 'Estructura', 'Pintura'
+    'Alba\u00f1iler\u00eda / Estructura',
+    'Yeser\u00eda / Terminaciones',
+    'Carpinter\u00eda',
+    'Electricidad',
+    'Plomer\u00eda / Gas',
+    'Pintura'
   ];
 
-  const estados: EstadoCuadrilla[] = ['Activa', 'Sin asignaciones', 'Inactiva'];
+  const estados: EstadoCuadrilla[] = ['Disponible', 'Ocupada', 'En obra', 'Inactiva'];
 
   const handleBusquedaChange = (value: string) => {
     setFiltros({ busqueda: value || undefined });

@@ -4,7 +4,7 @@ import { seedPlantillasTareas } from './plantillas-tareas';
 import { seedSuscripciones } from './suscripciones';
 import { seedUsuarios } from './usuarios';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient() as PrismaClient & { miembroOrganizacion: any };
 
 async function main() {
   console.log('🚀 Iniciando proceso de seed completo...');

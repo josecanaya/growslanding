@@ -23,6 +23,7 @@ interface Tarea {
   lider: string;
   costo?: number;
   dependencias?: string[];
+  dependsOn?: string[];
   etapa?: string;
 }
 

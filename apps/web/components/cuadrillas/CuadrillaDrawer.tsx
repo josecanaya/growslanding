@@ -354,9 +354,13 @@ export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
                         </div>
                         <div className="flex items-center space-x-2">
                           {item.activo ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" title="Activo" />
+                            <span className="inline-flex" title="Activo">
+                              <CheckCircle className="h-4 w-4 text-green-500" aria-label="Activo" />
+                            </span>
                           ) : (
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" title="Inactivo" />
+                            <span className="inline-flex" title="Inactivo">
+                              <AlertTriangle className="h-4 w-4 text-yellow-500" aria-label="Inactivo" />
+                            </span>
                           )}
                         </div>
                       </div>

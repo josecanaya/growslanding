@@ -30,13 +30,21 @@ function calculateRealProgress(obj: any): number {
 export async function GET() {
   try {
     // Usar los datos originales del roadmap
-    const growsProject = initialData.projects.find(p => p.projectName === 'GROWS');
+    const roadmapData = initialData as {
+      projects: Array<{
+        projectName: string;
+        updatedAt?: string;
+        objectives: any[];
+      }>;
+    };
+
+    const growsProject = roadmapData.projects.find(p => p.projectName === 'GROWS');
     if (!growsProject) {
       throw new Error('Proyecto GROWS no encontrado');
     }
 
     // Convertir los objetivos del formato inicial al formato esperado por la API
-    const objetivos = growsProject.objectives.map(obj => ({
+    const objetivos = growsProject.objectives.map((obj: any) => ({
       id: obj.id,
       titulo: obj.title,
       descripcion: obj.description,
@@ -50,8 +58,8 @@ export async function GET() {
       collapsed: false,
       createdAt: growsProject.updatedAt,
       updatedAt: growsProject.updatedAt,
-      tareas: obj.taskGroups?.flatMap(group => 
-        group.tasks?.map(task => ({
+      tareas: obj.taskGroups?.flatMap((group: any) => 
+        group.tasks?.map((task: any) => ({
           id: task.id,
           texto: task.text,
           descripcion: task.description || '',
@@ -65,11 +73,11 @@ export async function GET() {
           updatedAt: growsProject.updatedAt,
         })) || []
       ) || [],
-      gruposTareas: obj.taskGroups?.map(group => ({
+      gruposTareas: obj.taskGroups?.map((group: any) => ({
         id: group.id,
         titulo: group.title,
         descripcion: group.description,
-        tareas: group.tasks?.map(task => ({
+        tareas: group.tasks?.map((task: any) => ({
           id: task.id,
           texto: task.text,
           descripcion: task.description || '',
@@ -88,8 +96,10 @@ export async function GET() {
     return NextResponse.json(objetivos);
   } catch (error) {
     console.error('Error al obtener objetivos:', error);
+    const details =
+      error instanceof Error ? error.message : 'Error desconocido';
     return NextResponse.json(
-      { error: 'Error al obtener objetivos', details: error.message },
+      { error: 'Error al obtener objetivos', details },
       { status: 500 }
     );
   }

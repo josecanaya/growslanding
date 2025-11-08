@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient() as PrismaClient & { miembroOrganizacion: any };
 
 export async function seedUsuarios() {
   console.log('🌱 Iniciando seed de usuarios de ejemplo...');

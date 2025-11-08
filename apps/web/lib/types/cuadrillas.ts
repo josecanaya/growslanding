@@ -26,6 +26,7 @@ export interface Documento {
   nombre: string;
   url?: string; // mock
   vigente?: boolean;
+  fechaVencimiento?: string;
 }
 
 export interface KPI {

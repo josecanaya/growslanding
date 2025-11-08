@@ -33,7 +33,7 @@ type ElementoCatalogo = {
   id: string;
   nombre: string;
   unidad?: string;
-  opciones?: Record<string, string[]>;
+  opciones?: Record<string, string[] | undefined>;
   tareas?: string[];
 };
 
@@ -626,7 +626,7 @@ export default function CargaElementosPanel({
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {opciones.map((opcion) => (
+                          {(opciones ?? []).map((opcion) => (
                             <SelectItem key={opcion} value={opcion}>
                               {opcion}
                             </SelectItem>

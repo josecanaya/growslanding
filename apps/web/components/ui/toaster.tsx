@@ -9,6 +9,7 @@ export interface ToastProps {
   id?: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  variant?: 'default' | 'destructive' | string;
   action?: ToastActionElement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;

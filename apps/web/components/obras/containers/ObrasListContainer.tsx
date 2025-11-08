@@ -7,6 +7,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { DetalleObra } from '@/components/cliente/DetalleObra';
+import type { LegajoDocumento } from '@/components/cliente/DetalleObra';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { Button, Card, SectionLayout } from '@/components/ui/grows';
@@ -52,6 +53,14 @@ const DEFAULT_OBRAS: Obra[] = [
   },
 ];
 
+type SupabaseObraRow = {
+  id: string;
+  name?: string | null;
+  address?: string | null;
+  estado?: string | null;
+  created_at?: string | null;
+};
+
 export function ObrasListContainer() {
   const router = useRouter();
   const pathname = usePathname();
@@ -90,7 +99,8 @@ export function ObrasListContainer() {
       }
 
       // Mapear datos de Supabase al formato Obra
-      const obrasMapeadas: Obra[] = (data || []).map((obra) => ({
+      const obrasSupabase = (data ?? []) as SupabaseObraRow[];
+      const obrasMapeadas: Obra[] = obrasSupabase.map((obra) => ({
         id: obra.id,
         nombre: obra.name || 'Sin nombre',
         localizacion: obra.address || '',
@@ -193,8 +203,12 @@ export function ObrasListContainer() {
       },
     ];
 
+    const estadoNormalizado =
+      (selectedObra.estado?.toLowerCase() as 'activa' | 'pausada' | 'finalizada') || 'activa';
+
     const obraCompleta = {
       ...selectedObra,
+      estado: estadoNormalizado,
       cliente: selectedObra.cliente || 'Cliente por defecto',
       tipoObra: selectedObra.tipoObra || 'nueva',
       fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
@@ -202,7 +216,7 @@ export function ObrasListContainer() {
       progreso: selectedObra.progreso || 0,
       tareasActivas: selectedObra.tareasActivas || 0,
       tareasCompletadas: selectedObra.tareasCompletadas || 0,
-      legajoTecnico: selectedObra.legajoTecnico || [],
+      legajoTecnico: (selectedObra.legajoTecnico as LegajoDocumento[] | undefined) || [],
       tareas: tareasMock,
       fechaFinEstimada: '2024-12-31',
     };

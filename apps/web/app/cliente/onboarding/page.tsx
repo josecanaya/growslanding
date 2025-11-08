@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import { Button } from '@/components/ui/button';
@@ -50,7 +51,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (devModeEnabled) {
-      router.replace('/cliente-tecnico');
+      router.replace('/cliente-tecnico' as Route);
     }
   }, [devModeEnabled, router]);
 
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
     if (currentUser.orgId) {
       const target =
         redirectTarget ?? getDefaultRouteForRole(currentUser.role ?? 'CLIENTE_TECNICO');
-      router.push(target);
+      router.push(target as Route);
     }
   }, [currentUser, redirectTarget, router, devModeEnabled]);
 
@@ -141,7 +142,7 @@ export default function OnboardingPage() {
 
   const handleGoToPanel = () => {
     const target = redirectTarget ?? '/cliente-tecnico';
-    router.push(target);
+    router.push(target as Route);
   };
 
   if (devModeEnabled) {

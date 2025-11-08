@@ -333,9 +333,9 @@ export default function GrupoGridPanel({ titulo, tipos, plantaId, tareasObra = [
     if (!selected || !plantaId) return;
     const existente = getElementoPorNombre(selected, plantaId);
     if (existente) {
-      setUnidad(existente.unidad);
-      setCantidad(existente.cantidad);
-      setConfigValues(existente.configuraciones);
+      setUnidad(existente.unidad ?? 'm²');
+      setCantidad(existente.cantidad ?? 1);
+      setConfigValues(existente.configuraciones ?? {});
       setPrecedencias(existente.precedencias || {});
     } else {
       // Reset some default values
@@ -612,7 +612,7 @@ export default function GrupoGridPanel({ titulo, tipos, plantaId, tareasObra = [
                             <input
                               type="checkbox"
                               checked={estaSeleccionada}
-                             ราะ onChange={(e) => {
+                              onChange={(e) => {
                                 const nuevasPrecedencias = e.target.checked
                                   ? [...precedenciasTarea, tarea.codigo || tarea.id]
                                   : precedenciasTarea.filter(p => p !== (tarea.codigo || tarea.id));

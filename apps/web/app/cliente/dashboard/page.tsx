@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 
 import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { ChatSection } from '@/components/cliente/ChatSection';
@@ -45,7 +46,7 @@ export default function ClienteDashboardPage() {
     }
 
     if (normalizedRole === 'CLIENTE_TECNICO' && !currentUser.orgId) {
-      router.replace('/onboarding');
+      router.replace('/onboarding' as Route);
     }
   }, [currentUser, normalizedRole, router]);
 

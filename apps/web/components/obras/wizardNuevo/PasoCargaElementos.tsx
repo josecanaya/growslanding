@@ -111,21 +111,18 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
   // Si se debe mostrar el detalle con elementos, mostrar el componente DetalleObra
   if (mostrarDetalleConElementos && obraCreadaId) {
     // Crear un objeto obra mock para el DetalleObra
-    const obraParaDetalle = {
+    const obraParaDetalle: Parameters<typeof DetalleObra>[0]['obra'] = {
       id: obraCreadaId,
       nombre: getNombreObra(),
-      localizacion: direccion || '',
-      estado: 'ACTIVA',
-      created_at: new Date().toISOString(),
-      fecha_inicio: undefined,
-      presupuesto: undefined,
-      descripcion: '',
-      cliente: propietario || undefined,
+      cliente: propietario || 'Cliente',
       tipoObra: (tipoObra as 'nueva' | 'reforma' | 'ampliacion') || 'nueva',
-      numeroPermiso: undefined,
+      fechaInicio: new Date().toISOString(),
+      descripcion: '',
+      numeroPermiso: 'SIN-PERMISO',
       progreso: 0,
       tareasActivas: 0,
       tareasCompletadas: 0,
+      estado: 'activa',
       legajoTecnico: [],
     };
 

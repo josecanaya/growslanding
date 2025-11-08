@@ -44,7 +44,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params;
+    const { id } = await params;
     const body = await request.json();
     const payload = requestSchema.parse(body);
     const supabase = createServiceSupabaseClient();
@@ -123,8 +123,8 @@ export async function POST(
         rollbackMotivo: payload.motivo ?? null,
       },
       {
-        tarea,
-        obra: tarea.obra!,
+        tarea: tarea as any,
+        obra: (tarea.obra as any)!,
       }
     );
 
@@ -144,7 +144,7 @@ export async function POST(
         has_nc: payload.has_nc,
         snapshot_json: prepared.snapshot_json,
         pdf_path: pdfPath,
-      })
+      } as any)
       .select('id, created_at')
       .single();
 

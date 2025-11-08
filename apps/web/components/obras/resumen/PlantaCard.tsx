@@ -1,7 +1,6 @@
 'use client';
 
 import { Building } from 'lucide-react';
-import ProgressBar from './ProgressBar';
 
 type EtapaProgreso = {
   etapa: 'estructura' | 'obra_gris' | 'terminaciones';
@@ -14,6 +13,24 @@ type PlantaCardProps = {
   porcentajeTotal: number;
   etapas: EtapaProgreso[];
   onVerDetalle?: () => void;
+};
+
+const InlineProgressBar = ({ percent, color = '#003C6E' }: { percent: number; color?: string }) => {
+  const clamped = Math.min(100, Math.max(0, percent));
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+        <span>Avance total</span>
+        <span>{Math.round(clamped)}%</span>
+      </div>
+      <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{ width: `${clamped}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default function PlantaCard({ nombre, porcentajeTotal, etapas, onVerDetalle }: PlantaCardProps) {
@@ -33,7 +50,7 @@ export default function PlantaCard({ nombre, porcentajeTotal, etapas, onVerDetal
       </div>
 
       <div className="mb-4">
-        <ProgressBar percent={porcentajeTotal} height="md" color="#003C6E" showLabel />
+        <InlineProgressBar percent={porcentajeTotal} color="#003C6E" />
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4 text-xs">

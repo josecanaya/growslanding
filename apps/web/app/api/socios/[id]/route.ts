@@ -41,7 +41,7 @@ export async function DELETE(
     const { data: socio, error: socioError } = await supabase
       .from('socios')
       .select('id, org_id, contacto, status')
-      .eq('id', params.id)
+      .eq('id', id)
       .maybeSingle();
 
     if (socioError || !socio || socio.org_id !== org.id) {
@@ -52,7 +52,7 @@ export async function DELETE(
       return NextResponse.json({ ok: true });
     }
 
-    const updates = [] as Array<Promise<{ error?: unknown }>>;
+    const updates: Array<PromiseLike<{ error?: unknown }>> = [];
 
     updates.push(
       supabase

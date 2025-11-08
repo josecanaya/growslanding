@@ -12,6 +12,30 @@ export type Database = {
   };
   public: {
     Tables: {
+      actas: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      cuadrilla_integrantes: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      cuadrilla_socios: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      cuadrillas: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
       eventos: {
         Row: {
           actor_method: string;
@@ -121,6 +145,12 @@ export type Database = {
           }
         ];
       };
+      elementos: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
       media: {
         Row: {
           created_at: string;
@@ -215,6 +245,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      organizations: {
+        Row: {
+          id: string;
+          name: string;
+          cuit: string | null;
+          address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          cuit?: string | null;
+          address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          cuit?: string | null;
+          address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       qr_tokens: {
         Row: {
           created_at: string;
@@ -246,39 +300,10 @@ export type Database = {
         Relationships: [];
       };
       socios: {
-        Row: {
-          contacto: string | null;
-          id: string;
-          nombre: string;
-          org_id: string;
-          rol: string;
-          status: string;
-        };
-        Insert: {
-          contacto?: string | null;
-          id?: string;
-          nombre: string;
-          org_id: string;
-          rol?: string;
-          status?: string;
-        };
-        Update: {
-          contacto?: string | null;
-          id?: string;
-          nombre?: string;
-          org_id?: string;
-          rol?: string;
-          status?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "socios_org_id_fkey";
-            columns: ["org_id"];
-            isOneToOne: false;
-            referencedRelation: "orgs";
-            referencedColumns: ["id"];
-          }
-        ];
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
       };
       tarea_precedencias: {
         Row: {
@@ -311,52 +336,28 @@ export type Database = {
         ];
       };
       tareas: {
-        Row: {
-          created_at: string;
-          descripcion: string;
-          estado: Database["public"]["Enums"]["visit_status"];
-          id: string;
-          obra_id: string;
-          referente_id: string | null;
-          socio_ids: string[];
-          tipo: string;
-        };
-        Insert: {
-          created_at?: string;
-          descripcion: string;
-          estado?: Database["public"]["Enums"]["visit_status"];
-          id?: string;
-          obra_id: string;
-          referente_id?: string | null;
-          socio_ids?: string[];
-          tipo: string;
-        };
-        Update: {
-          created_at?: string;
-          descripcion?: string;
-          estado?: Database["public"]["Enums"]["visit_status"];
-          id?: string;
-          obra_id?: string;
-          referente_id?: string | null;
-          socio_ids?: string[];
-          tipo?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "tareas_obra_id_fkey";
-            columns: ["obra_id"];
-            isOneToOne: false;
-            referencedRelation: "obras";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "tareas_referente_id_fkey";
-            columns: ["referente_id"];
-            isOneToOne: false;
-            referencedRelation: "socios";
-            referencedColumns: ["id"];
-          }
-        ];
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      tareas_estados: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      tareas_evidencias: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
+      };
+      tareas_presupuestos: {
+        Row: Record<string, any>;
+        Insert: Record<string, any>;
+        Update: Record<string, any>;
+        Relationships: [];
       };
     };
     Views: {

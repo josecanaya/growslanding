@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ export default function SelectRolePage() {
       }
 
       if (!data.session) {
-        router.replace('/auth/login');
+        router.replace('/auth/login' as Route);
       } else {
         const role =
           (data.session.user.app_metadata as Record<string, unknown> | undefined)?.role ??
@@ -68,7 +69,7 @@ export default function SelectRolePage() {
 
         if (typeof role === 'string' && role.length > 0) {
           const target = redirectTarget ?? getDefaultRouteForRole(role as UserRole);
-          router.replace(target);
+          router.replace(target as Route);
         }
       }
     }
@@ -89,7 +90,7 @@ export default function SelectRolePage() {
 
     if (devModeEnabled && role === 'ADMIN') {
       const target = redirectTarget ?? getDefaultRouteForRole('ADMIN');
-      router.replace(target);
+      router.replace(target as Route);
       return;
     }
 
@@ -134,7 +135,7 @@ export default function SelectRolePage() {
 
       const target = redirectTarget ?? getDefaultRouteForRole(resolvedRole);
       setStatusMessage(null);
-      router.replace(target);
+      router.replace(target as Route);
     } catch (error) {
       console.error('[SELECT_ROLE_ERROR]', error);
       setStatusMessage(

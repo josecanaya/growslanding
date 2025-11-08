@@ -65,20 +65,30 @@ export async function GET(
       .order('created_at', { ascending: false });
 
     // Obtener presupuestos (si existe la tabla)
-    const { data: presupuestos } = await supabase
-      .from('tareas_presupuestos')
-      .select('*')
-      .eq('tarea_id', id)
-      .order('created_at', { ascending: false })
-      .catch(() => ({ data: null })); // Si la tabla no existe, no falla
+    let presupuestos: unknown[] | null = null;
+    try {
+      const response = await supabase
+        .from('tareas_presupuestos')
+        .select('*')
+        .eq('tarea_id', id)
+        .order('created_at', { ascending: false });
+      presupuestos = response.data ?? null;
+    } catch {
+      presupuestos = null;
+    }
 
     // Obtener evidencias (si existe la tabla)
-    const { data: evidencias } = await supabase
-      .from('tareas_evidencias')
-      .select('*')
-      .eq('tarea_id', id)
-      .order('created_at', { ascending: false })
-      .catch(() => ({ data: null })); // Si la tabla no existe, no falla
+    let evidencias: unknown[] | null = null;
+    try {
+      const response = await supabase
+        .from('tareas_evidencias')
+        .select('*')
+        .eq('tarea_id', id)
+        .order('created_at', { ascending: false });
+      evidencias = response.data ?? null;
+    } catch {
+      evidencias = null;
+    }
 
     return NextResponse.json({
       success: true,

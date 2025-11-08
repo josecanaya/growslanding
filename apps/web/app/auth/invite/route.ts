@@ -41,7 +41,8 @@ export async function GET(request: Request) {
       },
     });
 
-    const actionLink = linkData?.action_link ?? linkData?.properties?.action_link;
+    const actionLink =
+      (linkData as any)?.action_link ?? (linkData as any)?.properties?.action_link;
 
     if (linkError || !actionLink) {
       return redirectToLogin();

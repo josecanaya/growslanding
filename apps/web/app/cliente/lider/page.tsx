@@ -26,7 +26,7 @@ export default async function LeaderPage() {
   let orgId: string | null = null;
 
   {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabaseAuth = createServerComponentClient<Database>({
       cookies: () => cookieStore,
     });
@@ -107,7 +107,7 @@ export default async function LeaderPage() {
   return (
     <LeaderClient
       socios={socios ?? []}
-      tareas={tareas ?? []}
+      tareas={(tareas ?? []) as any}
       tokens={tokensFiltrados}
       obras={obras ?? []}
       invites={invites ?? []}

@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       let orgError = null;
 
       // Intentar con 'organizations' (según el SQL compartido)
-      const orgCheck1 = await supabase
+      const orgCheck1 = await (supabase as any)
         .from('organizations')
         .select('id')
         .eq('id', org_id)

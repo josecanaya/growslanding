@@ -15,14 +15,25 @@ export { CPMService } from './cpm.service';
 
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+type PrismaWithLegacy = PrismaClient & {
+  miembroOrganizacion?: {
+    findFirst: (...args: any[]) => Promise<any>;
+  };
+  obraCache?: {
+    upsert: (...args: any[]) => Promise<any>;
+    findUnique: (...args: any[]) => Promise<any>;
+  };
+};
+
+const prisma = new PrismaClient() as PrismaWithLegacy;
 
 export class CacheService {
   /**
    * Actualiza el cache de una obra
    */
   static async actualizarCacheObra(obraId: string) {
-    const obra = await prisma.obra.findUnique({
+    const obraDelegate = prisma.obra as any;
+    const obra = await obraDelegate.findUnique({
       where: { id: obraId },
       include: {
         elementos: {
@@ -35,14 +46,22 @@ export class CacheService {
 
     if (!obra) return;
 
-    const totalTareas = obra.elementos.reduce((acc, elemento) => acc + elemento.tareas.length, 0);
-    const tareasCompletadas = obra.elementos.reduce((acc, elemento) => {
-      return acc + elemento.tareas.filter(tarea => tarea.estado === 'VALIDADA').length;
+    const totalTareas = obra.elementos.reduce(
+      (acc: number, elemento: any) => acc + elemento.tareas.length,
+      0,
+    );
+    const tareasCompletadas = obra.elementos.reduce((acc: number, elemento: any) => {
+      return acc + elemento.tareas.filter((tarea: any) => tarea.estado === 'VALIDADA').length;
     }, 0);
 
     const progreso = totalTareas > 0 ? (tareasCompletadas / totalTareas) * 100 : 0;
 
-    await prisma.obraCache.upsert({
+    const cacheDelegate = prisma.obraCache;
+    if (!cacheDelegate) {
+      return;
+    }
+
+    await cacheDelegate.upsert({
       where: { obraId },
       create: {
         obraId,
@@ -64,7 +83,12 @@ export class CacheService {
    * Obtiene el cache de una obra
    */
   static async obtenerCacheObra(obraId: string) {
-    return await prisma.obraCache.findUnique({
+    const cacheDelegate = prisma.obraCache;
+    if (!cacheDelegate) {
+      return null;
+    }
+
+    return await cacheDelegate!.findUnique({
       where: { obraId },
     });
   }
@@ -80,7 +104,12 @@ export class PermisosService {
     accion: string,
     recurso?: string
   ): Promise<boolean> {
-    const miembro = await prisma.miembroOrganizacion.findFirst({
+    const miembroDelegate = prisma.miembroOrganizacion;
+    if (!miembroDelegate) {
+      return false;
+    }
+
+    const miembro = await miembroDelegate.findFirst({
       where: {
         usuarioId,
         organizacionId,

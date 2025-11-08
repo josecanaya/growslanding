@@ -6,6 +6,7 @@ import {
   useRouter,
   useSearchParams,
 } from 'next/navigation';
+import type { Route } from 'next';
 import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
@@ -96,7 +97,7 @@ export default function LoginPage() {
       if (devModeEnabled) {
         const target = redirectTarget ?? defaultDevRoute;
         if (pathname !== target) {
-          router.replace(target);
+          router.replace(target as Route);
         }
         return;
       }
@@ -132,7 +133,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace(target);
+      router.replace(target as Route);
     }
 
     void checkSession();
@@ -156,7 +157,7 @@ export default function LoginPage() {
     if (devModeEnabled) {
       const target = redirectTarget ?? defaultDevRoute;
       if (pathname !== target) {
-        router.replace(target);
+        router.replace(target as Route);
       }
       return;
     }
@@ -209,7 +210,7 @@ export default function LoginPage() {
             asChild
             className="mx-auto w-full max-w-xs bg-[#FFD700] text-[#0D3B3B] hover:bg-[#e6c200]"
           >
-            <Link href={selectionPath}>Elegir mi rol</Link>
+            <Link href={selectionPath as Route}>Elegir mi rol</Link>
           </Button>
         </div>
       </div>

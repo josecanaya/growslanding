@@ -1,6 +1,12 @@
 ﻿import { PrismaClient, PlanSuscripcion } from '@prisma/client';
 
-const prisma = new PrismaClient();
+type PrismaWithLegacy = PrismaClient & {
+  miembroOrganizacion?: {
+    count: (...args: any[]) => Promise<number>;
+  };
+};
+
+const prisma = new PrismaClient() as PrismaWithLegacy;
 
 const PLAN_LIMITS: Record<PlanSuscripcion, { obras: number; socios: number }> = {
   STARTER: { obras: 2, socios: 5 },
@@ -86,7 +92,12 @@ export class SuscripcionService {
       return true;
     }
 
-    const activos = await prisma.miembroOrganizacion.count({
+    const miembroDelegate = prisma.miembroOrganizacion;
+    if (!miembroDelegate) {
+      return true;
+    }
+
+    const activos = await miembroDelegate.count({
       where: {
         organizacionId: orgId,
         rol: 'SOCIO',
@@ -162,6 +173,8 @@ export class SuscripcionService {
   static async obtenerEstadisticasUso(orgId: string) {
     const limites = await obtenerLimitesSuscripcion(orgId);
 
+    const miembroDelegateStats = prisma.miembroOrganizacion;
+
     const [obrasActuales, sociosActuales] = await Promise.all([
       prisma.obra.count({
         where: {
@@ -169,13 +182,15 @@ export class SuscripcionService {
           estado: { not: 'CANCELADA' },
         },
       }),
-      prisma.miembroOrganizacion.count({
-        where: {
-          organizacionId: orgId,
-          rol: 'SOCIO',
-          activo: true,
-        },
-      }),
+      miembroDelegateStats
+        ? miembroDelegateStats.count({
+            where: {
+              organizacionId: orgId,
+              rol: 'SOCIO',
+              activo: true,
+            },
+          })
+        : Promise.resolve(0),
     ]);
 
     const obrasMaximo = limites.obrasMax === Number.MAX_SAFE_INTEGER ? null : limites.obrasMax;

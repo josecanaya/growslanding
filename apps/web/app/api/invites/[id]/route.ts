@@ -12,17 +12,18 @@ export const runtime = 'nodejs';
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
 
     if (IS_DEV_MODE) {
       return NextResponse.json({ ok: true, devMode: true });
     }
 
+    const cookieStore = cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({
-      cookies: cookies as unknown as () => ReturnType<typeof cookies>,
+      cookies: () => cookieStore,
     });
     const {
       data: { user },

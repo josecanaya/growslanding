@@ -1,4 +1,15 @@
-export const CONFIGURACIONES_TECNICAS: { [key: string]: any } = {
+export type ConfiguracionTecnicaCampo = {
+  label: string;
+  type: 'select' | 'number' | 'text' | 'checkbox';
+  options?: string[];
+  min?: number;
+  max?: number;
+  default?: string | number | boolean;
+  placeholder?: string;
+  description?: string;
+};
+
+export const CONFIGURACIONES_TECNICAS: Record<string, Record<string, ConfiguracionTecnicaCampo>> = {
   'Cimiento corrido': {
     tipo: { label: 'Tipo de fundación', type: 'select', options: ['Superficial', 'Profunda'] },
     profundidad: { label: 'Profundidad (cm)', type: 'number', min: 40, max: 200, default: 80 },
@@ -48,7 +59,7 @@ export const CONFIGURACIONES_TECNICAS: { [key: string]: any } = {
   'Muro común 30 cm (doble muro portante)': {
     tipo: { label: 'Tipo de muro', type: 'select', options: ['Doble muro', 'Muro portante simple'] },
     material: { label: 'Material', type: 'select', options: ['Ladrillo común', 'Cerámico hueco', 'Bloque de hormigón'] },
-    camara: { label: 'Cámara de aire', type: 'checkbox', label: 'Incluir cámara de aire' },
+    camara: { label: 'Cámara de aire', type: 'checkbox', description: 'Incluir cámara de aire' },
     aislacion: { label: 'Aislación', type: 'select', options: ['Sin aislación', 'EPS 50mm', 'EPS 100mm'] },
     terminacion: { label: 'Terminación exterior', type: 'select', options: ['Revoque', 'Piedra', 'Ladrillo visto'] }
   },
@@ -97,7 +108,7 @@ export const CONFIGURACIONES_TECNICAS: { [key: string]: any } = {
   'Cubierta de chapa': {
     tipo: { label: 'Tipo de chapa', type: 'select', options: ['Chapa galvanizada', 'Chapa prepintada', 'Chapa de aluminio'] },
     espesor: { label: 'Espesor (mm)', type: 'select', options: ['0.5', '0.6', '0.7'] },
-    aislacion: { label: 'Aislación', type: 'checkbox', label: 'Incluir aislación térmica' },
+    aislacion: { label: 'Aislación', type: 'checkbox', description: 'Incluir aislación térmica' },
     color: { label: 'Color', type: 'select', options: ['Blanco', 'Gris', 'Rojo', 'Azul'] }
   },
   'Cubierta de teja': {

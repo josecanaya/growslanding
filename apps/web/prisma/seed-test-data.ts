@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient() as PrismaClient & { miembroOrganizacion: any };
 
 async function main() {
   console.log('🌱 Creando datos de prueba...');

@@ -24,6 +24,19 @@ interface Documento {
   fechaVencimiento?: string;
 }
 
+type SupabaseSocioRecord = {
+  id: string;
+  nombre?: string | null;
+  email?: string | null;
+  user_id?: string | null;
+  org_id?: string | null;
+};
+
+type SupabaseCuadrillaSocioRecord = {
+  cuadrilla_id: string;
+  rol_en_cuadrilla?: string | null;
+};
+
 interface MiCuadrillaProps {
   user: {
     name: string;
@@ -66,8 +79,9 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
             .eq('email', currentUser.email)
             .maybeSingle();
 
-          if (socioData && !socioError) {
-            socioId = socioData.id;
+          const socioRecord = socioData as SupabaseSocioRecord | null;
+          if (socioRecord && !socioError) {
+            socioId = socioRecord.id;
           }
         }
 
@@ -80,8 +94,9 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
             .eq('user_id', currentUser.id)
             .maybeSingle();
 
-          if (socioData && !socioError) {
-            socioId = socioData.id;
+          const socioRecord = socioData as SupabaseSocioRecord | null;
+          if (socioRecord && !socioError) {
+            socioId = socioRecord.id;
           }
         }
 
@@ -101,7 +116,9 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
           .eq('activo', true)
           .limit(1);
 
-        if (relacionesError || !relacionesCuadrilla || relacionesCuadrilla.length === 0) {
+        const relaciones = (relacionesCuadrilla as SupabaseCuadrillaSocioRecord[] | null) ?? [];
+
+        if (relacionesError || relaciones.length === 0) {
           console.warn('[MI_CUADRILLA] El socio no está asignado a ninguna cuadrilla');
           setIntegrantes([]);
           setDocumentos([]);
@@ -109,7 +126,7 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
           return;
         }
 
-        const cuadrillaId = relacionesCuadrilla[0].cuadrilla_id;
+        const cuadrillaId = relaciones[0].cuadrilla_id;
 
         // Cargar socios de la cuadrilla
         const response = await fetch(`/api/cuadrillas/${cuadrillaId}/socios`, {

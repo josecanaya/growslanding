@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createRouteHandlerClient<Database>({
       cookies: () => cookieStore,
     });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await (supabase as any)
       .from('organizations')
       .insert([{ name, cuit: cuit ?? null, address: address ?? null }])
       .select()

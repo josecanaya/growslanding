@@ -13,7 +13,13 @@ import {
   TipoActor
 } from '../schemas';
 
-const prisma = new PrismaClient();
+type PrismaWithLegacy = PrismaClient & {
+  miembroOrganizacion?: {
+    findFirst: (...args: any[]) => Promise<any>;
+  };
+};
+
+const prisma = new PrismaClient() as PrismaWithLegacy;
 
 export class TareaService {
   /**
@@ -112,7 +118,12 @@ export class TareaService {
     const tarea = await this.verificarTarea(data.tareaId, organizacionId);
 
     // Verificar que el socio pertenece a la organización
-    const socio = await prisma.miembroOrganizacion.findFirst({
+    const miembroDelegate = prisma.miembroOrganizacion;
+    if (!miembroDelegate) {
+      throw new Error('Modelo de miembros no disponible en Prisma');
+    }
+
+    const socio = await miembroDelegate.findFirst({
       where: {
         organizacionId,
         usuarioId: data.socioId,
@@ -178,7 +189,12 @@ export class TareaService {
     const tarea = await this.verificarTarea(data.tareaId, organizacionId);
 
     // Obtener rol del actor
-    const actor = await prisma.miembroOrganizacion.findFirst({
+    const miembroActorDelegate = prisma.miembroOrganizacion;
+    if (!miembroActorDelegate) {
+      throw new Error('Modelo de miembros no disponible en Prisma');
+    }
+
+    const actor = await miembroActorDelegate.findFirst({
       where: {
         organizacionId,
         usuarioId: actorId,
@@ -255,7 +271,12 @@ export class TareaService {
     const tarea = await this.verificarTarea(data.tareaId, organizacionId);
 
     // Verificar que el socio pertenece a la organización
-    const socio = await prisma.miembroOrganizacion.findFirst({
+    const miembroSocioDelegate = prisma.miembroOrganizacion;
+    if (!miembroSocioDelegate) {
+      throw new Error('Modelo de miembros no disponible en Prisma');
+    }
+
+    const socio = await miembroSocioDelegate.findFirst({
       where: {
         organizacionId,
         usuarioId: data.socioId,

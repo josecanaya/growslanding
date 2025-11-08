@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import GrupoGridPanel from './GrupoGridPanel';
 
-type ElementoCatalogo = {
+export type ElementoCatalogo = {
   id: string;
   nombre: string;
   unidad: string;

@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { TipoEvento, TipoNotificacion, EstadoNotificacion } from '../schemas';
 
-const prisma = new PrismaClient();
+type PrismaWithNotificaciones = PrismaClient & {
+  notificacion: any;
+  obra?: any;
+  tarea?: any;
+};
+
+const prisma = new PrismaClient() as PrismaWithNotificaciones;
 
 export class NotificacionService {
   /**
@@ -222,11 +228,8 @@ export class NotificacionService {
       case 'PRESUPUESTO_SUBIDO':
         // Notificar al cliente técnico de la obra
         if (evento.obraId) {
-          const obra = await prisma.obra.findUnique({
-            where: { id: evento.obraId },
-            select: { clienteId: true },
-          });
-          if (obra) usuarios.push(obra.clienteId);
+          const clienteId = await this.obtenerClienteTecnicoDeObra(evento.obraId);
+          if (clienteId) usuarios.push(clienteId);
         }
         break;
 
@@ -235,11 +238,8 @@ export class NotificacionService {
       case 'SOCIO_ASIGNADO':
         // Notificar al socio asignado
         if (evento.tareaId) {
-          const tarea = await prisma.tarea.findUnique({
-            where: { id: evento.tareaId },
-            select: { socioId: true },
-          });
-          if (tarea?.socioId) usuarios.push(tarea.socioId);
+          const socioId = await this.obtenerSocioAsignadoDeTarea(evento.tareaId);
+          if (socioId) usuarios.push(socioId);
         }
         break;
 
@@ -248,11 +248,8 @@ export class NotificacionService {
       case 'EVIDENCIA_SUBIDA':
         // Notificar al cliente técnico
         if (evento.obraId) {
-          const obra = await prisma.obra.findUnique({
-            where: { id: evento.obraId },
-            select: { clienteId: true },
-          });
-          if (obra) usuarios.push(obra.clienteId);
+          const clienteId = await this.obtenerClienteTecnicoDeObra(evento.obraId);
+          if (clienteId) usuarios.push(clienteId);
         }
         break;
 
@@ -260,11 +257,8 @@ export class NotificacionService {
       case 'PAGO_GENERADO':
         // Notificar al socio
         if (evento.tareaId) {
-          const tarea = await prisma.tarea.findUnique({
-            where: { id: evento.tareaId },
-            select: { socioId: true },
-          });
-          if (tarea?.socioId) usuarios.push(tarea.socioId);
+          const socioId = await this.obtenerSocioAsignadoDeTarea(evento.tareaId);
+          if (socioId) usuarios.push(socioId);
         }
         break;
     }
@@ -275,6 +269,44 @@ export class NotificacionService {
     }
 
     return usuarios;
+  }
+
+  private static async obtenerClienteTecnicoDeObra(obraId: string): Promise<string | null> {
+    const obraDelegate = prisma.obra;
+    if (!obraDelegate?.findUnique) {
+      console.warn('[Notificaciones] Delegado de obra no disponible, omitiendo notificacion al cliente', { obraId });
+      return null;
+    }
+
+    try {
+      const obra = await obraDelegate.findUnique({
+        where: { id: obraId },
+        select: { clienteId: true },
+      });
+      return obra?.clienteId ?? null;
+    } catch (error) {
+      console.warn('[Notificaciones] No se pudo obtener clienteId para la obra', { obraId, error });
+      return null;
+    }
+  }
+
+  private static async obtenerSocioAsignadoDeTarea(tareaId: string): Promise<string | null> {
+    const tareaDelegate = prisma.tarea;
+    if (!tareaDelegate?.findUnique) {
+      console.warn('[Notificaciones] Delegado de tarea no disponible, omitiendo notificacion al socio', { tareaId });
+      return null;
+    }
+
+    try {
+      const tarea = await tareaDelegate.findUnique({
+        where: { id: tareaId },
+        select: { socioId: true },
+      });
+      return tarea?.socioId ?? null;
+    } catch (error) {
+      console.warn('[Notificaciones] No se pudo obtener socioId para la tarea', { tareaId, error });
+      return null;
+    }
   }
 
   /**

@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Layers } from 'lucide-react';
-import SubcategoriaAccordion from './SubcategoriaAccordion';
+import SubcategoriaAccordion, { type ElementoCatalogo as SubcategoriaElemento } from './SubcategoriaAccordion';
 
-interface ElementoCatalogo {
+interface ElementoCatalogoData {
   id: string;
   nombre: string;
   descripcion?: string | null;
   codigo?: string | null;
   unidad?: string;
-  opciones?: Record<string, string[]>;
+  opciones?: Record<string, string[] | undefined>;
   tareas?: string[];
 }
 
 interface SubcategoriaCatalogo {
   id: string;
   nombre: string;
-  elementos: ElementoCatalogo[];
+  elementos: ElementoCatalogoData[];
 }
 
 interface CategoriaCatalogo {
@@ -103,23 +103,46 @@ export default function CategoriaGridPanelConNavegacion({
         {categoriaSeleccionada ? (
           <div className="space-y-4 p-6">
             {categoriaSeleccionada.subcategorias.length > 0 ? (
-              categoriaSeleccionada.subcategorias.map((subcategoria) => (
-                <SubcategoriaAccordion
-                  key={subcategoria.id}
-                  subcategoriaId={subcategoria.id}
-                  subcategoriaNombre={subcategoria.nombre}
-                  elementos={subcategoria.elementos}
-                  categoriaNombre={categoriaSeleccionada.nombre}
-                  plantaId={plantaId}
-                  tareasObra={tareasObra}
-                  obraId={obraId}
-                  elementosCargados={new Set(
-                    (categoriaSeleccionada.elementosCargados?.[subcategoria.nombre] ?? []).map(
-                      (elem: { nombre: string }) => elem.nombre,
-                    ),
-                  )}
-                />
-              ))
+              categoriaSeleccionada.subcategorias.map((subcategoria) => {
+                const elementosNormalizados: SubcategoriaElemento[] = subcategoria.elementos.map(
+                  (elemento) => {
+                    const opcionesNormalizadas = elemento.opciones
+                      ? Object.fromEntries(
+                          Object.entries(elemento.opciones).map(([clave, valor]) => [
+                            clave,
+                            valor ?? [],
+                          ]),
+                        )
+                      : undefined;
+
+                    return {
+                      id: elemento.id,
+                      nombre: elemento.nombre,
+                      unidad: elemento.unidad ?? 'unidad',
+                      opciones: opcionesNormalizadas,
+                      tareas: elemento.tareas,
+                    };
+                  },
+                );
+
+                return (
+                  <SubcategoriaAccordion
+                    key={subcategoria.id}
+                    subcategoriaId={subcategoria.id}
+                    subcategoriaNombre={subcategoria.nombre}
+                    elementos={elementosNormalizados}
+                    categoriaNombre={categoriaSeleccionada.nombre}
+                    plantaId={plantaId}
+                    tareasObra={tareasObra}
+                    obraId={obraId}
+                    elementosCargados={new Set(
+                      (categoriaSeleccionada.elementosCargados?.[subcategoria.nombre] ?? []).map(
+                        (elem: { nombre: string }) => elem.nombre,
+                      ),
+                    )}
+                  />
+                );
+              })
             ) : (
               <div className="py-16 text-center text-sm text-slate-500">
                 Todavía no hay elementos definidos para esta categoría.

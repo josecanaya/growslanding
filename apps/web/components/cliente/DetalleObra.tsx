@@ -34,7 +34,7 @@ import {
 import { ModalCrearTarea } from './modals/ModalCrearTarea';
 // import { LegajoTecnicoSection } from './LegajoTecnicoSection';
 import { EditorVisualTareas } from './EditorVisualTareas';
-import { PasoElementosConstructivos } from './PasoElementosConstructivos';
+import PasoElementosConstructivos from './PasoElementosConstructivos';
 import CargaElementosPanel from '@/components/cliente/CargaElementosPanel';
 import ObraResumenContainer from '@/components/obras/resumen/ObraResumenContainer';
 import LegajoOrganizado from './LegajoOrganizado';
@@ -43,7 +43,7 @@ import { elementos } from '@/lib/elementos-vivienda';
 import { ElementoSeleccionado, ExpansorElementos } from '@/lib/services/expansorElementos';
 import { ModalSeleccionCantidad } from './modals/ModalSeleccionCantidad';
 
-interface LegajoDocumento {
+export interface LegajoDocumento {
   id: string;
   nombre: string;
   categoria: 'planos' | 'permisos' | 'contratos' | 'seguridad' | 'otros';
@@ -58,6 +58,8 @@ interface Obra {
   cliente: string;
   tipoObra: 'nueva' | 'reforma' | 'ampliacion';
   fechaInicio: string;
+  fechaFin?: string;
+  descripcion?: string;
   numeroPermiso?: string;
   progreso: number;
   tareasActivas: number;

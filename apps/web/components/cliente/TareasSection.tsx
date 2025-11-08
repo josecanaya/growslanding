@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush } from 'lucide-react';
 import { Card, Button, Badge, EmptyState } from '@/components/ui/grows';
+import type { BadgeProps } from '@/components/ui/grows';
 import { TimelineInteractivo } from './TimelineInteractivo';
 import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
@@ -37,12 +38,28 @@ interface Tarea {
   fechaFin: string;
   prioridad: 'Baja' | 'Media' | 'Alta';
   presupuesto?: number;
+  dependencias?: string[];
 }
 
 // Función para calcular el progreso de una obra basado en tareas
 const calcularProgreso = (tareasCompletadas: number, tareasTotal: number): number => {
   if (tareasTotal === 0) return 0;
   return Math.round((tareasCompletadas / tareasTotal) * 100);
+};
+
+const mapTareaEstadoToBadgeStatus = (estado: Tarea['estado']): BadgeProps['status'] => {
+  switch (estado) {
+    case 'Pendiente':
+      return 'pendiente';
+    case 'En curso':
+      return 'en_progreso';
+    case 'Finalizada':
+      return 'finalizada';
+    case 'Aprobada':
+      return 'completada';
+    default:
+      return 'pendiente';
+  }
 };
 
 // Mock eliminado - ahora se cargan desde Supabase
@@ -1117,7 +1134,7 @@ export function TareasSection() {
                       ].map(modo => (
                         <Button
                           key={modo.id}
-                          variant={modoTareas === modo.id ? 'primary' : 'outline'}
+                          variant={modoTareas === modo.id ? 'primary' : 'secondary'}
                           size="sm"
                           onClick={() => setModoTareas(modo.id as ModoTareas)}
                         >
@@ -1139,7 +1156,7 @@ export function TareasSection() {
                             {['todos', 'pendiente', 'en_curso', 'finalizada', 'aprobada'].map(estado => (
                               <Button
                                 key={estado}
-                                variant={filtroEstado === estado ? 'primary' : 'outline'}
+                              variant={filtroEstado === estado ? 'primary' : 'secondary'}
                                 size="sm"
                                 onClick={() => setFiltroEstado(estado)}
                               >
@@ -1173,20 +1190,14 @@ export function TareasSection() {
                             tareas.filter(tarea => 
                               filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
                             ).map(tarea => {
-                              const getEstadoStatus = (estado: string) => {
-                                if (estado === 'Pendiente') return 'pending';
-                                if (estado === 'En curso') return 'in_progress';
-                                if (estado === 'Finalizada' || estado === 'Aprobada') return 'completed';
-                                return 'default';
-                              };
-
+                              const badgeStatus = mapTareaEstadoToBadgeStatus(tarea.estado);
                               return (
                                 <Card key={tarea.id}>
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-3 mb-2">
                                         <h3 className="text-lg font-semibold text-grows-primary">{tarea.nombre}</h3>
-                                        <Badge status={getEstadoStatus(tarea.estado)}>
+                                        <Badge status={badgeStatus}>
                                           {tarea.estado}
                                         </Badge>
                                         <Badge variant="default">

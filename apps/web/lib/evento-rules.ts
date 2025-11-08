@@ -132,8 +132,9 @@ export async function prepareEventoInsert(
     });
     pdfPath = pdf.pdfPath;
     pdfBytes = pdf.pdfBytes;
+    const eventoSnapshot = snapshot.evento as Record<string, unknown>;
     snapshot.evento = {
-      ...snapshot.evento,
+      ...eventoSnapshot,
       pdf_path: pdfPath,
     };
   }

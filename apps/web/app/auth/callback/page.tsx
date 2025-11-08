@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import { useDevMode } from '@/lib/dev-mode-context';
@@ -42,7 +43,7 @@ export default function CallbackPage() {
     async function resolveSession() {
       if (devModeEnabled) {
         const target = redirectTarget ?? defaultDevRoute;
-        router.replace(target);
+        router.replace(target as Route);
         return;
       }
 
@@ -52,7 +53,7 @@ export default function CallbackPage() {
       }
 
       if (!data.session) {
-        router.replace('/auth/login');
+        router.replace('/auth/login' as Route);
         return;
       }
 
@@ -66,12 +67,12 @@ export default function CallbackPage() {
         const selectionPath = redirectTarget
           ? `/auth/select-role?redirect=${encodeURIComponent(redirectTarget)}`
           : '/auth/select-role';
-        router.replace(selectionPath);
+        router.replace(selectionPath as Route);
         return;
       }
 
       const target = redirectTarget ?? getDefaultRouteForRole(role);
-      router.replace(target);
+      router.replace(target as Route);
     }
 
     void resolveSession();

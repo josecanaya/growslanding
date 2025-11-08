@@ -205,7 +205,7 @@ const ObraCard = ({
 export default function ObrasSection() {
   const router = useRouter();
   const currentUser = useCurrentUser();
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createClientComponentClient<Database>() as any;
   const [obras, setObras] = useState<Obra[]>([]);
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -240,11 +240,11 @@ export default function ObrasSection() {
       }
 
       // Mapear datos de Supabase al formato Obra
-      const obrasMapeadas: Obra[] = (data || []).map((obra) => ({
+      const obrasMapeadas: Obra[] = ((data as any[]) || []).map((obra) => ({
         id: obra.id,
         nombre: obra.name || 'Sin nombre',
         localizacion: obra.address || '',
-        estado: (obra.estado?.toUpperCase() as 'ACTIVA' | 'PAUSADA' | 'FINALIZADA' | 'CANCELADA') || 'ACTIVA',
+        estado: (obra.estado?.toLowerCase() as 'activa' | 'pausada' | 'finalizada') || 'activa',
         created_at: obra.created_at || new Date().toISOString(),
         fecha_inicio: undefined,
         presupuesto: undefined,
@@ -328,7 +328,7 @@ export default function ObrasSection() {
           .update({
             name: formState.nombre,
             address: formState.localizacion || null,
-          })
+          } as any)
           .eq('id', selectedObra.id)
           .eq('org_id', currentUser.orgId);
 
@@ -515,6 +515,7 @@ export default function ObrasSection() {
       cliente: selectedObra.cliente || "Cliente por defecto",
       tipoObra: selectedObra.tipoObra || "nueva",
       fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
+      estado: (selectedObra.estado as 'activa' | 'pausada' | 'finalizada') || 'activa',
       numeroPermiso: selectedObra.numeroPermiso || "SIN-PERMISO",
       progreso: selectedObra.progreso || 0,
       tareasActivas: selectedObra.tareasActivas || 0,

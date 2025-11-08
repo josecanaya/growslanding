@@ -9,6 +9,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui/grows';
+import type { BadgeProps } from '@/components/ui/grows';
 import { Obra } from '@/types/obras';
 
 type ObraCardProps = {
@@ -18,7 +19,7 @@ type ObraCardProps = {
   onDelete: (obra: Obra) => void;
 };
 
-const estadoVariantMap: Record<string, string> = {
+const estadoVariantMap: Record<string, BadgeProps['variant']> = {
   ACTIVA: 'success',
   PAUSADA: 'warning',
   FINALIZADA: 'info',
@@ -33,7 +34,7 @@ function formatDate(date: string) {
   });
 }
 
-function getEstadoVariant(estado: string) {
+function getEstadoVariant(estado: string): BadgeProps['variant'] {
   return estadoVariantMap[estado] ?? 'default';
 }
 

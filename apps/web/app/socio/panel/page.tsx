@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 
 import { TopBar } from '@/components/socio/TopBar';
 import { PanelViewer } from '@/components/socio/PanelViewer';
@@ -75,7 +76,7 @@ export default function PanelPage() {
 
     const normalized = normalizeRole(currentUser.role);
     if (normalized === 'CLIENTE_TECNICO' && !currentUser.orgId) {
-      router.replace('/onboarding');
+      router.replace('/onboarding' as Route);
     }
   }, [currentUser, router]);
 

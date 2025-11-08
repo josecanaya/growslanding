@@ -2,7 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { TipoEvento } from '../schemas';
 import { NotificacionService } from './notificacion.service';
 
-const prisma = new PrismaClient();
+type PrismaWithEvento = PrismaClient & {
+  evento: any;
+};
+
+const prisma = new PrismaClient() as PrismaWithEvento;
 
 export class EventoService {
   /**
@@ -171,11 +175,11 @@ export class EventoService {
 
     return {
       totalEventos,
-      eventosPorTipo: eventosPorTipo.map(item => ({
+      eventosPorTipo: eventosPorTipo.map((item: any) => ({
         tipo: item.tipoEvento,
         cantidad: item._count.tipoEvento,
       })),
-      eventosPorDia: eventosPorDia.map(item => ({
+      eventosPorDia: eventosPorDia.map((item: any) => ({
         fecha: item.createdAt,
         cantidad: item._count.createdAt,
       })),

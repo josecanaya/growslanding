@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { TareaService } from '../../../../../lib/services';
 import { CrearEvidenciaSchema } from '../../../../../lib/schemas';
 import { PermisosService } from '../../../../../lib/services';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const organizacionId = request.headers.get('x-organizacion-id');
     
     if (!organizacionId) {
@@ -18,7 +20,7 @@ export async function GET(
     }
 
     // Obtener evidencias de la tarea
-    const evidencias = await prisma.tareaEvidencia.findMany({
+    const evidencias = await (prisma as any).tareaEvidencia.findMany({
       where: {
         tareaId: id,
         tarea: {
@@ -62,6 +64,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const organizacionId = request.headers.get('x-organizacion-id');
     const usuarioId = request.headers.get('x-usuario-id');

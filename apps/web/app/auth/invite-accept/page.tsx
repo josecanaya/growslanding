@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 
@@ -32,7 +33,11 @@ export default function InviteAcceptPage() {
         });
         
         // Redirigir a login con mensaje de error
-        router.replace(`/auth/login?error=${encodeURIComponent(errorDescription || 'El link de invitación expiró o es inválido')}`);
+        router.replace(
+          `/auth/login?error=${encodeURIComponent(
+            errorDescription || 'El link de invitación expiró o es inválido'
+          )}` as Route
+        );
         return;
       }
 
@@ -43,7 +48,11 @@ export default function InviteAcceptPage() {
           
           if (exchangeError || !session) {
             console.error('[INVITE_ACCEPT_EXCHANGE_ERROR]', exchangeError);
-            router.replace(`/auth/login?error=${encodeURIComponent('Error al autenticar. Por favor, solicita un nuevo link de invitación.')}`);
+            router.replace(
+              `/auth/login?error=${encodeURIComponent(
+                'Error al autenticar. Por favor, solicita un nuevo link de invitación.'
+              )}` as Route
+            );
             return;
           }
 
@@ -51,7 +60,7 @@ export default function InviteAcceptPage() {
           // (puede que el campo user_id no exista en la tabla)
           if (socioId && session.user) {
             try {
-              const { error: linkError } = await supabase
+              const { error: linkError } = await (supabase as any)
                 .from('socios')
                 .update({ 
                   user_id: session.user.id,
@@ -80,10 +89,14 @@ export default function InviteAcceptPage() {
           }
 
           // Redirigir al panel del socio
-          router.replace('/panel');
+          router.replace('/panel' as Route);
         } catch (err) {
           console.error('[INVITE_ACCEPT_EXCEPTION]', err);
-          router.replace(`/auth/login?error=${encodeURIComponent('Error inesperado. Por favor, intenta nuevamente.')}`);
+          router.replace(
+            `/auth/login?error=${encodeURIComponent(
+              'Error inesperado. Por favor, intenta nuevamente.'
+            )}` as Route
+          );
         }
         return;
       }
@@ -96,7 +109,7 @@ export default function InviteAcceptPage() {
         // (puede que el campo user_id no exista en la tabla)
         if (socioId) {
           try {
-            const { error: linkError } = await supabase
+            const { error: linkError } = await (supabase as any)
               .from('socios')
               .update({ 
                 user_id: session.user.id,
@@ -124,12 +137,15 @@ export default function InviteAcceptPage() {
         }
         
         // Redirigir al panel
-        router.replace('/panel');
+        router.replace('/panel' as Route);
         return;
       }
 
       // Si no hay código ni sesión, redirigir a login
-      router.replace('/auth/login?error=' + encodeURIComponent('Por favor, inicia sesión para aceptar la invitación.'));
+      router.replace(
+        ('/auth/login?error=' +
+          encodeURIComponent('Por favor, inicia sesión para aceptar la invitación.')) as Route
+      );
     }
 
     void handleInviteAccept();

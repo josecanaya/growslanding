@@ -1,6 +1,8 @@
 'use client';
 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { AppRouterInstance } from 'next/navigation';
+import type { Route } from 'next';
 
 import { IS_DEV_MODE } from '@/lib/config';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -23,8 +25,8 @@ export function clearClientSessionArtifacts() {
 }
 
 type LogoutOptions = {
-  router: { replace: (href: string) => void };
-  redirectTo?: string;
+  router: AppRouterInstance;
+  redirectTo?: Route | string;
 };
 
 export async function logout({ router, redirectTo = '/auth/login' }: LogoutOptions) {
@@ -42,5 +44,5 @@ export async function logout({ router, redirectTo = '/auth/login' }: LogoutOptio
     window.alert('Desconectado (modo dev)');
   }
 
-  router.replace(redirectTo);
+  router.replace(redirectTo as Route);
 }

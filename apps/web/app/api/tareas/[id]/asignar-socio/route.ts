@@ -8,6 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const organizacionId = request.headers.get('x-organizacion-id');
     const usuarioId = request.headers.get('x-usuario-id');

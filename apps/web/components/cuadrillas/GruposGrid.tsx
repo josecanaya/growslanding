@@ -182,7 +182,9 @@ export function GruposGrid() {
   // Calcular estadísticas por especialidad
   const getEstadisticasGrupo = (especialidad: Especialidad) => {
     const cuadrillasGrupo = cuadrillas.filter(c => c.especialidad === especialidad);
-    const disponibles = cuadrillasGrupo.filter(c => c.estado === 'Disponible' || c.estado === 'disponible').length;
+    const disponibles = cuadrillasGrupo.filter(c => 
+      c.estado === 'Disponible' || c.estado.toLowerCase() === 'disponible'
+    ).length;
     
     // Calcular tareas activas desde los KPIs reales
     const tareasActivas = cuadrillasGrupo.reduce((sum, c) => {
@@ -191,7 +193,7 @@ export function GruposGrid() {
     
     // Calcular alertas (cuadrillas inactivas o con problemas)
     const alertas = cuadrillasGrupo.filter(c => {
-      return c.estado === 'Inactiva' || c.estado === 'inactiva' || 
+      return c.estado === 'Inactiva' || c.estado.toLowerCase() === 'inactiva' || 
              (!c.telefonoEncargado && !c.emailEncargado); // Datos incompletos
     }).length;
 

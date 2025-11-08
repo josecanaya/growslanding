@@ -59,12 +59,32 @@ interface Tarea {
   } | null;
 }
 
+type SupabaseTareaResumen = {
+  id: string;
+  title: string;
+  cuadrilla_id?: string | null;
+  responsable?: string | null;
+};
+
+type SupabaseCuadrillaRecord = {
+  id: string;
+  nombre?: string | null;
+  encargado?: string | null;
+  email_encargado?: string | null;
+};
+
+type SupabaseCuadrillaSocioLink = {
+  socio_id: string;
+};
+
 interface Socio {
   id: string;
   nombre: string;
   email: string | null;
   telefono: string | null;
   rol: string;
+  user_id?: string | null;
+  org_id?: string | null;
 }
 
 interface MisTareasProps {
@@ -225,10 +245,11 @@ export function MisTareas({ user }: MisTareasProps) {
           .eq('org_id', orgId)
           .eq('user_id', currentUser.id)
           .maybeSingle();
+        const socioPorUserIdRecord = socioPorUserId as Socio | null;
 
         // Si hay error por campo inexistente, ignorarlo y buscar por email
-        if (socioPorUserId && !errorUserId) {
-          socioData = socioPorUserId;
+        if (socioPorUserIdRecord && !errorUserId) {
+          socioData = socioPorUserIdRecord;
         } else {
           // Buscar por email (fallback si no hay user_id o campo no existe)
           if (currentUser.email) {
@@ -238,12 +259,13 @@ export function MisTareas({ user }: MisTareasProps) {
               .eq('org_id', orgId)
               .eq('email', currentUser.email)
               .maybeSingle();
+            const socioPorEmailRecord = socioPorEmail as Socio | null;
 
-            if (socioPorEmail && !errorEmail) {
-              socioData = socioPorEmail;
+            if (socioPorEmailRecord && !errorEmail) {
+              socioData = socioPorEmailRecord;
 
               // Si el socio no tiene user_id vinculado, intentar vincularlo automáticamente
-              if (!socioPorEmail.user_id && currentUser.id) {
+              if (!socioPorEmailRecord.user_id && currentUser.id) {
                 try {
                   const vincularResponse = await fetch('/api/socios/vincular-usuario', {
                     method: 'POST',
@@ -336,10 +358,12 @@ export function MisTareas({ user }: MisTareasProps) {
               .or(condicionesTarea.join(','))
               .limit(5);
 
-            if (tareasDirectas && tareasDirectas.length > 0 && !errorTareas) {
+            const tareasDirectasData = (tareasDirectas as SupabaseTareaResumen[] | null) ?? [];
+
+            if (tareasDirectasData.length > 0 && !errorTareas) {
               console.log('[MIS_TAREAS] ✅ Se encontraron tareas asignadas directamente:', {
-                cantidad: tareasDirectas.length,
-                tareas: tareasDirectas.map(t => ({ id: t.id, title: t.title, responsable: t.responsable })),
+                cantidad: tareasDirectasData.length,
+                tareas: tareasDirectasData.map(t => ({ id: t.id, title: t.title, responsable: t.responsable })),
               });
               
               // Si tiene tareas, buscar el socio por cuadrilla o por responsable
@@ -349,9 +373,11 @@ export function MisTareas({ user }: MisTareasProps) {
                 .select('id, nombre, encargado, email_encargado')
                 .eq('org_id', orgId);
               
-              if (cuadrillas && !errorCuadrillas) {
+              const cuadrillasData = (cuadrillas as SupabaseCuadrillaRecord[] | null) ?? [];
+
+              if (cuadrillasData.length > 0 && !errorCuadrillas) {
                 // Buscar cuadrilla donde el encargado coincide
-                const cuadrillaCoincidente = cuadrillas.find(c => {
+                const cuadrillaCoincidente = cuadrillasData.find(c => {
                   const encargadoLower = (c.encargado || '').toLowerCase();
                   const emailEncargado = (c.email_encargado || '').toLowerCase();
                   const usuarioEmail = (currentUser.email || '').toLowerCase();
@@ -373,8 +399,10 @@ export function MisTareas({ user }: MisTareasProps) {
                     .eq('activo', true)
                     .limit(1);
 
-                  if (relacionesSocio && relacionesSocio.length > 0 && !errorRelaciones) {
-                    const socioIdEncontrado = relacionesSocio[0].socio_id;
+                  const relacionesSocioData = (relacionesSocio as SupabaseCuadrillaSocioLink[] | null) ?? [];
+
+                  if (relacionesSocioData.length > 0 && !errorRelaciones) {
+                    const socioIdEncontrado = relacionesSocioData[0].socio_id;
                     const { data: socioEncontrado } = await supabase
                       .from('socios')
                       .select('id, nombre, email, telefono, rol, user_id, org_id')
@@ -397,10 +425,12 @@ export function MisTareas({ user }: MisTareasProps) {
                   .from('socios')
                   .select('id, nombre, email, telefono, rol, user_id, org_id')
                   .eq('org_id', orgId);
+                
+                const sociosOrg = (todosLosSociosOrg as Socio[] | null) ?? [];
 
-                if (todosLosSociosOrg && !errorTodosSocios) {
+                if (sociosOrg.length > 0 && !errorTodosSocios) {
                   // Buscar el socio más probable basándose en nombre o email
-                  const socioMasProbable = todosLosSociosOrg.find(s => {
+                  const socioMasProbable = sociosOrg.find(s => {
                     const nombreSocio = (s.nombre || '').toLowerCase();
                     const emailSocio = (s.email || '').toLowerCase();
                     const usuarioNombre = (currentUser.name || '').toLowerCase();
@@ -881,4 +911,3 @@ export function MisTareas({ user }: MisTareasProps) {
     </div>
   );
 }
-

@@ -69,8 +69,8 @@ export function VisorAlertasRiesgo({ onClose }: VisorAlertasRiesgoProps) {
       // Alertas por documentos vencidos
       cuadrilla.documentos.forEach(doc => {
         if (!doc.vigente) {
-          const fechaVencimiento = doc.fechaVencimiento ? new Date(doc.fechaVencimiento) : null;
-          const diasRestantes = fechaVencimiento ? Math.ceil((fechaVencimiento.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+          const fechaVencimiento = doc.fechaVencimiento ? new Date(doc.fechaVencimiento) : undefined;
+          const diasRestantes = fechaVencimiento ? Math.ceil((fechaVencimiento.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : undefined;
           
           alertas.push({
             id: `doc-${doc.id}`,
@@ -79,7 +79,12 @@ export function VisorAlertasRiesgo({ onClose }: VisorAlertasRiesgoProps) {
             cuadrillaNombre: cuadrilla.nombre,
             encargado: cuadrilla.encargado,
             descripcion: `${doc.nombre} (${doc.tipo})`,
-            severidad: diasRestantes && diasRestantes < 0 ? 'ALTA' : diasRestantes && diasRestantes <= 30 ? 'MEDIA' : 'BAJA',
+            severidad:
+              diasRestantes !== undefined && diasRestantes < 0
+                ? 'ALTA'
+                : diasRestantes !== undefined && diasRestantes <= 30
+                  ? 'MEDIA'
+                  : 'BAJA',
             fechaVencimiento: doc.fechaVencimiento,
             diasRestantes,
             estado: 'PENDIENTE'

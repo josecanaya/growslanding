@@ -23,6 +23,27 @@ interface Tarea {
   cuadrillaId?: string;
 }
 
+type SupabaseObraRecord = {
+  id: string;
+  name?: string | null;
+  estado?: string | null;
+};
+
+type SupabaseTareaRecord = {
+  id: string;
+  title?: string | null;
+  descripcion?: string | null;
+  estado?: string | null;
+  obra_id?: string | null;
+  elemento_id?: string | null;
+  cuadrilla_id?: string | null;
+};
+
+type SupabaseElementoRecord = {
+  id: string;
+  categoria?: string | null;
+};
+
 export function AsignarModal() {
   const { 
     showModalAsignacion, 
@@ -66,11 +87,14 @@ export function AsignarModal() {
             variant: 'destructive',
           });
         } else {
-          setObras((data || []).map(obra => ({
-            id: obra.id,
-            nombre: obra.name,
-            estado: obra.estado || 'activa'
-          })));
+          const supabaseObras = (data ?? []) as SupabaseObraRecord[];
+          setObras(
+            supabaseObras.map(obra => ({
+              id: obra.id,
+              nombre: obra.name || 'Sin nombre',
+              estado: obra.estado || 'activa',
+            }))
+          );
         }
       } catch (err) {
         console.error('[ERROR_CARGAR_OBRAS_EXCEPTION]', err);
@@ -138,10 +162,14 @@ export function AsignarModal() {
             variant: 'destructive',
           });
         } else {
+          const supabaseTareas = (data ?? []) as SupabaseTareaRecord[];
+
           // Si hay datos, intentar obtener información adicional de elementos
-          if (data && data.length > 0) {
+          if (supabaseTareas.length > 0) {
             // Intentar obtener categorías de elementos (opcional, no crítico)
-            const elementoIds = data.map(t => t.elemento_id).filter(Boolean);
+            const elementoIds = supabaseTareas
+              .map(t => t.elemento_id)
+              .filter((id): id is string => Boolean(id));
             let categoriasMap: Record<string, string> = {};
             
             if (elementoIds.length > 0) {
@@ -152,7 +180,7 @@ export function AsignarModal() {
                   .in('id', elementoIds);
                 
                 if (elementosData) {
-                  elementosData.forEach(elem => {
+                  (elementosData as SupabaseElementoRecord[]).forEach(elem => {
                     if (elem.id) categoriasMap[elem.id] = elem.categoria || 'estructura';
                   });
                 }
@@ -162,11 +190,11 @@ export function AsignarModal() {
               }
             }
 
-            setTareas(data.map(tarea => ({
+            setTareas(supabaseTareas.map(tarea => ({
               id: tarea.id,
-              nombre: tarea.title,
-              obraId: tarea.obra_id,
-              etapa: categoriasMap[tarea.elemento_id || '']?.toLowerCase() || 'estructura',
+              nombre: tarea.title || 'Sin nombre',
+              obraId: tarea.obra_id || '',
+              etapa: categoriasMap[tarea.elemento_id ?? '']?.toLowerCase() || 'estructura',
               estado: tarea.estado || 'pendiente',
               cuadrillaId: tarea.cuadrilla_id || undefined
             })));

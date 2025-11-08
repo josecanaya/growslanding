@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Check, Plus } from 'lucide-react';
 import { Seleccion } from './SubgrupoAccordion';
 import { CONFIGURACIONES_TECNICAS } from './config/configuracionesTecnicas';
+import type { ConfiguracionTecnicaCampo } from './config/configuracionesTecnicas';
 
 interface ConfiguracionTecnicaModalProps {
   elemento: any;
@@ -23,7 +24,8 @@ export function ConfiguracionTecnicaModal({
 }: ConfiguracionTecnicaModalProps) {
   const [configuracion, setConfiguracion] = useState<{ [key: string]: any }>({});
   
-  const configuraciones = CONFIGURACIONES_TECNICAS[elemento.nombre] || {};
+  const configuraciones: Record<string, ConfiguracionTecnicaCampo> =
+    CONFIGURACIONES_TECNICAS[elemento.nombre] || {};
   
   const handleInputChange = (key: string, value: any) => {
     setConfiguracion(prev => ({
@@ -98,7 +100,7 @@ export function ConfiguracionTecnicaModal({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">Seleccionar...</option>
-                    {config.options.map((option: string) => (
+                    {config.options?.map((option: string) => (
                       <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
@@ -109,7 +111,7 @@ export function ConfiguracionTecnicaModal({
                     type="number"
                     min={config.min}
                     max={config.max}
-                    defaultValue={config.default}
+                    defaultValue={typeof config.default === 'number' ? config.default : undefined}
                     onChange={(e) => handleInputChange(key, e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />

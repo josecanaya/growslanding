@@ -36,7 +36,7 @@ interface ElementosStore {
   updateElemento: (id: string, data: Partial<ElementoObra>) => void;
   removeElemento: (id: string) => void;
   setElementos: (elementos: ElementoObra[]) => void;
-  getElementoPorNombre: (nombre: string) => ElementoObra | undefined;
+  getElementoPorNombre: (nombre: string, plantaId?: string) => ElementoObra | undefined;
   updatePrecedencias: (id: string, codigoTarea: string | null, precedencias: string[]) => void;
   setTareasObra: (tareas: TareaObra[]) => void;
   getTareasObra: () => TareaObra[];
@@ -85,8 +85,11 @@ export const useElementosStore = create<ElementosStore>((set, get) => ({
     set({ elementos: elementos ?? [] });
   },
 
-  getElementoPorNombre: (nombre) => {
-    return get().elementos.find((elem) => elem.nombreElemento === nombre);
+  getElementoPorNombre: (nombre, plantaId) => {
+    const coincidencias = get().elementos.filter((elem) => elem.nombreElemento === nombre);
+    if (coincidencias.length === 0) return undefined;
+    if (!plantaId) return coincidencias[0];
+    return coincidencias.find((elem) => elem.plantaId === plantaId) ?? coincidencias[0];
   },
 
   updatePrecedencias: (id, codigoTarea, precedencias) => {

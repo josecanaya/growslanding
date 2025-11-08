@@ -171,7 +171,7 @@ export function EtapasTimeline({ tareas, obraId }: EtapasTimelineProps) {
             >
               <div className="flex items-center gap-4 mb-4">
                 <div className={`p-3 rounded-lg ${etapa.color} text-white`}>
-                  <IconComponent className="h-6 w-6" />
+                  {IconComponent ? <IconComponent className="h-6 w-6" /> : null}
                 </div>
                 <div>
                   <h3 className={`text-lg font-bold ${etapa.textColor}`}>
@@ -213,7 +213,7 @@ export function EtapasTimeline({ tareas, obraId }: EtapasTimelineProps) {
                 return (
                   <>
                     <div className={`p-2 rounded-lg ${etapa?.color} text-white`}>
-                      <IconComponent className="h-5 w-5" />
+                      {IconComponent ? <IconComponent className="h-5 w-5" /> : null}
                     </div>
                     <h2 className="text-xl font-bold text-gray-900">
                       Timeline - {etapa?.nombre}

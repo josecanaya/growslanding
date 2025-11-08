@@ -1,7 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { createServiceSupabaseClient } from '../supabase-server';
 
-const prisma = new PrismaClient();
+type PrismaWithCache = PrismaClient & {
+  obraCache?: {
+    upsert: (...args: any[]) => Promise<any>;
+  };
+};
+
+const prisma = new PrismaClient() as PrismaWithCache;
 
 interface TareaCPM {
   id: string;
@@ -17,6 +23,12 @@ interface TareaCPM {
   esCritica?: boolean;
 }
 
+type PrecedenciaRow = {
+  tarea_id: string;
+  depende_de: string;
+  lag_dias?: number | null;
+};
+
 export class CPMService {
   /**
    * Calcula el camino crítico para una obra
@@ -27,7 +39,8 @@ export class CPMService {
     duracionTotal: number;
   }> {
     // Obtener todas las tareas de la obra con sus precedencias
-    const tareas = await prisma.tarea.findMany({
+    const tareaDelegate = prisma.tarea as any;
+    const tareas = await tareaDelegate.findMany({
       where: {
         elemento: {
           obraId,
@@ -47,11 +60,11 @@ export class CPMService {
     });
 
     // Convertir a formato CPM
-    const tareasCPM: TareaCPM[] = tareas.map(tarea => ({
+    const tareasCPM: TareaCPM[] = tareas.map((tarea: any) => ({
       id: tarea.id,
       nombre: tarea.nombre,
       duracionEstimada: tarea.duracionEstimada || 1,
-      precedencias: tarea.precedencias.map(p => p.tareaPredecesora.id),
+      precedencias: tarea.precedencias.map((p: any) => p.tareaPredecesora.id),
     }));
 
     // Calcular fechas tempranas (forward pass)
@@ -250,21 +263,24 @@ export class CPMService {
   static async actualizarCacheObra(obraId: string) {
     try {
       const resultado = await this.calcularCaminoCritico(obraId);
+      const cacheDelegate = prisma.obraCache;
 
-      await prisma.obraCache.upsert({
-        where: { obraId },
-        create: {
-          obraId,
-          caminoCritico: resultado.caminoCritico,
-          duracionTotal: resultado.duracionTotal,
-          ultimaActualizacion: new Date(),
-        },
-        update: {
-          caminoCritico: resultado.caminoCritico,
-          duracionTotal: resultado.duracionTotal,
-          ultimaActualizacion: new Date(),
-        },
-      });
+      if (cacheDelegate) {
+        await cacheDelegate.upsert({
+          where: { obraId },
+          create: {
+            obraId,
+            caminoCritico: resultado.caminoCritico,
+            duracionTotal: resultado.duracionTotal,
+            ultimaActualizacion: new Date(),
+          },
+          update: {
+            caminoCritico: resultado.caminoCritico,
+            duracionTotal: resultado.duracionTotal,
+            ultimaActualizacion: new Date(),
+          },
+        });
+      }
 
       return resultado;
     } catch (error) {
@@ -349,7 +365,9 @@ export class CPMService {
     const precedenciasMap = new Map<string, string[]>();
     const lagDiasMap = new Map<string, number>();
 
-    (precedencias || []).forEach(prec => {
+    const precedenciasRows = (precedencias as unknown as PrecedenciaRow[] | null) ?? [];
+
+    precedenciasRows.forEach(prec => {
       if (!precedenciasMap.has(prec.tarea_id)) {
         precedenciasMap.set(prec.tarea_id, []);
       }

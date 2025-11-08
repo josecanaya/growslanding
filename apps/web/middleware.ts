@@ -32,6 +32,10 @@ function isRedirectLoop(pathname: string) {
   return pathname === '/auth/login' || pathname === '/auth/callback';
 }
 
+function isLegacyLanding(pathname: string) {
+  return pathname === '/es' || pathname === '/es/';
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
@@ -48,6 +52,10 @@ export async function middleware(req: NextRequest) {
   }
   
   // Redirecciones legacy
+  if (isLegacyLanding(pathname)) {
+    return NextResponse.redirect(new URL('/socio/panel', req.url));
+  }
+
   if (pathname.startsWith('/cliente-tecnico')) {
     return NextResponse.redirect(new URL('/cliente/dashboard', req.url));
   }

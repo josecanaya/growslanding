@@ -7,6 +7,7 @@ import {
   CheckCircle,
   Loader2,
   PlusCircle,
+  Send,
   Search,
   Users,
   XCircle,
@@ -72,7 +73,7 @@ const FALLBACK_STAGE = {
   badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
 };
 
-const STATUS_OPTIONS = ['PENDIENTE', 'APROBADO', 'RECHAZADO'];
+const STATUS_OPTIONS = ['PEDIDO', 'PENDIENTE', 'APROBADO', 'RECHAZADO'];
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -114,7 +115,6 @@ type RawPresupuesto = Record<string, any> & {
   moneda?: string | null;
   estado?: string | null;
   notas?: string | null;
-  cuadrilla_id?: string | null;
   socio_id?: string | null;
 };
 
@@ -153,7 +153,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [budgets, setBudgets] = useState<RawPresupuesto[]>([]);
   const [cuadrillas, setCuadrillas] = useState<{ id: string; nombre: string }[]>([]);
-  const [linkKey, setLinkKey] = useState<'cuadrilla_id' | 'socio_id'>('cuadrilla_id');
 
   const [stageFilter, setStageFilter] = useState<string>('todas');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
@@ -162,43 +161,11 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<string>('');
   const [selectedCuadrilla, setSelectedCuadrilla] = useState<string>('');
-  const [monto, setMonto] = useState('');
-  const [moneda, setMoneda] = useState('ARS');
   const [notas, setNotas] = useState('');
   const [savingBudget, setSavingBudget] = useState(false);
   const [assigningBudgetId, setAssigningBudgetId] = useState<string | null>(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState<string | null>(null);
   const [etapaActiva, setEtapaActiva] = useState<StageKey>('estructura');
-
-  useEffect(() => {
-    let active = true;
-
-    async function detectLinkKey() {
-      try {
-        const { data } = await supabase
-          .from('tareas_presupuestos')
-          .select('cuadrilla_id, socio_id')
-          .limit(1)
-          .maybeSingle();
-        if (!active) return;
-        if (data && 'cuadrilla_id' in data && data?.cuadrilla_id !== undefined) {
-          setLinkKey('cuadrilla_id');
-        } else if (data && 'socio_id' in data && data?.socio_id !== undefined) {
-          setLinkKey('socio_id');
-        } else {
-          setLinkKey('cuadrilla_id');
-        }
-      } catch {
-        setLinkKey('cuadrilla_id');
-      }
-    }
-
-    void detectLinkKey();
-
-    return () => {
-      active = false;
-    };
-  }, [supabase]);
 
   useEffect(() => {
     let active = true;
@@ -278,7 +245,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           tareaIds.length
             ? supabase
                 .from('tareas_presupuestos')
-                .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, cuadrilla_id, socio_id')
+                .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, socio_id')
                 .in('tarea_id', tareaIds)
             : Promise.resolve({ data: [] }),
           supabase
@@ -425,7 +392,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       if (search.trim()) {
         const term = search.trim().toLowerCase();
         const matchesTarea = tarea.titulo.toLowerCase().includes(term);
-        const vinculoId = (linkKey === 'cuadrilla_id' ? budget.cuadrilla_id : budget.socio_id) ?? '';
+        const vinculoId = budget.socio_id ?? '';
         const cuadrilla = cuadrillaMap.get(vinculoId) ?? '';
         if (!matchesTarea && !cuadrilla.toLowerCase().includes(term)) {
           return false;
@@ -434,7 +401,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
       return true;
     });
-  }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter, search, linkKey]);
+  }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter, search]);
 
   const handleOpenModal = (taskId?: string) => {
     if (taskId) {
@@ -443,20 +410,15 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       setSelectedTask('');
     }
     setSelectedCuadrilla('');
-    setMonto('');
-    setMoneda('ARS');
     setNotas('');
     setModalOpen(true);
   };
 
   const handleCreateBudget = async () => {
-    if (!currentUser?.orgId || !selectedTask || !selectedCuadrilla || !monto) return;
-
-    const montoNumber = Number.parseFloat(monto);
-    if (Number.isNaN(montoNumber)) {
+    if (!currentUser?.orgId || !selectedTask || !selectedCuadrilla) {
       toast({
-        title: 'Monto inválido',
-        description: 'Ingresá un número válido para el monto.',
+        title: 'Faltan datos',
+        description: 'Elegí una tarea y una cuadrilla antes de enviar la solicitud.',
         variant: 'destructive',
       });
       return;
@@ -464,17 +426,13 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
     const payload: Record<string, any> = {
       tarea_id: selectedTask,
-      monto: montoNumber,
-      moneda,
-      estado: 'PENDIENTE',
+      monto: 0,
+      moneda: 'ARS',
+      estado: 'pedido',
       notas: notas || null,
     };
 
-    if (linkKey === 'cuadrilla_id') {
-      payload.cuadrilla_id = selectedCuadrilla;
-    } else {
-      payload.socio_id = selectedCuadrilla;
-    }
+    payload.socio_id = selectedCuadrilla;
 
     setSavingBudget(true);
 
@@ -485,7 +443,14 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         .select()
         .maybeSingle();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('[AsignarSection] Insert error detail', {
+          message: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint,
+        });
+        throw insertError;
+      }
 
       if (data) {
         setBudgets((prev) => [data as RawPresupuesto, ...prev]);
@@ -493,11 +458,23 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
       toast({
         title: 'Solicitud registrada',
-        description: 'Se envió la solicitud de presupuesto a la cuadrilla seleccionada.',
+        description: 'Pedimos el presupuesto a la cuadrilla seleccionada.',
       });
       setModalOpen(false);
     } catch (err) {
-      console.error('[AsignarSection] Error inserting presupuesto', err);
+      const normalizedError =
+        err && typeof err === 'object'
+          ? {
+              ...(err as Record<string, unknown>),
+              message: (err as { message?: string }).message,
+              name: (err as { name?: string }).name,
+            }
+          : err;
+      console.error(
+        '[AsignarSection] Error inserting presupuesto',
+        normalizedError,
+        JSON.stringify(normalizedError, null, 2)
+      );
       toast({
         title: 'No se pudo registrar el presupuesto',
         description: 'Intentá nuevamente en unos minutos.',
@@ -555,7 +532,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     if (!currentUser?.orgId) return;
 
     const tarea = taskMap.get(budget.tarea_id);
-    const vinculoId = linkKey === 'cuadrilla_id' ? budget.cuadrilla_id : budget.socio_id;
+    const vinculoId = budget.socio_id;
     if (!tarea || !vinculoId) {
       toast({
         title: 'No se pudo asignar la tarea',
@@ -571,7 +548,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     try {
       const tareaUpdates: Record<string, any> = {
         responsable: cuadrillaNombre,
-        cuadrilla_id: linkKey === 'cuadrilla_id' ? vinculoId : null,
+        cuadrilla_id: vinculoId,
       };
 
       const { error: tareaError } = await supabase
@@ -607,7 +584,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             ? {
                 ...task,
                 responsable: cuadrillaNombre,
-                cuadrillaId: linkKey === 'cuadrilla_id' ? vinculoId : task.cuadrillaId,
+                cuadrillaId: vinculoId,
               }
             : task
         )
@@ -884,13 +861,14 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                             {hayPresupuestos ? (
                               <div className="space-y-3">
                                 {taskBudgets.map((budget) => {
-                                  const vinculoId =
-                                    linkKey === 'cuadrilla_id' ? budget.cuadrilla_id : budget.socio_id;
+                                  const vinculoId = budget.socio_id;
                                   const cuadrillaNombre =
                                     (vinculoId && cuadrillaMap.get(vinculoId)) ?? 'Sin cuadrilla';
                                   const estado = (budget.estado ?? 'PENDIENTE').toUpperCase();
                                   const montoFormateado =
-                                    budget.monto !== null && budget.monto !== undefined
+                                    budget.monto !== null &&
+                                    budget.monto !== undefined &&
+                                    Number(budget.monto) > 0
                                       ? new Intl.NumberFormat('es-AR', {
                                           style: 'currency',
                                           currency: budget.moneda ?? 'ARS',
@@ -1017,13 +995,14 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                 const tarea = taskMap.get(budget.tarea_id);
                 if (!tarea) return null;
                 const fecha = formatDate(budget.created_at);
-                const vinculoId =
-                  (linkKey === 'cuadrilla_id' ? budget.cuadrilla_id : budget.socio_id) ?? '';
+                const vinculoId = budget.socio_id ?? '';
                 const cuadrillaNombre = cuadrillaMap.get(vinculoId) ?? 'Sin cuadrilla asignada';
                 const etapa = tarea.etapa ?? 'Sin etapa';
                 const estado = (budget.estado ?? 'PENDIENTE').toUpperCase();
                 const montoFormateado =
-                  budget.monto !== null && budget.monto !== undefined
+                  budget.monto !== null &&
+                  budget.monto !== undefined &&
+                  Number(budget.monto) > 0
                     ? new Intl.NumberFormat('es-AR', {
                         style: 'currency',
                         currency: budget.moneda ?? 'ARS',
@@ -1082,7 +1061,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       </section>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg bg-white text-slate-900">
           <DialogHeader>
             <DialogTitle>Solicitar presupuesto</DialogTitle>
             <DialogDescription>
@@ -1139,36 +1118,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
               </Select>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Monto estimado
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={monto}
-                  onChange={(event) => setMonto(event.target.value)}
-                  placeholder="Ej: 120000"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">
-                  Moneda
-                </label>
-                <Select value={moneda} onValueChange={setMoneda}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="ARS" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ARS">ARS</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div>
               <label className="mb-1 block text-sm font-medium text-slate-700">
                 Notas adicionales
@@ -1194,18 +1143,12 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             <Button
               variant="primary"
               onClick={() => void handleCreateBudget()}
-              disabled={
-                savingBudget ||
-                !selectedTask ||
-                !selectedCuadrilla ||
-                !monto ||
-                Number.isNaN(Number.parseFloat(monto))
-              }
+              disabled={savingBudget || !selectedTask || !selectedCuadrilla}
             >
               {savingBudget ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <PlusCircle className="h-4 w-4" />
+                <Send className="h-4 w-4" />
               )}
               <span>Enviar solicitud</span>
             </Button>

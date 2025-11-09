@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush, ClipboardList } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Building2, TrendingUp, MapPin, User, ArrowRight, Users, CheckCircle, ClipboardList, Loader2 } from 'lucide-react';
 import { Card, Button, Badge, EmptyState } from '@/components/ui/grows';
 import type { BadgeProps } from '@/components/ui/grows';
-import { TimelineInteractivo } from './TimelineInteractivo';
-import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { usePlanUsage } from '@/lib/subscriptions/use-plan-usage';
@@ -17,6 +15,9 @@ import { EtapasSection } from './EtapasSection';
 import { ValidarSection } from './ValidarSection';
 import { AsignarSection } from './AsignarSection';
 import { AsignarModal } from '@/components/cuadrillas/AsignarModal';
+import { ordenarTareasPorDependenciasBase } from '@/lib/utils/ordenarTareasPorDependenciasBase';
+import { EditorVisualTareasN8N } from './EditorVisualTareasN8N';
+import { cn } from '@/lib/utils';
 
 // Tipos de datos
 interface Obra {
@@ -536,14 +537,41 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
 
 type VistaTareas = 'lista-obras' | 'detalle-obra' | 'editor-gantt';
 type TabPrincipal = 'asignar' | 'organiza' | 'validar' | 'etapas' | 'resumen';
-type ModoTareas = 'lista' | 'timeline' | 'editor-visual';
+
+const FASES_ORGANIZA = [
+  { value: 'estructura', label: 'Estructura' },
+  { value: 'obra gris', label: 'Obra gris' },
+  { value: 'terminaciones', label: 'Terminaciones' },
+] as const;
+
+const FASE_STYLES = {
+  estructura: {
+    card: 'border-amber-300 bg-amber-50/80',
+    accent: 'text-amber-600',
+    pill: 'bg-amber-100 text-amber-700',
+  },
+  'obra gris': {
+    card: 'border-slate-300 bg-white',
+    accent: 'text-slate-600',
+    pill: 'bg-slate-200 text-slate-700',
+  },
+  terminaciones: {
+    card: 'border-emerald-300 bg-emerald-50/80',
+    accent: 'text-emerald-600',
+    pill: 'bg-emerald-100 text-emerald-700',
+  },
+} as const;
 
 export function TareasSection() {
   const [vistaActual, setVistaActual] = useState<VistaTareas>('lista-obras');
   const [obraSeleccionada, setObraSeleccionada] = useState<string>('');
   const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>('asignar');
-  const [modoTareas, setModoTareas] = useState<ModoTareas>('editor-visual');
-  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [faseOrganiza, setFaseOrganiza] = useState<(typeof FASES_ORGANIZA)[number]['value']>('estructura');
+  const [limiteOrganiza, setLimiteOrganiza] = useState<Record<(typeof FASES_ORGANIZA)[number]['value'], number>>({
+    estructura: 5,
+    'obra gris': 5,
+    terminaciones: 5,
+  });
   
   const [obras, setObras] = useState<Obra[]>([]);
   const [loading, setLoading] = useState(true);
@@ -806,6 +834,109 @@ export function TareasSection() {
 
   const obraActual = obras.find(o => o.id === obraSeleccionada);
 
+  useEffect(() => {
+    setLimiteOrganiza({
+      estructura: 5,
+      'obra gris': 5,
+      terminaciones: 5,
+    });
+  }, [obraSeleccionada]);
+
+  useEffect(() => {
+    setLimiteOrganiza((prev) => {
+      const actual = prev[faseOrganiza] ?? 5;
+      if (actual >= 5) return prev;
+      return {
+        ...prev,
+        [faseOrganiza]: 5,
+      };
+    });
+  }, [faseOrganiza]);
+
+  const tareasOrganiza = useMemo(() => {
+    const faseLower = faseOrganiza.toLowerCase();
+    const filtradas = tareas.filter((tarea) => {
+      const etapa = (tarea.etapa ?? '').toLowerCase();
+      const nombre = tarea.nombre.toLowerCase();
+      return etapa.includes(faseLower) || nombre.includes(faseLower);
+    });
+    return ordenarTareasPorDependenciasBase(filtradas);
+  }, [tareas, faseOrganiza]);
+
+  const limiteActualOrganiza = limiteOrganiza[faseOrganiza] ?? 5;
+  const tareasOrganizaVisibles = useMemo(
+    () => tareasOrganiza.slice(0, limiteActualOrganiza),
+    [tareasOrganiza, limiteActualOrganiza]
+  );
+  const puedeCargarMasOrganiza = tareasOrganiza.length > tareasOrganizaVisibles.length;
+
+  const handleSolicitarMasOrganiza = useCallback(() => {
+    setLimiteOrganiza((prev) => {
+      const actual = prev[faseOrganiza] ?? 5;
+      const siguiente = Math.min(actual + 5, tareasOrganiza.length);
+      return {
+        ...prev,
+        [faseOrganiza]: siguiente,
+      };
+    });
+  }, [faseOrganiza, tareasOrganiza.length]);
+
+  const editorTareasOrganiza = useMemo(() => {
+    const etapaNormalizada = faseOrganiza.replace(' ', '_') as 'estructura' | 'obra_gris' | 'terminaciones';
+
+    return tareasOrganizaVisibles.map((tarea) => {
+      const estadoLower = tarea.estado.toLowerCase();
+      const estadoEditor: 'pendiente' | 'en_progreso' | 'completada' | 'bloqueada' =
+        estadoLower.includes('curso')
+          ? 'en_progreso'
+          : estadoLower.includes('final')
+          ? 'completada'
+          : estadoLower.includes('aprob')
+          ? 'completada'
+          : 'pendiente';
+
+      const etapaEditor =
+        (tarea.etapa?.toLowerCase().replace(' ', '_') as 'estructura' | 'obra_gris' | 'terminaciones') ??
+        etapaNormalizada;
+
+      const fechaInicio = tarea.fechaInicio || new Date().toISOString();
+      const fechaFin = tarea.fechaFin || fechaInicio;
+
+      const duracionDias = Math.max(
+        1,
+        Math.ceil(
+          (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      );
+
+      return {
+        id: tarea.id,
+        nombre: tarea.nombre,
+        obraId: obraSeleccionada || '',
+        lider: tarea.responsable || 'Sin asignar',
+        fechaInicio,
+        fechaFin,
+        plantilla: '',
+        checklist: [],
+        evidencias: [],
+        estado: estadoEditor,
+        etapa: etapaEditor,
+        precedencia: tarea.dependencias || [],
+        duracion: duracionDias,
+        esCritica: false,
+        holgura: 0,
+        earlyStart: 0,
+        earlyFinish: 0,
+        lateStart: 0,
+        lateFinish: 0,
+        x: 0,
+        y: 0,
+        dependencias: tarea.dependencias || [],
+      };
+    });
+  }, [tareasOrganizaVisibles, faseOrganiza, obraSeleccionada]);
+
   // Renderizar vista según el estado actual
   switch (vistaActual) {
     case 'lista-obras': {
@@ -938,229 +1069,61 @@ export function TareasSection() {
 
               {tabPrincipal === 'organiza' && (
                 <div className="space-y-6">
-                  {/* Header de Gestión de Tareas */}
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-grows-primary">Gestión de Tareas</h2>
-                    <div className="flex gap-2">
-                      {[
-                        { id: 'lista', label: 'Lista' },
-                        { id: 'timeline', label: 'Timeline' },
-                        { id: 'editor-visual', label: 'Editor Visual' }
-                      ].map(modo => (
-                        <Button
-                          key={modo.id}
-                          variant={modoTareas === modo.id ? 'primary' : 'secondary'}
-                          size="sm"
-                          onClick={() => setModoTareas(modo.id as ModoTareas)}
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold text-grows-primary">Gestión de tareas por fase</h2>
+                      <p className="text-sm text-grows-text-secondary">
+                        Orden inicial según dependencias base. Podés reacomodar libremente las tareas en el canvas.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {FASES_ORGANIZA.map((fase) => (
+                        <button
+                          key={fase.value}
+                          type="button"
+                          onClick={() => setFaseOrganiza(fase.value)}
+                          className={cn(
+                            'rounded-full border px-4 py-2 text-sm font-medium transition-all',
+                            faseOrganiza === fase.value
+                              ? 'border-blue-500 bg-blue-600 text-white shadow-md'
+                              : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:text-blue-600'
+                          )}
                         >
-                          {modo.label}
-                        </Button>
+                          {fase.label}
+                        </button>
                       ))}
-                     
                     </div>
                   </div>
 
-                  {/* Contenido según el modo seleccionado */}
-                  {modoTareas === 'lista' && (
-                    <Card>
-                      <div className="space-y-4">
-                        {/* Filtros */}
-                        <div className="flex items-center gap-4 pb-4 border-b border-grows-border">
-                          <span className="text-sm font-medium text-grows-text-secondary">Filtrar por estado:</span>
-                          <div className="flex gap-2">
-                            {['todos', 'pendiente', 'en_curso', 'finalizada', 'aprobada'].map(estado => (
-                              <Button
-                                key={estado}
-                              variant={filtroEstado === estado ? 'primary' : 'secondary'}
-                                size="sm"
-                                onClick={() => setFiltroEstado(estado)}
-                              >
-                                {estado === 'todos' ? 'Todos' : 
-                                 estado === 'en_curso' ? 'En curso' :
-                                 estado.replace('_', ' ').charAt(0).toUpperCase() + estado.replace('_', ' ').slice(1)}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Lista de tareas */}
-                        <div className="space-y-4">
-                          {loadingTareas ? (
-                            <div className="text-center py-8">
-                              <p className="text-grows-text-secondary">Cargando tareas...</p>
-                            </div>
-                          ) : tareas.length === 0 ? (
-                            <EmptyState
-                              title="No hay tareas"
-                              description="No hay tareas para esta obra"
-                            />
-                          ) : tareas.filter(tarea => 
-                            filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
-                          ).length === 0 ? (
-                            <EmptyState
-                              title="No hay tareas con este filtro"
-                              description={`No se encontraron tareas con el estado "${filtroEstado}"`}
-                            />
-                          ) : (
-                            tareas.filter(tarea => 
-                              filtroEstado === 'todos' || tarea.estado.toLowerCase().replace(' ', '_') === filtroEstado
-                            ).map(tarea => {
-                              const badgeStatus = mapTareaEstadoToBadgeStatus(tarea.estado);
-                              return (
-                                <Card key={tarea.id}>
-                                  <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-semibold text-grows-primary">{tarea.nombre}</h3>
-                                        <Badge status={badgeStatus}>
-                                          {tarea.estado}
-                                        </Badge>
-                                        <Badge variant="default">
-                                          {tarea.etapa}
-                                        </Badge>
-                                      </div>
-                                      
-                                      <p className="text-grows-text-secondary mb-3">{tarea.descripcion}</p>
-                                      
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-grows-text-secondary">
-                                        <div className="flex items-center space-x-2">
-                                          <User className="h-4 w-4" />
-                                          <span>{tarea.responsable}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                          <Calendar className="h-4 w-4" />
-                                          <span>
-                                            {new Date(tarea.fechaInicio).toLocaleDateString()} - {new Date(tarea.fechaFin).toLocaleDateString()}
-                                          </span>
-                                        </div>
-                                        {tarea.presupuesto && (
-                                          <div className="flex items-center space-x-2">
-                                            <DollarSign className="h-4 w-4" />
-                                            <span>${tarea.presupuesto.toLocaleString()}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* Acciones */}
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button variant="ghost" size="sm" icon={<Eye className="h-4 w-4" />}>
-                                        Ver
-                                      </Button>
-                                      <Button variant="ghost" size="sm" icon={<DollarSign className="h-4 w-4" />}>
-                                        Presupuesto
-                                      </Button>
-                                      <Button variant="ghost" size="sm" icon={<Users className="h-4 w-4" />}>
-                                        Asignar
-                                      </Button>
-                                      {tarea.estado === 'Finalizada' && (
-                                        <Button variant="ghost" size="sm" icon={<CheckCircle className="h-4 w-4" />}>
-                                          Validar
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </Card>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {modoTareas === 'timeline' && (
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Timeline de Tareas</h3>
+                  {!obraSeleccionada ? (
+                    <EmptyState
+                      title="Seleccioná una obra"
+                      description="Elegí una obra para manipular sus tareas en el editor visual."
+                    />
+                  ) : (
+                    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                       {loadingTareas ? (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">Cargando tareas...</p>
+                        <div className="flex h-[360px] flex-col items-center justify-center gap-3 text-slate-500">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                          <span>Cargando tareas de {faseOrganiza}…</span>
                         </div>
-                      ) : tareas.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">No hay tareas para esta obra</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {tareas.map((tarea, index) => (
-                          <div key={tarea.id} className="flex items-center gap-4">
-                            <div className="flex flex-col items-center">
-                              <div className={`w-3 h-3 rounded-full ${
-                                tarea.estado === 'Finalizada' ? 'bg-green-500' :
-                                tarea.estado === 'En curso' ? 'bg-blue-500' :
-                                'bg-gray-300'
-                              }`}></div>
-                              {index < tareas.length - 1 && <div className="w-px h-8 bg-gray-300 mt-2"></div>}
-                            </div>
-                            <div className="flex-1 bg-white rounded-lg border border-gray-200 p-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{tarea.nombre}</h4>
-                                  <p className="text-sm text-gray-600">{tarea.etapa}</p>
-                                </div>
-                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                  tarea.estado === 'Pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                                  tarea.estado === 'En curso' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-green-100 text-green-800'
-                                }`}>
-                                  {tarea.estado}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {modoTareas === 'editor-visual' && (
-                    <Card>
-                      {loadingTareas ? (
-                        <div className="py-8 text-center text-grows-text-secondary">
-                          Cargando tareas...
-                        </div>
-                      ) : tareas.length === 0 ? (
-                        <div className="py-8 text-center text-grows-text-secondary">
-                          No hay tareas para esta obra
+                      ) : editorTareasOrganiza.length === 0 ? (
+                        <div className="flex h-[360px] flex-col items-center justify-center text-sm text-slate-400">
+                          No hay tareas registradas en esta fase todavía.
                         </div>
                       ) : (
                         <EditorVisualTareasN8N
-                          tareas={tareas.map(t => ({
-                            ...t,
-                            obraId: obraSeleccionada || '',
-                            lider: t.responsable,
-                            plantilla: '',
-                            checklist: [],
-                            evidencias: [],
-                            estado:
-                              t.estado === 'Finalizada' || t.estado === 'Aprobada'
-                                ? 'completada'
-                                : t.estado === 'En curso'
-                                ? 'en_progreso'
-                                : 'pendiente',
-                            etapa: t.etapa as 'estructura' | 'obra_gris' | 'terminaciones',
-                            precedencia: t.dependencias || [],
-                            duracion: 5,
-                            esCritica: false,
-                            holgura: 0,
-                            earlyStart: 0,
-                            earlyFinish: 0,
-                            lateStart: 0,
-                            lateFinish: 0,
-                            x: 0,
-                            y: 0,
-                            dependencias: t.dependencias || [],
-                          }))}
-                          etapa="estructura"
+                          tareas={editorTareasOrganiza}
+                          etapa={faseOrganiza.replace(' ', '_') as 'estructura' | 'obra_gris' | 'terminaciones'}
                           onActualizarTarea={() => {}}
                           onEliminarTarea={() => {}}
                           onCrearTarea={() => {}}
+                          onSolicitarMas={handleSolicitarMasOrganiza}
+                          puedeCargarMas={puedeCargarMasOrganiza}
                         />
                       )}
-                    </Card>
+                    </div>
                   )}
-
                 </div>
               )}
 

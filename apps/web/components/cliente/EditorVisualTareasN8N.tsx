@@ -41,6 +41,8 @@ interface EditorVisualTareasN8NProps {
   onActualizarTarea: (tarea: Tarea) => void;
   onEliminarTarea: (tareaId: string) => void;
   onCrearTarea: (tarea: Omit<Tarea, 'id' | 'x' | 'y'>) => void;
+  onSolicitarMas?: () => void;
+  puedeCargarMas?: boolean;
 }
 
 export function EditorVisualTareasN8N({ 
@@ -48,7 +50,9 @@ export function EditorVisualTareasN8N({
   etapa, 
   onActualizarTarea, 
   onEliminarTarea, 
-  onCrearTarea 
+  onCrearTarea,
+  onSolicitarMas,
+  puedeCargarMas = false,
 }: EditorVisualTareasN8NProps) {
   console.log('🚀 EditorVisualTareasN8N - FILTROS, PRECARGA y EDICIÓN');
   console.log('📊 Tareas recibidas:', tareasIniciales.length);
@@ -56,11 +60,11 @@ export function EditorVisualTareasN8N({
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [nodos, setNodos] = useState<Tarea[]>([]);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.9);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
-  const [filtroEtapa, setFiltroEtapa] = useState<string | null>(null);
+  const [filtroEtapa, setFiltroEtapa] = useState<string | null>(etapa);
   const [tareaSeleccionada, setTareaSeleccionada] = useState<Tarea | null>(null);
   const [modalEdicionAbierto, setModalEdicionAbierto] = useState(false);
 
@@ -107,10 +111,10 @@ export function EditorVisualTareasN8N({
     
     const ordenEtapas = ['estructura', 'obra_gris', 'terminaciones'];
     const posicionesIniciales = {
-      'estructura': { x: 100, y: 100 },
-      'obra_gris': { x: 800, y: 100 },
-      'terminaciones': { x: 1500, y: 100 }
-    };
+      estructura: { x: 120, y: 80 },
+      obra_gris: { x: 520, y: 80 },
+      terminaciones: { x: 920, y: 80 },
+    } as const;
     
     const tareasConPosicion: Tarea[] = [];
     
@@ -133,8 +137,8 @@ export function EditorVisualTareasN8N({
           if (tareasDepYaCargadas.length > 0) {
             const maxX = Math.max(...tareasDepYaCargadas.map(t => t.x));
             const avgY = tareasDepYaCargadas.reduce((sum, t) => sum + t.y, 0) / tareasDepYaCargadas.length;
-            
-            x = maxX + 300;
+
+            x = maxX + 220;
             y = avgY;
           }
         }
@@ -145,7 +149,7 @@ export function EditorVisualTareasN8N({
           y: tarea.y || y
         });
         
-        offsetY += 150;
+        offsetY += 120;
       });
     });
     
@@ -277,13 +281,17 @@ export function EditorVisualTareasN8N({
   };
 
   // Controles de zoom
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2));
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5));
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 1.6));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.6));
   const handleReset = () => {
     setZoom(1);
     const nodosConPosicion = precargaLogicaPorEtapas(tareasIniciales);
     setNodos(nodosConPosicion);
   };
+
+  useEffect(() => {
+    setFiltroEtapa(etapa);
+  }, [etapa]);
 
   return (
     <div className="h-full w-full relative" style={{backgroundColor: '#eaf0f6'}}>
@@ -360,6 +368,14 @@ export function EditorVisualTareasN8N({
             >
               <RotateCcw className="h-4 w-4" />
             </button>
+            {puedeCargarMas && onSolicitarMas && (
+              <button
+                onClick={onSolicitarMas}
+                className="ml-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+              >
+                Mostrar 5 más
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -370,13 +386,13 @@ export function EditorVisualTareasN8N({
         className="w-full h-full relative overflow-auto"
         style={{
           background: '#eaf0f6',
-          minHeight: '700px'
+          minHeight: '640px'
         }}
         onWheel={(e) => {
           if (e.ctrlKey) {
             e.preventDefault();
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            setZoom(prev => Math.max(0.5, Math.min(2, prev + delta)));
+            setZoom(prev => Math.max(0.6, Math.min(1.6, prev + delta)));
           }
         }}
       >
@@ -386,8 +402,8 @@ export function EditorVisualTareasN8N({
           className="absolute inset-0 w-full h-full pointer-events-none"
           style={{ 
             zIndex: 0,
-            minWidth: '2500px',
-            minHeight: '1500px'
+            minWidth: '1600px',
+            minHeight: '1100px'
           }}
         >
           {renderConexiones()}
@@ -399,8 +415,8 @@ export function EditorVisualTareasN8N({
           style={{
             transform: `scale(${zoom})`,
             transformOrigin: 'top left',
-            minWidth: '2500px',
-            minHeight: '1500px'
+            minWidth: '1600px',
+            minHeight: '1100px'
           }}
         >
           {tareasVisibles.map((tarea) => (

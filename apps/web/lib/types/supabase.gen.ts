@@ -194,6 +194,8 @@ export type Database = {
           localizacion: string | null;
           nombre: string;
           org_id: string;
+          plantas: number | null;
+          superficies: Json | null;
         };
         Insert: {
           cliente?: string | null;
@@ -202,6 +204,8 @@ export type Database = {
           localizacion?: string | null;
           nombre: string;
           org_id: string;
+          plantas?: number | null;
+          superficies?: Json | null;
         };
         Update: {
           cliente?: string | null;
@@ -210,6 +214,8 @@ export type Database = {
           localizacion?: string | null;
           nombre?: string;
           org_id?: string;
+          plantas?: number | null;
+          superficies?: Json | null;
         };
         Relationships: [
           {

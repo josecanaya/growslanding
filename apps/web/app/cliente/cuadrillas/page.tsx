@@ -14,6 +14,7 @@ import { VisorCumplimientoGeneral } from '@/components/cuadrillas/VisorCumplimie
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { Button, SectionLayout } from '@/components/ui/grows';
 import { UserCheck, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
@@ -71,9 +72,12 @@ export default function CuadrillasPage() {
       <SidebarClienteTecnico 
         activeSection="cuadrillas"
         onSectionChange={(section) => {
-          if (section !== 'cuadrillas') {
-            router.push('/cliente/dashboard');
+          if (section === 'cuadrillas') {
+            router.push('/cliente/cuadrillas' as Route);
+            return;
           }
+
+          router.push((`/cliente/dashboard?section=${section}`) as Route);
         }}
       />
       

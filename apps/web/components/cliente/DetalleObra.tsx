@@ -99,6 +99,26 @@ interface DetalleObraProps {
   tabInicial?: 'resumen' | 'elementos' | 'legajo'; // Tab inicial cuando se abre el detalle
 }
 
+type PlantaResumen = {
+  id: string;
+  nombre: string;
+  metrosCubiertos?: number;
+  metrosDescubiertos?: number;
+  metrosTotales?: number;
+  orden?: number;
+};
+
+const FALLBACK_PLANTAS: PlantaResumen[] = [
+  {
+    id: 'general',
+    nombre: 'General / Sin asignar',
+    metrosCubiertos: 0,
+    metrosDescubiertos: 0,
+    metrosTotales: 0,
+    orden: 1,
+  },
+];
+
 const etapas = [
   { key: 'estructura', nombre: 'Estructura', color: 'bg-blue-100 text-blue-800', icon: Building },
   { key: 'obra_gris', nombre: 'Obra Gris', color: 'bg-gray-100 text-gray-800', icon: Wrench },
@@ -152,6 +172,7 @@ export function DetalleObra({
   const [elementoParaModal, setElementoParaModal] = useState<any>(null);
   const [tareasCreadas, setTareasCreadas] = useState<any[]>([]);
   const [mostrarResultado, setMostrarResultado] = useState(false);
+  const [plantasObra, setPlantasObra] = useState<PlantaResumen[]>(FALLBACK_PLANTAS);
   
   // Estados para el modal de edición
   const [showModalEditar, setShowModalEditar] = useState(false);
@@ -337,6 +358,81 @@ export function DetalleObra({
 
     onActualizarObra(obraActualizada);
   };
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchPlantas() {
+      try {
+        const response = await fetch(`/api/obras/${obra.id}/plantas`);
+        if (!response.ok) {
+          throw new Error(`Status ${response.status}`);
+        }
+        const payload = await response.json();
+        if (!mounted) return;
+
+        const data = Array.isArray(payload?.data) ? payload.data : [];
+        if (!data.length) {
+          setPlantasObra(FALLBACK_PLANTAS);
+          return;
+        }
+
+        const normalizadas: PlantaResumen[] = data.map((item: any, index: number) => {
+          const orden = Number(
+            item?.orden ?? item?.planta ?? item?.numero ?? item?.idx ?? index + 1,
+          );
+          const metrosCubiertos = Number(
+            item?.metrosCubiertos ?? item?.metros_cubiertos ?? item?.cubiertos ?? 0,
+          );
+          const metrosDescubiertos = Number(
+            item?.metrosDescubiertos ??
+              item?.metros_descubiertos ??
+              item?.descubiertos ??
+              0,
+          );
+          const metrosTotales = Number(
+            item?.metrosTotales ??
+              item?.metros_totales ??
+              item?.total ??
+              metrosCubiertos + metrosDescubiertos,
+          );
+
+          return {
+            id: String(item?.id ?? orden ?? index + 1),
+            nombre:
+              item?.nombre ??
+              item?.label ??
+              item?.alias ??
+              item?.rotulo ??
+              `Planta ${orden || index + 1}`,
+            metrosCubiertos: Number.isFinite(metrosCubiertos) ? metrosCubiertos : 0,
+            metrosDescubiertos: Number.isFinite(metrosDescubiertos)
+              ? metrosDescubiertos
+              : 0,
+            metrosTotales: Number.isFinite(metrosTotales)
+              ? metrosTotales
+              : metrosCubiertos + metrosDescubiertos,
+            orden: Number.isFinite(orden) ? orden : index + 1,
+          };
+        });
+
+        normalizadas.sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+        setPlantasObra(normalizadas);
+      } catch (error) {
+        console.error('[DETALLE_OBRA] Error cargando plantas de la obra:', error);
+        if (mounted) {
+          setPlantasObra(FALLBACK_PLANTAS);
+        }
+      } finally {
+        // noop
+      }
+    }
+
+    fetchPlantas();
+    return () => {
+      mounted = false;
+    };
+  }, [obra.id]);
 
   const handleDeleteDocumento = (documentoId: string) => {
     const obraActualizada = {
@@ -781,7 +877,7 @@ export function DetalleObra({
               <ObraResumenContainer
                 obra={obra}
                 tareas={tareas}
-                plantas={[{ id: 'PB', nombre: 'Planta Baja' }, { id: '1', nombre: '1er Piso' }, { id: '2', nombre: '2do Piso' }]}
+                plantas={plantasObra?.length ? plantasObra : FALLBACK_PLANTAS}
                 onEditarInfo={() => {}}
                 onVerDetallePlanta={(plantaId) => {
                   console.log('Ver detalle de planta', plantaId);
@@ -806,10 +902,10 @@ export function DetalleObra({
             <div className="p-0">
               <CargaElementosPanel
                 obraId={obra.id}
-                plantas={[
-                  { id: 'PB', nombre: 'PB' },
-                  { id: '1', nombre: '1er Piso' },
-                ]}
+                plantas={(plantasObra?.length ? plantasObra : FALLBACK_PLANTAS).map((planta) => ({
+                  id: planta.id,
+                  nombre: planta.nombre,
+                }))}
               />
             </div>
           )}

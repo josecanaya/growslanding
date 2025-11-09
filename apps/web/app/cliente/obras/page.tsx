@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { ObrasListContainer } from '@/components/obras/containers/ObrasListContainer';
 
@@ -14,7 +15,7 @@ export default function ObrasPage() {
         activeSection="obras"
         onSectionChange={(section) => {
           if (section !== 'obras') {
-            router.push('/cliente/dashboard');
+            router.push((`/cliente/dashboard?section=${section}`) as Route);
           }
         }}
       />

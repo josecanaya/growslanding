@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useWizardStore, TipoObra } from './useWizardStore';
-import PasoCargaElementos from './PasoCargaElementos';
-import MapPickerModal from './components/MapPickerModal';
-import { useGeocoding } from './hooks/useGeocoding';
+import DireccionAutocomplete from '../wizard/DireccionAutocomplete';
+import ModalMapa from '../wizard/ModalMapa';
 
 const TIPO_OBRA_OPCIONES: { key: TipoObra; label: string }[] = [
   { key: 'Casa familiar', label: 'Casa familiar' },
@@ -30,18 +29,11 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const ensureId = useWizardStore((s) => s.ensureId);
   const setTipoObra = useWizardStore((s) => s.setTipoObra);
 
-  const { searchAddresses, geocodeAddress, isLoading: geocodingLoading } = useGeocoding();
-
-  // Inicializa id del proyecto solo una vez
   useMemo(() => {
     ensureId();
   }, [ensureId]);
 
-  const [searchQuery, setSearchQuery] = useState(direccion ?? '');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
@@ -49,40 +41,20 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
     return dir.length > 3 && prop.length > 2 && !!tipoObra;
   }, [direccion, propietario, tipoObra]);
 
-  const handleSearchChange = async (value: string) => {
-    setSearchQuery(value);
-    setField('direccion', value);
-
-    if (value.trim().length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
+  const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
+    setField('direccion', value.direccion);
+    if (typeof value.lat === 'number') {
+      setField('latitud', value.lat);
     }
-
-    setIsSearching(true);
-    const results = await searchAddresses(value);
-    setSuggestions(results);
-    setShowSuggestions(results.length > 0);
-    setIsSearching(false);
-  };
-
-  const handleAddressSelect = async (selectedAddress: string) => {
-    setSearchQuery(selectedAddress);
-    setShowSuggestions(false);
-
-    const result = await geocodeAddress(selectedAddress);
-    if (result) {
-      setField('direccion', result.address);
-      setField('latitud', result.lat);
-      setField('longitud', result.lng);
+    if (typeof value.lng === 'number') {
+      setField('longitud', value.lng);
     }
   };
 
-  const handleMapLocationSelect = (lat: number, lng: number, address: string) => {
-    setField('latitud', lat);
-    setField('longitud', lng);
-    setField('direccion', address);
-    setSearchQuery(address);
+  const handleConfirmarMapa = (value: { direccion: string; lat: number; lng: number }) => {
+    setField('direccion', value.direccion);
+    setField('latitud', value.lat);
+    setField('longitud', value.lng);
     setIsMapModalOpen(false);
   };
 
@@ -97,7 +69,10 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
             <p className="text-sm text-gray-600">Completá la información inicial del proyecto</p>
           </div>
           {id && (
-            <div className="rounded-md px-3 py-1 text-sm font-semibold" style={{ backgroundColor: '#E6EEF7', color: '#003C6E' }}>
+            <div
+              className="rounded-md px-3 py-1 text-sm font-semibold"
+              style={{ backgroundColor: '#E6EEF7', color: '#003C6E' }}
+            >
               ID: #{id}
             </div>
           )}
@@ -106,33 +81,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
         <div className="grid gap-6 p-5 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-medium text-gray-800">Dirección</label>
-            <div className="relative">
-              <input
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-                placeholder="Calle, número, ciudad"
-              />
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
-                  <ul className="max-h-60 overflow-y-auto">
-                    {suggestions.map((suggestion, index) => (
-                      <li
-                        key={index}
-                        onClick={() => handleAddressSelect(suggestion)}
-                        className="cursor-pointer px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
-                      >
-                        {suggestion}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            {(geocodingLoading || isSearching) && (
-              <p className="text-sm text-gray-500">Buscando dirección...</p>
-            )}
+            <DireccionAutocomplete value={direccion ?? ''} onChange={handleDireccionChange} />
             <button
               type="button"
               onClick={() => setIsMapModalOpen(true)}
@@ -192,7 +141,10 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
             type="button"
             disabled={!puedeContinuar}
             onClick={onNext}
-            className={`rounded-lg px-6 py-2.5 font-semibold text-white transition $ {puedeContinuar ? '' : 'opacity-60'}`.replace(' $', ' ')}
+            className={`rounded-lg px-6 py-2.5 font-semibold text-white transition $ {puedeContinuar ? '' : 'opacity-60'}`.replace(
+              ' $',
+              ' '
+            )}
             style={{ backgroundColor: '#0055A4' }}
           >
             Siguiente
@@ -200,12 +152,13 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
         </div>
       </div>
 
-      <MapPickerModal
-        isOpen={isMapModalOpen}
+      <ModalMapa
+        open={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
-        onLocationSelect={handleMapLocationSelect}
+        initialDireccion={direccion ?? ''}
         initialLat={latitud}
         initialLng={longitud}
+        onConfirm={handleConfirmarMapa}
       />
     </div>
   );

@@ -13,11 +13,12 @@ export default function NuevaObraPage() {
       <SidebarClienteTecnico
         activeSection="obras"
         onSectionChange={(section) => {
-          if (section !== 'obras') {
-            router.push('/cliente-tecnico' as Route);
-          } else {
-            router.push('/obras' as Route);
+          if (section === 'obras') {
+            router.push('/cliente/obras' as Route);
+            return;
           }
+
+          router.push((`/cliente/dashboard?section=${section}`) as Route);
         }}
       />
 

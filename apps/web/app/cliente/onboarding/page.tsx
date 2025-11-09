@@ -51,7 +51,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     if (devModeEnabled) {
-      router.replace('/cliente-tecnico' as Route);
+      router.replace('/cliente/dashboard' as Route);
     }
   }, [devModeEnabled, router]);
 
@@ -141,7 +141,7 @@ export default function OnboardingPage() {
   };
 
   const handleGoToPanel = () => {
-    const target = redirectTarget ?? '/cliente-tecnico';
+    const target = redirectTarget ?? '/cliente/dashboard';
     router.push(target as Route);
   };
 

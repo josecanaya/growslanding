@@ -23,7 +23,7 @@ export function getDefaultRouteForRole(role: UserRole | null): string {
   switch (role) {
     case 'ADMIN':
     case 'CLIENTE_TECNICO':
-      return '/cliente-tecnico';
+      return '/cliente/dashboard';
     case 'SOCIO':
       return '/socio';
     default:

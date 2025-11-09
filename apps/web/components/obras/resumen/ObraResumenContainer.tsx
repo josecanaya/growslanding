@@ -1,10 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Building, Layers, FilePlus, TrendingUp, Activity } from 'lucide-react';
-import Building3DWithWindows from './Building3DWithWindows';
+import { useEffect, useMemo } from 'react';
+import { Building, Layers, FilePlus, Activity } from 'lucide-react';
 import { useElementosStore } from '../elementos/useElementosStore';
 import { Button } from '@/components/ui/button';
+import { FloorSelector } from './FloorSelector';
+import { KpiPanel } from './KpiPanel';
+import { useObraStore } from './useObraStore';
+import type { PisoResumen } from './useObraStore';
 
 interface Obra {
   id: string;
@@ -45,16 +48,17 @@ type ObraResumenContainerProps = {
   onAbrirLegajo?: (plantaId: string) => void;
 };
 
-export default function ObraResumenContainer({ 
-  obra, 
-  tareas, 
-  plantas = [{ id: 'PB', nombre: 'Planta Baja' }, { id: '1', nombre: '1er Piso' }],
+export default function ObraResumenContainer({
+  obra,
+  tareas,
+  plantas = [],
   onEditarInfo,
   onVerDetallePlanta,
   onAbrirElementos,
   onAbrirLegajo
 }: ObraResumenContainerProps) {
   const elementos = useElementosStore((state) => state.elementos);
+  const pisoSeleccionado = useObraStore((state) => state.pisoId);
   
   // Calcular métricas globales
   const totalElementos = elementos.length;
@@ -77,9 +81,36 @@ export default function ObraResumenContainer({
         : 0;
       const elementosPendientes = Math.max(0, elementosPlanta.length - elementosCompletados - elementosEnProgreso);
 
-      const metrosCubiertos = elementosPlanta.length * 15;
-      const metrosDescubiertos = elementosPlanta.length * 5;
-      const metrosTotales = metrosCubiertos + metrosDescubiertos;
+      const plantaMetrics = planta as unknown as {
+        metrosCubiertos?: number;
+        metrosDescubiertos?: number;
+        metrosTotales?: number;
+        metros_cubiertos?: number;
+        metros_descubiertos?: number;
+        metros_totales?: number;
+      };
+
+      const metrosCubiertos =
+        Number(
+          plantaMetrics.metrosCubiertos ??
+            plantaMetrics.metros_cubiertos ??
+            (planta as any).cubiertos,
+        ) || elementosPlanta.length * 15;
+
+      const metrosDescubiertos =
+        Number(
+          plantaMetrics.metrosDescubiertos ??
+            plantaMetrics.metros_descubiertos ??
+            (planta as any).descubiertos,
+        ) || elementosPlanta.length * 5;
+
+      const metrosTotales =
+        Number(
+          plantaMetrics.metrosTotales ??
+            plantaMetrics.metros_totales ??
+            (planta as any).total ??
+            metrosCubiertos + metrosDescubiertos,
+        ) || metrosCubiertos + metrosDescubiertos;
 
       const tareasCompletadas = tareasPlanta.filter(t => t.estado === 'completada').length;
       const totalTareas = tareasPlanta.length;
@@ -125,6 +156,24 @@ export default function ObraResumenContainer({
         }
       ];
 
+      const categorias = (() => {
+        if (elementosPlanta.length === 0) return [];
+
+        const acumulado = new Map<string, number>();
+        elementosPlanta.forEach((elemento) => {
+          const nombre = elemento.grupo ?? 'General';
+          acumulado.set(nombre, (acumulado.get(nombre) ?? 0) + 1);
+        });
+
+        return Array.from(acumulado.entries())
+          .map(([nombre, cantidad]) => ({
+            nombre,
+            elementos: cantidad,
+            porcentaje: Math.min(100, cantidad * 15),
+          }))
+          .sort((a, b) => b.porcentaje - a.porcentaje);
+      })();
+
       return {
         planta,
         porcentajeTotal,
@@ -136,9 +185,51 @@ export default function ObraResumenContainer({
         metrosCubiertos,
         metrosDescubiertos,
         metrosTotales,
+        categorias,
       };
     });
   }, [plantas, tareas, elementos]);
+
+  useEffect(() => {
+    const pisosResumen: PisoResumen[] = progresoPorPlanta.map(
+      ({
+        planta,
+        porcentajeTotal,
+        metrosTotales,
+        metrosCubiertos,
+        metrosDescubiertos,
+        totalElementos,
+        categorias,
+      }) => ({
+        id: planta.id,
+        nombre: planta.nombre,
+        porcentaje: porcentajeTotal,
+        metrosTotales,
+        metrosCubiertos,
+        metrosDescubiertos,
+        elementos: totalElementos,
+        categorias,
+      }),
+    );
+
+    const signature = JSON.stringify(pisosResumen);
+    const currentState = useObraStore.getState();
+    const fallbackId = pisosResumen[0]?.id ?? null;
+    const nextId =
+      currentState.pisoId && pisosResumen.some((piso) => piso.id === currentState.pisoId)
+        ? currentState.pisoId
+        : fallbackId;
+
+    if (currentState.signature === signature && currentState.pisoId === (nextId ?? null)) {
+      return;
+    }
+
+    currentState.setSnapshot({
+      pisos: pisosResumen,
+      pisoId: nextId ?? null,
+      signature,
+    });
+  }, [progresoPorPlanta]);
 
   const totalMetrosCubiertos = useMemo(
     () => progresoPorPlanta.reduce((acc, item) => acc + item.metrosCubiertos, 0),
@@ -268,6 +359,7 @@ export default function ObraResumenContainer({
   });
   const progresoTotal = Math.round(obra.progreso ?? 0);
   const defaultPlantaId = plantas[0]?.id ?? 'general';
+  const plantaParaAcciones = pisoSeleccionado ?? defaultPlantaId;
 
   return (
     <div className="space-y-6 bg-[#F8FAFC] p-6 lg:p-8">
@@ -304,125 +396,38 @@ export default function ObraResumenContainer({
         <div className="space-y-6 lg:col-span-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">Vista del proyecto</h3>
+              <h3 className="text-sm font-semibold text-slate-700">Plantas del proyecto</h3>
+              <span className="text-xs font-medium text-slate-500">
+                {plantasActivas} activas
+              </span>
             </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Seleccioná una planta para ver indicadores y métricas específicas.
+            </p>
             <div className="mt-4">
-              <Building3DWithWindows
-                pisos={progresoPorPlanta.length}
-                plantas={progresoPorPlanta.map(({ planta, metrosTotales, metrosCubiertos, metrosDescubiertos, totalElementos }) => ({
-                  id: planta.id,
-                  nombre: planta.nombre,
-                  metrosTotales,
-                  metrosCubiertos,
-                  metrosDescubiertos,
-                  totalElementos,
-                }))}
-                onClickPiso={(index) => {
-                  const plantaIndex = plantas.length - 1 - index;
-                  const planta = plantas[plantaIndex];
-                  if (planta && onVerDetallePlanta) {
-                    onVerDetallePlanta(planta.id);
-                  }
-                }}
-                onAbrirElementos={(plantaId) => {
-                  if (onAbrirElementos) {
-                    onAbrirElementos(plantaId);
-                  }
-                }}
-                onAbrirLegajo={(plantaId) => {
-                  if (onAbrirLegajo) {
-                    onAbrirLegajo(plantaId);
-                  }
+              <FloorSelector
+                onSelect={(id) => {
+                  onVerDetallePlanta?.(id);
                 }}
               />
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]">
-            <h3 className="text-sm font-semibold text-slate-700">Estructura del proyecto</h3>
-            <div className="mt-4 space-y-3">
-              {progresoPorPlanta.map(({ planta, porcentajeTotal }) => (
-                <div
-                  key={planta.id}
-                  className="rounded-xl border border-blue-100 bg-blue-50/60 p-3"
-                >
-                  <div className="flex items-center justify-between text-sm font-medium text-slate-700">
-                    <span>{planta.nombre}</span>
-                    <span className="text-[#0052CC]">{Math.round(porcentajeTotal)}%</span>
-                  </div>
-                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-blue-100">
-                    <div
-                      className="h-2 rounded-full bg-[#0052CC] transition-all"
-                      style={{ width: `${Math.min(100, Math.round(porcentajeTotal))}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="space-y-6 lg:col-span-7">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Metros totales</p>
-              <p className="text-2xl font-semibold text-slate-800">{totalMetrosTotales} m²</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Cubiertos</p>
-              <p className="text-2xl font-semibold text-[#0052CC]">{totalMetrosCubiertos} m²</p>
-            </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-              <p className="text-xs text-slate-500">Descubiertos</p>
-              <p className="text-2xl font-semibold text-[#22C55E]">{totalMetrosDescubiertos} m²</p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700">Avance general</h3>
-                  <p className="text-xs text-slate-500">Seguimiento del progreso del proyecto</p>
-                </div>
-                <span className="text-lg font-semibold text-[#0052CC]">{progresoTotal}%</span>
-              </div>
-              <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-2 rounded-full bg-[#0052CC]"
-                  style={{ width: `${Math.min(100, progresoTotal)}%` }}
-                />
-              </div>
-              <div className="mt-3 grid grid-cols-3 text-xs text-slate-500">
-                <span>{obra.tareasActivas} tareas activas</span>
-                <span>{obra.tareasCompletadas} completadas</span>
-                <span>{totalElementos} elementos</span>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-[#0052CC]" />
-                <h3 className="text-sm font-semibold text-slate-700">Categorías destacadas</h3>
-              </div>
-              <div className="mt-4 space-y-3">
-                {topCategorias.map((cat) => (
-                  <div key={cat.nombre} className="flex items-center justify-between rounded-xl border border-blue-100/80 bg-blue-50/50 px-3 py-2">
-                    <div>
-                      <p className="text-sm font-medium text-slate-700">{cat.nombre}</p>
-                      <p className="text-xs text-slate-500">{cat.elementos} elementos</p>
-                    </div>
-                    <span className="text-sm font-semibold text-[#0052CC]">{Math.round(cat.porcentaje)}%</span>
-                  </div>
-                ))}
-                {topCategorias.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                    Todavía no hay categorías con elementos cargados.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <KpiPanel
+            global={{
+              metrosTotales: totalMetrosTotales,
+              metrosCubiertos: totalMetrosCubiertos,
+              metrosDescubiertos: totalMetrosDescubiertos,
+              progreso: progresoTotal,
+              tareasActivas: obra.tareasActivas,
+              tareasCompletadas: obra.tareasCompletadas,
+              totalElementos,
+              categorias: topCategorias,
+            }}
+          />
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-2">
@@ -458,14 +463,14 @@ export default function ObraResumenContainer({
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <Button
                 className="flex-1 rounded-xl bg-[#0052CC] text-white hover:bg-[#0044a8]"
-                onClick={() => onAbrirElementos?.(defaultPlantaId)}
+                onClick={() => onAbrirElementos?.(plantaParaAcciones)}
               >
                 <Layers className="mr-2 h-4 w-4" /> Ver elementos
               </Button>
               <Button
                 variant="outline"
                 className="flex-1 rounded-xl border border-[#0052CC]/30 bg-blue-50 text-[#0052CC] hover:bg-blue-100"
-                onClick={() => onAbrirLegajo?.(defaultPlantaId)}
+                onClick={() => onAbrirLegajo?.(plantaParaAcciones)}
               >
                 <FilePlus className="mr-2 h-4 w-4" /> Agregar legajo
               </Button>

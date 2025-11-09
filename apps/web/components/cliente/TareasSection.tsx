@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush } from 'lucide-react';
+import { Building2, TrendingUp, Clock, MapPin, User, ArrowRight, Calendar, Plus, Eye, DollarSign, Users, CheckCircle, AlertCircle, Wrench, Paintbrush, ClipboardList } from 'lucide-react';
 import { Card, Button, Badge, EmptyState } from '@/components/ui/grows';
 import type { BadgeProps } from '@/components/ui/grows';
 import { TimelineInteractivo } from './TimelineInteractivo';
@@ -12,6 +12,11 @@ import { usePlanUsage } from '@/lib/subscriptions/use-plan-usage';
 import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { ResumenTareasLayout } from '@/components/tareas/ResumenTareasLayout';
+import { EtapasSection } from './EtapasSection';
+import { ValidarSection } from './ValidarSection';
+import { AsignarSection } from './AsignarSection';
+import { AsignarModal } from '@/components/cuadrillas/AsignarModal';
 
 // Tipos de datos
 interface Obra {
@@ -39,6 +44,7 @@ interface Tarea {
   prioridad: 'Baja' | 'Media' | 'Alta';
   presupuesto?: number;
   dependencias?: string[];
+  obraId?: string | null;
 }
 
 // Función para calcular el progreso de una obra basado en tareas
@@ -77,7 +83,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-01-18',
     prioridad: 'Alta',
     presupuesto: 18000,
-    dependencias: []
+    dependencias: [],
+    obraId: 'O01'
   },
   {
     id: 'E02',
@@ -90,7 +97,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-01-26',
     prioridad: 'Alta',
     presupuesto: 42000,
-    dependencias: ['E01']
+    dependencias: ['E01'],
+    obraId: 'O01'
   },
   {
     id: 'E03',
@@ -103,7 +111,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-02-05',
     prioridad: 'Alta',
     presupuesto: 95000,
-    dependencias: ['E02']
+    dependencias: ['E02'],
+    obraId: 'O01'
   },
   {
     id: 'E04',
@@ -116,7 +125,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-02-20',
     prioridad: 'Alta',
     presupuesto: 125000,
-    dependencias: ['E03']
+    dependencias: ['E03'],
+    obraId: 'O01'
   },
   {
     id: 'E05',
@@ -129,7 +139,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-03-05',
     prioridad: 'Alta',
     presupuesto: 180000,
-    dependencias: ['E04']
+    dependencias: ['E04'],
+    obraId: 'O01'
   },
   {
     id: 'E06',
@@ -142,7 +153,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-03-18',
     prioridad: 'Alta',
     presupuesto: 110000,
-    dependencias: ['E05']
+    dependencias: ['E05'],
+    obraId: 'O01'
   },
   {
     id: 'E07',
@@ -155,7 +167,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-04-02',
     prioridad: 'Alta',
     presupuesto: 195000,
-    dependencias: ['E06']
+    dependencias: ['E06'],
+    obraId: 'O01'
   },
 
   // ====== ETAPA 2: OBRA GRIS ======
@@ -170,7 +183,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-04-18',
     prioridad: 'Media',
     presupuesto: 85000,
-    dependencias: ['E07']
+    dependencias: ['E07'],
+    obraId: 'O01'
   },
   {
     id: 'OG02',
@@ -183,7 +197,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-05-03',
     prioridad: 'Media',
     presupuesto: 78000,
-    dependencias: ['E07']
+    dependencias: ['E07'],
+    obraId: 'O01'
   },
   {
     id: 'OG03',
@@ -196,7 +211,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-05-20',
     prioridad: 'Media',
     presupuesto: 62000,
-    dependencias: ['OG01', 'OG02']
+    dependencias: ['OG01', 'OG02'],
+    obraId: 'O01'
   },
   {
     id: 'OG04',
@@ -209,7 +225,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-06-05',
     prioridad: 'Media',
     presupuesto: 72000,
-    dependencias: ['OG03']
+    dependencias: ['OG03'],
+    obraId: 'O01'
   },
   {
     id: 'OG05',
@@ -222,7 +239,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-06-08',
     prioridad: 'Media',
     presupuesto: 68000,
-    dependencias: ['OG03']
+    dependencias: ['OG03'],
+    obraId: 'O01'
   },
   {
     id: 'OG06',
@@ -235,7 +253,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-06-18',
     prioridad: 'Media',
     presupuesto: 38000,
-    dependencias: ['OG04', 'OG05']
+    dependencias: ['OG04', 'OG05'],
+    obraId: 'O01'
   },
   {
     id: 'OG07',
@@ -248,7 +267,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-07-05',
     prioridad: 'Media',
     presupuesto: 55000,
-    dependencias: ['OG06']
+    dependencias: ['OG06'],
+    obraId: 'O01'
   },
   {
     id: 'OG08',
@@ -261,7 +281,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-07-22',
     prioridad: 'Media',
     presupuesto: 62000,
-    dependencias: ['OG06']
+    dependencias: ['OG06'],
+    obraId: 'O01'
   },
   {
     id: 'OG09',
@@ -274,7 +295,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-08-08',
     prioridad: 'Media',
     presupuesto: 48000,
-    dependencias: ['OG08']
+    dependencias: ['OG08'],
+    obraId: 'O01'
   },
 
   // ====== ETAPA 3: TERMINACIONES ======
@@ -289,7 +311,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-08-28',
     prioridad: 'Baja',
     presupuesto: 58000,
-    dependencias: ['OG09']
+    dependencias: ['OG09'],
+    obraId: 'O01'
   },
   {
     id: 'T02',
@@ -302,7 +325,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-09-15',
     prioridad: 'Baja',
     presupuesto: 125000,
-    dependencias: ['T01']
+    dependencias: ['T01'],
+    obraId: 'O01'
   },
   {
     id: 'T03',
@@ -315,7 +339,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-09-28',
     prioridad: 'Baja',
     presupuesto: 68000,
-    dependencias: ['T01']
+    dependencias: ['T01'],
+    obraId: 'O01'
   },
   {
     id: 'T04',
@@ -328,7 +353,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-10-15',
     prioridad: 'Baja',
     presupuesto: 82000,
-    dependencias: ['T03']
+    dependencias: ['T03'],
+    obraId: 'O01'
   },
   {
     id: 'T05',
@@ -341,7 +367,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-10-30',
     prioridad: 'Baja',
     presupuesto: 95000,
-    dependencias: ['T04']
+    dependencias: ['T04'],
+    obraId: 'O01'
   },
   {
     id: 'T06',
@@ -354,7 +381,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-11-08',
     prioridad: 'Baja',
     presupuesto: 58000,
-    dependencias: ['T05']
+    dependencias: ['T05'],
+    obraId: 'O01'
   },
   {
     id: 'T07',
@@ -367,7 +395,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-11-08',
     prioridad: 'Baja',
     presupuesto: 48000,
-    dependencias: ['T05']
+    dependencias: ['T05'],
+    obraId: 'O01'
   },
   {
     id: 'T08',
@@ -380,7 +409,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-11-25',
     prioridad: 'Baja',
     presupuesto: 62000,
-    dependencias: ['T06', 'T07']
+    dependencias: ['T06', 'T07'],
+    obraId: 'O01'
   },
   {
     id: 'T09',
@@ -393,7 +423,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-12-08',
     prioridad: 'Baja',
     presupuesto: 55000,
-    dependencias: ['T08']
+    dependencias: ['T08'],
+    obraId: 'O01'
   },
   {
     id: 'T10',
@@ -406,7 +437,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-12-15',
     prioridad: 'Alta',
     presupuesto: 18000,
-    dependencias: ['T09']
+    dependencias: ['T09'],
+    obraId: 'O01'
   },
   {
     id: 'T11',
@@ -419,7 +451,8 @@ const tareasMock_DEPRECATED: Tarea[] = [
     fechaFin: '2024-12-18',
     prioridad: 'Alta',
     presupuesto: 8000,
-    dependencias: ['T10']
+    dependencias: ['T10'],
+    obraId: 'O01'
   }
 ];
 
@@ -502,13 +535,13 @@ function ObraResumenCard({ obra, onVerPlanificacion }: ObraResumenCardProps) {
 }
 
 type VistaTareas = 'lista-obras' | 'detalle-obra' | 'editor-gantt';
-type TabPrincipal = 'resumen' | 'elementos' | 'tareas' | 'presupuesto';
+type TabPrincipal = 'asignar' | 'organiza' | 'validar' | 'etapas' | 'resumen';
 type ModoTareas = 'lista' | 'timeline' | 'editor-visual';
 
 export function TareasSection() {
   const [vistaActual, setVistaActual] = useState<VistaTareas>('lista-obras');
   const [obraSeleccionada, setObraSeleccionada] = useState<string>('');
-  const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>('resumen');
+  const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>('asignar');
   const [modoTareas, setModoTareas] = useState<ModoTareas>('editor-visual');
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   
@@ -737,6 +770,7 @@ export function TareasSection() {
               categoria: elemento.categoria,
               subcategoria: elemento.subcategoria,
             } : undefined,
+            obraId: tarea.obra_id, // Asegúrate de que obraId se asigne aquí
           };
         });
 
@@ -863,265 +897,46 @@ export function TareasSection() {
           {/* Tabs principales */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="border-b border-gray-200">
-              <nav className="flex space-x-8 px-6">
+              <nav className="flex flex-wrap gap-2 px-6 py-2">
                 {[
-                  { id: 'resumen', label: 'Resumen' },
-                  { id: 'elementos', label: 'Elementos' },
-                  { id: 'tareas', label: 'Tareas' },
-                  { id: 'presupuesto', label: 'Presupuesto' }
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setTabPrincipal(tab.id as TabPrincipal)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                      tabPrincipal === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
+                  { id: 'asignar', label: 'Asignar', icon: Users },
+                  { id: 'organiza', label: 'Organiza', icon: ClipboardList },
+                  { id: 'validar', label: 'Validar', icon: CheckCircle },
+                  { id: 'etapas', label: 'Etapas', icon: Building2 },
+                  { id: 'resumen', label: 'Resumen', icon: TrendingUp },
+                ].map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setTabPrincipal(tab.id as TabPrincipal)}
+                      className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                        tabPrincipal === tab.id
+                          ? 'bg-blue-50 text-blue-700 shadow-inner'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{tab.label}</span>
+                    </button>
+                  );
+                })}
               </nav>
             </div>
 
             <div className="p-6">
               {tabPrincipal === 'resumen' && (
-                <div className="space-y-6">
-                  {/* Estadísticas */}
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Total</p>
-                          <p className="text-2xl font-bold text-gray-900">{tareas.length}</p>
-                        </div>
-                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <CheckCircle className="h-4 w-4 text-blue-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Completadas</p>
-                          <p className="text-2xl font-bold text-green-600">
-                            {tareas.filter(t => t.estado === 'Finalizada' || t.estado === 'Aprobada').length}
-                          </p>
-                        </div>
-                        <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">En progreso</p>
-                          <p className="text-2xl font-bold text-blue-600">
-                            {tareas.filter(t => t.estado === 'En curso').length}
-                          </p>
-                        </div>
-                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <AlertCircle className="h-4 w-4 text-blue-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Pendientes</p>
-                          <p className="text-2xl font-bold text-yellow-600">
-                            {tareas.filter(t => t.estado === 'Pendiente').length}
-                          </p>
-                        </div>
-                        <div className="h-8 w-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                          <Clock className="h-4 w-4 text-yellow-600" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TIMELINE DE ETAPAS - NUEVO */}
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-6">Timeline de Etapas de Construcción</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* ESTRUCTURA */}
-                      <div 
-                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                        style={{backgroundColor: '#f0e0d6', borderColor: '#d4af37'}}
-                      >
-                        <div className="flex items-center gap-3 mb-4">
-                          <div 
-                            className="p-3 text-white rounded-lg"
-                            style={{backgroundColor: '#d4af37'}}
-                          >
-                            <Building2 className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-bold" style={{color: '#8b4513'}}>Estructura</h4>
-                            <p className="text-sm" style={{color: '#5b5f6a'}}>Fundaciones, columnas, vigas</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span style={{color: '#5b5f6a'}}>Progreso</span>
-                            <span className="font-bold" style={{color: '#8b4513'}}>
-                              {Math.round((tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Estructura').length, 1)) * 100)}%
-                            </span>
-                          </div>
-                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
-                            <div 
-                              className="h-2 rounded-full" 
-                              style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Estructura').length, 1)) * 100)}%`,
-                                backgroundColor: '#d4af37'
-                              }}
-                            ></div>
-                          </div>
-                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
-                            <span>{tareas.filter(t => t.etapa === 'Estructura').length} tareas</span>
-                            <span>{tareas.filter(t => t.etapa === 'Estructura' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* OBRA GRIS */}
-                      <div 
-                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                        style={{backgroundColor: '#f5f7fa', borderColor: '#dce3ea'}}
-                      >
-                        <div className="flex items-center gap-3 mb-4">
-                          <div 
-                            className="p-3 text-white rounded-lg"
-                            style={{backgroundColor: '#6b7280'}}
-                          >
-                            <Wrench className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-bold" style={{color: '#1B263B'}}>Obra Gris</h4>
-                            <p className="text-sm" style={{color: '#5b5f6a'}}>Mampostería, instalaciones</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span style={{color: '#5b5f6a'}}>Progreso</span>
-                            <span className="font-bold" style={{color: '#1B263B'}}>
-                              {Math.round((tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Obra gris').length, 1)) * 100)}%
-                            </span>
-                          </div>
-                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
-                            <div 
-                              className="h-2 rounded-full" 
-                              style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Obra gris').length, 1)) * 100)}%`,
-                                backgroundColor: '#6b7280'
-                              }}
-                            ></div>
-                          </div>
-                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
-                            <span>{tareas.filter(t => t.etapa === 'Obra gris').length} tareas</span>
-                            <span>{tareas.filter(t => t.etapa === 'Obra gris' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* TERMINACIONES */}
-                      <div 
-                        className="border-2 rounded-xl p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                        style={{backgroundColor: '#d4edda', borderColor: '#28a745'}}
-                      >
-                        <div className="flex items-center gap-3 mb-4">
-                          <div 
-                            className="p-3 text-white rounded-lg"
-                            style={{backgroundColor: '#28a745'}}
-                          >
-                            <Paintbrush className="h-6 w-6" />
-                          </div>
-                          <div>
-                            <h4 className="text-lg font-bold" style={{color: '#155724'}}>Terminaciones</h4>
-                            <p className="text-sm" style={{color: '#5b5f6a'}}>Revoques, pintura, acabados</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span style={{color: '#5b5f6a'}}>Progreso</span>
-                            <span className="font-bold" style={{color: '#155724'}}>
-                              {Math.round((tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Terminaciones').length, 1)) * 100)}%
-                            </span>
-                          </div>
-                          <div className="w-full rounded-full h-2" style={{backgroundColor: '#eaf0f6'}}>
-                            <div 
-                              className="h-2 rounded-full" 
-                              style={{
-                                width: `${Math.round((tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length / Math.max(tareas.filter(t => t.etapa === 'Terminaciones').length, 1)) * 100)}%`,
-                                backgroundColor: '#28a745'
-                              }}
-                            ></div>
-                          </div>
-                          <div className="flex justify-between text-xs" style={{color: '#5b5f6a'}}>
-                            <span>{tareas.filter(t => t.etapa === 'Terminaciones').length} tareas</span>
-                            <span>{tareas.filter(t => t.etapa === 'Terminaciones' && (t.estado === 'Finalizada' || t.estado === 'Aprobada')).length} completadas</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Timeline Interactivo */}
-                  <div className="rounded-lg border p-6 h-full flex flex-col" style={{backgroundColor: '#ffffff', borderColor: '#dce3ea'}}>
-                    <h3 className="text-lg font-semibold mb-6" style={{color: '#1B263B'}}>Timeline de Desarrollo</h3>
-                    {loadingTareas ? (
-                      <div className="flex-1 flex items-center justify-center">
-                        <p className="text-gray-500">Cargando tareas...</p>
-                      </div>
-                    ) : tareas.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center">
-                        <p className="text-gray-500">No hay tareas para esta obra</p>
-                      </div>
-                    ) : (
-                      <div className="flex-1">
-                        <TimelineInteractivo
-                          tareas={tareas.map(tarea => ({
-                            id: tarea.id,
-                            nombre: tarea.nombre,
-                            descripcion: tarea.descripcion,
-                            fechaInicio: tarea.fechaInicio,
-                            fechaFin: tarea.fechaFin,
-                            progreso: tarea.estado === 'Finalizada' ? 100 : 
-                                     tarea.estado === 'En curso' ? 50 : 
-                                     tarea.estado === 'Aprobada' ? 100 : 0,
-                            estado: tarea.estado === 'Finalizada' ? 'completada' :
-                                   tarea.estado === 'En curso' ? 'en_progreso' :
-                                   tarea.estado === 'Aprobada' ? 'completada' : 'pendiente',
-                            lider: tarea.responsable,
-                            costo: tarea.presupuesto,
-                            etapa: tarea.etapa
-                          }))}
-                          onTareaClick={(tarea) => {
-                            console.log('Tarea clickeada:', tarea);
-                            // Aquí podrías abrir un modal o panel lateral
-                          }}
-                          onEditarPlanificacion={() => {
-                            console.log('Editar planificación');
-                            // Aquí podrías abrir el editor Gantt
-                          }}
-                          onVerDependencias={() => {
-                            console.log('Ver dependencias');
-                            // Aquí podrías mostrar las dependencias
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
+                obraSeleccionada ? (
+                  <ResumenTareasLayout initialObraId={obraSeleccionada} />
+                ) : (
+                  <EmptyState
+                    title="Seleccioná una obra"
+                    description="Elegí una obra de la lista para visualizar su resumen de tareas."
+                  />
+                )
               )}
 
-              {tabPrincipal === 'tareas' && (
+              {tabPrincipal === 'organiza' && (
                 <div className="space-y-6">
                   {/* Header de Gestión de Tareas */}
                   <div className="flex items-center justify-between">
@@ -1349,24 +1164,26 @@ export function TareasSection() {
                 </div>
               )}
 
-              {tabPrincipal === 'presupuesto' && (
-                <Card>
-                  <h2 className="text-lg font-semibold text-grows-primary mb-4">Presupuesto de tareas</h2>
-                  <p className="text-grows-muted mb-6">Vista preliminar. (Sin lógica nueva)</p>
-                  <EmptyState
-                    title="Todavía no cargaste presupuestos"
-                    description="Acá vas a poder ver y solicitar presupuestos de tareas."
-                  />
-                </Card>
+              {tabPrincipal === 'asignar' && (
+                <AsignarSection obraId={obraSeleccionada || null} />
               )}
 
-              {tabPrincipal === 'elementos' && (
-                <div className="text-center py-12">
-                  <Building2 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Elementos</h3>
-                  <p className="text-gray-600">Esta sección estará disponible próximamente</p>
-                </div>
+              {tabPrincipal === 'etapas' && (
+                obraSeleccionada ? (
+                  <EtapasSection obraId={obraSeleccionada} requireSelection />
+                ) : (
+                  <EmptyState
+                    title="Seleccioná una obra"
+                    description="Elegí una obra activa para ver el avance por etapas."
+                  />
+                )
               )}
+
+              {tabPrincipal === 'validar' && (
+                <ValidarSection obraId={obraSeleccionada || null} />
+              )}
+
+              <AsignarModal />
             </div>
           </div>
         </div>

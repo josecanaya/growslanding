@@ -376,6 +376,13 @@ export default function CargaElementosPanel({
     }
   };
 
+  const selectTriggerClass =
+    "h-11 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/20";
+  const selectContentClass =
+    "rounded-xl border border-slate-200 bg-white shadow-lg";
+  const selectItemClass =
+    "rounded-lg px-3 py-2 text-sm text-slate-700 data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#0052CC] focus:bg-slate-100 focus:text-[#0052CC]";
+
   return (
     <div className="grid grid-cols-12 gap-5 p-5 bg-[#F9FAFB]">
       {/* Panel izquierdo */}
@@ -418,16 +425,16 @@ export default function CargaElementosPanel({
       <section className="col-span-12 space-y-4 lg:col-span-6">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "cargar" | "cargados")} className="w-full">
-            <TabsList className="mb-4 flex gap-2 border-b border-slate-200 bg-transparent p-0">
+              <TabsList className="mb-4 flex gap-2 border-b border-slate-200 bg-transparent p-0">
               <TabsTrigger
                 value="cargar"
-                className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC] data-[state=active]:font-semibold"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC]"
               >
                 Cargar elementos
               </TabsTrigger>
               <TabsTrigger
                 value="cargados"
-                className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC] data-[state=active]:font-semibold"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC]"
               >
                 Elementos cargados
               </TabsTrigger>
@@ -609,7 +616,7 @@ export default function CargaElementosPanel({
             </header>
 
             {selectedElemento ? (
-              <div className="space-y-4">
+                <div className="space-y-4">
                 {Object.entries(selectedElemento.elemento.opciones ?? {}).map(
                   ([key, opciones]) => (
                     <div key={key} className="space-y-1">
@@ -622,12 +629,12 @@ export default function CargaElementosPanel({
                           setConfigValues((prev) => ({ ...prev, [key]: value }))
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={selectTriggerClass}>
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className={selectContentClass}>
                           {(opciones ?? []).map((opcion) => (
-                            <SelectItem key={opcion} value={opcion}>
+                            <SelectItem key={opcion} value={opcion} className={selectItemClass}>
                               {opcion}
                             </SelectItem>
                           ))}
@@ -641,10 +648,10 @@ export default function CargaElementosPanel({
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-600">Unidad</label>
                     <Select value={unidad} onValueChange={setUnidad}>
-                      <SelectTrigger>
+                      <SelectTrigger className={selectTriggerClass}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={selectContentClass}>
                         {[
                           "m²",
                           "m³",
@@ -652,7 +659,7 @@ export default function CargaElementosPanel({
                           "ml",
                           "kg",
                         ].map((option) => (
-                          <SelectItem key={option} value={option}>
+                          <SelectItem key={option} value={option} className={selectItemClass}>
                             {option}
                           </SelectItem>
                         ))}
@@ -677,13 +684,15 @@ export default function CargaElementosPanel({
                     value={selectedPlanta}
                     onValueChange={(value) => setSelectedPlanta(value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={selectTriggerClass}>
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={GENERAL_PLANTA_ID}>General / Sin asignar</SelectItem>
+                    <SelectContent className={selectContentClass}>
+                      <SelectItem value={GENERAL_PLANTA_ID} className={selectItemClass}>
+                        General / Sin asignar
+                      </SelectItem>
                       {plantas.map((planta) => (
-                        <SelectItem key={planta.id} value={planta.id}>
+                        <SelectItem key={planta.id} value={planta.id} className={selectItemClass}>
                           {planta.nombre}
                         </SelectItem>
                       ))}

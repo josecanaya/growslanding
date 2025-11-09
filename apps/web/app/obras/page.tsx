@@ -14,9 +14,12 @@ export default function ObrasPage() {
       <SidebarClienteTecnico 
         activeSection="obras"
         onSectionChange={(section) => {
-          if (section !== 'obras') {
-            router.push('/cliente-tecnico' as Route);
+          if (section === 'obras') {
+            router.push('/cliente/obras' as Route);
+            return;
           }
+
+          router.push((`/cliente/dashboard?section=${section}`) as Route);
         }}
       />
       

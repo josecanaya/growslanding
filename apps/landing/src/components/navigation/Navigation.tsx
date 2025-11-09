@@ -1,16 +1,16 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {useTranslations, useLocale} from 'next-intl';
+import {useLocale} from 'next-intl';
 import Link from 'next/link';
 import Image from 'next/image';
 import {Menu, X, Globe, LogIn, UserPlus} from 'lucide-react';
+import {APP_WEB_URLS} from '@/lib/config';
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const t = useTranslations('navigation');
   const locale = useLocale();
 
   // Detectar scroll
@@ -82,7 +82,7 @@ export function Navigation() {
                 className="flex items-center space-x-2 text-white/90 hover:text-yellow-400 px-4 py-3 text-lg font-semibold transition-colors duration-200 hover:bg-white/10 rounded-lg"
               >
                 <Globe className="h-4 w-4" />
-                <span>ES</span>
+                <span>{locale.toUpperCase()}</span>
               </button>
               
               {isLangOpen && (
@@ -102,20 +102,20 @@ export function Navigation() {
             </div>
 
             {/* Auth Buttons */}
-            <Link
-              href={`/${locale}/coming-soon`}
+            <a
+              href={APP_WEB_URLS.login()}
               className="flex items-center gap-2 text-white/90 hover:text-yellow-400 px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-white/10 rounded-lg"
             >
               <LogIn className="h-5 w-5" />
               Ingresar
-            </Link>
-            <Link
-              href={`/${locale}/coming-soon`}
+            </a>
+            <a
+              href={APP_WEB_URLS.register()}
               className="flex items-center gap-2 bg-yellow-400 text-black px-6 py-3 rounded-lg text-sm font-bold hover:bg-yellow-300 transition-all duration-200 shadow-lg hover:shadow-xl"
             >
               <UserPlus className="h-5 w-5" />
               Registrarse
-            </Link>
+            </a>
           </div>
 
           {/* Mobile menu button */}
@@ -147,22 +147,22 @@ export function Navigation() {
             
             {/* Mobile Auth Buttons */}
             <div className="px-3 py-2 border-t border-yellow-400/30 mt-2 space-y-2">
-              <Link
-                href={`/${locale}/coming-soon`}
+              <a
+                href={APP_WEB_URLS.login()}
                 className="flex items-center gap-2 text-white/90 hover:text-yellow-400 px-3 py-2 text-base font-medium"
                 onClick={() => setIsOpen(false)}
               >
                 <LogIn className="h-4 w-4" />
                 Ingresar
-              </Link>
-              <Link
-                href={`/${locale}/coming-soon`}
+              </a>
+              <a
+                href={APP_WEB_URLS.register()}
                 className="flex items-center justify-center gap-2 bg-yellow-400 text-black px-5 py-3 rounded-md text-base font-semibold w-full"
                 onClick={() => setIsOpen(false)}
               >
                 <UserPlus className="h-4 w-4" />
                 Registrarse
-              </Link>
+              </a>
             </div>
 
             {/* Mobile Language */}

@@ -315,6 +315,7 @@ export async function POST(
                 obra_id: elementoCompleto.obra_id,
                 elemento_id: elementoCompleto.id,
                 title: t.nombre,
+                etapa: t.fase ?? null,
                 descripcion: `${t.nombre} para ${elementoCompleto.nombre}`,
                 estado: 'pendiente',
                 prioridad: 'MEDIA',

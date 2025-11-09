@@ -342,10 +342,111 @@ export type Database = {
         ];
       };
       tareas: {
-        Row: Record<string, any>;
-        Insert: Record<string, any>;
-        Update: Record<string, any>;
-        Relationships: [];
+        Row: {
+          id: string;
+          org_id: string;
+          obra_id: string;
+          title: string;
+          descripcion: string | null;
+          estado: string | null;
+          responsable: string | null;
+          fecha_inicio: string | null;
+          fecha_fin: string | null;
+          created_at: string | null;
+          elemento_id: string | null;
+          cuadrilla_id: string | null;
+          prioridad: string | null;
+          fecha_inicio_estimada: string | null;
+          fecha_fin_estimada: string | null;
+          fecha_inicio_real: string | null;
+          fecha_fin_real: string | null;
+          avance: number | null;
+          validado_por: string | null;
+          fecha_validacion: string | null;
+          costo_presupuestado: number | null;
+          updated_at: string | null;
+          etapa: string | null;
+        };
+        Insert: {
+          id?: string;
+          org_id: string;
+          obra_id: string;
+          title: string;
+          descripcion?: string | null;
+          estado?: string | null;
+          responsable?: string | null;
+          fecha_inicio?: string | null;
+          fecha_fin?: string | null;
+          created_at?: string | null;
+          elemento_id?: string | null;
+          cuadrilla_id?: string | null;
+          prioridad?: string | null;
+          fecha_inicio_estimada?: string | null;
+          fecha_fin_estimada?: string | null;
+          fecha_inicio_real?: string | null;
+          fecha_fin_real?: string | null;
+          avance?: number | null;
+          validado_por?: string | null;
+          fecha_validacion?: string | null;
+          costo_presupuestado?: number | null;
+          updated_at?: string | null;
+          etapa?: string | null;
+        };
+        Update: {
+          id?: string;
+          org_id?: string;
+          obra_id?: string;
+          title?: string;
+          descripcion?: string | null;
+          estado?: string | null;
+          responsable?: string | null;
+          fecha_inicio?: string | null;
+          fecha_fin?: string | null;
+          created_at?: string | null;
+          elemento_id?: string | null;
+          cuadrilla_id?: string | null;
+          prioridad?: string | null;
+          fecha_inicio_estimada?: string | null;
+          fecha_fin_estimada?: string | null;
+          fecha_inicio_real?: string | null;
+          fecha_fin_real?: string | null;
+          avance?: number | null;
+          validado_por?: string | null;
+          fecha_validacion?: string | null;
+          costo_presupuestado?: number | null;
+          updated_at?: string | null;
+          etapa?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tareas_cuadrilla_id_fkey";
+            columns: ["cuadrilla_id"];
+            isOneToOne: false;
+            referencedRelation: "cuadrillas";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tareas_elemento_id_fkey";
+            columns: ["elemento_id"];
+            isOneToOne: false;
+            referencedRelation: "elementos";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tareas_obras_fkey";
+            columns: ["obra_id"];
+            isOneToOne: false;
+            referencedRelation: "obras";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tareas_org_id_fkey";
+            columns: ["org_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       tareas_estados: {
         Row: Record<string, any>;

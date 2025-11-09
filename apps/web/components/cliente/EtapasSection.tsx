@@ -41,9 +41,12 @@ type EtapasSectionProps = {
   requireSelection?: boolean;
 };
 
-type RawTarea = {
+type RawTarea = Record<string, any> & {
   id: string;
-  etapa: string | null;
+  etapa?: string | null;
+  tipo?: string | null;
+  category?: string | null;
+  fase?: string | null;
   estado: string | null;
   obra_id: string;
 };
@@ -130,7 +133,7 @@ export function EtapasSection({ obraId, requireSelection = false }: EtapasSectio
 
         const { data, error: fetchError } = await supabase
           .from('tareas')
-          .select('id, etapa, estado, obra_id')
+          .select('*')
           .in('obra_id', obraIds);
 
         if (!active) return;
@@ -139,7 +142,24 @@ export function EtapasSection({ obraId, requireSelection = false }: EtapasSectio
           throw fetchError;
         }
 
-        setTareas((data ?? []) as RawTarea[]);
+        const mapped = (data ?? []).map((row: RawTarea) => {
+          const rawStage =
+            row.etapa ??
+            row.tipo ??
+            row.category ??
+            (row as any).stage ??
+            row.fase ??
+            null;
+
+          return {
+            id: row.id,
+            etapa: rawStage ? String(rawStage) : null,
+            estado: row.estado ?? null,
+            obra_id: row.obra_id,
+          } as RawTarea;
+        });
+
+        setTareas(mapped);
       } catch (err) {
         const errorMessage =
           err && typeof err === 'object' && 'message' in err

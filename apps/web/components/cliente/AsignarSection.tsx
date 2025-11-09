@@ -18,6 +18,7 @@ import {
   Card,
   EmptyState,
 } from '@/components/ui/grows';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -95,6 +96,9 @@ type RawTarea = Record<string, any> & {
   title?: string | null;
   nombre?: string | null;
   etapa?: string | null;
+  tipo?: string | null;
+  category?: string | null;
+  fase?: string | null;
   obra_id: string;
   responsable?: string | null;
   estado?: string | null;
@@ -164,6 +168,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [savingBudget, setSavingBudget] = useState(false);
   const [assigningBudgetId, setAssigningBudgetId] = useState<string | null>(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState<string | null>(null);
+  const [etapaActiva, setEtapaActiva] = useState<StageKey>('estructura');
 
   useEffect(() => {
     let active = true;
@@ -237,20 +242,35 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
         const { data: rawTasks, error: tareasError } = await supabase
           .from('tareas')
-          .select('id, title, nombre, etapa, obra_id, responsable, estado, cuadrilla_id')
+          .select('*')
           .in('obra_id', obraIds);
 
         if (tareasError) throw tareasError;
 
-        const mappedTasks: TaskInfo[] = (rawTasks ?? []).map((row: RawTarea) => ({
-          id: row.id,
-          titulo: row.title ?? row.nombre ?? 'Tarea sin título',
-          etapa: row.etapa ?? null,
-          obraId: row.obra_id,
-          responsable: row.responsable ?? null,
-          cuadrillaId: row.cuadrilla_id ?? null,
-          estado: row.estado ?? null,
-        }));
+        const mappedTasks: TaskInfo[] = (rawTasks ?? []).map((row: RawTarea) => {
+          const rawStage =
+            row.etapa ??
+            row.tipo ??
+            row.category ??
+            (row as any).stage ??
+            row.fase ??
+            null;
+
+          return {
+            id: row.id,
+            titulo:
+              row.title ??
+              row.nombre ??
+              (row as any).titulo ??
+              (row as any).name ??
+              'Tarea sin título',
+            etapa: rawStage ? String(rawStage) : null,
+            obraId: row.obra_id,
+            responsable: row.responsable ?? null,
+            cuadrillaId: row.cuadrilla_id ?? null,
+            estado: row.estado ?? null,
+          };
+        });
 
         const tareaIds = mappedTasks.map((t) => t.id);
 
@@ -377,6 +397,15 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
     return ordered;
   }, [tareasPendientes]);
+
+  useEffect(() => {
+    const firstWithTasks = stageBuckets.find((bucket) => bucket.tasks.length > 0);
+    if (firstWithTasks) {
+      setEtapaActiva(firstWithTasks.key);
+    } else {
+      setEtapaActiva('estructura');
+    }
+  }, [stageBuckets]);
 
   const filteredBudgets = useMemo(() => {
     return budgets.filter((budget) => {
@@ -742,6 +771,56 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       </div>
 
       <section className="space-y-6">
+        <div className="flex flex-wrap items-center gap-3">
+          {STAGE_DEFINITIONS.map((definition) => {
+            const bucket = stageBuckets.find((item) => item.key === definition.key);
+            const count = bucket?.tasks.length ?? 0;
+            const isActive = etapaActiva === definition.key;
+
+            return (
+              <button
+                key={definition.key}
+                onClick={() => setEtapaActiva(definition.key)}
+                className={cn(
+                  'flex min-w-[200px] flex-1 items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all',
+                  isActive
+                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50/60'
+                )}
+              >
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">{definition.label}</p>
+                  <p className="text-[11px] text-slate-500">{definition.description}</p>
+                </div>
+                <span className="text-lg font-semibold">{count}</span>
+              </button>
+            );
+          })}
+          {(() => {
+            const fallbackBucket = stageBuckets.find((item) => item.key === FALLBACK_STAGE.key);
+            if (!fallbackBucket || fallbackBucket.tasks.length === 0) return null;
+            const isActive = etapaActiva === FALLBACK_STAGE.key;
+            return (
+              <button
+                key={FALLBACK_STAGE.key}
+                onClick={() => setEtapaActiva(FALLBACK_STAGE.key)}
+                className={cn(
+                  'flex min-w-[200px] flex-1 items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all',
+                  isActive
+                    ? 'border-slate-500 bg-slate-100 text-slate-700 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
+                )}
+              >
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide">{FALLBACK_STAGE.label}</p>
+                  <p className="text-[11px] text-slate-500">{FALLBACK_STAGE.description}</p>
+                </div>
+                <span className="text-lg font-semibold">{fallbackBucket.tasks.length}</span>
+              </button>
+            );
+          })()}
+        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Asigná por etapas</h2>
@@ -755,25 +834,24 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         </div>
 
         {stageBuckets.some((bucket) => bucket.tasks.length > 0) ? (
-          <div className="space-y-6">
-            {stageBuckets.map((bucket) => {
-              if (bucket.tasks.length === 0) return null;
-
-              return (
-                <div
-                  key={bucket.key}
-                  className={`rounded-3xl border p-6 shadow-sm ${bucket.accent}`}
-                >
-                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-900">{bucket.label}</h3>
-                      <p className="text-sm text-slate-600">{bucket.description}</p>
-                    </div>
-                    <Badge className={bucket.badgeClass}>
-                      {bucket.tasks.length} tarea{bucket.tasks.length === 1 ? '' : 's'} por asignar
-                    </Badge>
+          stageBuckets
+            .filter((bucket) => bucket.key === etapaActiva)
+            .map((bucket) => (
+              <div
+                key={bucket.key}
+                className={`rounded-3xl border p-6 shadow-sm ${bucket.accent}`}
+              >
+                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900">{bucket.label}</h3>
+                    <p className="text-sm text-slate-600">{bucket.description}</p>
                   </div>
+                  <Badge className={bucket.badgeClass}>
+                    {bucket.tasks.length} tarea{bucket.tasks.length === 1 ? '' : 's'} por asignar
+                  </Badge>
+                </div>
 
+                {bucket.tasks.length > 0 ? (
                   <div className="grid gap-4 xl:grid-cols-2">
                     {bucket.tasks.map((task) => {
                       const taskBudgets = budgetsByTask.get(task.id) ?? [];
@@ -861,10 +939,14 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                       );
                     })}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                ) : (
+                  <EmptyState
+                    title="No hay tareas para esta etapa"
+                    description="Cuando se generen tareas en esta etapa las vas a ver acá."
+                  />
+                )}
+              </div>
+            ))
         ) : (
           <EmptyState
             title="No hay tareas pendientes de asignación"

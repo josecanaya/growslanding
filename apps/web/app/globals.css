@@ -3,204 +3,81 @@
 @tailwind utilities;
 
 :root {
-  /* Variables GROWS - Nueva paleta verde-neutral con acento dorado */
-  --grows-primary: #1B5E20;      /* Verde oscuro corporativo */
-  --grows-secondary: #E8C547;    /* Dorado suave (nuevo acento principal) */
-  --grows-background: #F5F7F5;   /* Fondo gris verdoso suave */
-  --grows-surface: #FFFFFF;      /* Superficie principal */
-  --grows-border: #E0E0E0;       /* Líneas y separadores */
-  --grows-text-primary: #1A1A1A; /* Texto principal */
-  --grows-text-secondary: #444444; /* Texto secundario */
-  --grows-error: #B71C1C;        /* Rojo más apagado y elegante */
-  --grows-success: #388E3C;      /* Éxito */
-  --grows-warning: #FBC02D;      /* Advertencia puntual */
-  --grows-neutral: #F0F2F0;      /* Neutral base */
-  
-  /* Variables legacy - mantener para compatibilidad */
-  --color-primario: #1B263B;
-  --color-secundario: #f5f7fa;
-  --color-acento: #9CCC65;
-  --color-claro-fondo: #eaf0f6;
-  --color-oscuro: #10161a;
-  
-  /* Variables para compatibilidad con shadcn/ui */
-  --background: 245 247 245; /* grows-background */
-  --foreground: 26 26 26; /* grows-text-primary */
-  --muted: 240 242 240; /* grows-neutral */
-  --muted-foreground: 68 68 68; /* grows-text-secondary */
-  --popover: 255 255 255; /* grows-surface */
-  --popover-foreground: 26 26 26; /* grows-text-primary */
-  --card: 255 255 255; /* grows-surface */
-  --card-foreground: 26 26 26; /* grows-text-primary */
-  --border: 224 224 224; /* grows-border */
-  --input: 245 247 245; /* grows-background */
-  --primary: 27 94 32; /* grows-primary */
-  --primary-foreground: 255 255 255;
-  --secondary: 232 197 71; /* grows-secondary - nuevo dorado */
-  --secondary-foreground: 26 26 26; /* grows-text-primary */
-  --accent: 232 197 71; /* grows-secondary - nuevo dorado */
-  --accent-foreground: 26 26 26; /* grows-text-primary */
-  --destructive: 183 28 28; /* grows-error - nuevo rojo apagado */
-  --destructive-foreground: 255 255 255;
-  --ring: 27 94 32; /* grows-primary */
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 16 22 26; /* oscuro */
-  --foreground: 245 247 250; /* secundario */
-  --muted: 27 38 59; /* primario */
-  --muted-foreground: 245 247 250; /* secundario */
-  --popover: 27 38 59; /* primario */
-  --popover-foreground: 245 247 250; /* secundario */
-  --card: 27 38 59; /* primario */
-  --card-foreground: 245 247 250; /* secundario */
-  --border: 36 50 73; /* primario más claro */
-  --input: 27 38 59; /* primario */
-  --primary: 244 226 126; /* acento */
-  --primary-foreground: 16 22 26; /* oscuro */
-  --secondary: 27 38 59; /* primario */
-  --secondary-foreground: 245 247 250; /* secundario */
-  --accent: 244 226 126; /* acento */
-  --accent-foreground: 16 22 26; /* oscuro */
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 245 247 250;
-  --ring: 244 226 126; /* acento */
+  --grows-blue: #0C1D36;
+  --grows-blue-light: #4A6FA5;
+  --grows-gold: #E8C547;
+  --grows-gray: #F5F6F7;
+  --grows-surface: #FFFFFF;
+  --grows-text: #1A1A1A;
+  --grows-text-muted: #5A5A5A;
+  --grows-border: #E0E0E0;
+  --grows-error: #A32A2A;
+  --grows-neutral: #EEF1F4;
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', 'Nunito', 'Poppins', system-ui, -apple-system, sans-serif;
+    background-color: var(--grows-gray);
+    color: var(--grows-text);
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-weight: 500;
   }
-  
+
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
   }
 }
 
-/* Clases de la paleta corporativa GROWS */
 @layer utilities {
-  /* Clases legacy - mantener para compatibilidad */
-  .bg-primario { background-color: var(--color-primario); }
-  .bg-secundario { background-color: var(--color-secundario); }
-  .bg-acento { background-color: var(--color-acento); }
-  .bg-claro-fondo { background-color: var(--color-claro-fondo); }
-  .bg-oscuro { background-color: var(--color-oscuro); }
-  
-  .text-primario { color: var(--color-primario); }
-  .text-secundario { color: var(--color-secundario); }
-  .text-acento { color: var(--color-acento); }
-  .text-claro-fondo { color: var(--color-claro-fondo); }
-  .text-oscuro { color: var(--color-oscuro); }
-  
-  .border-primario { border-color: var(--color-primario); }
-  .border-secundario { border-color: var(--color-secundario); }
-  .border-acento { border-color: var(--color-acento); }
-  .border-claro-fondo { border-color: var(--color-claro-fondo); }
-  .border-oscuro { border-color: var(--color-oscuro); }
-  .border-corporativo { border-color: #dce3ea; }
-  
-  /* Clases GROWS - Nueva paleta verde-neutral */
-  .bg-grows-primary { background-color: var(--grows-primary); }
-  .bg-grows-secondary { background-color: var(--grows-secondary); }
-  .bg-grows-background { background-color: var(--grows-background); }
+  .bg-grows-blue { background-color: var(--grows-blue); }
+  .bg-grows-blue-light { background-color: var(--grows-blue-light); }
+  .bg-grows-gray { background-color: var(--grows-gray); }
   .bg-grows-surface { background-color: var(--grows-surface); }
-  .bg-grows-neutral { background-color: var(--grows-neutral); }
   .bg-grows-error { background-color: var(--grows-error); }
-  .bg-grows-success { background-color: var(--grows-success); }
-  .bg-grows-warning { background-color: var(--grows-warning); }
-  
-  .text-grows-primary { color: var(--grows-primary); }
-  .text-grows-secondary { color: var(--grows-secondary); }
-  .text-grows-text-primary { color: var(--grows-text-primary); }
-  .text-grows-text-secondary { color: var(--grows-text-secondary); }
+  .bg-grows-gold { background-color: var(--grows-gold); }
+  .bg-grows-primary { background-color: var(--grows-blue); }
+  .bg-grows-secondary { background-color: var(--grows-blue-light); }
+  .bg-grows-neutral { background-color: var(--grows-neutral); }
+  .bg-grows-warning { background-color: var(--grows-blue-light); }
+
+  .text-grows-blue { color: var(--grows-blue); }
+  .text-grows-blue-light { color: var(--grows-blue-light); }
+  .text-grows-text { color: var(--grows-text); }
+  .text-grows-text-muted { color: var(--grows-text-muted); }
   .text-grows-error { color: var(--grows-error); }
-  .text-grows-success { color: var(--grows-success); }
-  .text-grows-warning { color: var(--grows-warning); }
-  
-  .border-grows-primary { border-color: var(--grows-primary); }
-  .border-grows-secondary { border-color: var(--grows-secondary); }
+  .text-grows-gold { color: var(--grows-gold); }
+  .text-grows-primary { color: var(--grows-blue); }
+  .text-grows-secondary { color: var(--grows-blue-light); }
+  .text-grows-text-primary { color: var(--grows-text); }
+  .text-grows-text-secondary { color: var(--grows-text-muted); }
+
+  .border-grows-blue { border-color: var(--grows-blue); }
+  .border-grows-blue-light { border-color: var(--grows-blue-light); }
   .border-grows-border { border-color: var(--grows-border); }
-  
-  /* Sombras GROWS */
+  .border-grows-primary { border-color: var(--grows-blue); }
+  .border-grows-secondary { border-color: var(--grows-blue-light); }
+
   .shadow-grows-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
-  .shadow-grows-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
-  .shadow-grows-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15); }
-  .shadow-grows-xl { box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2); }
-  
-  /* Bordes GROWS */
+  .shadow-grows-md { box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08); }
+  .shadow-grows-lg { box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); }
+
   .rounded-grows-sm { border-radius: 0.25rem; }
   .rounded-grows-md { border-radius: 0.5rem; }
   .rounded-grows-lg { border-radius: 1rem; }
   .rounded-grows-xl { border-radius: 1.5rem; }
-  
-  /* Espaciado GROWS */
+  .rounded-grows-full { border-radius: 9999px; }
+
   .p-grows-xs { padding: 0.25rem; }
   .p-grows-sm { padding: 0.5rem; }
   .p-grows-md { padding: 1rem; }
   .p-grows-lg { padding: 1.5rem; }
   .p-grows-xl { padding: 2rem; }
-  
+
   .m-grows-xs { margin: 0.25rem; }
   .m-grows-sm { margin: 0.5rem; }
   .m-grows-md { margin: 1rem; }
   .m-grows-lg { margin: 1.5rem; }
   .m-grows-xl { margin: 2rem; }
-  
-          /* Hover effects GROWS */
-          .hover-grows-primary:hover { background-color: #0d4a13; }
-          .hover-grows-secondary:hover { background-color: #D1AF33; }
-          .hover-grows-shadow:hover { 
-            box-shadow: 0 10px 15px -3px rgba(27, 94, 32, 0.1), 0 4px 6px -2px rgba(27, 94, 32, 0.05);
-          }
-  
-  /* Transiciones suaves */
+
   .transition-smooth { transition: all 0.3s ease-in-out; }
-  
-  /* Espaciado mejorado */
-  .gap-8 { gap: 2rem; }
-  .mt-10 { margin-top: 2.5rem; }
-}
-
-/* Animaciones personalizadas */
-@keyframes fadeInUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
 }

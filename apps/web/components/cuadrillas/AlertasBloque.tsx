@@ -21,16 +21,9 @@ export function AlertasBloque() {
   }
 
   return (
-    <div 
-      className="alerta-container mt-8 mx-auto max-w-3xl rounded-xl border-2 p-4 text-center font-medium"
-      style={{
-        backgroundColor: 'rgba(244, 226, 126, 0.15)',
-        borderColor: '#f4e27e',
-        color: '#1B263B'
-      }}
-    >
+    <div className="mt-8 mx-auto max-w-3xl rounded-grows-lg border-2 border-growsBlueLight bg-grows-blue-light/10 p-4 text-center font-medium text-growsBlue">
       <p className="text-base">
-        ⚠️ {totalAlertas} {totalAlertas === 1 ? 'alerta crítica' : 'alertas críticas'} — {' '}
+        ⚠️ {totalAlertas} {totalAlertas === 1 ? 'alerta crítica' : 'alertas críticas'} —{' '}
         {cuadrillasSinSeguro > 0 && `${cuadrillasSinSeguro} sin seguro`}
         {cuadrillasSinSeguro > 0 && documentosVencidos > 0 && ' / '}
         {documentosVencidos > 0 && `${documentosVencidos} documentos vencidos`}

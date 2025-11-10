@@ -89,7 +89,7 @@ export default function PanelPage() {
   }, [currentUser?.role]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-claro">
+    <div className="flex min-h-screen flex-col bg-grows-gray">
       <TopBar
         isConnected={isConnected}
         isOnBreak={isOnBreak}

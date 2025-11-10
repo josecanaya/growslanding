@@ -117,18 +117,18 @@ export function Obras({ user }: ObrasProps) {
   };
 
   return (
-    <div className="space-y-4 bg-claro-fondo min-h-screen p-6">
+    <div className="space-y-4 bg-grows-gray min-h-screen p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-8 mt-8">
         <div>
-          <h2 className="text-2xl font-bold text-oscuro">Oportunidades de Obras</h2>
-          <p className="text-sm text-oscuro/70">
+          <h2 className="text-2xl font-bold text-grows-text">Oportunidades de Obras</h2>
+          <p className="text-sm text-grows-text-muted">
             {obras.length} obras disponibles
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm text-oscuro/70">Nivel actual</div>
-          <div className="text-lg font-bold text-acento">{user.level}</div>
+          <div className="text-sm text-grows-text-muted">Nivel actual</div>
+          <div className="text-lg font-bold text-grows-blue-light">{user.level}</div>
         </div>
       </div>
 
@@ -137,12 +137,12 @@ export function Obras({ user }: ObrasProps) {
         {obras.map((obra) => (
           <div
             key={obra.id}
-            className="bg-white rounded-xl shadow-sm border border-corporativo p-6 hover-sombra transition-smooth"
+            className="bg-white rounded-xl shadow-sm border border-grows-border p-6 transition-smooth hover:shadow-grows-md"
           >
             {/* Header de la obra */}
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-oscuro mb-1">
+                <h3 className="text-lg font-semibold text-grows-text mb-1">
                   {obra.nombre}
                 </h3>
                 <div className="flex items-center space-x-2">
@@ -156,43 +156,43 @@ export function Obras({ user }: ObrasProps) {
 
             {/* Información de la obra */}
             <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-oscuro/70">
-                <MapPin className="h-4 w-4 mr-2 text-primario" />
+              <div className="flex items-center text-sm text-grows-text-muted">
+                <MapPin className="h-4 w-4 mr-2 text-grows-blue" />
                 <span>{obra.ubicacion}</span>
               </div>
-              <div className="flex items-center text-sm text-oscuro/70">
-                <Calendar className="h-4 w-4 mr-2 text-primario" />
+              <div className="flex items-center text-sm text-grows-text-muted">
+                <Calendar className="h-4 w-4 mr-2 text-grows-blue" />
                 <span>Inicio: {new Date(obra.fechaInicio).toLocaleDateString()}</span>
               </div>
-              <div className="flex items-center text-sm text-oscuro/70">
-                <Clock className="h-4 w-4 mr-2 text-primario" />
+              <div className="flex items-center text-sm text-grows-text-muted">
+                <Clock className="h-4 w-4 mr-2 text-grows-blue" />
                 <span>Duración: {obra.duracion}</span>
               </div>
-              <div className="flex items-center text-sm text-oscuro/70">
-                <DollarSign className="h-4 w-4 mr-2 text-primario" />
+              <div className="flex items-center text-sm text-grows-text-muted">
+                <DollarSign className="h-4 w-4 mr-2 text-grows-blue" />
                 <span>Presupuesto: {obra.presupuesto}</span>
               </div>
-              <div className="flex items-center text-sm text-oscuro/70">
-                <Users className="h-4 w-4 mr-2 text-primario" />
+              <div className="flex items-center text-sm text-grows-text-muted">
+                <Users className="h-4 w-4 mr-2 text-grows-blue" />
                 <span>Especialidad: {obra.especialidadRequerida}</span>
               </div>
             </div>
 
             {/* Descripción */}
             <div className="mb-4">
-              <p className="text-sm text-oscuro/80 leading-relaxed">
+              <p className="text-sm text-grows-text-muted leading-relaxed">
                 {obra.descripcion}
               </p>
             </div>
 
             {/* Requisitos */}
-            <div className="bg-secundario border border-corporativo rounded-lg p-3 mb-4">
-              <div className="text-sm text-oscuro/70 mb-1 font-medium">Requisitos:</div>
+            <div className="bg-grows-gray border border-grows-border rounded-lg p-3 mb-4">
+              <div className="text-sm text-grows-text-muted mb-1 font-medium">Requisitos:</div>
               <div className="flex flex-wrap gap-2">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secundario text-oscuro border border-corporativo">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-grows-gray text-grows-text border border-grows-border">
                   Nivel: {obra.nivelRequerido}
                 </span>
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secundario text-oscuro border border-corporativo">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-grows-gray text-grows-text border border-grows-border">
                   {obra.especialidadRequerida}
                 </span>
               </div>
@@ -202,7 +202,7 @@ export function Obras({ user }: ObrasProps) {
             <div className="flex space-x-2">
               <button
                 onClick={() => handleViewDetails(obra.id)}
-                className="flex-1 flex items-center justify-center space-x-2 bg-secundario hover:bg-secundario/80 text-oscuro py-3 px-4 rounded-lg font-medium transition-smooth border border-corporativo"
+                className="flex-1 flex items-center justify-center space-x-2 bg-grows-gray hover:bg-grows-gray/80 text-grows-text py-3 px-4 rounded-lg font-medium transition-smooth border border-grows-border"
               >
                 <Eye className="h-4 w-4" />
                 <span>Ver detalles</span>
@@ -211,7 +211,7 @@ export function Obras({ user }: ObrasProps) {
               {canApply(obra) ? (
                 <button
                   onClick={() => handleApply(obra.id)}
-                  className="flex-1 flex items-center justify-center space-x-2 bg-primario hover-primario text-white py-3 px-4 rounded-lg font-medium transition-smooth"
+                  className="flex-1 flex items-center justify-center space-x-2 bg-grows-blue hover:bg-grows-blue/90 text-white py-3 px-4 rounded-lg font-medium transition-smooth"
                 >
                   <ArrowRight className="h-4 w-4" />
                   <span>Aplicar</span>
@@ -219,7 +219,7 @@ export function Obras({ user }: ObrasProps) {
               ) : (
                 <button
                   disabled
-                  className="flex-1 flex items-center justify-center space-x-2 bg-secundario text-oscuro/50 py-3 px-4 rounded-lg font-medium cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center space-x-2 bg-grows-gray text-grows-text-muted py-3 px-4 rounded-lg font-medium cursor-not-allowed"
                 >
                   <Clock className="h-4 w-4" />
                   <span>
@@ -234,16 +234,16 @@ export function Obras({ user }: ObrasProps) {
       </div>
 
       {/* Resumen de aplicaciones */}
-      <div className="bg-secundario border border-corporativo rounded-lg p-4">
-        <h3 className="font-semibold text-oscuro mb-2">Mis aplicaciones</h3>
+      <div className="bg-grows-gray border border-grows-border rounded-lg p-4">
+        <h3 className="font-semibold text-grows-text mb-2">Mis aplicaciones</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <div className="text-oscuro/70">Aplicaciones enviadas</div>
-            <div className="text-xl font-bold text-primario">3</div>
+            <div className="text-grows-text-muted">Aplicaciones enviadas</div>
+            <div className="text-xl font-bold text-grows-blue">3</div>
           </div>
           <div>
-            <div className="text-oscuro/70">Obras asignadas</div>
-            <div className="text-xl font-bold text-primario">1</div>
+            <div className="text-grows-text-muted">Obras asignadas</div>
+            <div className="text-xl font-bold text-grows-blue">1</div>
           </div>
         </div>
       </div>

@@ -1,0 +1,43 @@
+import { useSubscription } from '@/lib/subscriptions';
+import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
+
+/**
+ * Define qué planes pueden usar cada feature.
+ */
+const FEATURE_RULES: Record<string, string[]> = {
+  obras: ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'],
+  cuadrillas: ['STARTER', 'PRO', 'ENTERPRISE'],
+  validacion: ['STARTER', 'PRO', 'ENTERPRISE'],
+  chat: ['PRO', 'ENTERPRISE'],
+  calendario: ['PRO', 'ENTERPRISE'],
+  notificaciones: ['STARTER', 'PRO', 'ENTERPRISE'],
+};
+
+/** Verifica si un plan tiene acceso a una funcionalidad */
+export const canUseFeature = (planId: string, feature: string) => {
+  return FEATURE_RULES[feature]?.includes(planId) ?? false;
+};
+
+/**
+ * Hook que centraliza permisos y upgrade modal.
+ */
+export const usePlanGate = () => {
+  const { planId } = useSubscription();
+  const upgradeModal = useUpgradeModal();
+
+  const verifyAccess = (feature: string, targetPlanId?: string) => {
+    if (!canUseFeature(planId, feature)) {
+      upgradeModal.open({
+        targetPlanId: targetPlanId ?? 'STARTER',
+        featureId: feature,
+        reason: `Tu plan (${planId}) no permite usar esta función.`,
+        contextCopy: 'Actualizá a Starter o superior para desbloquearla.',
+      });
+      return false;
+    }
+    return true;
+  };
+
+  return { verifyAccess };
+};
+

@@ -40,6 +40,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
+import { useSubscription } from '@/lib/subscriptions';
+import { canUseFeature, usePlanGate } from '@/lib/permissions';
 
 const STAGE_DEFINITIONS = [
   {
@@ -145,8 +147,13 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     () => createClientComponentClient<Database>(),
     []
   );
-  const abrirModalAsignacion = useCuadrillasStore((state) => state.abrirModalAsignacion);
   const { toast } = useToast();
+  const abrirModalAsignacion = useCuadrillasStore((state) => state.abrirModalAsignacion);
+  const { planId } = useSubscription();
+  const { verifyAccess } = usePlanGate();
+  const canUseCuadrillas = canUseFeature(planId, 'cuadrillas');
+
+  const ensureCuadrillaAccess = () => verifyAccess('cuadrillas');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -404,6 +411,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter, search]);
 
   const handleOpenModal = (taskId?: string) => {
+    if (!ensureCuadrillaAccess()) {
+      return;
+    }
     if (taskId) {
       setSelectedTask(taskId);
     } else {
@@ -414,7 +424,17 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     setModalOpen(true);
   };
 
+  const handleAbrirAsignacion = () => {
+    if (!ensureCuadrillaAccess()) {
+      return;
+    }
+    abrirModalAsignacion();
+  };
+
   const handleCreateBudget = async () => {
+    if (!ensureCuadrillaAccess()) {
+      return;
+    }
     if (!currentUser?.orgId || !selectedTask || !selectedCuadrilla) {
       toast({
         title: 'Faltan datos',
@@ -529,6 +549,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   const handleAssignBudget = async (budget: RawPresupuesto) => {
+    if (!ensureCuadrillaAccess()) {
+      return;
+    }
     if (!currentUser?.orgId) return;
 
     const tarea = taskMap.get(budget.tarea_id);
@@ -805,7 +828,12 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
               Visualizá cada etapa de la obra, solicitá presupuestos y confirmá la cuadrilla indicada.
             </p>
           </div>
-          <Button variant="primary" icon={<PlusCircle className="h-4 w-4" />} onClick={() => handleOpenModal()}>
+          <Button
+            variant="primary"
+            icon={<PlusCircle className="h-4 w-4" />}
+            onClick={() => handleOpenModal()}
+            className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
+          >
             Solicitar presupuesto
           </Button>
         </div>
@@ -849,10 +877,20 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                                 </div>
                               </div>
                               <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => abrirModalAsignacion()}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleAbrirAsignacion}
+                                  className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
+                                >
                                   Asignar manualmente
                                 </Button>
-                                <Button variant="secondary" size="sm" onClick={() => handleOpenModal(task.id)}>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  onClick={() => handleOpenModal(task.id)}
+                                  className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
+                                >
                                   Pedir presupuesto
                                 </Button>
                               </div>
@@ -975,7 +1013,12 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             </div>
           </div>
 
-          <Button variant="primary" icon={<PlusCircle className="h-4 w-4" />} onClick={() => handleOpenModal()}>
+          <Button
+            variant="primary"
+            icon={<PlusCircle className="h-4 w-4" />}
+            onClick={() => handleOpenModal()}
+            className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
+          >
             Solicitar presupuesto
           </Button>
         </div>

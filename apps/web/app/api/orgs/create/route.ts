@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
-    const { name, cuit, address } = payload ?? {};
+    const { name, cuit, address, plan_actual: incomingPlan } = payload ?? {};
 
     if (!name || typeof name !== 'string') {
       return NextResponse.json(
@@ -18,10 +18,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient<Database>({
-      cookies: () => cookieStore,
-    });
+    const supabase = createRouteHandlerClient<Database>({ cookies });
 
     const {
       data: { user },
@@ -42,9 +39,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: org, error: orgError } = await (supabase as any)
+    const plan_actual =
+      typeof incomingPlan === 'string' && incomingPlan.trim().length > 0
+        ? incomingPlan
+        : 'FREE';
+
+    const { data: org, error: orgError } = await supabase
       .from('organizations')
-      .insert([{ name, cuit: cuit ?? null, address: address ?? null }])
+      .insert([
+        {
+          name,
+          cuit: cuit ?? null,
+          address: address ?? null,
+          user_id: user.id,
+          plan_actual,
+        },
+      ])
       .select()
       .single();
 

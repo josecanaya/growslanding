@@ -74,6 +74,7 @@ export interface Cuadrilla {
   kpi: KPI;
   feedback: Feedback[];
   badges: Badge[];
+  obraId?: string | null;
   // mock de asignaciones actuales
   asignaciones?: Array<{
     obraNombre: string;

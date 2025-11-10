@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Send, FileText, User, Calendar, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { Bell, Send, FileText, User, Calendar, AlertCircle, CheckCircle, Info, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useSubscription } from '@/lib/subscriptions';
+import { canUseFeature, usePlanGate } from '@/lib/permissions';
 
 // Tipos de datos
 interface Notificacion {
@@ -81,10 +84,18 @@ const informesMock: Informe[] = [
   }
 ];
 
-export function NotificacionesSection() {
+interface NotificacionesSectionProps {
+  onNavigate?: (section: string) => void;
+}
+
+export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps) {
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>(notificacionesMock);
   const [informes, setInformes] = useState<Informe[]>(informesMock);
   const [mostrarModalEmision, setMostrarModalEmision] = useState(false);
+  const { planId } = useSubscription();
+  const { verifyAccess } = usePlanGate();
+  const canUseNotificaciones = canUseFeature(planId, 'notificaciones');
+  const router = useRouter();
 
   const getTipoIcon = (tipo: string) => {
     switch (tipo) {
@@ -114,12 +125,59 @@ export function NotificacionesSection() {
   };
 
   const marcarComoLeida = (id: string) => {
+    if (!verifyAccess('notificaciones', 'STARTER')) {
+      return;
+    }
     setNotificaciones(prev => prev.map(notif => 
       notif.id === id ? { ...notif, leida: true } : notif
     ));
   };
 
   const notificacionesNoLeidas = notificaciones.filter(n => !n.leida).length;
+
+  if (!canUseNotificaciones) {
+    const handleClose = () => {
+      if (onNavigate) {
+        onNavigate('obras');
+        return;
+      }
+      router.push('/cliente/obras');
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.22),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.55),_transparent_55%)] opacity-80"
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
+        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
+            <Bell className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-zinc-50">Notificaciones en plan Starter</h1>
+          <p className="text-sm text-zinc-200">
+            Enviá informes, alertas y notificaciones en vivo al subir a Starter o superior. Centralizá la comunicación de tus obras.
+          </p>
+          <button
+            type="button"
+            onClick={() => verifyAccess('notificaciones', 'STARTER')}
+            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
+          >
+            Activar plan Starter
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
@@ -137,7 +195,10 @@ export function NotificacionesSection() {
           </div>
           
           <button
-            onClick={() => setMostrarModalEmision(true)}
+            onClick={() => {
+              if (!verifyAccess('notificaciones', 'STARTER')) return;
+              setMostrarModalEmision(true);
+            }}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Send className="h-4 w-4 mr-2" />

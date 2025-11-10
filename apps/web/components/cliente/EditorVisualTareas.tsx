@@ -69,7 +69,7 @@ export function EditorVisualTareas({
   const getColorEtapa = (etapa: string) => {
     switch (etapa) {
       case 'estructura':
-        return '#D4A017'; // Dorado
+        return '#4A6FA5'; // Azul pálido
       case 'obra_gris':
         return '#555A5F'; // Gris
       case 'terminaciones':

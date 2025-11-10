@@ -17,7 +17,7 @@ interface CuadrillasState {
   error: string | null;
   
   // Acciones
-  fetchCuadrillas: (orgId: string) => Promise<void>;
+  fetchCuadrillas: (orgId: string, obraId?: string) => Promise<void>;
   crearCuadrilla: (cuadrillaData: Partial<Cuadrilla>, orgId: string) => Promise<Cuadrilla | null>;
   eliminarCuadrilla: (cuadrillaId: string, orgId: string) => Promise<boolean>;
   setFiltros: (filtros: Partial<FiltrosCuadrillas>) => void;
@@ -70,6 +70,7 @@ function mapearCuadrillaDesdeSupabase(data: any): Cuadrilla {
     seguridadAlDia,
     integrantes,
     documentos: data.documentos || [],
+    obraId: data.obra_id || null,
     kpi: {
       tareasAsignadas: 0, // Se calculará desde tareas
       tareasEnEjecucion: 0,
@@ -103,23 +104,29 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchCuadrillas: async (orgId: string) => {
+  fetchCuadrillas: async (orgId: string, obraId?: string) => {
     if (!orgId) {
       set({ error: 'No hay organización seleccionada' });
       return;
     }
 
     set({ isLoading: true, error: null });
-    const supabase = createClientComponentClient<Database>();
+    const supabase = createClientComponentClient<Database>() as any;
 
     try {
       // Query inicial: incluir todos los campos que podrían existir en un solo select
       // Si algún campo no existe, Supabase lo ignorará pero no fallará
-      const { data: cuadrillasData, error: cuadrillasError } = await supabase
+      let query = supabase
         .from('cuadrillas')
         .select('id, nombre, encargado, especialidad, estado, org_id, obra_id, created_at, updated_at')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
+
+      if (obraId) {
+        query = query.eq('obra_id', obraId);
+      }
+
+      const { data: cuadrillasData, error: cuadrillasError } = await query;
 
       if (cuadrillasError) {
         // Log detallado del error
@@ -163,10 +170,10 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
       // Usar directamente los datos obtenidos sin queries adicionales
       // Las queries opcionales a campos/tablas que no existen causan errores 400/404
       // Por ahora, solo usamos los campos básicos que sabemos que existen
-      const cuadrillasCompletas = cuadrillasData || [];
+      const cuadrillasCompletas = (cuadrillasData || []) as any[];
 
       // Cargar tareas para calcular KPIs
-      const cuadrillaIds = cuadrillasCompletas.map(c => c.id);
+      const cuadrillaIds = cuadrillasCompletas.map((c) => c.id);
       let tareasPorCuadrilla: Record<string, any[]> = {};
 
       if (cuadrillaIds.length > 0) {
@@ -178,7 +185,7 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
 
         if (!tareasError && tareasData) {
           // Agrupar tareas por cuadrilla_id
-          tareasPorCuadrilla = tareasData.reduce((acc: Record<string, any[]>, tarea) => {
+          tareasPorCuadrilla = (tareasData as any[]).reduce((acc: Record<string, any[]>, tarea: any) => {
             if (tarea.cuadrilla_id) {
               if (!acc[tarea.cuadrilla_id]) {
                 acc[tarea.cuadrilla_id] = [];
@@ -234,7 +241,7 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
     }
 
     set({ isLoading: true, error: null });
-    const supabase = createClientComponentClient<Database>();
+    const supabase = createClientComponentClient<Database>() as any;
 
     try {
       // Validar campos requeridos
@@ -272,11 +279,11 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
         return null;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('cuadrillas')
         .insert([nuevaCuadrilla])
         .select()
-        .single();
+        .single()) as { data: any; error: any };
 
       // Verificar si hay error - incluso si el objeto está vacío
       if (error || (error !== null && Object.keys(error).length === 0)) {
@@ -389,7 +396,7 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
 
   eliminarCuadrilla: async (cuadrillaId: string, orgId: string) => {
     set({ isLoading: true, error: null });
-    const supabase = createClientComponentClient<Database>();
+    const supabase = createClientComponentClient<Database>() as any;
     try {
       const { error } = await supabase
         .from('cuadrillas')

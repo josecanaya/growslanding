@@ -30,8 +30,8 @@ export function VerificacionSistemaGROWS() {
       <Card title="Botones - Variantes GROWS">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-3">
-            <Button variant="primary">Primario (Dorado)</Button>
-            <Button variant="secondary">Secundario (Borde Dorado)</Button>
+            <Button variant="primary">Primario (Azul Pálido)</Button>
+            <Button variant="secondary">Secundario (Borde Azul)</Button>
             <Button variant="ghost">Ghost (Sin Fondo)</Button>
             <Button variant="danger">Peligro (Rojo)</Button>
           </div>
@@ -85,8 +85,8 @@ export function VerificacionSistemaGROWS() {
           </div>
           <div className="text-center">
             <div className="h-16 w-16 bg-grows-secondary rounded-grows-lg mx-auto mb-2"></div>
-            <p className="text-sm font-medium text-grows-primary">Dorado</p>
-            <p className="text-xs text-grows-text-secondary">#E8C547</p>
+            <p className="text-sm font-medium text-grows-primary">Azul Pálido</p>
+            <p className="text-xs text-grows-text-secondary">#4A6FA5</p>
           </div>
           <div className="text-center">
             <div className="h-16 w-16 bg-grows-background rounded-grows-lg mx-auto mb-2 border border-grows-border"></div>
@@ -100,7 +100,7 @@ export function VerificacionSistemaGROWS() {
           </div>
         </div>
         <p className="text-sm text-grows-text-secondary mt-4">
-          ✅ Paleta unificada: Azul petróleo como base principal, Dorado como acento, fondo gris claro
+          ✅ Paleta unificada: Azul petróleo como base principal, azul pálido como acento, fondo gris claro
         </p>
       </Card>
 

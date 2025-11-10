@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
+import type { Obra } from '@/types/obras';
 import { TopStats } from '@/components/cuadrillas/TopStats';
-import { GruposGrid } from '@/components/cuadrillas/GruposGrid';
-import { AlertasBloque } from '@/components/cuadrillas/AlertasBloque';
-import { Kanban } from '@/components/cuadrillas/Kanban';
 import { CuadrillaDrawer } from '@/components/cuadrillas/CuadrillaDrawer';
 import { AsignarModal } from '@/components/cuadrillas/AsignarModal';
 import { VisorCuadrillasActivas } from '@/components/cuadrillas/VisorCuadrillasActivas';
@@ -12,132 +12,392 @@ import { VisorTareasEjecucion } from '@/components/cuadrillas/VisorTareasEjecuci
 import { VisorCumplimientoGeneral } from '@/components/cuadrillas/VisorCumplimientoGeneral';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { Button, SectionLayout } from '@/components/ui/grows';
-import { UserCheck, X } from 'lucide-react';
+import { BaseCard, Button, EmptyState, SectionLayout } from '@/components/ui/grows';
 import { useToast } from '@/components/ui/use-toast';
+import { Building2, CheckCircle, ClipboardList, TrendingUp, UserCheck, Users, X } from 'lucide-react';
+import { useSubscription } from '@/lib/subscriptions';
+import { canUseFeature, usePlanGate } from '@/lib/permissions';
+import { ObraCard } from '@/components/obras/ui/ObraCard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Kanban } from '@/components/cuadrillas/Kanban';
+import type { Especialidad } from '@/lib/types/cuadrillas';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export function CuadrillasSection() {
+interface CuadrillasSectionProps {
+  onNavigate?: (section: string) => void;
+}
+
+const TAB_ITEMS = [
+  { id: 'asignadas', label: 'Asignadas', icon: Users },
+  { id: 'disponibles', label: 'Disponibles', icon: ClipboardList },
+  { id: 'invitaciones', label: 'Invitaciones', icon: CheckCircle },
+  { id: 'evaluaciones', label: 'Evaluaciones', icon: TrendingUp },
+  { id: 'resumen', label: 'Resumen', icon: Building2 },
+] as const;
+
+type TabValue = (typeof TAB_ITEMS)[number]['id'];
+
+const ESPECIALIDADES: Especialidad[] = [
+  'Albañilería / Estructura',
+  'Yesería / Terminaciones',
+  'Carpintería',
+  'Plomería / Gas',
+  'Electricidad',
+  'Pintura',
+];
+
+export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
   const currentUser = useCurrentUser();
   const { toast } = useToast();
-  const { 
-    cuadrillaSeleccionada, 
-    showDrawer, 
-    showModalAsignacion, 
-    filtros, 
-    setFiltros,
-    fetchCuadrillas,
-    cuadrillas,
-    isLoading
-  } = useCuadrillasStore();
-  const cuadrillasStore = useCuadrillasStore();
+  const { cuadrillaSeleccionada, showDrawer, showModalAsignacion, fetchCuadrillas, cuadrillas } = useCuadrillasStore();
+  const cuadrillasStore = useCuadrillasStore.getState();
   const [visorActivo, setVisorActivo] = useState<'cuadrillas' | 'tareas' | 'cumplimiento' | null>(null);
-  const [vistaDetalle, setVistaDetalle] = useState(false);
   const [showModalInvitarSocio, setShowModalInvitarSocio] = useState(false);
+  const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
+  const [obras, setObras] = useState<Obra[]>([]);
+  const [loadingObras, setLoadingObras] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabValue>('asignadas');
+  const [especialidadDisponible, setEspecialidadDisponible] = useState<Especialidad | null>(null);
+  const supabase = createClientComponentClient<Database>();
+  const { planId } = useSubscription();
+  const { verifyAccess } = usePlanGate();
+  const canUseCuadrillas = canUseFeature(planId, 'cuadrillas');
 
-  // Cargar cuadrillas desde Supabase al montar el componente
   useEffect(() => {
     if (currentUser?.orgId) {
       fetchCuadrillas(currentUser.orgId);
     }
   }, [currentUser?.orgId, fetchCuadrillas]);
 
-  const handleOpenVisor = (visorType: 'cuadrillas' | 'tareas' | 'cumplimiento') => {
-    setVisorActivo(visorType);
-  };
-
-  const handleCloseVisor = () => {
-    setVisorActivo(null);
-  };
-
-  // Detectar cuando se filtra por especialidad para mostrar vista detalle
-  const handleVolverAGrid = () => {
-    setVistaDetalle(false);
-    setFiltros({ especialidad: undefined });
-  };
-
-  // Efecto para detectar cambio de filtro de especialidad
   useEffect(() => {
-    if (filtros.especialidad) {
-      setVistaDetalle(true);
+    const cargarObras = async () => {
+      if (!currentUser?.orgId) {
+        setObras([]);
+        setLoadingObras(false);
+        return;
+      }
+
+      try {
+        setLoadingObras(true);
+        const { data, error } = await supabase
+          .from('obras')
+          .select('*')
+          .eq('org_id', currentUser.orgId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[CuadrillasSection] Error cargando obras:', error);
+          setObras([]);
+          return;
+        }
+
+        const obrasFormateadas: Obra[] = ((data as any[]) || []).map((obra) => ({
+          id: obra.id,
+          nombre: obra.name || 'Sin nombre',
+          cliente: obra.propietario || 'Sin cliente',
+          localizacion: obra.address || 'Sin dirección',
+          estado: obra.estado || 'ACTIVA',
+          created_at: obra.created_at,
+          fecha_inicio: obra.created_at,
+          tipoObra: obra.tipo_obra || 'nueva',
+          progreso: obra.progreso ?? 0,
+        }));
+
+        setObras(obrasFormateadas);
+      } catch (error) {
+        console.error('[CuadrillasSection] Excepción cargando obras:', error);
+        setObras([]);
+      } finally {
+        setLoadingObras(false);
+      }
+    };
+
+    cargarObras();
+  }, [currentUser?.orgId, supabase]);
+
+  const obrasActivas = useMemo(() => obras, [obras]);
+
+  const cuadrillasAsignadas = useMemo(() => {
+    if (!selectedObra) return [];
+    return cuadrillas.filter((cuadrilla) => cuadrilla.obraId === selectedObra.id);
+  }, [cuadrillas, selectedObra?.id]);
+
+  const cuadrillasDisponibles = useMemo(() => {
+    return cuadrillas.filter((cuadrilla) => {
+      const estado = `${cuadrilla.estado ?? ''}`.toLowerCase();
+      const esDisponible = estado.includes('disponible');
+      const sinObra = !cuadrilla.obraId;
+      return esDisponible || sinObra;
+    });
+  }, [cuadrillas]);
+
+  const filteredCuadrillas = useMemo(() => {
+    if (!especialidadDisponible) {
+      return cuadrillasDisponibles;
     }
-  }, [filtros.especialidad]);
+
+    return cuadrillasDisponibles.filter((cuadrilla) => cuadrilla.especialidad === especialidadDisponible);
+  }, [cuadrillasDisponibles, especialidadDisponible]);
+
+  const handleOpenVisor = (visorType: 'cuadrillas' | 'tareas' | 'cumplimiento') => setVisorActivo(visorType);
+  const handleCloseVisor = () => setVisorActivo(null);
+  const handleSelectObra = (obra: Obra) => {
+    setSelectedObra(obra);
+    setActiveTab('asignadas');
+  };
+  const handleBackToListado = () => setSelectedObra(null);
+  const handleAsignarCuadrilla = (cuadrillaId: string) => {
+    const cuadrilla = cuadrillas.find((item) => item.id === cuadrillaId);
+    if (!cuadrilla) return;
+
+    cuadrillasStore.seleccionarCuadrilla(cuadrilla);
+    cuadrillasStore.abrirModalAsignacion();
+  };
+
+  const handlePedirPresupuesto = (cuadrillaId: string) => {
+    const cuadrilla = cuadrillas.find((item) => item.id === cuadrillaId);
+    if (!cuadrilla) {
+      return;
+    }
+
+    toast({
+      title: 'Pedir presupuesto',
+      description: `Pronto vas a poder solicitar presupuesto directo a ${cuadrilla.nombre}. Te llevo al módulo de presupuestos.`,
+    });
+
+    onNavigate?.('presupuestos');
+  };
+
+  if (!canUseCuadrillas) {
+    const handleClose = () => onNavigate?.('obras');
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.22),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.55),_transparent_55%)] opacity-80"
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
+        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
+            <UserCheck className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-zinc-50">Gestión de cuadrillas en plan Starter</h1>
+          <p className="text-sm text-zinc-200">
+            Organizá tus equipos, gestioná asignaciones y controlá cargas operativas al activar el plan Starter o superior.
+          </p>
+          <button
+            type="button"
+            onClick={() => verifyAccess('cuadrillas', 'STARTER')}
+            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
+          >
+            Activar plan Starter
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const progresoGeneral = selectedObra?.progreso ?? 0;
+  const fechaInicio = selectedObra?.fecha_inicio || selectedObra?.created_at;
+  const fechaInicioFormatted = fechaInicio ? new Date(fechaInicio).toLocaleDateString('es-AR') : 'N/D';
 
   return (
-    <div className="relative">
-      {/* Contenido normal (dashboard) */}
-      {!visorActivo && (
-        <>
-          {/* Vista de Grid (grupos) */}
-          {!vistaDetalle && (
-            <SectionLayout
-              title="Gestión de Cuadrillas"
-              subtitle="Seleccioná una especialidad para ver sus cuadrillas"
-            >
-              {/* Botón Invitar Socio */}
-              <div className="mb-4 flex justify-end">
-                <Button
-                  variant="primary"
-                  onClick={() => setShowModalInvitarSocio(true)}
-                  icon={<UserCheck className="h-4 w-4" />}
-                >
-                  Invitar Socio
+    <>
+      {!selectedObra ? (
+        <SectionLayout title="Gestión de Cuadrillas" subtitle="Seleccioná una obra para ver y administrar sus cuadrillas">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-sm text-growsTextMuted">
+              Tenés {obrasActivas.length} obra{obrasActivas.length === 1 ? '' : 's'} disponibles
+            </p>
+            <Button variant="primary" onClick={() => setShowModalInvitarSocio(true)} icon={<UserCheck className="h-4 w-4" />}>
+              Invitar socio
+            </Button>
+          </div>
+
+          {loadingObras ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <BaseCard key={`obra-loading-${index}`}>Cargando obras…</BaseCard>
+              ))}
+            </div>
+          ) : obrasActivas.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {obrasActivas.map((obra) => (
+                <ObraCard
+                  key={obra.id}
+                  obra={obra}
+                  onView={() => handleSelectObra(obra)}
+                  onEdit={() => undefined}
+                  onDelete={() => undefined}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Todavía no cargaste obras"
+              description="Cuando generes tu primera obra, vas a poder gestionar sus cuadrillas desde acá."
+            />
+          )}
+        </SectionLayout>
+      ) : (
+        <SectionLayout title="Gestión de Cuadrillas" subtitle="Administrá tus equipos por obra sin salir del panel">
+          <BaseCard>
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" onClick={handleBackToListado}>
+                  ← Volver
                 </Button>
+                <div>
+                  <h1 className="text-2xl font-semibold text-growsBlue">{selectedObra.nombre}</h1>
+                  <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-growsTextMuted">
+                    <span>Cliente: {selectedObra.cliente || 'Sin cliente'}</span>
+                    <span>Tipo: {selectedObra.tipoObra ? selectedObra.tipoObra.toUpperCase() : 'N/D'}</span>
+                    <span>Inicio: {fechaInicioFormatted}</span>
+                  </div>
+                </div>
               </div>
 
-              {/* KPIs esenciales */}
-              <TopStats onOpenVisor={handleOpenVisor} />
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-sm text-growsTextMuted">Progreso general</div>
+                  <div className="text-lg font-bold text-growsBlue">{progresoGeneral}%</div>
+                </div>
+                <div className="h-2 w-20 rounded-full bg-grows-gray">
+                  <div className="h-2 rounded-full bg-growsBlue transition-all duration-300" style={{ width: `${progresoGeneral}%` }} />
+                </div>
+              </div>
+            </div>
+          </BaseCard>
 
-              {/* Grid de grupos */}
-              <GruposGrid />
+          <BaseCard className="p-0">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabValue)}>
+              <TabsList className="grid w-full grid-cols-5 rounded-t-grows-lg border-b border-grows-border bg-grows-surface/70">
+                {TAB_ITEMS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className={`flex items-center justify-center gap-2 rounded-none px-4 py-2 text-sm font-medium transition-colors ${
+                        isActive
+                          ? 'bg-growsBlue/10 text-growsBlue shadow-inner'
+                          : 'text-growsTextMuted hover:bg-grows-gray hover:text-growsBlue'
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {tab.label}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
 
-              {/* Bloque de alertas */}
-              <AlertasBloque />
-            </SectionLayout>
-          )}
+              <TabsContent value="asignadas" className="p-6">
+                {cuadrillasAsignadas.length === 0 ? (
+                  <EmptyState
+                    title="Sin cuadrillas asignadas"
+                    description="Aún no hay cuadrillas trabajando en esta obra."
+                    icon={<Users className="h-12 w-12 text-growsBlue" />}
+                  />
+                ) : (
+                  <section className="space-y-6">
+                    <TopStats onOpenVisor={handleOpenVisor} />
+                    <Kanban cuadrillas={cuadrillasAsignadas} />
+                  </section>
+                )}
+              </TabsContent>
+              <TabsContent value="disponibles" className="p-6">
+                <section className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-growsText">Cuadrillas disponibles</h3>
+                    <Select
+                      value={especialidadDisponible ?? 'todas'}
+                      onValueChange={(value) => {
+                        if (value === 'todas') {
+                          setEspecialidadDisponible(null);
+                        } else {
+                          setEspecialidadDisponible(value as Especialidad);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="w-56 border-grows-border">
+                        <SelectValue placeholder="Todas las especialidades" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todas">Todas las especialidades</SelectItem>
+                        {ESPECIALIDADES.map((esp) => (
+                          <SelectItem key={esp} value={esp}>
+                            {esp}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          {/* Vista de detalle (cuadrillas de una especialidad) */}
-          {vistaDetalle && (
-            <SectionLayout
-              title={filtros.especialidad || 'Especialidad'}
-              subtitle="Gestiona las cuadrillas de esta especialidad"
-            >
-              {/* Botón volver */}
-              <Button
-                variant="ghost"
-                onClick={handleVolverAGrid}
-                className="mb-4"
-              >
-                ← Volver a especialidades
-              </Button>
+                  {filteredCuadrillas.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {filteredCuadrillas.map((cuadrilla) => {
+                        const integrantesCount = cuadrilla.integrantes?.length ?? 0;
+                        const cumplimiento = cuadrilla.kpi?.cumplimientoPct ?? 0;
 
-              {/* KPIs esenciales */}
-              <TopStats onOpenVisor={handleOpenVisor} />
-
-              {/* Tablero Kanban (solo muestra la especialidad filtrada) */}
-              <Kanban />
-            </SectionLayout>
-          )}
-        </>
+                        return (
+                          <BaseCard key={cuadrilla.id} title={cuadrilla.nombre} subtitle={cuadrilla.especialidad}>
+                            <div className="space-y-2">
+                              <p className="text-sm text-growsTextMuted">
+                                {integrantesCount} integrante{integrantesCount === 1 ? '' : 's'} · {cumplimiento}% cumplimiento
+                              </p>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="secondary" className="border-grows-border" onClick={() => handleAsignarCuadrilla(cuadrilla.id)}>
+                                  Asignar manualmente
+                                </Button>
+                                <Button size="sm" onClick={() => handlePedirPresupuesto(cuadrilla.id)}>
+                                  Pedir presupuesto
+                                </Button>
+                              </div>
+                            </div>
+                          </BaseCard>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="Sin cuadrillas disponibles"
+                      description="No hay cuadrillas libres para esta especialidad."
+                      icon={<Users className="h-10 w-10 text-growsBlue" />}
+                    />
+                  )}
+                </section>
+              </TabsContent>
+              <TabsContent value="invitaciones" className="p-6">
+                <BaseCard>Invitaciones pendientes de socios</BaseCard>
+              </TabsContent>
+              <TabsContent value="evaluaciones" className="p-6">
+                <BaseCard>Evaluaciones y desempeño</BaseCard>
+              </TabsContent>
+              <TabsContent value="resumen" className="p-6">
+                <BaseCard>Resumen general de cuadrillas</BaseCard>
+              </TabsContent>
+            </Tabs>
+          </BaseCard>
+        </SectionLayout>
       )}
 
-      {/* Visores de KPIs */}
-      {visorActivo === 'cuadrillas' && (
-        <VisorCuadrillasActivas onClose={handleCloseVisor} />
-      )}
-      {visorActivo === 'tareas' && (
-        <VisorTareasEjecucion onClose={handleCloseVisor} />
-      )}
-      {visorActivo === 'cumplimiento' && (
-        <VisorCumplimientoGeneral onClose={handleCloseVisor} />
-      )}
+      {visorActivo === 'cuadrillas' && <VisorCuadrillasActivas onClose={handleCloseVisor} />}
+      {visorActivo === 'tareas' && <VisorTareasEjecucion onClose={handleCloseVisor} />}
+      {visorActivo === 'cumplimiento' && <VisorCumplimientoGeneral onClose={handleCloseVisor} />}
 
-      {/* Drawer lateral para detalles */}
       <CuadrillaDrawer cuadrilla={cuadrillaSeleccionada} />
-
-      {/* Modal de asignación */}
       <AsignarModal />
 
-      {/* Modal Invitar Socio */}
       {showModalInvitarSocio && (
         <ModalInvitarSocio
           onClose={() => setShowModalInvitarSocio(false)}
@@ -164,11 +424,10 @@ export function CuadrillasSection() {
               const result = await response.json();
 
               if (result.success) {
-                // Si se creó una cuadrilla, recargar la lista
                 if (result.data?.cuadrilla_id) {
                   await cuadrillasStore.fetchCuadrillas(currentUser.orgId);
                 }
-                
+
                 toast({
                   title: 'Socio invitado',
                   description: result.message || 'Se envió un link de acceso al socio.',
@@ -190,36 +449,31 @@ export function CuadrillasSection() {
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
-// Componente Modal Invitar Socio
-function ModalInvitarSocio({ onClose, onInvitar }: { 
-  onClose: () => void; 
+function ModalInvitarSocio({
+  onClose,
+  onInvitar,
+}: {
+  onClose: () => void;
   onInvitar: (socioData: { nombre: string; email?: string; telefono?: string; rol?: string; especialidad?: string }) => Promise<void>;
 }) {
-  const especialidades: string[] = [
-    'Albañilería / Estructura',
-    'Yesería / Terminaciones',
-    'Carpintería',
-    'Plomería / Gas',
-    'Electricidad',
-    'Pintura'
-  ];
+  const especialidades: string[] = ESPECIALIDADES;
 
   const [formData, setFormData] = useState({
     nombre: '',
     email: '',
     telefono: '',
     rol: 'constructor' as 'constructor' | 'lider' | 'socio',
-    especialidad: '' as string
+    especialidad: '' as string,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.nombre || (!formData.email && !formData.telefono)) {
       return;
     }
@@ -241,124 +495,105 @@ function ModalInvitarSocio({ onClose, onInvitar }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Invitar Socio</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-6 w-6" />
-            </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-md rounded-grows-lg bg-grows-surface p-6 shadow-grows-lg">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-growsBlue">Invitar socio</h2>
+          <button onClick={onClose} className="text-growsTextMuted hover:text-growsBlue" type="button">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Nombre completo *</label>
+            <input
+              type="text"
+              value={formData.nombre}
+              onChange={(e) => setFormData((prev) => ({ ...prev, nombre: e.target.value }))}
+              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              placeholder="Ej: Juan Pérez"
+              required
+              disabled={isSubmitting}
+            />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre completo *
-              </label>
-              <input
-                type="text"
-                value={formData.nombre}
-                onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="Ej: Juan Pérez"
-                required
-                disabled={isSubmitting}
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Email</label>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              placeholder="ejemplo@email.com"
+              disabled={isSubmitting}
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="ejemplo@email.com"
-                disabled={isSubmitting}
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Teléfono</label>
+            <input
+              type="tel"
+              value={formData.telefono}
+              onChange={(e) => setFormData((prev) => ({ ...prev, telefono: e.target.value }))}
+              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              placeholder="+54 9 11 1234-5678"
+              disabled={isSubmitting}
+            />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Teléfono
-              </label>
-              <input
-                type="tel"
-                value={formData.telefono}
-                onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                placeholder="+54 9 11 1234-5678"
-                disabled={isSubmitting}
-              />
-            </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Rol</label>
+            <select
+              value={formData.rol}
+              onChange={(e) => setFormData((prev) => ({ ...prev, rol: e.target.value as 'constructor' | 'lider' | 'socio' }))}
+              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              disabled={isSubmitting}
+            >
+              <option value="constructor">Constructor</option>
+              <option value="lider">Líder de cuadrilla</option>
+              <option value="socio">Socio</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rol
-              </label>
-              <select
-                value={formData.rol}
-                onChange={(e) => setFormData({ ...formData, rol: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                disabled={isSubmitting}
-              >
-                <option value="constructor">Constructor</option>
-                <option value="lider">Líder de Cuadrilla</option>
-                <option value="socio">Socio</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Especialidad
-              </label>
-              <select
-                value={formData.especialidad}
-                onChange={(e) => setFormData({ ...formData, especialidad: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                disabled={isSubmitting}
-              >
-                <option value="">Seleccionar especialidad (opcional)</option>
-                {especialidades.map((esp) => (
-                  <option key={esp} value={esp}>
-                    {esp}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Si seleccionás una especialidad y el rol es &quot;Líder de Cuadrilla&quot;, se creará automáticamente una cuadrilla.
-              </p>
-            </div>
-
-            <p className="text-xs text-gray-500">
-              * Debe proporcionar email o teléfono. Se enviará un link de acceso para que el socio se registre.
+          <div>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Especialidad</label>
+            <select
+              value={formData.especialidad}
+              onChange={(e) => setFormData((prev) => ({ ...prev, especialidad: e.target.value }))}
+              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              disabled={isSubmitting}
+            >
+              <option value="">Seleccionar especialidad (opcional)</option>
+              {especialidades.map((esp) => (
+                <option key={esp} value={esp}>
+                  {esp}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-growsTextMuted">
+              Si seleccionás una especialidad y el rol es "Líder de Cuadrilla", se creará automáticamente una cuadrilla.
             </p>
+          </div>
 
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting || !formData.nombre || (!formData.email && !formData.telefono)}
-              >
-                {isSubmitting ? 'Enviando...' : 'Enviar Invitación'}
-              </button>
-            </div>
-          </form>
-        </div>
+          <p className="text-xs text-growsTextMuted">
+            * Debe proporcionar email o teléfono. Se enviará un link de acceso para que el socio se registre.
+          </p>
+
+          <div className="flex gap-3 pt-4">
+            <Button type="button" variant="ghost" className="flex-1" onClick={onClose} disabled={isSubmitting}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              className="flex-1"
+              disabled={isSubmitting || !formData.nombre || (!formData.email && !formData.telefono)}
+            >
+              {isSubmitting ? 'Enviando…' : 'Enviar invitación'}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

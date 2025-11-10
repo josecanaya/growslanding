@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Calendar, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Users, X } from 'lucide-react';
 import { Card, Button, Badge, SectionLayout } from '@/components/ui/grows';
+import { useSubscription } from '@/lib/subscriptions';
+import { canUseFeature, usePlanGate } from '@/lib/permissions';
 
 interface EventoCalendario {
   id: string;
@@ -106,12 +109,20 @@ const tareasCalendarioMock: TareaCalendario[] = [
   }
 ];
 
-export function CalendarioSection() {
+interface CalendarioSectionProps {
+  onNavigate?: (section: string) => void;
+}
+
+export function CalendarioSection({ onNavigate }: CalendarioSectionProps) {
   const [fechaActual, setFechaActual] = useState(new Date());
   const [eventos] = useState<EventoCalendario[]>(eventosMock);
   const [tareas] = useState<TareaCalendario[]>(tareasCalendarioMock);
   const [vista, setVista] = useState<'semana' | 'mes' | 'timeline'>('semana');
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
+  const { planId } = useSubscription();
+  const { verifyAccess } = usePlanGate();
+  const canUseCalendario = canUseFeature(planId, 'calendario');
+  const router = useRouter();
 
   // Navegación del calendario
   const cambiarMes = (direccion: 'anterior' | 'siguiente') => {
@@ -216,6 +227,50 @@ export function CalendarioSection() {
     }
   };
 
+  if (!canUseCalendario) {
+    const handleClose = () => {
+      if (onNavigate) {
+        onNavigate('obras');
+        return;
+      }
+      router.push('/cliente/obras');
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.22),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.55),_transparent_55%)] opacity-80"
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
+        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
+            <Calendar className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-zinc-50">Calendario disponible en plan PRO</h1>
+          <p className="text-sm text-zinc-200">
+            Programá hitos, recordatorios y sincronizá tareas entre equipos con el plan PRO o Enterprise.
+          </p>
+          <button
+            type="button"
+            onClick={() => verifyAccess('calendario', 'PRO')}
+            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
+          >
+            Activar plan PRO
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <SectionLayout
       title="Calendario"
@@ -240,7 +295,7 @@ export function CalendarioSection() {
               {['semana', 'mes', 'timeline'].map(vistaOption => (
                 <button
                   key={vistaOption}
-                  onClick={() => setVista(vistaOption as any)}
+                onClick={() => setVista(vistaOption as any)}
                   className={`px-3 py-1 text-sm rounded-grows-md transition-colors ${
                     vista === vistaOption
                       ? 'bg-grows-surface text-grows-primary shadow-grows-sm'
@@ -254,7 +309,10 @@ export function CalendarioSection() {
 
             {/* Botón nuevo evento */}
             <Button
-              onClick={() => setMostrarModalNuevo(true)}
+            onClick={() => {
+              if (!verifyAccess('calendario', 'PRO')) return;
+              setMostrarModalNuevo(true);
+            }}
               variant="primary"
               icon={<Plus className="h-4 w-4" />}
             >

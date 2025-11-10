@@ -10,7 +10,6 @@ import {
   useMemo,
   useState,
 } from 'react';
-
 import type { SubscriptionPlanId } from './types';
 import { SUBSCRIPTION_PLAN_ORDER } from './types';
 
@@ -31,7 +30,6 @@ type SubscriptionContextValue = {
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
 const PLAN_STORAGE_KEY = 'grows.subscription.plan';
-const OVERRIDE_STORAGE_KEY = 'grows.subscription.override';
 
 const DEFAULT_PLAN: SubscriptionPlanId = 'FREE';
 
@@ -39,37 +37,72 @@ function isValidPlan(value: unknown): value is SubscriptionPlanId {
   return typeof value === 'string' && SUBSCRIPTION_PLAN_ORDER.includes(value as never);
 }
 
+const noopSetOverride = (() => undefined) as Dispatch<
+  SetStateAction<SubscriptionPlanId | null>
+>;
+
 export function SubscriptionProvider({
   children,
 }: {
   children: ReactNode;
 }) {
   const [planId, setPlanId] = useState<SubscriptionPlanId>(DEFAULT_PLAN);
-  const [overridePlanId, setOverridePlanId] = useState<SubscriptionPlanId | null>(null);
   const [isSimulated, setIsSimulated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Inicializar desde storage
+  // Inicializar desde storage y sincronizar con API
   useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
+    // 1) Estado inicial desde localStorage (fallback inmediato)
     const storedPlan = window.localStorage.getItem(PLAN_STORAGE_KEY);
-    const storedOverride = window.localStorage.getItem(OVERRIDE_STORAGE_KEY);
-
     if (isValidPlan(storedPlan)) {
       setPlanId(storedPlan);
     }
-
-    if (isValidPlan(storedOverride)) {
-      setOverridePlanId(storedOverride);
-    }
-
     const simulatedFlag =
       window.localStorage.getItem(`${PLAN_STORAGE_KEY}.simulated`) === 'true';
     setIsSimulated(simulatedFlag);
     setIsLoading(false);
+
+    // 2) Sincronizar con la API en segundo plano
+    const abortController = new AbortController();
+    const fetchPlan = async () => {
+      try {
+        const response = await fetch('/api/subscription/plan', {
+          signal: abortController.signal,
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            setPlanId(DEFAULT_PLAN);
+            return;
+          }
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data: { planId?: unknown } = await response.json();
+        if (isValidPlan(data.planId)) {
+          setPlanId(data.planId);
+        } else {
+          setPlanId(DEFAULT_PLAN);
+          return;
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('[SubscriptionProvider] Error fetching plan from API:', error);
+        }
+        setPlanId(DEFAULT_PLAN);
+      }
+    };
+
+    void fetchPlan();
+
+    return () => {
+      abortController.abort();
+    };
   }, []);
 
   // Persistir plan principal
@@ -92,21 +125,8 @@ export function SubscriptionProvider({
     );
   }, [isSimulated, isLoading]);
 
-  // Persistir override
-  useEffect(() => {
-    if (typeof window === 'undefined' || isLoading) {
-      return;
-    }
-
-    if (overridePlanId) {
-      window.localStorage.setItem(OVERRIDE_STORAGE_KEY, overridePlanId);
-    } else {
-      window.localStorage.removeItem(OVERRIDE_STORAGE_KEY);
-    }
-  }, [overridePlanId, isLoading]);
-
-  const effectivePlanId = overridePlanId ?? planId;
-  const effectiveSimulated = isSimulated || Boolean(overridePlanId);
+  const effectivePlanId = planId;
+  const effectiveSimulated = isSimulated;
 
   const setPlan = (nextPlan: SubscriptionPlanId, options?: { simulated?: boolean }) => {
     setPlanId(nextPlan);
@@ -117,25 +137,20 @@ export function SubscriptionProvider({
     }
   };
 
-  const clearOverride = () => {
-    setOverridePlanId(null);
-  };
-
   const value = useMemo<SubscriptionContextValue>(
     () => ({
       planId,
       effectivePlanId,
-      overridePlanId,
+      overridePlanId: null,
       isSimulated: effectiveSimulated,
       isLoading,
       setPlan,
-      setOverridePlan: setOverridePlanId,
-      clearOverride,
+      setOverridePlan: noopSetOverride,
+      clearOverride: () => undefined,
     }),
     [
       planId,
       effectivePlanId,
-      overridePlanId,
       effectiveSimulated,
       isLoading,
     ],

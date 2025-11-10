@@ -19,7 +19,7 @@ import { normalizeRole } from '@/lib/roles';
 export default function ClienteDashboardPage() {
   const router = useRouter();
   const currentUser = useCurrentUser();
-  const [activeSection, setActiveSection] = useState('chat');
+  const [activeSection, setActiveSection] = useState('obras');
 
   const normalizedRole = useMemo(
     () => normalizeRole(currentUser?.role),
@@ -59,11 +59,11 @@ export default function ClienteDashboardPage() {
       case 'tareas':
         return <TareasSection />;
       case 'cuadrillas':
-        return <CuadrillasSection />;
+        return <CuadrillasSection onNavigate={setActiveSection} />;
       case 'notificaciones':
-        return <NotificacionesSection />;
+        return <NotificacionesSection onNavigate={setActiveSection} />;
       case 'calendario':
-        return <CalendarioSection />;
+        return <CalendarioSection onNavigate={setActiveSection} />;
       case 'cuenta':
         return <CuentaSection />;
       default:

@@ -60,23 +60,23 @@ export function TopStats({ onOpenVisor }: TopStatsProps) {
             key={stat.title}
             title={stat.title}
             onClick={() => onOpenVisor(stat.visorType)}
-            className="cursor-pointer hover:shadow-grows-md transition-all duration-200"
+            className="cursor-pointer transition-all duration-200"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className={`p-3 rounded-grows-lg bg-${stat.color}/10`}>
-                  <IconComponent className={`h-6 w-6 text-${stat.color}`} />
+                <div className="p-3 rounded-grows-lg bg-grows-blue-light/10">
+                  <IconComponent className="h-6 w-6 text-growsBlueLight" />
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold text-${stat.color}`}>
+                  <div className="text-2xl font-bold text-growsBlue">
                     {stat.value}
                     {stat.total && (
-                      <span className="text-sm text-grows-text-secondary font-normal">
+                      <span className="text-sm text-growsTextMuted font-normal">
                         /{stat.total}
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-grows-text-secondary">
+                  <div className="text-sm text-growsTextMuted">
                     {stat.subtitle}
                   </div>
                 </div>

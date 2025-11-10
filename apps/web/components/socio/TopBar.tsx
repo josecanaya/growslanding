@@ -40,11 +40,11 @@ export function TopBar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-primario shadow-lg">
+      <header className="sticky top-0 z-40 bg-grows-blue shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             onClick={() => setShowSideMenu(true)}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-acento text-xl text-oscuro shadow-md transition hover:shadow-lg"
+            className="flex h-12 w-12 items-center justify-center rounded-full bg-grows-blue-light text-xl text-grows-text shadow-md transition hover:bg-grows-blue-light/90 hover:shadow-lg"
             aria-label="Abrir menu"
           >
             {user.avatar}
@@ -59,12 +59,12 @@ export function TopBar({
             className="fixed inset-0 z-50 bg-black/50"
             onClick={() => setShowSideMenu(false)}
           />
-          <aside className="fixed top-0 left-0 z-50 h-full w-80 bg-primario shadow-xl">
+          <aside className="fixed top-0 left-0 z-50 h-full w-80 bg-grows-blue shadow-xl">
             <div className="flex h-full flex-col">
               <div className="border-b border-white/20 p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-acento text-xl text-oscuro">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-grows-blue-light text-xl text-grows-text">
                       {user.avatar}
                     </div>
                     <div>
@@ -86,7 +86,7 @@ export function TopBar({
                 </div>
               </div>
 
-              <div className="flex-1 bg-primario py-6">
+              <div className="flex-1 bg-grows-blue py-6">
                 <nav className="space-y-2">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
@@ -104,7 +104,7 @@ export function TopBar({
                 </nav>
               </div>
 
-              <div className="border-t border-white/20 bg-primario p-6">
+              <div className="border-t border-white/20 bg-grows-blue p-6">
                 <button
                   onClick={onLogout}
                   className="flex w-full items-center space-x-4 rounded-lg px-4 py-3 text-left text-white transition hover:bg-white/10"

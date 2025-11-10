@@ -68,8 +68,7 @@ export default function CuadrillasPage() {
 
   return (
     <div className="min-h-screen bg-grows-background flex">
-      {/* Sidebar */}
-      <SidebarClienteTecnico 
+      <SidebarClienteTecnico
         activeSection="cuadrillas"
         onSectionChange={(section) => {
           if (section === 'cuadrillas') {
@@ -80,66 +79,29 @@ export default function CuadrillasPage() {
           router.push((`/cliente/dashboard?section=${section}`) as Route);
         }}
       />
-      
-      {/* Contenedor principal */}
+
       <div className="flex-1 ml-[220px] relative">
-        {/* Contenido normal (dashboard) */}
         {!visorActivo && (
-          <>
-            {/* Vista de Grid (grupos) */}
-            {!vistaDetalle && (
-              <SectionLayout
-                title="Gestión de Cuadrillas"
-                subtitle="Seleccioná una especialidad para ver sus cuadrillas"
+          <SectionLayout
+            title={vistaDetalle ? filtros.especialidad || 'Especialidad' : 'Gestión de Cuadrillas'}
+            subtitle={vistaDetalle ? 'Gestioná las cuadrillas de esta especialidad' : 'Seleccioná una especialidad para ver sus cuadrillas'}
+          >
+            <div className="mb-4 flex justify-end">
+              <Button
+                variant={vistaDetalle ? 'ghost' : 'primary'}
+                onClick={vistaDetalle ? handleVolverAGrid : () => setShowModalInvitarSocio(true)}
+                className={vistaDetalle ? 'mb-0' : ''}
+                icon={!vistaDetalle ? <UserCheck className="h-4 w-4" /> : undefined}
               >
-                {/* Botón Invitar Socio */}
-                <div className="mb-4 flex justify-end">
-                  <Button
-                    variant="primary"
-                    onClick={() => setShowModalInvitarSocio(true)}
-                    icon={<UserCheck className="h-4 w-4" />}
-                  >
-                    Invitar Socio
-                  </Button>
-                </div>
+                {vistaDetalle ? '← Volver a especialidades' : 'Invitar Socio'}
+              </Button>
+            </div>
 
-                {/* KPIs esenciales */}
-                <TopStats onOpenVisor={handleOpenVisor} />
-
-                {/* Grid de grupos */}
-                <GruposGrid />
-
-                {/* Bloque de alertas */}
-                <AlertasBloque />
-              </SectionLayout>
-            )}
-
-            {/* Vista de detalle (cuadrillas de una especialidad) */}
-            {vistaDetalle && (
-              <SectionLayout
-                title={filtros.especialidad || 'Especialidad'}
-                subtitle="Gestiona las cuadrillas de esta especialidad"
-              >
-                {/* Botón volver */}
-                <Button
-                  variant="ghost"
-                  onClick={handleVolverAGrid}
-                  className="mb-4"
-                >
-                  ← Volver a especialidades
-                </Button>
-
-                {/* KPIs esenciales */}
-                <TopStats onOpenVisor={handleOpenVisor} />
-
-                {/* Tablero Kanban (solo muestra la especialidad filtrada) */}
-                <Kanban />
-              </SectionLayout>
-            )}
-          </>
+            <TopStats onOpenVisor={handleOpenVisor} />
+            {vistaDetalle ? <Kanban /> : <><GruposGrid /><AlertasBloque /></>}
+          </SectionLayout>
         )}
 
-        {/* Visores de KPIs */}
         {visorActivo === 'cuadrillas' && (
           <VisorCuadrillasActivas onClose={handleCloseVisor} />
         )}
@@ -150,13 +112,9 @@ export default function CuadrillasPage() {
           <VisorCumplimientoGeneral onClose={handleCloseVisor} />
         )}
 
-        {/* Drawer lateral para detalles */}
         <CuadrillaDrawer cuadrilla={cuadrillaSeleccionada} />
-
-        {/* Modal de asignación */}
         <AsignarModal />
 
-        {/* Modal Invitar Socio */}
         {showModalInvitarSocio && (
           <ModalInvitarSocio
             onClose={() => setShowModalInvitarSocio(false)}

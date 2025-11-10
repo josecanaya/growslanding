@@ -20,17 +20,23 @@ import { ChevronDown, ChevronRight, Plus } from 'lucide-react';
 
 const especialidades: Especialidad[] = [
   'Albañilería / Estructura',
-  'Yesería / Terminaciones', 
+  'Yesería / Terminaciones',
   'Carpintería',
   'Plomería / Gas',
   'Electricidad',
   'Pintura'
 ];
 
-export function Kanban() {
+interface KanbanProps {
+  cuadrillas?: Cuadrilla[];
+}
+
+export function Kanban({ cuadrillas: cuadrillasOverride }: KanbanProps = {}) {
   const currentUser = useCurrentUser();
   const { toast } = useToast();
-  const { cuadrillas, filtros, moverCuadrilla, crearCuadrilla, error } = useCuadrillasStore();
+  const store = useCuadrillasStore();
+  const cuadrillas = cuadrillasOverride ?? store.cuadrillas;
+  const { filtros, moverCuadrilla, crearCuadrilla, error } = store;
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showModalNueva, setShowModalNueva] = useState(false);
   const [especialidadSeleccionada, setEspecialidadSeleccionada] = useState<Especialidad | null>(null);
@@ -121,21 +127,21 @@ export function Kanban() {
   };
 
   const getEspecialidadColor = (especialidad: string) => {
-    const colores = {
-      'Albañilería / Estructura': 'bg-orange-50 border-orange-200',
-      'Yesería / Terminaciones': 'bg-pink-50 border-pink-200',
-      'Carpintería': 'bg-amber-50 border-amber-200',
-      'Plomería / Gas': 'bg-blue-50 border-blue-200',
-      'Electricidad': 'bg-yellow-50 border-yellow-200',
-      'Pintura': 'bg-purple-50 border-purple-200'
+     const colores = {
+      'Albañilería / Estructura': 'bg-growsBlueLight/10',
+      'Yesería / Terminaciones': 'bg-growsBlueLight/10',
+      'Carpintería': 'bg-growsBlueLight/10',
+      'Plomería / Gas': 'bg-growsBlueLight/10',
+      'Electricidad': 'bg-growsBlueLight/10',
+      'Pintura': 'bg-growsBlueLight/10',
     };
-    return colores[especialidad as keyof typeof colores] || 'bg-gray-50 border-gray-200';
+    return colores[especialidad as keyof typeof colores] || 'bg-growsBlueLight/10';
   };
 
   const activeCuadrilla = activeId ? cuadrillas.find(c => c.id === activeId) : null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-grows-gray">
       <DndContext
         sensors={sensors}
         onDragStart={handleDragStart}
@@ -150,19 +156,19 @@ export function Kanban() {
             return (
               <div
                 key={especialidad}
-                className={`${getEspecialidadColor(especialidad)} rounded-xl border-2 border-dashed overflow-hidden`}
+                className={`rounded-grows-lg border border-dashed border-grows-border overflow-hidden ${getEspecialidadColor(especialidad)}`}
               >
                 {/* Header del accordion */}
                 <button
                   onClick={() => toggleSection(especialidad)}
-                  className="w-full p-4 text-left hover:bg-white/30 transition-colors duration-200"
+                  className="w-full p-4 text-left transition-colors duration-200 hover:bg-grows-surface/30"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <span className="text-2xl">{getEspecialidadIcon(especialidad)}</span>
                       <div>
-                        <h3 className="font-semibold text-gray-900 text-lg">{especialidad}</h3>
-                        <p className="text-sm text-gray-600">
+                        <h3 className="text-lg font-semibold text-growsBlue">{especialidad}</h3>
+                        <p className="text-sm text-growsTextMuted">
                           {totalCuadrillas} cuadrillas • {cuadrillasDisponibles} disponibles
                         </p>
                       </div>
@@ -174,15 +180,15 @@ export function Kanban() {
                           cuadrillasDisponibles > 0 ? 'bg-green-500' : 
                           totalCuadrillas > 0 ? 'bg-yellow-500' : 'bg-gray-400'
                         }`}></div>
-                        <span className="text-sm text-gray-600">
+                        <span className="text-sm text-growsTextMuted">
                           {cuadrillasDisponibles > 0 ? 'Disponible' : 
                            totalCuadrillas > 0 ? 'Ocupado' : 'Sin cuadrillas'}
                         </span>
                       </div>
                       {isExpanded ? (
-                        <ChevronDown className="h-5 w-5 text-gray-600" />
+                        <ChevronDown className="h-5 w-5 text-growsTextMuted" />
                       ) : (
-                        <ChevronRight className="h-5 w-5 text-gray-600" />
+                        <ChevronRight className="h-5 w-5 text-growsTextMuted" />
                       )}
                     </div>
                   </div>
@@ -205,17 +211,17 @@ export function Kanban() {
                         
                         {/* Mensaje cuando no hay cuadrillas */}
                         {cuadrillasColumna.length === 0 && (
-                          <div className="col-span-full flex items-center justify-center py-12 text-gray-500">
+                          <div className="col-span-full flex items-center justify-center py-12 text-growsTextMuted">
                             <div className="text-center">
                               <div className="text-4xl mb-3">{getEspecialidadIcon(especialidad)}</div>
-                              <p className="text-lg font-medium mb-2">No hay cuadrillas en esta especialidad</p>
-                              <p className="text-sm">Arrastra una cuadrilla aquí para moverla</p>
+                              <p className="mb-2 text-lg font-medium text-growsBlue">No hay cuadrillas en esta especialidad</p>
+                              <p className="text-sm">Arrastrá una cuadrilla acá para moverla</p>
                               <button 
                                 onClick={() => {
                                   setEspecialidadSeleccionada(especialidad as Especialidad);
                                   setShowModalNueva(true);
                                 }}
-                                className="mt-4 flex items-center space-x-2 mx-auto px-4 py-2 bg-white hover:bg-gray-50 text-gray-700 rounded-lg border border-gray-200 transition-colors duration-200"
+                                className="mx-auto mt-4 flex items-center space-x-2 rounded-grows-md border border-grows-border bg-grows-surface px-4 py-2 text-growsText transition-colors duration-200 hover:bg-grows-surface/80"
                               >
                                 <Plus className="h-4 w-4" />
                                 <span>Agregar cuadrilla</span>

@@ -26,6 +26,8 @@ import {
   type SubscriptionPlanId,
 } from '@/lib/subscriptions/types';
 import { usePlanCard } from '@/lib/subscriptions/hooks';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 type UpgradeModalRequest = {
   targetPlanId: SubscriptionPlanId;
@@ -83,15 +85,51 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
     [open, close, state.open],
   );
 
-  const handleSubscribe = useCallback(() => {
-    const query = new URLSearchParams();
-    query.set('plan', state.targetPlanId);
-    if (state.source) {
-      query.set('from', state.source);
+  const handleSubscribe = useCallback(async () => {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData?.user?.id) {
+        toast({
+          title: 'No se pudo actualizar el plan',
+          description:
+            'No encontramos una sesión activa. Iniciá sesión e intentá nuevamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase
+        .from('organizations')
+        .update({ plan_actual: state.targetPlanId })
+        .eq('owner_user_id', authData.user.id);
+
+      if (error) {
+        console.error('[UpgradeModal] Error updating plan:', error);
+        toast({
+          title: 'No se pudo actualizar el plan',
+          description: 'Intentalo nuevamente en unos minutos.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Plan actualizado',
+        description: `Plan ${state.targetPlanId} activado correctamente.`,
+      });
+      close();
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('[UpgradeModal] Unexpected error updating plan:', error);
+      toast({
+        title: 'No se pudo actualizar el plan',
+        description: 'Ocurrió un error inesperado. Volvé a intentar en unos minutos.',
+        variant: 'destructive',
+      });
     }
-    close();
-    router.push(`/cuenta?${query.toString()}`);
-  }, [close, router, state.targetPlanId, state.source]);
+  }, [close, state.targetPlanId]);
 
   const handleViewPlans = useCallback(() => {
     const query = new URLSearchParams();
@@ -105,10 +143,12 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
     <UpgradeModalContext.Provider value={contextValue}>
       {children}
       <Dialog open={state.open} onOpenChange={(next) => (!next ? close() : undefined)}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{targetPlan.name}</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-md rounded-2xl border border-zinc-800 bg-neutral-900 text-zinc-100 shadow-xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-xl font-semibold text-[#CBA135]">
+              {targetPlan.name}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-zinc-400">
               {state.contextCopy ??
                 state.reason ??
                 'Descubrí las funciones disponibles en este plan para seguir escalando tu operación.'}
@@ -117,11 +157,9 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
 
           <div className="space-y-4">
             {limitDetails ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                <p className="font-medium text-slate-900">
-                  {limitDetails.label}
-                </p>
-                <p>
+              <div className="rounded-xl border border-zinc-800 bg-neutral-800/70 px-4 py-3 text-sm text-zinc-200">
+                <p className="font-semibold text-zinc-100">{limitDetails.label}</p>
+                <p className="text-sm text-zinc-300">
                   {limitDetails.blockedCopy ??
                     'Alcanzaste el límite disponible en tu plan actual. Pasá al siguiente nivel para seguir creciendo.'}
                 </p>
@@ -129,24 +167,24 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
             ) : null}
 
             {featureDetails ? (
-              <div className="rounded-lg border border-slate-200 px-4 py-3">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="rounded-xl border border-zinc-800 bg-neutral-800/70 px-4 py-3 text-sm text-zinc-200">
+                <p className="font-semibold text-zinc-100">
                   Funcionalidad destacada: {featureDetails.label}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-zinc-300">
                   Disponible en {targetPlan.name}. Mejorá tu plan para activarla.
                 </p>
               </div>
             ) : null}
 
             <div>
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-zinc-100">
                 Beneficios que desbloqueás
               </p>
-              <ul className="mt-2 space-y-2 text-sm text-slate-700">
+              <ul className="mt-3 space-y-2 text-sm text-zinc-200">
                 {targetPlan.benefits.map((benefit) => (
                   <li key={benefit} className="flex items-start gap-2">
-                    <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
+                    <span className="mt-1 h-2 w-2 flex-shrink-0 rounded-full bg-[#CBA135]" />
                     <span>{benefit}</span>
                   </li>
                 ))}
@@ -154,18 +192,18 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <DialogFooter className="flex flex-col items-stretch gap-2 sm:flex-col">
+          <DialogFooter className="mt-6 flex flex-col gap-2 sm:flex-col">
             <Button
               type="button"
-              className="w-full"
+              className="w-full bg-[#CBA135] text-black hover:bg-[#d3ad45]"
               onClick={handleSubscribe}
             >
-              Suscribirme
+              Activar plan
             </Button>
             <Button
               type="button"
               variant="outline"
-              className="w-full"
+              className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800"
               onClick={handleViewPlans}
             >
               Ver todos los planes

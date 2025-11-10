@@ -37,7 +37,7 @@ export function ChatDemo() {
                 <h4 className="font-semibold text-grows-primary mb-3">🎯 Branding GROWS</h4>
                 <ul className="space-y-2 text-sm text-grows-text-secondary">
                   <li>• Azul petróleo (#0C1D36) para texto principal</li>
-                  <li>• Dorado (#E8C547) para acentos e íconos</li>
+              <li>• Azul pálido (#4A6FA5) para acentos e íconos</li>
                   <li>• Tipografía Rubik para el saludo</li>
                   <li>• Ícono dorado distintivo de GrowsBot</li>
                   <li>• Animaciones fade-in sutiles</li>

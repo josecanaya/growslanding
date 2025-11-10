@@ -8,13 +8,13 @@ Este sistema de diseño unificado garantiza la coherencia visual en toda la plat
 
 ### Colores Principales
 - **Azul Petróleo** (`#0C1D36`) - Color base principal
-- **Dorado** (`#E8C547`) - Color de acento
+- **Azul Pálido** (`#4A6FA5`) - Color de acento
 - **Fondo** (`#F5F6F7`) - Fondo gris claro
 - **Superficie** (`#FFFFFF`) - Superficie principal
 
 ### Estados Semánticos
-- **Activa/Completada** → Dorado (`#E8C547`)
-- **Pausada/Pendiente** → Dorado (`#E8C547`)
+- **Activa/Completada** → Azul pálido (`#4A6FA5`)
+- **Pausada/Pendiente** → Azul pálido (`#4A6FA5`)
 - **Finalizada** → Azul petróleo (`#0C1D36`)
 - **Cancelada/Bloqueada** → Rojo apagado (`#A32A2A`)
 

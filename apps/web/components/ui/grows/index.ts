@@ -7,6 +7,7 @@
 
 export { Button } from './Button';
 export { Card } from './Card';
+export { BaseCard } from './BaseCard';
 export { ModalBase } from './ModalBase';
 export { EmptyState } from './EmptyState';
 export { Badge } from './Badge';

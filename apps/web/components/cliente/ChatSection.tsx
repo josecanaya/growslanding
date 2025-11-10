@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Send,
   MessageCircle,
@@ -11,7 +12,10 @@ import {
   Mic,
   Settings,
   ChevronDown,
+  X,
 } from 'lucide-react';
+import { useSubscription } from '@/lib/subscriptions';
+import { canUseFeature, usePlanGate } from '@/lib/permissions';
 
 interface Message {
   id: string;
@@ -63,13 +67,17 @@ function extractAssistantMessage(payload: unknown): string {
   return String(payload);
 }
 
-export function ChatSection({ userName = 'Usuario' }: ChatSectionProps) {
+export function ChatSection({ userName = 'Usuario', onNavigate }: ChatSectionProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { planId } = useSubscription();
+  const { verifyAccess } = usePlanGate();
+  const canUseChat = canUseFeature(planId, 'chat');
+  const router = useRouter();
 
   // Auto-scroll al ultimo mensaje
   const scrollToBottom = () => {
@@ -162,6 +170,9 @@ export function ChatSection({ userName = 'Usuario' }: ChatSectionProps) {
   };
 
   const handleSendMessage = () => {
+    if (!verifyAccess('chat', 'PRO')) {
+      return;
+    }
     if (!inputValue.trim()) return;
 
     try {
@@ -189,6 +200,51 @@ export function ChatSection({ userName = 'Usuario' }: ChatSectionProps) {
       handleSendMessage();
     }
   };
+
+  if (!canUseChat) {
+    const handleClose = () => {
+      if (onNavigate) {
+        onNavigate('obras');
+        return;
+      }
+      router.push('/cliente/obras');
+    };
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.25),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.65),_transparent_55%)] opacity-80"
+          aria-hidden="true"
+        />
+        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
+        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
+            aria-label="Cerrar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
+            <MessageCircle className="h-7 w-7" />
+          </div>
+          <h1 className="text-2xl font-semibold text-zinc-50">Chat disponible en plan PRO</h1>
+          <p className="text-sm text-zinc-200">
+            Activá un plan PRO o Enterprise para conversar con GrowsBot, coordinar acciones y recibir
+            recomendaciones inteligentes.
+          </p>
+          <button
+            type="button"
+            onClick={() => verifyAccess('chat', 'PRO')}
+            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
+          >
+            Ver planes disponibles
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white flex">

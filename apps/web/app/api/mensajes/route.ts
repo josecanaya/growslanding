@@ -6,27 +6,27 @@ export async function GET(request: NextRequest) {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
     const orgId = request.headers.get('x-organizacion-id');
-    const socioId = request.headers.get('x-socio-id');
+    const obraId = request.nextUrl.searchParams.get('obra_id');
+    const tareaId = request.nextUrl.searchParams.get('tarea_id');
 
     if (!orgId) {
       return NextResponse.json({ success: false, error: 'Falta x-organizacion-id' }, { status: 400 });
     }
 
-    let query = supabaseAny.from('notificaciones').select('*').eq('org_id', orgId);
-    if (socioId) {
-      query = query.eq('socio_id', socioId);
-    }
+    let query = supabaseAny.from('mensajes').select('*').eq('org_id', orgId);
+    if (obraId) query = query.eq('obra_id', obraId);
+    if (tareaId) query = query.eq('tarea_id', tareaId);
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[GET /api/notificaciones] Error:', error);
+      console.error('[GET /api/mensajes] Error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error('[GET /api/notificaciones] Excepción:', error);
+    console.error('[GET /api/mensajes] Excepción:', error);
     return NextResponse.json(
       { success: false, error: error?.message ?? 'Error interno' },
       { status: 500 },
@@ -40,19 +40,21 @@ export async function POST(request: NextRequest) {
     const supabaseAny = supabase as any;
     const body = await request.json();
 
-    const { data, error } = await supabaseAny.from('notificaciones').insert([body]).select();
+    const { data, error } = await supabaseAny.from('mensajes').insert([body]).select();
 
     if (error) {
-      console.error('[POST /api/notificaciones] Error:', error);
+      console.error('[POST /api/mensajes] Error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
-    console.error('[POST /api/notificaciones] Excepción:', error);
+    console.error('[POST /api/mensajes] Excepción:', error);
     return NextResponse.json(
       { success: false, error: error?.message ?? 'Error interno' },
       { status: 500 },
     );
   }
 }
+
+

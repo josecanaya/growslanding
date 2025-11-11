@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { TopStats } from '@/components/cuadrillas/TopStats';
 import { GruposGrid } from '@/components/cuadrillas/GruposGrid';
@@ -15,9 +16,11 @@ import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { Button, SectionLayout } from '@/components/ui/grows';
-import { UserCheck, X } from 'lucide-react';
+import { BaseCard, Button, EmptyState, SectionLayout } from '@/components/ui/grows';
+import { UserCheck, Users, X } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import type { Cuadrilla } from '@/lib/types/cuadrillas';
+import type { Database } from '@/lib/types/supabase.gen';
 
 export default function CuadrillasPage() {
   const router = useRouter();
@@ -33,10 +36,12 @@ export default function CuadrillasPage() {
     cuadrillas,
     isLoading
   } = useCuadrillasStore();
-  const cuadrillasStore = useCuadrillasStore();
+  const cuadrillasStore = useCuadrillasStore.getState();
   const [visorActivo, setVisorActivo] = useState<'cuadrillas' | 'tareas' | 'cumplimiento' | null>(null);
   const [vistaDetalle, setVistaDetalle] = useState(false);
   const [showModalInvitarSocio, setShowModalInvitarSocio] = useState(false);
+  const [viewMode, setViewMode] = useState<'obras' | 'general'>('obras');
+  const [statsExtras, setStatsExtras] = useState({ socios: 0, pendientes: 0 });
 
   // Cargar cuadrillas desde Supabase al montar el componente
   useEffect(() => {
@@ -45,12 +50,87 @@ export default function CuadrillasPage() {
     }
   }, [currentUser?.orgId, fetchCuadrillas]);
 
+  useEffect(() => {
+    if (!currentUser?.orgId) {
+      setStatsExtras({ socios: 0, pendientes: 0 });
+      return;
+    }
+
+    const supabase = createClientComponentClient<Database>() as any;
+
+    const cargarStatsExtras = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('socios')
+          .select('*')
+          .eq('org_id', currentUser.orgId);
+
+        if (!error && Array.isArray(data)) {
+          const totalSocios = data.length;
+          const pendientes = data.filter((row: any) => {
+            const estado = `${row?.status ?? row?.estado ?? ''}`.toLowerCase();
+            return estado === 'pendiente' || estado === 'pending' || estado === 'invitado';
+          }).length;
+
+          setStatsExtras({ socios: totalSocios, pendientes });
+        } else {
+          setStatsExtras({ socios: 0, pendientes: 0 });
+        }
+      } catch (error) {
+        console.warn('[CuadrillasPage] Error cargando estadísticas de socios', error);
+        setStatsExtras({ socios: 0, pendientes: 0 });
+      }
+    };
+
+    cargarStatsExtras();
+  }, [currentUser?.orgId, showModalInvitarSocio]);
+
   const handleOpenVisor = (visorType: 'cuadrillas' | 'tareas' | 'cumplimiento') => {
     setVisorActivo(visorType);
   };
 
   const handleCloseVisor = () => {
     setVisorActivo(null);
+  };
+
+  const stats = useMemo(() => {
+    const normalizar = (estado?: string) => `${estado ?? ''}`.toLowerCase();
+
+    const activas = cuadrillas.filter((cuadrilla) => {
+      const estado = normalizar(cuadrilla.estado);
+      return estado.includes('activa') || estado.includes('obra');
+    }).length;
+
+    const disponibles = cuadrillas.filter((cuadrilla) => {
+      const estado = normalizar(cuadrilla.estado);
+      return estado.includes('dispon') || !cuadrilla.obraId;
+    }).length;
+
+    return {
+      activas,
+      disponibles,
+      pendientes: statsExtras.pendientes,
+      socios: statsExtras.socios,
+    };
+  }, [cuadrillas, statsExtras]);
+
+  const handleChangeViewMode = (mode: 'obras' | 'general') => {
+    setViewMode(mode);
+
+    if (mode === 'general') {
+      setVistaDetalle(false);
+      setFiltros({ especialidad: undefined });
+    }
+  };
+
+  const handleVerCuadrilla = (cuadrilla: Cuadrilla) => {
+    cuadrillasStore.seleccionarCuadrilla(cuadrilla);
+    cuadrillasStore.abrirDrawer();
+  };
+
+  const handleAsignarCuadrilla = (cuadrilla: Cuadrilla) => {
+    cuadrillasStore.seleccionarCuadrilla(cuadrilla);
+    cuadrillasStore.abrirModalAsignacion();
   };
 
   // Detectar cuando se filtra por especialidad para mostrar vista detalle
@@ -63,9 +143,82 @@ export default function CuadrillasPage() {
   useEffect(() => {
     if (filtros.especialidad) {
       setVistaDetalle(true);
+      setViewMode('obras');
     }
   }, [filtros.especialidad]);
 
+  const renderGeneralGrid = () => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <BaseCard key={`cuadrilla-loading-${index}`}>
+              <div className="h-20 animate-pulse rounded-grows-md bg-grows-neutral" />
+            </BaseCard>
+          ))}
+        </div>
+      );
+    }
+
+    if (cuadrillas.length === 0) {
+      return (
+        <EmptyState
+          title="Todavía no cargaste cuadrillas"
+          description="Cuando invites o registres cuadrillas, las vas a ver listadas acá."
+          icon={<Users className="h-12 w-12 text-growsBlue" />}
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {cuadrillas.map((cuadrilla) => {
+          const integrantes = cuadrilla.integrantes?.length ?? 0;
+          const estado = `${cuadrilla.estado ?? 'Sin estado'}`;
+          const cumplimiento = cuadrilla.kpi?.cumplimientoPct ?? 0;
+
+          return (
+            <BaseCard key={cuadrilla.id} title={cuadrilla.nombre} subtitle={cuadrilla.especialidad}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-growsTextMuted">
+                  <span>{integrantes} integrante{integrantes === 1 ? '' : 's'}</span>
+                  <span className="rounded-grows-full bg-growsBlueLight/10 px-2 py-1 text-growsBlue">
+                    {estado.toUpperCase()}
+                  </span>
+                </div>
+                <p className="text-sm text-growsTextMuted">
+                  Cumplimiento promedio: {cumplimiento}%
+                </p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => handleVerCuadrilla(cuadrilla)}>
+                    Ver detalle
+                  </Button>
+                  <Button size="sm" onClick={() => handleAsignarCuadrilla(cuadrilla)}>
+                    Asignar
+                  </Button>
+                </div>
+              </div>
+            </BaseCard>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const sectionTitle = viewMode === 'general'
+    ? 'Todas las cuadrillas'
+    : vistaDetalle
+    ? filtros.especialidad || 'Especialidad'
+    : 'Gestión de Cuadrillas';
+
+  const sectionSubtitle = viewMode === 'general'
+    ? 'Explorá todas las cuadrillas de tu organización'
+    : vistaDetalle
+    ? 'Gestioná las cuadrillas de esta especialidad'
+    : 'Seleccioná una especialidad para ver sus cuadrillas';
+
+  const toggleViewLabel = viewMode === 'general' ? 'Ver por especialidad' : 'Ver todas';
+ 
   return (
     <div className="min-h-screen bg-grows-background flex">
       <SidebarClienteTecnico
@@ -83,22 +236,61 @@ export default function CuadrillasPage() {
       <div className="flex-1 ml-[220px] relative">
         {!visorActivo && (
           <SectionLayout
-            title={vistaDetalle ? filtros.especialidad || 'Especialidad' : 'Gestión de Cuadrillas'}
-            subtitle={vistaDetalle ? 'Gestioná las cuadrillas de esta especialidad' : 'Seleccioná una especialidad para ver sus cuadrillas'}
+            title={sectionTitle}
+            subtitle={sectionSubtitle}
           >
-            <div className="mb-4 flex justify-end">
-              <Button
-                variant={vistaDetalle ? 'ghost' : 'primary'}
-                onClick={vistaDetalle ? handleVolverAGrid : () => setShowModalInvitarSocio(true)}
-                className={vistaDetalle ? 'mb-0' : ''}
-                icon={!vistaDetalle ? <UserCheck className="h-4 w-4" /> : undefined}
-              >
-                {vistaDetalle ? '← Volver a especialidades' : 'Invitar Socio'}
-              </Button>
-            </div>
+            <section className="mb-8 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-growsText">Panel General de Cuadrillas</h2>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => handleChangeViewMode(viewMode === 'general' ? 'obras' : 'general')}>
+                    {toggleViewLabel}
+                  </Button>
+                  <Button onClick={() => setShowModalInvitarSocio(true)} icon={<UserCheck className="h-4 w-4" />}>
+                    Invitar socio
+                  </Button>
+                </div>
+              </div>
 
-            <TopStats onOpenVisor={handleOpenVisor} />
-            {vistaDetalle ? <Kanban /> : <><GruposGrid /><AlertasBloque /></>}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <BaseCard title="Cuadrillas Activas">
+                  <p className="text-2xl font-semibold text-growsBlue">{stats.activas}</p>
+                </BaseCard>
+                <BaseCard title="Disponibles">
+                  <p className="text-2xl font-semibold text-growsBlue">{stats.disponibles}</p>
+                </BaseCard>
+                <BaseCard title="Invitaciones Pendientes">
+                  <p className="text-2xl font-semibold text-growsBlue">{stats.pendientes}</p>
+                </BaseCard>
+                <BaseCard title="Socios Totales">
+                  <p className="text-2xl font-semibold text-growsBlue">{stats.socios}</p>
+                </BaseCard>
+              </div>
+            </section>
+
+            {viewMode === 'general' ? (
+              renderGeneralGrid()
+            ) : (
+              <>
+                {vistaDetalle && (
+                  <div className="mb-4 flex justify-end">
+                    <Button variant="ghost" onClick={handleVolverAGrid}>
+                      ← Volver a especialidades
+                    </Button>
+                  </div>
+                )}
+
+                <TopStats onOpenVisor={handleOpenVisor} />
+                {vistaDetalle ? (
+                  <Kanban />
+                ) : (
+                  <>
+                    <GruposGrid />
+                    <AlertasBloque />
+                  </>
+                )}
+              </>
+            )}
           </SectionLayout>
         )}
 

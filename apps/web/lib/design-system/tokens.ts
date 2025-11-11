@@ -16,6 +16,8 @@ export const GROWS_TOKENS = {
     growsTextMuted: '#5A5A5A', // Texto secundario
     growsBorder: '#E0E0E0', // Bordes
     growsError: '#A32A2A', // Errores o alertas
+    growsGreen: '#2B8A3E', // Estados completados
+    growsYellow: '#E5A100', // Alertas suaves
   },
   typography: {
     fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',

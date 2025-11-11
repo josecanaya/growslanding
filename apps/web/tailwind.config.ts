@@ -23,6 +23,8 @@ const config: Config = {
         growsTextMuted: GROWS_TOKENS.colors.growsTextMuted,
         growsBorder: GROWS_TOKENS.colors.growsBorder,
         growsError: GROWS_TOKENS.colors.growsError,
+        growsGreen: GROWS_TOKENS.colors.growsGreen,
+        growsYellow: GROWS_TOKENS.colors.growsYellow,
       },
       fontFamily: {
         sans: fontStack,

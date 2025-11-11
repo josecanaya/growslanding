@@ -1,0 +1,112 @@
+{
+  "planes": [
+    {
+      "nombre": "Free",
+      "descripcion": "Entrada sin costo para cuadrillas chicas que necesitan ordenar tareas en una única obra activa.",
+      "features": [
+        "1 obra simultánea con tablero Kanban básico",
+        "Checklist de tareas diarias y calendario semanal",
+        "Carga de evidencias fotográficas con almacenamiento limitado",
+        "Mensajería interna 1 a 1 entre cliente técnico y socio constructor"
+      ]
+    },
+    {
+      "nombre": "Starter",
+      "descripcion": "Pensado para pymes constructoras que gestionan varias cuadrillas y requieren validaciones formales.",
+      "features": [
+        "Hasta 3 obras en paralelo con fases personalizables",
+        "Gestión de cuadrillas y asignación de responsables por tarea",
+        "Validación de avances y checklist de seguridad digital",
+        "Reportes PDF automáticos semanales para enviar a clientes"
+      ]
+    },
+    {
+      "nombre": "Pro",
+      "descripcion": "Solución para empresas medianas que necesitan visibilidad integral y control operativo en tiempo real.",
+      "features": [
+        "Obras ilimitadas con plantillas reutilizables por rubro",
+        "Dashboards comparativos por obra, cuadrilla y proveedor",
+        "Integración nativa con almacenamiento de planos y contratos",
+        "Alertas inteligentes de desvíos en cronograma y presupuesto"
+      ]
+    },
+    {
+      "nombre": "Enterprise",
+      "descripcion": "Suite corporativa con seguridad avanzada, soporte dedicado y extensibilidad para holdings constructivos.",
+      "features": [
+        "Multiempresa y multirregión con controles de acceso jerárquicos",
+        "APIs y webhooks para integrar ERP, RRHH y control de costos",
+        "SLA 99.9% y soporte dedicado 24/7 con gestor técnico asignado",
+        "Flujos de aprobación personalizados para certificados y pagos"
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "rol": "Cliente Técnico",
+      "descripcion": "Coordina la planificación de la obra, define alcances, carga hitos, valida avances y libera certificaciones."
+    },
+    {
+      "rol": "Socio Constructor",
+      "descripcion": "Ejecuta tareas en campo, reporta evidencias, solicita recursos y actualiza el estado diario de la cuadrilla."
+    },
+    {
+      "rol": "Supervisor",
+      "descripcion": "Monitorea rendimiento integral, valida cumplimiento normativo, gestiona incidencias y asegura la comunicación entre roles."
+    }
+  ],
+  "dashboards": [
+    {
+      "nombre": "Panel Cliente Técnico",
+      "componentes": [
+        "Resumen de obras activas con KPI de avance y desvíos",
+        "Calendario maestro con hitos y dependencias",
+        "Módulo de validación y certificación de tareas",
+        "Centro de informes con exportación PDF y CSV"
+      ]
+    },
+    {
+      "nombre": "Panel Socio Constructor",
+      "componentes": [
+        "Backlog de tareas asignadas por cuadrilla",
+        "Carga rápida de evidencias fotográficas y notas",
+        "Checklist de seguridad y materiales requeridos",
+        "Mensajería contextual con el cliente técnico"
+      ]
+    },
+    {
+      "nombre": "Panel Supervisor",
+      "componentes": [
+        "Vista consolidada de KPIs por obra y por equipo",
+        "Mapa de incidencias y alertas en tiempo real",
+        "Control de recursos y horas trabajadas por cuadrilla",
+        "Comparador histórico de avance vs. planificación"
+      ]
+    }
+  ],
+  "ventajas": [
+    "Centraliza la comunicación y documentación en una única plataforma enfocada en obra",
+    "Reduce retrasos detectando desvíos de cronograma y presupuesto en tiempo real",
+    "Mejora la trazabilidad con evidencias fotográficas vinculadas a cada tarea",
+    "Acelera certificaciones mediante flujos de validación digitales y auditable",
+    "Escala con la empresa gracias a planes progresivos y modulares"
+  ],
+  "futuros_desarrollos": [
+    {
+      "nombre": "BRIX — Motor de IA para planificación predictiva",
+      "descripcion": "Analizará cronogramas y cargas de trabajo para sugerir ajustes automáticos y detectar riesgos anticipados.",
+      "estado": "en desarrollo"
+    },
+    {
+      "nombre": "Integración BIM",
+      "descripcion": "Sincronización bidireccional con modelos BIM para vincular elementos constructivos con tareas y evidencias.",
+      "estado": "planificado"
+    },
+    {
+      "nombre": "Marketplace de socios y proveedores",
+      "descripcion": "Espacio curado para contratar cuadrillas, alquilar equipos y adquirir materiales con calificaciones verificadas.",
+      "estado": "en diseño"
+    }
+  ]
+}
+

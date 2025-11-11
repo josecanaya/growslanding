@@ -58,6 +58,8 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
   const [loadingObras, setLoadingObras] = useState(true);
   const [activeTab, setActiveTab] = useState<TabValue>('asignadas');
   const [especialidadDisponible, setEspecialidadDisponible] = useState<Especialidad | null>(null);
+  const [viewMode, setViewMode] = useState<'obras' | 'general'>('obras');
+  const [statsExtras, setStatsExtras] = useState({ socios: 0, pendientes: 0 });
   const supabase = createClientComponentClient<Database>();
   const { planId } = useSubscription();
   const { verifyAccess } = usePlanGate();
@@ -68,6 +70,40 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
       fetchCuadrillas(currentUser.orgId);
     }
   }, [currentUser?.orgId, fetchCuadrillas]);
+
+  useEffect(() => {
+    const cargarStatsExtras = async () => {
+      if (!currentUser?.orgId) {
+        setStatsExtras({ socios: 0, pendientes: 0 });
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('socios')
+          .select('*')
+          .eq('org_id', currentUser.orgId);
+
+        if (error || !data) {
+          setStatsExtras({ socios: 0, pendientes: 0 });
+          return;
+        }
+
+        const total = data.length;
+        const pendientes = data.filter((row: any) => {
+          const estado = `${row?.status ?? row?.estado ?? ''}`.toLowerCase();
+          return estado === 'pendiente' || estado === 'pending' || estado === 'invitado';
+        }).length;
+
+        setStatsExtras({ socios: total, pendientes });
+      } catch (error) {
+        console.warn('[CuadrillasSection] Error cargando stats de socios', error);
+        setStatsExtras({ socios: 0, pendientes: 0 });
+      }
+    };
+
+    cargarStatsExtras();
+  }, [currentUser?.orgId, showModalInvitarSocio, supabase]);
 
   useEffect(() => {
     const cargarObras = async () => {
@@ -139,11 +175,33 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
     return cuadrillasDisponibles.filter((cuadrilla) => cuadrilla.especialidad === especialidadDisponible);
   }, [cuadrillasDisponibles, especialidadDisponible]);
 
+  const stats = useMemo(() => {
+    const normalizar = (estado?: string) => `${estado ?? ''}`.toLowerCase();
+
+    const activas = cuadrillas.filter((cuadrilla) => {
+      const estado = normalizar(cuadrilla.estado);
+      return estado.includes('activa') || estado.includes('obra');
+    }).length;
+
+    const disponibles = cuadrillas.filter((cuadrilla) => {
+      const estado = normalizar(cuadrilla.estado);
+      return estado.includes('dispon') || !cuadrilla.obraId;
+    }).length;
+
+    return {
+      activas,
+      disponibles,
+      pendientes: statsExtras.pendientes,
+      socios: statsExtras.socios,
+    };
+  }, [cuadrillas, statsExtras]);
+
   const handleOpenVisor = (visorType: 'cuadrillas' | 'tareas' | 'cumplimiento') => setVisorActivo(visorType);
   const handleCloseVisor = () => setVisorActivo(null);
   const handleSelectObra = (obra: Obra) => {
     setSelectedObra(obra);
     setActiveTab('asignadas');
+    setViewMode('obras');
   };
   const handleBackToListado = () => setSelectedObra(null);
   const handleAsignarCuadrilla = (cuadrillaId: string) => {
@@ -166,6 +224,20 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
     });
 
     onNavigate?.('presupuestos');
+  };
+
+  const handleChangeViewMode = (mode: 'obras' | 'general') => {
+    setViewMode(mode);
+    if (mode === 'general') {
+      setSelectedObra(null);
+    }
+  };
+
+  const handleVerCuadrilla = (cuadrillaId: string) => {
+    const cuadrilla = cuadrillas.find((item) => item.id === cuadrillaId);
+    if (!cuadrilla) return;
+    cuadrillasStore.seleccionarCuadrilla(cuadrilla);
+    cuadrillasStore.abrirDrawer();
   };
 
   if (!canUseCuadrillas) {
@@ -210,42 +282,127 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
   const fechaInicio = selectedObra?.fecha_inicio || selectedObra?.created_at;
   const fechaInicioFormatted = fechaInicio ? new Date(fechaInicio).toLocaleDateString('es-AR') : 'N/D';
 
+  const renderGeneralGrid = () => {
+    if (cuadrillas.length === 0) {
+      return (
+        <EmptyState
+          title="Todavía no cargaste cuadrillas"
+          description="Cuando invites o registres cuadrillas, las vas a ver listadas acá."
+          icon={<Users className="h-12 w-12 text-growsBlue" />}
+        />
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {cuadrillas.map((cuadrilla) => {
+          const integrantes = cuadrilla.integrantes?.length ?? 0;
+          const cumplimiento = cuadrilla.kpi?.cumplimientoPct ?? 0;
+          const estado = `${cuadrilla.estado ?? 'Sin estado'}`.toUpperCase();
+
+          return (
+            <BaseCard key={cuadrilla.id} title={cuadrilla.nombre} subtitle={cuadrilla.especialidad}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-growsTextMuted">
+                  <span>{integrantes} integrante{integrantes === 1 ? '' : 's'}</span>
+                  <span className="rounded-grows-full bg-growsBlueLight/10 px-2 py-1 text-growsBlue">{estado}</span>
+                </div>
+                <p className="text-sm text-growsTextMuted">Cumplimiento promedio: {cumplimiento}%</p>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => handleVerCuadrilla(cuadrilla.id)}>
+                    Ver detalle
+                  </Button>
+                  <Button size="sm" onClick={() => handleAsignarCuadrilla(cuadrilla.id)}>
+                    Asignar
+                  </Button>
+                </div>
+              </div>
+            </BaseCard>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const sectionTitle = viewMode === 'general'
+    ? 'Todas las cuadrillas'
+    : 'Gestión de Cuadrillas';
+
+  const sectionSubtitle = viewMode === 'general'
+    ? 'Explorá y gestioná todas tus cuadrillas desde un solo lugar'
+    : 'Seleccioná una obra para ver y administrar sus cuadrillas';
+
   return (
     <>
       {!selectedObra ? (
-        <SectionLayout title="Gestión de Cuadrillas" subtitle="Seleccioná una obra para ver y administrar sus cuadrillas">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-growsTextMuted">
-              Tenés {obrasActivas.length} obra{obrasActivas.length === 1 ? '' : 's'} disponibles
-            </p>
-            <Button variant="primary" onClick={() => setShowModalInvitarSocio(true)} icon={<UserCheck className="h-4 w-4" />}>
-              Invitar socio
-            </Button>
-          </div>
+        <SectionLayout title={sectionTitle} subtitle={sectionSubtitle}>
+          <section className="mb-8 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="text-2xl font-semibold text-growsText">Panel General de Cuadrillas</h2>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => handleChangeViewMode(viewMode === 'general' ? 'obras' : 'general')}
+                >
+                  {viewMode === 'general' ? 'Ver por obra' : 'Ver todas'}
+                </Button>
+                <Button onClick={() => setShowModalInvitarSocio(true)} icon={<UserCheck className="h-4 w-4" />}>
+                  Invitar socio
+                </Button>
+              </div>
+            </div>
 
-          {loadingObras ? (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <BaseCard key={`obra-loading-${index}`}>Cargando obras…</BaseCard>
-              ))}
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <BaseCard title="Cuadrillas Activas">
+                <p className="text-2xl font-semibold text-growsBlue">{stats.activas}</p>
+              </BaseCard>
+              <BaseCard title="Disponibles">
+                <p className="text-2xl font-semibold text-growsBlue">{stats.disponibles}</p>
+              </BaseCard>
+              <BaseCard title="Invitaciones Pendientes">
+                <p className="text-2xl font-semibold text-growsBlue">{stats.pendientes}</p>
+              </BaseCard>
+              <BaseCard title="Socios Totales">
+                <p className="text-2xl font-semibold text-growsBlue">{stats.socios}</p>
+              </BaseCard>
             </div>
-          ) : obrasActivas.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {obrasActivas.map((obra) => (
-                <ObraCard
-                  key={obra.id}
-                  obra={obra}
-                  onView={() => handleSelectObra(obra)}
-                  onEdit={() => undefined}
-                  onDelete={() => undefined}
-                />
-              ))}
-            </div>
+          </section>
+
+          {viewMode === 'general' ? (
+            renderGeneralGrid()
           ) : (
-            <EmptyState
-              title="Todavía no cargaste obras"
-              description="Cuando generes tu primera obra, vas a poder gestionar sus cuadrillas desde acá."
-            />
+            <>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-sm text-growsTextMuted">
+                  Tenés {obrasActivas.length} obra{obrasActivas.length === 1 ? '' : 's'} disponibles
+                </p>
+              </div>
+
+              {loadingObras ? (
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <BaseCard key={`obra-loading-${index}`}>Cargando obras…</BaseCard>
+                  ))}
+                </div>
+              ) : obrasActivas.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  {obrasActivas.map((obra) => (
+                    <ObraCard
+                      key={obra.id}
+                      obra={obra}
+                      onView={() => handleSelectObra(obra)}
+                      onEdit={() => undefined}
+                      onDelete={() => undefined}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Todavía no cargaste obras"
+                  description="Cuando generes tu primera obra, vas a poder gestionar sus cuadrillas desde acá."
+                />
+              )}
+            </>
           )}
         </SectionLayout>
       ) : (

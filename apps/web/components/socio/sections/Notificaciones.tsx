@@ -1,17 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Info, Clock, Users, Calendar, Award } from 'lucide-react';
-
-interface Notificacion {
-  id: string;
-  tipo: 'info' | 'warning' | 'success' | 'error';
-  titulo: string;
-  mensaje: string;
-  fecha: string;
-  leida: boolean;
-  accion?: string;
-}
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, Bell } from 'lucide-react';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { BaseCard, Button, EmptyState } from '@/components/ui/grows';
+import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente/mensajeria/ListaNotificaciones';
 
 interface NotificacionesProps {
   user: {
@@ -23,172 +16,117 @@ interface NotificacionesProps {
 }
 
 export function Notificaciones({ user }: NotificacionesProps) {
-  // Notificaciones - se cargarán desde Supabase cuando se implemente
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
+  const currentUser = useCurrentUser();
+  const orgId = currentUser?.orgId ?? null;
+  const socioId = currentUser?.id ?? null;
 
-  const getTipoIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'success': return <CheckCircle className="h-5 w-5 text-green-600" />;
-      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
-      case 'error': return <AlertTriangle className="h-5 w-5 text-red-600" />;
-      case 'info': return <Info className="h-5 w-5 text-blue-600" />;
-      default: return <Bell className="h-5 w-5 text-gray-600" />;
+  const [notificaciones, setNotificaciones] = useState<NotificacionItem[]>([]);
+  const [cargando, setCargando] = useState(false);
+
+  const headers = useMemo(() => {
+    const base: Record<string, string> = {};
+    if (orgId) base['x-organizacion-id'] = orgId;
+    if (socioId) base['x-socio-id'] = socioId;
+    return base;
+  }, [orgId, socioId]);
+
+  const fetchNotificaciones = useCallback(async () => {
+    if (!orgId || !socioId) {
+      setNotificaciones([]);
+      return;
+    }
+
+    setCargando(true);
+    try {
+      const res = await fetch('/api/notificaciones', { headers, cache: 'no-store' });
+      const json = await res.json();
+      if (json.success) {
+        const items: NotificacionItem[] = (json.data || []).map((item: any) => ({
+          id: item.id,
+          titulo: item.titulo || 'Notificación',
+          mensaje: item.mensaje || item.descripcion || 'Sin detalle',
+          tipo: (item.tipo || 'info') as NotificacionItem['tipo'],
+          fecha: item.created_at || item.fecha || new Date().toISOString(),
+          leida: Boolean(item.leida),
+          destinatario: user.name,
+        }));
+        setNotificaciones(items);
+      }
+    } catch (error) {
+      console.error('[Socio Notificaciones] Error fetching notificaciones:', error);
+    } finally {
+      setCargando(false);
+    }
+  }, [headers, orgId, socioId, user.name]);
+
+  useEffect(() => {
+    fetchNotificaciones();
+  }, [fetchNotificaciones]);
+
+  const marcarComoLeida = async (id: string) => {
+    try {
+      await fetch(`/api/notificaciones/${id}/leida`, { method: 'PATCH' });
+      setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
+    } catch (error) {
+      console.error('[Socio Notificaciones] Error marcando notificación como leída:', error);
     }
   };
 
-  const getTipoColor = (tipo: string) => {
-    switch (tipo) {
-      case 'success': return 'bg-green-50 border-green-200';
-      case 'warning': return 'bg-yellow-50 border-yellow-200';
-      case 'error': return 'bg-red-50 border-red-200';
-      case 'info': return 'bg-blue-50 border-blue-200';
-      default: return 'bg-gray-50 border-gray-200';
-    }
+  const marcarTodasComoLeidas = async () => {
+    const pendientes = notificaciones.filter((n) => !n.leida);
+    await Promise.all(pendientes.map((notif) => fetch(`/api/notificaciones/${notif.id}/leida`, { method: 'PATCH' })));
+    setNotificaciones((prev) => prev.map((notif) => ({ ...notif, leida: true })));
   };
 
-  const getTipoTextColor = (tipo: string) => {
-    switch (tipo) {
-      case 'success': return 'text-green-900';
-      case 'warning': return 'text-yellow-900';
-      case 'error': return 'text-red-900';
-      case 'info': return 'text-blue-900';
-      default: return 'text-gray-900';
-    }
-  };
-
-  const marcarComoLeida = (id: string) => {
-    setNotificaciones(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, leida: true } : notif
-      )
-    );
-  };
-
-  const marcarTodasComoLeidas = () => {
-    setNotificaciones(prev => 
-      prev.map(notif => ({ ...notif, leida: true }))
-    );
-  };
-
-  const notificacionesNoLeidas = notificaciones.filter(n => !n.leida).length;
+  const totales = useMemo(() => {
+    const total = notificaciones.length;
+    const sinLeer = notificaciones.filter((n) => !n.leida).length;
+    const leidas = total - sinLeer;
+    return { total, sinLeer, leidas };
+  }, [notificaciones]);
 
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Notificaciones</h2>
-          <p className="text-sm text-gray-600">
-            {notificacionesNoLeidas} sin leer
-          </p>
+          <h2 className="text-xl font-semibold text-growsText">Notificaciones</h2>
+          <p className="text-sm text-growsTextMuted">{totales.sinLeer} sin leer</p>
         </div>
-        {notificacionesNoLeidas > 0 && (
-          <button
-            onClick={marcarTodasComoLeidas}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
+        {totales.sinLeer > 0 && (
+          <Button variant="secondary" onClick={marcarTodasComoLeidas}>
             Marcar todas como leídas
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* Estadísticas rápidas */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#1A202C' }}>
-          <div className="text-lg font-bold" style={{ color: '#FEEB70' }}>{notificaciones.length}</div>
-          <div className="text-xs" style={{ color: '#A0AEC0' }}>Total</div>
-        </div>
-        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#008080' }}>
-          <div className="text-lg font-bold" style={{ color: '#FFFFFF' }}>{notificacionesNoLeidas}</div>
-          <div className="text-xs" style={{ color: '#FFFFFF' }}>Sin leer</div>
-        </div>
-        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: '#FEEB70' }}>
-          <div className="text-lg font-bold" style={{ color: '#1A202C' }}>
-            {notificaciones.filter(n => n.leida).length}
-          </div>
-          <div className="text-xs" style={{ color: '#1A202C' }}>Leídas</div>
-        </div>
+        <BaseCard title="Total" className="text-center">
+          <p className="text-xl font-semibold text-growsBlue">{totales.total}</p>
+        </BaseCard>
+        <BaseCard title="Sin leer" className="text-center">
+          <p className="text-xl font-semibold text-growsBlue">{totales.sinLeer}</p>
+        </BaseCard>
+        <BaseCard title="Leídas" className="text-center">
+          <p className="text-xl font-semibold text-growsBlue">{totales.leidas}</p>
+        </BaseCard>
       </div>
 
-      {/* Lista de notificaciones */}
-      <div className="space-y-3">
-        {notificaciones.map((notificacion) => (
-          <div
-            key={notificacion.id}
-            className={`rounded-lg border p-4 transition-all duration-200 ${
-              notificacion.leida 
-                ? 'bg-white border-gray-200' 
-                : `${getTipoColor(notificacion.tipo)} border-l-4`
-            }`}
-          >
-            <div className="flex items-start space-x-3">
-              <div className="flex-shrink-0 mt-1">
-                {getTipoIcon(notificacion.tipo)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className={`font-semibold text-sm ${
-                    notificacion.leida ? 'text-gray-900' : getTipoTextColor(notificacion.tipo)
-                  }`}>
-                    {notificacion.titulo}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs text-gray-500">
-                      {new Date(notificacion.fecha).toLocaleDateString()}
-                    </span>
-                    {!notificacion.leida && (
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    )}
-                  </div>
-                </div>
-                <p className={`text-sm mb-3 ${
-                  notificacion.leida ? 'text-gray-600' : getTipoTextColor(notificacion.tipo)
-                }`}>
-                  {notificacion.mensaje}
-                </p>
-                {notificacion.accion && (
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        marcarComoLeida(notificacion.id);
-                        console.log(`Acción: ${notificacion.accion}`);
-                      }}
-                      className={`text-sm font-medium px-3 py-1 rounded-lg transition-colors ${
-                        notificacion.tipo === 'success' 
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : notificacion.tipo === 'warning'
-                          ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                          : notificacion.tipo === 'error'
-                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                          : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                      }`}
-                    >
-                      {notificacion.accion}
-                    </button>
-                    {!notificacion.leida && (
-                      <button
-                        onClick={() => marcarComoLeida(notificacion.id)}
-                        className="text-xs text-gray-500 hover:text-gray-700"
-                      >
-                        Marcar como leída
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+      <BaseCard>
+        {cargando ? (
+          <div className="flex items-center justify-center py-12 text-growsTextMuted">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Cargando notificaciones…
           </div>
-        ))}
-      </div>
-
-      {/* Mensaje cuando no hay notificaciones */}
-      {notificaciones.length === 0 && (
-        <div className="text-center py-12">
-          <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No hay notificaciones</h3>
-          <p className="text-gray-600">Te notificaremos cuando haya novedades importantes.</p>
-        </div>
-      )}
+        ) : notificaciones.length === 0 ? (
+          <EmptyState
+            title="No hay notificaciones"
+            description="Te avisaremos cuando recibas novedades."
+            icon={<Bell className="h-10 w-10 text-growsBlue" />}
+          />
+        ) : (
+          <ListaNotificaciones items={notificaciones} onMarkAsRead={marcarComoLeida} />
+        )}
+      </BaseCard>
     </div>
   );
 }

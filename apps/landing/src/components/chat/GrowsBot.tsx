@@ -5,12 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot } from "lucide-react";
 
-import {
-  growsBotFallback,
-  growsBotInitialGreeting,
-  growsBotIntents,
-  type GrowsBotIntent,
-} from "@/data/growsBotResponses";
 import { scrollToSection } from "@/utils/scrollToSection";
 
 type GrowsBotAction = {
@@ -27,12 +21,10 @@ type ChatMessage = {
 type GrowsBotProps = {
   onCommand?: (payload: {
     userInput: string;
-    match?: GrowsBotIntent;
   }) => void;
 };
 
 const storageKey = "grows-bot-conversation";
-const storageLastTopicKey = "grows-bot-last-topic";
 const tooltipDurationMs = 4000;
 
 const suggestedTopics = [
@@ -42,9 +34,6 @@ const suggestedTopics = [
   { label: "Sistema de reputación", value: "reputación" },
   { label: "Planes y precios", value: "precios" },
 ];
-
-const normalizeText = (value: string) =>
-  value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 export function GrowsBot({ onCommand }: GrowsBotProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -56,7 +45,6 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
   const [showSuggestions, setShowSuggestions] = useState(true);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
-  const pendingReplyRef = useRef<number>();
   const greetingTimeoutRef = useRef<number>();
   const hasSentGreetingRef = useRef(false);
 
@@ -106,9 +94,6 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
 
   useEffect(() => {
     return () => {
-      if (pendingReplyRef.current) {
-        window.clearTimeout(pendingReplyRef.current);
-      }
       if (greetingTimeoutRef.current) {
         window.clearTimeout(greetingTimeoutRef.current);
       }
@@ -133,7 +118,10 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     greetingTimeoutRef.current = window.setTimeout(() => {
       setMessages((prev) => [
         ...prev,
-        { sender: "bot", text: growsBotInitialGreeting },
+        {
+          sender: "bot",
+          text: "👋 ¡Bienvenido a GROWS! ¿Querés que te muestre cómo funciona el sistema?",
+        },
       ]);
       hasSentGreetingRef.current = true;
     }, 2000);
@@ -145,63 +133,58 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     };
   }, [hasHydrated]);
 
-  const matchIntent = useCallback((input: string) => {
-    const normalizedInput = normalizeText(input);
-    return growsBotIntents.find((intent) =>
-      intent.keywords.some((keyword) =>
-        normalizedInput.includes(normalizeText(keyword))
-      )
-    );
-  }, []);
-
+  // 🔄 Reemplazado sistema local de intents por conexión con GAUCHO (n8n)
   const handleUserMessage = useCallback(
-    (rawInput: string) => {
+    async (rawInput: string) => {
       const trimmed = rawInput.trim();
-      if (!trimmed) {
-        return;
-      }
+      if (!trimmed) return;
 
       setMessages((prev) => [...prev, { sender: "user", text: trimmed }]);
       setInputValue("");
       setShowSuggestions(false);
-
-      if (pendingReplyRef.current) {
-        window.clearTimeout(pendingReplyRef.current);
-      }
-
-      if (typeof window !== "undefined") {
-        try {
-          window.localStorage.setItem(storageLastTopicKey, trimmed);
-        } catch (error) {
-          console.warn("GROWS Bot: unable to persist last topic", error);
-        }
-      }
-
-      const matchedIntent = matchIntent(trimmed);
-      onCommand?.({ userInput: trimmed, match: matchedIntent });
-
       setIsTyping(true);
-      const replyDelay = Math.floor(Math.random() * 200) + 500;
 
-      pendingReplyRef.current = window.setTimeout(() => {
-        const actions =
-          matchedIntent?.actions && matchedIntent.actions.length > 0
-            ? matchedIntent.actions
-            : undefined;
+      try {
+        onCommand?.({ userInput: trimmed });
+        const res = await fetch("/api/gaucho", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: trimmed,
+            session_id: "landing-" + Date.now(),
+          }),
+        });
 
+        const data = await res.json();
+
+        const botText =
+          data?.message ||
+          data?.display_message ||
+          data?.response ||
+          "No recibí respuesta de GAUCHO.";
+        const botActions = data?.buttons?.map((b: any) => ({
+          label: b.label,
+          section: b.action,
+        }));
+
+        setMessages((prev) => [
+          ...prev,
+          { sender: "bot", text: botText, actions: botActions },
+        ]);
+      } catch (err) {
+        console.error("Error al conectar con GAUCHO:", err);
         setMessages((prev) => [
           ...prev,
           {
             sender: "bot",
-            text: matchedIntent?.reply ?? growsBotFallback,
-            actions,
+            text: "No pude conectar con GAUCHO. Probá de nuevo en unos minutos.",
           },
         ]);
+      } finally {
         setIsTyping(false);
-        pendingReplyRef.current = undefined;
-      }, replyDelay);
+      }
     },
-    [matchIntent, onCommand]
+    []
   );
 
   const handleToggle = useCallback(() => {
@@ -225,7 +208,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       if (!trimmed) {
         return;
       }
-      handleUserMessage(trimmed);
+      void handleUserMessage(trimmed);
     },
     [handleUserMessage, inputValue]
   );
@@ -237,7 +220,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
 
   const handleSuggestedTopic = useCallback(
     (value: string) => {
-      handleUserMessage(value);
+      void handleUserMessage(value);
     },
     [handleUserMessage]
   );

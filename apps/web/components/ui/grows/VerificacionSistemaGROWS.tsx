@@ -64,10 +64,13 @@ export function VerificacionSistemaGROWS() {
           <Card
             title="Card con Estado"
             subtitle="Con badge de estado"
-            status="ACTIVA"
             icon={<div className="h-6 w-6 bg-grows-secondary/10 rounded-grows-md flex items-center justify-center">📋</div>}
           >
             <p className="text-grows-text-secondary">Card con icono y estado usando Badge component</p>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-grows-text-secondary">Estado</span>
+              <Badge variant="success">ACTIVA</Badge>
+            </div>
           </Card>
         </div>
         <p className="text-sm text-grows-text-secondary mt-4">

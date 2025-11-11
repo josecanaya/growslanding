@@ -8,6 +8,7 @@
  * Si se pasa --dry-run, solo muestra las precedencias que se crearían sin insertarlas
  */
 
+// @ts-nocheck
 import 'dotenv/config';
 import { createServiceSupabaseClient } from '../lib/supabase-server';
 

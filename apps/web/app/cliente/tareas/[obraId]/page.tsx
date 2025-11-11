@@ -15,7 +15,8 @@ export default function ClienteTareasObraResumenPage() {
     <SectionLayout
       title="Resumen de tareas"
       subtitle="Visualizá el estado general de las tareas asociadas a esta obra."
-      headerAction={
+    >
+      <div className="mb-6 flex justify-end">
         <Button
           variant="ghost"
           size="sm"
@@ -25,8 +26,7 @@ export default function ClienteTareasObraResumenPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Volver
         </Button>
-      }
-    >
+      </div>
       <ResumenTareasLayout initialObraId={obraId} />
     </SectionLayout>
   );

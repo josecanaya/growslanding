@@ -65,12 +65,15 @@ const SelectScrollDownButton = React.forwardRef<
 SelectScrollDownButton.displayName =
   SelectPrimitive.ScrollDownButton.displayName
 
+interface GrowsSelectContentProps
+  extends React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> {
+  position?: "item-aligned" | "popper"
+}
+
 const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>
->(({ className, children, position = "popper", modal = false, sideOffset = 6, ...props }, ref) => {
-  const modalProp = modal ? true : undefined
-
+  GrowsSelectContentProps
+>(({ className, children, position = "popper", sideOffset = 6, ...props }, ref) => {
   return (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
@@ -82,7 +85,6 @@ const SelectContent = React.forwardRef<
         className
       )}
       position={position}
-      modal={modalProp}
       sideOffset={sideOffset}
       {...props}
     >

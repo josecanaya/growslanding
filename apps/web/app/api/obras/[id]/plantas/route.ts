@@ -45,6 +45,12 @@ const TOTAL_KEYS = [
   'area_total',
 ];
 
+type ObraRecord = {
+  id: string;
+  superficies: unknown;
+  plantas: unknown;
+};
+
 function normalizeKey(key: string): string {
   return key.replace(/[^a-z0-9]/gi, '').toLowerCase();
 }
@@ -168,7 +174,7 @@ export async function GET(
       );
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createRouteHandlerClient<Database>({
       cookies: () => cookieStore,
     });
@@ -189,7 +195,7 @@ export async function GET(
       .from('obras')
       .select('id, superficies, plantas')
       .eq('id', obraId)
-      .maybeSingle();
+      .maybeSingle<ObraRecord>();
 
     if (obraError) {
       console.warn('[OBRAS_PLANTAS] Error obteniendo obra:', obraError);

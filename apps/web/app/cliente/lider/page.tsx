@@ -99,7 +99,10 @@ export default async function LeaderPage() {
       .order('created_at', { ascending: false }),
   ]);
 
-  const tareaIds = new Set((tareas ?? []).map((t) => t.id));
+  type TareaRow = { id: string };
+  const tareasList = ((tareas ?? []) as unknown) as TareaRow[];
+
+  const tareaIds = new Set(tareasList.map((t) => t.id));
   const tokensFiltrados = (tokens ?? []).filter((token) =>
     tareaIds.has(token.ref_id)
   );
@@ -107,7 +110,7 @@ export default async function LeaderPage() {
   return (
     <LeaderClient
       socios={socios ?? []}
-      tareas={(tareas ?? []) as any}
+      tareas={tareasList as any}
       tokens={tokensFiltrados}
       obras={obras ?? []}
       invites={invites ?? []}

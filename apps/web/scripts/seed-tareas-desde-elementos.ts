@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Script para generar tareas desde elementos existentes
  * 

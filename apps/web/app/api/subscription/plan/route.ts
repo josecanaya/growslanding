@@ -5,7 +5,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 
 export async function GET() {
-  const supabase = createRouteHandlerClient<Database>({ cookies });
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   const {
     data: { user },
@@ -16,7 +17,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await (supabase as any)
     .from('organizations')
     .select('id, plan_actual')
     .eq('user_id', user.id)

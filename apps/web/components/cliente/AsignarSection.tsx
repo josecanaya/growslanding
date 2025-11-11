@@ -144,7 +144,7 @@ function normalizeStage(value: string | null | undefined): StageKey | null {
 export function AsignarSection({ obraId }: AsignarSectionProps) {
   const currentUser = useCurrentUser();
   const supabase = useMemo(
-    () => createClientComponentClient<Database>(),
+    () => createClientComponentClient<Database>() as any,
     []
   );
   const { toast } = useToast();
@@ -202,7 +202,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             throw obrasError;
           }
 
-          obraIds = (obrasData ?? []).map((obra) => obra.id as string).filter(Boolean);
+          type ObraRow = { id: string | null };
+          const obraRows = ((obrasData ?? []) as unknown) as ObraRow[];
+          obraIds = obraRows.map((obra) => obra.id ?? '').filter(Boolean);
         }
 
         if (!obraIds.length) {

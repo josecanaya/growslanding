@@ -12,16 +12,16 @@ export const runtime = 'nodejs';
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     if (IS_DEV_MODE) {
       return NextResponse.json({ ok: true, devMode: true });
     }
 
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({
       cookies: () => cookieStore,
     });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { EtapasTimelineWrapper } from '@/components/cliente/EtapasTimelineWrapper';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
@@ -39,14 +39,18 @@ export default function ObraTimelinePage() {
   const [loading, setLoading] = useState(true);
 
   // Datos mock para demostración
-  const obraMock: Obra = {
-    id: obraId,
-    nombre: 'Casa Residencial Norte',
-    cliente: 'Familia Rodríguez',
-    localizacion: 'Av. Libertador 1234, CABA'
-  };
+  const obraMock = useMemo<Obra>(
+    () => ({
+      id: obraId,
+      nombre: 'Casa Residencial Norte',
+      cliente: 'Familia Rodríguez',
+      localizacion: 'Av. Libertador 1234, CABA'
+    }),
+    [obraId]
+  );
 
-  const tareasMock: Tarea[] = [
+  const tareasMock = useMemo<Tarea[]>(
+    () => [
     // ESTRUCTURA
     {
       id: '1',
@@ -196,7 +200,9 @@ export default function ObraTimelinePage() {
       tiempoTemprano: 76,
       tiempoTardio: 76
     }
-  ];
+  ],
+    [obraId]
+  );
 
   useEffect(() => {
     // Simular carga de datos
@@ -210,7 +216,7 @@ export default function ObraTimelinePage() {
     };
 
     loadData();
-  }, [obraId]);
+  }, [obraId, obraMock, tareasMock]);
 
   if (loading) {
     return (

@@ -3,7 +3,7 @@
 import type { ReactNode, CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 
-interface BaseCardProps {
+export interface BaseCardProps {
   title?: string;
   subtitle?: string;
   icon?: ReactNode;

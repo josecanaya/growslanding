@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import {
   usePathname,
   useRouter,
@@ -48,7 +48,7 @@ function StatusMessage({ text }: { text: string | null }) {
   );
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -290,5 +290,21 @@ export default function LoginPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#0D3B3B] px-4 py-12 text-white">
+          <div className="rounded-3xl bg-[#F5F6F7] p-10 text-center text-[#333333] shadow-2xl">
+            Preparando inicio de sesión…
+          </div>
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

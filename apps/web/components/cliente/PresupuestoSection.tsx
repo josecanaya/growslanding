@@ -114,7 +114,10 @@ function normalizeCuadrilla(row: Record<string, any>): Cuadrilla {
 export function PresupuestoSection() {
   const {toast} = useToast();
   const currentUser = useCurrentUser();
-  const supabase = useMemo(() => createClientComponentClient<Database>(), []);
+  const supabase = useMemo(
+    () => createClientComponentClient<Database>() as any,
+    []
+  );
 
   const [obras, setObras] = useState<Obra[]>([]);
   const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
@@ -187,25 +190,27 @@ export function PresupuestoSection() {
         if (presupuestosError) throw presupuestosError;
         if (tareasError) throw tareasError;
 
-        const mappedSolicitudes = (presupuestosData ?? []).map((row) => normalizeSolicitud(row));
+        const mappedSolicitudes = (presupuestosData ?? []).map((row: any) => normalizeSolicitud(row));
         const tareasIniciales = (tareasData ?? [])
-          .map((row) => normalizeTask(row))
-          .filter((task): task is Task => Boolean(task));
+          .map((row: any) => normalizeTask(row))
+          .filter((task: Task | null | undefined): task is Task => Boolean(task));
 
         const nuevaTaskMap: Record<string, Task> = {};
-        tareasIniciales.forEach((task) => {
+        tareasIniciales.forEach((task: Task) => {
           nuevaTaskMap[task.id] = task;
         });
-        mappedSolicitudes.forEach((solicitud) => {
+        mappedSolicitudes.forEach((solicitud: Solicitud) => {
           if (solicitud.tarea) {
             nuevaTaskMap[solicitud.tarea.id] = solicitud.tarea;
           }
         });
 
         const tareasConSolicitud = new Set<string>(
-          mappedSolicitudes.map((solicitud) => solicitud.tareaId)
+          mappedSolicitudes.map((solicitud: Solicitud) => solicitud.tareaId)
         );
-        const disponibles = tareasIniciales.filter((task) => !tareasConSolicitud.has(task.id));
+        const disponibles = tareasIniciales.filter(
+          (task: Task) => !tareasConSolicitud.has(task.id)
+        );
 
         setSolicitudes(mappedSolicitudes);
         setTareasDisponibles(disponibles);
@@ -233,30 +238,39 @@ export function PresupuestoSection() {
     setLoadingObras(true);
     setError(null);
 
-    supabase
-      .from('obras')
-      .select('id, nombre')
-      .eq('org_id', currentUser.orgId)
-      .order('created_at', {ascending: true})
-      .then(({data, error: obrasError}) => {
+    const fetchObras = async () => {
+      try {
+        const { data, error: obrasError } = await supabase
+          .from('obras')
+          .select('id, nombre')
+          .eq('org_id', currentUser.orgId)
+          .order('created_at', { ascending: true });
+
         if (!active) return;
+
         if (obrasError) {
           console.error('[PresupuestoSection] Error loading obras', obrasError);
           setError('No pudimos recuperar tus obras.');
           return;
         }
 
-        const mapped = (data ?? []).map((row) => normalizeObra(row));
+        const mapped = (data ?? []).map((row: any) => normalizeObra(row));
         setObras(mapped);
         if (!obraSeleccionada && mapped.length > 0) {
           setObraSeleccionada(mapped[0].id);
         }
-      })
-      .finally(() => {
+      } catch (err) {
+        if (!active) return;
+        console.error('[PresupuestoSection] Unexpected error loading obras', err);
+        setError('No pudimos recuperar tus obras.');
+      } finally {
         if (active) {
           setLoadingObras(false);
         }
-      });
+      }
+    };
+
+    void fetchObras();
 
     return () => {
       active = false;
@@ -268,20 +282,29 @@ export function PresupuestoSection() {
 
     let active = true;
 
-    supabase
-      .from('cuadrillas')
-      .select('id, nombre')
-      .eq('org_id', currentUser.orgId)
-      .order('nombre', {ascending: true})
-      .then(({data, error: cuadrillasError}) => {
+    const fetchCuadrillas = async () => {
+      try {
+        const { data, error: cuadrillasError } = await supabase
+          .from('cuadrillas')
+          .select('id, nombre')
+          .eq('org_id', currentUser.orgId)
+          .order('nombre', { ascending: true });
+
         if (!active) return;
+
         if (cuadrillasError) {
           console.error('[PresupuestoSection] Error loading cuadrillas', cuadrillasError);
           return;
         }
 
-        setCuadrillas((data ?? []).map((row) => normalizeCuadrilla(row)));
-      });
+        setCuadrillas((data ?? []).map((row: any) => normalizeCuadrilla(row)));
+      } catch (err) {
+        if (!active) return;
+        console.error('[PresupuestoSection] Unexpected error loading cuadrillas', err);
+      }
+    };
+
+    void fetchCuadrillas();
 
     return () => {
       active = false;
@@ -305,7 +328,7 @@ export function PresupuestoSection() {
           schema: 'public',
           table: 'tareas_presupuestos',
         },
-        async (payload) => {
+        async (payload: { new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
           const row = (payload.new ?? payload.old) as Record<string, any> | null;
           const tareaId = row?.tarea_id as string | undefined;
           if (!tareaId) return;

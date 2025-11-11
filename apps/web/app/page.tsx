@@ -6,9 +6,9 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole } from '@/lib/roles';
 
 export default async function RootPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient<Database>({
-  cookies: () => cookieStore,
+    cookies: () => cookieStore,
   });
 
   const {

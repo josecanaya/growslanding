@@ -153,10 +153,12 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
 
   const obrasActivas = useMemo(() => obras, [obras]);
 
+  const selectedObraId = selectedObra?.id;
+
   const cuadrillasAsignadas = useMemo(() => {
-    if (!selectedObra) return [];
-    return cuadrillas.filter((cuadrilla) => cuadrilla.obraId === selectedObra.id);
-  }, [cuadrillas, selectedObra?.id]);
+    if (!selectedObraId) return [];
+    return cuadrillas.filter((cuadrilla) => cuadrilla.obraId === selectedObraId);
+  }, [cuadrillas, selectedObraId]);
 
   const cuadrillasDisponibles = useMemo(() => {
     return cuadrillas.filter((cuadrilla) => {
@@ -729,7 +731,7 @@ function ModalInvitarSocio({
               ))}
             </select>
             <p className="mt-1 text-xs text-growsTextMuted">
-              Si seleccionás una especialidad y el rol es "Líder de Cuadrilla", se creará automáticamente una cuadrilla.
+              Si seleccionás una especialidad y el rol es &quot;Líder de Cuadrilla&quot;, se creará automáticamente una cuadrilla.
             </p>
           </div>
 

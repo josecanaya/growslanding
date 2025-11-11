@@ -81,7 +81,7 @@ type ObraItem = {
 export function ValidarSection({ obraId }: ValidarSectionProps) {
   const currentUser = useCurrentUser();
   const supabase = useMemo(
-    () => createClientComponentClient<Database>(),
+    () => createClientComponentClient<Database>() as any,
     []
   );
   const { toast } = useToast();
@@ -164,16 +164,22 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           : Promise.resolve({ data: [] }),
       ]);
 
-      const obrasMap = new Map<string, string>(
-        (obrasData ?? []).map((obra) => [obra.id as string, (obra as any).nombre ?? 'Obra sin nombre'])
-      );
+      const obraRows = ((obrasData ?? []) as unknown) as Array<{ id: string | null; nombre?: string | null }>;
+      const obrasMap = new Map<string, string>();
+      obraRows.forEach((obra) => {
+        if (!obra.id) return;
+        obrasMap.set(obra.id, obra.nombre ?? 'Obra sin nombre');
+      });
 
-      const cuadrillaMap = new Map<string, string>(
-        (cuadrillasData ?? []).map((c) => [c.id as string, (c as any).nombre ?? 'Cuadrilla sin nombre'])
-      );
+      const cuadrillaRows = ((cuadrillasData ?? []) as unknown) as Array<{ id: string | null; nombre?: string | null }>;
+      const cuadrillaMap = new Map<string, string>();
+      cuadrillaRows.forEach((c) => {
+        if (!c.id) return;
+        cuadrillaMap.set(c.id, c.nombre ?? 'Cuadrilla sin nombre');
+      });
 
       const evidenciasMap = new Map<string, string[]>(
-        (evidenciasData ?? []).reduce((acc, item) => {
+        (evidenciasData ?? []).reduce((acc: Map<string, string[]>, item: any) => {
           const tareaId = item.tarea_id as string;
           const url = (item as any).url ?? (item as any).path ?? '';
           if (!url) return acc;

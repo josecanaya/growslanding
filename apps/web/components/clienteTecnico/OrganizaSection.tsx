@@ -98,6 +98,7 @@ export function OrganizaSection({
   const canvasTasks = useOrganizaStore(canvasSelector);
 
   const [precedenciasState, setPrecedenciasState] = useState<Record<string, PrecedenciaMeta>>(precedencias);
+  const precedenciasStateRef = useRef(precedencias);
   const isSyncingFromPropsRef = useRef(false);
   type DialogMode = 'edit' | 'create';
 
@@ -121,6 +122,10 @@ export function OrganizaSection({
   }, [precedencias]);
 
   useEffect(() => {
+    precedenciasStateRef.current = precedenciasState;
+  }, [precedenciasState]);
+
+  useEffect(() => {
     if (!obraId) return;
     if (isSyncingFromPropsRef.current) {
       isSyncingFromPropsRef.current = false;
@@ -133,8 +138,10 @@ export function OrganizaSection({
     if (!obraId) return;
 
     // Al reconstruir el lienzo siempre calculamos precedencias
+    const currentPrecedencias = precedenciasStateRef.current;
+
     const initialPrecedencias = canvasOrder.reduce<Record<string, PrecedenciaMeta>>((acc, taskId, index) => {
-      const meta = precedenciasState[taskId];
+      const meta = currentPrecedencias[taskId];
       const previousId = index > 0 ? canvasOrder[index - 1] : null;
       const tarea = tareasPorId.get(taskId);
 

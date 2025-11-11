@@ -55,13 +55,15 @@ export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
   const [loadingSocios, setLoadingSocios] = useState(false);
 
   // Cargar socios de la cuadrilla
+  const cuadrillaId = cuadrilla?.id;
+
   useEffect(() => {
     const cargarSocios = async () => {
-      if (!cuadrilla?.id || !currentUser?.orgId) return;
+      if (!cuadrillaId || !currentUser?.orgId) return;
 
       try {
         setLoadingSocios(true);
-        const response = await fetch(`/api/cuadrillas/${cuadrilla.id}/socios`, {
+        const response = await fetch(`/api/cuadrillas/${cuadrillaId}/socios`, {
           headers: {
             'x-organizacion-id': currentUser.orgId,
           },
@@ -80,10 +82,10 @@ export function CuadrillaDrawer({ cuadrilla }: CuadrillaDrawerProps) {
       }
     };
 
-    if (showDrawer && cuadrilla) {
+    if (showDrawer && cuadrillaId) {
       cargarSocios();
     }
-  }, [cuadrilla?.id, currentUser?.orgId, showDrawer]);
+  }, [cuadrillaId, currentUser?.orgId, showDrawer]);
 
   if (!showDrawer || !cuadrilla) return null;
 

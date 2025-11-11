@@ -39,6 +39,21 @@ const requestSchema = z.object({
   gps_lon: z.number().optional(),
 });
 
+type TareaRecord = {
+  id: string;
+  obra_id: string | null;
+  tipo: string | null;
+  descripcion: string | null;
+  estado: string | null;
+  referente_id: string | null;
+  socio_ids: string[] | null;
+  obra: {
+    nombre: string | null;
+    cliente: string | null;
+    localizacion: string | null;
+  } | null;
+};
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -56,7 +71,7 @@ export async function POST(
          obra:obras(nombre, cliente, localizacion)`
       )
       .eq('id', id)
-      .maybeSingle();
+      .maybeSingle<TareaRecord>();
 
     if (tareaError) {
       throw tareaError;

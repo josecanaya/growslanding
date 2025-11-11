@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import PerfilUsuario from "./components/PerfilUsuario";
 import Personalizacion from "./components/Personalizacion";
@@ -106,7 +106,9 @@ export default function CuentaPage() {
         <div className="flex flex-col gap-10">
           <PerfilUsuario />
           <Personalizacion />
-          <Suscripcion />
+          <Suspense fallback={<div className="rounded-xl border border-[#e3dff2] bg-white p-6 shadow-sm dark:border-[#2a263a] dark:bg-[#1c1a2b]">Cargando información de suscripción…</div>}>
+            <Suscripcion />
+          </Suspense>
           {isAdmin ? <DeveloperModePanel /> : null}
         </div>
       </div>

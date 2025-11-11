@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -21,7 +21,7 @@ type OrganizationPayload = {
   address?: string;
 };
 
-export default function OnboardingPage() {
+function OnboardingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { devModeEnabled } = useDevMode();
@@ -356,5 +356,19 @@ export default function OnboardingPage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#003840] px-4 text-white">
+          <p className="text-sm text-white/70">Cargando onboarding…</p>
+        </div>
+      }
+    >
+      <OnboardingPageContent />
+    </Suspense>
   );
 }

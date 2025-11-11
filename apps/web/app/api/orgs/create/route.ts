@@ -18,7 +18,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
     const {
       data: { user },
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
         ? incomingPlan
         : 'FREE';
 
-    const { data: org, error: orgError } = await supabase
+    const { data: org, error: orgError } = await (supabase as any)
       .from('organizations')
       .insert([
         {

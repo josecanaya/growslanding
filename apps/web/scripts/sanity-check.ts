@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+// @ts-nocheck
 /**
  * Script de validación final para GROWS
  * 

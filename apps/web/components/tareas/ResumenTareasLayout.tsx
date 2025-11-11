@@ -18,6 +18,7 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { ObraResumen, TareaResumen } from '@/lib/supabase/tareasService';
 import { fetchObraResumen, fetchTareasPorObra } from '@/lib/supabase/tareasService';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/supabase.gen';
 
 type EstadoKey = 'pendiente' | 'en_progreso' | 'completada';
@@ -107,7 +108,7 @@ export function ResumenTareasLayout({ initialObraId }: ResumenTareasLayoutProps)
     let mounted = true;
     if (!obraId || !orgId) return;
 
-    const supabase = createClientComponentClient<Database>();
+    const supabase = createClientComponentClient<Database>() as unknown as SupabaseClient<Database>;
 
     console.info('[ResumenTareasLayout] Cargando resumen', { obraId, orgId });
 

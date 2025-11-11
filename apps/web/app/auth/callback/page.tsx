@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -25,7 +25,7 @@ function sanitizeRedirect(target: string | null): string | null {
   return target;
 }
 
-export default function CallbackPage() {
+function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { devModeEnabled } = useDevMode();
@@ -94,5 +94,19 @@ export default function CallbackPage() {
         Verificando sesión segura…
       </p>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#F5F6F7] px-4 text-[#0D3B3B]">
+          <p className="text-center text-lg font-semibold">Verificando sesión…</p>
+        </div>
+      }
+    >
+      <CallbackPageContent />
+    </Suspense>
   );
 }

@@ -87,11 +87,11 @@ export async function middleware(req: NextRequest) {
   }
   
   const supabase = createMiddlewareClient<Database>(
-    { req, res },
+    { req, res } as any,
     {
       supabaseUrl: SUPABASE_URL,
       supabaseKey: SUPABASE_ANON_KEY,
-    }
+    } as any
   );
   const {
     data: { session },

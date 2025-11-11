@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 
-export default function InviteAcceptPage() {
+function InviteAcceptPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = useMemo(
@@ -166,6 +166,22 @@ export default function InviteAcceptPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function InviteAcceptPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#F5F6F7] px-4 text-[#0D3B3B]">
+          <p className="text-center text-lg font-semibold">
+            Procesando invitación…
+          </p>
+        </div>
+      }
+    >
+      <InviteAcceptPageContent />
+    </Suspense>
   );
 }
 

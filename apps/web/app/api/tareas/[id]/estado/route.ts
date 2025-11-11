@@ -102,7 +102,9 @@ export async function POST(
 
     // Mapear estado nuevo a formato Supabase
     const estadoNuevoSupabase = mapearEstadoASupabase(validatedData.estadoNuevo);
-    const estadoAnteriorSupabase = mapearEstadoASupabase(tareaAnterior.estado);
+    const estadoAnteriorSupabase = tareaAnterior.estado
+      ? mapearEstadoASupabase(tareaAnterior.estado)
+      : null;
 
     // Actualizar estado de la tarea
     const { data: tareaActualizada, error: updateError } = await supabase
@@ -151,7 +153,9 @@ export async function POST(
         estado_nuevo: estadoNuevoSupabase,
         actor_tipo: body.actorRol || 'CLIENTE_TECNICO',
         actor_id: usuarioId,
-        motivo: body.motivo || `Cambio de estado de ${estadoAnteriorSupabase} a ${estadoNuevoSupabase}`,
+        motivo:
+          body.motivo ||
+          `Cambio de estado de ${estadoAnteriorSupabase ?? 'SIN_ESTADO'} a ${estadoNuevoSupabase}`,
       });
 
     if (estadoInsertError) {

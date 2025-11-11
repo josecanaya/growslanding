@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
@@ -29,7 +29,7 @@ const ROLE_CHOICES: Array<{ key: UserRole; title: string; description: string }>
     },
   ];
 
-export default function SelectRolePage() {
+function SelectRolePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { devModeEnabled } = useDevMode();
@@ -212,5 +212,21 @@ export default function SelectRolePage() {
         ) : null}
       </div>
     </div>
+  );
+}
+
+export default function SelectRolePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#0D3B3B] px-4 py-12 text-white">
+          <div className="rounded-3xl bg-[#F5F6F7] p-10 text-center text-[#333333] shadow-2xl">
+            Cargando…
+          </div>
+        </div>
+      }
+    >
+      <SelectRolePageContent />
+    </Suspense>
   );
 }

@@ -140,9 +140,14 @@ function DetalleGrupo({ especialidad, cuadrillas, onBack }: DetalleGrupoProps) {
             key={cuadrilla.id}
             title={cuadrilla.nombre}
             subtitle={`Encargado: ${cuadrilla.encargado}`}
-            status={cuadrilla.estado}
           >
             <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-grows-text-secondary">Estado:</span>
+                <span className="font-medium text-grows-primary">
+                  {cuadrilla.estado ?? 'Sin estado'}
+                </span>
+              </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-grows-text-secondary">Integrantes:</span>
                 <span className="font-medium text-grows-primary">{cuadrilla.integrantes?.length || 0}</span>

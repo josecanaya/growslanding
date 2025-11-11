@@ -85,7 +85,7 @@ function isCompleted(value: string | null | undefined): boolean {
 export function EtapasSection({ obraId, requireSelection = false }: EtapasSectionProps) {
   const currentUser = useCurrentUser();
   const supabase = useMemo(
-    () => createClientComponentClient<Database>(),
+    () => createClientComponentClient<Database>() as any,
     []
   );
 
@@ -121,7 +121,9 @@ export function EtapasSection({ obraId, requireSelection = false }: EtapasSectio
             throw obrasError;
           }
 
-          obraIds = (obrasData ?? []).map((obra) => obra.id as string).filter(Boolean);
+          type ObraRow = { id: string | null };
+          const obraRows = ((obrasData ?? []) as unknown) as ObraRow[];
+          obraIds = obraRows.map((obra) => obra.id ?? '').filter(Boolean);
         }
 
         if (!obraIds.length) {

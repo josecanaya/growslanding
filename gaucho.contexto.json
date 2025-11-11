@@ -1,0 +1,227 @@
+{
+  "planes": [
+    {
+      "nombre": "FREE",
+      "descripcion": "Plan demo con acceso de lectura y límites fijados en PLAN_CARDS y FEATURE_RULES.",
+      "features": [
+        "Hasta 2 obras activas sin BIM ni cuadrillas operativas.",
+        "Chat, notificaciones y calendario en modo demostración.",
+        "Dependencias y automatizaciones N8N visibles en modo lectura."
+      ]
+    },
+    {
+      "nombre": "STARTER",
+      "descripcion": "Plan operativo con dependencias automáticas limitadas y calendario manual.",
+      "features": [
+        "Hasta 5 obras activas con BIM habilitado.",
+        "3 tareas activas por obra y 3 cuadrillas operativas.",
+        "Chat interno, notificaciones operativas y automatizaciones N8N limitadas."
+      ]
+    },
+    {
+      "nombre": "PRO",
+      "descripcion": "Plan avanzado con reportes automatizados y cuadrillas ilimitadas.",
+      "features": [
+        "Hasta 10 obras activas y 10 tareas activas por obra.",
+        "Cuadrillas ilimitadas con alertas automáticas.",
+        "Reportes PDF/QR, historial y comparadores multi-obra."
+      ]
+    },
+    {
+      "nombre": "ENTERPRISE",
+      "descripcion": "Plan listado en la landing con acceso anticipado para personalizaciones.",
+      "features": [
+        "Escenario pensado para grandes volúmenes y automatizaciones extendidas.",
+        "Contactar equipo GROWS para habilitar funciones adicionales."
+      ]
+    }
+  ],
+  "roles": [
+    {
+      "nombre": "ADMIN",
+      "descripcion": "Rol con acceso total que redirige a /cliente/dashboard según roles.ts.",
+      "features": [
+        "Gestiona organizaciones multi-tenant, soporte y pruebas."
+      ]
+    },
+    {
+      "nombre": "CLIENTE_TECNICO",
+      "descripcion": "Usuario principal del panel cliente con navegación SidebarClienteTecnico.",
+      "features": [
+        "Administra obras, tareas, cuadrillas, calendario y notificaciones.",
+        "Configura planes y preferencias desde CuentaSection." 
+      ]
+    },
+    {
+      "nombre": "SOCIO",
+      "descripcion": "Rol del panel /socio que consume oportunidades de obra.",
+      "features": [
+        "Consulta oportunidades y aplica según nivel requerido.",
+        "Reporta progreso y evidencias desde componentes socio." 
+      ]
+    }
+  ],
+  "dashboards": [
+    {
+      "nombre": "Panel Cliente Técnico",
+      "descripcion": "Estructura basada en /cliente/dashboard con secciones Chat, Obras, Tareas, Cuadrillas, Notificaciones, Calendario y Cuenta.",
+      "features": [
+        "SidebarClienteTecnico controla navegación y destaca plan actual.",
+        "Secciones usan Supabase para CRUD y gating según plan (permissions.ts)."
+      ]
+    },
+    {
+      "nombre": "Panel Socio Constructor",
+      "descripcion": "Secciones en apps/web/components/socio para oportunidades, tareas en curso y métricas de reputación.",
+      "features": [
+        "Obras.tsx lista oportunidades con filtros por estado y nivel.",
+        "TareasEnCurso.tsx gestiona avances y evidencia requerida."
+      ]
+    }
+  ],
+  "ventajas": [
+    {
+      "nombre": "Catálogo estandarizado",
+      "descripcion": "El repositorio incluye catálogos de elementos y tareas reutilizables (elementos-constructivos.ts, tareas-construccion.ts).",
+      "features": [
+        "Plantillas aplicadas en DetalleObra y wizard de creación de elementos.",
+        "Facilitan cálculo de duraciones para el servicio CPM."
+      ]
+    },
+    {
+      "nombre": "Multi-tenant Supabase",
+      "descripcion": "useCurrentUser gestiona sesión, org_id y rol; los headers multi-tenant se propagan en NotificacionesSection.",
+      "features": [
+        "createClientComponentClient se usa en ObrasSection, CuadrillasSection y ValidarSection.",
+        "RLS requiere cabeceras x-organizacion-id y x-socio-id en llamadas REST."
+      ]
+    },
+    {
+      "nombre": "Integración n8n",
+      "descripcion": "ChatSection y endpoint /api/chat proxyan a flujos n8n; /api/gaucho replica patrón para landing.",
+      "features": [
+        "Fallbacks definidos cuando el webhook no responde.",
+        "Contextos n8n_local documentan procesos de roles, planes y reportes."
+      ]
+    }
+  ],
+  "modulos": {
+    "obras": {
+      "existe": true,
+      "nombre": "Gestión de obras",
+      "descripcion": "ObrasSection y DetalleObra permiten crear, editar y auditar proyectos con límites por plan.",
+      "funciones": [
+        "CREAR/editar obra con formulario (nombre, localización, fecha_inicio, presupuesto, descripción).",
+        "EstadoBadge resume estado ACTIVA/PAUSADA/FINALIZADA/CANCELADA.",
+        "DetalleObra integra tabs de planificación, documentos y timeline."
+      ]
+    },
+    "tareas": {
+      "existe": true,
+      "nombre": "Planificación y seguimiento",
+      "descripcion": "TareasSection agrupa Organiza, Asignar, Validar y un editor tipo Gantt.",
+      "funciones": [
+        "OrganizaSection guarda precedencias en public.tarea_precedencias con FINISH_TO_START.",
+        "TaskCanvas soporta zoom, drag y sincroniza posiciones calculadas al recargar.",
+        "ValidarSection consume tareas finalizadas, evidencias y cuadrillas desde Supabase."
+      ]
+    },
+    "mensajeria": {
+      "existe": true,
+      "nombre": "Chat y notificaciones",
+      "descripcion": "ChatSection y NotificacionesSection combinan mensajería interna, informes y n8n.",
+      "funciones": [
+        "ChatSection verifica plan PRO y envia payload a /api/chat.",
+        "NotificacionesSection usa Tabs (notificaciones, informes, mensajes) con fetch multi-tenant.",
+        "MensajeriaDirecta y ListaInformes gestionan conversaciones y reportes." 
+      ]
+    },
+    "calendario": {
+      "existe": true,
+      "nombre": "Calendario operativo",
+      "descripcion": "CalendarioSection renderiza eventos y tareas con filtros por vista semana/mes/timeline.",
+      "funciones": [
+        "Eventos mockeados con campos título, fecha, hora, participantes.",
+        "Tareas calendario referencian estado y prioridad para sincronizar con obras."
+      ]
+    },
+    "billetera": {
+      "existe": false,
+      "nombre": "Billetera",
+      "descripcion": "No hay componentes ni endpoints activos para billetera en v1.0.",
+      "funciones": []
+    },
+    "oportunidades": {
+      "existe": true,
+      "nombre": "Bolsa de obras",
+      "descripcion": "El panel socio lista obras disponibles con validación de nivel y especialidad.",
+      "funciones": [
+        "Obras.tsx muestra estado Disponible/En evaluación/Próxima.",
+        "Permite aplicar si el nivel del socio cumple requisito.",
+        "Muestra presupuesto, duración y requisitos por obra."
+      ]
+    },
+    "cuadrillas": {
+      "existe": true,
+      "nombre": "Gestión de cuadrillas",
+      "descripcion": "CuadrillasSection usa useCuadrillasStore para listar, asignar y evaluar equipos.",
+      "funciones": [
+        "Tabs (asignadas, disponibles, invitaciones, evaluaciones, resumen).",
+        "AsignarModal consulta obras, filtra tareas libres y ejecuta asignarTarea.",
+        "TopStats y visores grafican activas, disponibles y pendientes."
+      ]
+    }
+  },
+  "procedimientos": {
+    "crear_obra": {
+      "existe": true,
+      "rutas_ui": ["/cliente/dashboard?section=obras"],
+      "componentes": ["ObrasSection", "DetalleObra"],
+      "pasos": [
+        "Abrí ObrasSection y presioná el botón Crear obra (botón en encabezado).",
+        "Completá el formulario con campos mínimos y guardá para persistir vía Supabase.",
+        "El panel actualiza la grilla y habilita acciones Ver/Editar/Eliminar." 
+      ],
+      "campos_minimos": ["nombre", "localizacion", "fecha_inicio", "presupuesto", "descripcion"],
+      "notas": "Plan guard verifica límites según PLAN_LIMIT_RULES." 
+    },
+    "asignar_cuadrilla": {
+      "existe": true,
+      "rutas_ui": ["/cliente/dashboard?section=cuadrillas"],
+      "componentes": ["CuadrillasSection", "AsignarModal", "useCuadrillasStore"],
+      "pasos": [
+        "Desde CuadrillasSection elegí la cuadrilla y abrí Asignar cuadrilla (AsignarModal).",
+        "Seleccioná obra, filtrá tareas libres y confirmá la asignación (asignarTarea).",
+        "El estado de la cuadrilla cambia a asignada y la tarea referencia la cuadrilla." 
+      ],
+      "campos_minimos": ["obra_id", "tarea_id"],
+      "notas": "Requiere plan STARTER o superior para habilitar cuadrillas." 
+    },
+    "subir_evidencias": {
+      "existe": false,
+      "rutas_ui": ["/cliente/dashboard?section=validar", "/socio"],
+      "componentes": ["ValidarSection", "TareasEnCurso"],
+      "pasos": ["La UI actual muestra placeholders y alertas pendientes."],
+      "campos_minimos": [],
+      "notas": "La API /api/tareas/[id]/evidencias y servicios Prisma están listos; interfaz en desarrollo." 
+    }
+  },
+  "inteligencia_artificial": {
+    "gaucho": {
+      "estado": "v1.0 (landing)",
+      "capacidades": [
+        "Chat embebido en la landing (GrowsBot.tsx).",
+        "FAQ contextual con sugerencias y botones CTA.",
+        "Fallback local cuando n8n no responde."
+      ],
+      "futuro": [
+        "Integración directa en panel Cliente Técnico.",
+        "Automatización de tareas y camino crítico con recomendaciones de cuadrillas."
+      ]
+    }
+  },
+  "automatizacion": {
+    "en_desarrollo": true,
+    "descripcion": "Sistema basado en dependencias y fases constructivas que generará cronogramas automáticos con soporte CPM y n8n."
+  }
+}

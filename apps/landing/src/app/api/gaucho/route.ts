@@ -1,37 +1,43 @@
 import { NextResponse } from "next/server";
 
-/**
- * Proxy entre el chat de la landing y el agente GAUCHO en n8n.
- * Recibe { message, session_id } y reenvía al webhook de n8n.
- */
 export async function POST(req: Request) {
   try {
     const { message, session_id } = await req.json();
 
-    // Reemplazá esta URL con tu webhook público de n8n:
-    const N8N_WEBHOOK = "https://josecanaya.app.n8n.cloud/workflow/KCBgyLOVz4GmHZ6A";
+    const WEBHOOK_URL =
+      process.env.N8N_GAUCHO_WEBHOOK_URL ||
+      process.env.N8N_WEBHOOK_URL ||
+      process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
 
-    const response = await fetch(N8N_WEBHOOK, {
+    console.log("GAUCHO WEBHOOK URL:", WEBHOOK_URL);
+
+    if (!WEBHOOK_URL) {
+      return NextResponse.json({
+        message: "Webhook de GAUCHO no configurado.",
+        buttons: [],
+      });
+    }
+
+    const response = await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        source: "grows-landing",
+        sentAt: new Date().toISOString(),
+        message,
         user_message: message,
         session_id: session_id || "landing-session",
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("GAUCHO webhook error:", response.status, errorText);
+      throw new Error(`Webhook responded ${response.status}`);
+    }
+
     const data = await response.json();
-
-    const result = {
-      message:
-        data?.message ||
-        data?.display_message ||
-        data?.response ||
-        "No se recibió respuesta de GAUCHO.",
-      buttons: data?.buttons || [],
-    };
-
-    return NextResponse.json(result);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Error en /api/gaucho:", error);
     return NextResponse.json(

@@ -190,7 +190,7 @@ export function SolutionsSection() {
         className="pointer-events-none absolute -top-24 h-px w-px"
         aria-hidden="true"
       />
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+      <div className="relative z-10 mx-auto max-w-screen-xl px-4 md:px-6 py-10 md:py-16 overflow-hidden">
         
         {/* Header with counter */}
         <motion.div 
@@ -226,49 +226,54 @@ export function SolutionsSection() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Grid de tarjetas (responsivo: 1 columna en móvil, 2 en tablet, 4 en desktop) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {cards.map((card, index) => {
-            const Icon = card.icon;
-            const isProblem = !isOrdered;
-            const isHovered = hoveredCard === card.id;
-            const currentSolution = solutions.find(s => s.id === card.id);
-            const showSolution = isHovered && !isOrdered;
-            
-            return (
-              <motion.div
-                key={card.id}
-                className="group relative h-[300px] cursor-pointer"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                animate={isOrdered ? {
-                  scale: [1, 1.05, 1],
-                  transition: {
-                    delay: index * 0.1,
-                    duration: 0.6
+        {/* Grid/Carrusel de tarjetas */}
+        <div className="relative mb-16">
+          <div
+            className="flex md:grid md:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-visible snap-x snap-mandatory scroll-smooth scrollbar-none touch-pan-x pb-5 md:pb-0"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
+            {cards.map((card, index) => {
+              const Icon = card.icon;
+              const isHovered = hoveredCard === card.id;
+              const currentSolution = solutions.find((s) => s.id === card.id);
+              const showSolution = isHovered && !isOrdered;
+
+              const stateStyles = isOrdered
+                ? 'bg-[#111111] border-emerald-500/30 hover:border-emerald-500/50 hover:shadow-lg shadow-emerald-500/10'
+                : showSolution
+                ? 'bg-[#111111] border-emerald-500/50 shadow-lg shadow-emerald-500/20'
+                : 'bg-[#1A0A0A] border-red-500/30 hover:border-red-500/50 hover:shadow-md';
+
+              const iconColor = isOrdered || showSolution ? 'text-emerald-400' : 'text-red-400';
+              const titleColor = iconColor;
+              const descriptionColor = isOrdered || showSolution ? 'text-gray-200' : 'text-gray-300';
+
+              return (
+                <motion.div
+                  key={card.id}
+                  className={`group relative min-w-[82%] md:min-w-0 flex-shrink-0 snap-center rounded-2xl border border-white/10 bg-[#1A1A1A] p-6 md:p-7 flex flex-col transition-transform duration-300 hover:scale-[1.02] overflow-hidden cursor-pointer ${stateStyles}`}
+                  style={{ aspectRatio: '1 / 1.05', maxHeight: '380px' }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  animate={
+                    isOrdered
+                      ? {
+                          scale: [1, 1.05, 1],
+                          transition: {
+                            delay: index * 0.1,
+                            duration: 0.6,
+                          },
+                        }
+                      : {}
                   }
-                } : {}}
-                whileHover={{ y: -4, transition: { duration: 0.2 } }}
-                onMouseEnter={() => setHoveredCard(card.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-              >
-                {/* Tarjeta */}
-                <div className={`
-                  absolute inset-0 rounded-xl p-8 transition-all duration-500
-                  ${isOrdered 
-                    ? 'bg-[#111111] border border-emerald-500/30 group-hover:border-emerald-500/50 group-hover:shadow-lg shadow-emerald-500/10' 
-                    : showSolution
-                    ? 'bg-[#111111] border border-emerald-500/50 shadow-lg shadow-emerald-500/20'
-                    : 'bg-[#1A0A0A] border border-red-500/30 group-hover:border-red-500/50 group-hover:shadow-md'
-                  }
-                  group-hover:shadow-lg
-                `}>
-                  {/* Glow effect on hover for solutions */}
+                  onMouseEnter={() => setHoveredCard(card.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
                   {(isOrdered || showSolution) && (
                     <motion.div
-                      className="absolute inset-0 rounded-xl bg-emerald-500/5 blur-xl -z-10"
+                      className="pointer-events-none absolute inset-0 rounded-2xl bg-emerald-500/5 blur-xl"
                       animate={{
                         opacity: [0.3, 0.6, 0.3],
                       }}
@@ -279,52 +284,37 @@ export function SolutionsSection() {
                     />
                   )}
 
-                  {/* Icono */}
-                  <div className={`
-                    h-10 w-10 mb-4 transition-all duration-300
-                    ${isOrdered || showSolution ? 'text-emerald-400' : 'text-red-400'}
-                    group-hover:scale-110
-                  `}>
-                    {(showSolution && currentSolution) ? (
-                      <currentSolution.icon className="h-full w-full" />
-                    ) : (
-                      <Icon className="h-full w-full" />
-                    )}
-                  </div>
-                  
-                  {/* Título */}
-                  <h3 className={`
-                    text-lg font-semibold mb-3 font-sans transition-colors duration-300
-                    ${isOrdered || showSolution ? 'text-emerald-400' : 'text-red-400'}
-                    group-hover:opacity-80
-                  `}>
-                    {showSolution && currentSolution ? currentSolution.title : card.title}
-                  </h3>
-                  
-                  {/* Descripción */}
-                  <p className={`
-                    text-sm font-normal leading-relaxed transition-colors duration-300
-                    ${isOrdered || showSolution ? 'text-gray-200' : 'text-gray-300'}
-                  `}>
-                    {showSolution && currentSolution ? currentSolution.description : card.description}
-                  </p>
+                  <div className="relative z-10 flex h-full flex-col gap-3 items-center justify-center text-center">
+                    <div className="inline-flex items-center gap-2">
+                      {(showSolution && currentSolution) ? (
+                        <currentSolution.icon className={`w-5 h-5 ${titleColor}`} />
+                      ) : (
+                        <Icon className={`w-5 h-5 ${titleColor}`} />
+                      )}
+                      <h3
+                        className={`text-lg md:text-xl font-semibold transition-colors duration-300 ${titleColor}`}
+                      >
+                        {showSolution && currentSolution ? currentSolution.title : card.title}
+                      </h3>
+                    </div>
 
-                  {/* Badge de "Solución" cuando se hace hover o está activado */}
-                  {(showSolution || isOrdered) && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8, rotate: -10 }}
-                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                      className="absolute top-4 right-4 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg"
+                    <p
+                      className={`text-base md:text-lg text-gray-300 leading-snug transition-colors duration-300 ${descriptionColor}`}
                     >
+                      {showSolution && currentSolution ? currentSolution.description : card.description}
+                    </p>
+                  </div>
+
+                  {(showSolution || isOrdered) && (
+                    <span className="absolute top-4 right-4 z-20 flex items-center gap-1 text-xs bg-green-600/20 text-green-400 px-2 py-1 rounded-full">
                       <CheckCircle2 className="h-3 w-3" />
                       SOLUCIÓN
-                    </motion.div>
+                    </span>
                   )}
 
-                  {/* Pulse effect for solutions */}
                   {(isOrdered || showSolution) && (
                     <motion.div
-                      className="absolute inset-0 rounded-xl border-2 border-emerald-500/30"
+                      className="pointer-events-none absolute inset-0 rounded-2xl border-2 border-emerald-500/30"
                       animate={{
                         opacity: [0.5, 0.8, 0.5],
                         scale: [1, 1.02, 1],
@@ -335,15 +325,16 @@ export function SolutionsSection() {
                       }}
                     />
                   )}
-                </div>
-              </motion.div>
-            );
-          })}
+                </motion.div>
+              );
+            })}
+          </div>
+          <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#0D0D0D] to-transparent pointer-events-none md:hidden" />
         </div>
 
         {/* Botón CTA con confetti effect placeholders */}
         <motion.div 
-          className="text-center mt-10"
+          className="text-center mt-8"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}

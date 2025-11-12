@@ -3,7 +3,7 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot } from "lucide-react";
+import { Bot, X } from "lucide-react";
 
 import { scrollToSection } from "@/utils/scrollToSection";
 
@@ -26,6 +26,7 @@ type GrowsBotProps = {
 
 const storageKey = "grows-bot-conversation";
 const tooltipDurationMs = 4000;
+const storageLastTopicKey = "grows-bot-last-topic";
 
 const suggestedTopics = [
   { label: "¿Cómo funciona GROWS?", value: "cómo funciona grows" },
@@ -145,31 +146,51 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       setIsTyping(true);
 
       try {
-        onCommand?.({ userInput: trimmed });
-        const res = await fetch("/api/gaucho", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const response = await fetch('/api/gaucho', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify({
             message: trimmed,
             session_id: "landing-" + Date.now(),
           }),
         });
 
-        const data = await res.json();
+        console.log('Respuesta HTTP:', response.status, response.statusText);
+
+        if (!response.ok) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              sender: 'bot',
+              text: 'No pude conectar con GAUCHO. Probá de nuevo en unos minutos.',
+            },
+          ]);
+          setIsTyping(false);
+          return;
+        }
+
+        const data = await response.json();
 
         const botText =
           data?.message ||
           data?.display_message ||
           data?.response ||
           "No recibí respuesta de GAUCHO.";
-        const botActions = data?.buttons?.map((b: any) => ({
-          label: b.label,
-          section: b.action,
+        const rawButtons = Array.isArray(data?.buttons) ? data.buttons : [];
+        const botActions = rawButtons.map((b: any) => ({
+          label: b?.label ?? String(b?.text ?? ''),
+          section: b?.action ?? '',
         }));
 
         setMessages((prev) => [
           ...prev,
-          { sender: "bot", text: botText, actions: botActions },
+          {
+            sender: "bot",
+            text: botText,
+            actions: botActions.length > 0 ? botActions : undefined,
+          },
         ]);
       } catch (err) {
         console.error("Error al conectar con GAUCHO:", err);
@@ -265,40 +286,58 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
         {isOpen && (
           <motion.div
             key="growsbot-panel"
-            className="fixed bottom-28 right-8 z-[9998] w-[90vw] max-w-[380px] max-h-[600px] overflow-visible rounded-2xl border border-gray-200 bg-white text-gray-900 shadow-2xl"
-            style={{ transformOrigin: "bottom right" }}
-            initial={{ opacity: 0, scale: 0.94, y: 24, x: 12 }}
-            animate={{ opacity: 1, scale: 1, y: -10, x: -10 }}
-            exit={{ opacity: 0, scale: 0.94, y: 24, x: 12 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-24 right-6 z-[60] w-full max-w-sm"
           >
-            <div className="flex h-full flex-col justify-between overflow-visible">
-              <header className="border-b border-gray-200 px-5 py-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-lg font-bold text-emerald-700">
-                      GROWS·Bot
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      Tu asistente de obra inteligente
-                    </p>
+            <div className="rounded-3xl border border-white/30 bg-white/95 shadow-xl backdrop-blur-xl">
+              <div className="flex items-center justify-between rounded-t-3xl bg-emerald-600/10 px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
+                    <Bot className="h-5 w-5" />
                   </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">GROWS·Bot</p>
+                    <p className="text-xs text-emerald-600">Tu asistente de obra inteligente</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    className="rounded-full p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
-                    onClick={handleClose}
-                    aria-label="Cerrar chat de GROWS·Bot"
+                    onClick={() => {
+                      try {
+                        window.localStorage.removeItem(storageKey);
+                        window.localStorage.removeItem(storageLastTopicKey);
+                      } catch (error) {
+                        console.warn('GROWS Bot: unable to clear stored conversation', error);
+                      }
+                      window.location.reload();
+                    }}
+                    className="rounded-full p-1.5 text-gray-400 transition hover:text-gray-700"
+                    title="Reiniciar conversación"
                   >
-                    ✕
+                    ⟳
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-full p-1.5 text-gray-400 transition hover:text-gray-700"
+                    aria-label="Cerrar chat"
+                  >
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
-              </header>
-
-              <div
-                ref={listContainerRef}
-                className="flex-1 overflow-y-auto px-5 pb-6 pt-4"
-              >
-                <div className="flex flex-col gap-3">
+              </div>
+              {isTyping && (
+                <div className="h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-400 animate-pulse rounded-t-lg" />
+              )}
+              <div className="flex max-h-[440px] flex-col">
+                <div
+                  ref={listContainerRef}
+                  className="flex-1 space-y-3 overflow-y-auto px-6 py-5 text-sm text-slate-700"
+                >
                   {messages.map((message, index) => (
                     <motion.div
                       key={`${message.sender}-${index}`}

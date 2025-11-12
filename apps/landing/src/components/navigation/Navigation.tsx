@@ -38,22 +38,25 @@ export function Navigation() {
     { code: 'en', name: 'English', flag: '🇺🇸' },
   ];
 
+  const logoProps = {
+    src: '/images/logo-amarillo.svg',
+    width: 140,
+    height: 67
+  };
+
   return (
     <nav className={`fixed top-0 w-full bg-black/95 backdrop-blur-sm border-b border-yellow-400/30 z-50 transition-all duration-500 ${
       isScrolled ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
     }`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-8">
+      <div className="mx-auto w-full max-w-screen-xl px-4 md:px-6">
         <div className="flex justify-between items-center h-24 gap-4">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0 flex items-center gap-3 hover:opacity-90 transition-opacity" style={{ height: '100%' }}>
-            <Image 
-              src="/images/logo-amarillo.svg" 
-              alt="GROWS" 
-              width={140} 
-              height={67} 
-              className="object-contain" 
+            <Image
+              {...logoProps}
+              className="h-10 w-auto max-w-full"
               priority
-              style={{ height: '50%', width: 'auto', objectFit: 'contain', filter: 'invert(88%) sepia(98%) saturate(2639%) hue-rotate(345deg) brightness(101%) contrast(101%)' }}
+              alt="Grows logo"
             />
             <span className="text-yellow-400 font-bold text-2xl">GROWS</span>
           </Link>
@@ -133,7 +136,7 @@ export function Navigation() {
       {/* Mobile Navigation */}
       {isOpen && (
         <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black border-t border-yellow-400/30">
+          <div className="px-4 pt-2 pb-3 space-y-1 md:px-6 bg-black border-t border-yellow-400/30">
             {navItems.map((item) => (
               <a
                 key={item.label}

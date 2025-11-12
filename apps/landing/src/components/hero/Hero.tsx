@@ -1,13 +1,22 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
+import { useEffect, useState } from 'react';
 
 export function Hero() {
   const t = useTranslations('hero');
   const locale = useLocale();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <style jsx>{`
@@ -63,26 +72,25 @@ export function Hero() {
         }
       `}</style>
       
-      {/* Imagen de fondo hiperrealista */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/images/Hero.jpg"
-          alt={t('altText')}
-          fill
-          className="object-cover"
-          priority
-          quality={90}
-          placeholder="blur"
-          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAoADgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD1+iikJBGSQBQAV8//ALSPjvxF4W8PeH7Tw/q13pl1e+fFJLbSmMlBHGxUleTksO4rsP8Ahc/w3/6GnRf/A6L/GigD/9k="
-        />
-        {/* Overlay oscuro para contraste */}
+      {/* Fondo dinámico */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: isMobile
+            ? "url('/images/Herocelular.jpg')"
+            : "url('/images/hero-desktop.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: isMobile ? 'center top' : 'center',
+          backgroundRepeat: 'no-repeat',
+          minHeight: '100%'
+        }}
+      >
         <div className="absolute inset-0 bg-black/60"></div>
-        {/* Overlay dorado sutil */}
         <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-yellow-500/10"></div>
       </div>
       
       {/* Contenido principal - Movido hacia arriba para no tapar la mano */}
-      <div className="absolute top-16 left-0 right-0 z-20 text-center px-6 sm:px-8 lg:px-12">
+      <div className="absolute top-16 left-0 right-0 z-20 text-center px-4 md:px-6">
         {/* Texto principal animado - Todo en una línea */}
         <div className="animate-fade-in-up">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white leading-none tracking-tight">
@@ -103,7 +111,7 @@ export function Hero() {
       </div>
 
       {/* Subtítulo y botón - Posicionados en la parte inferior */}
-      <div className="absolute bottom-20 left-0 right-0 z-20 text-center px-6 sm:px-8 lg:px-12">
+      <div className="absolute bottom-20 left-0 right-0 z-20 text-center px-4 md:px-6">
         {/* Subtítulo con estilo diferente */}
         <div className="animate-fade-in-up mb-8">
           <p className="text-base sm:text-lg text-gray-300 font-medium mb-2">

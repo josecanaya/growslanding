@@ -40,6 +40,19 @@ h1, h2, h3, h4, h5, h6 {
   .text-balance {
     text-wrap: balance;
   }
+  .snap-x {
+    scroll-snap-type: x proximity;
+  }
+  .aspect-square {
+    aspect-ratio: 1 / 1;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 /* Custom scrollbar */
@@ -58,4 +71,11 @@ h1, h2, h3, h4, h5, h6 {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+@layer base {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 }

@@ -40,7 +40,7 @@ export function PricingSection() {
     },
     {
       name: 'Starter',
-      price: isAnnual ? '$39' : '$49',
+      price: '$25 USD',
       period: 'por mes',
       description: 'Para estudios pequeños',
       features: [
@@ -56,7 +56,7 @@ export function PricingSection() {
     },
     {
       name: 'Pro',
-      price: isAnnual ? '$79' : '$99',
+      price: '$50 USD',
       period: 'por mes',
       description: 'Funciones avanzadas completas',
       highlighted: true,
@@ -74,7 +74,7 @@ export function PricingSection() {
     },
     {
       name: 'Enterprise',
-      price: isAnnual ? '$160' : '$200',
+      price: '$100 USD',
       period: 'por mes',
       description: 'Grandes volúmenes y personalizaciones',
       badge: 'En desarrollo',

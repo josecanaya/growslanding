@@ -28,7 +28,9 @@ export default async function RootLayout({
 
   return (
     <html lang={locale}>
-      <body className={`${inter.variable} ${manrope.variable} ${inter.className}`}>
+      <body
+        className={`${inter.variable} ${manrope.variable} ${inter.className} overflow-x-hidden bg-[#0D0D0D] text-white`}
+      >
         <NextIntlClientProvider messages={messages}>
           {children}
         </NextIntlClientProvider>

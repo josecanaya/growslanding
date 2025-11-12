@@ -1,91 +1,98 @@
 'use client';
 
-import {Building2, Mail, Phone, MapPin} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import {Mail, Phone, MapPin, Instagram, ArrowRight} from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer id="contacto" className="bg-black text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <Building2 className="h-8 w-8 text-yellow-400" />
-              <h3 className="text-2xl font-bold text-yellow-400">GROWS</h3>
-            </div>
-            <p className="text-white/70 mb-6 max-w-md">
-              Plataforma integral de gestión para la construcción que conecta constructores, 
-              supervisores y clientes para optimizar procesos y mejorar la calidad.
-            </p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 text-white/70">
-                <Mail className="h-4 w-4" />
-                <span>contacto@grows.app</span>
-              </div>
-              <div className="flex items-center gap-3 text-white/70">
-                <Phone className="h-4 w-4" />
-                <span>(+54) 341 318-9944</span>
-              </div>
-              <div className="flex items-center gap-3 text-white/70">
-                <MapPin className="h-4 w-4" />
-                <span>Rosario, Santa Fe, Argentina</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Enlaces Rápidos</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#home" className="text-white/70 hover:text-yellow-400 transition-colors">
-                  Inicio
-                </a>
-              </li>
-              <li>
-                <a href="#obras" className="text-white/70 hover:text-yellow-400 transition-colors">
-                  Soluciones
-                </a>
-              </li>
-              <li>
-                <a href="#users" className="text-white/70 hover:text-yellow-400 transition-colors">
-                  Roles
-                </a>
-              </li>
-              <li>
-                <a href="#ecosystem" className="text-white/70 hover:text-yellow-400 transition-colors">
-                  Ecosistema
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Features */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Características</h4>
-            <ul className="space-y-2">
-              <li className="text-white/70">Calendario Inteligente</li>
-              <li className="text-white/70">Billetera Digital</li>
-              <li className="text-white/70">Bolsa de Trabajo</li>
-              <li className="text-white/70">Reportes de Avance</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-white/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-          <p className="text-white/60 text-sm">
-            © 2024 GROWS. Todos los derechos reservados.
+    <footer className="bg-[#0D0D0D] text-white py-12 px-6 md:px-12">
+      <div className="max-w-screen-xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-10">
+        {/* Columna 1: Logo + descripción */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <Image
+            src="/images/logo2.png"
+            alt="GROWS logo"
+            width={120}
+            height={120}
+            className="mb-4 brightness-0 invert-[0.8]"
+          />
+          <p className="text-sm text-gray-300 max-w-xs">
+            Construcción inteligente impulsada por IA. Conectamos constructores, supervisores y
+            clientes para optimizar procesos y mejorar la calidad.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-white/60 hover:text-yellow-400 transition-colors text-sm">
-              Política de Privacidad
-            </a>
-            <a href="#" className="text-white/60 hover:text-yellow-400 transition-colors text-sm">
-              Términos de Servicio
+        </div>
+
+        {/* Columna 2: Contacto */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <h3 className="text-[#CBA135] font-semibold text-lg mb-3">Contacto</h3>
+          <ul className="space-y-2 text-gray-300">
+            <li className="flex items-center gap-2 justify-center md:justify-start">
+              <Mail size={18} className="text-[#CBA135]" /> makeitgrows@gmail.com
+            </li>
+            <li className="flex items-center gap-2 justify-center md:justify-start">
+              <Phone size={18} className="text-[#CBA135]" /> (+54) 341 318-9944
+            </li>
+            <li className="flex items-center gap-2 justify-center md:justify-start">
+              <MapPin size={18} className="text-[#CBA135]" /> Rosario, Santa Fe, Argentina
+            </li>
+          </ul>
+
+          <div className="flex items-center justify-center md:justify-start gap-4 mt-4">
+            <a
+              href="https://www.instagram.com/makeitgrows"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:scale-110 transition"
+            >
+              <Instagram className="w-6 h-6 text-[#CBA135]" />
             </a>
           </div>
         </div>
+
+        {/* Columna 3: Enlaces + CTA */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <h3 className="text-[#CBA135] font-semibold text-lg mb-3">Enlaces Rápidos</h3>
+          <ul className="space-y-2 text-gray-300 mb-4">
+            <li>
+              <Link href="/es" className="hover:text-white transition">
+                Inicio
+              </Link>
+            </li>
+            <li>
+              <Link href="/es/soluciones" className="hover:text-white transition">
+                Soluciones
+              </Link>
+            </li>
+            <li>
+              <Link href="/es/roles" className="hover:text-white transition">
+                Roles
+              </Link>
+            </li>
+            <li>
+              <Link href="/es/ecosistema" className="hover:text-white transition">
+                Ecosistema
+              </Link>
+            </li>
+            <li>
+              <Link href="/es/precios" className="hover:text-white transition">
+                Precios
+              </Link>
+            </li>
+          </ul>
+
+          <Link
+            href="mailto:makeitgrows@gmail.com"
+            className="inline-flex items-center justify-center gap-2 bg-[#CBA135] text-black font-semibold py-2 px-6 rounded-xl hover:bg-[#E3C35F] transition"
+          >
+            Contactanos <ArrowRight size={18} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Línea final */}
+      <div className="mt-10 border-t border-white/10 pt-6 text-center text-sm text-gray-400">
+        © 2025 GROWS — Todos los derechos reservados.
       </div>
     </footer>
   );

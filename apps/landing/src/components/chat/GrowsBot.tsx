@@ -355,7 +355,16 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
                             : "border-gray-200 bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {message.text}
+                        {message.sender === "bot" ? (
+                          <div
+                            className="text-sm leading-relaxed"
+                            dangerouslySetInnerHTML={{
+                              __html: message.text.replace(/\n/g, "<br>"),
+                            }}
+                          />
+                        ) : (
+                          message.text
+                        )}
                       </div>
 
                       {message.actions && message.actions.length > 0 && (

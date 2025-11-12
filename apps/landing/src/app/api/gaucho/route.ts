@@ -12,28 +12,33 @@ export async function POST(req: Request) {
     console.log("GAUCHO WEBHOOK URL:", WEBHOOK_URL);
 
     if (!WEBHOOK_URL) {
-      return NextResponse.json({
-        message: "Webhook de GAUCHO no configurado.",
-        buttons: [],
-      });
+      return NextResponse.json(
+        {
+          message: "Webhook de GAUCHO no configurado.",
+          buttons: [],
+        },
+        { status: 500 }
+      );
     }
+
+    const payload = {
+      sessionId: session_id || `landing-${Date.now()}`,
+      action: "sendMessage",
+      chatInput: typeof message === "string" ? message : JSON.stringify(message ?? ""),
+    };
 
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source: "grows-landing",
-        sentAt: new Date().toISOString(),
-        message,
-        user_message: message,
-        session_id: session_id || "landing-session",
-      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("GAUCHO webhook error:", response.status, errorText);
-      throw new Error(`Webhook responded ${response.status}`);
+      throw new Error(`Webhook respondió ${response.status}`);
     }
 
     const data = await response.json();

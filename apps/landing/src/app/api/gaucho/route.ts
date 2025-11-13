@@ -9,12 +9,12 @@ export async function POST(req: Request) {
       process.env.N8N_WEBHOOK_URL ||
       process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL;
 
-    console.log("GAUCHO WEBHOOK URL:", WEBHOOK_URL);
+    console.log("Fierro webhook URL:", WEBHOOK_URL);
 
     if (!WEBHOOK_URL) {
       return NextResponse.json(
         {
-          message: "Webhook de GAUCHO no configurado.",
+          message: "Webhook de Fierro no configurado.",
           buttons: [],
         },
         { status: 500 }
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("GAUCHO webhook error:", response.status, errorText);
+      console.error("Fierro webhook error:", response.status, errorText);
       throw new Error(`Webhook respondió ${response.status}`);
     }
 
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error en /api/gaucho:", error);
     return NextResponse.json(
-      { message: "Error al conectar con GAUCHO.", buttons: [] },
+      { message: "Error al conectar con Fierro.", buttons: [] },
       { status: 500 }
     );
   }

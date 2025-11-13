@@ -2,8 +2,9 @@
 
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { scrollToSection } from "@/utils/scrollToSection";
 
@@ -24,9 +25,10 @@ type GrowsBotProps = {
   }) => void;
 };
 
-const storageKey = "grows-bot-conversation";
+const storageKey = "fierro-bot-conversation";
 const tooltipDurationMs = 4000;
-const storageLastTopicKey = "grows-bot-last-topic";
+const introBoostDurationMs = 2500;
+const storageLastTopicKey = "fierro-bot-last-topic";
 
 const suggestedTopics = [
   { label: "¿Cómo funciona GROWS?", value: "cómo funciona grows" },
@@ -44,6 +46,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
   const [hasHydrated, setHasHydrated] = useState(false);
   const [showTooltip, setShowTooltip] = useState(true);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [isIntroBoost, setIsIntroBoost] = useState(true);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
   const greetingTimeoutRef = useRef<number>();
@@ -65,7 +68,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
         }
       }
     } catch (error) {
-      console.warn("Gaucho: unable to load stored conversation", error);
+      console.warn("Fierro: unable to load stored conversation", error);
     } finally {
       setHasHydrated(true);
     }
@@ -78,7 +81,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(messages));
     } catch (error) {
-      console.warn("Gaucho: unable to persist conversation", error);
+      console.warn("Fierro: unable to persist conversation", error);
     }
   }, [messages, hasHydrated]);
 
@@ -92,6 +95,14 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     );
     return () => window.clearTimeout(tooltipTimeout);
   }, []);
+
+  useEffect(() => {
+    if (!isIntroBoost) return;
+    const timeout = window.setTimeout(() => {
+      setIsIntroBoost(false);
+    }, introBoostDurationMs);
+    return () => window.clearTimeout(timeout);
+  }, [isIntroBoost]);
 
   useEffect(() => {
     return () => {
@@ -121,7 +132,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
         ...prev,
         {
           sender: "bot",
-          text: "👋 ¡Bienvenido a GROWS! ¿Querés que te muestre cómo funciona el sistema?",
+          text: "👋 ¡Soy Fierro! ¿Querés que te muestre cómo funciona el sistema GROWS?",
         },
       ]);
       hasSentGreetingRef.current = true;
@@ -134,7 +145,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     };
   }, [hasHydrated]);
 
-  // 🔄 Reemplazado sistema local de intents por conexión con GAUCHO (n8n)
+  // 🔄 Reemplazado sistema local de intents por conexión con Fierro (n8n)
   const handleUserMessage = useCallback(
     async (rawInput: string) => {
       const trimmed = rawInput.trim();
@@ -146,10 +157,10 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       setIsTyping(true);
 
       try {
-        const response = await fetch('/api/gaucho', {
-          method: 'POST',
+        const response = await fetch("/api/fierro", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             message: trimmed,
@@ -157,14 +168,14 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
           }),
         });
 
-        console.log('Respuesta HTTP:', response.status, response.statusText);
+        console.log("Respuesta HTTP:", response.status, response.statusText);
 
         if (!response.ok) {
           setMessages((prev) => [
             ...prev,
             {
-              sender: 'bot',
-              text: 'No pude conectar con GAUCHO. Probá de nuevo en unos minutos.',
+              sender: "bot",
+              text: "No pude conectar con Fierro. Probá de nuevo en unos minutos.",
             },
           ]);
           setIsTyping(false);
@@ -177,11 +188,11 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
           data?.message ||
           data?.display_message ||
           data?.response ||
-          "No recibí respuesta de GAUCHO.";
+          "No recibí respuesta de Fierro.";
         const rawButtons = Array.isArray(data?.buttons) ? data.buttons : [];
         const botActions = rawButtons.map((b: any) => ({
-          label: b?.label ?? String(b?.text ?? ''),
-          section: b?.action ?? '',
+          label: b?.label ?? String(b?.text ?? ""),
+          section: b?.action ?? "",
         }));
 
         setMessages((prev) => [
@@ -193,12 +204,12 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
           },
         ]);
       } catch (err) {
-        console.error("Error al conectar con GAUCHO:", err);
+        console.error("Error al conectar con Fierro:", err);
         setMessages((prev) => [
           ...prev,
           {
             sender: "bot",
-            text: "No pude conectar con GAUCHO. Probá de nuevo en unos minutos.",
+            text: "No pude conectar con Fierro. Probá de nuevo en unos minutos.",
           },
         ]);
       } finally {
@@ -272,10 +283,10 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
             className="fixed bottom-28 right-8 z-[9999] rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-800 shadow-lg"
           >
-            👋 ¡Hola! Soy <span className="font-bold text-emerald-600">Gaucho</span> — tu
+            👋 ¡Hola! Soy <span className="font-bold text-emerald-600">Fierro</span> — tu
             asistente de obra digital.
           </motion.div>
         )}
@@ -293,14 +304,20 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
           >
             <div className="rounded-3xl border border-white/30 bg-white/95 shadow-xl backdrop-blur-xl">
               <div className="flex items-center justify-between rounded-t-3xl bg-emerald-600/10 px-6 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg">
-                    <Bot className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Gaucho</p>
-                    <p className="text-xs text-emerald-600">Tu asistente de obra inteligente</p>
-                  </div>
+                  <div className="flex items-center gap-4">
+                      <div className="relative h-16 w-16 overflow-hidden rounded-full shadow-lg ring-2 ring-white/40">
+                        <Image
+                          src="/images/gaucho-icon.png"
+                          alt="Fierro avatar"
+                          fill
+                          sizes="64px"
+                          className="object-cover"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-slate-900">Fierro</p>
+                        <p className="text-sm text-emerald-600">Tu asistente de obra inteligente</p>
+                      </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -310,7 +327,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
                         window.localStorage.removeItem(storageKey);
                         window.localStorage.removeItem(storageLastTopicKey);
                       } catch (error) {
-                        console.warn('Gaucho: unable to clear stored conversation', error);
+                        console.warn("Fierro: unable to clear stored conversation", error);
                       }
                       window.location.reload();
                     }}
@@ -461,10 +478,22 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       <button
         type="button"
         onClick={handleToggle}
-        className="fixed bottom-8 right-6 z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xl transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        className="fixed bottom-6 right-6 z-[50] flex h-24 w-24 items-center justify-center rounded-full border border-white/30 bg-black/40 text-white shadow-xl backdrop-blur-md transition hover:bg-black/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label="Abrir chat"
       >
-        <Bot className="h-6 w-6" />
+        <motion.span
+          className="relative inline-flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border-4 border-white/80"
+          animate={{ scale: isIntroBoost ? 2 : 1 }}
+          transition={{ type: "spring", stiffness: 220, damping: 18 }}
+        >
+          <Image
+            src="/images/gaucho-icon.png"
+            alt="Abrir Fierro"
+            fill
+            sizes="80px"
+            className="object-cover"
+          />
+        </motion.span>
       </button>
     </>
   );

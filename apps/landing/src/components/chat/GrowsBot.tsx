@@ -65,7 +65,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
         }
       }
     } catch (error) {
-      console.warn("GROWS Bot: unable to load stored conversation", error);
+      console.warn("Gaucho: unable to load stored conversation", error);
     } finally {
       setHasHydrated(true);
     }
@@ -78,7 +78,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     try {
       window.localStorage.setItem(storageKey, JSON.stringify(messages));
     } catch (error) {
-      console.warn("GROWS Bot: unable to persist conversation", error);
+      console.warn("Gaucho: unable to persist conversation", error);
     }
   }, [messages, hasHydrated]);
 
@@ -275,8 +275,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
             transition={{ duration: 0.4 }}
             className="fixed bottom-28 right-8 z-[9999] rounded-lg border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-800 shadow-lg"
           >
-            👋 ¡Hola! Soy{" "}
-            <span className="font-bold text-emerald-600">GROWS·Bot</span> — tu
+            👋 ¡Hola! Soy <span className="font-bold text-emerald-600">Gaucho</span> — tu
             asistente de obra digital.
           </motion.div>
         )}
@@ -299,7 +298,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
                     <Bot className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">GROWS·Bot</p>
+                    <p className="text-sm font-semibold text-slate-900">Gaucho</p>
                     <p className="text-xs text-emerald-600">Tu asistente de obra inteligente</p>
                   </div>
                 </div>
@@ -311,7 +310,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
                         window.localStorage.removeItem(storageKey);
                         window.localStorage.removeItem(storageLastTopicKey);
                       } catch (error) {
-                        console.warn('GROWS Bot: unable to clear stored conversation', error);
+                        console.warn('Gaucho: unable to clear stored conversation', error);
                       }
                       window.location.reload();
                     }}
@@ -462,12 +461,10 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       <button
         type="button"
         onClick={handleToggle}
-        className="fixed bottom-6 right-6 z-[9999] flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xl shadow-[0_0_25px_#00b89466] transition-all duration-300 hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 md:h-20 md:w-20 animate-pulse"
-        aria-label={isOpen ? "Cerrar GROWS·Bot" : "Abrir GROWS·Bot"}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
+        className="fixed bottom-8 right-6 z-[50] flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xl transition hover:bg-emerald-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+        aria-label="Abrir chat"
       >
-        <Bot className="h-8 w-8 md:h-10 md:w-10" />
+        <Bot className="h-6 w-6" />
       </button>
     </>
   );

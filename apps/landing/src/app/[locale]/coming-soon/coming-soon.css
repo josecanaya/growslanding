@@ -88,7 +88,6 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Heartbeat glow animation para el contador */
 @keyframes heartbeat {
   0%, 100% {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
@@ -101,22 +100,16 @@
   }
 }
 
-/* Aplicar heartbeat cada 5 segundos - se aplica via inline styles en el componente */
-/* .countdown-box {
-  animation: heartbeat 5s ease-in-out infinite;
-} */
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .title-gradient {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
-  
+
   .countdown-box {
-    min-width: 65px !important;
+    min-width: 60px !important;
     padding: 12px !important;
   }
-  
+
   .number-gold {
     font-size: 1.75rem !important;
   }

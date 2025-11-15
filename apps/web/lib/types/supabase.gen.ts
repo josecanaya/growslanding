@@ -314,16 +314,28 @@ export type Database = {
       };
       tarea_precedencias: {
         Row: {
-          depende_de: string;
+          depende_de: string | null;
           tarea_id: string;
+          tipo_dependencia: string | null;
+          lag_dias: number | null;
+          pos_x: number | null;
+          pos_y: number | null;
         };
         Insert: {
-          depende_de: string;
+          depende_de?: string | null;
           tarea_id: string;
+          tipo_dependencia?: string | null;
+          lag_dias?: number | null;
+          pos_x?: number | null;
+          pos_y?: number | null;
         };
         Update: {
-          depende_de?: string;
+          depende_de?: string | null;
           tarea_id?: string;
+          tipo_dependencia?: string | null;
+          lag_dias?: number | null;
+          pos_x?: number | null;
+          pos_y?: number | null;
         };
         Relationships: [
           {

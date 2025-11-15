@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Circle } from 'lucide-react';
+import { Circle, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 
 export type TaskCanvasEstado = 'pendiente' | 'en_progreso' | 'completada' | 'bloqueada';
 export type TaskCanvasEtapa = 'estructura' | 'obra_gris' | 'terminaciones';
+
+export const CANVAS_COLUMN_WIDTH = 400;
+export const CANVAS_ROW_HEIGHT = 150;
+export const CANVAS_MARGIN_X = 80;
+export const CANVAS_MARGIN_Y = 60;
 
 export interface TaskCanvasNode {
   id: string;
@@ -20,7 +25,10 @@ export interface TaskCanvasNode {
 
 interface TaskCanvasProps {
   tareas: TaskCanvasNode[];
-  onTaskClick: (taskId: string) => void;
+  onTaskClick?: (taskId: string) => void;
+  onTaskDoubleClick?: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onPositionChange?: (taskId: string, position: { x: number; y: number }) => void;
 }
 
 const CANVAS_WIDTH = 1600;
@@ -54,7 +62,96 @@ const getColorEstado = (estado: string) => {
   }
 };
 
-export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
+function TaskNode({
+  tarea,
+  onMouseDown,
+  onDoubleClick,
+  onDelete,
+}: {
+  tarea: TaskCanvasNode;
+  onMouseDown: (event: React.MouseEvent) => void;
+  onDoubleClick: () => void;
+  onDelete?: () => void;
+}) {
+  const [isHovering, setIsHovering] = useState(false);
+
+  return (
+    <div
+      className="absolute cursor-move select-none group"
+      style={{
+        left: `${tarea.x ?? 0}px`,
+        top: `${tarea.y ?? 0}px`,
+        zIndex: 1,
+      }}
+      onMouseDown={onMouseDown}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        onDoubleClick();
+      }}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      <div
+        className="rounded-lg shadow-sm transition-all relative"
+        style={{
+          width: '230px',
+          height: '100px',
+          backgroundColor: '#ffffff',
+          border: `2px solid ${getColorEtapa(tarea.etapa)}`,
+          borderRadius: '10px',
+          boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+          padding: '12px',
+        }}
+      >
+        {isHovering && onDelete && (
+          <button
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete();
+            }}
+            className="absolute -top-2 -right-2 z-10 rounded-full bg-red-500 p-1.5 text-white shadow-lg transition-opacity hover:bg-red-600"
+            style={{ pointerEvents: 'auto' }}
+            title="Eliminar nodo"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        )}
+        <div className="mb-2 flex items-start">
+          <Circle
+            className="mr-2 mt-1 h-2 w-2"
+            style={{ color: getColorEstado(tarea.estado) }}
+            fill={getColorEstado(tarea.estado)}
+          />
+          <h4 className="flex-1 truncate text-sm font-semibold" style={{ color: '#1B263B' }}>
+            {tarea.nombre}
+          </h4>
+        </div>
+
+        <p className="mb-1 text-xs" style={{ color: '#4a4e57' }}>
+          {tarea.lider}
+        </p>
+
+        <p className="mb-1 text-xs" style={{ color: '#4a4e57' }}>
+          {tarea.duracion}d
+        </p>
+
+        <div className="flex items-center justify-between">
+          <span
+            className="rounded-full px-2 py-1 text-xs"
+            style={{
+              backgroundColor: `${getColorEstado(tarea.estado)}20`,
+              color: getColorEstado(tarea.estado),
+            }}
+          >
+            {tarea.estado}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function TaskCanvas({ tareas, onTaskClick, onTaskDoubleClick, onTaskDelete, onPositionChange }: TaskCanvasProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [nodos, setNodos] = useState<TaskCanvasNode[]>([]);
@@ -63,67 +160,18 @@ export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
   const [hasDragged, setHasDragged] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [draggedNode, setDraggedNode] = useState<string | null>(null);
-
-  const precargarLayout = useCallback(
-    (tareasEntrada: TaskCanvasNode[], prevPositions: Map<string, TaskCanvasNode>) => {
-      const ordenEtapas: TaskCanvasEtapa[] = ['estructura', 'obra_gris', 'terminaciones'];
-      const posicionesIniciales: Record<TaskCanvasEtapa, { x: number; y: number }> = {
-        estructura: { x: 120, y: 80 },
-        obra_gris: { x: 520, y: 80 },
-        terminaciones: { x: 920, y: 80 },
-      };
-
-      const tareasConPosicion: TaskCanvasNode[] = [];
-
-      ordenEtapas.forEach((etapaActual) => {
-        const tareasEtapa = tareasEntrada.filter((t) => t.etapa === etapaActual);
-        const posInicial = posicionesIniciales[etapaActual];
-        let offsetY = 0;
-
-        tareasEtapa.forEach((tarea) => {
-          const deps = tarea.dependencias || [];
-          let x = posInicial.x;
-          let y = posInicial.y + offsetY;
-
-          if (deps.length > 0) {
-            const dependenciasCargadas = tareasConPosicion.filter((t) => deps.includes(t.id));
-            if (dependenciasCargadas.length > 0) {
-              const maxX = Math.max(...dependenciasCargadas.map((t) => t.x ?? posInicial.x));
-              const avgY =
-                dependenciasCargadas.reduce((sum, t) => sum + (t.y ?? posInicial.y), 0) / dependenciasCargadas.length;
-              x = maxX + 220;
-              y = avgY;
-            }
-          }
-
-          const previa = prevPositions.get(tarea.id);
-
-          tareasConPosicion.push({
-            ...tarea,
-            x: previa?.x ?? tarea.x ?? x,
-            y: previa?.y ?? tarea.y ?? y,
-          });
-
-          offsetY += 120;
-        });
-      });
-
-      return tareasConPosicion;
-    },
-    [],
-  );
+  const nodosRef = useRef<TaskCanvasNode[]>([]);
 
   useEffect(() => {
     if (tareas.length === 0) {
       setNodos([]);
+      nodosRef.current = [];
       return;
     }
-    setNodos((prev) => {
-      const prevMap = new Map(prev.map((nodo) => [nodo.id, nodo]));
-      const posicionadas = precargarLayout(tareas, prevMap);
-      return posicionadas;
-    });
-  }, [tareas, precargarLayout]);
+    const clones = tareas.map((tarea) => ({ ...tarea }));
+    setNodos(clones);
+    nodosRef.current = clones;
+  }, [tareas]);
 
   const renderConexiones = () => {
     const conexiones: JSX.Element[] = [];
@@ -166,41 +214,81 @@ export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
 
   const handleMouseDown = (event: React.MouseEvent, tareaId: string) => {
     event.preventDefault();
-    setIsDragging(true);
-    setHasDragged(false);
-    setDraggedNode(tareaId);
-    setDragStart({ x: event.clientX, y: event.clientY });
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scrollLeft = canvasRef.current.scrollLeft;
+    const scrollTop = canvasRef.current.scrollTop;
+    
+    // Calcular posición EXACTA del mouse en el espacio del canvas (sin zoom)
+    const canvasX = (event.clientX - rect.left + scrollLeft) / zoom;
+    const canvasY = (event.clientY - rect.top + scrollTop) / zoom;
+    
+    const currentNode = nodosRef.current.find((n) => n.id === tareaId);
+    if (currentNode) {
+      const nodeX = currentNode.x ?? 0;
+      const nodeY = currentNode.y ?? 0;
+      
+      // Guardar el offset del mouse relativo al nodo
+      const offsetX = canvasX - nodeX;
+      const offsetY = canvasY - nodeY;
+      
+      setDragStart({ x: offsetX, y: offsetY });
+      setIsDragging(true);
+      setHasDragged(false);
+      setDraggedNode(tareaId);
+    }
   };
 
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
-      if (!isDragging || !draggedNode) return;
+      if (!isDragging || !draggedNode || !canvasRef.current) return;
 
-      const deltaX = (event.clientX - dragStart.x) / zoom;
-      const deltaY = (event.clientY - dragStart.y) / zoom;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const scrollLeft = canvasRef.current.scrollLeft;
+      const scrollTop = canvasRef.current.scrollTop;
+      
+      // Calcular posición EXACTA del mouse en el espacio del canvas (sin zoom)
+      const canvasX = (event.clientX - rect.left + scrollLeft) / zoom;
+      const canvasY = (event.clientY - rect.top + scrollTop) / zoom;
+      
+      // Aplicar offset para mantener la posición relativa del mouse al nodo
+      const newX = canvasX - dragStart.x;
+      const newY = canvasY - dragStart.y;
 
-      setNodos((prev) =>
-        prev.map((nodo) =>
+      setNodos((prev) => {
+        const updated = prev.map((nodo) =>
           nodo.id === draggedNode
             ? {
                 ...nodo,
-                x: (nodo.x ?? 0) + deltaX,
-                y: (nodo.y ?? 0) + deltaY,
+                x: newX,
+                y: newY,
               }
             : nodo,
-        ),
-      );
+        );
+        nodosRef.current = updated;
+        return updated;
+      });
 
-      setDragStart({ x: event.clientX, y: event.clientY });
       setHasDragged(true);
     },
     [dragStart, draggedNode, isDragging, zoom],
   );
 
   const handleMouseUp = useCallback(() => {
+    if (isDragging && draggedNode && hasDragged) {
+      const updatedNode = nodosRef.current.find((item) => item.id === draggedNode);
+      if (updatedNode && updatedNode.x !== undefined && updatedNode.y !== undefined) {
+        onPositionChange?.(updatedNode.id, {
+          x: updatedNode.x,
+          y: updatedNode.y,
+        });
+      }
+    }
     setIsDragging(false);
     setDraggedNode(null);
-  }, []);
+    setHasDragged(false);
+  }, [draggedNode, hasDragged, nodos, onPositionChange]);
 
   useEffect(() => {
     if (!isDragging) return;
@@ -215,71 +303,10 @@ export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
   }, [handleMouseMove, handleMouseUp, isDragging]);
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 1.6));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.6));
-  const handleReset = () => {
-    setZoom(1);
-    const posicionadas = precargarLayout(tareas, new Map<string, TaskCanvasNode>());
-    setNodos(posicionadas);
-  };
-
-  const handleNodeClick = (tareaId: string) => {
-    if (hasDragged) {
-      setHasDragged(false);
-      return;
-    }
-    onTaskClick(tareaId);
-  };
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0));
 
   return (
     <div className="relative h-full w-full" style={{ backgroundColor: '#eaf0f6' }}>
-      <div className="absolute left-4 top-4 z-10 rounded-lg border bg-white p-2 shadow-lg" style={{ borderColor: '#dce3ea' }}>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleZoomOut}
-            className="rounded p-2 transition-colors"
-            style={{ color: '#1B263B' }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.backgroundColor = '#f5f7fa';
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </button>
-          <span className="min-w-[3rem] text-center text-sm font-medium" style={{ color: '#1B263B' }}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            onClick={handleZoomIn}
-            className="rounded p-2 transition-colors"
-            style={{ color: '#1B263B' }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.backgroundColor = '#f5f7fa';
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </button>
-          <div className="h-6 w-px" style={{ backgroundColor: '#dce3ea' }} />
-          <button
-            onClick={handleReset}
-            className="rounded p-2 transition-colors"
-            style={{ color: '#1B263B' }}
-            onMouseEnter={(event) => {
-              event.currentTarget.style.backgroundColor = '#f5f7fa';
-            }}
-            onMouseLeave={(event) => {
-              event.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
       <div
         ref={canvasRef}
         className="relative h-full w-full overflow-auto"
@@ -288,7 +315,7 @@ export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
           if (!event.ctrlKey) return;
           event.preventDefault();
           const delta = event.deltaY > 0 ? -0.1 : 0.1;
-          setZoom((prev) => Math.max(0.6, Math.min(1.6, prev + delta)));
+          setZoom((prev) => Math.max(0, Math.min(1.6, prev + delta)));
         }}
       >
         <div
@@ -311,71 +338,37 @@ export function TaskCanvas({ tareas, onTaskClick }: TaskCanvasProps) {
           </svg>
 
           {nodos.map((tarea) => (
-            <div
+            <TaskNode
               key={tarea.id}
-              className="absolute cursor-move select-none"
-              style={{
-                left: `${tarea.x ?? 0}px`,
-                top: `${tarea.y ?? 0}px`,
-                zIndex: 1,
-              }}
+              tarea={tarea}
               onMouseDown={(event) => handleMouseDown(event, tarea.id)}
-              onClick={(event) => {
-                event.stopPropagation();
-                handleNodeClick(tarea.id);
-              }}
-            >
-              <div
-                className="rounded-lg shadow-sm transition-all"
-                style={{
-                  width: '230px',
-                  height: '100px',
-                  backgroundColor: '#ffffff',
-                  border: `2px solid ${getColorEtapa(tarea.etapa)}`,
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                  padding: '12px',
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.boxShadow = '0 0 6px rgba(0,0,0,0.1)';
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
-                }}
-              >
-                <div className="mb-2 flex items-start">
-                  <Circle
-                    className="mr-2 mt-1 h-2 w-2"
-                    style={{ color: getColorEstado(tarea.estado) }}
-                    fill={getColorEstado(tarea.estado)}
-                  />
-                  <h4 className="flex-1 truncate text-sm font-semibold" style={{ color: '#1B263B' }}>
-                    {tarea.nombre}
-                  </h4>
-                </div>
-
-                <p className="mb-1 text-xs" style={{ color: '#4a4e57' }}>
-                  {tarea.lider}
-                </p>
-
-                <p className="mb-1 text-xs" style={{ color: '#4a4e57' }}>
-                  {tarea.duracion}d
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <span
-                    className="rounded-full px-2 py-1 text-xs"
-                    style={{
-                      backgroundColor: `${getColorEstado(tarea.estado)}20`,
-                      color: getColorEstado(tarea.estado),
-                    }}
-                  >
-                    {tarea.estado}
-                  </span>
-                </div>
-              </div>
-            </div>
+              onDoubleClick={() => onTaskDoubleClick?.(tarea.id)}
+              onDelete={() => onTaskDelete?.(tarea.id)}
+            />
           ))}
+        </div>
+      </div>
+      <div className="absolute left-4 bottom-4 z-20 rounded-lg border bg-white p-2 shadow-lg" style={{ borderColor: '#dce3ea' }}>
+        <div className="flex flex-col items-center space-y-2">
+          <button
+            onClick={handleZoomIn}
+            className="rounded p-2 transition-colors hover:bg-gray-100"
+            style={{ color: '#1B263B' }}
+            title="Acercar (Ctrl+Scroll arriba)"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          <span className="min-w-[3rem] text-center text-xs font-medium" style={{ color: '#1B263B' }}>
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={handleZoomOut}
+            className="rounded p-2 transition-colors hover:bg-gray-100"
+            style={{ color: '#1B263B' }}
+            title="Alejar (Ctrl+Scroll abajo)"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </div>

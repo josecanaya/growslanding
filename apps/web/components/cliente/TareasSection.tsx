@@ -21,93 +21,10 @@ type OrganizaPrecedenciaMap = Record<
   {
     dependeDe: string | null;
     duracion: number;
+    posX: number | null;
+    posY: number | null;
   }
 >;
-
-const buildCanvasOrder = (tareas: Tarea[], precedencias: OrganizaPrecedenciaMap): string[] => {
-  if (!tareas.length || !Object.keys(precedencias).length) {
-    return [];
-  }
-
-  const taskIds = new Set(tareas.map((tarea) => tarea.id));
-  const taskIndex = new Map(tareas.map((tarea, index) => [tarea.id, index]));
-
-  const depMap = new Map<string, string | null>();
-  const childrenMap = new Map<string, string[]>();
-
-  Object.entries(precedencias).forEach(([tareaId, meta]) => {
-    if (!taskIds.has(tareaId)) return;
-    const depende = meta.dependeDe ?? null;
-    depMap.set(tareaId, depende);
-
-    if (depende && taskIds.has(depende)) {
-      const children = childrenMap.get(depende) ?? [];
-      children.push(tareaId);
-      childrenMap.set(depende, children);
-    }
-  });
-
-  if (depMap.size === 0) {
-    return [];
-  }
-
-  const allIds = new Set<string>();
-  depMap.forEach((dep, id) => {
-    if (taskIds.has(id)) {
-      allIds.add(id);
-    }
-    if (dep && taskIds.has(dep)) {
-      allIds.add(dep);
-    }
-  });
-
-  const heads: string[] = [];
-  allIds.forEach((id) => {
-    if (!depMap.has(id) || depMap.get(id) === null) {
-      heads.push(id);
-    }
-  });
-
-  if (heads.length === 0) {
-    heads.push(...depMap.keys());
-  }
-
-  const visited = new Set<string>();
-  const order: string[] = [];
-
-  const visit = (node: string) => {
-    if (!taskIds.has(node) || visited.has(node)) {
-      return;
-    }
-
-    const dependency = depMap.get(node);
-    if (dependency && !visited.has(dependency)) {
-      visit(dependency);
-    }
-
-    if (!visited.has(node)) {
-      visited.add(node);
-      order.push(node);
-    }
-
-    const children = (childrenMap.get(node) ?? []).sort(
-      (a, b) => (taskIndex.get(a) ?? 0) - (taskIndex.get(b) ?? 0),
-    );
-    children.forEach(visit);
-  };
-
-  heads
-    .sort((a, b) => (taskIndex.get(a) ?? 0) - (taskIndex.get(b) ?? 0))
-    .forEach(visit);
-
-  depMap.forEach((_dep, id) => {
-    if (!visited.has(id)) {
-      visit(id);
-    }
-  });
-
-  return order;
-};
 
 // Tipos de datos
 interface Obra {
@@ -890,34 +807,66 @@ export function TareasSection() {
         const tareaIds = tareasFormateadas.map((tarea) => tarea.id);
         let precedenciasMap: OrganizaPrecedenciaMap = {};
 
+        let precedenciasData: {
+          tarea_id: string | null;
+          depende_de: string | null;
+          lag_dias: number | string | null;
+          pos_x: number | string | null;
+          pos_y: number | string | null;
+          created_at?: string | null;
+        }[] | null = null;
+
         if (tareaIds.length > 0) {
-          const { data: precedenciasData, error: precedenciasError } = await supabase
+          const { data, error: precedenciasError } = await supabase
             .from('tarea_precedencias')
-            .select('tarea_id, depende_de, lag_dias')
-            .in('tarea_id', tareaIds);
+            .select('tarea_id, depende_de, lag_dias, pos_x, pos_y, created_at')
+            .in('tarea_id', tareaIds)
+            .order('created_at', { ascending: true });
 
           if (precedenciasError) {
             console.error('[TareasSection] Error cargando precedencias:', precedenciasError);
             precedenciasMap = {};
-          } else if (precedenciasData) {
-            precedenciasMap = precedenciasData.reduce<OrganizaPrecedenciaMap>((acc, item) => {
+          } else if (data) {
+            precedenciasData = data;
+            precedenciasMap = data.reduce<OrganizaPrecedenciaMap>((acc, item) => {
               if (!item.tarea_id) {
                 return acc;
               }
               acc[item.tarea_id] = {
                 dependeDe: item.depende_de ?? null,
-                duracion: typeof item.lag_dias === 'number' && item.lag_dias > 0 ? item.lag_dias : DEFAULT_CANVAS_DURATION,
+                duracion:
+                  typeof item.lag_dias === 'number' && item.lag_dias > 0
+                    ? item.lag_dias
+                    : typeof item.lag_dias === 'string' && item.lag_dias.trim() !== ''
+                    ? Math.max(1, Number.parseInt(item.lag_dias, 10))
+                    : DEFAULT_CANVAS_DURATION,
+                posX:
+                  typeof item.pos_x === 'number'
+                    ? item.pos_x
+                    : typeof item.pos_x === 'string' && item.pos_x.trim() !== ''
+                    ? Number.parseFloat(item.pos_x)
+                    : null,
+                posY:
+                  typeof item.pos_y === 'number'
+                    ? item.pos_y
+                    : typeof item.pos_y === 'string' && item.pos_y.trim() !== ''
+                    ? Number.parseFloat(item.pos_y)
+                    : null,
               };
               return acc;
             }, {});
           }
         }
 
-        const ordenDesdeSupabase = buildCanvasOrder(tareasFormateadas, precedenciasMap);
+        const safePrecedenciasData = Array.isArray(precedenciasData) ? precedenciasData : [];
+
+        const ordenDesdeSupabase = safePrecedenciasData
+          .map((row) => row.tarea_id)
+          .filter((id): id is string => Boolean(id));
 
         setOrganizaCanvas((prev) => ({
           ...prev,
-          [obraSeleccionada]: ordenDesdeSupabase.length > 0 ? ordenDesdeSupabase : [],
+          [obraSeleccionada]: ordenDesdeSupabase,
         }));
 
         setOrganizaPrecedencias((prev) => ({

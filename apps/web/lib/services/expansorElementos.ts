@@ -335,27 +335,19 @@ export class ExpansorElementos {
   }
 
   private static calcularTiempoEstimado(tareaOriginal: any, cantidad: number, unidadElemento: string): number {
+    // coef_operativo = horas necesarias para ejecutar 1 unidad de la tarea
     const coefOperativo = tareaOriginal.coef_operativo;
     
-    // Factor de conversión basado en la unidad del elemento
-    let factorCantidad = 1;
+    // Horas por día de trabajo estándar
+    const HORAS_POR_DIA = 8;
     
-    switch (unidadElemento) {
-      case 'm²':
-        factorCantidad = cantidad / 10; // 10m² por día como referencia
-        break;
-      case 'm³':
-        factorCantidad = cantidad / 5; // 5m³ por día como referencia
-        break;
-      case 'unidad':
-        factorCantidad = cantidad / 2; // 2 unidades por día como referencia
-        break;
-    }
+    // Calcular horas totales: coef_operativo (horas/unidad) × cantidad (unidades)
+    const horasTotales = coefOperativo * cantidad;
     
-    // Tiempo base en días
-    const tiempoBase = Math.max(1, Math.ceil(coefOperativo * factorCantidad));
+    // Convertir horas a días (redondeando hacia arriba, mínimo 1 día)
+    const dias = Math.max(1, Math.ceil(horasTotales / HORAS_POR_DIA));
     
-    return tiempoBase;
+    return dias;
   }
 }
 

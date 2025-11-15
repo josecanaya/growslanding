@@ -35,139 +35,15 @@ export async function GET(
     }
 
     // ============================================
-    // MÉTODO PRINCIPAL: Usar tabla cuadrilla_socios (nueva relación explícita)
+    // ✅ NUEVO MÉTODO: Buscar tareas por responsable (email)
+    // Las cuadrillas quedan obsoletas, las tareas se asignan directamente al socio
     // ============================================
-    console.log('[SOCIOS_TAREAS] Buscando cuadrillas del socio usando tabla cuadrilla_socios:', {
+    console.log('[SOCIOS_TAREAS] Buscando tareas por responsable:', {
       socio_id: socioId,
       socio_nombre: socio.nombre,
       socio_email: socio.email,
+      socio_telefono: socio.telefono,
     });
-
-    // 1️⃣ Obtener cuadrillas del socio desde tabla intermedia (FUENTE PRINCIPAL)
-    const { data: relaciones, error: relacionesError } = await supabase
-      .from('cuadrilla_socios')
-      .select('cuadrilla_id, rol_en_cuadrilla')
-      .eq('socio_id', socioId)
-      .eq('activo', true);
-
-    let cuadrillaIds: string[] = [];
-    let cuadrillasRelacionadas: any[] = [];
-
-    if (!relacionesError && relaciones && relaciones.length > 0) {
-      cuadrillaIds = relaciones.map((r: any) => r.cuadrilla_id);
-      
-      // Obtener detalles de las cuadrillas
-      const { data: cuadrillasData } = await supabase
-        .from('cuadrillas')
-        .select('id, nombre, encargado, email_encargado')
-        .in('id', cuadrillaIds)
-        .eq('org_id', organizacionId);
-      
-      cuadrillasRelacionadas = cuadrillasData || [];
-      
-      console.log('[SOCIOS_TAREAS] ✅ Cuadrillas encontradas por relación explícita:', {
-        cantidad: cuadrillasRelacionadas.length,
-        cuadrillas: cuadrillasRelacionadas.map(c => ({ id: c.id, nombre: c.nombre })),
-        relaciones: relaciones.map((r: any) => ({ cuadrilla_id: r.cuadrilla_id, rol_en_cuadrilla: r.rol_en_cuadrilla })),
-      });
-    } else if (relacionesError) {
-      console.warn('[SOCIOS_TAREAS] ⚠️ Error al buscar en cuadrilla_socios (puede que la tabla no exista aún):', relacionesError);
-      // Continuar con fallback
-    }
-
-    // ============================================
-    // FALLBACK: Buscar por encargado (compatibilidad con datos antiguos)
-    // ============================================
-    if (cuadrillaIds.length === 0) {
-      console.log('[SOCIOS_TAREAS] No se encontraron cuadrillas por relación explícita, usando fallback por encargado');
-      
-      const contacto = socio.email || socio.telefono || '';
-      const nombre = socio.nombre || '';
-
-      // Construir consulta para cuadrillas
-      let cuadrillasQuery = supabase
-        .from('cuadrillas')
-        .select('id, nombre, encargado, email_encargado, telefono_encargado')
-        .eq('org_id', organizacionId);
-
-      // Filtrar por encargado (puede ser nombre, email o teléfono)
-      const condicionesCuadrilla: string[] = [];
-      
-      // Buscar por nombre del encargado (coincidencia parcial)
-      if (nombre) {
-        condicionesCuadrilla.push(`encargado.ilike.%${nombre}%`);
-      }
-      
-      // Buscar por email del encargado (si existe el campo)
-      if (socio.email) {
-        condicionesCuadrilla.push(`email_encargado.eq.${socio.email}`);
-      }
-      
-      // Buscar por teléfono del encargado (si existe el campo)
-      if (socio.telefono) {
-        condicionesCuadrilla.push(`telefono_encargado.eq.${socio.telefono}`);
-      }
-      
-      // Buscar por contacto en el campo encargado (fallback)
-      if (contacto) {
-        condicionesCuadrilla.push(`encargado.ilike.%${contacto}%`);
-      }
-
-      let cuadrillas: any[] = [];
-      let cuadrillasError: any = null;
-
-      if (condicionesCuadrilla.length > 0) {
-        const { data, error } = await cuadrillasQuery.or(condicionesCuadrilla.join(','));
-        cuadrillas = data || [];
-        cuadrillasError = error;
-      } else {
-        const { data, error } = await cuadrillasQuery;
-        cuadrillas = data || [];
-        cuadrillasError = error;
-        
-        // Filtrar manualmente si hay error en la query OR o si no se encontraron resultados
-        if (!cuadrillasError && cuadrillas.length > 0) {
-          cuadrillas = cuadrillas.filter(c => {
-            const encargadoLower = (c.encargado || '').toLowerCase().trim();
-            const nombreLower = nombre.toLowerCase().trim();
-            const contactoLower = contacto.toLowerCase().trim();
-            
-            const nombrePrimeraPalabra = nombreLower.split(' ')[0];
-            const encargadoPrimeraPalabra = encargadoLower.split(' ')[0];
-            
-            return (
-              encargadoLower === nombreLower ||
-              encargadoLower.includes(nombreLower) ||
-              nombreLower.includes(encargadoLower) ||
-              encargadoPrimeraPalabra === nombrePrimeraPalabra ||
-              encargadoLower.includes(contactoLower) ||
-              (socio.email && c.email_encargado === socio.email) ||
-              (socio.telefono && c.telefono_encargado === socio.telefono)
-            );
-          });
-        }
-      }
-
-      if (!cuadrillasError && cuadrillas.length > 0) {
-        cuadrillaIds = cuadrillas.map(c => c.id);
-        cuadrillasRelacionadas = cuadrillas;
-        
-        console.log('[SOCIOS_TAREAS] ✅ Cuadrillas encontradas por fallback (encargado):', {
-          cantidad: cuadrillas.length,
-          cuadrillas: cuadrillas.map(c => ({ id: c.id, nombre: c.nombre, encargado: c.encargado })),
-        });
-      } else if (cuadrillasError) {
-        console.warn('[SOCIOS_TAREAS] ⚠️ Error en fallback por encargado:', cuadrillasError);
-      }
-    }
-
-    // ============================================
-    // Construir consulta de tareas
-    // ============================================
-    // Tareas donde:
-    // 1. cuadrilla_id IN (cuadrillas del socio - de cuadrilla_socios o fallback por encargado)
-    // 2. OR responsable = contacto del socio (email o teléfono) - compatibilidad
-    // NOTA: No hay campo socio_id en la tabla tareas, solo cuadrilla_id y responsable
 
     let tareasQuery = supabase
       .from('tareas')
@@ -183,7 +59,6 @@ export async function GET(
         fecha_fin_estimada,
         fecha_inicio_real,
         fecha_fin_real,
-        cuadrilla_id,
         obra_id,
         elemento_id,
         created_at,
@@ -192,57 +67,43 @@ export async function GET(
           id,
           nombre,
           categoria,
-          subcategoria
+          subcategoria,
+          descripcion,
+          unidad,
+          cantidad
         ),
         obra:obras(
           id,
           name,
           address
-        ),
-        cuadrilla:cuadrillas(
-          id,
-          nombre,
-          especialidad
         )
       `)
       .eq('org_id', organizacionId);
 
-    // Construir filtros OR
+    // Construir filtros OR para buscar por responsable
     const filtros: string[] = [];
 
-    // Filtro 1: Tareas de cuadrillas del socio (PRINCIPAL - desde cuadrilla_socios o fallback)
-    if (cuadrillaIds.length > 0) {
-      filtros.push(`cuadrilla_id.in.(${cuadrillaIds.join(',')})`);
-      console.log('[SOCIOS_TAREAS] ✅ Filtro 1: Tareas de cuadrillas del socio:', {
-        cuadrilla_ids: cuadrillaIds,
-        cantidad: cuadrillaIds.length,
-      });
-    } else {
-      console.warn('[SOCIOS_TAREAS] ⚠️ No se encontraron cuadrillas para el socio, buscando solo por responsable');
-    }
-
-    // Filtro 2: Tareas donde responsable = contacto del socio (COMPATIBILIDAD)
-    // Este es importante porque cuando se asigna una tarea directamente, se actualiza el responsable
-    const nombre = socio.nombre || '';
+    // ✅ Buscar tareas donde responsable = email del socio (PRINCIPAL)
     if (socio.email) {
       filtros.push(`responsable.eq.${socio.email}`);
-    }
-    if (socio.telefono) {
-      filtros.push(`responsable.eq.${socio.telefono}`);
-    }
-    // También buscar por nombre del socio en el responsable (por si acaso)
-    if (nombre) {
-      filtros.push(`responsable.ilike.%${nombre}%`);
+      console.log('[SOCIOS_TAREAS] ✅ Filtro por email:', socio.email);
     }
     
-    console.log('[SOCIOS_TAREAS] Filtro 2: Responsable directo (compatibilidad):', {
-      email: socio.email,
-      telefono: socio.telefono,
-      nombre: nombre,
-    });
+    // ✅ Buscar tareas donde responsable = teléfono del socio (si existe)
+    if (socio.telefono) {
+      filtros.push(`responsable.eq.${socio.telefono}`);
+      console.log('[SOCIOS_TAREAS] ✅ Filtro por teléfono:', socio.telefono);
+    }
+    
+    // ✅ Buscar por nombre del socio en el responsable (búsqueda parcial, por compatibilidad)
+    const nombre = socio.nombre || '';
+    if (nombre) {
+      filtros.push(`responsable.ilike.%${nombre}%`);
+      console.log('[SOCIOS_TAREAS] ✅ Filtro por nombre:', nombre);
+    }
 
-    // NOTA: No agregamos filtro por socio_id porque ese campo NO existe en la tabla tareas
-    // Las tareas se asignan a socios a través de cuadrilla_id (principal) o responsable (fallback)
+    // NOTA: Las tareas ahora se asignan directamente por responsable (email), no por cuadrilla
+    // El campo cuadrilla_id está obsoleto y no se usa para filtrar tareas
     
     console.log('[SOCIOS_TAREAS] Total filtros:', filtros.length, 'Filtros:', filtros);
 
@@ -255,10 +116,9 @@ export async function GET(
       return NextResponse.json({
         success: true,
         data: [],
-        message: 'No se encontraron tareas para este socio. Asegúrate de que el socio esté vinculado a una cuadrilla o tenga tareas asignadas directamente.',
+        message: 'No se encontraron tareas para este socio. Asegúrate de que el socio tenga tareas asignadas directamente por responsable (email).',
         meta: {
           socio_id: socioId,
-          cuadrillas_vinculadas: 0,
           total_tareas: 0,
           metodo: 'ninguno',
         },
@@ -291,7 +151,6 @@ export async function GET(
               fecha_fin_estimada,
               fecha_inicio_real,
               fecha_fin_real,
-              cuadrilla_id,
               obra_id,
               elemento_id,
               created_at,
@@ -300,17 +159,15 @@ export async function GET(
                 id,
                 nombre,
                 categoria,
-                subcategoria
+                subcategoria,
+                descripcion,
+                unidad,
+                cantidad
               ),
               obra:obras(
                 id,
                 name,
                 address
-              ),
-              cuadrilla:cuadrillas(
-                id,
-                nombre,
-                especialidad
               )
             `)
             .eq('org_id', organizacionId)
@@ -330,7 +187,6 @@ export async function GET(
             meta: {
               socio_id: socioId,
               socio_nombre: socio.nombre,
-              cuadrillas_encontradas: cuadrillaIds.length,
               total_tareas: (tareasRetry || []).length,
             },
           });
@@ -346,14 +202,12 @@ export async function GET(
     console.log('[SOCIOS_TAREAS] ✅ Resultado final:', {
       socio_id: socioId,
       socio_nombre: socio.nombre,
-      cuadrillas_vinculadas: cuadrillaIds.length,
-      cuadrilla_ids: cuadrillaIds,
       total_tareas: (tareas || []).length,
-      metodo: cuadrillasRelacionadas.length > 0 ? 'cuadrilla_socios (explícito)' : 'fallback (encargado)',
+      metodo: 'responsable (email)',
       tareas_ejemplo: tareas?.slice(0, 3).map((t: any) => ({
         id: t.id,
         title: t.title,
-        cuadrilla_id: t.cuadrilla_id,
+        responsable: t.responsable,
         estado: t.estado,
       })),
     });
@@ -364,10 +218,8 @@ export async function GET(
       meta: {
         socio_id: socioId,
         socio_nombre: socio.nombre,
-        cuadrillas_vinculadas: cuadrillaIds.length,
-        cuadrilla_ids: cuadrillaIds,
         total_tareas: (tareas || []).length,
-        metodo: cuadrillasRelacionadas.length > 0 ? 'cuadrilla_socios' : 'fallback_encargado',
+        metodo: 'responsable (email)',
       },
     });
   } catch (error) {

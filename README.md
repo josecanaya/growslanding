@@ -41,14 +41,14 @@ Asegurar la base técnica (Supabase + estructura de datos) y validar el flujo CR
 
 #### **Día 3 — Martes 11**
 
-- [ ] Reescribir modal de **planes (Gratis / Starter)**:
-  - [ ] Revisar archivo `/components/ui/ModalPlanes.tsx` o equivalente.
-  - [ ] Implementar control:
+- [ x] Reescribir modal de **planes (Gratis / Starter)**:
+  - [x ] Revisar archivo `/components/ui/ModalPlanes.tsx` o equivalente.
+  - [ x] Implementar control:
     - Plan Gratis → máximo 1 obra, sin cuadrillas ni validación.
     - Plan Starter → hasta 3 obras, con cuadrillas y validación habilitada.
-  - [ ] Condicionar los botones “Asignar” y “Validar” según plan.
-  - [ ] Guardar lógica en helper: `/lib/permissions.ts`.
-- [ ] Crear función de verificación:
+  - [ x] Condicionar los botones “Asignar” y “Validar” según plan.
+  - [x ] Guardar lógica en helper: `/lib/permissions.ts`.
+- [X] Crear función de verificación:
 
 ```ts
 canUser(feature: string, plan: string): boolean
@@ -56,7 +56,7 @@ canUser(feature: string, plan: string): boolean
 
 que se use globalmente para ocultar botones y rutas no permitidas.
 
-- [ ] Testear con 2 cuentas en Supabase (Gratis y Starter).
+- [X] Testear con 2 cuentas en Supabase (Gratis y Starter).
 
 ---
 
@@ -80,14 +80,14 @@ colors: {
 }
 ```
 
-- [ ] Ajustar botones ShadCN:
-  - [ ] `variant="default"` → color growsBlue
-  - [ ] `variant="outline"` → borde gris + hover azul claro
+- [ x] Ajustar botones ShadCN:
+  - [ x] `variant="default"` → color growsBlue
+  - [ x] `variant="outline"` → borde gris + hover azul claro
 - [ ] Revisar componentes:
-  - [ ] `/components/ui/Button.tsx`
-  - [ ] `/components/ui/Card.tsx`
-  - [ ] `/components/layout/Sidebar.tsx`
-- [ ] Corregir tipografías (Tailwind font-sans global).
+  - [x ] `/components/ui/Button.tsx`
+  - [x ] `/components/ui/Card.tsx`
+  - [ x] `/components/layout/Sidebar.tsx`
+- [x ] Corregir tipografías (Tailwind font-sans global).
 - [ ] Capturar pantallas limpias para la landing.
 
 #### **Día 5 — Jueves 13**
@@ -127,7 +127,7 @@ Dejar todo funcional, documentado y desplegado.
 
 - [ ] Test completo local:
   - [ ] Login, crear obra, crear tarea, asignar, validar.
-  - [ ] Verificar límites de plan.
+  - [X] Verificar límites de plan.
   - [ ] Comprobar roles Cliente Técnico / Socio.
   - [ ] Corregir bugs detectados.
 - [ ] Ejecutar prompt de Cursor → actualizar `docs/GROWS_V1.0_README.md`.

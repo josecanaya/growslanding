@@ -33,7 +33,8 @@ async function uploadToBucket(bucket: string, dataUrl: string): Promise<UploadRe
 }
 
 export async function uploadPhoto(dataUrl: string) {
-  return uploadToBucket('photos', dataUrl);
+  // El bucket se llama 'evidencias' según el contexto del proyecto
+  return uploadToBucket('evidencias', dataUrl);
 }
 
 export async function uploadSignature(dataUrl: string) {

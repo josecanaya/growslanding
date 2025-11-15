@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Home, Users, Bell, User, X, ClipboardList } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Bell, Clock, ClipboardList, NotebookPen, Users, User, X } from 'lucide-react';
+import type { Route } from 'next';
 
 interface TopBarProps {
   isConnected: boolean;
@@ -14,28 +16,45 @@ interface TopBarProps {
     avatar: string;
   };
   roleLabel?: string;
-  onSectionChange: (section: string) => void;
+  onSectionChange?: (section: string) => void; // Mantener opcional para compatibilidad
 }
 
 export function TopBar({
   user,
   roleLabel,
-  onSectionChange,
   onLogout,
+  onSectionChange,
 }: TopBarProps) {
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const menuItems = [
-    { id: 'tareas', label: 'Tareas', icon: Home },
-    { id: 'mis-tareas', label: 'Mis Tareas', icon: ClipboardList },
-    { id: 'cuadrilla', label: 'Cuadrilla', icon: Users },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
-    { id: 'cuenta', label: 'Perfil', icon: User },
+    // 1. Notificaciones - usar la ruta actual de notificaciones que ya existe
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell, route: '/socio/notificaciones' as Route },
+    // 2. Ahora - usar la ruta donde hoy se muestran las tareas del día (antes "tareas")
+    { id: 'ahora', label: 'Ahora', icon: Clock, route: '/socio/ahora' as Route },
+    // 3. Tareas - usar la ruta actual donde hoy se accede a "Mis tareas" completas (antes "mis-tareas")
+    { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route },
+    // 4. Presupuesta (NUEVA) - placeholder /socio/presupuestos
+    { id: 'presupuestos', label: 'Presupuesta', icon: NotebookPen, route: '/socio/presupuestos' as Route },
+    // 5. Mi Cuadrilla - mantener la ruta actual que ya funciona
+    { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route },
+    // 6. Cuenta - mantener la ruta actual
+    { id: 'cuenta', label: 'Cuenta', icon: User, route: '/socio/cuenta' as Route },
   ];
 
-  const handleMenuClick = (sectionId: string) => {
-    onSectionChange(sectionId);
+  const handleMenuClick = (route: Route, sectionId: string) => {
+    router.push(route);
+    // Mantener compatibilidad con sistema anterior si existe
+    if (onSectionChange) {
+      onSectionChange(sectionId);
+    }
     setShowSideMenu(false);
+  };
+
+  const isActive = (route: string) => {
+    return pathname === route || pathname?.startsWith(`${route}/`);
   };
 
   return (
@@ -90,11 +109,14 @@ export function TopBar({
                 <nav className="space-y-2">
                   {menuItems.map((item) => {
                     const Icon = item.icon;
+                    const active = isActive(item.route);
                     return (
                       <button
                         key={item.id}
-                        onClick={() => handleMenuClick(item.id)}
-                        className="flex w-full items-center space-x-4 px-6 py-4 text-left text-white transition hover:bg-white/10"
+                        onClick={() => handleMenuClick(item.route, item.id)}
+                        className={`flex w-full items-center space-x-4 px-6 py-4 text-left text-white transition hover:bg-white/10 ${
+                          active ? 'bg-white/15 font-semibold' : ''
+                        }`}
                       >
                         <Icon className="h-6 w-6" />
                         <span className="font-medium">{item.label}</span>

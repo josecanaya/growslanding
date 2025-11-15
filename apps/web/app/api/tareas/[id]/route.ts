@@ -208,23 +208,20 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     };
 
-    // Si solo viene cuadrilla_id, actualizarlo directamente sin validar schema
+    // ⚠️ OBSOLETO: cuadrilla_id ya no se usa para lógica de tareas
+    // Se mantiene el campo en la BD por compatibilidad pero siempre debe ser null
+    // Las tareas ahora se asignan directamente por responsable (email)
+    
+    // Si solo viene cuadrilla_id, ignorarlo (obsoleto)
     const soloCuadrillaId = body.cuadrilla_id !== undefined && Object.keys(body).filter(k => k !== 'cuadrilla_id').length === 0;
     
     if (soloCuadrillaId) {
-      // Validar que cuadrilla_id sea un UUID válido o null
-      const cuadrillaId = body.cuadrilla_id;
-      if (cuadrillaId !== null && cuadrillaId !== undefined && cuadrillaId !== '') {
-        // Validar formato UUID básico
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (typeof cuadrillaId !== 'string' || !uuidRegex.test(cuadrillaId)) {
-          return NextResponse.json(
-            { success: false, error: 'cuadrilla_id debe ser un UUID válido o null' },
-            { status: 400 }
-          );
-        }
-      }
-      updateData.cuadrilla_id = cuadrillaId === '' ? null : cuadrillaId;
+      // No hacer nada, cuadrilla_id está obsoleto
+      console.warn('[PATCH_TAREA] Intento de actualizar cuadrilla_id (obsoleto), ignorado');
+      return NextResponse.json(
+        { success: false, error: 'cuadrilla_id está obsoleto. Use el campo responsable para asignar tareas.' },
+        { status: 400 }
+      );
     } else {
       // Validar otros campos con el schema
       try {
@@ -258,9 +255,11 @@ export async function PATCH(
           updateData.avance = validatedData.avance;
         }
         
-        // Permitir cuadrilla_id si viene junto con otros campos
+        // ⚠️ OBSOLETO: No permitir actualizar cuadrilla_id
+        // Las tareas se asignan por responsable (email), no por cuadrilla
         if (body.cuadrilla_id !== undefined) {
-          updateData.cuadrilla_id = body.cuadrilla_id;
+          console.warn('[PATCH_TAREA] Intento de actualizar cuadrilla_id (obsoleto), ignorado');
+          // No actualizar cuadrilla_id, siempre debe ser null
         }
       } catch (schemaError: any) {
         console.error('[ERROR_VALIDACION_SCHEMA]', schemaError);
@@ -297,7 +296,7 @@ export async function PATCH(
         .update(updateData)
         .eq('id', id)
         .eq('org_id', organizacionId)
-        .select('id, title, descripcion, estado, responsable, prioridad, obra_id, elemento_id, cuadrilla_id, updated_at')
+        .select('id, title, descripcion, estado, responsable, prioridad, obra_id, elemento_id, updated_at')
         .single();
       
       tarea = result.data;

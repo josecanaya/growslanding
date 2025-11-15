@@ -9,6 +9,8 @@ export type CanvasTask = {
   tareaId: string;
   dependeDe: string | null;
   duracion: number;
+  x: number;
+  y: number;
 };
 
 export type OrganizaState = {
@@ -16,11 +18,13 @@ export type OrganizaState = {
   syncCanvas: (
     obraId: string,
     order: string[],
-    getDefaults: (taskId: string, index: number) => CanvasTask
+    getDefaults: (taskId: string, index: number) => CanvasTask,
   ) => void;
   updateCanvasTask: (obraId: string, tareaId: string, updates: Partial<CanvasTask>) => void;
   resetCanvas: (obraId: string) => void;
   upsertCanvasTask: (obraId: string, task: CanvasTask) => void;
+  updateNodePosition: (obraId: string, tareaId: string, position: { x: number; y: number }) => void;
+  removeCanvasTask: (obraId: string, tareaId: string) => void;
 };
 
 export const useOrganizaStore = create<OrganizaState>((set) => ({
@@ -35,7 +39,11 @@ export const useOrganizaStore = create<OrganizaState>((set) => ({
       const synced = order.map((taskId, index) => {
         const existing = currentMap.get(taskId);
         if (existing) {
-          return existing;
+          return {
+            ...existing,
+            x: Number.isFinite(existing.x) ? existing.x : 0,
+            y: Number.isFinite(existing.y) ? existing.y : 0,
+          };
         }
         return getDefaults(taskId, index);
       });
@@ -66,6 +74,8 @@ export const useOrganizaStore = create<OrganizaState>((set) => ({
                 updates.duracion !== undefined
                   ? Math.max(1, Number.isFinite(updates.duracion) ? Math.trunc(updates.duracion) : DEFAULT_DURATION)
                   : task.duracion,
+              x: updates.x !== undefined ? updates.x : task.x,
+              y: updates.y !== undefined ? updates.y : task.y,
             }
           : task,
       );
@@ -95,15 +105,68 @@ export const useOrganizaStore = create<OrganizaState>((set) => ({
       const current = state.canvasByObra[obraId] ?? [];
       const existingIndex = current.findIndex((item) => item.tareaId === task.tareaId);
 
+      const sanitizedTask: CanvasTask = {
+        tareaId: task.tareaId,
+        dependeDe: task.dependeDe ?? null,
+        duracion: Math.max(
+          1,
+          Number.isFinite(task.duracion) ? Math.trunc(task.duracion) : DEFAULT_DURATION,
+        ),
+        x: Number.isFinite(task.x) ? task.x : 0,
+        y: Number.isFinite(task.y) ? task.y : 0,
+      };
+
       const next =
         existingIndex === -1
-          ? [...current, task]
-          : current.map((item, index) => (index === existingIndex ? { ...item, ...task } : item));
+          ? [...current, sanitizedTask]
+          : current.map((item, index) => (index === existingIndex ? { ...item, ...sanitizedTask } : item));
 
       return {
         canvasByObra: {
           ...state.canvasByObra,
           [obraId]: next,
+        },
+      };
+    });
+  },
+  updateNodePosition: (obraId, tareaId, position) => {
+    if (!obraId || !tareaId) return;
+
+    set((state) => {
+      const current = state.canvasByObra[obraId] ?? [];
+      if (current.length === 0) {
+        return state;
+      }
+
+      const updated = current.map((task) =>
+        task.tareaId === tareaId
+          ? {
+              ...task,
+              x: Number.isFinite(position.x) ? position.x : task.x,
+              y: Number.isFinite(position.y) ? position.y : task.y,
+            }
+          : task,
+      );
+
+      return {
+        canvasByObra: {
+          ...state.canvasByObra,
+          [obraId]: updated,
+        },
+      };
+    });
+  },
+  removeCanvasTask: (obraId, tareaId) => {
+    if (!obraId || !tareaId) return;
+
+    set((state) => {
+      const current = state.canvasByObra[obraId] ?? [];
+      const filtered = current.filter((task) => task.tareaId !== tareaId);
+
+      return {
+        canvasByObra: {
+          ...state.canvasByObra,
+          [obraId]: filtered,
         },
       };
     });

@@ -6,6 +6,7 @@ import { CheckCircle, Clock, MapPin, Calendar, CheckSquare, Paperclip, MessageCi
 import { SlideToConfirm } from '../SlideToConfirm';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import type { VisitStatus } from '@/lib/fsm';
 import { tareasConstructivas } from '@/lib/tareas-construccion';
 import { ChecklistModal } from '../ChecklistModal';
 import type { ChecklistItem } from '@/data/checklists';
@@ -627,7 +628,7 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       // Preparar payload - Usar el estado actual de la tarea
       // Si la tarea está en ejecución, mantener ese estado
       // Si está pendiente, puede iniciarse
-      const estadoActual = tareaActiva.estado === 'En progreso' 
+      const estadoActual: VisitStatus = tareaActiva.estado === 'En progreso' 
         ? 'en_ejecucion' 
         : tareaActiva.estado === 'Pendiente' 
         ? 'en_ejecucion' 
@@ -642,7 +643,7 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       }));
       
       const payload = {
-        nuevo_estado: estadoActual as const,
+        nuevo_estado: estadoActual,
         actor: {
           name: actorName,
           role: 'Socio' as const,
@@ -803,6 +804,11 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       alert(validacion.mensaje || 'Debes completar el checklist antes de finalizar la tarea.');
       // Abrir el modal de checklist para que el usuario lo complete
       setShowChecklist(true);
+      return;
+    }
+
+    if (!tareaActiva) {
+      console.error('[FINALIZAR_TAREA] No hay tarea activa seleccionada');
       return;
     }
 

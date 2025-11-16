@@ -170,10 +170,13 @@ function LoginPageContent() {
         redirectUrl.searchParams.set('redirect', redirectTarget);
       }
 
+      const redirectToUrl = redirectUrl.toString();
+      console.log('[GOOGLE_LOGIN] Redirect URL:', redirectToUrl);
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl.toString(),
+          redirectTo: redirectToUrl,
           queryParams: {
             prompt: 'consent',
             access_type: 'offline',

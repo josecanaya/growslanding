@@ -20,11 +20,16 @@ export async function GET() {
   const { data: org, error: orgError } = await (supabase as any)
     .from('organizations')
     .select('id, plan_actual')
-    .eq('user_id', user.id)
-    .single();
+    .eq('owner_user_id', user.id)
+    .maybeSingle();
 
   if (orgError) {
     console.error('[subscription/plan] Error fetching organization:', orgError);
+    return NextResponse.json({ planId: 'FREE', orgId: null });
+  }
+
+  if (!org) {
+    // No hay organización para este usuario, retornar plan FREE
     return NextResponse.json({ planId: 'FREE', orgId: null });
   }
 

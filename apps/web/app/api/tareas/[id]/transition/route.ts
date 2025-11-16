@@ -271,28 +271,33 @@ export async function POST(
       .eq('tarea_id', tarea.id);
 
     if (precedencias && precedencias.length > 0) {
-      const dependeIds = precedencias.map((p) => p.depende_de);
-      const { data: bloqueo } = await supabase
-        .from('tareas')
-        .select('id, estado')
-        .in('id', dependeIds)
-        .neq('estado', 'validado');
+      const dependeIds = precedencias
+        .map((p) => p.depende_de)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
-      if (bloqueo && bloqueo.length > 0) {
-        // Obtener información de las tareas bloqueantes para mostrar mejor mensaje
-        const { data: tareasBloqueantes } = await supabase
+      if (dependeIds.length > 0) {
+        const { data: bloqueo } = await supabase
           .from('tareas')
-          .select('id, title, estado')
-          .in('id', bloqueo.map((b) => b.id));
-        
-        return new Response(
-          JSON.stringify({
-            message: 'No se puede avanzar: tareas precedentes sin validar',
-            bloqueos: tareasBloqueantes || bloqueo,
-            error: 'PRECEDENCE_ERROR',
-          }),
-          { status: 409 }
-        );
+          .select('id, estado')
+          .in('id', dependeIds)
+          .neq('estado', 'validado');
+
+        if (bloqueo && bloqueo.length > 0) {
+          // Obtener información de las tareas bloqueantes para mostrar mejor mensaje
+          const { data: tareasBloqueantes } = await supabase
+            .from('tareas')
+            .select('id, title, estado')
+            .in('id', bloqueo.map((b) => b.id));
+          
+          return new Response(
+            JSON.stringify({
+              message: 'No se puede avanzar: tareas precedentes sin validar',
+              bloqueos: tareasBloqueantes || bloqueo,
+              error: 'PRECEDENCE_ERROR',
+            }),
+            { status: 409 }
+          );
+        }
       }
     }
 

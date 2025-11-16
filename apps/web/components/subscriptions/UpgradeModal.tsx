@@ -26,7 +26,7 @@ import {
   type SubscriptionPlanId,
 } from '@/lib/subscriptions/types';
 import { usePlanCard } from '@/lib/subscriptions/hooks';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 
 type UpgradeModalRequest = {
@@ -87,6 +87,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
 
   const handleSubscribe = useCallback(async () => {
     try {
+      const supabase = getSupabaseClient();
       const { data: authData, error: authError } = await supabase.auth.getUser();
       if (authError || !authData?.user?.id) {
         toast({

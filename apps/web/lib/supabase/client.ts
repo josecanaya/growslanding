@@ -1,2 +1,4 @@
-export { supabase as supabaseClient } from '../supabase';
+import { getSupabaseClient } from '../supabase';
+
+export const supabaseClient = getSupabaseClient;
 

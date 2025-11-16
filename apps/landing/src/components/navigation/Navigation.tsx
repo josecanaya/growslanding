@@ -106,7 +106,7 @@ export function Navigation() {
 
             {/* Auth Buttons */}
             <a
-              href={APP_WEB_URLS.login()}
+              href="http://app.grows.com.ar/auth/login"
               className="flex items-center gap-2 text-white/90 hover:text-yellow-400 px-4 py-3 text-sm font-semibold transition-colors duration-200 hover:bg-white/10 rounded-lg"
             >
               <LogIn className="h-5 w-5" />
@@ -151,7 +151,7 @@ export function Navigation() {
             {/* Mobile Auth Buttons */}
             <div className="px-3 py-2 border-t border-yellow-400/30 mt-2 space-y-2">
               <a
-                href={APP_WEB_URLS.login()}
+                href="http://app.grows.com.ar/auth/login"
                 className="flex items-center gap-2 text-white/90 hover:text-yellow-400 px-3 py-2 text-base font-medium"
                 onClick={() => setIsOpen(false)}
               >

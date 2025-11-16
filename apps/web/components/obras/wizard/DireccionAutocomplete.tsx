@@ -22,7 +22,7 @@ function loadGoogleMapsApi() {
   }
 
   if (!googleMapsPromise) {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyCIzK1ydM-ADJW_yUOpNXJpr8Oh1u5eUwo';
     if (!apiKey) {
       return Promise.reject(new Error('Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
     }

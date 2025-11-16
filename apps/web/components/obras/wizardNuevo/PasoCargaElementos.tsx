@@ -93,6 +93,9 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
       // Resetear el wizard
       reset();
       onFinish();
+      
+      // Redirigir al dashboard con la sección de obras
+      router.push('/cliente/dashboard?section=obras');
     } catch (err: any) {
       console.error('[ERROR_CREAR_OBRA]', err);
       setError(err.message || 'Error al crear la obra. Por favor, intenta nuevamente.');

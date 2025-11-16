@@ -163,16 +163,20 @@ function LoginPageContent() {
     }
 
     try {
+      // Usar la URL base de la aplicación (puede ser Vercel URL o dominio personalizado)
       const origin = window.location.origin;
       const redirectUrl = new URL('/auth/callback', origin);
       if (redirectTarget) {
         redirectUrl.searchParams.set('redirect', redirectTarget);
       }
 
+      const redirectToUrl = redirectUrl.toString();
+      console.log('[GOOGLE_LOGIN] Redirect URL:', redirectToUrl);
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl.toString(),
+          redirectTo: redirectToUrl,
           queryParams: {
             prompt: 'consent',
             access_type: 'offline',

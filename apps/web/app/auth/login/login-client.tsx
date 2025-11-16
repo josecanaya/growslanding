@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '@/lib/types/supabase.gen';
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Database } from "@/lib/types/supabase.gen";
 
 const supabase = createClientComponentClient<Database>();
 
 export default function LoginClient() {
   const searchParams = useSearchParams();
-  const redirect = searchParams?.get('redirect') ?? '/dashboard';
-  const [email, setEmail] = useState('');
+  const redirect = searchParams?.get("redirect") ?? "/dashboard";
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function LoginClient() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!email) {
-      setError('Ingresa un correo válido.');
+      setError("Ingresa un correo válido.");
       return;
     }
     setLoading(true);
@@ -27,7 +27,9 @@ export default function LoginClient() {
     setSuccess(false);
     try {
       const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(
+        redirect
+      )}`;
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -39,8 +41,10 @@ export default function LoginClient() {
       }
       setSuccess(true);
     } catch (err) {
-      console.error('[MAGIC_LINK_ERROR]', err);
-      setError(err instanceof Error ? err.message : 'No se pudo enviar el enlace.');
+      console.error("[MAGIC_LINK_ERROR]", err);
+      setError(
+        err instanceof Error ? err.message : "No se pudo enviar el enlace."
+      );
     } finally {
       setLoading(false);
     }
@@ -51,14 +55,19 @@ export default function LoginClient() {
     setError(null);
     try {
       const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+      const redirectUrl = new URL("/auth/callback", origin);
+      redirectUrl.searchParams.set("redirect", redirect);
+      const redirectTo = redirectUrl.toString();
+
+      console.log("[GOOGLE_LOGIN] Redirect URL:", redirectTo);
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
           redirectTo,
           queryParams: {
-            prompt: 'consent',
-            access_type: 'offline',
+            prompt: "consent",
+            access_type: "offline",
           },
         },
       });
@@ -67,18 +76,21 @@ export default function LoginClient() {
       }
       // Supabase redirige automáticamente, no continuamos flujo local.
     } catch (err) {
-      console.error('[GOOGLE_LOGIN_ERROR]', err);
-      
+      console.error("[GOOGLE_LOGIN_ERROR]", err);
+
       // Manejar específicamente el error de proveedor no habilitado
-      if (err instanceof Error && err.message.includes('provider is not enabled')) {
+      if (
+        err instanceof Error &&
+        err.message.includes("provider is not enabled")
+      ) {
         setError(
-          'Google OAuth no está configurado en este momento. Por favor, usa el enlace mágico con tu correo electrónico.'
+          "Google OAuth no está configurado en este momento. Por favor, usa el enlace mágico con tu correo electrónico."
         );
       } else {
         setError(
           err instanceof Error
             ? err.message
-            : 'No se pudo iniciar sesión con Google. Intenta nuevamente.'
+            : "No se pudo iniciar sesión con Google. Intenta nuevamente."
         );
       }
       setGoogleLoading(false);
@@ -111,18 +123,20 @@ export default function LoginClient() {
           className="w-full rounded bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-60"
           disabled={loading}
         >
-          {loading ? 'Enviando enlace…' : 'Enviar enlace mágico'}
+          {loading ? "Enviando enlace…" : "Enviar enlace mágico"}
         </button>
       </form>
       {success && (
         <p className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
-          Revisa tu bandeja de entrada. Haz clic en el enlace para iniciar sesión.
+          Revisa tu bandeja de entrada. Haz clic en el enlace para iniciar
+          sesión.
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="space-y-3">
         <p className="text-center text-xs text-muted-foreground">
-          El enlace expira en pocos minutos. Puedes reenviarlo ingresando el correo nuevamente.
+          El enlace expira en pocos minutos. Puedes reenviarlo ingresando el
+          correo nuevamente.
         </p>
         <div className="flex items-center gap-2">
           <span className="h-px flex-1 bg-border" />
@@ -136,7 +150,7 @@ export default function LoginClient() {
           disabled={googleLoading}
           title="Google OAuth puede no estar disponible en este momento"
         >
-          {googleLoading ? 'Redirigiendo a Google…' : 'Continuar con Google'}
+          {googleLoading ? "Redirigiendo a Google…" : "Continuar con Google"}
         </button>
         <p className="text-center text-xs text-muted-foreground">
           Si Google no funciona, usa el enlace mágico arriba ⬆️

@@ -47,8 +47,14 @@ export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) 
         if (!eventosError && eventosData && eventosData.length > 0) {
           const checklistEvento = eventosData[0].checklist;
           if (Array.isArray(checklistEvento) && checklistEvento.length > 0) {
-            // Usar checklist del evento más reciente
-            setItems(checklistEvento as ChecklistItem[]);
+            // Convertir formato del evento a formato del componente
+            // El evento puede tener { id, label, checked } o { id, label, done }
+            const itemsConvertidos = checklistEvento.map((item: any) => ({
+              id: item.id || `item-${Math.random()}`,
+              label: item.label || '',
+              done: item.checked !== undefined ? item.checked : item.done !== undefined ? item.done : false,
+            }));
+            setItems(itemsConvertidos);
             setLoading(false);
             return;
           }
@@ -90,24 +96,46 @@ export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) 
     cargarChecklist();
   }, [tarea.id, tarea.title, tarea.nombre, supabase]);
 
-  const handleToggleItem = (itemId: string) => {
-    setItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId ? { ...item, done: !item.done } : item
-      )
+  const handleToggleItem = async (itemId: string) => {
+    const nuevosItems = items.map(item =>
+      item.id === itemId ? { ...item, done: !item.done } : item
     );
+    setItems(nuevosItems);
+    
+    // Auto-save: guardar automáticamente al marcar/desmarcar
+    try {
+      await onSave(nuevosItems);
+    } catch (error) {
+      console.error('[CHECKLIST_MODAL] Error en auto-save:', error);
+      // No mostrar error al usuario en auto-save, solo loguear
+    }
   };
 
   const handleSave = async () => {
     try {
       setSaving(true);
       await onSave(items);
+      // Cerrar modal después de guardar exitosamente
+      onClose();
     } catch (error) {
       console.error('[CHECKLIST_MODAL] Error al guardar:', error);
       alert('Error al guardar el checklist. Por favor, intenta nuevamente.');
-    } finally {
       setSaving(false);
     }
+  };
+
+  // Guardar al cerrar si hay cambios
+  const handleClose = async () => {
+    try {
+      // Guardar antes de cerrar si hay items
+      if (items.length > 0) {
+        await onSave(items);
+      }
+    } catch (error) {
+      console.error('[CHECKLIST_MODAL] Error al guardar al cerrar:', error);
+      // No bloquear el cierre por error de guardado
+    }
+    onClose();
   };
 
   const nombreTarea = tarea.title || tarea.nombre || 'Tarea';
@@ -119,7 +147,7 @@ export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) 
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">Checklist</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             disabled={saving}
           >
@@ -181,7 +209,7 @@ export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) 
         {/* Footer con botones */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={saving}
             className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >

@@ -36,7 +36,7 @@ export function getAppWebUrl(): string {
   }
   
   // PRIORIDAD 5: Default de producción (solo si realmente estamos en producción)
-  return 'https://grows.app';
+  return 'http://app.grows.com.ar';
 }
 
 /**

@@ -2,8 +2,9 @@ import { canTransition, enforceTransition, type VisitStatus } from './fsm';
 import { createActaPdf } from './pdf';
 
 type ChecklistItem = {
+  id: string;
   label: string;
-  value: string;
+  checked: boolean;
 };
 
 type MediaItem = {
@@ -72,7 +73,7 @@ export function validateMediaRules({
   media,
 }: ValidateInput) {
   const requiresPhoto =
-    has_nc || checklist.some((item) => item.value?.toUpperCase() === 'NO');
+    has_nc || checklist.some((item) => !item.checked);
   if (!requiresPhoto) {
     return true;
   }
@@ -84,6 +85,35 @@ export function validateMediaRules({
   }
 
   return true;
+}
+
+/**
+ * Valida que el checklist esté completo (todos los items marcados)
+ * Solo se aplica cuando se intenta finalizar una tarea
+ */
+export function validateChecklistCompleto(
+  checklist: ChecklistItem[],
+  nuevoEstado: VisitStatus
+): void {
+  // Solo validar si se está finalizando la tarea
+  if (nuevoEstado !== 'finalizado') {
+    return;
+  }
+
+  // Si no hay checklist, no validar
+  if (!checklist || checklist.length === 0) {
+    return;
+  }
+
+  // Verificar que todos los items estén marcados
+  const itemsIncompletos = checklist.filter((item) => !item.checked);
+  
+  if (itemsIncompletos.length > 0) {
+    const itemsPendientes = itemsIncompletos.map((item) => item.label).join(', ');
+    throw new Error(
+      `Debés completar todos los puntos del checklist antes de finalizar la tarea.\n\nItems pendientes:\n${itemsPendientes}`
+    );
+  }
 }
 
 export async function prepareEventoInsert(

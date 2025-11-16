@@ -20,8 +20,9 @@ const mediaSchema = z.object({
 });
 
 const checklistSchema = z.object({
+  id: z.string(),
   label: z.string(),
-  value: z.string(),
+  checked: z.boolean(),
 });
 
 const requestSchema = z.object({
@@ -300,6 +301,25 @@ export async function POST(
       checklist: payload.checklist,
       media: payload.media,
     });
+
+    // Validar checklist completo solo al finalizar
+    if (payload.nuevo_estado === 'finalizado') {
+      if (payload.checklist && payload.checklist.length > 0) {
+        const itemsIncompletos = payload.checklist.filter((item) => !item.checked);
+        if (itemsIncompletos.length > 0) {
+          const itemsPendientes = itemsIncompletos.map((item) => item.label).join(', ');
+          return new Response(
+            JSON.stringify({
+              message: 'Debés completar todos los puntos del checklist antes de finalizar la tarea.',
+              error: 'CHECKLIST_INCOMPLETO',
+              itemsPendientes: itemsPendientes,
+              bloqueos: itemsIncompletos,
+            }),
+            { status: 400 }
+          );
+        }
+      }
+    }
 
     const uploadedMedia = await Promise.all(
       payload.media.map(async (item, idx) => {

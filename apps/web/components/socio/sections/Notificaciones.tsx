@@ -1,10 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Bell } from 'lucide-react';
+import { Loader2, Bell, MessageSquare } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { BaseCard, Button, EmptyState } from '@/components/ui/grows';
 import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente/mensajeria/ListaNotificaciones';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
 
 interface NotificacionesProps {
   user: {
@@ -17,17 +20,98 @@ interface NotificacionesProps {
 
 export function Notificaciones({ user }: NotificacionesProps) {
   const currentUser = useCurrentUser();
+  const router = useRouter();
+  const supabase = createClientComponentClient<Database>();
   const orgId = currentUser?.orgId ?? null;
-  const socioId = currentUser?.id ?? null;
+  const [socioId, setSocioId] = useState<string | null>(null);
+  const [loadingSocioId, setLoadingSocioId] = useState(true);
 
   const [notificaciones, setNotificaciones] = useState<NotificacionItem[]>([]);
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
   const [cargando, setCargando] = useState(false);
+
+  // Obtener socio_id desde email
+  useEffect(() => {
+    const obtenerSocioId = async () => {
+      if (!currentUser?.email || !orgId) {
+        setLoadingSocioId(false);
+        return;
+      }
+
+      setLoadingSocioId(true);
+      try {
+        const supabaseAny = supabase as any;
+        const { data, error } = await supabaseAny
+          .from('socios')
+          .select('id')
+          .eq('email', currentUser.email)
+          .eq('org_id', orgId)
+          .maybeSingle();
+
+        if (!error && data) {
+          console.log('[Notificaciones] Socio ID obtenido:', data.id);
+          setSocioId(data.id);
+        } else {
+          console.error('[Notificaciones] Error al obtener socio_id:', error);
+          console.log('[Notificaciones] Datos recibidos:', data);
+        }
+      } catch (error) {
+        console.error('[Notificaciones] Error al obtener socio_id:', error);
+      } finally {
+        setLoadingSocioId(false);
+      }
+    };
+
+    obtenerSocioId();
+  }, [currentUser?.email, orgId, supabase]);
 
   const headers = useMemo(() => {
     const base: Record<string, string> = {};
     if (orgId) base['x-organizacion-id'] = orgId;
     if (socioId) base['x-socio-id'] = socioId;
     return base;
+  }, [orgId, socioId]);
+
+  // Cargar mensajes no leídos
+  const fetchMensajesNoLeidos = useCallback(async () => {
+    if (!orgId || !socioId || typeof window === 'undefined') {
+      console.log('[Notificaciones] No se pueden cargar mensajes:', { orgId, socioId, hasWindow: typeof window !== 'undefined' });
+      setMensajesNoLeidos(0);
+      return;
+    }
+
+    try {
+      const url = new URL('/api/mensajes', window.location.origin);
+      url.searchParams.set('socio_id', socioId);
+
+      console.log('[Notificaciones] Cargando mensajes:', { url: url.toString(), socioId, orgId });
+
+      const res = await fetch(url.toString(), { 
+        headers: { 'x-organizacion-id': orgId },
+        cache: 'no-store' 
+      });
+      
+      console.log('[Notificaciones] Respuesta del endpoint:', { status: res.status, ok: res.ok });
+      
+      const json = await res.json();
+      console.log('[Notificaciones] Datos recibidos:', { success: json.success, dataLength: json.data?.length || 0 });
+      
+      if (json.success) {
+        const mensajes = (json.data || []) as Array<{ destinatario_id: string; leido: boolean }>;
+        console.log('[Notificaciones] Mensajes recibidos:', mensajes.length);
+        console.log('[Notificaciones] Primeros mensajes:', mensajes.slice(0, 3));
+        
+        const noLeidos = mensajes.filter(
+          (m) => m.destinatario_id === socioId && !m.leido
+        );
+        console.log('[Notificaciones] Mensajes no leídos:', noLeidos.length);
+        setMensajesNoLeidos(noLeidos.length);
+      } else {
+        console.error('[Notificaciones] Error en la respuesta:', json.error);
+      }
+    } catch (error) {
+      console.error('[Notificaciones] Error al cargar mensajes no leídos:', error);
+    }
   }, [orgId, socioId]);
 
   const fetchNotificaciones = useCallback(async () => {
@@ -61,7 +145,8 @@ export function Notificaciones({ user }: NotificacionesProps) {
 
   useEffect(() => {
     fetchNotificaciones();
-  }, [fetchNotificaciones]);
+    fetchMensajesNoLeidos();
+  }, [fetchNotificaciones, fetchMensajesNoLeidos]);
 
   const marcarComoLeida = async (id: string) => {
     try {
@@ -82,8 +167,16 @@ export function Notificaciones({ user }: NotificacionesProps) {
     const total = notificaciones.length;
     const sinLeer = notificaciones.filter((n) => !n.leida).length;
     const leidas = total - sinLeer;
-    return { total, sinLeer, leidas };
-  }, [notificaciones]);
+    // Incluir mensajes no leídos en el total
+    const totalConMensajes = total + mensajesNoLeidos;
+    const sinLeerConMensajes = sinLeer + mensajesNoLeidos;
+    return { 
+      total: totalConMensajes, 
+      sinLeer: sinLeerConMensajes, 
+      leidas,
+      mensajesNoLeidos 
+    };
+  }, [notificaciones, mensajesNoLeidos]);
 
   return (
     <div className="space-y-4">
@@ -111,20 +204,47 @@ export function Notificaciones({ user }: NotificacionesProps) {
         </BaseCard>
       </div>
 
+      {/* Sección de Mensajes */}
+      {mensajesNoLeidos > 0 && (
+        <BaseCard>
+          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="font-semibold text-growsText">
+                  {mensajesNoLeidos} {mensajesNoLeidos === 1 ? 'mensaje sin leer' : 'mensajes sin leer'}
+                </p>
+                <p className="text-sm text-growsTextMuted">Tenés mensajes nuevos del equipo técnico</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => router.push('/socio/mensajes')}
+              variant="primary"
+            >
+              Ver mensajes
+            </Button>
+          </div>
+        </BaseCard>
+      )}
+
       <BaseCard>
-        {cargando ? (
+        {loadingSocioId || cargando ? (
           <div className="flex items-center justify-center py-12 text-growsTextMuted">
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Cargando notificaciones…
           </div>
-        ) : notificaciones.length === 0 ? (
+        ) : notificaciones.length === 0 && mensajesNoLeidos === 0 ? (
           <EmptyState
             title="No hay notificaciones"
             description="Te avisaremos cuando recibas novedades."
             icon={<Bell className="h-10 w-10 text-growsBlue" />}
           />
         ) : (
-          <ListaNotificaciones items={notificaciones} onMarkAsRead={marcarComoLeida} />
+          <>
+            {notificaciones.length > 0 && (
+              <ListaNotificaciones items={notificaciones} onMarkAsRead={marcarComoLeida} />
+            )}
+          </>
         )}
       </BaseCard>
     </div>

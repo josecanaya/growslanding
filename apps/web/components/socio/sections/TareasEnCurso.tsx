@@ -418,7 +418,10 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
         }
 
         // Verificar si todos los items están completados
-        const todosCompletos = checklist.every((item: any) => item.done === true);
+        // El checklist puede venir con 'done' (formato antiguo) o 'checked' (formato nuevo)
+        const todosCompletos = checklist.every((item: any) => 
+          item.checked === true || item.done === true
+        );
         setChecklistCompleto(todosCompletos);
       } catch (error) {
         console.error('[CHECKLIST_STATUS] Error al verificar checklist:', error);
@@ -634,11 +637,11 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
         : 'en_ejecucion'; // Por defecto en_ejecucion
       
       // Transformar items del checklist al formato esperado por el endpoint
-      // El endpoint espera: { label: string, value: string }
-      // Nosotros tenemos: { id: string, label: string, done: boolean }
+      // El endpoint espera: { id: string, label: string, checked: boolean }
       const checklistFormateado = items.map(item => ({
+        id: item.id,
         label: item.label,
-        value: item.done ? 'true' : 'false', // Convertir boolean a string
+        checked: item.done, // done -> checked
       }));
       
       const payload = {
@@ -698,8 +701,9 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       const todosCompletos = items.every(item => item.done === true);
       setChecklistCompleto(todosCompletos);
 
-      // Cerrar modal
-      setShowChecklist(false);
+      // No cerrar modal automáticamente
+      // El modal se cierra solo cuando el usuario presiona "Guardar" o "Cerrar"
+      // El auto-save (al marcar/desmarcar) no debe cerrar el modal
 
     } catch (error) {
       console.error('[GUARDAR_CHECKLIST] ❌ Error al guardar checklist:', error);
@@ -777,13 +781,17 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       }
 
       // Validar que todos los items estén completados
-      const itemsIncompletos = checklist.filter((item: any) => !item.done);
+      // El checklist puede venir con 'done' (formato antiguo) o 'checked' (formato nuevo)
+      const itemsIncompletos = checklist.filter((item: any) => {
+        const estaCompleto = item.checked === true || item.done === true;
+        return !estaCompleto;
+      });
       
       if (itemsIncompletos.length > 0) {
         const itemsPendientes = itemsIncompletos.map((item: any) => item.label || item.id).join(', ');
         return {
           valido: false,
-          mensaje: `Debes completar todos los items del checklist antes de finalizar la tarea.\n\nItems pendientes:\n${itemsPendientes}\n\nPor favor, completa el checklist desde el botón "Checklist".`,
+          mensaje: `Debés completar todos los puntos del checklist antes de finalizar la tarea.\n\nItems pendientes:\n${itemsPendientes}\n\nPor favor, completa el checklist desde el botón "Checklist".`,
         };
       }
 
@@ -796,11 +804,11 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
   };
 
   const handleFinalizarTarea = async () => {
-    // Validar checklist antes de proceder
+    // Validar checklist completo antes de proceder (OBLIGATORIO)
     const validacion = await validarChecklistCompleto();
     
     if (!validacion.valido) {
-      alert(validacion.mensaje || 'Debes completar el checklist antes de finalizar la tarea.');
+      alert(validacion.mensaje || 'Debés completar todos los puntos del checklist antes de finalizar la tarea.');
       // Abrir el modal de checklist para que el usuario lo complete
       setShowChecklist(true);
       return;
@@ -863,11 +871,11 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
       return;
     }
 
-    // Validar checklist antes de finalizar (doble validación)
+    // Validar checklist completo antes de finalizar (OBLIGATORIO)
     const validacion = await validarChecklistCompleto();
     
     if (!validacion.valido) {
-      alert(validacion.mensaje || 'Debes completar el checklist antes de finalizar la tarea.');
+      alert(validacion.mensaje || 'Debés completar todos los puntos del checklist antes de finalizar la tarea.');
       // Abrir el modal de checklist para que el usuario lo complete
       setShowChecklist(true);
       return;
@@ -892,6 +900,33 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
 
       const actorName = currentUser.name || currentUser.email || 'Socio';
       
+      // Obtener el checklist más reciente de la tarea para incluirlo en la finalización
+      let checklistFinal: Array<{ id: string; label: string; checked: boolean }> = [];
+      try {
+        const { data: eventosData } = await supabase
+          .from('eventos')
+          .select('checklist, created_at')
+          .eq('tarea_id', tareaActiva.id)
+          .not('checklist', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (eventosData && eventosData.length > 0) {
+          const checklistEvento = eventosData[0].checklist;
+          if (Array.isArray(checklistEvento) && checklistEvento.length > 0) {
+            // Convertir formato del evento al formato esperado por el endpoint
+            checklistFinal = checklistEvento.map((item: any) => ({
+              id: item.id || `item-${Math.random()}`,
+              label: item.label || '',
+              checked: item.checked !== undefined ? item.checked : item.done !== undefined ? item.done : false,
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('[FINALIZAR_TAREA] Error al obtener checklist:', error);
+        // Continuar sin checklist si hay error
+      }
+      
       // Preparar payload según el schema del endpoint
       const payload = {
         nuevo_estado: 'finalizado' as const,
@@ -900,7 +935,7 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
           role: 'Socio' as const,
           method: 'login' as const,
         },
-        checklist: [],
+        checklist: checklistFinal,
         notas: '',
         has_nc: false,
         media: media.map(item => ({
@@ -944,7 +979,7 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
             role: 'Socio' as const,
             method: 'login' as const,
           },
-          checklist: [],
+          checklist: checklistFinal,
           notas: '',
           has_nc: false,
           media: mediaPayload,
@@ -1207,14 +1242,7 @@ export function TareasEnCurso({ user }: TareasEnCursoProps) {
           
           <button 
             onClick={() => {
-              // Navegar a la sección de chat del panel de cliente
-              // Si el usuario es CLIENTE_TECNICO, ir al dashboard de cliente
-              // Si no, mostrar un mensaje informativo
-              if (currentUser?.role === 'CLIENTE_TECNICO' || currentUser?.role === 'ADMIN') {
-                router.push('/cliente/dashboard?section=chat');
-              } else {
-                alert('Chat: Esta funcionalidad está disponible para clientes técnicos. Si necesitás contactar con el equipo, hablá con tu líder.');
-              }
+              router.push('/socio/mensajes');
             }}
             className="flex flex-col items-center space-y-2 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
           >

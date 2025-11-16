@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
+import { getAppWebUrl } from '@/lib/config';
 
 const supabase = createClientComponentClient<Database>();
 
@@ -26,8 +27,8 @@ export default function LoginClient() {
     setError(null);
     setSuccess(false);
     try {
-      const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+      const appBaseUrl = getAppWebUrl();
+      const redirectTo = `${appBaseUrl}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -50,8 +51,8 @@ export default function LoginClient() {
     setGoogleLoading(true);
     setError(null);
     try {
-      const origin = window.location.origin;
-      const redirectTo = `${origin}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
+      const appBaseUrl = getAppWebUrl();
+      const redirectTo = `${appBaseUrl}/auth/callback?redirect=${encodeURIComponent(redirect)}`;
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

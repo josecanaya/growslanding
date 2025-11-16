@@ -139,10 +139,13 @@ export async function prepareEventoInsert(
   };
 
   // Conversión para PDF: asegurar tipos esperados por createActaPdf
-  const pdfChecklist = (payload.checklist ?? []).map(item => ({
-    ...item,
-    value: item.value ?? "",
-  }));
+  const pdfChecklist = (payload.checklist ?? []).map((item) => {
+    const itemWithValue = item as ChecklistItem & { value?: string };
+    return {
+      ...itemWithValue,
+      value: itemWithValue.value ?? '',
+    };
+  });
 
   const pdfMedia = (payload.media ?? []).map(m => ({
     ...m,

@@ -15,6 +15,7 @@ import { useDevMode } from '@/lib/dev-mode-context';
 import { mockUser } from '@/lib/mockUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { getDefaultRouteForRole, normalizeRole } from '@/lib/roles';
+import { getAppWebUrl } from '@/lib/config';
 
 const AUTH_LOGIN_PATH = '/auth/login';
 const MISSING_ROLE_MESSAGE =
@@ -163,8 +164,8 @@ function LoginPageContent() {
     }
 
     try {
-      const origin = window.location.origin;
-      const redirectUrl = new URL('/auth/callback', origin);
+      const appBaseUrl = getAppWebUrl();
+      const redirectUrl = new URL('/auth/callback', appBaseUrl);
       if (redirectTarget) {
         redirectUrl.searchParams.set('redirect', redirectTarget);
       }

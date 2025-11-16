@@ -40,9 +40,10 @@ export function PricingSection() {
     },
     {
       name: 'Starter',
-      price: '$25 USD',
+      price: '$30 USD',
       period: 'por mes',
       description: 'Para estudios pequeños',
+      badge: 'OFERTA LANZAMIENTO',
       features: [
         { text: '5 obras activas', included: true },
         { text: 'Hasta 3 socios habilitados', included: true },
@@ -56,7 +57,7 @@ export function PricingSection() {
     },
     {
       name: 'Pro',
-      price: '$50 USD',
+      price: '$100 USD',
       period: 'por mes',
       description: 'Funciones avanzadas completas',
       highlighted: true,
@@ -74,7 +75,7 @@ export function PricingSection() {
     },
     {
       name: 'Enterprise',
-      price: '$100 USD',
+      price: '$200 USD',
       period: 'por mes',
       description: 'Grandes volúmenes y personalizaciones',
       badge: 'En desarrollo',
@@ -150,9 +151,11 @@ export function PricingSection() {
               {plan.badge && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <div className={`flex items-center gap-1 px-4 py-1 rounded-full text-sm font-semibold ${
-                    plan.highlighted 
-                      ? 'bg-grows-primary text-white' 
-                      : 'bg-grows-warning text-grows-text-primary'
+                    plan.highlighted
+                      ? 'bg-grows-primary text-white'
+                      : (plan.badge === 'OFERTA LANZAMIENTO'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-grows-warning text-grows-text-primary')
                   }`}>
                     {plan.highlighted && <Star className="h-3 w-3 fill-current" />}
                     {plan.badge}

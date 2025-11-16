@@ -138,6 +138,16 @@ export async function prepareEventoInsert(
     nc_deadline: payload.nc_deadline ?? null,
   };
 
+  // Conversión para PDF: asegurar tipos esperados por createActaPdf
+  const pdfChecklist = (payload.checklist ?? []).map((item) => ({
+    ...item,
+    value: (item as unknown as { value?: string }).value ?? '',
+  }));
+
+  const pdfMedia = (payload.media ?? []).map((m) => ({
+    ...m,
+  }));
+
   const snapshot: Record<string, unknown> = {
     generadoEn: new Date().toISOString(),
     tarea: context.tarea,
@@ -157,7 +167,8 @@ export async function prepareEventoInsert(
       obra: context.obra,
       evento: {
         ...baseEvento,
-        media: payload.media,
+        media: pdfMedia,
+        checklist: pdfChecklist,
       },
     });
     pdfPath = pdf.pdfPath;

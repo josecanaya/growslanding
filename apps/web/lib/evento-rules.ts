@@ -1,22 +1,23 @@
-import { canTransition, enforceTransition, type VisitStatus } from './fsm';
-import { createActaPdf } from './pdf';
+import { canTransition, enforceTransition, type VisitStatus } from "./fsm";
+import { createActaPdf } from "./pdf";
 
 type ChecklistItem = {
   id: string;
   label: string;
   checked: boolean;
+  value?: string;
 };
 
 type MediaItem = {
-  kind: 'foto' | 'firma';
+  kind: "foto" | "firma";
   path?: string;
   dataUrl?: string;
 };
 
 type ActorInfo = {
   name: string;
-  role: 'Cliente' | 'Socio';
-  method: 'QR' | 'login' | 'PIN';
+  role: "Cliente" | "Socio";
+  method: "QR" | "login" | "PIN";
 };
 
 type ValidateInput = {
@@ -54,8 +55,8 @@ type PreparedEvento = {
     tarea_id: string;
     nuevo_estado: VisitStatus;
     actor_name: string;
-    actor_role: ActorInfo['role'];
-    actor_method: ActorInfo['method'];
+    actor_role: ActorInfo["role"];
+    actor_method: ActorInfo["method"];
     checklist: ChecklistItem[];
     notas: string;
     has_nc: boolean;
@@ -72,16 +73,15 @@ export function validateMediaRules({
   checklist,
   media,
 }: ValidateInput) {
-  const requiresPhoto =
-    has_nc || checklist.some((item) => !item.checked);
+  const requiresPhoto = has_nc || checklist.some((item) => !item.checked);
   if (!requiresPhoto) {
     return true;
   }
 
-  const hasPhoto = media.some((item) => item.kind === 'foto');
+  const hasPhoto = media.some((item) => item.kind === "foto");
 
   if (!hasPhoto) {
-    throw new Error('Se requiere al menos una foto para documentar la NC.');
+    throw new Error("Se requiere al menos una foto para documentar la NC.");
   }
 
   return true;
@@ -96,7 +96,7 @@ export function validateChecklistCompleto(
   nuevoEstado: VisitStatus
 ): void {
   // Solo validar si se está finalizando la tarea
-  if (nuevoEstado !== 'finalizado') {
+  if (nuevoEstado !== "finalizado") {
     return;
   }
 
@@ -107,9 +107,11 @@ export function validateChecklistCompleto(
 
   // Verificar que todos los items estén marcados
   const itemsIncompletos = checklist.filter((item) => !item.checked);
-  
+
   if (itemsIncompletos.length > 0) {
-    const itemsPendientes = itemsIncompletos.map((item) => item.label).join(', ');
+    const itemsPendientes = itemsIncompletos
+      .map((item) => item.label)
+      .join(", ");
     throw new Error(
       `Debés completar todos los puntos del checklist antes de finalizar la tarea.\n\nItems pendientes:\n${itemsPendientes}`
     );
@@ -125,26 +127,26 @@ export async function prepareEventoInsert(
     motivo: payload.rollbackMotivo ?? payload.notas,
   });
 
-  const baseEvento: PreparedEvento['evento'] = {
+  const baseEvento: PreparedEvento["evento"] = {
     tarea_id: payload.tareaId,
     nuevo_estado: payload.nuevo_estado,
     actor_name: payload.actor.name,
     actor_role: payload.actor.role,
     actor_method: payload.actor.method,
     checklist: payload.checklist,
-    notas: payload.notas?.trim() ?? '',
+    notas: payload.notas?.trim() ?? "",
     has_nc: payload.has_nc,
     nc_responsable: payload.nc_responsable ?? null,
     nc_deadline: payload.nc_deadline ?? null,
   };
 
   // Conversión para PDF: asegurar tipos esperados por createActaPdf
-  const pdfChecklist = (payload.checklist ?? []).map(item => ({
+  const pdfChecklist = (payload.checklist ?? []).map((item) => ({
     ...item,
     value: item.value ?? "",
   }));
 
-  const pdfMedia = (payload.media ?? []).map(m => ({
+  const pdfMedia = (payload.media ?? []).map((m) => ({
     ...m,
   }));
 
@@ -154,14 +156,17 @@ export async function prepareEventoInsert(
     obra: context.obra,
     evento: {
       ...baseEvento,
-      media: payload.media.map((item) => ({ kind: item.kind, path: item.path })),
+      media: payload.media.map((item) => ({
+        kind: item.kind,
+        path: item.path,
+      })),
     },
   };
 
   let pdfPath: string | null = null;
   let pdfBytes: Uint8Array | null = null;
 
-  if (payload.nuevo_estado === 'validado') {
+  if (payload.nuevo_estado === "validado") {
     const pdf = await createActaPdf({
       tarea: context.tarea,
       obra: context.obra,
@@ -188,9 +193,6 @@ export async function prepareEventoInsert(
   };
 }
 
-export function canTransitionSafely(
-  from: VisitStatus,
-  to: VisitStatus
-) {
+export function canTransitionSafely(from: VisitStatus, to: VisitStatus) {
   return canTransition(from, to);
 }

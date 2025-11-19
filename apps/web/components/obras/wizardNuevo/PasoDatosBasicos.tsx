@@ -146,6 +146,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
               ' '
             )}
             style={{ backgroundColor: '#0055A4' }}
+            data-onboarding="crear-obra"
           >
             Siguiente
           </button>

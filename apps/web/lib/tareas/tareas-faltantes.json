@@ -1,0 +1,812 @@
+[
+  {
+    "id": "1RACA001",
+    "nombre": "1ra capa placas",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "2DACA001",
+    "nombre": "2da capa base",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "2DALI001",
+    "nombre": "2da lijada",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "AISAC001",
+    "nombre": "Aislación acústica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "AISHI001",
+    "nombre": "Aislación hidrófuga",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "AISTE001",
+    "nombre": "Aislación térmica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "AISXP001",
+    "nombre": "Aislación XPS",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ALIME001",
+    "nombre": "Alisado mecánico",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ARMAD001",
+    "nombre": "Armado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ASPER001",
+    "nombre": "Aspersores",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ATAFI001",
+    "nombre": "Atado o fijación",
+    "fase": "estructura"
+  },
+  {
+    "id": "BABET001",
+    "nombre": "Babetas",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "BARHU001",
+    "nombre": "Barrera humedad",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "BARNI001",
+    "nombre": "Barniz/laca",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "BASCA001",
+    "nombre": "Base cascajo",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "BOCAS001",
+    "nombre": "Bocas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "BOMAP001",
+    "nombre": "Bomba (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAB3X001",
+    "nombre": "Cable 3x2.5mm²",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CABAL001",
+    "nombre": "Caballete",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CABIN001",
+    "nombre": "Cableado interno",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAJEA001",
+    "nombre": "Cajeado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAMAP001",
+    "nombre": "Campana (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAMAR001",
+    "nombre": "Cama de arena",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CANAG001",
+    "nombre": "Cañerías agua fría",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CANAL001",
+    "nombre": "Cañería alimentación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CANEL001",
+    "nombre": "Cañería eléctrica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CANPR001",
+    "nombre": "Cañería principal agua fría",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAPCO001",
+    "nombre": "Capa de compresión",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CAPMI001",
+    "nombre": "Capa micro",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CARCE001",
+    "nombre": "Carpeta cemento",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CARGA001",
+    "nombre": "Cargar",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CARGA002",
+    "nombre": "Carga gas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CARHI001",
+    "nombre": "Carpeta hidrófuga",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CARVO001",
+    "nombre": "Carga en volquete",
+    "fase": "estructura"
+  },
+  {
+    "id": "CERRA001",
+    "nombre": "Cerramiento",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CLIFI001",
+    "nombre": "Clips fijación",
+    "fase": "estructura"
+  },
+  {
+    "id": "COLAI001",
+    "nombre": "Colocar aislación (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLAL001",
+    "nombre": "Colocación alivianamiento",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLAR001",
+    "nombre": "Colocación armadura",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLBA001",
+    "nombre": "Colocación baño químico",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLBO001",
+    "nombre": "Colocación bovedillas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLCA001",
+    "nombre": "Colocación casilla",
+    "fase": "estructura"
+  },
+  {
+    "id": "COLCA002",
+    "nombre": "Colocación carpintería",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "COLES001",
+    "nombre": "Colocación estribos",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONAR001",
+    "nombre": "Conexión artefactos",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "CONCA001",
+    "nombre": "Conexión cañerías",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONCA002",
+    "nombre": "Conexión canaleta superior",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONCA003",
+    "nombre": "Construcción cámara combustión",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONCI001",
+    "nombre": "Construcción cisterna",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONCO001",
+    "nombre": "Conexión colectores",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONDE001",
+    "nombre": "Conexión desagüe inferior",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONDI001",
+    "nombre": "Conexión disyuntores",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONEL001",
+    "nombre": "Conexión eléctrica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONEV001",
+    "nombre": "Conducto evacuación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONFR001",
+    "nombre": "Conexión frigorífica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONLA001",
+    "nombre": "Conexión lavarropas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONLI001",
+    "nombre": "Conexión a línea municipal",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONME001",
+    "nombre": "Conexión medidor",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONMI001",
+    "nombre": "Conexiones mínimas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CONPI001",
+    "nombre": "Conexión pilar",
+    "fase": "estructura"
+  },
+  {
+    "id": "CORDI001",
+    "nombre": "Cortes dilatación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CORRE001",
+    "nombre": "Correas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CORUN001",
+    "nombre": "Corte y unión",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "CURAD001",
+    "nombre": "Curado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "DERIV001",
+    "nombre": "Derivaciones",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "DESCL001",
+    "nombre": "Desagües cloacales",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "DESCO001",
+    "nombre": "Desagüe cocina",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "DESLA001",
+    "nombre": "Desagüe lavadero",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "DESMA001",
+    "nombre": "Desmalezado",
+    "fase": "estructura"
+  },
+  {
+    "id": "DISSI001",
+    "nombre": "Diseño sistema",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ENCOF001",
+    "nombre": "Encofrado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ESTME001",
+    "nombre": "Estructura metálica",
+    "fase": "estructura"
+  },
+  {
+    "id": "ESTSO001",
+    "nombre": "Estructura sombra (si aplica)",
+    "fase": "estructura"
+  },
+  {
+    "id": "EXTCE001",
+    "nombre": "Extendido césped",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "FIJAC001",
+    "nombre": "Fijaciones",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "FIJPA001",
+    "nombre": "Fijación pared",
+    "fase": "estructura"
+  },
+  {
+    "id": "FRATA001",
+    "nombre": "Fratazado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "FUNDA001",
+    "nombre": "Fundación",
+    "fase": "estructura"
+  },
+  {
+    "id": "GEOTE001",
+    "nombre": "Geotextil",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "GRIFE001",
+    "nombre": "Grifería",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "HIERR001",
+    "nombre": "Hierros",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "HORMI001",
+    "nombre": "Hormigonado",
+    "fase": "estructura"
+  },
+  {
+    "id": "IDECI001",
+    "nombre": "Identificación circuitos",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ILUCE001",
+    "nombre": "Iluminación cenital",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "IMPCA001",
+    "nombre": "Impresión cartel",
+    "fase": "estructura"
+  },
+  {
+    "id": "IMPRI001",
+    "nombre": "Imprimación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "INSCO001",
+    "nombre": "Instalación contenedor",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "INSPA001",
+    "nombre": "Instalación parrilla",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "INSTA001",
+    "nombre": "Instalaciones",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "JUNES001",
+    "nombre": "Juntar escombros",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LEVTA001",
+    "nombre": "Levantar tabique",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LIJAD001",
+    "nombre": "Lijado",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "LIMAT001",
+    "nombre": "Limatesas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LIMPI001",
+    "nombre": "Limpieza",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LISTO001",
+    "nombre": "Listones",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LLATE001",
+    "nombre": "Llave térmica dedicada",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LLAVE001",
+    "nombre": "Llaves",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LLENA001",
+    "nombre": "Llenado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "LOSHO001",
+    "nombre": "Losa hormigón",
+    "fase": "estructura"
+  },
+  {
+    "id": "MALAN001",
+    "nombre": "Malla antimaleza",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MALSU001",
+    "nombre": "Malla superior",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MANTE001",
+    "nombre": "Mantenimiento",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MASIL001",
+    "nombre": "Masillado",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "MON1R001",
+    "nombre": "Montaje 1ra estructura",
+    "fase": "estructura"
+  },
+  {
+    "id": "MONES001",
+    "nombre": "Montaje estructura soporte",
+    "fase": "estructura"
+  },
+  {
+    "id": "MONLU001",
+    "nombre": "Montaje luminaria",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MONTA001",
+    "nombre": "Montaje tanque",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MONUN001",
+    "nombre": "Montaje unidad interior",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MONVI001",
+    "nombre": "Montaje viguetas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "MULCH001",
+    "nombre": "Mulching",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "NIVBA001",
+    "nombre": "Nivelación base",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "NIVSU001",
+    "nombre": "Nivelación superficie",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "NUETA001",
+    "nombre": "Nueva tarea",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ORIEN001",
+    "nombre": "Orientación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PASPA001",
+    "nombre": "Pase pared",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PASTI001",
+    "nombre": "Pastinado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PEGAD001",
+    "nombre": "Pegado adhesivo especial",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PEGCE001",
+    "nombre": "Pegado cerámicos",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PENDI001",
+    "nombre": "Pendientes",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PERFI001",
+    "nombre": "Perfilería",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PISEL001",
+    "nombre": "Piso elegido",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PLALA001",
+    "nombre": "Placas lado 1",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "PLAYA001",
+    "nombre": "Playa/borde",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PREBA001",
+    "nombre": "Preparación base",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PRESU001",
+    "nombre": "Preparación superficie",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PRICO001",
+    "nombre": "Primer corte",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PROGR001",
+    "nombre": "Programación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PROTE001",
+    "nombre": "Protección",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PRUES001",
+    "nombre": "Prueba estanqueidad",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PRUHI001",
+    "nombre": "Prueba hidráulica",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PUEMA001",
+    "nombre": "Puesta en marcha",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "PULAP001",
+    "nombre": "Pulido (si aplica)",
+    "fase": "terminaciones"
+  },
+  {
+    "id": "PURGA001",
+    "nombre": "Purgado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "RASAP001",
+    "nombre": "Rastreles (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "REBOS001",
+    "nombre": "Rebose",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "REGUL001",
+    "nombre": "Regulador",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "RELLE001",
+    "nombre": "Relleno",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "REMAT001",
+    "nombre": "Remates",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "RETBA001",
+    "nombre": "Retiro de basura",
+    "fase": "estructura"
+  },
+  {
+    "id": "RETFI001",
+    "nombre": "Retiro final",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "REVAP001",
+    "nombre": "Revoque (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "RIEIN001",
+    "nombre": "Riego inicial",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "SELJU001",
+    "nombre": "Sellado juntas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "SELLA001",
+    "nombre": "Sellador",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "SIEMB001",
+    "nombre": "Siembra/panes",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "SOLDA001",
+    "nombre": "Soldadura/bulonado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "SOPOR001",
+    "nombre": "Soportes",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TAPA001",
+    "nombre": "Tapa",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TENSA001",
+    "nombre": "Tensado",
+    "fase": "estructura"
+  },
+  {
+    "id": "TIEPR001",
+    "nombre": "Tierra preparada",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TIEVE001",
+    "nombre": "Tierra vegetal",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TOMDE001",
+    "nombre": "Toma dedicada",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TRAAP001",
+    "nombre": "Tratamiento (si aplica)",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TRAPR001",
+    "nombre": "Tratamiento protector",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TRASL001",
+    "nombre": "Traslado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "TUTOR001",
+    "nombre": "Tutor",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "UNION001",
+    "nombre": "Uniones",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "VALVU001",
+    "nombre": "Válvulas",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "VENTI001",
+    "nombre": "Ventilación",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "VERIF001",
+    "nombre": "Verificación",
+    "fase": "estructura"
+  },
+  {
+    "id": "VIBRA001",
+    "nombre": "Vibrado",
+    "fase": "obra_gris"
+  },
+  {
+    "id": "ZOCAL001",
+    "nombre": "Zócalos",
+    "fase": "terminaciones"
+  }
+]

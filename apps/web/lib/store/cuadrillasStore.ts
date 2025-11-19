@@ -93,6 +93,34 @@ function calcularAntiguedad(createdAt: string): string {
   return `${años} años`;
 }
 
+// Helper para determinar especialidad desde el rol del socio
+function determinarEspecialidadDesdeRol(rol?: string): Especialidad | null {
+  if (!rol) return null;
+  const rolLower = rol.toLowerCase();
+  
+  // Mapeo de roles a especialidades
+  if (rolLower.includes('albañil') || rolLower.includes('estructura') || rolLower.includes('constructor')) {
+    return 'Albañilería / Estructura';
+  }
+  if (rolLower.includes('yesero') || rolLower.includes('terminacion')) {
+    return 'Yesería / Terminaciones';
+  }
+  if (rolLower.includes('carpintero') || rolLower.includes('carpinteria')) {
+    return 'Carpintería';
+  }
+  if (rolLower.includes('plomero') || rolLower.includes('gas')) {
+    return 'Plomería / Gas';
+  }
+  if (rolLower.includes('electricista') || rolLower.includes('electricidad')) {
+    return 'Electricidad';
+  }
+  if (rolLower.includes('pintor') || rolLower.includes('pintura')) {
+    return 'Pintura';
+  }
+  
+  return null;
+}
+
 export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
   cuadrillas: [],
   obras: [],
@@ -114,30 +142,35 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
     const supabase = createClientComponentClient<Database>() as any;
 
     try {
-      // Query inicial: incluir todos los campos que podrían existir en un solo select
-      // Si algún campo no existe, Supabase lo ignorará pero no fallará
+      // Buscar cuadrillas desde la tabla socios filtrando por org_id
+      // Solo seleccionar columnas que existen en la tabla socios (según schema: id, org_id, nombre, telefono, email, rol, created_at)
       let query = supabase
-        .from('cuadrillas')
-        .select('id, nombre, encargado, especialidad, estado, org_id, obra_id, created_at, updated_at')
+        .from('socios')
+        .select('id, nombre, telefono, email, org_id, created_at, rol')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
 
-      if (obraId) {
-        query = query.eq('obra_id', obraId);
-      }
+      const { data: sociosData, error: sociosError } = await query;
 
-      const { data: cuadrillasData, error: cuadrillasError } = await query;
+      // Log para debugging
+      console.log('[FETCH_CUADRILLAS] Query ejecutado (desde socios):', {
+        orgId,
+        obraId: obraId || 'todas',
+        hasError: !!sociosError,
+        dataLength: sociosData?.length || 0,
+        error: sociosError,
+      });
 
-      if (cuadrillasError) {
+      if (sociosError) {
         // Log detallado del error
         const errorInfo: any = {
-          message: cuadrillasError?.message || 'Error desconocido',
-          details: cuadrillasError?.details || null,
-          hint: cuadrillasError?.hint || null,
-          code: cuadrillasError?.code || null,
-          errorObject: cuadrillasError,
-          errorType: typeof cuadrillasError,
-          errorKeys: cuadrillasError ? Object.keys(cuadrillasError) : [],
+          message: sociosError?.message || 'Error desconocido',
+          details: sociosError?.details || null,
+          hint: sociosError?.hint || null,
+          code: sociosError?.code || null,
+          errorObject: sociosError,
+          errorType: typeof sociosError,
+          errorKeys: sociosError ? Object.keys(sociosError) : [],
           orgId: orgId
         };
         
@@ -147,51 +180,104 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
           console.error('[FETCH_CUADRILLAS_ERROR]', errorInfo);
         }
         
+        // Si el error es que la tabla no existe (42P01) o no hay permisos (PGRST116)
+        // Retornar array vacío en lugar de mostrar error
+        if (sociosError?.code === '42P01' || sociosError?.code === 'PGRST116' || 
+            sociosError?.message?.includes('does not exist') ||
+            sociosError?.message?.includes('permission denied')) {
+          console.warn('[FETCH_CUADRILLAS] Tabla no existe o sin permisos, retornando array vacío');
+          set({ cuadrillas: [], isLoading: false, error: null });
+          return;
+        }
+        
         // Mensaje de error más descriptivo
-        let errorMessage = 'Error al cargar cuadrillas';
-        if (cuadrillasError?.message) {
-          errorMessage = cuadrillasError.message;
-        } else if (cuadrillasError?.code === 'PGRST116') {
-          errorMessage = 'No tienes permisos para ver cuadrillas. Verifica tu autenticación.';
-        } else if (cuadrillasError && Object.keys(cuadrillasError).length === 0) {
-          errorMessage = 'Error de permisos: Verifica que tengas acceso para ver cuadrillas en esta organización';
+        let errorMessage = 'Error al cargar cuadrillas desde socios';
+        if (sociosError?.message) {
+          errorMessage = sociosError.message;
+        } else if (sociosError?.code === 'PGRST116') {
+          errorMessage = 'No tienes permisos para ver socios. Verifica tu autenticación.';
+        } else if (sociosError && Object.keys(sociosError).length === 0) {
+          errorMessage = 'Error de permisos: Verifica que tengas acceso para ver socios en esta organización';
         }
         
         set({ error: errorMessage, isLoading: false });
         return;
       }
 
-      // Si no hay datos pero tampoco hay error, puede ser que simplemente no haya cuadrillas
-      if (!cuadrillasData) {
+      // Si no hay datos pero tampoco hay error, puede ser que simplemente no haya socios
+      if (!sociosData || sociosData.length === 0) {
+        console.log('[FETCH_CUADRILLAS] No hay socios, retornando array vacío');
         set({ cuadrillas: [], isLoading: false });
         return;
       }
 
-      // Usar directamente los datos obtenidos sin queries adicionales
-      // Las queries opcionales a campos/tablas que no existen causan errores 400/404
-      // Por ahora, solo usamos los campos básicos que sabemos que existen
-      const cuadrillasCompletas = (cuadrillasData || []) as any[];
+      console.log('[FETCH_CUADRILLAS] Socios recibidos:', {
+        count: sociosData.length,
+        orgId: orgId,
+        socios: sociosData.map((s: any) => ({ 
+          id: s.id, 
+          nombre: s.nombre, 
+          org_id: s.org_id,
+          rol: s.rol,
+          telefono: s.telefono,
+          email: s.email
+        }))
+      });
+
+      // Convertir socios a formato Cuadrilla
+      // Cada socio se convierte en una cuadrilla individual
+      const cuadrillasCompletas = sociosData.map((socio: any) => {
+        // Determinar especialidad basada en el rol o usar una por defecto
+        const especialidad = determinarEspecialidadDesdeRol(socio.rol) || 'Albañilería / Estructura';
+        
+        return {
+          id: socio.id,
+          nombre: socio.nombre || 'Sin nombre',
+          encargado: socio.nombre || 'Sin encargado',
+          telefono_encargado: socio.telefono || null,
+          whatsapp_encargado: socio.telefono || null, // Usar telefono como whatsapp si no existe columna separada
+          email_encargado: socio.email || null,
+          foto_encargado: null,
+          especialidad: especialidad,
+          estado: 'Disponible', // Todos los socios se muestran como disponibles por defecto
+          org_id: socio.org_id,
+          obra_id: null, // Los socios no tienen obra_id directo, se asigna después
+          created_at: socio.created_at,
+          updated_at: socio.created_at,
+        };
+      }) as any[];
 
       // Cargar tareas para calcular KPIs
-      const cuadrillaIds = cuadrillasCompletas.map((c) => c.id);
+      // Buscar tareas asignadas a estos socios (usando socio_ids en lugar de cuadrilla_id)
+      const socioIds = cuadrillasCompletas.map((c) => c.id);
       let tareasPorCuadrilla: Record<string, any[]> = {};
 
-      if (cuadrillaIds.length > 0) {
+      if (socioIds.length > 0) {
+        // Buscar tareas donde el socio_id esté en el array socio_ids
         const { data: tareasData, error: tareasError } = await supabase
           .from('tareas')
-          .select('id, cuadrilla_id, estado, avance')
-          .eq('org_id', orgId)
-          .in('cuadrilla_id', cuadrillaIds);
+          .select('id, socio_ids, estado, avance')
+          .eq('org_id', orgId);
 
         if (!tareasError && tareasData) {
-          // Agrupar tareas por cuadrilla_id
+          // Agrupar tareas por socio_id (cada socio puede tener múltiples tareas)
           tareasPorCuadrilla = (tareasData as any[]).reduce((acc: Record<string, any[]>, tarea: any) => {
-            if (tarea.cuadrilla_id) {
-              if (!acc[tarea.cuadrilla_id]) {
-                acc[tarea.cuadrilla_id] = [];
+            // socio_ids puede ser un array o un string
+            const sociosEnTarea = Array.isArray(tarea.socio_ids) 
+              ? tarea.socio_ids 
+              : tarea.socio_ids 
+                ? [tarea.socio_ids] 
+                : [];
+            
+            sociosEnTarea.forEach((socioId: string) => {
+              if (socioId && socioIds.includes(socioId)) {
+                if (!acc[socioId]) {
+                  acc[socioId] = [];
+                }
+                acc[socioId].push(tarea);
               }
-              acc[tarea.cuadrilla_id].push(tarea);
-            }
+            });
+            
             return acc;
           }, {});
         } else if (tareasError) {
@@ -398,8 +484,11 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
     set({ isLoading: true, error: null });
     const supabase = createClientComponentClient<Database>() as any;
     try {
+      console.log('[ELIMINAR_CUADRILLA] Eliminando socio:', { cuadrillaId, orgId });
+      
+      // Eliminar de la tabla socios (las cuadrillas ahora son socios)
       const { error } = await supabase
-        .from('cuadrillas')
+        .from('socios')
         .delete()
         .eq('id', cuadrillaId)
         .eq('org_id', orgId);
@@ -409,6 +498,8 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
         set({ error: error.message, isLoading: false });
         return false;
       }
+      
+      console.log('[ELIMINAR_CUADRILLA] Socio eliminado exitosamente');
       
       // Actualizar el estado local eliminando la cuadrilla
       set((state) => ({

@@ -14,7 +14,7 @@ import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { BaseCard, Button, EmptyState, SectionLayout } from '@/components/ui/grows';
 import { useToast } from '@/components/ui/use-toast';
-import { Building2, CheckCircle, ClipboardList, TrendingUp, UserCheck, Users, X } from 'lucide-react';
+import { Building2, CheckCircle, ClipboardList, TrendingUp, UserCheck, Users, X, Trash2 } from 'lucide-react';
 import { useSubscription } from '@/lib/subscriptions';
 import { canUseFeature, usePlanGate } from '@/lib/permissions';
 import { ObraCard } from '@/components/obras/ui/ObraCard';
@@ -49,7 +49,7 @@ const ESPECIALIDADES: Especialidad[] = [
 export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
   const currentUser = useCurrentUser();
   const { toast } = useToast();
-  const { cuadrillaSeleccionada, showDrawer, showModalAsignacion, fetchCuadrillas, cuadrillas } = useCuadrillasStore();
+  const { cuadrillaSeleccionada, showDrawer, showModalAsignacion, fetchCuadrillas, cuadrillas, eliminarCuadrilla } = useCuadrillasStore();
   const cuadrillasStore = useCuadrillasStore.getState();
   const [visorActivo, setVisorActivo] = useState<'cuadrillas' | 'tareas' | 'cumplimiento' | null>(null);
   const [showModalInvitarSocio, setShowModalInvitarSocio] = useState(false);
@@ -157,8 +157,62 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
 
   const cuadrillasAsignadas = useMemo(() => {
     if (!selectedObraId) return [];
-    return cuadrillas.filter((cuadrilla) => cuadrilla.obraId === selectedObraId);
+    
+    // Buscar tareas de esta obra que tengan cuadrilla_id asignado
+    // Las cuadrillas asignadas son aquellas que tienen al menos una tarea en esta obra
+    return cuadrillas.filter((cuadrilla) => {
+      // Verificar si esta cuadrilla tiene tareas asignadas en esta obra
+      // Esto se hace buscando en las tareas que tienen cuadrilla_id igual al ID del socio
+      // Por ahora, retornamos todas las cuadrillas y luego las filtraremos con un useEffect
+      return true; // Temporal: se filtrará con useEffect
+    });
   }, [cuadrillas, selectedObraId]);
+  
+  // Estado para almacenar las cuadrillas realmente asignadas a esta obra
+  const [cuadrillasAsignadasReal, setCuadrillasAsignadasReal] = useState<typeof cuadrillas>([]);
+  
+  // useEffect para buscar las cuadrillas asignadas a esta obra
+  useEffect(() => {
+    const buscarCuadrillasAsignadas = async () => {
+      if (!selectedObraId || !currentUser?.orgId) {
+        setCuadrillasAsignadasReal([]);
+        return;
+      }
+      
+      try {
+        // Buscar tareas de esta obra que tengan cuadrilla_id asignado
+        const { data: tareasData, error: tareasError } = await supabase
+          .from('tareas')
+          .select('id, cuadrilla_id, obra_id')
+          .eq('obra_id', selectedObraId)
+          .eq('org_id', currentUser.orgId)
+          .not('cuadrilla_id', 'is', null);
+        
+        if (tareasError) {
+          console.error('[CuadrillasSection] Error buscando tareas asignadas:', tareasError);
+          setCuadrillasAsignadasReal([]);
+          return;
+        }
+        
+        // Obtener los IDs únicos de las cuadrillas asignadas
+        const cuadrillaIdsAsignadas = new Set(
+          (tareasData || [])
+            .map((t: any) => t.cuadrilla_id)
+            .filter((id: string | null): id is string => id !== null)
+        );
+        
+        // Filtrar las cuadrillas que están asignadas
+        const asignadas = cuadrillas.filter((c) => cuadrillaIdsAsignadas.has(c.id));
+        
+        setCuadrillasAsignadasReal(asignadas);
+      } catch (error) {
+        console.error('[CuadrillasSection] Excepción buscando cuadrillas asignadas:', error);
+        setCuadrillasAsignadasReal([]);
+      }
+    };
+    
+    buscarCuadrillasAsignadas();
+  }, [selectedObraId, cuadrillas, currentUser?.orgId, supabase]);
 
   const cuadrillasDisponibles = useMemo(() => {
     return cuadrillas.filter((cuadrilla) => {
@@ -226,6 +280,43 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
     });
 
     onNavigate?.('presupuestos');
+  };
+
+  const handleEliminarCuadrilla = async (cuadrillaId: string) => {
+    if (!currentUser?.orgId) {
+      toast({
+        title: 'Error',
+        description: 'No estás autenticado',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const cuadrilla = cuadrillas.find((item) => item.id === cuadrillaId);
+    if (!cuadrilla) {
+      return;
+    }
+
+    // Confirmar eliminación
+    if (!confirm(`¿Estás seguro de que querés eliminar la cuadrilla "${cuadrilla.nombre}"?`)) {
+      return;
+    }
+
+    const success = await eliminarCuadrilla(cuadrillaId, currentUser.orgId);
+    if (success) {
+      toast({
+        title: 'Cuadrilla eliminada',
+        description: `La cuadrilla "${cuadrilla.nombre}" fue eliminada correctamente.`,
+      });
+      // Refrescar la lista
+      await fetchCuadrillas(currentUser.orgId);
+    } else {
+      toast({
+        title: 'Error',
+        description: 'No se pudo eliminar la cuadrilla. Intentá nuevamente.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleChangeViewMode = (mode: 'obras' | 'general') => {
@@ -310,12 +401,21 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                   <span className="rounded-grows-full bg-growsBlueLight/10 px-2 py-1 text-growsBlue">{estado}</span>
                 </div>
                 <p className="text-sm text-growsTextMuted">Cumplimiento promedio: {cumplimiento}%</p>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <Button size="sm" variant="secondary" onClick={() => handleVerCuadrilla(cuadrilla.id)}>
                     Ver detalle
                   </Button>
                   <Button size="sm" onClick={() => handleAsignarCuadrilla(cuadrilla.id)}>
                     Asignar
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="destructive" 
+                    onClick={() => handleEliminarCuadrilla(cuadrilla.id)}
+                    className="ml-auto"
+                    title="Eliminar cuadrilla"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -461,7 +561,7 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
               </TabsList>
 
               <TabsContent value="asignadas" className="p-6">
-                {cuadrillasAsignadas.length === 0 ? (
+                {cuadrillasAsignadasReal.length === 0 ? (
                   <EmptyState
                     title="Sin cuadrillas asignadas"
                     description="Aún no hay cuadrillas trabajando en esta obra."
@@ -470,7 +570,7 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                 ) : (
                   <section className="space-y-6">
                     <TopStats onOpenVisor={handleOpenVisor} />
-                    <Kanban cuadrillas={cuadrillasAsignadas} />
+                    <Kanban cuadrillas={cuadrillasAsignadasReal} />
                   </section>
                 )}
               </TabsContent>
@@ -520,6 +620,15 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                                 </Button>
                                 <Button size="sm" onClick={() => handlePedirPresupuesto(cuadrilla.id)}>
                                   Pedir presupuesto
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleEliminarCuadrilla(cuadrilla.id)}
+                                  className="ml-auto"
+                                  title="Eliminar cuadrilla"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>

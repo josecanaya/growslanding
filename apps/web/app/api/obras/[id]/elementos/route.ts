@@ -243,6 +243,7 @@ export async function POST(
           tipo: elementoCompleto.nombre || '',
           cantidad: elementoCompleto.cantidad || 1,
           unidad: (elementoCompleto.unidad || 'unidad') as 'm²' | 'm³' | 'unidad',
+          descripcion: elementoCompleto.descripcion || undefined,
         };
 
         console.log('[POST_ELEMENTOS] Elemento preparado para expansor:', elementoParaExpansor);

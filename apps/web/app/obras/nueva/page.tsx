@@ -9,7 +9,7 @@ export default function NuevaObraPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-secundario flex">
+    <div className="min-h-screen bg-white flex">
       <SidebarClienteTecnico
         activeSection="obras"
         onSectionChange={(section) => {

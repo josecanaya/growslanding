@@ -363,35 +363,6 @@ export default function ObraResumenContainer({
 
   return (
     <div className="space-y-6 bg-[#F8FAFC] p-6 lg:p-8">
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0052CC]/10 text-[#0052CC]">
-              <Building className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-semibold text-[#1E293B]">{obra.nombre}</h2>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${estadoInfo.className}`}>
-                  {estadoInfo.label}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-slate-500">
-                Cliente: {obra.cliente} · Tipo: {obra.tipoObra}
-              </p>
-              <p className="text-xs text-slate-400">
-                Inicio: {fechaInicio} · Última actualización: {ultimaActualizacion}
-              </p>
-            </div>
-          </div>
-          {onEditarInfo && (
-            <Button variant="outline" className="rounded-xl border-slate-200" onClick={onEditarInfo}>
-              Editar información
-            </Button>
-          )}
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="space-y-6 lg:col-span-5">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]">

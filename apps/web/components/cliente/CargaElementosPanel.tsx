@@ -8,6 +8,16 @@ import {
   Layers,
   Pencil,
   Trash2,
+  Wrench,
+  Blocks,
+  Construction,
+  Plug,
+  Home,
+  Grid3x3,
+  Star,
+  Leaf,
+  Building2,
+  ChevronRight,
 } from "lucide-react";
 import { catalogoCompletoJson } from "@/lib/catalogos/elementos";
 import { cn } from "@/lib/utils";
@@ -22,6 +32,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import ModalNuevoElemento from "@/components/cliente/modals/ModalNuevoElemento";
+import ModalEditarElemento from "@/components/cliente/modals/ModalEditarElemento";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type Planta = {
@@ -34,7 +45,7 @@ type ElementoCatalogo = {
   nombre: string;
   unidad?: string;
   opciones?: Record<string, string[] | undefined>;
-  tareas?: string[];
+  tareas?: (string | { task_id?: string; nombre: string; fase: string })[];
 };
 
 type SubcategoriaCatalogo = {
@@ -67,7 +78,9 @@ type CargaElementosPanelProps = {
 
 type ConfiguracionKey = string;
 
-const mapearTareasAFases = (tareas: string[] = []) => {
+const mapearTareasAFases = (
+  tareas: (string | { task_id?: string; nombre: string; fase: string })[] = []
+) => {
   const fases: Record<string, string[]> = {
     estructura: [],
     "obra gris": [],
@@ -75,27 +88,98 @@ const mapearTareasAFases = (tareas: string[] = []) => {
   };
 
   tareas.forEach((tarea) => {
-    const lower = tarea.toLowerCase();
-    if (
-      lower.includes("replanteo") ||
-      lower.includes("excav") ||
-      lower.includes("encofrado") ||
-      lower.includes("armado") ||
-      lower.includes("estructura") ||
-      lower.includes("hormig")
-    ) {
-      fases.estructura.push(tarea);
-    } else if (
-      lower.includes("revoque") ||
-      lower.includes("instal") ||
-      lower.includes("mamposter") ||
-      lower.includes("contrapiso") ||
-      lower.includes("carp")
-    ) {
-      fases["obra gris"].push(tarea);
+    let nombreTarea: string;
+    let faseTarea: "estructura" | "obra gris" | "terminaciones";
+
+    // Si la tarea es un objeto, extraer nombre y fase
+    if (typeof tarea === "object" && tarea !== null && "nombre" in tarea) {
+      nombreTarea = tarea.nombre || "";
+
+      // Si el objeto tiene fase válida, usarla directamente
+      if (tarea.fase && typeof tarea.fase === "string") {
+        const faseLower = tarea.fase.toLowerCase().trim();
+        if (faseLower === "estructura") {
+          faseTarea = "estructura";
+        } else if (faseLower === "obra_gris" || faseLower === "obra gris") {
+          faseTarea = "obra gris";
+        } else if (faseLower === "terminaciones") {
+          faseTarea = "terminaciones";
+        } else {
+          // Si la fase no es reconocida, mapear por nombre
+          const lower = nombreTarea.toLowerCase();
+          if (
+            lower.includes("replanteo") ||
+            lower.includes("excav") ||
+            lower.includes("encofrado") ||
+            lower.includes("armado") ||
+            lower.includes("estructura") ||
+            lower.includes("hormig")
+          ) {
+            faseTarea = "estructura";
+          } else if (
+            lower.includes("revoque") ||
+            lower.includes("instal") ||
+            lower.includes("mamposter") ||
+            lower.includes("contrapiso") ||
+            lower.includes("carp")
+          ) {
+            faseTarea = "obra gris";
+          } else {
+            faseTarea = "terminaciones";
+          }
+        }
+      } else {
+        // Si no tiene fase, mapear por nombre
+        const lower = nombreTarea.toLowerCase();
+        if (
+          lower.includes("replanteo") ||
+          lower.includes("excav") ||
+          lower.includes("encofrado") ||
+          lower.includes("armado") ||
+          lower.includes("estructura") ||
+          lower.includes("hormig")
+        ) {
+          faseTarea = "estructura";
+        } else if (
+          lower.includes("revoque") ||
+          lower.includes("instal") ||
+          lower.includes("mamposter") ||
+          lower.includes("contrapiso") ||
+          lower.includes("carp")
+        ) {
+          faseTarea = "obra gris";
+        } else {
+          faseTarea = "terminaciones";
+        }
+      }
     } else {
-      fases.terminaciones.push(tarea);
+      // Si la tarea es un string (compatibilidad legacy)
+      nombreTarea = typeof tarea === "string" ? tarea : String(tarea);
+      const lower = nombreTarea.toLowerCase();
+      if (
+        lower.includes("replanteo") ||
+        lower.includes("excav") ||
+        lower.includes("encofrado") ||
+        lower.includes("armado") ||
+        lower.includes("estructura") ||
+        lower.includes("hormig")
+      ) {
+        faseTarea = "estructura";
+      } else if (
+        lower.includes("revoque") ||
+        lower.includes("instal") ||
+        lower.includes("mamposter") ||
+        lower.includes("contrapiso") ||
+        lower.includes("carp")
+      ) {
+        faseTarea = "obra gris";
+      } else {
+        faseTarea = "terminaciones";
+      }
     }
+
+    // Agregar la tarea a la fase correspondiente
+    fases[faseTarea].push(nombreTarea);
   });
 
   return fases;
@@ -148,6 +232,7 @@ export default function CargaElementosPanel({
   const [configValues, setConfigValues] = useState<Record<ConfiguracionKey, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [modalNuevoElementoOpen, setModalNuevoElementoOpen] = useState(false);
+  const [modalEditarElementoOpen, setModalEditarElementoOpen] = useState(false);
   const [elementosObra, setElementosObra] = useState<ElementoSupabase[]>([]);
   const [loadingElementos, setLoadingElementos] = useState(false);
   const [openSubcategorias, setOpenSubcategorias] = useState<Record<string, boolean>>({});
@@ -225,7 +310,7 @@ export default function CargaElementosPanel({
   }, [categoriaSeleccionada, elementosObra]);
 
   const categoriaStats = useMemo(() => {
-    return categorias.map((categoria) => {
+    const statsCategorias = categorias.map((categoria) => {
       const disponibles = categoria.subcategorias.reduce(
         (acc, sub) => acc + (sub.elementos?.length ?? 0),
         0
@@ -241,6 +326,8 @@ export default function CargaElementosPanel({
         cargados,
       };
     });
+
+    return statsCategorias;
   }, [categorias, elementosObra]);
 
   const tareasPorFase = useMemo(() => {
@@ -377,43 +464,107 @@ export default function CargaElementosPanel({
   };
 
   const selectTriggerClass =
-    "h-11 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/20";
+    "h-11 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 shadow-sm focus:border-[#0066FF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/20";
   const selectContentClass =
     "rounded-xl border border-slate-200 bg-white shadow-lg";
   const selectItemClass =
-    "rounded-lg px-3 py-2 text-sm text-slate-700 data-[highlighted]:bg-slate-100 data-[highlighted]:text-[#0052CC] focus:bg-slate-100 focus:text-[#0052CC]";
+    "rounded-lg px-3 py-2 text-sm text-slate-700 data-[highlighted]:bg-[#EAF3FF] data-[highlighted]:text-[#0066FF] focus:bg-[#EAF3FF] focus:text-[#0066FF]";
+
+  // Función para obtener el color del badge según el porcentaje
+  const getBadgeColor = (cargados: number, disponibles: number) => {
+    if (disponibles === 0) return "bg-[#E5E7EB] text-slate-600";
+    const porcentaje = (cargados / disponibles) * 100;
+    if (porcentaje === 0) return "bg-[#E5E7EB] text-slate-600";
+    if (porcentaje >= 1 && porcentaje < 50) return "bg-[#FFF3BF] text-amber-700";
+    if (porcentaje >= 50 && porcentaje < 100) return "bg-[#D9E8FF] text-blue-700";
+    if (porcentaje === 100) return "bg-[#D4F8D4] text-green-700";
+    return "bg-[#E5E7EB] text-slate-600";
+  };
+
+  // Función para obtener el icono según la categoría
+  const getCategoriaIcon = (nombre: string) => {
+    if (!nombre) return Building2;
+    const nombreLower = nombre.toLowerCase();
+    if (nombreLower.includes("trabajos preliminares") || nombreLower.includes("preliminares")) return Wrench;
+    if (nombreLower.includes("fundación") || nombreLower.includes("estructura")) return Blocks;
+    if (nombreLower.includes("muro") || nombreLower.includes("cerramiento")) return Construction;
+    if (nombreLower.includes("instalación") || nombreLower.includes("instalaciones")) return Plug;
+    if (nombreLower.includes("cubierta") || nombreLower.includes("cubiertas")) return Home;
+    if (nombreLower.includes("suelo") || nombreLower.includes("piso") || nombreLower.includes("suelos") || nombreLower.includes("pisos")) return Grid3x3;
+    if (nombreLower.includes("amenity") || nombreLower.includes("amenities")) return Star;
+    if (nombreLower.includes("parquizado") || nombreLower.includes("parque") || nombreLower.includes("parquizados")) return Leaf;
+    return Building2;
+  };
+
+  // Breadcrumb - muestra categoría y subcategoría cuando hay selección
+  const breadcrumb = useMemo(() => {
+    if (selectedElemento) {
+      return `${selectedElemento.categoriaNombre} / ${selectedElemento.subcategoriaNombre}`;
+    }
+    // Si hay una subcategoría abierta, mostrar categoría / subcategoría
+    const subcategoriaAbierta = subcategoriasConConteo.find(
+      (sub) => openSubcategorias[sub.subcategoria.id]
+    );
+    if (subcategoriaAbierta && categoriaSeleccionada) {
+      return `${categoriaSeleccionada.categoria} / ${subcategoriaAbierta.subcategoria.nombre}`;
+    }
+    // Solo categoría si está seleccionada
+    if (categoriaSeleccionada) {
+      return categoriaSeleccionada.categoria;
+    }
+    return null;
+  }, [selectedElemento, categoriaSeleccionada, subcategoriasConConteo, openSubcategorias]);
 
   return (
-    <div className="grid grid-cols-12 gap-5 p-5 bg-[#F9FAFB]">
+    <div className="grid grid-cols-12 gap-0 p-5 bg-[#F5F7FA]">
       {/* Panel izquierdo */}
-      <aside className="col-span-12 h-max rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(0,0,0,0.05)] lg:col-span-3">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <FolderKanban className="h-4 w-4 text-[#0052CC]" /> Categorías constructivas
+      <aside className="col-span-12 h-max rounded-l-xl border-r border-[#E5E7EB] bg-[#FFFEF5] shadow-sm lg:col-span-3">
+        {/* Header fijo */}
+        <div className="sticky top-0 z-10 bg-[#F0F2F5] border-b border-[#E1E4E8] px-5 py-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <Building2 className="h-4 w-4 text-slate-500" />
+            Categorías constructivas
+          </div>
         </div>
-        <div className="space-y-2">
+        <div className="p-4 space-y-2">
           {categoriaStats.map((cat) => {
             const isActive = cat.id === selectedCategoriaId;
+            const badgeColor = getBadgeColor(cat.cargados, cat.disponibles || 1);
+            const Icon = getCategoriaIcon(cat.nombre) || Building2;
             return (
               <button
                 key={cat.id}
                 type="button"
                 className={cn(
-                  "w-full rounded-xl border px-4 py-3 text-left transition-all flex items-center justify-between",
+                  "w-full rounded-xl px-4 py-4 text-left transition-all flex items-center justify-between group",
                   isActive
-                    ? "border-[#0052CC] bg-[#0052CC]/10 text-[#0052CC] shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:border-[#0052CC]/40 hover:bg-[#0052CC]/5"
+                    ? "bg-[#E8F1FF] text-[#0066FF] shadow-sm font-semibold border-l-[6px] border-[#0066FF] rounded-l-none"
+                    : "bg-[#FFF9E6] text-slate-700 hover:border-[#F5E6C4] hover:shadow-sm border border-transparent"
                 )}
                 onClick={() => {
-                  setSelectedCategoriaId(cat.id);
-                  setSelectedElemento(null);
+                  if (cat.id !== "trabajos-preliminares") {
+                    setSelectedCategoriaId(cat.id);
+                    setSelectedElemento(null);
+                  }
                 }}
               >
-                <span className="text-sm font-medium text-slate-700 line-clamp-2 pr-2">
-                  {cat.nombre}
-                </span>
-                <span className="flex flex-col items-end text-xs text-slate-500">
-                  <span>{cat.cargados}/{cat.disponibles}</span>
-                  <span className="text-[11px] text-slate-400">cargados</span>
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <Icon className={cn(
+                    "h-4 w-4 flex-shrink-0",
+                    isActive ? "text-[#0066FF]" : "text-slate-400 group-hover:text-slate-600"
+                  )} />
+                  <span className={cn(
+                    "text-sm line-clamp-2",
+                    isActive ? "font-semibold" : "font-medium"
+                  )}>
+                    {cat.nombre}
+                  </span>
+                </div>
+                <span className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ml-2 flex-shrink-0",
+                  badgeColor
+                )}>
+                  {cat.cargados}/{cat.disponibles || 0}
                 </span>
               </button>
             );
@@ -422,26 +573,45 @@ export default function CargaElementosPanel({
       </aside>
 
       {/* Panel central */}
-      <section className="col-span-12 space-y-4 lg:col-span-6">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(0,0,0,0.05)]">
+      <section className="col-span-12 space-y-4 lg:col-span-6 bg-white border-r border-[#E5E7EB] shadow-sm">
+        <div className="rounded-r-xl bg-white p-5">
+          {/* Breadcrumb */}
+          {breadcrumb && (
+            <div className="mb-4 flex items-center gap-1.5 text-sm text-slate-600">
+              {breadcrumb.split(' / ').map((part, index, array) => (
+                <span key={index} className="flex items-center gap-1.5">
+                  <span className={cn(
+                    "font-medium",
+                    index === array.length - 1 ? "text-slate-900" : "text-slate-600"
+                  )}>
+                    {part}
+                  </span>
+                  {index < array.length - 1 && (
+                    <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+          
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "cargar" | "cargados")} className="w-full">
               <TabsList className="mb-4 flex gap-2 border-b border-slate-200 bg-transparent p-0">
               <TabsTrigger
                 value="cargar"
-                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC]"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0066FF] data-[state=active]:text-[#0066FF]"
               >
                 Cargar elementos
               </TabsTrigger>
               <TabsTrigger
                 value="cargados"
-                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0052CC] data-[state=active]:text-[#0052CC]"
+                  className="rounded-none border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-blue-50 hover:text-blue-700 data-[state=active]:border-[#0066FF] data-[state=active]:text-[#0066FF]"
               >
                 Elementos cargados
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="cargar" className="mt-0">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900">
                     {categoriaSeleccionada?.categoria ?? "Seleccioná una categoría"}
@@ -454,37 +624,54 @@ export default function CargaElementosPanel({
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="flex items-center gap-2 rounded-xl border border-[#0052CC]/30 bg-[#0052CC]/10 px-4 py-2 text-sm font-medium text-[#0052CC] hover:bg-[#0052CC]/15"
+                  className="flex items-center gap-2 rounded-xl bg-[#0066FF] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0052E6] shadow-md transition-all"
                   onClick={() => setModalNuevoElementoOpen(true)}
                 >
-                  <Plus className="h-4 w-4" /> Agregar elemento
+                  <Plus className="h-5 w-5" /> Cargar nuevo elemento
                 </Button>
               </div>
 
-              <div className="mt-5 space-y-5">
+              <div className="mt-5 space-y-3">
                 {subcategoriasConConteo.map(({ subcategoria, cargados }) => {
                   const isOpen = openSubcategorias[subcategoria.id];
                   const total = subcategoria.elementos.length;
+                  const porcentaje = total > 0 ? (cargados / total) * 100 : 0;
+                  const badgeColor = porcentaje === 0 
+                    ? "bg-[#E5E7EB] text-slate-600"
+                    : porcentaje >= 1 && porcentaje < 50
+                    ? "bg-[#FFF3BF] text-amber-700"
+                    : porcentaje >= 50 && porcentaje < 100
+                    ? "bg-[#D9E8FF] text-blue-700"
+                    : "bg-[#D4F8D4] text-green-700";
+                  const isSelected = selectedElemento?.subcategoriaId === subcategoria.id;
+                  
                   return (
                     <div
                       key={subcategoria.id}
-                      className="rounded-2xl border border-slate-200 bg-white shadow-[0_1px_4px_rgba(15,23,42,0.06)]"
+                      className={cn(
+                        "rounded-lg border bg-white shadow-md transition-all duration-200",
+                        isSelected
+                          ? "border-[#0066FF] border-2 shadow-lg"
+                          : "border-[#E0E0E0] hover:shadow-lg hover:-translate-y-0.5"
+                      )}
                     >
                       <button
                         type="button"
-                        className="flex w-full items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                        className="flex w-full items-center justify-between px-6 py-5 text-left transition-colors hover:bg-slate-50/50"
                         onClick={() => toggleSubcategoria(subcategoria.id)}
                       >
                         <div className="flex flex-col">
-                          <span className="text-slate-800 text-base font-semibold">
+                          <span className="text-slate-900 text-lg font-semibold">
                             {subcategoria.nombre}
                           </span>
-                          <span className="text-xs text-slate-500 font-normal">
+                          <span className="text-xs text-slate-500 font-normal mt-1">
                             {total} elemento{total === 1 ? "" : "s"} disponibles
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 font-medium">
+                        <span className={cn(
+                          "rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ml-3",
+                          badgeColor
+                        )}>
                           {cargados}/{total} cargados
                         </span>
                       </button>
@@ -508,19 +695,27 @@ export default function CargaElementosPanel({
                                   key={elemento.id}
                                   type="button"
                                   className={cn(
-                                    "rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:shadow-md",
-                                    isActive && "border-[#0052CC] bg-[#0052CC]/10 text-[#0052CC] shadow-md"
+                                    "rounded-lg border bg-white p-4 text-left transition-all duration-200",
+                                    isActive 
+                                      ? "border-[#0066FF] border-2 bg-[#E8F1FF] shadow-md" 
+                                      : "border-slate-200 hover:shadow-md hover:border-slate-300"
                                   )}
                                   onClick={() => handleSelectElemento(subcategoria, elemento)}
                                 >
                                   <div
-                                    className="text-sm font-medium text-slate-800"
+                                    className={cn(
+                                      "text-sm font-medium",
+                                      isActive ? "text-[#0066FF] font-semibold" : "text-slate-800"
+                                    )}
                                     title={elemento.nombre}
                                   >
                                     {elemento.nombre}
                                   </div>
                                   {elemento.opciones ? (
-                                    <p className="mt-2 line-clamp-2 text-xs text-slate-500">
+                                    <p className={cn(
+                                      "mt-2 line-clamp-2 text-xs",
+                                      isActive ? "text-slate-600" : "text-slate-500"
+                                    )}>
                                       {Object.keys(elemento.opciones)
                                         .map((key) => key.replace(/_/g, " "))
                                         .slice(0, 2)
@@ -528,7 +723,7 @@ export default function CargaElementosPanel({
                                     </p>
                                   ) : null}
                                   {yaCargado ? (
-                                    <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-[#0052CC]">
+                                    <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-[#0066FF]">
                                       <Sparkles className="h-3 w-3" /> Cargado
                                     </span>
                                   ) : null}
@@ -568,7 +763,7 @@ export default function CargaElementosPanel({
                         type="button"
                         className={cn(
                           "rounded-xl border border-slate-200 bg-white text-left shadow-sm transition-all hover:shadow-md",
-                          isActive && "border-[#0052CC]"
+                          isActive && "border-[#0066FF]"
                         )}
                         onClick={() => setSelectedElementoCargado(elemento)}
                       >
@@ -603,23 +798,23 @@ export default function CargaElementosPanel({
       </section>
 
       {/* Panel derecho */}
-      <aside className="col-span-12 h-max rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(0,0,0,0.05)] lg:col-span-3">
+      <aside className="col-span-12 h-max rounded-r-xl border-l border-[#E5E7EB] bg-[#FBFBFB] p-6 shadow-sm lg:col-span-3">
         {activeTab === "cargar" ? (
           <>
-            <header className="mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Configuración</h3>
-              <p className="text-sm text-slate-500">
-                {selectedElemento
-                  ? `Elemento seleccionado: ${selectedElemento.elemento.nombre}`
-                  : "Seleccioná un elemento del listado"}
-              </p>
-            </header>
-
             {selectedElemento ? (
-                <div className="space-y-4">
+              <>
+                <header className="mb-5">
+                  <h3 className="text-2xl font-semibold text-[#0066FF] mb-1">
+                    {selectedElemento.elemento.nombre}
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    Configuración del elemento
+                  </p>
+                </header>
+                <div className="space-y-5 divide-y divide-slate-200">
                 {Object.entries(selectedElemento.elemento.opciones ?? {}).map(
-                  ([key, opciones]) => (
-                    <div key={key} className="space-y-1">
+                  ([key, opciones], index) => (
+                    <div key={key} className={cn("space-y-2", index === 0 ? "pt-0" : "pt-5")}>
                       <label className="text-xs font-medium text-slate-600">
                         {key.split("_").map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1)).join(" ")}
                       </label>
@@ -629,12 +824,12 @@ export default function CargaElementosPanel({
                           setConfigValues((prev) => ({ ...prev, [key]: value }))
                         }
                       >
-                        <SelectTrigger className={selectTriggerClass}>
+                        <SelectTrigger className={cn(selectTriggerClass, "focus:border-[#0066FF] focus:ring-[#0066FF]/20")}>
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent className={selectContentClass}>
                           {(opciones ?? []).map((opcion) => (
-                            <SelectItem key={opcion} value={opcion} className={selectItemClass}>
+                            <SelectItem key={opcion} value={opcion} className={cn(selectItemClass, "data-[highlighted]:bg-[#EAF3FF] data-[highlighted]:text-[#0066FF]")}>
                               {opcion}
                             </SelectItem>
                           ))}
@@ -703,7 +898,7 @@ export default function CargaElementosPanel({
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-600">Observaciones</label>
                   <textarea
-                    className="min-h-[80px] w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/25"
+                    className="min-h-[80px] w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-[#0066FF] focus:outline-none focus:ring-2 focus:ring-[#0066FF]/25"
                     placeholder="Notas adicionales, especificaciones, etc."
                     value={observaciones}
                     onChange={(event) => setObservaciones(event.target.value)}
@@ -735,8 +930,8 @@ export default function CargaElementosPanel({
                           </p>
                         ) : (
                           <ul className="list-outside list-disc pl-4">
-                            {tareas.map((tarea) => (
-                              <li key={tarea}>{tarea}</li>
+                            {tareas.map((tarea, index) => (
+                              <li key={`${fase}-${tarea}-${index}`}>{tarea}</li>
                             ))}
                           </ul>
                         )}
@@ -745,10 +940,16 @@ export default function CargaElementosPanel({
                   </div>
                 </section>
               </div>
+              </>
             ) : (
-              <div className="flex h-[480px] flex-col items-center justify-center gap-3 text-center text-sm text-slate-500">
-                <Layers className="h-8 w-8 text-slate-300" />
-                <p>Seleccioná un elemento del listado central para configurarlo.</p>
+              <div className="flex h-[480px] flex-col items-center justify-center gap-4 text-center px-4">
+                <Layers className="h-20 w-20 text-[#CACACA]" />
+                <h4 className="text-lg font-semibold text-slate-700">
+                  Configuración del elemento
+                </h4>
+                <p className="text-sm font-medium text-slate-500 max-w-xs">
+                  Elegí un elemento del panel central para ver sus detalles técnicos.
+                </p>
               </div>
             )}
           </>
@@ -782,7 +983,7 @@ export default function CargaElementosPanel({
                     type="button"
                     variant="outline"
                     className="flex-1 rounded-xl border border-slate-300"
-                    onClick={() => console.log("Editar elemento", selectedElementoCargado.id)}
+                    onClick={() => setModalEditarElementoOpen(true)}
                   >
                     <Pencil className="mr-2 h-4 w-4" /> Editar elemento
                   </Button>
@@ -817,6 +1018,16 @@ export default function CargaElementosPanel({
             title: "Elemento añadido",
             description: "El nuevo elemento quedó disponible en tu catálogo",
           });
+        }}
+      />
+
+      <ModalEditarElemento
+        open={modalEditarElementoOpen}
+        onClose={() => setModalEditarElementoOpen(false)}
+        elemento={selectedElementoCargado}
+        obraId={obraId}
+        onSuccess={() => {
+          fetchElementosObra();
         }}
       />
     </div>

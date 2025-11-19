@@ -327,22 +327,42 @@ export function AsignarModal() {
       if (!response.ok) {
         // Si es JSON, parsearlo y mostrar el error
         if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          console.error('[ERROR_ASIGNAR_TAREA] Error del servidor:', {
+          let errorData: any = {};
+          try {
+            const text = await response.clone().text();
+            console.log('[ERROR_ASIGNAR_TAREA] Respuesta raw del servidor:', text);
+            errorData = await response.json();
+          } catch (parseError) {
+            console.error('[ERROR_ASIGNAR_TAREA] Error al parsear JSON:', parseError);
+            const text = await response.text();
+            console.error('[ERROR_ASIGNAR_TAREA] Respuesta como texto:', text);
+            errorData = { error: 'Error al procesar respuesta del servidor', raw: text };
+          }
+          
+          console.error('[ERROR_ASIGNAR_TAREA] Error del servidor (completo):', {
             status: response.status,
+            statusText: response.statusText,
+            contentType,
             error: errorData.error,
             details: errorData.details,
+            success: errorData.success,
             fullResponse: errorData,
+            errorKeys: Object.keys(errorData),
           });
+          
+          // Construir mensaje de error más descriptivo
+          const errorMessage = errorData.details 
+            ? `${errorData.error || 'Error al asignar cuadrilla'}: ${errorData.details}`
+            : errorData.error || `Error ${response.status}: ${response.statusText}`;
           
           // Mostrar toast con error específico
           toast({
             title: 'Error al asignar tarea',
-            description: errorData.error || errorData.details || `Error ${response.status}: ${response.statusText}`,
+            description: errorMessage,
             variant: 'destructive',
           });
           
-          throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
+          throw new Error(errorMessage);
         }
         
         // Si no es JSON, intentar leer como texto (clonar primero)

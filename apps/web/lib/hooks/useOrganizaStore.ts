@@ -7,7 +7,7 @@ export const EMPTY_CANVAS_TASKS: CanvasTask[] = [];
 
 export type CanvasTask = {
   tareaId: string;
-  dependeDe: string | null;
+  dependeDe: string | string[] | null;
   duracion: number;
   x: number;
   y: number;

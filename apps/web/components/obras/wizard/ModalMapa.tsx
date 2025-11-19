@@ -49,7 +49,8 @@ function loadGoogleMapsApi() {
 
 type Coordinates = { lat: number; lng: number };
 
-const DEFAULT_POSITION: Coordinates = { lat: -34.603722, lng: -58.381592 };
+// Monumento Nacional a la Bandera, Rosario, Santa Fe, Argentina
+const DEFAULT_POSITION: Coordinates = { lat: -32.9468, lng: -60.6393 };
 
 interface ModalMapaProps {
   open: boolean;
@@ -211,14 +212,14 @@ export default function ModalMapa({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-3xl bg-white">
         <DialogHeader>
           <DialogTitle>Selecciona la ubicacion</DialogTitle>
           <DialogDescription>Arrastra el pin al punto exacto y confirma para guardar la direccion.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <div ref={mapContainerRef} className="h-80 w-full rounded-lg border border-gray-200" />
+          <div ref={mapContainerRef} className="h-80 w-full rounded-lg border border-gray-200 bg-white overflow-hidden" />
           {(isLoadingMap || isGeocoding) && (
             <p className="text-sm text-gray-500">Cargando mapa...</p>
           )}

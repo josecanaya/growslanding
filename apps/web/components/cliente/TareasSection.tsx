@@ -1115,6 +1115,7 @@ export function TareasSection() {
                           ? 'bg-blue-50 text-blue-700 shadow-inner'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
+                      data-onboarding={tab.id === 'organiza' ? 'cargar-elementos' : undefined}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{tab.label}</span>

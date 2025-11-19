@@ -36,12 +36,17 @@ interface Obra {
   presupuesto?: number;
   descripcion?: string;
   cliente?: string;
-  tipoObra?: 'nueva' | 'reforma' | 'ampliacion';
+  tipoObra?: 'nueva' | 'reforma' | 'ampliacion' | string;
   numeroPermiso?: string;
   progreso?: number;
   tareasActivas?: number;
   tareasCompletadas?: number;
   legajoTecnico?: any[];
+  plantas?: number;
+  terreno?: number;
+  superficies?: { planta: number; cubiertos: number; descubiertos: number }[];
+  latitud?: number;
+  longitud?: number;
 }
 
 interface FormState {
@@ -229,7 +234,7 @@ export default function ObrasSection() {
       setIsLoading(true);
       const { data, error: fetchError } = await supabase
         .from('obras')
-        .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra')
+        .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra, plantas, terreno, superficies, latitud, longitud')
         .eq('org_id', currentUser.orgId)
         .order('created_at', { ascending: false });
 
@@ -256,6 +261,11 @@ export default function ObrasSection() {
         tareasActivas: 0,
         tareasCompletadas: 0,
         legajoTecnico: [],
+        plantas: obra.plantas || 1,
+        terreno: obra.terreno || 0,
+        superficies: obra.superficies || [],
+        latitud: obra.latitud || undefined,
+        longitud: obra.longitud || undefined,
       }));
 
       setObras(obrasMapeadas);
@@ -430,28 +440,6 @@ export default function ObrasSection() {
   };
 
 
-  function handleAddMock() {
-    setObras(prev => ([
-      {
-        id: Date.now().toString(),
-        nombre: 'Demo Wizard - Casa Moderna',
-        localizacion: 'San Martín 550, Pueblo Esther',
-        estado: 'ACTIVA',
-        created_at: new Date().toISOString(),
-        fecha_inicio: '2025-01-10',
-        presupuesto: 180000,
-        descripcion: 'Generada con el nuevo flujo (mock para pruebas visuales).',
-        cliente: 'Cliente Demo',
-        tipoObra: 'nueva',
-        numeroPermiso: 'MOCK-2025',
-        progreso: 8,
-        tareasActivas: 0,
-        tareasCompletadas: 0,
-        legajoTecnico: []
-      },
-      ...prev
-    ]));
-  }
 
   // Loading state
   if (isLoading) {
@@ -514,6 +502,10 @@ export default function ObrasSection() {
       ...selectedObra,
       cliente: selectedObra.cliente || "Cliente por defecto",
       tipoObra: selectedObra.tipoObra || "nueva",
+      localizacion: selectedObra.localizacion || '',
+      plantas: selectedObra.plantas || 1,
+      terreno: selectedObra.terreno || 0,
+      superficies: selectedObra.superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }],
       fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
       estado: (selectedObra.estado as 'activa' | 'pausada' | 'finalizada') || 'activa',
       numeroPermiso: selectedObra.numeroPermiso || "SIN-PERMISO",
@@ -542,8 +534,73 @@ export default function ObrasSection() {
         onEliminarTarea={(tareaId) => {
           console.log('Eliminar tarea:', tareaId);
         }}
-        onActualizarObra={(obra) => {
-          console.log('Actualizar obra:', obra);
+        onActualizarObra={async (obra) => {
+          try {
+            setIsLoading(true);
+            setError(null);
+
+            // Mapear los campos del componente a los campos de la API
+            const updateData: any = {
+              nombre: obra.nombre,
+              localizacion: (obra as any).localizacion || '',
+              propietario: obra.cliente || '',
+              tipo_obra: obra.tipoObra || '',
+              plantas: (obra as any).plantas || 1,
+              terreno: (obra as any).terreno || 0,
+              superficies: (obra as any).superficies || [],
+            };
+
+            const response = await fetch(`/api/obras/${obra.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(updateData),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error || 'Error al actualizar la obra');
+            }
+
+            const responseData = await response.json();
+            const obraActualizada = responseData.data;
+
+            // Actualizar la obra en la lista local
+            setObras(prevObras => 
+              prevObras.map(o => 
+                o.id === obra.id 
+                  ? {
+                      ...o,
+                      nombre: obraActualizada.name || o.nombre,
+                      localizacion: obraActualizada.address || o.localizacion,
+                      cliente: obraActualizada.propietario || o.cliente,
+                      tipoObra: obraActualizada.tipo_obra || o.tipoObra,
+                      plantas: obraActualizada.plantas || o.plantas,
+                      terreno: obraActualizada.terreno || o.terreno,
+                      superficies: obraActualizada.superficies || o.superficies,
+                    }
+                  : o
+              )
+            );
+
+            // Actualizar la obra seleccionada con los datos actualizados
+            setSelectedObra(prev => prev ? {
+              ...prev,
+              nombre: obraActualizada.name || prev.nombre,
+              localizacion: obraActualizada.address || prev.localizacion,
+              cliente: obraActualizada.propietario || prev.cliente,
+              tipoObra: obraActualizada.tipo_obra || prev.tipoObra,
+              plantas: obraActualizada.plantas || prev.plantas,
+              terreno: obraActualizada.terreno || prev.terreno,
+              superficies: obraActualizada.superficies || prev.superficies,
+            } : null);
+          } catch (err) {
+            console.error('[UPDATE_OBRA_ERROR]', err);
+            setError(err instanceof Error ? err.message : 'Error al actualizar la obra');
+          } finally {
+            setIsLoading(false);
+          }
         }}
       />
     );
@@ -572,18 +629,12 @@ export default function ObrasSection() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
           <Button
-            variant="ghost"
-            className="!border !border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900 !rounded-xl"
-            onClick={handleAddMock}
-          >
-            Agregar demo
-          </Button>
-          <Button
             onClick={abrirWizardCrear}
             variant="primary"
             size="lg"
             icon={<Plus className="h-5 w-5" />}
-            className="!rounded-xl !bg-[#22C55E] !px-6 !py-3 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
+            className="!rounded-xl !bg-[#86EFAC] !px-6 !py-3 !text-white hover:!bg-[#4ADE80] focus:!ring-[#86EFAC] focus:!ring-offset-2"
+            data-onboarding="crear-obra"
           >
             Crear obra
           </Button>
@@ -643,7 +694,7 @@ export default function ObrasSection() {
               variant="primary"
               size="lg"
               icon={<Plus className="h-5 w-5" />}
-              className="!rounded-xl !bg-[#22C55E] !px-6 !py-3 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
+              className="!rounded-xl !bg-[#86EFAC] !px-6 !py-3 !text-white hover:!bg-[#4ADE80] focus:!ring-[#86EFAC] focus:!ring-offset-2"
             >
               Crear obra
             </Button>
@@ -776,7 +827,7 @@ export default function ObrasSection() {
                   variant="primary"
                   icon={<Save className="h-4 w-4" />}
                   loading={isLoading}
-                  className="!rounded-xl !bg-[#22C55E] !px-5 !py-2.5 !text-white hover:!bg-[#16A34A] focus:!ring-[#22C55E] focus:!ring-offset-2"
+                  className="!rounded-xl !bg-[#86EFAC] !px-5 !py-2.5 !text-white hover:!bg-[#4ADE80] focus:!ring-[#86EFAC] focus:!ring-offset-2"
                 >
                   {isEditing ? 'Actualizar obra' : 'Crear obra'}
                 </Button>

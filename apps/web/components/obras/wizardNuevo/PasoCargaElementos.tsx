@@ -154,7 +154,7 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
       <div className="rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
         <div className="rounded-2xl bg-gray-50 px-5 py-4">
           <h2 className="text-lg font-semibold" style={{ color: '#003C6E' }}>
-            Carga de elementos
+            <span data-onboarding="cargar-elementos">Carga de elementos</span>
           </h2>
           <p className="text-sm text-gray-600">Agregá elementos constructivos a la obra (opcional)</p>
         </div>

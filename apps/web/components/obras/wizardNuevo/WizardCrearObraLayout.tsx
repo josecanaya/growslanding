@@ -51,7 +51,7 @@ function WizardCrearObraLayout() {
           {/* Sidebar pasos (izquierda) */}
           <aside className="md:col-span-3">
             <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="mb-4">
+              <div className="mb-4" data-onboarding="crear-obra" style={{ scrollMarginTop: '20px' }}>
                 <h2 className="text-base font-semibold" style={{ color: '#003C6E' }}>
                   Crear nueva obra
                 </h2>

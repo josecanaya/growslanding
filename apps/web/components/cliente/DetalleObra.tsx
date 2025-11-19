@@ -37,7 +37,7 @@ import { EditorVisualTareas } from './EditorVisualTareas';
 import PasoElementosConstructivos from './PasoElementosConstructivos';
 import CargaElementosPanel from '@/components/cliente/CargaElementosPanel';
 import ObraResumenContainer from '@/components/obras/resumen/ObraResumenContainer';
-import LegajoOrganizado from './LegajoOrganizado';
+import LegajoSection from './Legajo/LegajoSection';
 import type { Seleccion } from '@/components/cliente/SubgrupoAccordion';
 import { elementos } from '@/lib/elementos-vivienda';
 import { ElementoSeleccionado, ExpansorElementos } from '@/lib/services/expansorElementos';
@@ -180,9 +180,10 @@ export function DetalleObra({
     nombre: obra.nombre,
     cliente: obra.cliente,
     tipoObra: obra.tipoObra,
-    fechaInicio: obra.fechaInicio,
-    fechaFin: obra.fechaFin || '',
-    descripcion: obra.descripcion || ''
+    localizacion: (obra as any).localizacion || '',
+    plantas: (obra as any).plantas || 1,
+    terreno: (obra as any).terreno || 0,
+    superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }]
   });
 
   const getEstadoColor = (estado: string) => {
@@ -725,9 +726,10 @@ export function DetalleObra({
       nombre: obra.nombre,
       cliente: obra.cliente,
       tipoObra: obra.tipoObra,
-      fechaInicio: obra.fechaInicio,
-      fechaFin: obra.fechaFin || '',
-      descripcion: obra.descripcion || ''
+      localizacion: (obra as any).localizacion || '',
+      plantas: (obra as any).plantas || 1,
+      terreno: (obra as any).terreno || 0,
+      superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }]
     });
     setShowModalEditar(true);
   };
@@ -756,7 +758,7 @@ export function DetalleObra({
     <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Principal */}
-        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#f5f7fa', borderColor: '#dce3ea'}}>
+        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#E6F2FF', borderColor: '#B3D9FF'}}>
           <div className="px-6 py-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -776,7 +778,9 @@ export function DetalleObra({
                   <ArrowLeft className="h-5 w-5" />
                 </button>
                 <div>
-                  <h1 className="text-2xl font-bold" style={{color: '#1B263B'}}>{obra.nombre}</h1>
+                  <h1 className="text-2xl font-bold" style={{color: '#1B263B'}}>
+                    {obra.cliente ? obra.cliente.toUpperCase() : 'SIN CLIENTE'} {obra.tipoObra ? `(${obra.tipoObra})` : ''}
+                  </h1>
                   <div className="flex items-center space-x-4 mt-2 text-sm" style={{color: '#4a4e57'}}>
                     <div className="flex items-center space-x-1">
                       <Users className="h-4 w-4" />
@@ -847,12 +851,12 @@ export function DetalleObra({
                       : 'border-transparent'
                   }`}
                   style={{
-                    borderBottomColor: vistaActual === key ? '#1B263B' : 'transparent',
-                    color: vistaActual === key ? '#1B263B' : '#5b5f6a'
+                    borderBottomColor: vistaActual === key ? '#0066FF' : 'transparent',
+                    color: vistaActual === key ? '#0066FF' : '#5b5f6a'
                   }}
                   onMouseEnter={(e) => {
                     if (vistaActual !== key) {
-                      e.currentTarget.style.color = '#1B263B';
+                      e.currentTarget.style.color = '#0066FF';
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -914,27 +918,7 @@ export function DetalleObra({
           {/* Tab: Legajo */}
           {vistaActual === 'legajo' && (
             <div className="p-6">
-              <LegajoOrganizado 
-                obraId={obra.id}
-                documentos={obra.legajoTecnico.map((doc: any) => ({
-                  id: doc.id,
-                  nombre: doc.nombre,
-                  tipo: doc.tipo || 'application/pdf',
-                  tamaño: doc.tamaño || 0,
-                  fechaSubida: doc.fechaSubida || doc.created_at || new Date().toISOString(),
-                  subidoPor: doc.subidoPor || 'Usuario',
-                  url: doc.url || '#',
-                  categoria: doc.categoria || 'Otros',
-                  descripcion: doc.descripcion,
-                  plantaId: doc.plantaId
-                }))}
-                onDocumentosChange={(docs) => {
-                  // TODO: Actualizar en base de datos
-                  console.log('Documentos actualizados:', docs);
-                }}
-                plantaFiltro={plantaFiltroLegajo}
-                onQuitarFiltro={() => setPlantaFiltroLegajo(undefined)}
-              />
+              <LegajoSection obraId={obra.id} />
             </div>
           )}
         </div>
@@ -982,6 +966,24 @@ export function DetalleObra({
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Dirección</label>
+                    <input
+                      type="text"
+                      value={formData.localizacion}
+                      onChange={(e) => handleInputChange('localizacion', e.target.value)}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      placeholder="Calle, número, ciudad"
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    />
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Cliente</label>
                     <input
                       type="text"
@@ -989,6 +991,7 @@ export function DetalleObra({
                       onChange={(e) => handleInputChange('cliente', e.target.value)}
                       className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
                       style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      placeholder="Nombre y apellido"
                       onFocus={(e) => {
                         e.target.style.borderColor = '#1B263B';
                       }}
@@ -1012,19 +1015,36 @@ export function DetalleObra({
                         e.target.style.borderColor = '#d3dae3';
                       }}
                     >
-                      <option value="nueva">Nueva</option>
-                      <option value="reforma">Reforma</option>
-                      <option value="ampliacion">Ampliación</option>
+                      <option value="Casa familiar">Casa familiar</option>
+                      <option value="Ampliación">Ampliación</option>
+                      <option value="Reforma">Reforma</option>
+                      <option value="Local comercial">Local comercial</option>
+                      <option value="Edificio pequeño">Edificio pequeño</option>
+                      <option value="Otro">Otro</option>
                     </select>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Fecha de inicio</label>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Cantidad de plantas</label>
                       <input
-                        type="date"
-                        value={formData.fechaInicio}
-                        onChange={(e) => handleInputChange('fechaInicio', e.target.value)}
+                        type="number"
+                        min="1"
+                        max="5"
+                        value={formData.plantas}
+                        onChange={(e) => {
+                          const plantas = parseInt(e.target.value) || 1;
+                          const plantasValidas = Math.max(1, Math.min(5, plantas));
+                          const nuevasSuperficies = Array.from({ length: plantasValidas }, (_, i) => {
+                            const index = i;
+                            return formData.superficies[index] || { planta: index + 1, cubiertos: 0, descubiertos: 0 };
+                          });
+                          setFormData(prev => ({
+                            ...prev,
+                            plantas: plantasValidas,
+                            superficies: nuevasSuperficies
+                          }));
+                        }}
                         className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
                         style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
                         onFocus={(e) => {
@@ -1036,13 +1056,19 @@ export function DetalleObra({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Fecha de fin</label>
+                      <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Terreno (m²)</label>
                       <input
-                        type="date"
-                        value={formData.fechaFin}
-                        onChange={(e) => handleInputChange('fechaFin', e.target.value)}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.terreno}
+                        onChange={(e) => {
+                          const terreno = parseFloat(e.target.value) || 0;
+                          setFormData(prev => ({ ...prev, terreno }));
+                        }}
                         className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
                         style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                        placeholder="0"
                         onFocus={(e) => {
                           e.target.style.borderColor = '#1B263B';
                         }}
@@ -1054,20 +1080,53 @@ export function DetalleObra({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Descripción breve</label>
-                    <textarea
-                      value={formData.descripcion}
-                      onChange={(e) => handleInputChange('descripcion', e.target.value)}
-                      rows={3}
-                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out resize-none"
-                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = '#1B263B';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = '#d3dae3';
-                      }}
-                    />
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Superficies por planta (m²)</label>
+                    <div className="space-y-3">
+                      {formData.superficies.map((superficie, index) => (
+                        <div key={index} className="grid grid-cols-3 gap-3 p-3 border rounded-lg" style={{borderColor: '#d3dae3', backgroundColor: '#f9fafb'}}>
+                          <div>
+                            <label className="block text-xs font-medium mb-1" style={{color: '#5b5f6a'}}>Planta {superficie.planta}</label>
+                            <div className="text-sm font-semibold" style={{color: '#1B263B'}}>{superficie.planta}</div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1" style={{color: '#5b5f6a'}}>Cubiertos (m²)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={superficie.cubiertos}
+                              onChange={(e) => {
+                                const cubiertos = parseFloat(e.target.value) || 0;
+                                const nuevasSuperficies = [...formData.superficies];
+                                nuevasSuperficies[index] = { ...superficie, cubiertos };
+                                setFormData(prev => ({ ...prev, superficies: nuevasSuperficies }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border rounded"
+                              style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                              placeholder="0"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium mb-1" style={{color: '#5b5f6a'}}>Descubiertos (m²)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={superficie.descubiertos}
+                              onChange={(e) => {
+                                const descubiertos = parseFloat(e.target.value) || 0;
+                                const nuevasSuperficies = [...formData.superficies];
+                                nuevasSuperficies[index] = { ...superficie, descubiertos };
+                                setFormData(prev => ({ ...prev, superficies: nuevasSuperficies }));
+                              }}
+                              className="w-full px-2 py-1 text-sm border rounded"
+                              style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

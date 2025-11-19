@@ -9,6 +9,7 @@ import {
   Bell,
   Calendar,
   ClipboardList,
+  HelpCircle,
 } from 'lucide-react';
 
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -17,11 +18,13 @@ import { ROLE_LABELS, normalizeRole } from '@/lib/roles';
 interface SidebarClienteTecnicoProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  onStartTutorial?: () => void;
 }
 
 export function SidebarClienteTecnico({
   activeSection,
   onSectionChange,
+  onStartTutorial,
 }: SidebarClienteTecnicoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const currentUser = useCurrentUser();
@@ -109,7 +112,21 @@ export function SidebarClienteTecnico({
       </nav>
 
       <div className="border-t border-white/20 p-4">
-        {isExpanded && <p className="text-center text-xs text-white/50">v1.0</p>}
+        {onStartTutorial && (
+          <button
+            onClick={onStartTutorial}
+            className={`group flex w-full items-center rounded-xl px-4 py-3 text-left font-medium transition-all duration-200 ${
+              isExpanded ? 'gap-3 justify-start' : 'justify-center'
+            } text-white hover:bg-[#E8C54720] hover:text-[#E8C547]`}
+            title={!isExpanded ? 'Ver tutorial' : undefined}
+          >
+            <HelpCircle
+              className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 text-white group-hover:text-[#E8C547]`}
+            />
+            {isExpanded && <span>Ver tutorial</span>}
+          </button>
+        )}
+        {isExpanded && <p className="text-center text-xs text-white/50 mt-2">v1.0</p>}
       </div>
     </div>
   );

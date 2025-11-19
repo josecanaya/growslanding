@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname } from 'next/navigation';
 import { X, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
-interface OnboardingStep {
+export interface OnboardingStep {
   id: string;
   target: string; // selector CSS
   title: string;
@@ -12,35 +11,32 @@ interface OnboardingStep {
   position?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-interface OnboardingClienteProps {
+interface OnboardingBaseProps {
   steps: OnboardingStep[];
   isActive: boolean;
-  currentStepIndex?: number;
+  currentStepIndex: number;
   onClose: () => void;
-  onComplete?: () => void;
-  onStepChange?: (index: number) => void;
+  onComplete: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
 }
 
-export function OnboardingCliente({
+export function OnboardingBase({
   steps,
   isActive,
-  currentStepIndex: externalStepIndex,
+  currentStepIndex,
   onClose,
   onComplete,
-  onStepChange,
-}: OnboardingClienteProps) {
-  const pathname = usePathname();
-  const [internalStepIndex, setInternalStepIndex] = useState(externalStepIndex ?? 0);
-  const currentStepIndex = externalStepIndex !== undefined ? externalStepIndex : internalStepIndex;
+  onNext,
+  onPrevious,
+}: OnboardingBaseProps) {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ top: number; left: number } | null>(null);
   const [isTargetVisible, setIsTargetVisible] = useState(false);
-  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
+  const [tooltipArrowPosition, setTooltipArrowPosition] = useState<'top' | 'bottom' | 'left' | 'right'>('bottom');
   const overlayRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const notFoundTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const skipStepRef = useRef<boolean>(false);
 
   const currentStep = steps[currentStepIndex];
 
@@ -51,6 +47,10 @@ export function OnboardingCliente({
     // Buscar todos los elementos que coincidan con el selector
     const allMatches = document.querySelectorAll(currentStep.target);
     let targetElement: HTMLElement | null = null;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[OnboardingBase] Buscando: ${currentStep.target}, encontrados: ${allMatches.length}`);
+    }
     
     if (allMatches.length > 0) {
       // Si hay múltiples elementos, buscar el primero visible
@@ -73,44 +73,10 @@ export function OnboardingCliente({
       }
     }
     
-    // Si no se encuentra, intentar buscar variantes del selector
-    if (!targetElement && currentStep.id === 'crear-obra') {
-      // Para el paso de crear obra, buscar en múltiples lugares
-      targetElement = document.querySelector('[data-onboarding="crear-obra"]');
-    }
-    
     if (!targetElement) {
-      setIsTargetVisible(false);
-      setTargetRect(null);
-      setTooltipPosition(null);
-      // Debug: log cuando no se encuentra el elemento
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[OnboardingCliente] Elemento no encontrado: ${currentStep.target} (paso: ${currentStep.id})`);
+        console.log(`[OnboardingBase] Elemento no encontrado: ${currentStep.target} (paso: ${currentStep.id})`);
       }
-      // Marcar que este paso debe ser saltado
-      skipStepRef.current = true;
-      return;
-    }
-    
-    // Si encontramos el elemento, resetear el flag de skip
-    skipStepRef.current = false;
-
-    // Si encontramos el elemento, ocultar el modal de error
-    if (notFoundTimeoutRef.current) {
-      clearTimeout(notFoundTimeoutRef.current);
-      notFoundTimeoutRef.current = null;
-    }
-    setShowNotFoundModal(false);
-
-    // Verificar que el elemento sea visible (permitir elementos parcialmente visibles)
-    const rect = targetElement.getBoundingClientRect();
-    const isVisible = rect.width > 0 && rect.height > 0 && 
-                      rect.top < window.innerHeight && 
-                      rect.left < window.innerWidth &&
-                      rect.bottom > 0 && 
-                      rect.right > 0;
-
-    if (!isVisible) {
       setIsTargetVisible(false);
       setTargetRect(null);
       setTooltipPosition(null);
@@ -118,102 +84,180 @@ export function OnboardingCliente({
     }
 
     setIsTargetVisible(true);
+    const rect = targetElement.getBoundingClientRect();
     setTargetRect(rect);
 
     // Hacer scroll al elemento si está parcialmente fuera de la vista
     if (rect.top < 0 || rect.bottom > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-      // Recalcular después del scroll
       setTimeout(() => {
-        const newRect = targetElement.getBoundingClientRect();
+        const newRect = targetElement!.getBoundingClientRect();
         setTargetRect(newRect);
       }, 300);
     }
 
     // Calcular posición del tooltip según la posición preferida
-    const position = currentStep.position || 'bottom';
-    const tooltipGap = 16;
+    const preferredPosition = currentStep.position || 'bottom';
+    const tooltipGap = 20;
     const tooltipWidth = 400;
-    const tooltipHeight = 200;
+    const tooltipHeight = 220;
 
-    let top = 0;
-    let left = 0;
-
-    switch (position) {
-      case 'top':
-        top = rect.top - tooltipHeight - tooltipGap;
-        left = rect.left + rect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'bottom':
-        top = rect.bottom + tooltipGap;
-        left = rect.left + rect.width / 2 - tooltipWidth / 2;
-        break;
-      case 'left':
-        top = rect.top + rect.height / 2 - tooltipHeight / 2;
-        left = rect.left - tooltipWidth - tooltipGap;
-        break;
-      case 'right':
-        top = rect.top + rect.height / 2 - tooltipHeight / 2;
-        left = rect.right + tooltipGap;
-        break;
-    }
-
-    // Ajustar si se sale de la pantalla
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
-    if (left < 20) left = 20;
-    if (left + tooltipWidth > viewportWidth - 20) {
-      left = viewportWidth - tooltipWidth - 20;
+    // Función para verificar si una posición tapa el elemento
+    const wouldOverlap = (tooltipTop: number, tooltipLeft: number) => {
+      const tooltipRight = tooltipLeft + tooltipWidth;
+      const tooltipBottom = tooltipTop + tooltipHeight;
+      
+      // Verificar si el tooltip se superpone con el elemento objetivo
+      return !(
+        tooltipRight < rect.left ||
+        tooltipLeft > rect.right ||
+        tooltipBottom < rect.top ||
+        tooltipTop > rect.bottom
+      );
+    };
+
+    // Intentar posiciones en orden de preferencia
+    let top = 0;
+    let left = 0;
+    let finalPosition = preferredPosition;
+
+    // Calcular posición inicial según preferencia
+    const calculatePosition = (pos: 'top' | 'bottom' | 'left' | 'right') => {
+      switch (pos) {
+        case 'top':
+          return {
+            top: rect.top - tooltipHeight - tooltipGap,
+            left: rect.left + rect.width / 2 - tooltipWidth / 2,
+          };
+        case 'bottom':
+          return {
+            top: rect.bottom + tooltipGap,
+            left: rect.left + rect.width / 2 - tooltipWidth / 2,
+          };
+        case 'left':
+          return {
+            top: rect.top + rect.height / 2 - tooltipHeight / 2,
+            left: rect.left - tooltipWidth - tooltipGap - 20, // Más espacio a la izquierda
+          };
+        case 'right':
+          return {
+            top: rect.top + rect.height / 2 - tooltipHeight / 2,
+            left: rect.right + tooltipGap,
+          };
+      }
+    };
+
+    // Intentar posición preferida
+    let pos = calculatePosition(preferredPosition);
+    top = pos.top;
+    left = pos.left;
+
+    // Si tapa el elemento, intentar otras posiciones
+    if (wouldOverlap(top, left)) {
+      const alternatives: Array<'top' | 'bottom' | 'left' | 'right'> = 
+        preferredPosition === 'top' ? ['bottom', 'left', 'right'] :
+        preferredPosition === 'bottom' ? ['top', 'left', 'right'] :
+        preferredPosition === 'left' ? ['right', 'top', 'bottom'] :
+        ['left', 'top', 'bottom'];
+
+      for (const altPos of alternatives) {
+        pos = calculatePosition(altPos);
+        if (!wouldOverlap(pos.top, pos.left)) {
+          top = pos.top;
+          left = pos.left;
+          finalPosition = altPos;
+          break;
+        }
+      }
     }
-    if (top < 20) top = 20;
+
+    // Ajuste especial: si está en 'right' y el elemento es pequeño (como un botón), mover más a la izquierda
+    if (finalPosition === 'right' && rect.width < 100) {
+      // Intentar posicionar a la izquierda del elemento si hay espacio
+      const leftPosition = rect.left - tooltipWidth - tooltipGap - 20;
+      if (leftPosition > 20 && !wouldOverlap(top, leftPosition)) {
+        left = leftPosition;
+        top = rect.top + rect.height / 2 - tooltipHeight / 2;
+        finalPosition = 'left';
+      } else {
+        // Si no cabe a la izquierda, al menos alejarlo más del botón
+        left = rect.right + tooltipGap + 50; // Más espacio del botón
+      }
+    }
+    
+    // Ajuste especial: si está en 'left', asegurar que esté bien posicionado
+    if (finalPosition === 'left') {
+      // Asegurar que no esté demasiado cerca del borde izquierdo
+      if (left < 20) {
+        left = 20;
+      }
+      // Asegurar que esté verticalmente centrado con el elemento
+      top = Math.max(20, Math.min(
+        rect.top + rect.height / 2 - tooltipHeight / 2,
+        viewportHeight - tooltipHeight - 20
+      ));
+    }
+
+    // Ajustar si se sale de la pantalla (sin tapar el elemento)
+    if (left < 20) {
+      // Si está a la izquierda, mover a la derecha del elemento si hay espacio
+      if (rect.right + tooltipGap + tooltipWidth < viewportWidth - 20) {
+        left = rect.right + tooltipGap;
+        finalPosition = 'right';
+      } else {
+        left = 20;
+      }
+    }
+    if (left + tooltipWidth > viewportWidth - 20) {
+      // Si está a la derecha, mover a la izquierda del elemento si hay espacio
+      if (rect.left - tooltipGap - tooltipWidth > 20) {
+        left = rect.left - tooltipWidth - tooltipGap;
+        finalPosition = 'left';
+      } else {
+        left = viewportWidth - tooltipWidth - 20;
+      }
+    }
+    if (top < 20) {
+      // Si está arriba, mover abajo del elemento si hay espacio
+      if (rect.bottom + tooltipGap + tooltipHeight < viewportHeight - 20) {
+        top = rect.bottom + tooltipGap;
+        finalPosition = 'bottom';
+      } else {
+        top = 20;
+      }
+    }
     if (top + tooltipHeight > viewportHeight - 20) {
-      top = viewportHeight - tooltipHeight - 20;
+      // Si está abajo, mover arriba del elemento si hay espacio
+      if (rect.top - tooltipGap - tooltipHeight > 20) {
+        top = rect.top - tooltipHeight - tooltipGap;
+        finalPosition = 'top';
+      } else {
+        top = viewportHeight - tooltipHeight - 20;
+      }
+    }
+
+    // Verificar una última vez que no tape el elemento después de los ajustes
+    if (wouldOverlap(top, left)) {
+      // Si aún tapa, mover a un lado seguro
+      if (rect.right + tooltipGap + tooltipWidth < viewportWidth - 20) {
+        left = rect.right + tooltipGap;
+        top = Math.max(20, Math.min(rect.top, viewportHeight - tooltipHeight - 20));
+        finalPosition = 'right';
+      } else if (rect.left - tooltipGap - tooltipWidth > 20) {
+        left = rect.left - tooltipWidth - tooltipGap;
+        top = Math.max(20, Math.min(rect.top, viewportHeight - tooltipHeight - 20));
+        finalPosition = 'left';
+      }
     }
 
     setTooltipPosition({ top, left });
+    setTooltipArrowPosition(finalPosition);
   }, [currentStep]);
 
-  // Resetear step index cuando se desactiva
-  useEffect(() => {
-    if (!isActive && externalStepIndex === undefined) {
-      setInternalStepIndex(0);
-    }
-  }, [isActive, externalStepIndex]);
-
-  // Forzar actualización del target cuando cambia la ruta
-  useEffect(() => {
-    if (isActive) {
-      // Resetear estado cuando cambia la ruta
-      setIsTargetVisible(false);
-      setTargetRect(null);
-      setTooltipPosition(null);
-      setShowNotFoundModal(false);
-      
-      // Limpiar timeout anterior
-      if (notFoundTimeoutRef.current) {
-        clearTimeout(notFoundTimeoutRef.current);
-        notFoundTimeoutRef.current = null;
-      }
-      
-      // Múltiples intentos con delays crecientes para dar tiempo al DOM
-      const timeouts = [
-        setTimeout(() => updateTargetPosition(), 300),
-        setTimeout(() => updateTargetPosition(), 800),
-        setTimeout(() => updateTargetPosition(), 1500),
-        setTimeout(() => updateTargetPosition(), 2500),
-      ];
-      
-      return () => {
-        timeouts.forEach(timeout => clearTimeout(timeout));
-        if (notFoundTimeoutRef.current) {
-          clearTimeout(notFoundTimeoutRef.current);
-        }
-      };
-    }
-  }, [pathname, isActive, updateTargetPosition]);
-
-    // Verificar periódicamente si el target existe y actualizar posición
+  // Verificar periódicamente si el target existe y actualizar posición
   useEffect(() => {
     if (!isActive) {
       setTargetRect(null);
@@ -222,35 +266,14 @@ export function OnboardingCliente({
       return;
     }
 
-    // Pequeño delay para que el DOM se actualice después de navegación
     const timeout = setTimeout(() => {
       updateTargetPosition();
     }, 300);
 
-    // Verificar cada 500ms si el target cambió de posición o apareció
-    // Aumentar la frecuencia cuando el target no es visible
     checkIntervalRef.current = setInterval(() => {
       updateTargetPosition();
-      
-      // Si el paso debe ser saltado y no hay timeout activo, avanzar
-      if (skipStepRef.current && !notFoundTimeoutRef.current) {
-        notFoundTimeoutRef.current = setTimeout(() => {
-          skipStepRef.current = false;
-          if (currentStepIndex < steps.length - 1) {
-            const newIndex = currentStepIndex + 1;
-            if (onStepChange) {
-              onStepChange(newIndex);
-            } else {
-              setInternalStepIndex(newIndex);
-            }
-          } else {
-            handleComplete();
-          }
-        }, 1500); // Esperar 1.5 segundos antes de avanzar
-      }
-    }, isTargetVisible ? 500 : 200);
+    }, 500);
 
-    // También escuchar scroll y resize
     const handleScroll = () => updateTargetPosition();
     const handleResize = () => updateTargetPosition();
 
@@ -264,73 +287,19 @@ export function OnboardingCliente({
       }
       window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleResize);
-      if (notFoundTimeoutRef.current) {
-        clearTimeout(notFoundTimeoutRef.current);
-      }
     };
-  }, [isActive, currentStepIndex, updateTargetPosition, steps.length, onStepChange]);
+  }, [isActive, currentStepIndex, updateTargetPosition]);
 
-  const handleNext = () => {
-    try {
-      if (currentStepIndex < steps.length - 1) {
-        const newIndex = currentStepIndex + 1;
-        if (onStepChange) {
-          onStepChange(newIndex);
-        } else {
-          setInternalStepIndex(newIndex);
-        }
-        // Resetear posición del target al cambiar de paso
-        setTimeout(() => {
-          updateTargetPosition();
-        }, 100);
-      } else {
-        handleComplete();
-      }
-    } catch (error) {
-      console.error('[OnboardingCliente] Error en handleNext:', error);
-    }
-  };
-
-  const handlePrevious = () => {
-    try {
-      if (currentStepIndex > 0) {
-        const newIndex = currentStepIndex - 1;
-        if (onStepChange) {
-          onStepChange(newIndex);
-        } else {
-          setInternalStepIndex(newIndex);
-        }
-        // Resetear posición del target al cambiar de paso
-        setTimeout(() => {
-          updateTargetPosition();
-        }, 100);
-      }
-    } catch (error) {
-      console.error('[OnboardingCliente] Error en handlePrevious:', error);
-    }
-  };
-
-  const handleComplete = () => {
-    onComplete?.();
-    onClose();
-  };
-
-  const handleSkip = () => {
-    onClose();
-  };
-
-  // Si no hay pasos o no hay paso actual, cerrar el tutorial
-  if (!isActive || steps.length === 0) {
-    if (isActive && steps.length === 0) {
-      // Si está activo pero no hay pasos, cerrarlo
-      setTimeout(() => {
-        onClose();
-      }, 100);
+  if (!isActive || !currentStep) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[OnboardingBase] No renderizando - isActive: ${isActive}, currentStep: ${currentStep?.id}`);
     }
     return null;
   }
 
-  if (!currentStep) return null;
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[OnboardingBase] Renderizando - paso: ${currentStep.id}, index: ${currentStepIndex}`);
+  }
 
   // Calcular el clip-path para el spotlight
   const spotlightStyle = targetRect
@@ -388,22 +357,22 @@ export function OnboardingCliente({
           }}
         >
           {/* Flecha apuntando al target */}
-          {currentStep.position === 'bottom' && targetRect && (
+          {targetRect && tooltipArrowPosition === 'bottom' && (
             <div
               className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-l border-t border-gray-200"
             />
           )}
-          {currentStep.position === 'top' && targetRect && (
+          {targetRect && tooltipArrowPosition === 'top' && (
             <div
               className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white rotate-45 border-r border-b border-gray-200"
             />
           )}
-          {currentStep.position === 'right' && targetRect && (
+          {targetRect && tooltipArrowPosition === 'right' && (
             <div
               className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-2 w-4 h-4 bg-white rotate-45 border-l border-b border-gray-200"
             />
           )}
-          {currentStep.position === 'left' && targetRect && (
+          {targetRect && tooltipArrowPosition === 'left' && (
             <div
               className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 w-4 h-4 bg-white rotate-45 border-r border-t border-gray-200"
             />
@@ -435,7 +404,7 @@ export function OnboardingCliente({
               <div className="flex items-center gap-2">
                 {currentStepIndex > 0 && (
                   <button
-                    onClick={handlePrevious}
+                    onClick={onPrevious}
                     className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
                   >
                     <ChevronLeft className="h-4 w-4 inline mr-1" />
@@ -446,7 +415,7 @@ export function OnboardingCliente({
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={handleSkip}
+                  onClick={onClose}
                   className="px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   Saltar tutorial
@@ -454,7 +423,7 @@ export function OnboardingCliente({
 
                 {currentStepIndex < steps.length - 1 ? (
                   <button
-                    onClick={handleNext}
+                    onClick={onNext}
                     className="px-5 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors flex items-center gap-2"
                   >
                     Siguiente
@@ -462,7 +431,7 @@ export function OnboardingCliente({
                   </button>
                 ) : (
                   <button
-                    onClick={handleComplete}
+                    onClick={onComplete}
                     className="px-5 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2"
                   >
                     Finalizar
@@ -470,37 +439,6 @@ export function OnboardingCliente({
                   </button>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mensaje si el target no existe después de varios intentos */}
-      {showNotFoundModal && !isTargetVisible && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md mx-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">
-              Elemento no encontrado
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              El elemento del tutorial no está visible en este momento. Asegurate de estar en la sección correcta o continuá al siguiente paso.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handleSkip}
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Saltar tutorial
-              </button>
-              <button
-                onClick={() => {
-                  setShowNotFoundModal(false);
-                  handleNext();
-                }}
-                className="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors"
-              >
-                Siguiente paso
-              </button>
             </div>
           </div>
         </div>

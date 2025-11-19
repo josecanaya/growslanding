@@ -42,7 +42,7 @@ export function KpiPanel({ global }: KpiPanelProps) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" data-onboarding="estadisticas-metros">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
           <p className="text-xs text-slate-500">Metros totales</p>
           <p className="text-2xl font-semibold text-slate-800">{metrosTotales} m²</p>

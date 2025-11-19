@@ -18,7 +18,9 @@ import {
   Leaf,
   Building2,
   ChevronRight,
+  HelpCircle,
 } from "lucide-react";
+import { OnboardingCargarElementosProvider, useOnboardingCargarElementos } from "@/components/onboarding/OnboardingCargarElementos";
 import { catalogoCompletoJson } from "@/lib/catalogos/elementos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -203,11 +205,12 @@ const buildDescripcion = (config: Record<string, string>, observaciones: string)
   return partes.join(" | ");
 };
 
-export default function CargaElementosPanel({
+function CargaElementosPanelContent({
   obraId,
   plantas = [],
 }: CargaElementosPanelProps) {
   const { toast } = useToast();
+  const { startOnboarding } = useOnboardingCargarElementos();
 
   const categorias: CategoriaCatalogo[] = useMemo(
     () => catalogoCompletoJson.categorias,
@@ -520,7 +523,7 @@ export default function CargaElementosPanel({
       {/* Panel izquierdo */}
       <aside className="col-span-12 h-max rounded-l-xl border-r border-[#E5E7EB] bg-[#FFFEF5] shadow-sm lg:col-span-3">
         {/* Header fijo */}
-        <div className="sticky top-0 z-10 bg-[#F0F2F5] border-b border-[#E1E4E8] px-5 py-2">
+        <div className="sticky top-0 z-10 bg-[#F0F2F5] border-b border-[#E1E4E8] px-5 py-2" data-onboarding="seleccionar-categoria">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Building2 className="h-4 w-4 text-slate-500" />
             Categorías constructivas
@@ -575,6 +578,19 @@ export default function CargaElementosPanel({
       {/* Panel central */}
       <section className="col-span-12 space-y-4 lg:col-span-6 bg-white border-r border-[#E5E7EB] shadow-sm">
         <div className="rounded-r-xl bg-white p-5">
+          {/* Header con botón de tutorial */}
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Cargar elementos</h2>
+            <Button
+              onClick={startOnboarding}
+              variant="ghost"
+              size="sm"
+              className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+            >
+              <HelpCircle className="h-4 w-4 mr-1" />
+              Ver tutorial — Elementos
+            </Button>
+          </div>
           {/* Breadcrumb */}
           {breadcrumb && (
             <div className="mb-4 flex items-center gap-1.5 text-sm text-slate-600">
@@ -677,7 +693,7 @@ export default function CargaElementosPanel({
                       </button>
 
                       {isOpen && (
-                        <div className="px-5 pb-5">
+                        <div className="px-5 pb-5" data-onboarding="seleccionar-tipo">
                           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {subcategoria.elementos.map((elemento) => {
                               const isActive =
@@ -749,7 +765,7 @@ export default function CargaElementosPanel({
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2" data-onboarding="ver-elementos-cargados">
                 {elementosCargadosPorCategoria.length === 0 ? (
                   <p className="col-span-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                     Todavía no hay elementos cargados. Sumá algunos desde la pestaña &quot;Cargar elementos&quot;.
@@ -839,7 +855,7 @@ export default function CargaElementosPanel({
                   )
                 )}
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3" data-onboarding="definir-cantidad">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-600">Unidad</label>
                     <Select value={unidad} onValueChange={setUnidad}>
@@ -910,6 +926,7 @@ export default function CargaElementosPanel({
                   className="w-full rounded-xl bg-[#22C55E] py-2 text-white hover:bg-[#16A34A]"
                   onClick={handleConfirmar}
                   disabled={isSaving}
+                  data-onboarding="confirmar-elemento"
                 >
                   {isSaving ? "Guardando..." : "Confirmar selección"}
                 </Button>
@@ -1031,6 +1048,15 @@ export default function CargaElementosPanel({
         }}
       />
     </div>
+  );
+}
+
+// Componente principal exportado (con provider)
+export default function CargaElementosPanel(props: CargaElementosPanelProps) {
+  return (
+    <OnboardingCargarElementosProvider>
+      <CargaElementosPanelContent {...props} />
+    </OnboardingCargarElementosProvider>
   );
 }
 

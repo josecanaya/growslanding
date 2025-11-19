@@ -313,7 +313,7 @@ function TaskNode({
 
           {/* Etiqueta de camino crítico o holguras */}
           {isCritical ? (
-            <p className="text-[10px] font-bold leading-tight mt-1" style={{ color: '#e74c3c' }}>
+            <p className="text-[10px] font-bold leading-tight mt-1" style={{ color: '#e74c3c' }} data-onboarding="mostrar-cpm">
               ⚡ CAMINO CRÍTICO
             </p>
           ) : tarea.cpm && tarea.cpm.float > 0 ? (
@@ -323,6 +323,7 @@ function TaskNode({
                 color: '#6B7280',
               }}
               title={`Holgura total: ${tarea.cpm.float}d, Holgura libre: ${tarea.cpm.float_free}d`}
+              data-onboarding="mostrar-cpm"
             >
               ⏳ Holgura: {tarea.cpm.float}d (libre {tarea.cpm.float_free} / total {tarea.cpm.float})
             </p>
@@ -671,6 +672,7 @@ export function TaskCanvas({
             transform: `scale(${zoom})`,
             transformOrigin: 'top left',
           }}
+          data-onboarding="conectar-tareas"
         >
           <svg
             ref={svgRef}
@@ -718,7 +720,7 @@ export function TaskCanvas({
           ))}
         </div>
       </div>
-      <div className="absolute left-4 bottom-4 z-50 rounded-lg border bg-white p-2 shadow-lg" style={{ borderColor: '#dce3ea', pointerEvents: 'auto' }}>
+      <div className="absolute left-4 bottom-4 z-50 rounded-lg border bg-white p-2 shadow-lg" style={{ borderColor: '#dce3ea', pointerEvents: 'auto' }} data-onboarding="controles-zoom">
         <div className="flex flex-col items-center space-y-2">
           <button
             onClick={handleZoomIn}

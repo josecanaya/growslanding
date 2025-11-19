@@ -42,6 +42,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useSubscription } from '@/lib/subscriptions';
 import { canUseFeature, usePlanGate } from '@/lib/permissions';
+import { SolicitarPresupuestoModal } from '@/components/clienteTecnico/presupuestos/SolicitarPresupuestoModal';
 
 const STAGE_DEFINITIONS = [
   {
@@ -165,14 +166,26 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [search, setSearch] = useState('');
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<string>('');
-  const [selectedCuadrilla, setSelectedCuadrilla] = useState<string>('');
-  const [notas, setNotas] = useState('');
-  const [savingBudget, setSavingBudget] = useState(false);
   const [assigningBudgetId, setAssigningBudgetId] = useState<string | null>(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState<string | null>(null);
   const [etapaActiva, setEtapaActiva] = useState<StageKey>('estructura');
+  
+  // Estado para el nuevo modal de presupuesto
+  const [presupuestoModalOpen, setPresupuestoModalOpen] = useState(false);
+  const [presupuestoModalEtapa, setPresupuestoModalEtapa] = useState<string>('');
+  const [presupuestoModalObraId, setPresupuestoModalObraId] = useState<string>('');
+  const [presupuestoModalTareas, setPresupuestoModalTareas] = useState<Array<{
+    id: string;
+    title: string;
+    etapa: string | null;
+    elemento?: { id: string; nombre: string | null; unidad?: string | null; cantidad?: number | null } | null;
+    duracionDias?: number;
+    es?: number | null;
+    ef?: number | null;
+    fecha_inicio_estimada?: string | null;
+    fecha_fin_estimada?: string | null;
+  }>>([]);
+  const [elementosMap, setElementosMap] = useState<Map<string, { id: string; nombre: string | null; unidad?: string | null; cantidad?: number | null }>>(new Map());
 
   useEffect(() => {
     let active = true;
@@ -222,6 +235,31 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           .in('obra_id', obraIds);
 
         if (tareasError) throw tareasError;
+
+        // Cargar elementos para las tareas
+        const elementoIds = (rawTasks ?? [])
+          .map((t: RawTarea) => (t as any).elemento_id)
+          .filter((id: string | null | undefined): id is string => !!id);
+        
+        let elementosData: any[] = [];
+        if (elementoIds.length > 0) {
+          const { data: elementos, error: elementosError } = await supabase
+            .from('elementos')
+            .select('id, nombre, unidad, cantidad')
+            .in('id', elementoIds);
+          
+          if (!elementosError && elementos) {
+            elementosData = elementos;
+          }
+        }
+
+        const elementosMapLocal = new Map(
+          elementosData.map((el: any) => [
+            el.id,
+            { id: el.id, nombre: el.nombre, unidad: el.unidad, cantidad: el.cantidad },
+          ])
+        );
+        setElementosMap(elementosMapLocal);
 
         const mappedTasks: TaskInfo[] = (rawTasks ?? []).map((row: RawTarea) => {
           const rawStage =
@@ -412,18 +450,74 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     });
   }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter, search]);
 
-  const handleOpenModal = (taskId?: string) => {
+  // handleOpenModal removido - ahora se usa handleOpenPresupuestoModal
+
+  const handleOpenPresupuestoModal = (etapa?: string, tareaId?: string) => {
     if (!ensureCuadrillaAccess()) {
       return;
     }
-    if (taskId) {
-      setSelectedTask(taskId);
-    } else {
-      setSelectedTask('');
+    
+    // Si no hay obraId, intentar obtenerlo de las tareas
+    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
+    if (!obraIdActual) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar la obra. Seleccioná una obra primero.',
+        variant: 'destructive',
+      });
+      return;
     }
-    setSelectedCuadrilla('');
-    setNotas('');
-    setModalOpen(true);
+
+    // Determinar qué tareas mostrar
+    let tareasParaModal: typeof presupuestoModalTareas = [];
+    
+    if (tareaId) {
+      // Modal para una sola tarea
+      const tarea = tasks.find((t) => t.id === tareaId);
+      if (tarea) {
+        const elemento = elementosMap.get((tarea as any).elemento_id || '');
+        tareasParaModal = [{
+          id: tarea.id,
+          title: tarea.titulo,
+          etapa: tarea.etapa,
+          elemento: elemento || null,
+          es: (tarea as any).es,
+          ef: (tarea as any).ef,
+          fecha_inicio_estimada: (tarea as any).fecha_inicio_estimada,
+          fecha_fin_estimada: (tarea as any).fecha_fin_estimada,
+        }];
+        setPresupuestoModalEtapa(tarea.etapa || '');
+      }
+    } else {
+      // Modal para todas las tareas de la etapa activa
+      const etapaKey = etapa || etapaActiva;
+      const bucket = stageBuckets.find((b) => b.key === etapaKey);
+      if (bucket) {
+        tareasParaModal = bucket.tasks.map((task) => {
+          const elemento = elementosMap.get((task as any).elemento_id || '');
+          return {
+            id: task.id,
+            title: task.titulo,
+            etapa: task.etapa,
+            elemento: elemento || null,
+            es: (task as any).es,
+            ef: (task as any).ef,
+            fecha_inicio_estimada: (task as any).fecha_inicio_estimada,
+            fecha_fin_estimada: (task as any).fecha_fin_estimada,
+          };
+        });
+        setPresupuestoModalEtapa(bucket.label);
+      }
+    }
+
+    setPresupuestoModalObraId(obraIdActual);
+    setPresupuestoModalTareas(tareasParaModal);
+    setPresupuestoModalOpen(true);
+  };
+
+  const handlePresupuestoSuccess = () => {
+    // Recargar datos después de crear presupuesto
+    window.location.reload(); // Simple reload, o podrías hacer un refetch más elegante
   };
 
   const handleAbrirAsignacion = () => {
@@ -433,79 +527,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     abrirModalAsignacion();
   };
 
-  const handleCreateBudget = async () => {
-    if (!ensureCuadrillaAccess()) {
-      return;
-    }
-    if (!currentUser?.orgId || !selectedTask || !selectedCuadrilla) {
-      toast({
-        title: 'Faltan datos',
-        description: 'Elegí una tarea y una cuadrilla antes de enviar la solicitud.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const payload: Record<string, any> = {
-      tarea_id: selectedTask,
-      monto: 0,
-      moneda: 'ARS',
-      estado: 'pedido',
-      notas: notas || null,
-    };
-
-    payload.socio_id = selectedCuadrilla;
-
-    setSavingBudget(true);
-
-    try {
-      const { data, error: insertError } = await supabase
-        .from('tareas_presupuestos')
-        .insert(payload)
-        .select()
-        .maybeSingle();
-
-      if (insertError) {
-        console.error('[AsignarSection] Insert error detail', {
-          message: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint,
-        });
-        throw insertError;
-      }
-
-      if (data) {
-        setBudgets((prev) => [data as RawPresupuesto, ...prev]);
-      }
-
-      toast({
-        title: 'Solicitud registrada',
-        description: 'Pedimos el presupuesto a la cuadrilla seleccionada.',
-      });
-      setModalOpen(false);
-    } catch (err) {
-      const normalizedError =
-        err && typeof err === 'object'
-          ? {
-              ...(err as Record<string, unknown>),
-              message: (err as { message?: string }).message,
-              name: (err as { name?: string }).name,
-            }
-          : err;
-      console.error(
-        '[AsignarSection] Error inserting presupuesto',
-        normalizedError,
-        JSON.stringify(normalizedError, null, 2)
-      );
-      toast({
-        title: 'No se pudo registrar el presupuesto',
-        description: 'Intentá nuevamente en unos minutos.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSavingBudget(false);
-    }
-  };
+  // handleCreateBudget removido - ahora se usa SolicitarPresupuestoModal con API
 
   const handleUpdateBudgetStatus = async (budgetId: string, status: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO') => {
     setUpdatingBudgetId(budgetId);
@@ -651,6 +673,25 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     }
   };
 
+  // Calcular estadísticas de presupuestos (debe estar antes de los early returns)
+  const totalBudgets = budgets.length;
+  const approvedBudgets = budgets.filter(
+    (budget) => (budget.estado ?? '').toUpperCase() === 'APROBADO'
+  ).length;
+  const pendingBudgets = useMemo(() => {
+    if (!obraId) {
+      return budgets.filter((budget) => (budget.estado ?? '').toUpperCase() === 'PENDIENTE').length;
+    }
+    // Filtrar por obra si hay obraId
+    return budgets.filter((budget) => {
+      const tarea = taskMap.get(budget.tarea_id);
+      return (
+        tarea?.obraId === obraId &&
+        (budget.estado ?? '').toUpperCase() === 'PENDIENTE'
+      );
+    }).length;
+  }, [budgets, obraId, taskMap]);
+
   if (!currentUser?.orgId) {
     return (
       <EmptyState
@@ -684,14 +725,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       </Card>
     );
   }
-
-  const totalBudgets = budgets.length;
-  const approvedBudgets = budgets.filter(
-    (budget) => (budget.estado ?? '').toUpperCase() === 'APROBADO'
-  ).length;
-  const pendingBudgets = budgets.filter(
-    (budget) => (budget.estado ?? '').toUpperCase() === 'PENDIENTE'
-  ).length;
 
   const renderBudgetActions = (budget: RawPresupuesto) => {
     const status = (budget.estado ?? 'PENDIENTE').toUpperCase();
@@ -833,7 +866,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           <Button
             variant="primary"
             icon={<PlusCircle className="h-4 w-4" />}
-            onClick={() => handleOpenModal()}
+            onClick={() => handleOpenPresupuestoModal()}
             className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
           >
             Solicitar presupuesto
@@ -890,7 +923,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                                 <Button
                                   variant="secondary"
                                   size="sm"
-                                  onClick={() => handleOpenModal(task.id)}
+                                  onClick={() => handleOpenPresupuestoModal(undefined, task.id)}
                                   className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
                                 >
                                   Pedir presupuesto
@@ -1018,7 +1051,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           <Button
             variant="primary"
             icon={<PlusCircle className="h-4 w-4" />}
-            onClick={() => handleOpenModal()}
+            onClick={() => handleOpenPresupuestoModal()}
             className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
           >
             Solicitar presupuesto
@@ -1105,101 +1138,17 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         )}
       </section>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="sm:max-w-lg bg-white text-slate-900">
-          <DialogHeader>
-            <DialogTitle>Solicitar presupuesto</DialogTitle>
-            <DialogDescription>
-              Elegí una tarea pendiente y la cuadrilla a la que querés enviar la solicitud.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Tarea
-              </label>
-              <Select value={selectedTask} onValueChange={setSelectedTask}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccioná una tarea" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tareasPendientes.length === 0 ? (
-                    <SelectItem value="" disabled>
-                      No hay tareas disponibles
-                    </SelectItem>
-                  ) : (
-                    tareasPendientes.map((task) => (
-                      <SelectItem key={task.id} value={task.id}>
-                        {task.titulo}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Cuadrilla
-              </label>
-              <Select value={selectedCuadrilla} onValueChange={setSelectedCuadrilla}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccioná una cuadrilla" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cuadrillas.length === 0 ? (
-                    <SelectItem value="" disabled>
-                      No hay cuadrillas disponibles
-                    </SelectItem>
-                  ) : (
-                    cuadrillas.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.nombre}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">
-                Notas adicionales
-              </label>
-              <textarea
-                value={notas}
-                onChange={(event) => setNotas(event.target.value)}
-                placeholder="Agregá contexto o requisitos específicos"
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setModalOpen(false)}
-              disabled={savingBudget}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => void handleCreateBudget()}
-              disabled={savingBudget || !selectedTask || !selectedCuadrilla}
-            >
-              {savingBudget ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-              <span>Enviar solicitud</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Modal de solicitud de presupuesto */}
+      {presupuestoModalOpen && presupuestoModalObraId && (
+        <SolicitarPresupuestoModal
+          open={presupuestoModalOpen}
+          onClose={() => setPresupuestoModalOpen(false)}
+          obraId={presupuestoModalObraId}
+          etapa={presupuestoModalEtapa}
+          tareas={presupuestoModalTareas}
+          onSuccess={handlePresupuestoSuccess}
+        />
+      )}
     </div>
   );
 }

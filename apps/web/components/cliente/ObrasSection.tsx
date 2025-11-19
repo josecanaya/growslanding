@@ -14,6 +14,7 @@ import {
   X,
   Save,
   AlertCircle,
+  HelpCircle,
 } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -23,6 +24,7 @@ import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 import { Button, SectionLayout } from '@/components/ui/grows';
+import { OnboardingCrearObraProvider, useOnboardingCrearObra } from '@/components/onboarding/OnboardingCrearObra';
 
 // Tipos de datos
 interface Obra {
@@ -128,6 +130,7 @@ const ObraCard = ({
         }
       }}
       className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0052CC]"
+      data-onboarding="card-obra"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -142,7 +145,9 @@ const ObraCard = ({
             </div>
           </div>
         </div>
-        <EstadoBadge estado={estado} />
+        <div data-onboarding="estado-obra">
+          <EstadoBadge estado={estado} />
+        </div>
       </div>
 
       {obra.descripcion && (
@@ -162,7 +167,7 @@ const ObraCard = ({
         )}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2" data-onboarding="acciones-obra">
         <div className="flex gap-2">
           <Button
             variant="ghost"
@@ -206,8 +211,8 @@ const ObraCard = ({
   );
 };
 
-// Componente principal
-export default function ObrasSection() {
+// Componente principal interno (envuelto por el provider)
+function ObrasSectionContent() {
   const router = useRouter();
   const currentUser = useCurrentUser();
   const supabase = createClientComponentClient<Database>() as any;
@@ -218,6 +223,7 @@ export default function ObrasSection() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { startOnboarding } = useOnboardingCrearObra();
 
   // Hooks para suscripciones
   const upgradeModal = useUpgradeModal();
@@ -629,6 +635,15 @@ export default function ObrasSection() {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
           <Button
+            onClick={startOnboarding}
+            variant="ghost"
+            size="sm"
+            icon={<HelpCircle className="h-4 w-4" />}
+            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+          >
+            Ver tutorial — Crear obra
+          </Button>
+          <Button
             onClick={abrirWizardCrear}
             variant="primary"
             size="lg"
@@ -650,7 +665,7 @@ export default function ObrasSection() {
         </div>
       )}
 
-      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" data-onboarding="estadisticas-obras">
         {[{
           label: 'Total de obras',
           value: totalObras,
@@ -837,5 +852,14 @@ export default function ObrasSection() {
         </div>
       )}
     </SectionLayout>
+  );
+}
+
+// Componente principal exportado (con provider)
+export default function ObrasSection() {
+  return (
+    <OnboardingCrearObraProvider>
+      <ObrasSectionContent />
+    </OnboardingCrearObraProvider>
   );
 }

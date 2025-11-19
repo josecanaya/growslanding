@@ -15,13 +15,11 @@ import { NotificacionesSection } from '@/components/cliente/NotificacionesSectio
 import { CalendarioSection } from '@/components/cliente/CalendarioSection';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
-import { useOnboardingCliente } from '@/hooks/useOnboardingCliente';
 
 export default function ClienteDashboardPage() {
   const router = useRouter();
   const currentUser = useCurrentUser();
   const [activeSection, setActiveSection] = useState('obras');
-  const { startOnboarding } = useOnboardingCliente();
 
   const normalizedRole = useMemo(
     () => normalizeRole(currentUser?.role),
@@ -86,7 +84,6 @@ export default function ClienteDashboardPage() {
       <SidebarClienteTecnico
         activeSection={activeSection}
         onSectionChange={setActiveSection}
-        onStartTutorial={startOnboarding}
       />
 
       <div className="ml-[220px] flex-1 p-8">{renderSection()}</div>

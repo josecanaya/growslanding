@@ -3,7 +3,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ClipboardList, Loader2, Plus, Trash2, Pencil } from 'lucide-react';
+import { ChevronDown, ClipboardList, Loader2, Plus, Trash2, Pencil, HelpCircle } from 'lucide-react';
 
 import { Button, EmptyState } from '@/components/ui/grows';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +16,7 @@ import { useOrganizaStore, selectCanvasTasks } from '@/lib/hooks/useOrganizaStor
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { agruparTareasConsolidadasPorPlanta, obtenerNombreFase, type TareaDisponible, type TareaAgrupadaConsolidada, type TareaConsolidada } from '@/lib/utils/organiza-tareas';
 import { calcularCPM, type TareaCPM, type CPMResultado } from '@/lib/utils/cpm';
+import { OnboardingOrganizarProvider, useOnboardingOrganizar } from '@/components/onboarding/OnboardingOrganizar';
 
 import {
   TaskCanvas,
@@ -98,7 +99,7 @@ const normalizeEtapa = (etapa?: string): EditorEtapa => {
   return 'estructura';
 };
 
-export function OrganizaSection({
+function OrganizaSectionContent({
   obraId,
   tareas,
   isLoading,
@@ -107,6 +108,7 @@ export function OrganizaSection({
   onCanvasOrderChange,
   onPrecedenciasChange,
 }: OrganizaSectionProps) {
+  const { startOnboarding } = useOnboardingOrganizar();
   const tareasFiltradas = useMemo(() => {
     if (!obraId) return [];
     return tareas.filter((tarea) => !tarea.obraId || tarea.obraId === obraId);
@@ -1132,6 +1134,28 @@ export function OrganizaSection({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4 flex-wrap">
                 <h2 className="text-xl font-semibold text-grows-text-primary">Organizá el flujo de trabajo</h2>
+                <button
+                  onClick={() => {
+                    console.log('🔵 Click en botón tutorial - llamando startOnboarding');
+                    startOnboarding();
+                  }}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                  style={{
+                    backgroundColor: '#f5f7fa',
+                    color: '#1B263B',
+                    border: '1px solid #dce3ea'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e8ecf0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f5f7fa';
+                  }}
+                  data-onboarding="tutorial-button-organizar"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                  Ver tutorial — Organizar
+                </button>
                 {proyectoMetrics.project_duration > 0 && (
                   <div
                     className="flex items-center gap-2 px-4 py-2 rounded-lg border"
@@ -1160,6 +1184,7 @@ export function OrganizaSection({
                       color: '#B91C1C',
                       fontSize: '14px',
                     }}
+                    data-onboarding="mostrar-cpm"
                   >
                     <span className="text-lg">⚡</span>
                     <span>Camino crítico:</span>
@@ -1183,7 +1208,7 @@ export function OrganizaSection({
               </span>
               {canvasOrderFiltrado.length > 0 ? (
                 <>
-                  <Button variant="primary" size="sm" onClick={handleGuardarLienzo} loading={isSaving}>
+                  <Button variant="primary" size="sm" onClick={handleGuardarLienzo} loading={isSaving} data-onboarding="guardar-lienzo">
                     Guardar lienzo
                   </Button>
                   <Button variant="ghost" size="sm" onClick={handleResetCanvas} className="border border-grows-border">
@@ -1205,6 +1230,7 @@ export function OrganizaSection({
                   onClick={() => setIsAddModalOpen(true)}
                   className="h-14 w-14 rounded-full shadow-lg transition-all hover:scale-110 hover:shadow-xl"
                   title="Agregar tarea al lienzo"
+                  data-onboarding="agregar-tarea"
                 >
                   <Plus className="h-6 w-6" />
                 </Button>
@@ -1222,7 +1248,7 @@ export function OrganizaSection({
             <div 
               className="relative rounded-2xl border border-grows-border/40 bg-white" 
               style={{ minHeight: '520px', height: '520px', overflow: 'hidden', position: 'relative' }}
-              data-onboarding="organizar-tareas"
+              data-onboarding="lienzo-tareas"
             >
               <TaskCanvas
                 tareas={viewerTasks}
@@ -1352,6 +1378,7 @@ export function OrganizaSection({
                   onClick={() => setIsAddModalOpen(true)}
                   className="h-14 w-14 rounded-full shadow-lg transition-all hover:scale-110 hover:shadow-xl pointer-events-auto"
                   title="Agregar tarea al lienzo"
+                  data-onboarding="agregar-tarea"
                 >
                   <Plus className="h-6 w-6" />
                 </Button>
@@ -1714,3 +1741,10 @@ function AvailableTaskButtonConsolidada({ tarea, onAdd }: AvailableTaskButtonCon
   );
 }
 
+export function OrganizaSection(props: OrganizaSectionProps) {
+  return (
+    <OnboardingOrganizarProvider>
+      <OrganizaSectionContent {...props} />
+    </OnboardingOrganizarProvider>
+  );
+}

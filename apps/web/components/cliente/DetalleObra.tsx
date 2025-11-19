@@ -755,7 +755,7 @@ export function DetalleObra({
   };
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
+    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}} data-onboarding-section="detalle-obra">
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Principal */}
         <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#E6F2FF', borderColor: '#B3D9FF'}}>
@@ -798,7 +798,7 @@ export function DetalleObra({
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="text-right">
+                <div className="text-right" data-onboarding="progreso-general">
                   <div className="text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
                   <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
                 </div>
@@ -807,6 +807,7 @@ export function DetalleObra({
                     onClick={handleAbrirModalEditar}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
                     style={{backgroundColor: '#1B263B', color: 'white'}}
+                    data-onboarding="editar-informacion"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = '#162033';
                     }}
@@ -836,7 +837,7 @@ export function DetalleObra({
         {/* Tabs de Navegación */}
         <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
           <div style={{borderBottomColor: '#dce3ea'}} className="border-b">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-8 px-6" data-onboarding="tabs-navegacion">
               {[
                 { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                 { key: 'elementos', label: 'Elementos', icon: Layers },

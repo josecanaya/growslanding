@@ -63,7 +63,7 @@ export async function POST(
 
     // Autenticación
     const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();
@@ -77,7 +77,7 @@ export async function POST(
     // Obtener la obra y su org_id directamente
     const { data: obra, error: obraError } = await supabase
       .from('obras')
-      .select('id, org_id, name')
+      .select('id, org_id')
       .eq('id', obraId)
       .maybeSingle();
 
@@ -149,12 +149,64 @@ export async function POST(
 
     // Filtrar tareas que ya tienen solicitud pendiente
     const tareasNuevas = payload.tareaIds.filter((tareaId) => !tareasExistentes.has(tareaId));
+    const tareasConSolicitudExistente = payload.tareaIds.filter((tareaId) => tareasExistentes.has(tareaId));
 
     if (tareasNuevas.length === 0) {
+      // Obtener nombres de las tareas y del socio para el mensaje
+      const { data: tareasInfo } = await supabase
+        .from('tareas')
+        .select('id, title')
+        .in('id', Array.from(tareasExistentes));
+      
+      const nombresTareas = (tareasInfo || []).map(t => t.title || 'Tarea sin título').join(', ');
+      const nombreSocio = socio.nombre || 'este socio';
+      
       return NextResponse.json(
-        { message: 'Todas las tareas ya tienen solicitudes pendientes para este socio' },
+        { 
+          message: `Ya solicitaste presupuesto a ${nombreSocio} para todas las tareas seleccionadas`,
+          details: `Las siguientes tareas ya tienen solicitudes pendientes: ${nombresTareas || 'N/A'}`,
+          tareasConSolicitud: Array.from(tareasExistentes),
+        },
         { status: 400 }
       );
+    }
+    
+    // Si algunas tareas ya tienen solicitud, informar pero continuar con las nuevas
+    if (tareasConSolicitudExistente.length > 0) {
+      console.log(`[SOLICITAR_PRESUPUESTO] ${tareasConSolicitudExistente.length} tareas ya tienen solicitudes, creando ${tareasNuevas.length} nuevas`);
+    }
+
+    // Obtener información de tareas con elementos para cantidad y unidad
+    const { data: tareasConElementos, error: errorTareasConElementos } = await supabase
+      .from('tareas')
+      .select(`
+        id,
+        elemento_id,
+        elementos:elemento_id (
+          id,
+          cantidad,
+          unidad
+        )
+      `)
+      .in('id', tareasNuevas);
+
+    if (errorTareasConElementos) {
+      console.warn('[SOLICITAR_PRESUPUESTO] Error obteniendo elementos de tareas:', errorTareasConElementos);
+      // Continuar de todas formas, no es crítico
+    }
+
+    // Crear mapa de tarea_id -> { cantidad, unidad }
+    const cantidadUnidadMap = new Map();
+    if (tareasConElementos) {
+      tareasConElementos.forEach((t: any) => {
+        if (t.elementos && (Array.isArray(t.elementos) ? t.elementos[0] : t.elementos)) {
+          const elemento = Array.isArray(t.elementos) ? t.elementos[0] : t.elementos;
+          cantidadUnidadMap.set(t.id, {
+            cantidad: elemento.cantidad,
+            unidad: elemento.unidad,
+          });
+        }
+      });
     }
 
     // Insertar solicitudes de presupuesto
@@ -166,6 +218,13 @@ export async function POST(
         moneda: 'ARS',
         estado: 'PENDIENTE',
       };
+      
+      // Agregar cantidad y unidad si están disponibles
+      const cantidadUnidad = cantidadUnidadMap.get(tareaId);
+      if (cantidadUnidad) {
+        insertData.cantidad = cantidadUnidad.cantidad;
+        insertData.unidad = cantidadUnidad.unidad;
+      }
       
       // Solo agregar notas si hay valor
       if (payload.notas && payload.notas.trim()) {
@@ -216,10 +275,10 @@ export async function POST(
     // Crear notificación para el socio
     const mensajeNotificacion =
       tareasNuevas.length === 1
-        ? `Tenés 1 tarea para presupuestar en la obra "${obra.name || 'sin nombre'}"`
-        : `Tenés ${tareasNuevas.length} tareas para presupuestar en la obra "${obra.name || 'sin nombre'}"`;
+        ? `Tenés 1 tarea para presupuestar en la obra`
+        : `Tenés ${tareasNuevas.length} tareas para presupuestar en la obra`;
 
-    const { error: notificacionError } = await supabase.from('notificaciones').insert({
+    const { error: notificacionError } = await (supabase as any).from('notificaciones').insert({
       org_id: orgId,
       socio_id: payload.socioId,
       obra_id: obraId,

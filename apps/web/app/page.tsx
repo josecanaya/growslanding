@@ -8,7 +8,7 @@ import { normalizeRole } from '@/lib/roles';
 export default async function RootPage() {
   const cookieStore = await cookies();
   const supabase = createServerComponentClient<Database>({
-    cookies: () => cookieStore,
+    cookies: () => cookieStore as any,
   });
 
   const {

@@ -1083,7 +1083,7 @@ export function DetalleObra({
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>Superficies por planta (m²)</label>
                     <div className="space-y-3">
-                      {formData.superficies.map((superficie, index) => (
+                      {formData.superficies.map((superficie: { planta: number; cubiertos: number; descubiertos: number }, index: number) => (
                         <div key={index} className="grid grid-cols-3 gap-3 p-3 border rounded-lg" style={{borderColor: '#d3dae3', backgroundColor: '#f9fafb'}}>
                           <div>
                             <label className="block text-xs font-medium mb-1" style={{color: '#5b5f6a'}}>Planta {superficie.planta}</label>

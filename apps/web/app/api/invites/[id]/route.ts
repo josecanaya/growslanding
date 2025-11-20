@@ -23,7 +23,7 @@ export async function DELETE(
 
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({
-      cookies: () => cookieStore,
+      cookies: () => cookieStore as any,
     });
     const {
       data: { user },

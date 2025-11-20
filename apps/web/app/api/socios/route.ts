@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
     const {
       data: { user },
     } = await supabaseAuth.auth.getUser();

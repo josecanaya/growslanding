@@ -11,7 +11,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
     
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 

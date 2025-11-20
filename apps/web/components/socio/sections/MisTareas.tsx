@@ -470,10 +470,14 @@ export function MisTareas({ user }: MisTareasProps) {
 
         // Si aún no se encontró el socio PERO tenemos orgId, intentar obtener las tareas directamente
         // Esto puede funcionar si el usuario tiene tareas asignadas aunque no encontremos su perfil de socio
-        if (!socioData) {
+        if (!socioData && orgId) {
           console.warn('[MIS_TAREAS] ⚠️ No se encontró perfil de socio, pero intentando obtener tareas directamente...');
           
-          // Intentar buscar tareas por responsable directamente
+          // Intentar buscar tareas de múltiples formas
+          let tareasDirectas: any[] | null = null;
+          let errorTareas: any = null;
+          
+          // 1. Buscar por responsable (email o nombre)
           const condicionesTarea: string[] = [];
           if (currentUser.email) {
             condicionesTarea.push(`responsable.eq.${currentUser.email}`);
@@ -484,69 +488,131 @@ export function MisTareas({ user }: MisTareasProps) {
           }
 
           if (condicionesTarea.length > 0) {
-            const { data: tareasDirectas, error: errorTareas } = await supabase
-              .from('tareas')
-              .select(`
-                id,
-                title,
-                descripcion,
-                estado,
-                responsable,
-                prioridad,
-                avance,
-                fecha_inicio_estimada,
-                fecha_fin_estimada,
-                fecha_inicio_real,
-                fecha_fin_real,
-                cuadrilla_id,
-                obra_id,
-                elemento_id,
-                elemento:elementos(
+            try {
+              const { data, error } = await supabase
+                .from('tareas')
+                .select(`
                   id,
-                  nombre,
-                  categoria,
-                  subcategoria
-                ),
-                obra:obras(
-                  id,
-                  name,
-                  address
-                ),
-                cuadrilla:cuadrillas(
-                  id,
-                  nombre,
-                  especialidad
-                )
-              `)
-              .eq('org_id', orgId)
-              .or(condicionesTarea.join(','))
-              .order('created_at', { ascending: false });
+                  title,
+                  descripcion,
+                  estado,
+                  responsable,
+                  prioridad,
+                  avance,
+                  fecha_inicio_estimada,
+                  fecha_fin_estimada,
+                  fecha_inicio_real,
+                  fecha_fin_real,
+                  cuadrilla_id,
+                  obra_id,
+                  elemento_id
+                `)
+                .eq('org_id', orgId)
+                .or(condicionesTarea.join(','))
+                .order('created_at', { ascending: false });
 
-            if (tareasDirectas && tareasDirectas.length > 0 && !errorTareas) {
-              console.log('[MIS_TAREAS] ✅ Tareas encontradas directamente sin perfil de socio:', {
-                cantidad: tareasDirectas.length,
-              });
-              
-              // Si tiene tareas, crear un perfil de socio temporal o usar el primero de la org
-              // Por ahora, crear un objeto socio temporal basado en el usuario actual
-              socioData = {
-                id: `temp-${currentUser.id}`,
-                nombre: currentUser.name || currentUser.email || 'Socio',
-                email: currentUser.email,
-                telefono: null,
-                rol: 'constructor',
-              };
-              
-              setTareas(tareasDirectas);
-              setSocio(socioData);
-              setLoading(false);
-              return; // Salir temprano ya que tenemos las tareas
+              if (!error && data && data.length > 0) {
+                tareasDirectas = data;
+                console.log('[MIS_TAREAS] ✅ Se encontraron tareas por responsable:', {
+                  cantidad: tareasDirectas.length,
+                });
+              } else {
+                errorTareas = error;
+                console.warn('[MIS_TAREAS] ⚠️ No se encontraron tareas por responsable:', {
+                  error: error,
+                  condiciones: condicionesTarea,
+                });
+              }
+            } catch (err) {
+              console.error('[MIS_TAREAS] Error al buscar tareas por responsable:', err);
+              errorTareas = err;
             }
+          }
+
+          // 2. Si no encontró por responsable, buscar todas las tareas de la org (fallback)
+          // Esto es un último recurso si el usuario tiene acceso pero no encontramos su perfil
+          if (!tareasDirectas || tareasDirectas.length === 0) {
+            console.log('[MIS_TAREAS] Intentando búsqueda más amplia de tareas...');
+            try {
+              // Buscar tareas recientes de la organización (últimas 20)
+              const { data: tareasRecientes, error: errorRecientes } = await supabase
+                .from('tareas')
+                .select(`
+                  id,
+                  title,
+                  descripcion,
+                  estado,
+                  responsable,
+                  prioridad,
+                  avance,
+                  fecha_inicio_estimada,
+                  fecha_fin_estimada,
+                  fecha_inicio_real,
+                  fecha_fin_real,
+                  cuadrilla_id,
+                  obra_id,
+                  elemento_id
+                `)
+                .eq('org_id', orgId)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+              if (!errorRecientes && tareasRecientes && tareasRecientes.length > 0) {
+                // Filtrar por nombre o email del usuario en el responsable
+                const tareasFiltradas = tareasRecientes.filter((t: any) => {
+                  if (!t.responsable) return false;
+                  const responsable = t.responsable.toLowerCase();
+                  const usuarioEmail = currentUser.email?.toLowerCase() || '';
+                  const usuarioNombre = currentUser.name?.toLowerCase() || '';
+                  
+                  return responsable.includes(usuarioEmail) || 
+                         responsable.includes(usuarioNombre.split(' ')[0]) ||
+                         usuarioNombre.includes(responsable.split(' ')[0]);
+                });
+
+                if (tareasFiltradas.length > 0) {
+                  tareasDirectas = tareasFiltradas;
+                  console.log('[MIS_TAREAS] ✅ Se encontraron tareas por búsqueda amplia:', {
+                    cantidad: tareasDirectas.length,
+                  });
+                }
+              }
+            } catch (err) {
+              console.error('[MIS_TAREAS] Error al buscar tareas recientes:', err);
+            }
+          }
+
+          // Si encontramos tareas de cualquier forma, crear perfil temporal
+          if (tareasDirectas && tareasDirectas.length > 0) {
+            console.log('[MIS_TAREAS] ✅ Se encontraron tareas asignadas directamente:', {
+              cantidad: tareasDirectas.length,
+            });
+            
+            socioData = {
+              id: `temp-${currentUser.id}`,
+              nombre: currentUser.name || currentUser.email || 'Socio',
+              email: currentUser.email,
+              telefono: null,
+              rol: 'constructor',
+              org_id: orgId,
+            };
+            
+            setTareas(tareasDirectas);
+            setSocio(socioData);
+            setLoading(false);
+            setError(null);
+            return; // Salir temprano ya que tenemos las tareas
+          } else {
+            console.warn('[MIS_TAREAS] ⚠️ No se encontraron tareas por ningún método:', {
+              error: errorTareas,
+              condiciones: condicionesTarea,
+            });
           }
         }
 
-        // Si después de todos los intentos no encontramos el socio, mostrar error
+        // Si después de todos los intentos no encontramos el socio NI tareas, mostrar error
         if (!socioData) {
+          console.error('[MIS_TAREAS] ❌ No se encontró perfil de socio ni tareas asignadas');
           setError('No se encontró tu perfil de socio. Contacta al administrador para que te invite.');
           setLoading(false);
           return;

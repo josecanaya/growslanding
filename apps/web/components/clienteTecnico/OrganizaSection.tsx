@@ -509,7 +509,10 @@ function OrganizaSectionContent({
           console.error('[OrganizaSection] Error en fetch:', fetchError);
           console.error('[OrganizaSection] Error type:', typeof fetchError);
           console.error('[OrganizaSection] Error message:', fetchError instanceof Error ? fetchError.message : String(fetchError));
-          throw new Error(`Error de red al guardar CPM: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+          console.error('[OrganizaSection] Error stack:', fetchError instanceof Error ? fetchError.stack : undefined);
+          // No lanzar error, solo loguear - el guardado de CPM es opcional
+          console.warn('[OrganizaSection] No se pudo guardar CPM en Supabase, pero el cálculo local sigue funcionando');
+          return; // Salir silenciosamente sin error
         }
 
         // Leer la respuesta como texto primero para poder parsearla después

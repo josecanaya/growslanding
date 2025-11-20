@@ -182,26 +182,43 @@ export function SolicitarPresupuestoModal({
       if (!response.ok) {
         let errorData: any = {};
         let responseText = '';
+        
         try {
-          responseText = await response.text();
-          console.log('[SolicitarPresupuestoModal] Response text:', responseText);
-          if (responseText) {
+          // Intentar leer como texto primero
+          const clone = response.clone();
+          responseText = await clone.text();
+          console.log('[SolicitarPresupuestoModal] Response text (length):', responseText.length);
+          console.log('[SolicitarPresupuestoModal] Response text (content):', responseText.substring(0, 500));
+          
+          if (responseText && responseText.trim()) {
             try {
               errorData = JSON.parse(responseText);
+              console.log('[SolicitarPresupuestoModal] Parsed error data:', errorData);
             } catch (parseError) {
               console.error('[SolicitarPresupuestoModal] Error parsing JSON:', parseError);
-              errorData = { raw: responseText };
+              errorData = { 
+                raw: responseText,
+                parseError: parseError instanceof Error ? parseError.message : String(parseError)
+              };
             }
+          } else {
+            console.warn('[SolicitarPresupuestoModal] Response body is empty');
+            errorData = { empty: true };
           }
         } catch (e) {
           console.error('[SolicitarPresupuestoModal] Error reading response:', e);
+          errorData = { 
+            readError: e instanceof Error ? e.message : String(e)
+          };
         }
         
-        console.error('[SolicitarPresupuestoModal] Error response:', {
+        console.error('[SolicitarPresupuestoModal] Error response details:', {
           status: response.status,
           statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
           error: errorData,
           rawText: responseText,
+          url: `/api/obras/${obraId}/solicitar-presupuesto`,
         });
         
         // Construir mensaje de error más descriptivo
@@ -214,19 +231,35 @@ export function SolicitarPresupuestoModal({
             errorMessage = errorData.details;
           } else if (errorData.details.message) {
             errorMessage = errorData.details.message;
+          } else if (errorData.details.error) {
+            errorMessage = errorData.details.error;
           } else {
             errorMessage = `Error: ${JSON.stringify(errorData.details)}`;
           }
         } else if (errorData.error) {
           if (typeof errorData.error === 'string') {
             errorMessage = errorData.error;
+          } else if (errorData.error.message) {
+            errorMessage = errorData.error.message;
           } else {
             errorMessage = `Error: ${JSON.stringify(errorData.error)}`;
           }
+        } else if (response.status === 400 && errorData.message?.includes('ya tienen solicitudes')) {
+          // Mensaje especial para cuando todas las tareas ya tienen solicitudes
+          errorMessage = errorData.message;
+          if (errorData.details) {
+            errorMessage += `. ${errorData.details}`;
+          }
         } else if (response.status === 500) {
-          errorMessage = 'Error interno del servidor. Revisá los logs del servidor para más detalles.';
+          errorMessage = `Error interno del servidor (${response.status}). Revisá los logs del servidor para más detalles.`;
+        } else if (response.status === 404) {
+          errorMessage = 'Ruta no encontrada. Verificá que la obra existe.';
+        } else if (response.status === 401) {
+          errorMessage = 'No estás autenticado. Iniciá sesión nuevamente.';
+        } else if (response.status === 403) {
+          errorMessage = 'No tenés permisos para realizar esta acción.';
         } else {
-          errorMessage = `Error ${response.status}: ${response.statusText}`;
+          errorMessage = `Error ${response.status}: ${response.statusText || 'Error desconocido'}`;
         }
         
         throw new Error(errorMessage);

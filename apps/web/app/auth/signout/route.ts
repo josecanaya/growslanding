@@ -6,7 +6,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
   await supabase.auth.signOut();
 
   const requestUrl = new URL(request.url);

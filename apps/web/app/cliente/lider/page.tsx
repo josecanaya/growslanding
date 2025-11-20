@@ -28,7 +28,7 @@ export default async function LeaderPage() {
   {
     const cookieStore = await cookies();
     const supabaseAuth = createServerComponentClient<Database>({
-      cookies: () => cookieStore,
+      cookies: () => cookieStore as any,
     });
     const {
       data: { user },

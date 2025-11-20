@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 import { TopBar } from '@/components/socio/TopBar';
-import { SwipeUpCameraButton } from '@/components/socio/SwipeUpCameraButton';
 import { logout } from '@/lib/auth';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { ROLE_LABELS, normalizeRole } from '@/lib/roles';
@@ -107,8 +106,6 @@ export default function SocioLayout({
           {children}
         </div>
       </main>
-
-      <SwipeUpCameraButton />
     </div>
   );
 }

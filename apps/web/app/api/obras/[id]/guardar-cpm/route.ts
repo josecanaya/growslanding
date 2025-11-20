@@ -162,7 +162,7 @@ export async function POST(
             lf: tarea.lf,
             float: tarea.float,
             is_critical: tarea.isCritical,
-          })
+          } as any)
           .eq('id', tarea.id)
           .eq('obra_id', obraId) // Asegurar que pertenece a la obra
           .select('id, es, ef, ls, lf, float, is_critical')

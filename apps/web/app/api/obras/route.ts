@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       let supabaseAuth;
       try {
         console.log('[POST_OBRAS] Creando cliente de autenticación...');
-        supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+        supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
         console.log('[POST_OBRAS] Cliente de autenticación creado');
       } catch (clientError) {
         console.error('[SUPABASE_CLIENT_ERROR]', clientError);

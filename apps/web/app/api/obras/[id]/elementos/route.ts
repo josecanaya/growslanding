@@ -28,7 +28,7 @@ export async function GET(
     // Validar sesión
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ 
-      cookies: () => cookieStore 
+      cookies: () => cookieStore as any 
     });
 
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
@@ -121,7 +121,7 @@ export async function POST(
     // Validar sesión
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ 
-      cookies: () => cookieStore 
+      cookies: () => cookieStore as any 
     });
 
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();

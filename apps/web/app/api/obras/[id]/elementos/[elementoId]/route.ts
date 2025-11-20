@@ -28,8 +28,8 @@ export async function PUT(
 
     // Validar sesión
     const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ 
-      cookies: () => cookieStore 
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any
     });
 
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();

@@ -46,7 +46,7 @@ export async function PATCH(
   try {
     // 1) Validar sesión
     const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
     const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
@@ -136,12 +136,52 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 1) Validar sesión
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'No autenticado' },
+        { status: 401 },
+      );
+    }
+
+    // 2) Obtener obra y validar permisos
     const { id } = await params;
-    const obra = await ObraService.eliminarObra(id, DEMO_ORG_ID);
+    const supabase = createServiceSupabaseClient();
+    
+    const { data: obra, error: fetchError } = await supabase
+      .from('obras')
+      .select('id, org_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !obra) {
+      return NextResponse.json(
+        { success: false, error: 'Obra no encontrada' },
+        { status: 404 },
+      );
+    }
+
+    // 3) Eliminar obra (soft delete: actualizar estado a 'ELIMINADA' o eliminar físicamente)
+    const { error: deleteError } = await supabase
+      .from('obras')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error("Error en DELETE /api/obras/[id]:", deleteError);
+      return NextResponse.json(
+        { success: false, error: deleteError.message },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: obra,
+      data: { id },
     });
   } catch (error) {
     console.error("Error en DELETE /api/obras/[id]:", error);

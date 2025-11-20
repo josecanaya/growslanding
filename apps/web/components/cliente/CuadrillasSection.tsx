@@ -410,7 +410,7 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                   </Button>
                   <Button 
                     size="sm" 
-                    variant="destructive" 
+                    variant="danger" 
                     onClick={() => handleEliminarCuadrilla(cuadrilla.id)}
                     className="ml-auto"
                     title="Eliminar cuadrilla"
@@ -623,7 +623,7 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                                 </Button>
                                 <Button 
                                   size="sm" 
-                                  variant="destructive" 
+                                  variant="danger" 
                                   onClick={() => handleEliminarCuadrilla(cuadrilla.id)}
                                   className="ml-auto"
                                   title="Eliminar cuadrilla"

@@ -20,6 +20,8 @@ interface PresupuestoItem {
     nombre: string | null;
     planta: string | null;
     altura: string | null;
+    cantidad: number | null;
+    unidad: string | null;
   } | null;
 }
 

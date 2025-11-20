@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Loader2, Save, Send, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
@@ -24,7 +24,7 @@ interface ObraConPresupuestos {
   aprobados: number;
 }
 
-export default function PresupuestosPage() {
+function PresupuestosContent() {
   const searchParams = useSearchParams();
   const obraId = searchParams.get('obra_id');
   const { toast } = useToast();
@@ -360,5 +360,20 @@ export default function PresupuestosPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PresupuestosPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center gap-2 text-slate-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">Cargando...</span>
+        </div>
+      </div>
+    }>
+      <PresupuestosContent />
+    </Suspense>
   );
 }

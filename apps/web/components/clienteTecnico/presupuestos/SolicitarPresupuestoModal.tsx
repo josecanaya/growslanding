@@ -100,13 +100,15 @@ export function SolicitarPresupuestoModal({
   useEffect(() => {
     if (!open || !currentUser?.orgId) return;
 
+    const orgId = currentUser.orgId;
+
     async function loadSocios() {
       setLoadingSocios(true);
       try {
         const { data, error } = await supabase
           .from('socios')
           .select('id, nombre, estado')
-          .eq('org_id', currentUser.orgId)
+          .eq('org_id', orgId)
           .eq('estado', 'activo')
           .order('nombre');
 

@@ -1,49 +1,49 @@
-const QR_PATH_PREFIX = '/t/';
+/**
+ * Utilidades para manejo de códigos QR
+ */
 
-export function decodeQR(input: string) {
-  if (!input) {
-    throw new Error('URL inválida');
-  }
-
-  let pathname = input;
-
-  try {
-    const url = new URL(input, 'https://placeholder.local');
-    pathname = url.pathname;
-  } catch {
-    // Si no es una URL completa asumimos que ya es un path.
-  }
-
-  const index = pathname.indexOf(QR_PATH_PREFIX);
-  if (index === -1) {
-    throw new Error('Formato de QR no reconocido');
-  }
-
-  const token = pathname.slice(index + QR_PATH_PREFIX.length).split('/')[0];
-
-  if (!token) {
-    throw new Error('Token QR ausente');
-  }
-
-  return token;
-}
-
-export type QrTokenRecord = {
-  pin: string | null;
+interface QRToken {
+  id: string;
+  ref_id: string;
+  pin?: string | null;
   enabled: boolean;
-};
-
-export function assertPinForToken(
-  token: Pick<QrTokenRecord, 'pin'>,
-  providedPin?: string | null
-) {
-  if (!token.pin) {
-    return true;
-  }
-
-  if (!providedPin || token.pin !== providedPin.trim()) {
-    throw new Error('PIN requerido o incorrecto');
-  }
-
-  return true;
 }
+
+/**
+ * Decodifica y normaliza un token QR
+ * @param qrPath - Ruta del QR (ej: "/t/abc123")
+ * @returns Token normalizado sin el prefijo de ruta
+ */
+export function decodeQR(qrPath: string): string {
+  // Remover el prefijo "/t/" si existe
+  const normalized = qrPath.replace(/^\/t\//, '').trim();
+  if (!normalized) {
+    throw new Error('Token QR inválido');
+  }
+  return normalized;
+}
+
+/**
+ * Valida el PIN para un token QR
+ * @param qrToken - Token QR con información del PIN
+ * @param providedPin - PIN proporcionado por el usuario (opcional)
+ * @throws Error si el PIN es requerido pero no se proporcionó, o si no coincide
+ */
+export function assertPinForToken(
+  qrToken: QRToken,
+  providedPin?: string
+): void {
+  // Si el token tiene PIN configurado
+  if (qrToken.pin) {
+    // Si no se proporcionó PIN, lanzar error
+    if (!providedPin) {
+      throw new Error('PIN requerido para acceder a este QR');
+    }
+    // Si el PIN no coincide, lanzar error
+    if (qrToken.pin !== providedPin) {
+      throw new Error('PIN incorrecto');
+    }
+  }
+  // Si no hay PIN configurado, no hacer nada (acceso libre)
+}
+

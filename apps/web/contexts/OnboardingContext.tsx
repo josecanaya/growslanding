@@ -1,25 +1,33 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import {
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+} from 'react';
 
-interface OnboardingContextType {
+interface OnboardingContextValue {
   isActive: boolean;
   currentStepIndex: number;
   startOnboarding: () => void;
   stopOnboarding: () => void;
   completeOnboarding: () => void;
-  setStepIndex: (index: number) => void;
+  setStepIndex: Dispatch<SetStateAction<number>>;
 }
 
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [isActive, setIsActive] = useState(false);
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [currentStepIndex, setStepIndex] = useState(0);
 
   const startOnboarding = useCallback(() => {
     setIsActive(true);
-    setCurrentStepIndex(0);
+    setStepIndex(0);
   }, []);
 
   const stopOnboarding = useCallback(() => {
@@ -28,33 +36,37 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const completeOnboarding = useCallback(() => {
     setIsActive(false);
-    setCurrentStepIndex(0);
+    setStepIndex(0);
   }, []);
 
-  const setStepIndex = useCallback((index: number) => {
-    setCurrentStepIndex(index);
-  }, []);
+  const value: OnboardingContextValue = {
+    isActive,
+    currentStepIndex,
+    startOnboarding,
+    stopOnboarding,
+    completeOnboarding,
+    setStepIndex,
+  };
 
   return (
-    <OnboardingContext.Provider
-      value={{
-        isActive,
-        currentStepIndex,
-        startOnboarding,
-        stopOnboarding,
-        completeOnboarding,
-        setStepIndex,
-      }}
-    >
+    <OnboardingContext.Provider value={value}>
       {children}
     </OnboardingContext.Provider>
   );
 }
 
-export function useOnboardingContext() {
+export function useOnboardingContext(): OnboardingContextValue {
   const context = useContext(OnboardingContext);
-  if (context === undefined) {
-    throw new Error('useOnboardingContext must be used within an OnboardingProvider');
+  if (!context) {
+    // Retornar valores por defecto si el contexto no está disponible
+    return {
+      isActive: false,
+      currentStepIndex: 0,
+      startOnboarding: () => {},
+      stopOnboarding: () => {},
+      completeOnboarding: () => {},
+      setStepIndex: () => {},
+    };
   }
   return context;
 }

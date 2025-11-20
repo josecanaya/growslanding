@@ -19,7 +19,7 @@ const DEFAULT_CANVAS_DURATION = 2;
 type OrganizaPrecedenciaMap = Record<
   string,
   {
-    dependeDe: string | null;
+    dependeDe: string | string[] | null;
     duracion: number;
     posX: number | null;
     posY: number | null;

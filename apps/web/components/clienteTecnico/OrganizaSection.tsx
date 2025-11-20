@@ -178,11 +178,13 @@ function OrganizaSectionContent({
         if (!current && !next) return false;
         if (!current || !next) return true;
         // Comparar dependeDe considerando arrays
+        const currentDependeDe = current.dependeDe;
+        const nextDependeDe = next.dependeDe;
         const dependeDeEqual = 
-          current.dependeDe === next.dependeDe ||
-          (Array.isArray(current.dependeDe) && Array.isArray(next.dependeDe) &&
-           current.dependeDe.length === next.dependeDe.length &&
-           current.dependeDe.every((val, idx) => val === next.dependeDe[idx]));
+          currentDependeDe === nextDependeDe ||
+          (Array.isArray(currentDependeDe) && Array.isArray(nextDependeDe) &&
+           currentDependeDe.length === nextDependeDe.length &&
+           currentDependeDe.every((val, idx) => val === nextDependeDe[idx]));
         return (
           current.posX !== next.posX ||
           current.posY !== next.posY ||
@@ -260,11 +262,13 @@ function OrganizaSectionContent({
         if (!current && !next) return false;
         if (!current || !next) return true;
         // Comparar dependeDe considerando arrays
+        const currentDependeDe = current.dependeDe;
+        const nextDependeDe = next.dependeDe;
         const dependeDeEqual = 
-          current.dependeDe === next.dependeDe ||
-          (Array.isArray(current.dependeDe) && Array.isArray(next.dependeDe) &&
-           current.dependeDe.length === next.dependeDe.length &&
-           current.dependeDe.every((val, idx) => val === next.dependeDe[idx]));
+          currentDependeDe === nextDependeDe ||
+          (Array.isArray(currentDependeDe) && Array.isArray(nextDependeDe) &&
+           currentDependeDe.length === nextDependeDe.length &&
+           currentDependeDe.every((val, idx) => val === nextDependeDe[idx]));
         return (
           current.posX !== next.posX ||
           current.posY !== next.posY ||
@@ -314,7 +318,9 @@ function OrganizaSectionContent({
 
     setSelectedTaskId(taskId);
     setDuracionDraft(meta?.duracion ?? (defaultDuracion > 0 ? defaultDuracion : DEFAULT_DURACION));
-    setPrecedenciaDraft(meta?.dependeDe ?? lastTaskId);
+    // Convertir dependeDe a array (puede ser string | null o string[])
+    const dependeDeActual = meta?.dependeDe ?? (lastTaskId ? [lastTaskId] : null);
+    setPrecedenciaDraft(dependeDeActual ? (Array.isArray(dependeDeActual) ? dependeDeActual : [dependeDeActual]) : []);
     setDialogMode('create');
     setIsAddModalOpen(false);
     setIsDialogOpen(true);

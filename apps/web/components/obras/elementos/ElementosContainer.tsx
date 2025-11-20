@@ -231,7 +231,12 @@ export default function ElementosContainer({ obraId, plantas }: ElementosContain
             subcategorias: cat.subcategorias.map(sub => ({
               id: sub.id,
               nombre: sub.nombre,
-              elementos: sub.elementos || []
+              elementos: (sub.elementos || []).map(el => ({
+                ...el,
+                tareas: Array.isArray(el.tareas) 
+                  ? el.tareas.map((t: any) => typeof t === 'string' ? t : t.task_id || t.nombre || '')
+                  : []
+              }))
             })),
             elementosCargados: elementosPorSubcategoria[cat.categoria] || {}
           }))}

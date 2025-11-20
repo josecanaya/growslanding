@@ -504,10 +504,18 @@ function ObrasSectionContent() {
       }
     ];
 
+    // Validar y asegurar que tipoObra sea uno de los valores válidos
+    const tipoObraValido = (tipo: string | undefined): 'nueva' | 'reforma' | 'ampliacion' => {
+      if (tipo === 'nueva' || tipo === 'reforma' || tipo === 'ampliacion') {
+        return tipo;
+      }
+      return 'nueva';
+    };
+
     const obraCompleta = {
       ...selectedObra,
       cliente: selectedObra.cliente || "Cliente por defecto",
-      tipoObra: selectedObra.tipoObra || "nueva",
+      tipoObra: tipoObraValido(selectedObra.tipoObra),
       localizacion: selectedObra.localizacion || '',
       plantas: selectedObra.plantas || 1,
       terreno: selectedObra.terreno || 0,

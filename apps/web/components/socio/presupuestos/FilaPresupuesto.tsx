@@ -82,7 +82,7 @@ export function FilaPresupuesto({
           <div>
             <label className="text-xs text-slate-500 block mb-1">Duración sugerida</label>
             <div className="text-sm text-slate-600">
-              {presupuesto.tarea?.duracion_sugerida !== null
+              {presupuesto.tarea?.duracion_sugerida !== null && presupuesto.tarea?.duracion_sugerida !== undefined
                 ? `${presupuesto.tarea.duracion_sugerida} días`
                 : 'N/A'}
             </div>
@@ -134,7 +134,7 @@ export function FilaPresupuesto({
         )}
       </td>
       <td className="px-4 py-3 text-sm text-slate-600 text-center">
-        {presupuesto.tarea?.duracion_sugerida !== null
+        {presupuesto.tarea?.duracion_sugerida !== null && presupuesto.tarea?.duracion_sugerida !== undefined
           ? `${presupuesto.tarea.duracion_sugerida}`
           : 'N/A'}
       </td>

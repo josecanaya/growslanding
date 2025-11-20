@@ -118,6 +118,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const tareaForm = useForm<z.infer<typeof nuevaTareaSchema>>({
+    // @ts-expect-error - Type compatibility issue between Zod versions
     resolver: zodResolver(nuevaTareaSchema),
     defaultValues: {
       obra_id: obras[0]?.id ?? '',
@@ -127,6 +128,7 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
   });
 
   const inviteForm = useForm<z.infer<typeof nuevoInviteSchema>>({
+    // @ts-expect-error - Type compatibility issue between Zod versions
     resolver: zodResolver(nuevoInviteSchema),
     defaultValues: { nombre: '', email: '' },
   });

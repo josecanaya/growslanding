@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import { TipoEvento, TipoNotificacion, EstadoNotificacion } from '../schemas';
+import { createServiceSupabaseClient } from '../supabase-server';
 
 type PrismaWithNotificaciones = PrismaClient & {
   notificacion: any;
@@ -12,7 +13,7 @@ const prisma = new PrismaClient() as PrismaWithNotificaciones;
 
 export class NotificacionService {
   /**
-   * Crea una notificación
+   * Crea una notificación (tanto en Prisma como en Supabase)
    */
   static async crearNotificacion(data: {
     usuarioId: string;
@@ -22,7 +23,10 @@ export class NotificacionService {
     obraId?: string;
     tareaId?: string;
     datos?: any;
+    orgId?: string;
+    socioId?: string;
   }) {
+    // Crear en Prisma
     const notificacion = await prisma.notificacion.create({
       data: {
         usuarioId: data.usuarioId,
@@ -35,6 +39,79 @@ export class NotificacionService {
         estado: 'PENDIENTE',
       },
     });
+
+    // También crear en Supabase para que el endpoint /api/notificaciones pueda leerla
+    try {
+      const supabase = createServiceSupabaseClient();
+      const supabaseAny = supabase as any;
+      
+      // Obtener orgId y socioId si no están en los datos
+      let orgId = data.orgId;
+      let socioId = data.socioId;
+      
+      // Si falta orgId, intentar obtenerlo desde la obra o tarea
+      if (!orgId && data.obraId) {
+        const obraDelegate = prisma.obra;
+        if (obraDelegate?.findUnique) {
+          try {
+            const obra = await obraDelegate.findUnique({
+              where: { id: data.obraId },
+              select: { organizacionId: true },
+            });
+            orgId = obra?.organizacionId ?? undefined;
+          } catch (e) {
+            console.warn('[Notificaciones] No se pudo obtener orgId desde obra', e);
+          }
+        }
+      }
+      
+      // Si falta socioId y es un usuario socio, intentar obtenerlo
+      if (!socioId && data.usuarioId) {
+        const socioDelegate = prisma.socio;
+        if (socioDelegate?.findFirst) {
+          try {
+            const socio = await socioDelegate.findFirst({
+              where: { 
+                id: data.usuarioId,
+                ...(orgId ? { orgId } : {})
+              },
+              select: { id: true },
+            });
+            socioId = socio?.id ?? undefined;
+          } catch (e) {
+            // Si no se encuentra por id, podría ser que usuarioId no sea el id del socio
+            // En ese caso, intentar buscar por email si está en los datos
+            console.log('[Notificaciones] No se encontró socio por id, esto es normal si usuarioId no es socioId');
+          }
+        }
+      }
+
+      const notificacionSupabase = {
+        org_id: orgId || null,
+        socio_id: socioId || null,
+        titulo: data.titulo,
+        mensaje: data.mensaje,
+        tipo: data.tipo,
+        leida: false,
+        obra_id: data.obraId || null,
+        tarea_id: data.tareaId || null,
+        created_at: new Date().toISOString(),
+      };
+
+      const { error: supabaseError } = await supabaseAny
+        .from('notificaciones')
+        .insert([notificacionSupabase]);
+
+      if (supabaseError) {
+        console.error('[Notificaciones] Error al crear notificación en Supabase:', supabaseError);
+        // No fallar si Supabase falla, ya que Prisma funcionó
+      } else {
+        console.log('[Notificaciones] Notificación creada en Supabase y Prisma');
+      }
+    } catch (error) {
+      console.error('[Notificaciones] Error al crear notificación en Supabase:', error);
+      // No fallar si Supabase falla, ya que Prisma funcionó
+    }
 
     // Enviar notificación según el tipo
     await this.enviarNotificacion(notificacion);
@@ -187,6 +264,45 @@ export class NotificacionService {
     payloadJson: any;
   }) {
     try {
+      // Obtener orgId y socioId desde la obra o tarea
+      let orgId: string | undefined;
+      let socioId: string | undefined;
+
+      if (evento.tareaId) {
+        const tareaDelegate = prisma.tarea;
+        if (tareaDelegate?.findUnique) {
+          try {
+            const tarea = await tareaDelegate.findUnique({
+              where: { id: evento.tareaId },
+              select: { orgId: true, socioId: true },
+            });
+            if (tarea) {
+              orgId = tarea.orgId;
+              socioId = tarea.socioId ?? undefined;
+            }
+          } catch (e) {
+            console.warn('[Notificaciones] No se pudo obtener orgId desde tarea', e);
+          }
+        }
+      }
+
+      if (!orgId && evento.obraId) {
+        const obraDelegate = prisma.obra;
+        if (obraDelegate?.findUnique) {
+          try {
+            const obra = await obraDelegate.findUnique({
+              where: { id: evento.obraId },
+              select: { orgId: true },
+            });
+            if (obra) {
+              orgId = obra.orgId;
+            }
+          } catch (e) {
+            console.warn('[Notificaciones] No se pudo obtener orgId desde obra', e);
+          }
+        }
+      }
+
       // Determinar usuarios a notificar según el tipo de evento
       const usuariosANotificar = await this.obtenerUsuariosANotificar(evento);
 
@@ -195,6 +311,29 @@ export class NotificacionService {
         const notificacion = await this.generarNotificacionPorEvento(evento, usuarioId);
         
         if (notificacion) {
+          // Determinar si el usuarioId es un socioId o clienteId
+          let socioIdParaNotificacion: string | undefined;
+          
+          // Para PRESUPUESTO_SUBIDO, el payloadJson tiene el socioId del presupuesto
+          if (evento.tipoEvento === 'PRESUPUESTO_SUBIDO' && evento.payloadJson?.socioId) {
+            // No asignamos socioId aquí porque el usuarioId es el clienteId
+            socioIdParaNotificacion = undefined;
+          }
+          // Para eventos de presupuesto aprobado/rechazado, el usuarioId debería ser el socioId
+          else if (evento.tipoEvento === 'PRESUPUESTO_APROBADO' || evento.tipoEvento === 'PRESUPUESTO_RECHAZADO') {
+            socioIdParaNotificacion = usuarioId; // En estos casos, usuarioId es el socioId
+          } 
+          // Para otros eventos donde el usuarioId es socioId
+          else if (evento.tipoEvento === 'SOCIO_ASIGNADO' || evento.tipoEvento === 'TAREA_VALIDADA' || evento.tipoEvento === 'PAGO_GENERADO') {
+            socioIdParaNotificacion = usuarioId; // En estos casos, usuarioId es el socioId
+          } 
+          else if (usuarioId === socioId) {
+            socioIdParaNotificacion = socioId;
+          } else {
+            // Si no es socioId, podría ser clienteId, no asignamos socioId
+            socioIdParaNotificacion = undefined;
+          }
+          
           await this.crearNotificacion({
             usuarioId,
             tipo: 'IN_APP',
@@ -203,6 +342,8 @@ export class NotificacionService {
             obraId: evento.obraId,
             tareaId: evento.tareaId,
             datos: evento.payloadJson,
+            orgId,
+            socioId: socioIdParaNotificacion,
           });
         }
       }

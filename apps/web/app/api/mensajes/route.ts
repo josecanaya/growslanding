@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Falta x-organizacion-id' }, { status: 400 });
     }
 
-    let query = supabaseAny.from('mensajes').select('*').eq('org_id', orgId);
+    // Buscar en gaucho_memoria donde tipo = 'texto' (mensajes)
+    // También buscar en mensajes por compatibilidad
+    let query = supabaseAny.from('gaucho_memoria').select('*').eq('tipo', 'texto');
 
     if (obraId) {
       query = query.eq('obra_id', obraId);
@@ -25,23 +27,55 @@ export async function GET(request: NextRequest) {
       query = query.eq('tarea_id', tareaId);
     }
 
-    if (socioId) {
-      query = query.or(`remitente_id.eq.${socioId},destinatario_id.eq.${socioId}`);
-      console.log('[GET /api/mensajes] Filtrando por socio_id:', socioId);
-    }
-
-    if (clienteId) {
-      query = query.or(`remitente_id.eq.${clienteId},destinatario_id.eq.${clienteId}`);
-      console.log('[GET /api/mensajes] Filtrando por cliente_id:', clienteId);
-    }
-
+    // Nota: gaucho_memoria tiene estructura diferente (contenido, tipo, leido)
+    // Si necesitamos filtrar por socio/cliente, necesitaríamos mapear los IDs
+    // Por ahora, traemos todos los mensajes de texto y los filtramos después si es necesario
+    
     query = query.order('created_at', { ascending: true });
 
-    const { data, error } = await query;
+    const { data: gauchoData, error: gauchoError } = await query;
+    
+    // También intentar obtener de la tabla mensajes por compatibilidad
+    let mensajesData: any[] = [];
+    try {
+      const mensajesQuery = supabaseAny.from('mensajes').select('*').eq('org_id', orgId);
+      if (socioId) {
+        mensajesQuery.or(`remitente_id.eq.${socioId},destinatario_id.eq.${socioId}`);
+      }
+      if (clienteId) {
+        mensajesQuery.or(`remitente_id.eq.${clienteId},destinatario_id.eq.${clienteId}`);
+      }
+      const { data: mensajesDataResult } = await mensajesQuery.order('created_at', { ascending: true });
+      mensajesData = mensajesDataResult || [];
+    } catch (e) {
+      // Si la tabla mensajes no existe, continuar solo con gaucho_memoria
+      console.log('[GET /api/mensajes] Tabla mensajes no disponible, usando solo gaucho_memoria');
+    }
+
+    // Mapear datos de gaucho_memoria al formato esperado
+    const gauchoMapeado = (gauchoData || []).map((item: any) => ({
+      id: item.id,
+      contenido: item.contenido,
+      tipo: item.tipo,
+      leido: item.leido || false,
+      created_at: item.created_at,
+      // Campos adicionales para compatibilidad
+      remitente_tipo: 'socio' as const,
+      remitente_id: socioId || '',
+      destinatario_tipo: 'cliente' as const,
+      destinatario_id: clienteId || '',
+      obra_id: obraId || null,
+      tarea_id: tareaId || null,
+    }));
+
+    // Combinar ambos resultados
+    const data = [...mensajesData, ...gauchoMapeado];
     
     console.log('[GET /api/mensajes] Resultado de la query:', { 
-      dataLength: data?.length || 0, 
-      error: error?.message || null,
+      gauchoDataLength: gauchoData?.length || 0,
+      mensajesDataLength: mensajesData.length,
+      totalLength: data.length,
+      error: gauchoError?.message || null,
       orgId,
       socioId,
       clienteId,
@@ -49,9 +83,12 @@ export async function GET(request: NextRequest) {
       tareaId
     });
 
-    if (error) {
-      console.error('[GET /api/mensajes] Error:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (gauchoError) {
+      console.error('[GET /api/mensajes] Error en gaucho_memoria:', gauchoError);
+      // Si hay error en gaucho_memoria pero tenemos datos de mensajes, continuar
+      if (mensajesData.length === 0) {
+        return NextResponse.json({ success: false, error: gauchoError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ success: true, data });
@@ -70,13 +107,40 @@ export async function POST(request: NextRequest) {
     const supabaseAny = supabase as any;
     const body = await request.json();
 
-    const { data, error } = await supabaseAny.from('mensajes').insert([body]).select();
+    // Insertar en gaucho_memoria con tipo 'texto'
+    const gauchoData = {
+      contenido: body.contenido || body.mensaje || '',
+      tipo: 'texto',
+      leido: false,
+    };
 
-    if (error) {
-      console.error('[POST /api/mensajes] Error:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const { data: gauchoInsert, error: gauchoError } = await supabaseAny
+      .from('gaucho_memoria')
+      .insert([gauchoData])
+      .select();
+
+    // También insertar en mensajes por compatibilidad si existe
+    let mensajesInsert = null;
+    try {
+      const { data: mensajesData, error: mensajesError } = await supabaseAny
+        .from('mensajes')
+        .insert([body])
+        .select();
+      if (!mensajesError) {
+        mensajesInsert = mensajesData;
+      }
+    } catch (e) {
+      // Si la tabla mensajes no existe, continuar solo con gaucho_memoria
+      console.log('[POST /api/mensajes] Tabla mensajes no disponible, usando solo gaucho_memoria');
     }
 
+    if (gauchoError) {
+      console.error('[POST /api/mensajes] Error en gaucho_memoria:', gauchoError);
+      return NextResponse.json({ success: false, error: gauchoError.message }, { status: 500 });
+    }
+
+    // Retornar el dato insertado (preferir mensajes si existe, sino gaucho_memoria)
+    const data = mensajesInsert || gauchoInsert;
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error('[POST /api/mensajes] Excepción:', error);

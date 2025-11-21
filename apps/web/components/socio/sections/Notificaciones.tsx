@@ -22,7 +22,8 @@ export function Notificaciones({ user }: NotificacionesProps) {
   const currentUser = useCurrentUser();
   const router = useRouter();
   const supabase = createClientComponentClient<Database>();
-  const orgId = currentUser?.orgId ?? null;
+  const orgIdFromUser = currentUser?.orgId ?? null;
+  const [orgId, setOrgId] = useState<string | null>(orgIdFromUser);
   const [socioId, setSocioId] = useState<string | null>(null);
   const [loadingSocioId, setLoadingSocioId] = useState(true);
 
@@ -30,10 +31,10 @@ export function Notificaciones({ user }: NotificacionesProps) {
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
   const [cargando, setCargando] = useState(false);
 
-  // Obtener socio_id desde email
+  // Obtener orgId y socio_id desde email si orgId es null
   useEffect(() => {
-    const obtenerSocioId = async () => {
-      if (!currentUser?.email || !orgId) {
+    const obtenerOrgIdYSocioId = async () => {
+      if (!currentUser?.email) {
         setLoadingSocioId(false);
         return;
       }
@@ -41,29 +42,60 @@ export function Notificaciones({ user }: NotificacionesProps) {
       setLoadingSocioId(true);
       try {
         const supabaseAny = supabase as any;
-        const { data, error } = await supabaseAny
-          .from('socios')
-          .select('id')
-          .eq('email', currentUser.email)
-          .eq('org_id', orgId)
-          .maybeSingle();
+        
+        // Si orgId es null, intentar obtenerlo desde socios
+        let orgIdActual = orgId;
+        if (!orgIdActual) {
+          const { data: socioData, error: socioError } = await supabaseAny
+            .from('socios')
+            .select('id, org_id')
+            .eq('email', currentUser.email)
+            .maybeSingle();
 
-        if (!error && data) {
-          console.log('[Notificaciones] Socio ID obtenido:', data.id);
-          setSocioId(data.id);
+          if (!socioError && socioData) {
+            orgIdActual = socioData.org_id;
+            setOrgId(orgIdActual);
+            setSocioId(socioData.id);
+            console.log('[Notificaciones] OrgId y SocioId obtenidos desde socios:', { 
+              orgId: orgIdActual, 
+              socioId: socioData.id 
+            });
+          } else {
+            console.error('[Notificaciones] Error al obtener orgId y socioId desde socios:', socioError);
+          }
         } else {
-          console.error('[Notificaciones] Error al obtener socio_id:', error);
-          console.log('[Notificaciones] Datos recibidos:', data);
+          // Si orgId existe, solo obtener socioId
+          const { data, error } = await supabaseAny
+            .from('socios')
+            .select('id')
+            .eq('email', currentUser.email)
+            .eq('org_id', orgIdActual)
+            .maybeSingle();
+
+          if (!error && data) {
+            console.log('[Notificaciones] Socio ID obtenido:', data.id);
+            setSocioId(data.id);
+          } else {
+            console.error('[Notificaciones] Error al obtener socio_id:', error);
+            console.log('[Notificaciones] Datos recibidos:', data);
+          }
         }
       } catch (error) {
-        console.error('[Notificaciones] Error al obtener socio_id:', error);
+        console.error('[Notificaciones] Error al obtener orgId y socioId:', error);
       } finally {
         setLoadingSocioId(false);
       }
     };
 
-    obtenerSocioId();
-  }, [currentUser?.email, orgId, supabase]);
+    obtenerOrgIdYSocioId();
+  }, [currentUser?.email, orgIdFromUser, supabase]);
+  
+  // Actualizar orgId cuando cambia orgIdFromUser
+  useEffect(() => {
+    if (orgIdFromUser) {
+      setOrgId(orgIdFromUser);
+    }
+  }, [orgIdFromUser]);
 
   const headers = useMemo(() => {
     const base: Record<string, string> = {};

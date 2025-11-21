@@ -124,13 +124,15 @@ export function Hero() {
         
             {/* Botón principal */}
             <div className="animate-fade-in-up">
-              <Link
-                href={`/${locale}/coming-soon`}
+              <a
+                href="https://calendly.com/grows-demo/30min"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group inline-flex items-center gap-3 bg-[#052D3D] text-white px-10 py-5 rounded-xl text-lg font-bold hover:bg-[#041F2B] hover:shadow-2xl transition-all duration-300 shadow-lg hover:scale-105 border-2 border-[#F9D65C]"
               >
                 {t('ctaButton')}
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Link>
+              </a>
             </div>
       </div>
       

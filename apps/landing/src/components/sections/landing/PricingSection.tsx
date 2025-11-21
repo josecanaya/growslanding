@@ -35,8 +35,8 @@ export function PricingSection() {
         { text: 'Sin vincular obreros', included: false },
         { text: 'Sin automatizaciones', included: false },
       ],
-      cta: 'Empezar gratis',
-      ctaLink: `/${locale}/coming-soon`,
+      cta: 'Crear cuenta FREE',
+      ctaLink: 'http://app.grows.com.ar/auth/register',
     },
     {
       name: 'Starter',
@@ -52,8 +52,8 @@ export function PricingSection() {
         { text: 'Reportes simples', included: true },
         { text: 'Soporte prioritario', included: false },
       ],
-      cta: 'Contratar Starter',
-      ctaLink: `/${locale}/coming-soon`,
+      cta: 'Agendar Demo',
+      ctaLink: 'https://calendly.com/grows-demo/30min',
     },
     {
       name: 'Pro',
@@ -70,15 +70,15 @@ export function PricingSection() {
         { text: 'Exportación datos (PDF/CSV)', included: true },
         { text: 'Soporte técnico prioritario', included: true },
       ],
-      cta: 'Contratar Pro',
-      ctaLink: `/${locale}/coming-soon`,
+      cta: 'Agendar Demo',
+      ctaLink: 'https://calendly.com/grows-demo/30min',
     },
     {
       name: 'Enterprise',
       price: '$200 USD',
       period: 'por mes',
       description: 'Grandes volúmenes y personalizaciones',
-      badge: 'En desarrollo',
+      badge: 'Contactar ventas',
       features: [
         { text: 'Obras ilimitadas', included: true },
         { text: 'Socios ilimitados', included: true },
@@ -87,8 +87,8 @@ export function PricingSection() {
         { text: 'Despliegue dedicado', included: true },
         { text: 'Soporte gerenciado 24/7', included: true },
       ],
-      cta: 'Acceso anticipado',
-      ctaLink: `/${locale}/coming-soon`,
+      cta: 'Contactar para inversión',
+      ctaLink: '#contact',
     },
   ];
 
@@ -204,16 +204,31 @@ export function PricingSection() {
               </ul>
 
               {/* CTA */}
-              <Link
-                href={plan.ctaLink}
-                className={`block w-full py-3 px-6 rounded-grows-md font-semibold transition-all text-center ${
-                  plan.highlighted
-                    ? 'bg-grows-primary text-white hover:bg-grows-primary/90 hover:shadow-grows-md'
-                    : 'border-2 border-grows-primary text-grows-primary hover:bg-grows-primary hover:text-white'
-                }`}
-              >
-                {plan.cta}
-              </Link>
+              {plan.ctaLink.startsWith('http') || plan.ctaLink.startsWith('#') ? (
+                <a
+                  href={plan.ctaLink}
+                  target={plan.ctaLink.startsWith('http') ? '_blank' : undefined}
+                  rel={plan.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className={`block w-full py-3 px-6 rounded-grows-md font-semibold transition-all text-center ${
+                    plan.highlighted
+                      ? 'bg-grows-primary text-white hover:bg-grows-primary/90 hover:shadow-grows-md'
+                      : 'border-2 border-grows-primary text-grows-primary hover:bg-grows-primary hover:text-white'
+                  }`}
+                >
+                  {plan.cta}
+                </a>
+              ) : (
+                <Link
+                  href={plan.ctaLink}
+                  className={`block w-full py-3 px-6 rounded-grows-md font-semibold transition-all text-center ${
+                    plan.highlighted
+                      ? 'bg-grows-primary text-white hover:bg-grows-primary/90 hover:shadow-grows-md'
+                      : 'border-2 border-grows-primary text-grows-primary hover:bg-grows-primary hover:text-white'
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>

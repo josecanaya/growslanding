@@ -6,6 +6,7 @@ import { UserProfiles } from "@/components/sections/landing/UserProfiles";
 import { EcosystemSection } from "@/components/sections/landing/EcosystemSection";
 import { Footer } from "@/components/footer/Footer";
 import { StorytellingFlow } from "@/components/sections/landing/StorytellingFlow";
+import { CTASection } from "@/components/sections/landing/CTASection";
 import { setRequestLocale } from "next-intl/server";
 import { GrowsBot } from "@/components/chat/GrowsBot";
 import { SectionDivider } from "@/components/SectionDivider";
@@ -25,6 +26,7 @@ export default function HomePage({ params: { locale } }: Props) {
         <UserProfiles />
         <EcosystemSection />
         <PricingSection />
+        <CTASection />
       </main>
       <Footer />
       <GrowsBot />

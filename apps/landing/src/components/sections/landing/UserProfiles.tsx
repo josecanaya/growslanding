@@ -146,13 +146,15 @@ export function UserProfiles() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
-                      <Link
-                        href={`/${locale}/coming-soon`}
+                      <a
+                        href="http://app.grows.com.ar/auth/register"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="group/btn inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 text-black font-semibold rounded-lg hover:bg-yellow-500 transition-all duration-300 shadow-md hover:shadow-lg self-start sm:self-auto"
                       >
                         {userType.ctaButton}
                         <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-1 transition-transform duration-200" />
-                      </Link>
+                      </a>
                     </motion.div>
                   </div>
                 </div>

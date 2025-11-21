@@ -16,8 +16,22 @@ export function CTASection() {
     setStatus('loading');
     
     try {
-      // Simular envío
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          source: 'cta_section',
+          interest_type: 'free_account',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al enviar');
+      }
+
       setStatus('success');
       setEmail('');
     } catch (e) {
@@ -33,10 +47,10 @@ export function CTASection() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Empezá gratis y escalá cuando lo necesites
+            ¿Listo para transformar tu construcción?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Plan Free sin límite de tiempo. Probá GROWS con 2 obras, familiarizate con el flujo y activá funciones premium cuando quieras.
+            Creá tu cuenta gratuita ahora o contactanos para inversiones y soluciones empresariales. Sin compromiso, sin límites de tiempo.
           </p>
         </div>
 
@@ -45,10 +59,10 @@ export function CTASection() {
             <div className="text-center">
               <CheckCircle className="h-16 w-16 text-grows-success mx-auto mb-6" />
               <h3 className="text-2xl font-bold text-grows-text-primary mb-4">
-                ¡Gracias por tu interés!
+                ¡Gracias por tu interés en GROWS!
               </h3>
               <p className="text-lg text-grows-text-secondary mb-6">
-                Te contactaremos pronto con acceso early access.
+                Nuestro equipo se pondrá en contacto contigo en las próximas 24 horas para coordinar tu acceso o responder tus consultas.
               </p>
               <button
                 onClick={() => setStatus('idle')}
@@ -64,7 +78,7 @@ export function CTASection() {
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-grows-text-secondary/50" />
                   <input
                     type="email"
-                    placeholder="Tu email profesional"
+                    placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -95,7 +109,7 @@ export function CTASection() {
                   </>
                 ) : (
                   <>
-                    Crear cuenta gratis
+                    Solicitar información
                     <ArrowRight className="h-5 w-5" />
                   </>
                 )}

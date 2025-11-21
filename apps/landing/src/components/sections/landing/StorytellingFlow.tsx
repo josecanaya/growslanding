@@ -470,7 +470,9 @@ export function StorytellingFlow() {
 
                   {/* CTA Button */}
                   <motion.a
-                    href={`/${locale}/coming-soon`}
+                    href="http://app.grows.com.ar/auth/register"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="group relative inline-flex items-center justify-center gap-2 md:gap-3 w-1/2 md:w-auto px-4 md:px-10 py-3 md:py-5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black font-bold text-sm md:text-xl rounded-2xl shadow-2xl overflow-hidden transition-all duración-300 mx-auto z-10"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -479,7 +481,7 @@ export function StorytellingFlow() {
                     whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(234, 179, 8, 0.5)' }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <span className="relative z-10">Probar GROWS</span>
+                    <span className="relative z-10">Crear cuenta FREE</span>
                     <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform duration-200 relative z-10" />
                     
                     {/* Button shimmer effect */}

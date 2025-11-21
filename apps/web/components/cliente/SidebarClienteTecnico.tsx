@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   MessageCircle,
   Building2,
@@ -10,10 +11,12 @@ import {
   Calendar,
   ClipboardList,
   HelpCircle,
+  LogOut,
 } from 'lucide-react';
 
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { ROLE_LABELS, normalizeRole } from '@/lib/roles';
+import { logout } from '@/lib/auth';
 
 interface SidebarClienteTecnicoProps {
   activeSection: string;
@@ -25,7 +28,9 @@ export function SidebarClienteTecnico({
   onSectionChange,
 }: SidebarClienteTecnicoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const currentUser = useCurrentUser();
+  const router = useRouter();
 
   const displayName = useMemo(
     () => currentUser?.name ?? 'Equipo GROWS',
@@ -109,7 +114,33 @@ export function SidebarClienteTecnico({
         </ul>
       </nav>
 
-      <div className="border-t border-white/20 p-4">
+      <div className="border-t border-white/20 p-4 space-y-2">
+        <button
+          onClick={async () => {
+            if (isLoggingOut) return;
+            setIsLoggingOut(true);
+            try {
+              await logout({ router, redirectTo: '/auth/login' });
+            } catch (error) {
+              console.error('[LOGOUT_ERROR]', error);
+              setIsLoggingOut(false);
+            }
+          }}
+          disabled={isLoggingOut}
+          className={`group flex w-full items-center rounded-xl px-4 py-3 text-left font-medium transition-all duration-200 ${
+            isExpanded ? 'gap-3 justify-start' : 'justify-center'
+          } text-white hover:bg-red-500/20 hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed`}
+          title={!isExpanded ? 'Cerrar sesión' : undefined}
+        >
+          <LogOut
+            className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 text-white group-hover:text-red-400 ${
+              isLoggingOut ? 'animate-pulse' : ''
+            }`}
+          />
+          {isExpanded && (
+            <span>{isLoggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}</span>
+          )}
+        </button>
         {isExpanded && <p className="text-center text-xs text-white/50 mt-2">v1.0</p>}
       </div>
     </div>

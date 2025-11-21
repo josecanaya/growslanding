@@ -3,9 +3,11 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
+import Image from 'next/image';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useDevMode } from '@/lib/dev-mode-context';
 import { mockUser } from '@/lib/mockUser';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -149,67 +151,87 @@ function SelectRolePageContent() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0D3B3B] px-4 py-12 text-white">
-      <div className="w-full max-w-2xl space-y-8 rounded-3xl bg-[#F5F6F7] p-10 text-center text-[#333333] shadow-2xl">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#0D3B3B]">
-            Bienvenido a GROWS
-          </h1>
-          <p className="text-sm text-[#333333] opacity-70">
-            Elegí tu rol para configurar la experiencia adecuada.
-          </p>
-        </header>
-
-        {statusMessage ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {statusMessage}
-          </div>
-        ) : null}
-
-        <div className="grid gap-4 md:grid-cols-2">
-          {ROLE_CHOICES.map((choice) => (
-            <button
-              key={choice.key}
-              type="button"
-              disabled={loading}
-              onClick={() => handleRoleSelection(choice.key)}
-              className="group flex h-full flex-col items-center justify-between rounded-2xl border border-[#0D3B3B]/15 bg-white px-6 py-8 text-left shadow-sm transition hover:-translate-y-1 hover:border-[#FFD700] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-75"
-            >
-              <div className="space-y-3 text-center">
-                <h2 className="text-xl font-semibold text-[#0D3B3B]">
-                  {choice.title}
-                </h2>
-                <p className="text-sm text-[#333333]/80">
-                  {choice.description}
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4 py-12">
+      <div className="flex w-full max-w-6xl flex-col items-center justify-center gap-16 md:flex-row">
+        {/* Columna izquierda: Formulario */}
+        <div className="flex w-full max-w-2xl items-center justify-center">
+          <Card className="w-full rounded-lg border border-gray-200 bg-white p-10 shadow-sm">
+            <CardContent className="space-y-8 p-0">
+              <header className="space-y-2 text-center">
+                <h1 className="text-2xl font-semibold text-[#002E5D]">
+                  Bienvenido a GROWS
+                </h1>
+                <p className="text-sm text-gray-600">
+                  Elegí tu rol para configurar la experiencia adecuada.
                 </p>
+              </header>
+
+              {statusMessage ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {statusMessage}
+                </div>
+              ) : null}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                {ROLE_CHOICES.map((choice) => (
+                  <button
+                    key={choice.key}
+                    type="button"
+                    disabled={loading}
+                    onClick={() => handleRoleSelection(choice.key)}
+                    className="group flex h-full flex-col items-center justify-between rounded-lg border border-gray-200 bg-white px-6 py-8 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-[#002E5D] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <div className="space-y-3 text-center">
+                      <h2 className="text-lg font-semibold text-[#002E5D]">
+                        {choice.title}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        {choice.description}
+                      </p>
+                    </div>
+                    <span className="mt-6 inline-flex items-center rounded-md bg-[#002E5D] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors group-hover:bg-[#003d7a]">
+                      Continuar
+                    </span>
+                  </button>
+                ))}
               </div>
-              <span className="mt-6 inline-flex items-center rounded-full bg-[#FFD700] px-4 py-2 text-sm font-semibold text-[#0D3B3B] shadow transition group-hover:bg-[#e6c200]">
-                Continuar
-              </span>
-            </button>
-          ))}
+
+              {devModeEnabled ? (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-5 text-sm text-blue-700">
+                  <p className="mb-3 font-medium">
+                    Opciones de prueba (solo visibles en modo desarrollador)
+                  </p>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      className="rounded-md border-gray-300 text-[#002E5D] hover:bg-gray-50"
+                      disabled={loading}
+                      onClick={() => handleRoleSelection('ADMIN')}
+                    >
+                      Entrar como ADMIN (modo prueba)
+                    </Button>
+                    <p className="text-xs text-gray-600">
+                      No se guarda en Supabase; acceso directo como {mockUser.role}.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
         </div>
 
-        {devModeEnabled ? (
-          <div className="rounded-2xl border border-dashed border-[#FFD700]/60 bg-[#FFD700]/10 p-5 text-sm text-[#0D3B3B]">
-            <p className="mb-3 font-medium">
-              Opciones de prueba (solo visibles en modo desarrollador)
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <Button
-                variant="outline"
-                className="border-[#FFD700] text-[#0D3B3B] hover:bg-[#FFD700] hover:text-[#0D3B3B]"
-                disabled={loading}
-                onClick={() => handleRoleSelection('ADMIN')}
-              >
-                Entrar como ADMIN (modo prueba)
-              </Button>
-              <p className="text-xs text-[#0D3B3B]/70">
-                No se guarda en Supabase; acceso directo como {mockUser.role}.
-              </p>
-            </div>
+        {/* Columna derecha: Imagen (oculta en mobile) */}
+        <div className="hidden h-[600px] w-full max-w-[460px] items-center justify-center md:flex">
+          <div className="relative h-full w-full">
+            <Image
+              src="/images/Login.png"
+              alt="GROWS Select Role"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
@@ -219,8 +241,8 @@ export default function SelectRolePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#0D3B3B] px-4 py-12 text-white">
-          <div className="rounded-3xl bg-[#F5F6F7] p-10 text-center text-[#333333] shadow-2xl">
+        <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4 py-12">
+          <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-[#002E5D] shadow-sm">
             Cargando…
           </div>
         </div>

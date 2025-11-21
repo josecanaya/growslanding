@@ -8,6 +8,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import { useDevMode } from '@/lib/dev-mode-context';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -147,10 +148,10 @@ function OnboardingPageContent() {
 
   if (devModeEnabled) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#003840] px-4 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4">
         <div className="space-y-3 text-center">
-          <p className="text-lg font-semibold">Modo desarrollador activo</p>
-          <p className="text-sm text-white/70">
+          <p className="text-lg font-semibold text-[#002E5D]">Modo desarrollador activo</p>
+          <p className="text-sm text-gray-600">
             Redirigiendo al panel utilizando la organización de prueba…
           </p>
         </div>
@@ -160,36 +161,38 @@ function OnboardingPageContent() {
 
   if (!currentUser) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#003840] px-4 text-white">
-        <p className="text-sm text-white/70">Cargando sesión…</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4">
+        <p className="text-sm text-gray-600">Cargando sesión…</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#003840] px-4 py-12 text-white">
-      <div className="w-full max-w-3xl space-y-8 rounded-3xl bg-[#F5F5F5] p-10 text-[#333333] shadow-2xl">
-        <header className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold text-[#003840]">Configurar organización</h1>
-          <p className="text-sm text-[#333333]/80">
-            Completa el onboarding para comenzar a trabajar con tu equipo.
-          </p>
-        </header>
+    <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4 py-12">
+      <div className="w-full max-w-3xl">
+        <Card className="rounded-lg border border-gray-200 bg-white p-10 shadow-sm">
+          <CardContent className="space-y-8 p-0">
+            <header className="space-y-2 text-center">
+              <h1 className="text-2xl font-semibold text-[#002E5D]">Configurar organización</h1>
+              <p className="text-sm text-gray-600">
+                Completa el onboarding para comenzar a trabajar con tu equipo.
+              </p>
+            </header>
 
-        <nav className="flex justify-center gap-3 text-xs font-medium uppercase tracking-wide text-[#003840]">
-          {[1, 2, 3].map((value) => (
-            <span
-              key={value}
-              className={`rounded-full px-3 py-1 ${
-                step === value
-                  ? 'bg-[#FFC300] text-[#003840]'
-                  : 'bg-[#003840]/10 text-[#003840]/70'
-              }`}
-            >
-              Paso {value}
-            </span>
-          ))}
-        </nav>
+            <nav className="flex justify-center gap-3 text-xs font-medium uppercase tracking-wide">
+              {[1, 2, 3].map((value) => (
+                <span
+                  key={value}
+                  className={`rounded-md px-3 py-1 ${
+                    step === value
+                      ? 'bg-[#002E5D] text-white'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  Paso {value}
+                </span>
+              ))}
+            </nav>
 
         {statusMessage ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -200,7 +203,7 @@ function OnboardingPageContent() {
         {step === 1 ? (
           <form className="space-y-6" onSubmit={handleOrgFormSubmit}>
             <div className="space-y-2 text-left">
-              <Label htmlFor="org-name" className="text-sm font-semibold text-[#003840]">
+              <Label htmlFor="org-name" className="text-sm font-semibold text-[#002E5D]">
                 Nombre de la empresa*
               </Label>
               <Input
@@ -211,12 +214,13 @@ function OnboardingPageContent() {
                 }
                 placeholder="Ej. Constructora Horizonte SRL"
                 required
+                className="h-12 rounded-md"
               />
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 text-left">
-                <Label htmlFor="org-cuit" className="text-sm font-semibold text-[#003840]">
+                <Label htmlFor="org-cuit" className="text-sm font-semibold text-[#002E5D]">
                   CUIT (opcional)
                 </Label>
                 <Input
@@ -226,12 +230,13 @@ function OnboardingPageContent() {
                     setOrgData((prev) => ({ ...prev, cuit: event.target.value }))
                   }
                   placeholder="30-12345678-9"
+                  className="h-12 rounded-md"
                 />
               </div>
               <div className="space-y-2 text-left">
                 <Label
                   htmlFor="org-address"
-                  className="text-sm font-semibold text-[#003840]"
+                  className="text-sm font-semibold text-[#002E5D]"
                 >
                   Dirección (opcional)
                 </Label>
@@ -242,6 +247,7 @@ function OnboardingPageContent() {
                     setOrgData((prev) => ({ ...prev, address: event.target.value }))
                   }
                   placeholder="Av. Pellegrini 1234, Rosario"
+                  className="h-12 rounded-md"
                 />
               </div>
             </div>
@@ -249,7 +255,7 @@ function OnboardingPageContent() {
             <div className="flex justify-end">
               <Button
                 type="submit"
-                className="bg-[#FFC300] text-[#003840] hover:bg-[#e6af00]"
+                className="h-12 rounded-md bg-[#002E5D] text-white shadow-sm transition-colors hover:bg-[#003d7a]"
               >
                 Siguiente
               </Button>
@@ -262,7 +268,7 @@ function OnboardingPageContent() {
             <div className="space-y-2 text-left">
               <Label
                 htmlFor="invite-email"
-                className="text-sm font-semibold text-[#003840]"
+                className="text-sm font-semibold text-[#002E5D]"
               >
                 Invitar socios por email (opcional)
               </Label>
@@ -273,26 +279,27 @@ function OnboardingPageContent() {
                   placeholder="socio@empresa.com"
                   value={inviteInput}
                   onChange={(event) => setInviteInput(event.target.value)}
+                  className="h-12 rounded-md"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  className="border-[#FFC300] text-[#003840] hover:bg-[#FFC300] hover:text-[#003840]"
+                  className="h-12 rounded-md border-gray-300 text-[#002E5D] hover:bg-gray-50"
                   onClick={handleAddInvite}
                   disabled={!inviteInput.trim()}
                 >
                   Agregar
                 </Button>
               </div>
-              <p className="text-xs text-[#003840]/70">
+              <p className="text-xs text-gray-600">
                 Próximamente enviaremos invitaciones automáticas. Por ahora podrás copiarlas manualmente.
               </p>
             </div>
 
             {invites.length > 0 ? (
-              <div className="rounded-2xl border border-[#003840]/10 bg-white p-4 text-left">
-                <p className="text-sm font-semibold text-[#003840]">Invitados</p>
-                <ul className="mt-3 space-y-2 text-sm text-[#003840]/80">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-left">
+                <p className="text-sm font-semibold text-[#002E5D]">Invitados</p>
+                <ul className="mt-3 space-y-2 text-sm text-gray-700">
                   {invites.map((email) => (
                     <li key={email} className="flex items-center justify-between gap-2">
                       <span>{email}</span>
@@ -315,7 +322,7 @@ function OnboardingPageContent() {
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#003840]/30 text-[#003840] hover:bg-[#003840]/10"
+                className="h-12 rounded-md border-gray-300 text-gray-700 hover:bg-gray-50"
                 onClick={() => setStep(1)}
               >
                 Volver
@@ -323,7 +330,7 @@ function OnboardingPageContent() {
               <Button
                 type="button"
                 onClick={handleCreateOrganization}
-                className="bg-[#FFC300] text-[#003840] hover:bg-[#e6af00]"
+                className="h-12 rounded-md bg-[#002E5D] text-white shadow-sm transition-colors hover:bg-[#003d7a] disabled:opacity-50"
                 disabled={loading}
               >
                 {loading ? 'Guardando...' : 'Finalizar'}
@@ -336,10 +343,10 @@ function OnboardingPageContent() {
           <div className="space-y-6 text-center">
             <div className="space-y-2">
               <p className="text-3xl">🎉</p>
-              <h2 className="text-2xl font-semibold text-[#003840]">
+              <h2 className="text-2xl font-semibold text-[#002E5D]">
                 Organización creada con éxito
               </h2>
-              <p className="text-sm text-[#003840]/80">
+              <p className="text-sm text-gray-600">
                 {createdOrgName
                   ? `${createdOrgName} ya está lista para comenzar a trabajar.`
                   : 'Tu organización ya está lista para comenzar a trabajar.'}
@@ -347,13 +354,15 @@ function OnboardingPageContent() {
             </div>
             <Button
               type="button"
-              className="mx-auto bg-[#FFC300] text-[#003840] hover:bg-[#e6af00]"
+              className="mx-auto h-12 rounded-md bg-[#002E5D] text-white shadow-sm transition-colors hover:bg-[#003d7a]"
               onClick={handleGoToPanel}
             >
               Ir al panel
             </Button>
           </div>
         ) : null}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -363,8 +372,10 @@ export default function OnboardingPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#003840] px-4 text-white">
-          <p className="text-sm text-white/70">Cargando onboarding…</p>
+        <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4">
+          <div className="rounded-lg border border-gray-200 bg-white p-10 text-center text-[#002E5D] shadow-sm">
+            Cargando onboarding…
+          </div>
         </div>
       }
     >

@@ -79,6 +79,14 @@ export default function LoginClient() {
     } catch (err) {
       console.error("[GOOGLE_LOGIN_ERROR]", err);
 
+      // Detectar error de rate limit
+      const isRateLimit = 
+        (err instanceof Error && (
+          err.message?.toLowerCase().includes('rate limit') ||
+          err.message?.toLowerCase().includes('too many requests')
+        )) ||
+        (err as any)?.status === 429;
+
       // Manejar específicamente el error de proveedor no habilitado
       if (
         err instanceof Error &&
@@ -86,6 +94,10 @@ export default function LoginClient() {
       ) {
         setError(
           "Google OAuth no está configurado en este momento. Por favor, usa el enlace mágico con tu correo electrónico."
+        );
+      } else if (isRateLimit) {
+        setError(
+          "Se alcanzó el límite de intentos de autenticación. Por favor, espera unos minutos antes de intentar nuevamente."
         );
       } else {
         setError(

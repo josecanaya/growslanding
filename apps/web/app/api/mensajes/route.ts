@@ -53,20 +53,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Mapear datos de gaucho_memoria al formato esperado
-    const gauchoMapeado = (gauchoData || []).map((item: any) => ({
-      id: item.id,
-      contenido: item.contenido,
-      tipo: item.tipo,
-      leido: item.leido || false,
-      created_at: item.created_at,
-      // Campos adicionales para compatibilidad
-      remitente_tipo: 'socio' as const,
-      remitente_id: socioId || '',
-      destinatario_tipo: 'cliente' as const,
-      destinatario_id: clienteId || '',
-      obra_id: obraId || null,
-      tarea_id: tareaId || null,
-    }));
+    // gaucho_memoria tiene: id, contenido, tipo, leido, created_at
+    // Como no tenemos remitente_id/destinatario_id en gaucho_memoria,
+    // asumimos que si hay socioId en la query, los mensajes son del socio hacia el cliente
+    // Si no hay socioId pero hay clienteId, son del cliente hacia el socio
+    const gauchoMapeado = (gauchoData || []).map((item: any) => {
+      // Determinar remitente y destinatario basado en quién está consultando
+      let remitente_id = '';
+      let remitente_tipo: 'socio' | 'cliente' = 'socio';
+      let destinatario_id = '';
+      let destinatario_tipo: 'socio' | 'cliente' = 'cliente';
+      
+      if (socioId) {
+        // Si hay socioId, asumimos que los mensajes son del socio hacia el cliente
+        remitente_id = socioId;
+        remitente_tipo = 'socio';
+        destinatario_id = clienteId || '';
+        destinatario_tipo = 'cliente';
+      } else if (clienteId) {
+        // Si hay clienteId pero no socioId, son del cliente hacia el socio
+        remitente_id = clienteId;
+        remitente_tipo = 'cliente';
+        destinatario_id = socioId || '';
+        destinatario_tipo = 'socio';
+      }
+      
+      return {
+        id: item.id,
+        contenido: item.contenido,
+        remitente_tipo,
+        remitente_id,
+        destinatario_tipo,
+        destinatario_id,
+        obra_id: obraId || null,
+        tarea_id: tareaId || null,
+        created_at: item.created_at,
+        leido: item.leido || false,
+      };
+    });
 
     // Combinar ambos resultados
     const data = [...mensajesData, ...gauchoMapeado];

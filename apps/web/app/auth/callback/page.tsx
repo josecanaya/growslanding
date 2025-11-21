@@ -1,11 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 
-import { useDevMode } from "@/lib/dev-mode-context";
 import type { Database } from "@/lib/types/supabase.gen";
 import { getDefaultRouteForRole, normalizeRole } from "@/lib/roles";
 
@@ -28,35 +27,47 @@ function sanitizeRedirect(target: string | null): string | null {
 function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { devModeEnabled } = useDevMode();
   const supabase = useMemo(() => createClientComponentClient<Database>(), []);
-  const defaultDevRoute = getDefaultRouteForRole("ADMIN");
   const redirectParam = searchParams?.get("redirect") ?? null;
   const redirectTarget = sanitizeRedirect(redirectParam);
+
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
     let active = true;
 
     async function resolveSession() {
-      if (devModeEnabled) {
-        const target = redirectTarget ?? defaultDevRoute;
-        router.replace(target as Route);
+      // Prevenir ejecuciones múltiples
+      if (hasRunRef.current) {
         return;
       }
-
+      hasRunRef.current = true;
       try {
         // Intercambiar código OAuth por sesión si está presente en la URL
         const code = searchParams?.get("code");
         if (code) {
-          const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code);
+          // Intentar intercambiar código UNA SOLA VEZ (sin retry para evitar loops)
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          
           if (exchangeError) {
             console.error(
               "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
               exchangeError
             );
+            
+            // Detectar error de rate limit específicamente
+            const isRateLimit = 
+              exchangeError.message?.toLowerCase().includes('rate limit') ||
+              exchangeError.message?.toLowerCase().includes('too many requests') ||
+              exchangeError.status === 429;
+            
             if (active) {
-              router.replace("/auth/login?error=oauth_failed" as Route);
+              // Redirigir inmediatamente sin reintentar para evitar más requests
+              if (isRateLimit) {
+                router.replace("/auth/login?error=rate_limit" as Route);
+              } else {
+                router.replace("/auth/login?error=oauth_failed" as Route);
+              }
             }
             return;
           }
@@ -114,8 +125,6 @@ function CallbackPageContent() {
       active = false;
     };
   }, [
-    devModeEnabled,
-    defaultDevRoute,
     redirectTarget,
     router,
     searchParams,
@@ -124,9 +133,14 @@ function CallbackPageContent() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F5F6F7] px-4 text-[#0D3B3B]">
-      <p className="text-center text-lg font-semibold">
-        Verificando sesión segura…
-      </p>
+      <div className="text-center">
+        <p className="text-lg font-semibold callback-loading-message">
+          Verificando sesión segura…
+        </p>
+        <p className="mt-2 text-sm text-gray-600">
+          Si ves un error de límite de velocidad, espera 10-15 minutos antes de intentar nuevamente.
+        </p>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import type { FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, MessageCircle, Mail } from "lucide-react";
+import { X, MessageCircle, Mail, ChevronUp, ChevronDown } from "lucide-react";
 
 import { scrollToSection } from "@/utils/scrollToSection";
 
@@ -44,11 +44,14 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(true);
+  const [showTooltip, setShowTooltip] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const [isIntroBoost, setIsIntroBoost] = useState(true);
+  const [isIntroBoost, setIsIntroBoost] = useState(false);
   const [showTutorialOverlay, setShowTutorialOverlay] = useState(false);
   const [tutorialCompleted, setTutorialCompleted] = useState(false);
+  const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [iconsCollapsed, setIconsCollapsed] = useState(false);
 
   // Contactos del footer
   const whatsappNumber = "+543413189944"; // (+54) 341 318-9944 sin espacios
@@ -91,7 +94,12 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     }
   }, [messages, hasHydrated]);
 
+  // El tooltip se maneja junto con el tutorial overlay
   useEffect(() => {
+    if (!showTutorialOverlay) {
+      setShowTooltip(false);
+      return;
+    }
     if (typeof window === "undefined") {
       return;
     }
@@ -100,7 +108,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       tooltipDurationMs
     );
     return () => window.clearTimeout(tooltipTimeout);
-  }, []);
+  }, [showTutorialOverlay]);
 
   useEffect(() => {
     if (!isIntroBoost) return;
@@ -110,10 +118,39 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     return () => window.clearTimeout(timeout);
   }, [isIntroBoost]);
 
+  // Detectar si es mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Detectar scroll en mobile
+  useEffect(() => {
+    if (!isMobile) {
+      setIsScrolledDown(true); // En desktop siempre visible
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setIsScrolledDown(scrollY > 300); // Aparecer después de 300px de scroll
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
+
   // Activar overlay tutorial después de 3 segundos
   useEffect(() => {
     const timeout = window.setTimeout(() => {
       setShowTutorialOverlay(true);
+      setIsIntroBoost(true);
+      setShowTooltip(true);
     }, 3000);
     return () => window.clearTimeout(timeout);
   }, []);
@@ -125,6 +162,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       setShowTutorialOverlay(false);
       setTutorialCompleted(true);
       setIsIntroBoost(false);
+      setShowTooltip(false);
     }, 8000);
     return () => window.clearTimeout(timeout);
   }, [showTutorialOverlay]);
@@ -133,6 +171,7 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
     setShowTutorialOverlay(false);
     setTutorialCompleted(true);
     setIsIntroBoost(false);
+    setShowTooltip(false);
   }, []);
 
   useEffect(() => {
@@ -365,24 +404,24 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       </AnimatePresence>
 
       <AnimatePresence>
-        {showTooltip && (
+        {showTooltip && showTutorialOverlay && !isOpen && (
           <motion.div
             key="growsbot-tooltip"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="fixed bottom-28 right-8 z-[9999] rounded-lg border-2 border-[#F8D24A] bg-gradient-to-br from-white to-[#F8D24A]/10 px-5 py-3 text-sm font-bold text-[#002E5D] shadow-2xl"
+            className={`fixed ${isMobile ? 'bottom-24 right-4' : 'bottom-28 right-8'} z-[9999] rounded-lg border-2 border-[#F8D24A] bg-gradient-to-br from-white to-[#F8D24A]/10 ${isMobile ? 'px-4 py-2 text-xs max-w-[280px]' : 'px-5 py-3 text-sm'} font-bold text-[#002E5D] shadow-2xl`}
             style={{
               boxShadow: "0 10px 40px rgba(248, 210, 74, 0.4)",
             }}
           >
             <div className="flex items-center gap-2">
-              <span className="text-2xl">👋</span>
+              <span className={isMobile ? "text-xl" : "text-2xl"}>👋</span>
               <div>
-                <span className="font-bold text-[#002E5D]">¡Hola! Soy Fierro</span>
+                <span className={`font-bold text-[#002E5D] ${isMobile ? 'text-xs' : 'text-sm'}`}>¡Hola! Soy Fierro</span>
                 <br />
-                <span className="text-xs font-semibold text-gray-700">
+                <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-semibold text-gray-700`}>
                   Tu asistente de GROWS. ¿Querés invertir, agendar demo o crear cuenta?
                 </span>
               </div>
@@ -575,55 +614,84 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
       </AnimatePresence>
 
       {/* Contenedor de iconos de contacto y botón del chatbot */}
-      <div className="fixed bottom-6 right-6 z-[50] flex flex-col items-end gap-3">
-        {/* Iconos de contacto - WhatsApp y Email */}
-        {(tutorialCompleted || showTutorialOverlay || isOpen) && (
+      <AnimatePresence>
+        {(showTutorialOverlay || tutorialCompleted || isOpen) && (isMobile ? isScrolledDown : true) && (
           <motion.div
-            key="contact-icons"
-            initial={{ opacity: 0, y: 20, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.4, delay: showTutorialOverlay ? 0.3 : 0 }}
-            className="flex flex-col gap-3"
+            key="chatbot-container"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.3 }}
+            className={`fixed ${isMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'} z-[50] flex flex-col items-end gap-2`}
           >
-              {/* Botón WhatsApp */}
-              <motion.a
-                href={`https://wa.me/${whatsappNumber}?text=Hola,%20me%20interesa%20conocer%20más%20sobre%20GROWS`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                aria-label="Contactar por WhatsApp"
-              >
-                {/* Logo WhatsApp SVG */}
-                <svg
-                  className="h-8 w-8"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
-                </svg>
-              </motion.a>
-
-              {/* Botón Email/Gmail */}
+            {/* Botón para colapsar/expandir iconos (solo mobile) */}
+            {isMobile && (tutorialCompleted || showTutorialOverlay || isOpen) && (
               <motion.button
                 type="button"
-                onClick={() => {
-                  window.location.href = `mailto:${email}?subject=Consulta sobre GROWS`;
-                }}
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl border-2 border-gray-200 cursor-pointer"
-                whileHover={{ scale: 1.1 }}
+                onClick={() => setIconsCollapsed(!iconsCollapsed)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#002E5D]/90 text-white shadow-lg backdrop-blur-sm transition-all hover:bg-[#002E5D] mb-1"
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                aria-label="Enviar email"
+                aria-label={iconsCollapsed ? "Mostrar iconos" : "Ocultar iconos"}
               >
-                {/* Logo Gmail SVG mejorado */}
-                <svg
-                  className="h-8 w-8"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                {iconsCollapsed ? (
+                  <ChevronUp className="h-5 w-5" />
+                ) : (
+                  <ChevronDown className="h-5 w-5" />
+                )}
+              </motion.button>
+            )}
+
+            {/* Iconos de contacto - WhatsApp y Email */}
+            <AnimatePresence>
+              {(tutorialCompleted || showTutorialOverlay || isOpen) && (!isMobile || !iconsCollapsed) && (
+                <motion.div
+                  key="contact-icons"
+                  initial={{ opacity: 0, y: 20, scale: 0.8, height: 0 }}
+                  animate={{ opacity: 1, y: 0, scale: 1, height: "auto" }}
+                  exit={{ opacity: 0, y: 20, scale: 0.8, height: 0 }}
+                  transition={{ duration: 0.4, delay: showTutorialOverlay ? 0.3 : 0 }}
+                  className="flex flex-col gap-2"
                 >
+                  {/* Botón WhatsApp */}
+                  <motion.a
+                    href={`https://wa.me/${whatsappNumber}?text=Hola,%20me%20interesa%20conocer%20más%20sobre%20GROWS`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`flex items-center justify-center rounded-full bg-[#25D366] text-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl ${isMobile ? 'h-12 w-12' : 'h-14 w-14'}`}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label="Contactar por WhatsApp"
+                  >
+                    {/* Logo WhatsApp SVG */}
+                    <svg
+                      className={isMobile ? "h-6 w-6" : "h-8 w-8"}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                    </svg>
+                  </motion.a>
+
+                  {/* Botón Email/Gmail */}
+                  <motion.button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = `mailto:${email}?subject=Consulta sobre GROWS`;
+                    }}
+                    className={`flex items-center justify-center rounded-full bg-white shadow-xl transition-all hover:scale-110 hover:shadow-2xl border-2 border-gray-200 cursor-pointer ${isMobile ? 'h-12 w-12' : 'h-14 w-14'}`}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    aria-label="Enviar email"
+                  >
+                    {/* Logo Gmail SVG mejorado */}
+                    <svg
+                      className={isMobile ? "h-6 w-6" : "h-8 w-8"}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
                   {/* Sobre principal - rojo */}
                   <path
                     d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.546l6.545-4.91 1.528-1.145C21.69 2.28 24 3.434 24 5.457z"
@@ -646,22 +714,23 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
                     stroke="#4285F4"
                     strokeWidth="0.5"
                     opacity="0.3"
-                  />
-                </svg>
-              </motion.button>
-          </motion.div>
-        )}
+                    />
+                    </svg>
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Botón principal del chatbot */}
-        <motion.button
-          type="button"
-          onClick={handleToggle}
-          className="flex h-24 w-24 items-center justify-center rounded-full border-3 border-[#F8D24A]/80 bg-gradient-to-br from-[#002E5D] to-[#003d7a] text-white shadow-2xl backdrop-blur-md transition-all hover:border-[#F8D24A] hover:shadow-[#F8D24A]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F8D24A]"
-        aria-label="Abrir chat"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{
-          scale: isIntroBoost ? [0, 1.3, 1.15, 1.2, 1] : 1,
-          opacity: 1,
+            {/* Botón principal del chatbot */}
+            <motion.button
+              type="button"
+              onClick={handleToggle}
+              className={`flex items-center justify-center rounded-full border-3 border-[#F8D24A]/80 bg-gradient-to-br from-[#002E5D] to-[#003d7a] text-white shadow-2xl backdrop-blur-md transition-all hover:border-[#F8D24A] hover:shadow-[#F8D24A]/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F8D24A] ${isMobile ? 'h-16 w-16' : 'h-24 w-24'}`}
+            aria-label="Abrir chat"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{
+              scale: isIntroBoost ? [0, 1.3, 1.15, 1.2, 1] : (showTutorialOverlay || tutorialCompleted ? 1 : 0),
+              opacity: showTutorialOverlay || tutorialCompleted ? 1 : 0,
           boxShadow: isIntroBoost
             ? [
                 "0 0 0px rgba(248, 210, 74, 0)",
@@ -700,8 +769,8 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
               }
         }
       >
-        <motion.span
-          className="relative inline-flex h-20 w-20 items-center justify-center overflow-visible rounded-full border-2 border-[#F8D24A]/90"
+              <motion.span
+                className={`relative inline-flex items-center justify-center overflow-visible rounded-full border-2 border-[#F8D24A]/90 ${isMobile ? 'h-14 w-14' : 'h-20 w-20'}`}
           animate={{
             scale: isIntroBoost ? [0, 1.2, 1.1, 1.15, 1] : 1,
             rotate: isIntroBoost ? [0, 5, -5, 0] : 0,
@@ -721,15 +790,15 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
               : {}
           }
         >
-          <div className="relative w-[140%] h-[140%] -m-[20%]">
-            <Image
-              src="/images/gaucho-icon.png"
-              alt="Abrir Fierro"
-              fill
-              sizes="112px"
-              className="object-contain"
-            />
-          </div>
+                <div className={`relative ${isMobile ? 'w-[130%] h-[130%] -m-[15%]' : 'w-[140%] h-[140%] -m-[20%]'}`}>
+                  <Image
+                    src="/images/gaucho-icon.png"
+                    alt="Abrir Fierro"
+                    fill
+                    sizes={isMobile ? "64px" : "112px"}
+                    className="object-contain"
+                  />
+                </div>
           {/* Glow effect dorado */}
           <motion.div
             className="absolute inset-0 rounded-full bg-[#F8D24A]/40"
@@ -770,9 +839,11 @@ export function GrowsBot({ onCommand }: GrowsBotProps) {
               ease: "easeOut",
             }}
           />
+            )}
+            </motion.button>
+          </motion.div>
         )}
-        </motion.button>
-      </div>
+      </AnimatePresence>
     </>
   );
 }

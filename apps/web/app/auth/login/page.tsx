@@ -14,8 +14,6 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { useDevMode } from '@/lib/dev-mode-context';
-import { mockUser } from '@/lib/mockUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { getDefaultRouteForRole, normalizeRole } from '@/lib/roles';
 import { getAppWebUrl } from '@/lib/config';
@@ -40,14 +38,49 @@ function sanitizeRedirect(target: string | null): string | null {
   return target;
 }
 
-function StatusMessage({ text }: { text: string | null }) {
+function StatusMessage({ 
+  text, 
+  onDismiss 
+}: { 
+  text: string | null;
+  onDismiss?: () => void;
+}) {
   if (!text) {
     return null;
   }
 
+  const isRateLimit = text.toLowerCase().includes('límite') || text.toLowerCase().includes('rate limit');
+
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-      {text}
+    <div className={`rounded-lg border px-4 py-3 text-sm ${
+      isRateLimit 
+        ? 'border-yellow-200 bg-yellow-50 text-yellow-800' 
+        : 'border-red-200 bg-red-50 text-red-700'
+    }`}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="flex-1">{text}</p>
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="ml-2 flex-shrink-0 text-current opacity-70 hover:opacity-100"
+            aria-label="Cerrar mensaje"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -56,7 +89,6 @@ function LoginPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { devModeEnabled } = useDevMode();
   const supabase = useMemo(
     () => createClientComponentClient<Database>(),
     []
@@ -73,7 +105,6 @@ function LoginPageContent() {
   const redirectParam = searchParams?.get('redirect') ?? null;
   const redirectTarget = sanitizeRedirect(redirectParam);
   const errorParam = searchParams?.get('error') ?? null;
-  const defaultDevRoute = getDefaultRouteForRole('ADMIN');
 
   useEffect(() => {
     if (errorParam === 'missing-role') {
@@ -89,6 +120,20 @@ function LoginPageContent() {
       return;
     }
 
+    if (errorParam === 'rate_limit') {
+      setStatusMessage(
+        'Se alcanzó el límite de velocidad de Supabase (429). Esto puede tardar 15-30 minutos en resetearse. Mientras tanto, usa email y contraseña en lugar de Google OAuth.'
+      );
+      return;
+    }
+
+    if (errorParam === 'oauth_failed') {
+      setStatusMessage(
+        'No se pudo completar el inicio de sesión con Google. Por favor, intenta nuevamente o usa el método de email y contraseña.'
+      );
+      return;
+    }
+
     if (errorParam) {
       setStatusMessage('No se pudo validar tu sesion. Intenta nuevamente.');
       return;
@@ -101,14 +146,6 @@ function LoginPageContent() {
     let active = true;
 
     async function checkSession() {
-      if (devModeEnabled) {
-        const target = redirectTarget ?? defaultDevRoute;
-        if (pathname !== target) {
-          router.replace(target as Route);
-        }
-        return;
-      }
-
       const { data } = await supabase.auth.getSession();
       if (!active || !data.session) {
         return;
@@ -149,8 +186,6 @@ function LoginPageContent() {
       active = false;
     };
   }, [
-    devModeEnabled,
-    defaultDevRoute,
     redirectTarget,
     router,
     supabase,
@@ -163,14 +198,6 @@ function LoginPageContent() {
     setStatusMessage(null);
     setGoogleError(null);
 
-    if (devModeEnabled) {
-      const target = redirectTarget ?? defaultDevRoute;
-      if (pathname !== target) {
-        router.replace(target as Route);
-      }
-      return;
-    }
-
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -178,6 +205,17 @@ function LoginPageContent() {
       });
 
       if (error) {
+        // Detectar error de rate limit
+        const isRateLimit = 
+          error.message?.toLowerCase().includes('rate limit') ||
+          error.message?.toLowerCase().includes('too many requests') ||
+          error.status === 429;
+        
+        if (isRateLimit) {
+          throw new Error(
+            'Se alcanzó el límite de intentos de autenticación. Por favor, espera unos minutos antes de intentar nuevamente.'
+          );
+        }
         throw error;
       }
 
@@ -217,14 +255,6 @@ function LoginPageContent() {
     setGoogleError(null);
     setStatusMessage(null);
 
-    if (devModeEnabled) {
-      const target = redirectTarget ?? defaultDevRoute;
-      if (pathname !== target) {
-        router.replace(target as Route);
-      }
-      return;
-    }
-
     try {
       const appBaseUrl = getAppWebUrl();
       const redirectUrl = new URL('/auth/callback', appBaseUrl);
@@ -251,16 +281,31 @@ function LoginPageContent() {
       }
     } catch (error) {
       console.error('[GOOGLE_LOGIN_ERROR]', error);
-      setGoogleError(
-        error instanceof Error
-          ? error.message
-          : 'No fue posible iniciar sesion con Google. Intenta nuevamente.'
-      );
+      
+      // Detectar error de rate limit
+      const isRateLimit = 
+        (error instanceof Error && (
+          error.message?.toLowerCase().includes('rate limit') ||
+          error.message?.toLowerCase().includes('too many requests')
+        )) ||
+        (error as any)?.status === 429;
+      
+      if (isRateLimit) {
+        setGoogleError(
+          'Se alcanzó el límite de intentos de autenticación. Por favor, espera unos minutos antes de intentar nuevamente.'
+        );
+      } else {
+        setGoogleError(
+          error instanceof Error
+            ? error.message
+            : 'No fue posible iniciar sesion con Google. Intenta nuevamente.'
+        );
+      }
       setIsGoogleLoading(false);
     }
   }
 
-  if (missingRole && !devModeEnabled) {
+  if (missingRole) {
     const selectionPath = redirectTarget
       ? `/auth/select-role?redirect=${encodeURIComponent(redirectTarget)}`
       : '/auth/select-role';
@@ -293,6 +338,7 @@ function LoginPageContent() {
                 src="/images/Login.png"
                 alt="GROWS Login"
                 fill
+                sizes="(max-width: 768px) 100vw, 460px"
                 className="object-contain"
                 priority
               />
@@ -317,7 +363,19 @@ function LoginPageContent() {
               </div>
 
               {statusMessage && statusMessage !== MISSING_ROLE_MESSAGE ? (
-                <StatusMessage text={statusMessage} />
+                <StatusMessage 
+                  text={statusMessage} 
+                  onDismiss={() => {
+                    setStatusMessage(null);
+                    // Limpiar el parámetro de error de la URL
+                    const newSearchParams = new URLSearchParams(searchParams?.toString() || '');
+                    newSearchParams.delete('error');
+                    const newUrl = newSearchParams.toString()
+                      ? `${pathname}?${newSearchParams.toString()}`
+                      : pathname || '/auth/login';
+                    router.replace(newUrl as Route);
+                  }}
+                />
               ) : null}
 
               {googleError ? (
@@ -372,8 +430,9 @@ function LoginPageContent() {
                 type="button"
                 variant="outline"
                 onClick={handleGoogleLogin}
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading || isGoogleLoading || errorParam === 'rate_limit'}
                 className="h-12 w-full rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-[#f8f8f8] disabled:opacity-50"
+                title={errorParam === 'rate_limit' ? 'Google OAuth está temporalmente deshabilitado debido al límite de velocidad' : undefined}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -411,12 +470,6 @@ function LoginPageContent() {
                 </Link>
               </div>
 
-              {devModeEnabled ? (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
-                  Modo desarrollador activo. Acceso directo disponible con{' '}
-                  <span className="font-semibold">{mockUser.email}</span>.
-                </div>
-              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -428,6 +481,7 @@ function LoginPageContent() {
               src="/images/Login.png"
               alt="GROWS Login"
               fill
+              sizes="(max-width: 768px) 100vw, 460px"
               className="object-contain"
               priority
             />

@@ -78,7 +78,10 @@ export function ListaNotificaciones({ items, onMarkAsRead }: ListaNotificaciones
   return (
     <div className="grid grid-cols-1 gap-4">
       {items.map((item) => {
-        const config = tipoConfig[item.tipo];
+        // Validar que el tipo sea válido, usar 'info' como fallback
+        const tipoValido: NotificacionItem['tipo'] = 
+          (item.tipo && tipoConfig[item.tipo]) ? item.tipo : 'info';
+        const config = tipoConfig[tipoValido];
         const Icon = config.icon;
         const fechaLegible = new Date(item.fecha).toLocaleString('es-AR', {
           day: '2-digit',

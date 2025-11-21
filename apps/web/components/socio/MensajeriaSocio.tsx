@@ -34,12 +34,13 @@ export function MensajeriaSocio() {
   const [loadingSocio, setLoadingSocio] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const orgId = currentUser?.orgId ?? null;
+  const orgIdFromUser = currentUser?.orgId ?? null;
+  const [orgId, setOrgId] = useState<string | null>(orgIdFromUser);
 
-  // Obtener socio_id desde email
+  // Obtener orgId y socio_id desde email
   useEffect(() => {
-    const obtenerSocioId = async () => {
-      if (!currentUser?.email || !orgId) {
+    const obtenerOrgIdYSocioId = async () => {
+      if (!currentUser?.email) {
         setLoadingSocio(false);
         return;
       }
@@ -47,27 +48,60 @@ export function MensajeriaSocio() {
       setLoadingSocio(true);
       try {
         const supabaseAny = supabase as any;
-        const { data, error } = await supabaseAny
-          .from('socios')
-          .select('id')
-          .eq('email', currentUser.email)
-          .eq('org_id', orgId)
-          .maybeSingle();
+        
+        // Si orgId es null, intentar obtenerlo desde socios
+        let orgIdActual = orgId;
+        if (!orgIdActual) {
+          const { data: socioData, error: socioError } = await supabaseAny
+            .from('socios')
+            .select('id, org_id')
+            .eq('email', currentUser.email)
+            .maybeSingle();
 
-        if (!error && data) {
-          setSocioId(data.id);
+          if (!socioError && socioData) {
+            orgIdActual = socioData.org_id;
+            setOrgId(orgIdActual);
+            setSocioId(socioData.id);
+            console.log('[MensajeriaSocio] OrgId y SocioId obtenidos desde socios:', { 
+              orgId: orgIdActual, 
+              socioId: socioData.id 
+            });
+          } else {
+            console.error('[MensajeriaSocio] Error al obtener orgId y socioId desde socios:', socioError);
+          }
         } else {
-          console.error('[MensajeriaSocio] Error al obtener socio_id:', error);
+          // Si orgId existe, solo obtener socioId
+          const { data, error } = await supabaseAny
+            .from('socios')
+            .select('id')
+            .eq('email', currentUser.email)
+            .eq('org_id', orgIdActual)
+            .maybeSingle();
+
+          if (!error && data) {
+            console.log('[MensajeriaSocio] Socio ID obtenido:', data.id);
+            setSocioId(data.id);
+          } else {
+            console.error('[MensajeriaSocio] Error al obtener socio_id:', error);
+            console.log('[MensajeriaSocio] Datos recibidos:', data);
+          }
         }
       } catch (error) {
-        console.error('[MensajeriaSocio] Error al obtener socio_id:', error);
+        console.error('[MensajeriaSocio] Error al obtener orgId y socioId:', error);
       } finally {
         setLoadingSocio(false);
       }
     };
 
-    obtenerSocioId();
-  }, [currentUser?.email, orgId, supabase]);
+    obtenerOrgIdYSocioId();
+  }, [currentUser?.email, orgIdFromUser, supabase]);
+  
+  // Actualizar orgId cuando cambia orgIdFromUser
+  useEffect(() => {
+    if (orgIdFromUser) {
+      setOrgId(orgIdFromUser);
+    }
+  }, [orgIdFromUser]);
 
   // Obtener cliente_id y obra_id desde las tareas del socio
   useEffect(() => {
@@ -151,15 +185,32 @@ export function MensajeriaSocio() {
         console.log('[MensajeriaSocio] Mensajes recibidos:', data.length);
         console.log('[MensajeriaSocio] Primeros mensajes:', data.slice(0, 3));
         
-        // Marcar como leídos todos los mensajes donde el socio es destinatario
-        const mensajesNoLeidos = data.filter(
+        // Mostrar TODOS los mensajes (leídos y no leídos)
+        // Filtrar solo los mensajes donde el socio es remitente o destinatario
+        const mensajesFiltrados = data.filter(
+          (m) => m.remitente_id === socioId || m.destinatario_id === socioId
+        );
+        
+        console.log('[MensajeriaSocio] Mensajes filtrados (remitente o destinatario):', mensajesFiltrados.length);
+        
+        // Ordenar por fecha (más recientes primero)
+        const mensajesOrdenados = mensajesFiltrados.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        
+        setMensajes(mensajesOrdenados);
+        
+        // Opcional: Marcar como leídos los mensajes donde el socio es destinatario
+        // pero solo si el usuario está viendo la página (no automáticamente)
+        const mensajesNoLeidos = mensajesFiltrados.filter(
           (m) => m.destinatario_id === socioId && !m.leido
         );
         console.log('[MensajeriaSocio] Mensajes no leídos:', mensajesNoLeidos.length);
         
-        // Marcar como leídos en paralelo
+        // Marcar como leídos en segundo plano (sin bloquear la UI)
         if (mensajesNoLeidos.length > 0) {
-          await Promise.all(
+          // Hacer esto de forma asíncrona sin esperar
+          Promise.all(
             mensajesNoLeidos.map((mensaje) =>
               fetch(`/api/mensajes/${mensaje.id}/leido`, {
                 method: 'PATCH',
@@ -169,30 +220,29 @@ export function MensajeriaSocio() {
                 return null;
               })
             )
-          );
-          
-          // Recargar mensajes después de marcarlos como leídos para obtener el estado actualizado
-          const resActualizado = await fetch(url.toString(), { 
-            headers,
-            cache: 'no-store' 
-          });
-          const jsonActualizado = await resActualizado.json();
-          if (jsonActualizado.success) {
-            const dataActualizada: Mensaje[] = (jsonActualizado.data || []) as Mensaje[];
-            setMensajes(dataActualizada);
-          } else {
-            // Si falla la recarga, usar los datos originales pero actualizar el estado local
-            const dataActualizada = data.map((m) => {
-              if (mensajesNoLeidos.some((n) => n.id === m.id)) {
-                return { ...m, leido: true };
+          ).then(() => {
+            // Recargar mensajes después de marcarlos como leídos
+            fetch(url.toString(), { 
+              headers,
+              cache: 'no-store' 
+            })
+            .then(res => res.json())
+            .then(jsonActualizado => {
+              if (jsonActualizado.success) {
+                const dataActualizada: Mensaje[] = (jsonActualizado.data || []) as Mensaje[];
+                const mensajesFiltradosActualizados = dataActualizada.filter(
+                  (m) => m.remitente_id === socioId || m.destinatario_id === socioId
+                );
+                const mensajesOrdenadosActualizados = mensajesFiltradosActualizados.sort((a, b) => 
+                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                );
+                setMensajes(mensajesOrdenadosActualizados);
               }
-              return m;
+            })
+            .catch(error => {
+              console.error('[MensajeriaSocio] Error al recargar mensajes:', error);
             });
-            setMensajes(dataActualizada);
-          }
-        } else {
-          // Si no hay mensajes no leídos, simplemente mostrar todos los mensajes
-          setMensajes(data);
+          });
         }
       }
     } catch (error) {

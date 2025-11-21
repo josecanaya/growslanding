@@ -66,10 +66,22 @@ export function SubscriptionProvider({
     setIsSimulated(simulatedFlag);
     setIsLoading(false);
 
-    // 2) Sincronizar con la API en segundo plano
+    // 2) Sincronizar con la API en segundo plano (solo si hay sesión)
     const abortController = new AbortController();
     const fetchPlan = async () => {
       try {
+        // Verificar si hay una sesión activa antes de hacer la petición
+        // Esto evita errores 401 innecesarios cuando el usuario no está autenticado
+        const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs');
+        const supabase = createClientComponentClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          // No hay sesión, usar plan por defecto sin hacer petición
+          setPlanId(DEFAULT_PLAN);
+          return;
+        }
+
         const response = await fetch('/api/subscription/plan', {
           signal: abortController.signal,
           cache: 'no-store',
@@ -77,6 +89,7 @@ export function SubscriptionProvider({
 
         if (!response.ok) {
           if (response.status === 401) {
+            // Usuario no autenticado, usar plan por defecto
             setPlanId(DEFAULT_PLAN);
             return;
           }
@@ -92,7 +105,11 @@ export function SubscriptionProvider({
         }
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
-          console.error('[SubscriptionProvider] Error fetching plan from API:', error);
+          // Solo loguear errores que no sean de aborto o 401 (que son esperados)
+          const errorMessage = (error as Error).message || '';
+          if (!errorMessage.includes('401') && !errorMessage.includes('Unauthorized')) {
+            console.error('[SubscriptionProvider] Error fetching plan from API:', error);
+          }
         }
         setPlanId(DEFAULT_PLAN);
       }

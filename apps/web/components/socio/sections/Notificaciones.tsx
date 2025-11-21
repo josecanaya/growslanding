@@ -157,11 +157,27 @@ export function Notificaciones({ user }: NotificacionesProps) {
       const res = await fetch('/api/notificaciones', { headers, cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
+        // Función para normalizar el tipo a uno de los valores válidos
+        const normalizarTipo = (tipo: any): NotificacionItem['tipo'] => {
+          const tipoStr = String(tipo || '').toLowerCase();
+          if (tipoStr === 'success' || tipoStr === 'exito' || tipoStr === 'aprobado') {
+            return 'success';
+          }
+          if (tipoStr === 'warning' || tipoStr === 'advertencia' || tipoStr === 'rechazado') {
+            return 'warning';
+          }
+          if (tipoStr === 'error' || tipoStr === 'error' || tipoStr === 'fallo') {
+            return 'error';
+          }
+          // Por defecto, info
+          return 'info';
+        };
+
         const items: NotificacionItem[] = (json.data || []).map((item: any) => ({
           id: item.id,
           titulo: item.titulo || 'Notificación',
           mensaje: item.mensaje || item.descripcion || 'Sin detalle',
-          tipo: (item.tipo || 'info') as NotificacionItem['tipo'],
+          tipo: normalizarTipo(item.tipo),
           fecha: item.created_at || item.fecha || new Date().toISOString(),
           leida: Boolean(item.leida),
           destinatario: user.name,

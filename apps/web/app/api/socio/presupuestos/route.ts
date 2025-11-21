@@ -402,6 +402,8 @@ export async function GET(request: NextRequest) {
         estado: p.estado || 'PENDIENTE',
         dias_reales: diasReales,
         monto: p.monto,
+        created_at: p.created_at || null,
+        updated_at: p.updated_at || null,
         tarea: p.tareas ? {
           id: p.tareas.id,
           title: p.tareas.title,

@@ -21,6 +21,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { OnboardingCargarElementosProvider, useOnboardingCargarElementos } from "@/components/onboarding/OnboardingCargarElementos";
+import TutorialButton from "@/components/common/TutorialButton";
 import { catalogoCompletoJson } from "@/lib/catalogos/elementos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -581,15 +582,7 @@ function CargaElementosPanelContent({
           {/* Header con botón de tutorial */}
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Cargar elementos</h2>
-            <Button
-              onClick={startOnboarding}
-              variant="ghost"
-              size="sm"
-              className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
-            >
-              <HelpCircle className="h-4 w-4 mr-1" />
-              Ver tutorial — Elementos
-            </Button>
+            <TutorialButton onClick={startOnboarding} />
           </div>
           {/* Breadcrumb */}
           {breadcrumb && (

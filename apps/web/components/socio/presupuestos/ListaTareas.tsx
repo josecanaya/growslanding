@@ -10,6 +10,8 @@ interface PresupuestoItem {
   estado: string;
   dias_reales: number | null;
   monto: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   tarea: {
     id: string;
     title: string | null;

@@ -17,6 +17,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { agruparTareasConsolidadasPorPlanta, obtenerNombreFase, type TareaDisponible, type TareaAgrupadaConsolidada, type TareaConsolidada } from '@/lib/utils/organiza-tareas';
 import { calcularCPM, type TareaCPM, type CPMResultado } from '@/lib/utils/cpm';
 import { OnboardingOrganizarProvider, useOnboardingOrganizar } from '@/components/onboarding/OnboardingOrganizar';
+import TutorialButton from '@/components/common/TutorialButton';
 
 import {
   TaskCanvas,
@@ -1143,28 +1144,13 @@ function OrganizaSectionContent({
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-4 flex-wrap">
                 <h2 className="text-xl font-semibold text-grows-text-primary">Organizá el flujo de trabajo</h2>
-                <button
+                <TutorialButton
                   onClick={() => {
                     console.log('🔵 Click en botón tutorial - llamando startOnboarding');
                     startOnboarding();
                   }}
-                  className="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                  style={{
-                    backgroundColor: '#f5f7fa',
-                    color: '#1B263B',
-                    border: '1px solid #dce3ea'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#e8ecf0';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f5f7fa';
-                  }}
                   data-onboarding="tutorial-button-organizar"
-                >
-                  <HelpCircle className="h-4 w-4" />
-                  Ver tutorial — Organizar
-                </button>
+                />
                 {proyectoMetrics.project_duration > 0 && (
                   <div
                     className="flex items-center gap-2 px-4 py-2 rounded-lg border"

@@ -12,6 +12,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { OnboardingOrganizarProvider, useOnboardingOrganizar } from '@/components/onboarding/OnboardingOrganizar';
+import TutorialButton from '@/components/common/TutorialButton';
 
 interface Tarea {
   id: string;
@@ -287,28 +288,13 @@ function EditorVisualTareasContent({
       <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-2" style={{borderColor: '#dce3ea'}}>
         <div className="flex items-center space-x-4">
           {/* Botón de tutorial */}
-          <button
+          <TutorialButton
             onClick={() => {
               console.log('🔵 Click en botón tutorial - llamando startOnboarding');
               startOnboarding();
             }}
-            className="px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-            style={{
-              backgroundColor: '#f5f7fa',
-              color: '#1B263B',
-              border: '1px solid #dce3ea'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e8ecf0';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f5f7fa';
-            }}
             data-onboarding="tutorial-button-organizar"
-          >
-            <HelpCircle className="h-4 w-4" />
-            Ver tutorial — Organizar
-          </button>
+          />
           {/* Filtros por etapa */}
           <div className="flex items-center space-x-2 pr-4 border-r" style={{borderColor: '#dce3ea'}} data-onboarding="filtros-etapa">
             <button

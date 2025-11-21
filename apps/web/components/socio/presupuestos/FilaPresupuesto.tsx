@@ -2,7 +2,24 @@
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/grows/Badge';
+import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Función para formatear fechas
+const formatFecha = (fecha: string | null | undefined): string => {
+  if (!fecha) return '';
+  try {
+    const date = new Date(fecha);
+    const dia = String(date.getDate()).padStart(2, '0');
+    const mes = String(date.getMonth() + 1).padStart(2, '0');
+    const año = date.getFullYear();
+    const horas = String(date.getHours()).padStart(2, '0');
+    const minutos = String(date.getMinutes()).padStart(2, '0');
+    return `${dia}/${mes}/${año} ${horas}:${minutos}`;
+  } catch {
+    return '';
+  }
+};
 
 interface PresupuestoItem {
   id: string;
@@ -10,6 +27,8 @@ interface PresupuestoItem {
   estado: string;
   dias_reales: number | null;
   monto: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   tarea: {
     id: string;
     title: string | null;
@@ -76,6 +95,21 @@ export function FilaPresupuesto({
               {presupuesto.tarea.etapa}
             </Badge>
           )}
+          {/* Fechas */}
+          <div className="mt-2 space-y-0.5">
+            {presupuesto.created_at && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <Calendar className="h-3 w-3" />
+                <span>Pedido el: {formatFecha(presupuesto.created_at)}</span>
+              </div>
+            )}
+            {presupuesto.updated_at && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <Calendar className="h-3 w-3" />
+                <span>Última actualización: {formatFecha(presupuesto.updated_at)}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -132,6 +166,21 @@ export function FilaPresupuesto({
         {presupuesto.elemento?.nombre && (
           <div className="text-xs text-slate-500 mt-0.5">{presupuesto.elemento.nombre}</div>
         )}
+        {/* Fechas */}
+        <div className="mt-1.5 space-y-0.5">
+          {presupuesto.created_at && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Calendar className="h-3 w-3" />
+              <span>Pedido el: {formatFecha(presupuesto.created_at)}</span>
+            </div>
+          )}
+          {presupuesto.updated_at && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <Calendar className="h-3 w-3" />
+              <span>Última actualización: {formatFecha(presupuesto.updated_at)}</span>
+            </div>
+          )}
+        </div>
       </td>
       <td className="px-4 py-3 text-sm text-slate-600 text-center">
         {presupuesto.tarea?.duracion_sugerida !== null && presupuesto.tarea?.duracion_sugerida !== undefined

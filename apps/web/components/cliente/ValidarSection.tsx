@@ -19,6 +19,9 @@ import {
   Loader2,
   Users,
   XCircle,
+  Image as ImageIcon,
+  X,
+  Camera,
 } from 'lucide-react';
 
 const COMPLETED_STATES = new Set(['finalizado', 'validado']);
@@ -56,6 +59,12 @@ type RawTarea = Record<string, any> & {
   validado_por?: string | null;
 };
 
+type EvidenciaItem = {
+  url: string;
+  path: string;
+  created_at?: string;
+};
+
 type ValidarTarea = {
   id: string;
   titulo: string;
@@ -66,7 +75,7 @@ type ValidarTarea = {
   cuadrillaNombre: string | null;
   fechaInicio: string | null;
   fechaFin: string | null;
-  evidenciaUrls: string[];
+  evidencias: EvidenciaItem[];
   rawEstado: string | null;
   hasFechaValidacion: boolean;
   hasValidadoPor: boolean;
@@ -91,6 +100,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
   const [tareas, setTareas] = useState<ValidarTarea[]>([]);
   const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [imagenAmpliada, setImagenAmpliada] = useState<{ url: string; titulo: string } | null>(null);
 
   const loadData = useCallback(async () => {
     if (!currentUser?.orgId) {
@@ -149,20 +159,70 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       );
       const tareaIds = pendientes.map((t) => t.id);
 
-      const [{ data: obrasData }, { data: cuadrillasData }, { data: evidenciasData }] = await Promise.all([
-        obraIds.length > 0
-          ? supabase.from('obras').select('id, nombre').in('id', obraIds)
-          : Promise.resolve({ data: [] }),
-        cuadrillaIds.length > 0
-          ? supabase.from('cuadrillas').select('id, nombre').in('id', cuadrillaIds)
-          : Promise.resolve({ data: [] }),
-        tareaIds.length > 0
-          ? supabase
-              .from('tareas_evidencias')
-              .select('id, tarea_id, url, path')
-              .in('tarea_id', tareaIds)
-          : Promise.resolve({ data: [] }),
-      ]);
+      // Obtener evidencias de tareas_evidencias y también de media (vía eventos)
+      let evidenciasDirectas: any[] = [];
+      let evidenciasMedia: any[] = [];
+      let eventosConTareas: any[] = [];
+      let obrasData: any[] = [];
+      let cuadrillasData: any[] = [];
+
+      if (tareaIds.length > 0) {
+        // Primero obtener eventos para poder buscar media
+        const { data: eventosData } = await supabase
+          .from('eventos')
+          .select('id, tarea_id')
+          .in('tarea_id', tareaIds);
+        
+        eventosConTareas = eventosData ?? [];
+        
+        // Preparar queries en paralelo
+        const queries: Promise<any>[] = [
+          obraIds.length > 0
+            ? supabase.from('obras').select('id, nombre').in('id', obraIds)
+            : Promise.resolve({ data: [] }),
+          cuadrillaIds.length > 0
+            ? supabase.from('cuadrillas').select('id, nombre').in('id', cuadrillaIds)
+            : Promise.resolve({ data: [] }),
+          supabase
+            .from('tareas_evidencias')
+            .select('id, tarea_id, url, path, created_at')
+            .in('tarea_id', tareaIds),
+        ];
+
+        // Si hay eventos, agregar query de media
+        if (eventosConTareas.length > 0) {
+          const eventoIds = eventosConTareas.map(e => e.id);
+          queries.push(
+            supabase
+              .from('media')
+              .select('id, evento_id, path, kind, created_at')
+              .in('evento_id', eventoIds)
+              .eq('kind', 'foto')
+          );
+        }
+
+        const results = await Promise.all(queries);
+        const [obrasResult, cuadrillasResult, evidenciasResult, mediaResult] = results;
+        
+        obrasData = (obrasResult as any).data ?? [];
+        cuadrillasData = (cuadrillasResult as any).data ?? [];
+        evidenciasDirectas = (evidenciasResult as any).data ?? [];
+        if (mediaResult) {
+          evidenciasMedia = (mediaResult as any).data ?? [];
+        }
+      } else {
+        // Si no hay tareas, solo obtener obras y cuadrillas
+        const [obrasResult, cuadrillasResult] = await Promise.all([
+          obraIds.length > 0
+            ? supabase.from('obras').select('id, nombre').in('id', obraIds)
+            : Promise.resolve({ data: [] }),
+          cuadrillaIds.length > 0
+            ? supabase.from('cuadrillas').select('id, nombre').in('id', cuadrillaIds)
+            : Promise.resolve({ data: [] }),
+        ]);
+        obrasData = (obrasResult as any).data ?? [];
+        cuadrillasData = (cuadrillasResult as any).data ?? [];
+      }
 
       const obraRows = ((obrasData ?? []) as unknown) as Array<{ id: string | null; nombre?: string | null }>;
       const obrasMap = new Map<string, string>();
@@ -178,19 +238,62 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         cuadrillaMap.set(c.id, c.nombre ?? 'Cuadrilla sin nombre');
       });
 
-      const evidenciasMap = new Map<string, string[]>(
-        (evidenciasData ?? []).reduce((acc: Map<string, string[]>, item: any) => {
-          const tareaId = item.tarea_id as string;
-          const url = (item as any).url ?? (item as any).path ?? '';
-          if (!url) return acc;
-          if (!acc.has(tareaId)) {
-            acc.set(tareaId, [url]);
-          } else {
-            acc.get(tareaId)!.push(url);
+      // Combinar evidencias de ambas fuentes
+      const evidenciasMap = new Map<string, Array<{ url: string; path: string; created_at?: string }>>();
+      
+      // Procesar evidencias de tareas_evidencias
+      evidenciasDirectas.forEach((item: any) => {
+        const tareaId = item.tarea_id as string;
+        const url = item.url ?? item.path ?? '';
+        if (!url) return;
+        if (!evidenciasMap.has(tareaId)) {
+          evidenciasMap.set(tareaId, []);
+        }
+        evidenciasMap.get(tareaId)!.push({
+          url,
+          path: item.path ?? url,
+          created_at: item.created_at,
+        });
+      });
+      
+      // Procesar evidencias de media (mapear evento_id -> tarea_id)
+      if (evidenciasMedia.length > 0) {
+        const eventoToTareaMap = new Map<string, string>();
+        eventosConTareas.forEach((e: any) => {
+          eventoToTareaMap.set(e.id, e.tarea_id);
+        });
+        
+        evidenciasMedia.forEach((item: any) => {
+          const tareaId = eventoToTareaMap.get(item.evento_id);
+          if (!tareaId) return;
+          const path = item.path ?? '';
+          if (!path) return;
+          
+          // Generar URL pública desde Supabase Storage (bucket 'actas' o 'evidencias')
+          let publicUrl = '';
+          try {
+            const { data: urlData } = supabase.storage.from('actas').getPublicUrl(path);
+            publicUrl = urlData.publicUrl;
+          } catch {
+            try {
+              const { data: urlData } = supabase.storage.from('evidencias').getPublicUrl(path);
+              publicUrl = urlData.publicUrl;
+            } catch {
+              // Si falla, usar el path como URL
+              publicUrl = path;
+            }
           }
-          return acc;
-        }, new Map<string, string[]>())
-      );
+          
+          if (!evidenciasMap.has(tareaId)) {
+            evidenciasMap.set(tareaId, []);
+          }
+          evidenciasMap.get(tareaId)!.push({
+            url: publicUrl,
+            path,
+            created_at: item.created_at,
+          });
+        });
+      }
 
       const mapped: ValidarTarea[] = pendientes.map((row) => {
         const titulo =
@@ -211,7 +314,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           cuadrillaNombre: row.cuadrilla_id ? cuadrillaMap.get(row.cuadrilla_id) ?? null : null,
           fechaInicio: (row.fecha_inicio_real as string | null) ?? (row.fecha_inicio as string | null) ?? null,
           fechaFin: (row.fecha_fin_real as string | null) ?? (row.fecha_fin as string | null) ?? null,
-          evidenciaUrls: evidenciasMap.get(row.id) ?? [],
+          evidencias: evidenciasMap.get(row.id) ?? [],
           rawEstado: (row.estado as string | null) ?? null,
           hasFechaValidacion,
           hasValidadoPor,
@@ -436,20 +539,29 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                       )}
                     </div>
 
-                    {tarea.evidenciaUrls.length > 0 && (
+                    {tarea.evidencias.length > 0 && (
                       <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase text-slate-500">Evidencias</p>
-                        <div className="flex flex-wrap gap-2">
-                          {tarea.evidenciaUrls.map((url) => (
-                            <a
-                              key={url}
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-blue-300 hover:text-blue-700"
+                        <p className="text-xs font-semibold uppercase text-slate-500">Evidencias ({tarea.evidencias.length})</p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {tarea.evidencias.map((evidencia, idx) => (
+                            <button
+                              key={`${evidencia.path}-${idx}`}
+                              onClick={() => setImagenAmpliada({ url: evidencia.url, titulo: tarea.titulo })}
+                              className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-blue-400 hover:shadow-md"
                             >
-                              <FileText className="h-3 w-3" /> Evidencia
-                            </a>
+                              <img
+                                src={evidencia.url}
+                                alt={`Evidencia ${idx + 1} - ${tarea.titulo}`}
+                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                                }}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+                                <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
+                              </div>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -488,6 +600,37 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           })
         )}
       </section>
+
+      {/* Modal de imagen ampliada */}
+      {imagenAmpliada && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setImagenAmpliada(null)}
+        >
+          <div className="relative max-w-5xl w-full max-h-[90vh]">
+            <button
+              onClick={() => setImagenAmpliada(null)}
+              className="absolute -top-12 right-0 z-10 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="bg-white rounded-lg overflow-hidden">
+              <img
+                src={imagenAmpliada.url}
+                alt={imagenAmpliada.titulo}
+                className="w-full h-auto max-h-[80vh] object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="16"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                }}
+              />
+              <div className="p-4 bg-white border-t">
+                <h3 className="font-semibold text-lg text-slate-900">{imagenAmpliada.titulo}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

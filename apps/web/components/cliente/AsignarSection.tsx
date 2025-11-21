@@ -4,38 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
   AlertCircle,
-  CheckCircle,
   Loader2,
-  PlusCircle,
-  Send,
-  Search,
-  Users,
-  XCircle,
 } from 'lucide-react';
 
 import {
-  Badge,
-  Button,
   Card,
   EmptyState,
 } from '@/components/ui/grows';
-import { cn } from '@/lib/utils';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -43,6 +18,12 @@ import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useSubscription } from '@/lib/subscriptions';
 import { canUseFeature, usePlanGate } from '@/lib/permissions';
 import { SolicitarPresupuestoModal } from '@/components/clienteTecnico/presupuestos/SolicitarPresupuestoModal';
+import { PanelEstado } from './asigna/PanelEstado';
+import { StageSummaryCard } from './asigna/StageSummaryCard';
+import { PanelAuditoria } from './asigna/PanelAuditoria';
+import { PresupuestoPDFModal } from './asigna/PresupuestoPDFModal';
+import { PresupuestoListaModal } from './asigna/PresupuestoListaModal';
+import { PresupuestoComentarioModal } from './asigna/PresupuestoComentarioModal';
 
 const STAGE_DEFINITIONS = [
   {
@@ -119,6 +100,8 @@ type RawPresupuesto = Record<string, any> & {
   estado?: string | null;
   notas?: string | null;
   socio_id?: string | null;
+  cantidad?: number | null;
+  unidad?: string | null;
 };
 
 type TaskInfo = {
@@ -129,6 +112,7 @@ type TaskInfo = {
   responsable: string | null;
   cuadrillaId: string | null;
   estado: string | null;
+  duracion_estimada?: number | null;
 };
 
 type StageKey = (typeof STAGE_DEFINITIONS)[number]['key'] | typeof FALLBACK_STAGE.key;
@@ -161,10 +145,10 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [tasks, setTasks] = useState<TaskInfo[]>([]);
   const [budgets, setBudgets] = useState<RawPresupuesto[]>([]);
   const [cuadrillas, setCuadrillas] = useState<{ id: string; nombre: string }[]>([]);
+  const [socioEmailMap, setSocioEmailMap] = useState<Map<string, string>>(new Map());
 
   const [stageFilter, setStageFilter] = useState<string>('todas');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
-  const [search, setSearch] = useState('');
 
   const [assigningBudgetId, setAssigningBudgetId] = useState<string | null>(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState<string | null>(null);
@@ -178,13 +162,22 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     id: string;
     title: string;
     etapa: string | null;
-    elemento?: { id: string; nombre: string | null; unidad?: string | null; cantidad?: number | null } | null;
-    duracionDias?: number;
-    es?: number | null;
-    ef?: number | null;
-    fecha_inicio_estimada?: string | null;
-    fecha_fin_estimada?: string | null;
+    elemento: any;
+    es: number | null;
+    ef: number | null;
+    fecha_inicio_estimada: string | null;
+    fecha_fin_estimada: string | null;
   }>>([]);
+  
+  // Estados para los modales de PDF, Lista y Comentario
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfModalData, setPdfModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
+  
+  const [listaModalOpen, setListaModalOpen] = useState(false);
+  const [listaModalData, setListaModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
+  
+  const [comentarioModalOpen, setComentarioModalOpen] = useState(false);
+  const [comentarioModalData, setComentarioModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
   const [elementosMap, setElementosMap] = useState<Map<string, { id: string; nombre: string | null; unidad?: string | null; cantidad?: number | null }>>(new Map());
 
   useEffect(() => {
@@ -283,29 +276,51 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             responsable: row.responsable ?? null,
             cuadrillaId: row.cuadrilla_id ?? null,
             estado: row.estado ?? null,
+            duracion_estimada: (row as any).duracion_estimada ?? null,
           };
         });
 
         const tareaIds = mappedTasks.map((t) => t.id);
 
-        const [{ data: rawBudgets }, { data: cuadrillasData }] = await Promise.all([
+        // Obtener socios para mapear socio_id -> email
+        const socioIds = new Set<string>();
+        const [{ data: rawBudgets }, { data: cuadrillasData }, { data: sociosData }] = await Promise.all([
           tareaIds.length
             ? supabase
                 .from('tareas_presupuestos')
-                .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, socio_id')
+                .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, socio_id, cantidad, unidad')
                 .in('tarea_id', tareaIds)
             : Promise.resolve({ data: [] }),
           supabase
             .from('cuadrillas')
             .select('id, nombre, org_id')
             .eq('org_id', currentUser.orgId),
+          // Obtener socios para mapear socio_id -> email
+          supabase
+            .from('socios')
+            .select('id, nombre, email, telefono, org_id')
+            .eq('org_id', currentUser.orgId),
         ]);
+
+        // Extraer socio_ids de los presupuestos
+        (rawBudgets ?? []).forEach((b: any) => {
+          if (b.socio_id) socioIds.add(b.socio_id);
+        });
+
+        // Crear mapa de socio_id -> email
+        const socioEmailMap = new Map<string, string>();
+        (sociosData ?? []).forEach((s: any) => {
+          if (s.id && s.email) {
+            socioEmailMap.set(s.id, s.email);
+          }
+        });
 
         if (!active) return;
 
         setTasks(mappedTasks);
         setBudgets((rawBudgets ?? []) as RawPresupuesto[]);
         setCuadrillas((cuadrillasData ?? []) as { id: string; nombre: string }[]);
+        setSocioEmailMap(socioEmailMap);
       } catch (err) {
         const errorMessage =
           err && typeof err === 'object' && 'message' in err
@@ -421,6 +436,71 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     }
   }, [stageBuckets]);
 
+  // Preparar datos para cada etapa (StageSummaryCards)
+  const etapasData = useMemo(() => {
+    return STAGE_DEFINITIONS.map((stageDef) => {
+      const bucket = stageBuckets.find((b) => b.key === stageDef.key);
+      const tareas = bucket?.tasks ?? [];
+      
+      // Tareas sin presupuesto
+      const tareasSinPresupuesto = tareas.filter((task) => {
+        const list = budgetsByTask.get(task.id) ?? [];
+        return list.length === 0;
+      });
+
+      // Presupuestos para esta etapa
+      const tareaIds = tareas.map((t) => t.id);
+      const presupuestosEtapa = budgets
+        .filter((budget) => tareaIds.includes(budget.tarea_id))
+        .map((budget) => {
+          const tarea = taskMap.get(budget.tarea_id);
+          const cuadrillaNombre = cuadrillaMap.get(budget.socio_id ?? '') ?? 'Sin cuadrilla';
+          // Intentar extraer duración ofrecida de las notas
+          let duracionOfrecida: number | null = null;
+          if (budget.notas) {
+            const match = budget.notas.match(/(\d+)\s*d[ií]a[s]?/i);
+            if (match) {
+              duracionOfrecida = parseInt(match[1], 10);
+            }
+          }
+          return {
+            id: budget.id,
+            tarea_id: budget.tarea_id,
+            tarea_titulo: tarea?.titulo ?? 'Tarea sin título',
+            cuadrilla_nombre: cuadrillaNombre,
+            monto: budget.monto ?? null,
+            moneda: budget.moneda ?? null,
+            estado: budget.estado ?? null,
+            notas: budget.notas ?? null,
+            duracion_estimada: tarea?.duracion_estimada ?? null,
+            duracion_ofrecida: duracionOfrecida,
+            created_at: budget.created_at ?? '',
+            updated_at: budget.updated_at ?? null,
+            socio_id: budget.socio_id ?? null,
+          };
+        });
+
+      return {
+        stageKey: stageDef.key,
+        stageLabel: stageDef.label,
+        stageDescription: stageDef.description,
+        tareas: tareas.map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          etapa: t.etapa,
+          duracion_estimada: t.duracion_estimada ?? null,
+        })),
+        presupuestos: presupuestosEtapa,
+        tareasSinPresupuesto: tareasSinPresupuesto.map((t) => ({
+          id: t.id,
+          titulo: t.titulo,
+          etapa: t.etapa,
+          duracion_estimada: t.duracion_estimada ?? null,
+        })),
+      };
+    });
+  }, [stageBuckets, budgetsByTask, budgets, taskMap, cuadrillaMap]);
+
   const filteredBudgets = useMemo(() => {
     return budgets.filter((budget) => {
       const tarea = taskMap.get(budget.tarea_id);
@@ -436,19 +516,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         if (estado !== statusFilter.toUpperCase()) return false;
       }
 
-      if (search.trim()) {
-        const term = search.trim().toLowerCase();
-        const matchesTarea = tarea.titulo.toLowerCase().includes(term);
-        const vinculoId = budget.socio_id ?? '';
-        const cuadrilla = cuadrillaMap.get(vinculoId) ?? '';
-        if (!matchesTarea && !cuadrilla.toLowerCase().includes(term)) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter, search]);
+  }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter]);
 
   // handleOpenModal removido - ahora se usa handleOpenPresupuestoModal
 
@@ -489,24 +559,44 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         setPresupuestoModalEtapa(tarea.etapa || '');
       }
     } else {
-      // Modal para todas las tareas de la etapa activa
-      const etapaKey = etapa || etapaActiva;
-      const bucket = stageBuckets.find((b) => b.key === etapaKey);
-      if (bucket) {
-        tareasParaModal = bucket.tasks.map((task) => {
-          const elemento = elementosMap.get((task as any).elemento_id || '');
-          return {
-            id: task.id,
-            title: task.titulo,
-            etapa: task.etapa,
-            elemento: elemento || null,
-            es: (task as any).es,
-            ef: (task as any).ef,
-            fecha_inicio_estimada: (task as any).fecha_inicio_estimada,
-            fecha_fin_estimada: (task as any).fecha_fin_estimada,
-          };
-        });
-        setPresupuestoModalEtapa(bucket.label);
+      // Modal para todas las tareas de la etapa especificada
+      if (etapa) {
+        const bucket = stageBuckets.find((b) => b.key === etapa);
+        if (bucket) {
+          tareasParaModal = bucket.tasks.map((task) => {
+            const elemento = elementosMap.get((task as any).elemento_id || '');
+            return {
+              id: task.id,
+              title: task.titulo,
+              etapa: task.etapa,
+              elemento: elemento || null,
+              es: (task as any).es,
+              ef: (task as any).ef,
+              fecha_inicio_estimada: (task as any).fecha_inicio_estimada,
+              fecha_fin_estimada: (task as any).fecha_fin_estimada,
+            };
+          });
+          setPresupuestoModalEtapa(bucket.label);
+        }
+      } else {
+        // Si no se especifica etapa, usar la primera etapa con tareas
+        const firstBucket = stageBuckets.find((b) => b.tasks.length > 0);
+        if (firstBucket) {
+          tareasParaModal = firstBucket.tasks.map((task) => {
+            const elemento = elementosMap.get((task as any).elemento_id || '');
+            return {
+              id: task.id,
+              title: task.titulo,
+              etapa: task.etapa,
+              elemento: elemento || null,
+              es: (task as any).es,
+              ef: (task as any).ef,
+              fecha_inicio_estimada: (task as any).fecha_inicio_estimada,
+              fecha_fin_estimada: (task as any).fecha_fin_estimada,
+            };
+          });
+          setPresupuestoModalEtapa(firstBucket.label);
+        }
       }
     }
 
@@ -518,6 +608,21 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const handlePresupuestoSuccess = () => {
     // Recargar datos después de crear presupuesto
     window.location.reload(); // Simple reload, o podrías hacer un refetch más elegante
+  };
+
+  const handleVerPdf = (cuadrillaNombre: string, presupuestos: any[]) => {
+    setPdfModalData({ cuadrillaNombre, presupuestos });
+    setPdfModalOpen(true);
+  };
+
+  const handleVerLista = (cuadrillaNombre: string, presupuestos: any[]) => {
+    setListaModalData({ cuadrillaNombre, presupuestos });
+    setListaModalOpen(true);
+  };
+
+  const handleComentar = (cuadrillaNombre: string, presupuestos: any[]) => {
+    setComentarioModalData({ cuadrillaNombre, presupuestos });
+    setComentarioModalOpen(true);
   };
 
   const handleAbrirAsignacion = () => {
@@ -579,29 +684,62 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     if (!currentUser?.orgId) return;
 
     const tarea = taskMap.get(budget.tarea_id);
-    const vinculoId = budget.socio_id;
-    if (!tarea || !vinculoId) {
+    const socioId = budget.socio_id;
+    if (!tarea || !socioId) {
       toast({
         title: 'No se pudo asignar la tarea',
-        description: 'Faltan datos de la cuadrilla o la tarea.',
+        description: 'Faltan datos del socio o la tarea.',
         variant: 'destructive',
       });
       return;
     }
 
-    const cuadrillaNombre = cuadrillaMap.get(vinculoId) ?? 'Cuadrilla sin nombre';
+    // Obtener email del socio (CRÍTICO: el socio busca tareas por email en responsable)
+    let socioEmail = socioEmailMap.get(socioId);
+    let socioNombre = cuadrillaMap.get(socioId) ?? 'Socio sin nombre';
+    
+    if (!socioEmail) {
+      // Si no tenemos el email en el mapa, obtenerlo de la BD
+      const { data: socioData } = await supabase
+        .from('socios')
+        .select('email, nombre')
+        .eq('id', socioId)
+        .eq('org_id', currentUser.orgId)
+        .maybeSingle();
+      
+      if (!socioData?.email) {
+        toast({
+          title: 'No se pudo asignar la tarea',
+          description: 'El socio no tiene email registrado. Actualizá los datos del socio.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      socioEmail = socioData.email;
+      socioNombre = socioData.nombre ?? socioNombre;
+      
+      // Actualizar el mapa
+      setSocioEmailMap((prev) => {
+        const nuevo = new Map(prev);
+        nuevo.set(socioId, socioEmail!);
+        return nuevo;
+      });
+    }
     setAssigningBudgetId(budget.id);
 
     try {
+      // CRÍTICO: Guardar el EMAIL del socio en responsable, no el nombre
       const tareaUpdates: Record<string, any> = {
-        responsable: cuadrillaNombre,
-        cuadrilla_id: vinculoId,
+        responsable: socioEmail, // Email del socio para que lo encuentre
+        cuadrilla_id: socioId,
       };
 
       const { error: tareaError } = await supabase
         .from('tareas')
         .update(tareaUpdates)
-        .eq('id', budget.tarea_id);
+        .eq('id', budget.tarea_id)
+        .eq('org_id', currentUser.orgId);
 
       if (tareaError) throw tareaError;
 
@@ -625,13 +763,30 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         if (rejectError) throw rejectError;
       }
 
+      // Crear notificación para el socio
+      try {
+        await (supabase as any).from('notificaciones').insert({
+          org_id: currentUser.orgId,
+          socio_id: socioId,
+          obra_id: tarea.obraId,
+          tarea_id: budget.tarea_id,
+          titulo: 'Tarea asignada',
+          mensaje: `Te asignaron la tarea "${tarea.titulo}" en la obra.`,
+          tipo: 'asignacion',
+          leida: false,
+        });
+      } catch (notifError) {
+        console.error('[AsignarSection] Error creando notificación:', notifError);
+        // No fallar si la notificación no se crea
+      }
+
       setTasks((prev) =>
         prev.map((task) =>
           task.id === budget.tarea_id
             ? {
                 ...task,
-                responsable: cuadrillaNombre,
-                cuadrillaId: vinculoId,
+                responsable: socioEmail ?? null,
+                cuadrillaId: socioId,
               }
             : task
         )
@@ -659,7 +814,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
       toast({
         title: 'Tarea asignada',
-        description: `Asignaste la tarea a ${cuadrillaNombre}.`,
+        description: `Asignaste la tarea a ${socioNombre}. El socio recibirá una notificación.`,
       });
     } catch (err) {
       console.error('[AsignarSection] Error asignando tarea', err);
@@ -674,22 +829,34 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   // Calcular estadísticas de presupuestos (debe estar antes de los early returns)
-  const totalBudgets = budgets.length;
-  const approvedBudgets = budgets.filter(
-    (budget) => (budget.estado ?? '').toUpperCase() === 'APROBADO'
-  ).length;
-  const pendingBudgets = useMemo(() => {
-    if (!obraId) {
-      return budgets.filter((budget) => (budget.estado ?? '').toUpperCase() === 'PENDIENTE').length;
+  const estadisticasPresupuestos = useMemo(() => {
+    if (!budgets || budgets.length === 0) {
+      return { pendientes: 0, enviados: 0, aprobados: 0 };
     }
-    // Filtrar por obra si hay obraId
-    return budgets.filter((budget) => {
-      const tarea = taskMap.get(budget.tarea_id);
-      return (
-        tarea?.obraId === obraId &&
-        (budget.estado ?? '').toUpperCase() === 'PENDIENTE'
-      );
-    }).length;
+
+    const presupuestosFiltrados = obraId
+      ? budgets.filter((budget) => {
+          const tarea = taskMap.get(budget.tarea_id);
+          return tarea?.obraId === obraId;
+        })
+      : budgets;
+
+    const pendientes = presupuestosFiltrados.filter(
+      (budget) => (budget.estado ?? '').toUpperCase() === 'PENDIENTE'
+    ).length;
+    
+    const enviados = presupuestosFiltrados.filter(
+      (budget) => {
+        const estado = (budget.estado ?? '').toUpperCase();
+        return estado === 'PEDIDO' || estado === 'PENDIENTE';
+      }
+    ).length;
+    
+    const aprobados = presupuestosFiltrados.filter(
+      (budget) => (budget.estado ?? '').toUpperCase() === 'APROBADO'
+    ).length;
+
+    return { pendientes, enviados, aprobados };
   }, [budgets, obraId, taskMap]);
 
   if (!currentUser?.orgId) {
@@ -726,417 +893,91 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     );
   }
 
-  const renderBudgetActions = (budget: RawPresupuesto) => {
-    const status = (budget.estado ?? 'PENDIENTE').toUpperCase();
-    return (
-      <div className="flex flex-wrap items-center gap-2 justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<CheckCircle className="h-4 w-4" />}
-          onClick={() => void handleUpdateBudgetStatus(budget.id, 'APROBADO')}
-          disabled={updatingBudgetId === budget.id || status === 'APROBADO'}
-        >
-          Aprobar
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<XCircle className="h-4 w-4" />}
-          onClick={() => void handleUpdateBudgetStatus(budget.id, 'RECHAZADO')}
-          disabled={updatingBudgetId === budget.id || status === 'RECHAZADO'}
-        >
-          Rechazar
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          icon={
-            assigningBudgetId === budget.id ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Users className="h-4 w-4" />
-            )
-          }
-          onClick={() => void handleAssignBudget(budget)}
-          disabled={assigningBudgetId === budget.id}
-        >
-          Asignar
-        </Button>
-      </div>
-    );
-  };
 
   return (
-    <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="border border-slate-200 bg-white shadow-sm">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Tareas sin cuadrilla
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">{tareasPendientes.length}</p>
-            <p className="text-xs text-slate-500">
-              {tareasSinPresupuesto.length} sin presupuestos recibidos
-            </p>
-          </div>
-        </Card>
-        <Card className="border border-slate-200 bg-white shadow-sm">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Solicitudes pendientes
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">{pendingBudgets}</p>
-            <p className="text-xs text-slate-500">
-              Presupuestos esperando respuesta de cuadrillas
-            </p>
-          </div>
-        </Card>
-        <Card className="border border-slate-200 bg-white shadow-sm">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Presupuestos aprobados
-            </p>
-            <p className="text-2xl font-semibold text-slate-900">{approvedBudgets}</p>
-            <p className="text-xs text-slate-500">
-              Sobre un total de {totalBudgets} presupuestos registrados
-            </p>
-          </div>
-        </Card>
+    <div className="space-y-6">
+      {/* Panel de Estado */}
+      <PanelEstado
+        presupuestosPendientes={estadisticasPresupuestos.pendientes}
+        presupuestosEnviados={estadisticasPresupuestos.enviados}
+        presupuestosAprobados={estadisticasPresupuestos.aprobados}
+      />
+
+      {/* Stage Summary Cards */}
+      <div className="space-y-4">
+        {etapasData.map((etapaData) => {
+          // Solo mostrar etapas que tengan tareas
+          if (etapaData.tareas.length === 0) return null;
+
+          return (
+            <StageSummaryCard
+              key={etapaData.stageKey}
+              stageKey={etapaData.stageKey}
+              stageLabel={etapaData.stageLabel}
+              stageDescription={etapaData.stageDescription}
+              tareas={etapaData.tareas}
+              presupuestos={etapaData.presupuestos}
+              tareasSinPresupuesto={etapaData.tareasSinPresupuesto}
+              onSolicitarPresupuesto={(tareaIds) => {
+                if (tareaIds.length === 1) {
+                  handleOpenPresupuestoModal(etapaData.stageKey, tareaIds[0]);
+                } else {
+                  handleOpenPresupuestoModal(etapaData.stageKey);
+                }
+              }}
+              onAprobar={(id) => handleUpdateBudgetStatus(id, 'APROBADO')}
+              onRechazar={(id) => handleUpdateBudgetStatus(id, 'RECHAZADO')}
+              onAsignar={(id) => {
+                const presupuesto = budgets.find((b) => b.id === id);
+                if (presupuesto) handleAssignBudget(presupuesto);
+              }}
+              onVerPdf={handleVerPdf}
+              onVerLista={handleVerLista}
+              onComentar={handleComentar}
+              actualizandoId={updatingBudgetId}
+              asignandoId={assigningBudgetId}
+              disabled={!canUseCuadrillas}
+            />
+          );
+        })}
       </div>
 
-      <section className="space-y-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {STAGE_DEFINITIONS.map((definition) => {
-            const bucket = stageBuckets.find((item) => item.key === definition.key);
-            const count = bucket?.tasks.length ?? 0;
-            const isActive = etapaActiva === definition.key;
+      {/* Mensaje si no hay tareas */}
+      {!stageBuckets.some((bucket) => bucket.tasks && bucket.tasks.length > 0) && (
+        <EmptyState
+          title="No hay tareas pendientes de asignación"
+          description="Cuando se creen nuevas tareas sin cuadrilla vas a poder gestionarlas desde acá."
+        />
+      )}
 
-            return (
-              <button
-                key={definition.key}
-                onClick={() => setEtapaActiva(definition.key)}
-                className={cn(
-                  'flex min-w-[200px] flex-1 items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all',
-                  isActive
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-blue-200 hover:bg-blue-50/60'
-                )}
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide">{definition.label}</p>
-                  <p className="text-[11px] text-slate-500">{definition.description}</p>
-                </div>
-                <span className="text-lg font-semibold">{count}</span>
-              </button>
-            );
-          })}
-          {(() => {
-            const fallbackBucket = stageBuckets.find((item) => item.key === FALLBACK_STAGE.key);
-            if (!fallbackBucket || fallbackBucket.tasks.length === 0) return null;
-            const isActive = etapaActiva === FALLBACK_STAGE.key;
-            return (
-              <button
-                key={FALLBACK_STAGE.key}
-                onClick={() => setEtapaActiva(FALLBACK_STAGE.key)}
-                className={cn(
-                  'flex min-w-[200px] flex-1 items-center justify-between rounded-2xl border px-4 py-3 text-left transition-all',
-                  isActive
-                    ? 'border-slate-500 bg-slate-100 text-slate-700 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                )}
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide">{FALLBACK_STAGE.label}</p>
-                  <p className="text-[11px] text-slate-500">{FALLBACK_STAGE.description}</p>
-                </div>
-                <span className="text-lg font-semibold">{fallbackBucket.tasks.length}</span>
-              </button>
-            );
-          })()}
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Asigná por etapas</h2>
-            <p className="text-sm text-slate-500">
-              Visualizá cada etapa de la obra, solicitá presupuestos y confirmá la cuadrilla indicada.
-            </p>
-          </div>
-          <Button
-            variant="primary"
-            icon={<PlusCircle className="h-4 w-4" />}
-            onClick={() => handleOpenPresupuestoModal()}
-            className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
-          >
-            Solicitar presupuesto
-          </Button>
-        </div>
-
-        {stageBuckets.some((bucket) => bucket.tasks.length > 0) ? (
-          stageBuckets
-            .filter((bucket) => bucket.key === etapaActiva)
-            .map((bucket) => (
-              <div
-                key={bucket.key}
-                className={`rounded-3xl border p-6 shadow-sm ${bucket.accent}`}
-              >
-                <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h3 className="text-xl font-semibold text-slate-900">{bucket.label}</h3>
-                    <p className="text-sm text-slate-600">{bucket.description}</p>
-                  </div>
-                  <Badge className={bucket.badgeClass}>
-                    {bucket.tasks.length} tarea{bucket.tasks.length === 1 ? '' : 's'} por asignar
-                  </Badge>
-                </div>
-
-                {bucket.tasks.length > 0 ? (
-                  <div className="grid gap-4 xl:grid-cols-2">
-                    {bucket.tasks.map((task) => {
-                      const taskBudgets = budgetsByTask.get(task.id) ?? [];
-                      const hayPresupuestos = taskBudgets.length > 0;
-                      const estadoResponsable = task.responsable
-                        ? `Asignada a ${task.responsable}`
-                        : 'Sin asignar';
-
-                      return (
-                        <Card key={task.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                          <div className="space-y-4 p-5">
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <h4 className="text-base font-semibold text-slate-900">{task.titulo}</h4>
-                                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                                  <Badge variant="default">{bucket.label}</Badge>
-                                  <span>{estadoResponsable}</span>
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={handleAbrirAsignacion}
-                                  className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
-                                >
-                                  Asignar manualmente
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  onClick={() => handleOpenPresupuestoModal(undefined, task.id)}
-                                  className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
-                                >
-                                  Pedir presupuesto
-                                </Button>
-                              </div>
-                            </div>
-
-                            {hayPresupuestos ? (
-                              <div className="space-y-3">
-                                {taskBudgets.map((budget) => {
-                                  const vinculoId = budget.socio_id;
-                                  const cuadrillaNombre =
-                                    (vinculoId && cuadrillaMap.get(vinculoId)) ?? 'Sin cuadrilla';
-                                  const estado = (budget.estado ?? 'PENDIENTE').toUpperCase();
-                                  const montoFormateado =
-                                    budget.monto !== null &&
-                                    budget.monto !== undefined &&
-                                    Number(budget.monto) > 0
-                                      ? new Intl.NumberFormat('es-AR', {
-                                          style: 'currency',
-                                          currency: budget.moneda ?? 'ARS',
-                                        }).format(budget.monto ?? 0)
-                                      : 'Monto no informado';
-
-                                  return (
-                                    <div
-                                      key={budget.id}
-                                      className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4"
-                                    >
-                                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                        <div>
-                                          <p className="text-sm font-medium text-slate-900">{cuadrillaNombre}</p>
-                                          <p className="text-xs text-slate-500">{montoFormateado}</p>
-                                          {budget.notas && (
-                                            <p className="text-xs text-slate-500">{budget.notas}</p>
-                                          )}
-                                        </div>
-                                        <Badge
-                                          variant={
-                                            estado === 'APROBADO'
-                                              ? 'success'
-                                              : estado === 'RECHAZADO'
-                                              ? 'error'
-                                              : 'warning'
-                                          }
-                                        >
-                                          {estado}
-                                        </Badge>
-                                      </div>
-                                      <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-                                        {renderBudgetActions(budget)}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center text-sm text-slate-500">
-                                Aún no hay presupuestos registrados para esta tarea.
-                              </div>
-                            )}
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No hay tareas para esta etapa"
-                    description="Cuando se generen tareas en esta etapa las vas a ver acá."
-                  />
-                )}
-              </div>
-            ))
-        ) : (
-          <EmptyState
-            title="No hay tareas pendientes de asignación"
-            description="Cuando se creen nuevas tareas sin cuadrilla vas a poder gestionarlas desde acá."
-          />
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Filtrar por etapa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las etapas</SelectItem>
-              {STAGE_DEFINITIONS.map((stage) => (
-                  <SelectItem key={stage.key} value={stage.key}>
-                    {stage.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los estados</SelectItem>
-                {STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por tarea o cuadrilla"
-                className="pl-9"
-              />
-            </div>
-          </div>
-
-          <Button
-            variant="primary"
-            icon={<PlusCircle className="h-4 w-4" />}
-            onClick={() => handleOpenPresupuestoModal()}
-            className={!canUseCuadrillas ? 'cursor-not-allowed opacity-60' : undefined}
-          >
-            Solicitar presupuesto
-          </Button>
-        </div>
-
-        {filteredBudgets.length ? (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-            <div className="hidden grid-cols-[140px_180px_1fr_120px_140px_200px] bg-slate-50 px-6 py-3 text-xs font-semibold uppercase text-slate-500 lg:grid">
-              <span>Fecha</span>
-              <span>Cuadrilla</span>
-              <span>Tarea</span>
-              <span>Etapa</span>
-              <span>Estado</span>
-              <span>Acciones</span>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {filteredBudgets.map((budget) => {
-                const tarea = taskMap.get(budget.tarea_id);
-                if (!tarea) return null;
-                const fecha = formatDate(budget.created_at);
-                const vinculoId = budget.socio_id ?? '';
-                const cuadrillaNombre = cuadrillaMap.get(vinculoId) ?? 'Sin cuadrilla asignada';
-                const etapa = tarea.etapa ?? 'Sin etapa';
-                const estado = (budget.estado ?? 'PENDIENTE').toUpperCase();
-                const montoFormateado =
-                  budget.monto !== null &&
-                  budget.monto !== undefined &&
-                  Number(budget.monto) > 0
-                    ? new Intl.NumberFormat('es-AR', {
-                        style: 'currency',
-                        currency: budget.moneda ?? 'ARS',
-                      }).format(budget.monto ?? 0)
-                    : null;
-
-                return (
-                  <div
-                    key={budget.id}
-                    className="grid grid-cols-1 gap-4 px-6 py-4 text-sm text-slate-700 lg:grid-cols-[140px_180px_1fr_120px_140px_200px]"
-                  >
-                    <div>
-                      <p className="font-medium text-slate-900">{fecha}</p>
-                      {budget.updated_at && (
-                        <p className="text-xs text-slate-500">
-                          Actualizado {formatDate(budget.updated_at)}
-                        </p>
-                      )}
-                    </div>
-                    <div className="font-medium text-slate-900">{cuadrillaNombre}</div>
-                    <div>
-                      <p className="font-medium text-slate-900">{tarea.titulo}</p>
-                      {montoFormateado && (
-                        <p className="text-xs text-slate-500">{montoFormateado}</p>
-                      )}
-                      {budget.notas && (
-                        <p className="text-xs text-slate-500">{budget.notas}</p>
-                      )}
-                    </div>
-                    <div className="text-sm text-slate-600">{etapa ?? 'Sin etapa'}</div>
-                    <div>
-                      <Badge
-                        variant={
-                          estado === 'APROBADO'
-                            ? 'success'
-                            : estado === 'RECHAZADO'
-                            ? 'error'
-                            : 'warning'
-                        }
-                      >
-                        {estado}
-                      </Badge>
-                    </div>
-                    <div>{renderBudgetActions(budget)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : (
-          <EmptyState
-            title="No hay presupuestos registrados"
-            description="Cuando solicites presupuestos a las cuadrillas los vas a ver acá."
-          />
-        )}
-      </section>
+      {/* Panel de Auditoría */}
+      <PanelAuditoria
+        presupuestos={budgets.map((b) => ({
+          id: b.id,
+          tarea_id: b.tarea_id,
+          created_at: b.created_at,
+          updated_at: b.updated_at ?? null,
+          estado: b.estado ?? null,
+          monto: b.monto ?? null,
+          moneda: b.moneda ?? null,
+          notas: b.notas ?? null,
+          socio_id: b.socio_id ?? null,
+        }))}
+        tareas={taskMap}
+        cuadrillas={cuadrillaMap}
+        stageFilter={stageFilter}
+        statusFilter={statusFilter}
+        onStageFilterChange={setStageFilter}
+        onStatusFilterChange={setStatusFilter}
+        onAprobar={(id) => handleUpdateBudgetStatus(id, 'APROBADO')}
+        onRechazar={(id) => handleUpdateBudgetStatus(id, 'RECHAZADO')}
+        onAsignar={(id) => {
+          const presupuesto = budgets.find((b) => b.id === id);
+          if (presupuesto) handleAssignBudget(presupuesto);
+        }}
+        actualizandoId={updatingBudgetId}
+        asignandoId={assigningBudgetId}
+      />
 
       {/* Modal de solicitud de presupuesto */}
       {presupuestoModalOpen && presupuestoModalObraId && (
@@ -1147,6 +988,44 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           etapa={presupuestoModalEtapa}
           tareas={presupuestoModalTareas}
           onSuccess={handlePresupuestoSuccess}
+        />
+      )}
+
+      {/* Modales de PDF, Lista y Comentario */}
+      {pdfModalData && (
+        <PresupuestoPDFModal
+          open={pdfModalOpen}
+          onClose={() => {
+            setPdfModalOpen(false);
+            setPdfModalData(null);
+          }}
+          cuadrillaNombre={pdfModalData.cuadrillaNombre}
+          presupuestos={pdfModalData.presupuestos}
+        />
+      )}
+
+      {listaModalData && (
+        <PresupuestoListaModal
+          open={listaModalOpen}
+          onClose={() => {
+            setListaModalOpen(false);
+            setListaModalData(null);
+          }}
+          cuadrillaNombre={listaModalData.cuadrillaNombre}
+          presupuestos={listaModalData.presupuestos}
+        />
+      )}
+
+      {comentarioModalData && (
+        <PresupuestoComentarioModal
+          open={comentarioModalOpen}
+          onClose={() => {
+            setComentarioModalOpen(false);
+            setComentarioModalData(null);
+          }}
+          cuadrillaNombre={comentarioModalData.cuadrillaNombre}
+          presupuestos={comentarioModalData.presupuestos}
+          obraId={obraId}
         />
       )}
     </div>

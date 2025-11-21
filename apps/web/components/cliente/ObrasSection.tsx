@@ -25,6 +25,7 @@ import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 import { Button, SectionLayout } from '@/components/ui/grows';
 import { OnboardingCrearObraProvider, useOnboardingCrearObra } from '@/components/onboarding/OnboardingCrearObra';
+import TutorialButton from '@/components/common/TutorialButton';
 
 // Tipos de datos
 interface Obra {
@@ -642,15 +643,7 @@ function ObrasSectionContent() {
             : 'Aún no registraste obras en tu organización.'}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
-          <Button
-            onClick={startOnboarding}
-            variant="ghost"
-            size="sm"
-            icon={<HelpCircle className="h-4 w-4" />}
-            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
-          >
-            Ver tutorial — Crear obra
-          </Button>
+          <TutorialButton onClick={startOnboarding} />
           <Button
             onClick={abrirWizardCrear}
             variant="primary"

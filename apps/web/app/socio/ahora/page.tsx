@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { TareasEnCurso } from '@/components/socio/sections/TareasEnCurso';
+import { AhoraSection } from '@/components/socio/sections/AhoraSection';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default function AhoraPage() {
   return (
     <Suspense fallback={<div>Cargando...</div>}>
-      <TareasEnCurso />
+      <AhoraSection />
     </Suspense>
   );
 }

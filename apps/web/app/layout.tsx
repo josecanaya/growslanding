@@ -36,6 +36,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <DevBanner />
                 <DevToolsPanel />
                 <Toaster />
+                {/* Audio global para notificaciones */}
+                <audio
+                  id="grows-notification-sound"
+                  src="/sounds/notification.mp3"
+                  preload="auto"
+                />
               </ThemeProvider>
             </UpgradeModalProvider>
           </SubscriptionProvider>

@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-import { visitStatusSchema } from '@/lib/fsm';
+import { visitStatusSchema, type VisitStatus } from '@/lib/fsm';
 import {
   prepareEventoInsert,
   validateMediaRules,
@@ -59,6 +59,21 @@ type TareaRecord = {
     address: string | null;
     org_id: string | null;
   } | null;
+};
+
+const mapEstadoBDaVisitStatus = (estado: string | null | undefined): VisitStatus => {
+  const value = (estado || '').trim().toLowerCase();
+  if (['en_ejecucion', 'en ejecucion', 'en_progreso', 'en progreso'].includes(value)) {
+    return 'en_ejecucion';
+  }
+  if (['finalizado', 'terminada', 'terminado', 'ejecutado', 'ejecutada'].includes(value)) {
+    return 'finalizado';
+  }
+  if (['validado', 'aprobado', 'validada'].includes(value)) {
+    return 'validado';
+  }
+  // Estados de preparación/asignación los tratamos como pendientes para permitir iniciar
+  return 'pendiente';
 };
 
 export async function POST(
@@ -265,22 +280,54 @@ export async function POST(
     
     // No validamos más cuadrillas, quedan obsoletas.
 
-    const { data: precedencias } = await supabase
+    // Verificar precedencias activas
+    const { data: precedencias, error: precedenciasError } = await supabase
       .from('tarea_precedencias')
-      .select('depende_de')
+      .select('id, depende_de, tarea_id')
       .eq('tarea_id', tarea.id);
+
+    console.log('[TRANSITION] Precedencias encontradas para tarea:', {
+      tareaId: tarea.id,
+      tareaTitle: tarea.title,
+      precedenciasCount: precedencias?.length || 0,
+      precedencias: precedencias,
+      error: precedenciasError,
+    });
 
     if (precedencias && precedencias.length > 0) {
       const dependeIds = precedencias
         .map((p) => p.depende_de)
         .filter((id): id is string => typeof id === 'string' && id.length > 0);
 
+      console.log('[TRANSITION] IDs de tareas predecesoras:', dependeIds);
+
       if (dependeIds.length > 0) {
-        const { data: bloqueo } = await supabase
+        // Obtener información completa de las tareas predecesoras (incluyendo nombres)
+        const { data: tareasPredecesoras, error: predecesorasError } = await supabase
           .from('tareas')
-          .select('id, estado')
+          .select('id, title, estado')
+          .in('id', dependeIds);
+
+        console.log('[TRANSITION] 📋 TODAS las tareas predecesoras (con nombres):', 
+          tareasPredecesoras?.map(t => ({
+            id: t.id,
+            nombre: t.title,
+            estado: t.estado,
+            precedenciaId: precedencias.find(p => p.depende_de === t.id)?.id
+          }))
+        );
+
+        const { data: bloqueo, error: bloqueoError } = await supabase
+          .from('tareas')
+          .select('id, title, estado')
           .in('id', dependeIds)
           .neq('estado', 'validado');
+
+        console.log('[TRANSITION] Tareas predecesoras no validadas:', {
+          bloqueoCount: bloqueo?.length || 0,
+          bloqueo: bloqueo,
+          error: bloqueoError,
+        });
 
         if (bloqueo && bloqueo.length > 0) {
           // Obtener información de las tareas bloqueantes para mostrar mejor mensaje
@@ -289,16 +336,36 @@ export async function POST(
             .select('id, title, estado')
             .in('id', bloqueo.map((b) => b.id));
           
+          console.log('[TRANSITION] ❌ Bloqueando transición por tareas precedentes:', tareasBloqueantes);
+          
+          // Mostrar información detallada para eliminar manualmente
+          console.log('[TRANSITION] 🔧 Para eliminar esta precedencia manualmente en Supabase, ejecutá:');
+          tareasBloqueantes?.forEach(tb => {
+            const prec = precedencias.find(p => p.depende_de === tb.id);
+            if (prec) {
+              console.log(`DELETE FROM tarea_precedencias WHERE id = '${prec.id}'; -- Elimina precedencia de "${tb.title}" (${tb.id}) hacia "${tarea.title}" (${tarea.id})`);
+            }
+          });
+          
+          // Crear mensaje detallado con IDs y nombres
+          const mensajeDetallado = tareasBloqueantes?.map(tb => {
+            const prec = precedencias.find(p => p.depende_de === tb.id);
+            return `- "${tb.title}" (ID: ${tb.id}, Estado: ${tb.estado})${prec ? ` - Precedencia ID: ${prec.id}` : ''}`;
+          }).join('\n') || 'Tareas precedentes sin validar';
+
           return new Response(
             JSON.stringify({
-              message: 'No se puede avanzar: tareas precedentes sin validar',
+              message: `No se puede avanzar: tareas precedentes sin validar:\n${mensajeDetallado}`,
               bloqueos: tareasBloqueantes || bloqueo,
+              precedenciasIds: precedencias.map(p => p.id),
               error: 'PRECEDENCE_ERROR',
             }),
             { status: 409 }
           );
         }
       }
+    } else {
+      console.log('[TRANSITION] ✅ No hay precedencias activas, puede continuar');
     }
 
     validateMediaRules({
@@ -329,8 +396,14 @@ export async function POST(
     const uploadedMedia = await Promise.all(
       payload.media.map(async (item, idx) => {
         if (item.kind === 'foto') {
+          if (item.path) {
+            return { kind: item.kind, path: item.path, dataUrl: item.dataUrl, idx };
+          }
           const { path } = await uploadPhoto(item.dataUrl);
           return { kind: item.kind, path, dataUrl: item.dataUrl, idx };
+        }
+        if (item.path) {
+          return { kind: item.kind, path: item.path, dataUrl: item.dataUrl, idx };
         }
         const { path } = await uploadSignature(item.dataUrl);
         return { kind: item.kind, path, dataUrl: item.dataUrl, idx };
@@ -355,7 +428,7 @@ export async function POST(
           id: tarea.id,
           tipo: tarea.title || '', // Usar title como tipo para compatibilidad
           descripcion: tarea.descripcion || '',
-          estado: tarea.estado as any,
+          estado: mapEstadoBDaVisitStatus(tarea.estado),
         },
         obra: {
           nombre: tarea.obra?.name || '',

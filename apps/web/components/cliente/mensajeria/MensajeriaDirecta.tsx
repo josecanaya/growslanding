@@ -17,8 +17,6 @@ type Mensaje = {
   remitente_id: string;
   destinatario_tipo: 'cliente' | 'socio';
   destinatario_id: string;
-  obra_id: string | null;
-  tarea_id: string | null;
   created_at: string;
   leido: boolean;
 };
@@ -42,7 +40,9 @@ export function MensajeriaDirecta({ obraId = null, socioId = null }: MensajeriaD
   const usuarioId = currentUser?.id ?? null;
 
   const headers = useMemo(() => {
-    const baseHeaders: Record<string, string> = {};
+    const baseHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
     if (orgId) baseHeaders['x-organizacion-id'] = orgId;
     if (usuarioId) baseHeaders['x-usuario-id'] = usuarioId;
     if (selectedSocioId) baseHeaders['x-socio-id'] = selectedSocioId;
@@ -63,21 +63,41 @@ export function MensajeriaDirecta({ obraId = null, socioId = null }: MensajeriaD
     setLoading(true);
     try {
       const url = new URL('/api/mensajes', window.location.origin);
-      if (obraId) url.searchParams.set('obra_id', obraId);
+      // obra_id fue eliminado de la tabla mensajes
 
       const res = await fetch(url.toString(), { headers, cache: 'no-store' });
       const json = await res.json();
       if (json.success) {
         const data: Mensaje[] = (json.data || []) as Mensaje[];
+        console.log('[MensajeriaDirecta] Mensajes recibidos:', data.length);
+        console.log('[MensajeriaDirecta] Filtros:', { usuarioId, selectedSocioId, orgId });
+        
+        // Filtrar mensajes de la conversación con el socio seleccionado
+        // La API ya filtra por orgId y usuarioId/orgId, ahora solo necesitamos filtrar por el socio seleccionado
         const filtradas = data.filter((mensaje) => {
-          const emisor = mensaje.remitente_id;
-          const receptor = mensaje.destinatario_id;
-          return (
-            (emisor === usuarioId && receptor === selectedSocioId) ||
-            (emisor === selectedSocioId && receptor === usuarioId)
-          );
+          // Mensaje del cliente al socio seleccionado
+          const esDelClienteAlSocio = 
+            mensaje.remitente_tipo === 'cliente' && 
+            mensaje.destinatario_tipo === 'socio' &&
+            mensaje.destinatario_id === selectedSocioId;
+          
+          // Mensaje del socio seleccionado al cliente
+          const esDelSocioAlCliente = 
+            mensaje.remitente_tipo === 'socio' && 
+            mensaje.remitente_id === selectedSocioId &&
+            mensaje.destinatario_tipo === 'cliente';
+          
+          return esDelClienteAlSocio || esDelSocioAlCliente;
         });
-        setMensajes(filtradas);
+        
+        console.log('[MensajeriaDirecta] Mensajes filtrados:', filtradas.length);
+        
+        // Ordenar por fecha (más antiguos primero, como un chat normal)
+        const mensajesOrdenados = filtradas.sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        
+        setMensajes(mensajesOrdenados);
       }
     } catch (error) {
       console.error('[MensajeriaDirecta] Error al cargar mensajes:', error);
@@ -137,12 +157,13 @@ export function MensajeriaDirecta({ obraId = null, socioId = null }: MensajeriaD
         },
         body: JSON.stringify({
           org_id: orgId,
-          obra_id: obraId,
           remitente_id: usuarioId,
           remitente_tipo: 'cliente',
           destinatario_id: selectedSocioId,
           destinatario_tipo: 'socio',
           contenido: nuevoMensaje.trim(),
+          tipo: 'chat',
+          leido: false,
         }),
       });
 
@@ -220,7 +241,9 @@ export function MensajeriaDirecta({ obraId = null, socioId = null }: MensajeriaD
               />
             ) : (
               mensajes.map((mensaje) => {
-                const esPropio = mensaje.remitente_id === usuarioId;
+                // Determinar si es propio: remitente es cliente
+                const esPropio = mensaje.remitente_tipo === 'cliente';
+                
                 return (
                   <div
                     key={mensaje.id}
@@ -268,5 +291,3 @@ export function MensajeriaDirecta({ obraId = null, socioId = null }: MensajeriaD
     </BaseCard>
   );
 }
-
-

@@ -14,8 +14,6 @@ type Mensaje = {
   remitente_id: string;
   destinatario_tipo: 'cliente' | 'socio';
   destinatario_id: string;
-  obra_id: string | null;
-  tarea_id: string | null;
   created_at: string;
   leido: boolean;
 };
@@ -142,8 +140,9 @@ export function MensajeriaSocio() {
       'Content-Type': 'application/json',
     };
     if (orgId) baseHeaders['x-organizacion-id'] = orgId;
+    if (socioId) baseHeaders['x-usuario-id'] = socioId;
     return baseHeaders;
-  }, [orgId]);
+  }, [orgId, socioId]);
 
   const fetchMensajes = useCallback(async () => {
     if (!orgId || !socioId || typeof window === 'undefined') {
@@ -154,9 +153,7 @@ export function MensajeriaSocio() {
     try {
       const url = new URL('/api/mensajes', window.location.origin);
       url.searchParams.set('socio_id', socioId);
-      if (obraId) {
-        url.searchParams.set('obra_id', obraId);
-      }
+      // obra_id fue eliminado de la tabla mensajes
 
       console.log('[MensajeriaSocio] Llamando endpoint:', { 
         url: url.toString(), 
@@ -193,9 +190,9 @@ export function MensajeriaSocio() {
         
         console.log('[MensajeriaSocio] Mensajes filtrados (remitente o destinatario):', mensajesFiltrados.length);
         
-        // Ordenar por fecha (más recientes primero)
+        // Ordenar por fecha (más antiguos primero, como un chat normal)
         const mensajesOrdenados = mensajesFiltrados.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         
         setMensajes(mensajesOrdenados);
@@ -234,7 +231,7 @@ export function MensajeriaSocio() {
                   (m) => m.remitente_id === socioId || m.destinatario_id === socioId
                 );
                 const mensajesOrdenadosActualizados = mensajesFiltradosActualizados.sort((a, b) => 
-                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                  new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
                 );
                 setMensajes(mensajesOrdenadosActualizados);
               }
@@ -284,12 +281,13 @@ export function MensajeriaSocio() {
         headers,
         body: JSON.stringify({
           org_id: orgId,
-          obra_id: obraId,
           remitente_id: socioId,
           remitente_tipo: 'socio',
           destinatario_id: clienteId,
           destinatario_tipo: 'cliente',
           contenido: nuevoMensaje.trim(),
+          tipo: 'chat',
+          leido: false,
         }),
       });
 
@@ -473,4 +471,3 @@ export function MensajeriaSocio() {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MisTareas } from '@/components/socio/sections/MisTareas';
+import { TareasEnCurso } from '@/components/socio/sections/TareasEnCurso';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 export default function TareasPage() {
@@ -32,5 +32,5 @@ export default function TareasPage() {
     }
   }, [currentUser?.name]);
 
-  return <MisTareas user={user} />;
+  return <TareasEnCurso />;
 }

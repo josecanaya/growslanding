@@ -44,12 +44,27 @@ export async function uploadSignature(dataUrl: string) {
 export async function uploadActaPdf(pdfBytes: Uint8Array, path: string) {
   const targetPath = path.startsWith('actas/') ? path : `actas/${path}`;
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase.storage
-    .from('actas')
-    .upload(targetPath.replace(/^actas\//, ''), pdfBytes, {
-      contentType: 'application/pdf',
-      upsert: true,
-    });
+  const uploadToActas = async () =>
+    supabase.storage
+      .from('actas')
+      .upload(targetPath.replace(/^actas\//, ''), pdfBytes, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+
+  let data;
+  let error;
+  ({ data, error } = await uploadToActas());
+
+  // Si falta el bucket, intentar crearlo y reintentar una vez
+  if (error && typeof error.message === 'string' && error.message.toLowerCase().includes('bucket not found')) {
+    try {
+      await supabase.storage.createBucket('actas', { public: false });
+      ({ data, error } = await uploadToActas());
+    } catch (e) {
+      // Si falla la creación, mantener el error original
+    }
+  }
 
   if (error || !data) {
     throw new Error(`No se pudo guardar el PDF del acta: ${error?.message ?? 'desconocido'}`);

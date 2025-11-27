@@ -20,14 +20,37 @@ export async function GET(
 
     // Obtener socio y su información de contacto
     // Nota: Puede que algunos campos no existan, los manejamos con select parcial
-    const { data: socio, error: socioError } = await supabase
+    let { data: socio, error: socioError } = await supabase
       .from('socios')
-      .select('id, org_id, nombre, email, telefono, rol')
+      .select('id, org_id, nombre, email, telefono, estado, especialidad')
       .eq('id', socioId)
       .eq('org_id', organizacionId)
-      .single();
+      .maybeSingle();
+
+    // Si no se encuentra con org_id, intentar sin org_id (por si hay inconsistencias)
+    if (!socio && !socioError) {
+      console.log('[SOCIOS_TAREAS] No se encontró con org_id, intentando sin org_id...');
+      const resultSinOrg = await supabase
+        .from('socios')
+        .select('id, org_id, nombre, email, telefono, estado, especialidad')
+        .eq('id', socioId)
+        .maybeSingle();
+      socio = resultSinOrg.data;
+      socioError = resultSinOrg.error;
+      
+      // Si encontramos el socio sin org_id, actualizar el org_id si tenemos uno
+      if (socio && organizacionId && !socio.org_id) {
+        await supabase
+          .from('socios')
+          .update({ org_id: organizacionId })
+          .eq('id', socioId);
+        socio.org_id = organizacionId;
+        console.log('[SOCIOS_TAREAS] ✅ org_id actualizado en el socio');
+      }
+    }
 
     if (socioError || !socio) {
+      console.error('[SOCIOS_TAREAS] Error al buscar socio:', socioError);
       return NextResponse.json(
         { success: false, error: 'Socio no encontrado' },
         { status: 404 }
@@ -80,7 +103,7 @@ export async function GET(
       `)
       .eq('org_id', organizacionId);
 
-    // Construir filtros OR para buscar por responsable
+    // Construir filtros OR para buscar por responsable Y cuadrilla_id
     const filtros: string[] = [];
 
     // ✅ Buscar tareas donde responsable = email del socio (PRINCIPAL)
@@ -102,8 +125,9 @@ export async function GET(
       console.log('[SOCIOS_TAREAS] ✅ Filtro por nombre:', nombre);
     }
 
-    // NOTA: Las tareas ahora se asignan directamente por responsable (email), no por cuadrilla
-    // El campo cuadrilla_id está obsoleto y no se usa para filtrar tareas
+    // ✅ Buscar tareas donde cuadrilla_id = socio_id (RESPALDO)
+    filtros.push(`cuadrilla_id.eq.${socioId}`);
+    console.log('[SOCIOS_TAREAS] ✅ Filtro por cuadrilla_id:', socioId);
     
     console.log('[SOCIOS_TAREAS] Total filtros:', filtros.length, 'Filtros:', filtros);
 

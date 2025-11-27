@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Loader2, Bell, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -8,6 +8,7 @@ import { BaseCard, Button, EmptyState } from '@/components/ui/grows';
 import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente/mensajeria/ListaNotificaciones';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
+import { playNotificationFeedback } from '@/lib/ui/notificationFeedback';
 
 interface NotificacionesProps {
   user: {
@@ -26,6 +27,7 @@ export function Notificaciones({ user }: NotificacionesProps) {
   const [orgId, setOrgId] = useState<string | null>(orgIdFromUser);
   const [socioId, setSocioId] = useState<string | null>(null);
   const [loadingSocioId, setLoadingSocioId] = useState(true);
+  const channelRef = useRef<any>(null);
 
   const [notificaciones, setNotificaciones] = useState<NotificacionItem[]>([]);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState(0);
@@ -101,6 +103,7 @@ export function Notificaciones({ user }: NotificacionesProps) {
     const base: Record<string, string> = {};
     if (orgId) base['x-organizacion-id'] = orgId;
     if (socioId) base['x-socio-id'] = socioId;
+    if (socioId) base['x-usuario-id'] = socioId;
     return base;
   }, [orgId, socioId]);
 
@@ -196,12 +199,100 @@ export function Notificaciones({ user }: NotificacionesProps) {
     fetchMensajesNoLeidos();
   }, [fetchNotificaciones, fetchMensajesNoLeidos]);
 
+  // Realtime subscription para notificaciones
+  useEffect(() => {
+    if (!orgId || !socioId) return;
+
+    const channel = supabase
+      .channel(`notificaciones_${orgId}_${socioId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notificaciones',
+          filter: `destinatario_id=eq.${socioId}`,
+        },
+        (payload) => {
+          console.log('[Socio Notificaciones] Realtime event:', payload);
+          
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const nuevaNotif: NotificacionItem = {
+              id: payload.new.id,
+              titulo: payload.new.titulo || 'Notificación',
+              mensaje: payload.new.mensaje || 'Sin detalle',
+              tipo: (payload.new.tipo === 'presupuesto_aprobado' ? 'success' : 'info') as NotificacionItem['tipo'],
+              fecha: payload.new.created_at || new Date().toISOString(),
+              leida: Boolean(payload.new.leida),
+              destinatario: user.name,
+            };
+            
+            // Agregar con animación slide-in
+            setNotificaciones((prev) => [nuevaNotif, ...prev]);
+
+            // Reproducir feedback si la notificación no está leída y el documento está visible
+            if (!payload.new.leida && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+              playNotificationFeedback();
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setNotificaciones((prev) =>
+              prev.map((notif) =>
+                notif.id === payload.new.id
+                  ? {
+                      ...notif,
+                      leida: Boolean(payload.new.leida),
+                    }
+                  : notif
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setNotificaciones((prev) => prev.filter((notif) => notif.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [orgId, socioId, supabase, user.name]);
+
   const marcarComoLeida = async (id: string) => {
     try {
-      await fetch(`/api/notificaciones/${id}/leida`, { method: 'PATCH' });
-      setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
+      const response = await fetch(`/api/notificaciones/${id}/leida`, {
+        method: 'PATCH',
+        headers: {
+          'x-organizacion-id': orgId || '',
+          'x-usuario-id': socioId || '',
+        },
+      });
+      
+      const json = await response.json();
+      if (json.success && json.data) {
+        // Actualizar con la lista del servidor
+        const items: NotificacionItem[] = (json.data || []).map((item: any) => ({
+          id: item.id,
+          titulo: item.titulo || 'Notificación',
+          mensaje: item.mensaje || item.descripcion || 'Sin detalle',
+          tipo: (item.tipo === 'presupuesto_aprobado' ? 'success' : 'info') as NotificacionItem['tipo'],
+          fecha: item.created_at || item.fecha || new Date().toISOString(),
+          leida: Boolean(item.leida),
+          destinatario: user.name,
+        }));
+        setNotificaciones(items);
+      } else {
+        // Fallback: actualizar localmente
+        setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
+      }
     } catch (error) {
       console.error('[Socio Notificaciones] Error marcando notificación como leída:', error);
+      // Fallback: actualizar localmente
+      setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
     }
   };
 
@@ -225,6 +316,19 @@ export function Notificaciones({ user }: NotificacionesProps) {
       mensajesNoLeidos 
     };
   }, [notificaciones, mensajesNoLeidos]);
+
+  // Emitir custom event cuando cambia el contador de no leídas
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('grows:notificaciones-unread-count', {
+        detail: {
+          rol: 'socio',
+          count: totales.sinLeer,
+        },
+      }),
+    );
+  }, [totales.sinLeer]);
 
   return (
     <div className="space-y-4">

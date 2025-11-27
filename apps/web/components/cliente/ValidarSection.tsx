@@ -113,13 +113,14 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     setError(null);
 
     try {
+      // Obtener TODAS las tareas finalizadas o validadas (no filtrar por validación)
       let tareasQuery = supabase
         .from('tareas')
         .select(
           'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id, fecha_validacion, validado_por'
         )
         .eq('org_id', currentUser.orgId)
-        .eq('estado', 'finalizado');
+        .in('estado', ['finalizado', 'validado', 'en_revision', 'pendiente']);
 
       if (obraId) {
         tareasQuery = tareasQuery.eq('obra_id', obraId);
@@ -131,33 +132,24 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         throw tareasError;
       }
 
-      const pendientes = (rawTareas ?? []).filter((row: RawTarea) => {
-        if (row.fecha_validacion !== undefined) {
-          return !row.fecha_validacion;
-        }
-        if (row.validado_por !== undefined) {
-          return !row.validado_por;
-        }
-        // Si no hay campos de validación, mantener la tarea como pendiente
-        return true;
-      }) as RawTarea[];
+      // Separar en pendientes y validadas
+      const todasLasTareas = (rawTareas ?? []) as RawTarea[];
+      
+      // Filtrar solo las que tienen evidencias o están finalizadas/validadas
+      const tareasConEvidencias = todasLasTareas.filter((row: RawTarea) => {
+        const estado = (row.estado ?? '').toLowerCase();
+        return estado === 'finalizado' || estado === 'validado' || estado === 'en_revision';
+      });
 
-      if (pendientes.length === 0) {
-        setTareas([]);
-        setObraSeleccionada(null);
-        setLoading(false);
-        return;
-      }
-
-      const obraIds = Array.from(new Set(pendientes.map((t) => t.obra_id)));
+      const obraIds = Array.from(new Set(tareasConEvidencias.map((t) => t.obra_id)));
       const cuadrillaIds = Array.from(
         new Set(
-          pendientes
+          tareasConEvidencias
             .map((t) => t.cuadrilla_id)
             .filter((value): value is string => Boolean(value))
         )
       );
-      const tareaIds = pendientes.map((t) => t.id);
+      const tareaIds = tareasConEvidencias.map((t) => t.id);
 
       // Obtener evidencias de tareas_evidencias y también de media (vía eventos)
       let evidenciasDirectas: any[] = [];
@@ -269,19 +261,14 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           const path = item.path ?? '';
           if (!path) return;
           
-          // Generar URL pública desde Supabase Storage (bucket 'actas' o 'evidencias')
+          // Generar URL p?blica desde Supabase Storage (bucket 'evidencias')
           let publicUrl = '';
           try {
-            const { data: urlData } = supabase.storage.from('actas').getPublicUrl(path);
+            const { data: urlData } = supabase.storage.from('evidencias').getPublicUrl(path);
             publicUrl = urlData.publicUrl;
           } catch {
-            try {
-              const { data: urlData } = supabase.storage.from('evidencias').getPublicUrl(path);
-              publicUrl = urlData.publicUrl;
-            } catch {
-              // Si falla, usar el path como URL
-              publicUrl = path;
-            }
+            // Si falla, usar el path como URL
+            publicUrl = path;
           }
           
           if (!evidenciasMap.has(tareaId)) {
@@ -295,7 +282,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         });
       }
 
-      const mapped: ValidarTarea[] = pendientes.map((row) => {
+      const mapped: ValidarTarea[] = tareasConEvidencias.map((row) => {
         const titulo =
           (row.title as string | null | undefined) ??
           (row.descripcion as string | null | undefined) ??
@@ -356,9 +343,25 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [tareas]);
 
+  // Separar tareas en pendientes y validadas
   const tareasFiltradas = useMemo(() => {
-    if (!obraSeleccionada) return [];
-    return tareas.filter((t) => t.obraId === obraSeleccionada);
+    if (!obraSeleccionada) return { pendientes: [], validadas: [] };
+    const filtradas = tareas.filter((t) => t.obraId === obraSeleccionada);
+    
+    const pendientes = filtradas.filter((t) => {
+      const estado = (t.rawEstado ?? '').toLowerCase();
+      // Una tarea es pendiente si NO está validada
+      const estaValidada = estado === 'validado' || t.hasFechaValidacion || t.hasValidadoPor;
+      return !estaValidada;
+    });
+    
+    const validadas = filtradas.filter((t) => {
+      const estado = (t.rawEstado ?? '').toLowerCase();
+      // Una tarea está validada si tiene estado 'validado' o tiene fecha_validacion/validado_por
+      return estado === 'validado' || t.hasFechaValidacion || t.hasValidadoPor;
+    });
+    
+    return { pendientes, validadas };
   }, [tareas, obraSeleccionada]);
 
   const handleValidar = useCallback(
@@ -393,7 +396,22 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           throw updateError;
         }
 
-        setTareas((prev) => prev.filter((t) => t.id !== tareaId));
+        // Actualizar el estado local sin eliminar la tarea
+        // La tarea se moverá automáticamente al bloque "Tareas validadas" gracias al useMemo
+        setTareas((prev) =>
+          prev.map((t) => {
+            if (t.id === tareaId) {
+              return {
+                ...t,
+                rawEstado: accion === 'validar' ? 'validado' : 'finalizado',
+                hasFechaValidacion: accion === 'validar',
+                hasValidadoPor: accion === 'validar',
+              };
+            }
+            return t;
+          })
+        );
+        
         toast({
           title: accion === 'validar' ? 'Tarea validada' : 'Tarea rechazada',
           description:
@@ -449,14 +467,8 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     );
   }
 
-  if (tareas.length === 0) {
-    return (
-      <EmptyState
-        title="No hay tareas para validar"
-        description="Cuando una cuadrilla finalice tareas pendientes vas a verlas acá."
-      />
-    );
-  }
+  // No mostrar empty state si hay tareas (aunque todas estén validadas)
+  // El empty state se mostrará dentro de la sección si no hay ninguna tarea
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
@@ -484,21 +496,24 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                     {obra.count}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">Tareas finalizadas pendientes de validación</p>
+                <p className="text-xs text-slate-500">Tareas finalizadas y validadas</p>
               </button>
             );
           })}
         </div>
       </aside>
 
-      <section className="flex-1 space-y-4">
-        {tareasFiltradas.length === 0 ? (
-          <EmptyState
-            title="No hay tareas pendientes"
-            description="Esta obra no tiene tareas finalizadas a la espera de validación."
-          />
-        ) : (
-          tareasFiltradas.map((tarea) => {
+      <section className="flex-1 space-y-6">
+        {/* Tareas pendientes de validación */}
+        {tareasFiltradas.pendientes.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-slate-900">
+                Tareas pendientes de validación ({tareasFiltradas.pendientes.length})
+              </h2>
+            </div>
+            {tareasFiltradas.pendientes.map((tarea) => {
             const estadoLabel = tarea.rawEstado ? tarea.rawEstado.toUpperCase() : 'FINALIZADO';
             const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
 
@@ -597,7 +612,110 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                 </div>
               </Card>
             );
-          })
+            })}
+          </div>
+        )}
+
+        {/* Tareas ya validadas */}
+        {tareasFiltradas.validadas.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-green-700">
+                Tareas ya validadas ({tareasFiltradas.validadas.length})
+              </h2>
+            </div>
+            {tareasFiltradas.validadas.map((tarea) => {
+              const estadoLabel = tarea.rawEstado ? tarea.rawEstado.toUpperCase() : 'VALIDADO';
+              const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
+
+              return (
+                <Card key={tarea.id} className="rounded-3xl border border-green-200 bg-green-50/30 shadow-sm">
+                  <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="info" className="border-blue-200 text-blue-700">
+                          <Building2 className="mr-1 h-3 w-3" />
+                          {tarea.obraNombre}
+                        </Badge>
+                        <Badge variant="success" className="border-green-200 text-green-700 bg-green-100">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          {estadoLabel}
+                        </Badge>
+                        {tarea.cuadrillaNombre && (
+                          <Badge variant="success" className="border-emerald-200 text-emerald-600">
+                            <Users className="mr-1 h-3 w-3" />
+                            {tarea.cuadrillaNombre}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-slate-900">{tarea.titulo}</h3>
+                      {tarea.descripcion && (
+                        <p className="text-sm text-slate-600">{tarea.descripcion}</p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {fechas}
+                        </span>
+                        {tarea.responsable && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-4 w-4" /> Responsable: {tarea.responsable}
+                          </span>
+                        )}
+                      </div>
+
+                      {tarea.evidencias.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase text-slate-500">Evidencias ({tarea.evidencias.length})</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {tarea.evidencias.map((evidencia, idx) => (
+                              <button
+                                key={`${evidencia.path}-${idx}`}
+                                onClick={() => setImagenAmpliada({ url: evidencia.url, titulo: tarea.titulo })}
+                                className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-green-400 hover:shadow-md"
+                              >
+                                <img
+                                  src={evidencia.url}
+                                  alt={`Evidencia ${idx + 1} - ${tarea.titulo}`}
+                                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+                                  <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Sin botones de acción para tareas validadas - solo lectura */}
+                    <div className="flex items-center">
+                      <Badge variant="success" className="border-green-300 text-green-800 bg-green-100">
+                        <CheckCircle className="mr-1 h-4 w-4" />
+                        Validado
+                      </Badge>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Mensaje si no hay tareas */}
+        {tareasFiltradas.pendientes.length === 0 && tareasFiltradas.validadas.length === 0 && (
+          <EmptyState
+            title="No hay tareas para validar"
+            description="Esta obra no tiene tareas finalizadas o validadas."
+          />
         )}
       </section>
 

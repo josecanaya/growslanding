@@ -56,35 +56,32 @@ function InviteAcceptPageContent() {
             return;
           }
 
-          // Si hay socio_id, intentar vincular el usuario con el socio
-          // (puede que el campo user_id no exista en la tabla)
-          if (socioId && session.user) {
+          // Obtener socio_id desde URL o desde metadata del usuario
+          let socioIdFinal = socioId;
+          if (!socioIdFinal && session.user) {
+            const metadata = session.user.user_metadata || {};
+            socioIdFinal = metadata.socio_id || null;
+          }
+
+          // Si hay socio_id, actualizar el estado del socio a activo
+          // NOTA: user_id no existe en la tabla socios, solo actualizamos el estado
+          if (socioIdFinal && session.user) {
             try {
               const { error: linkError } = await (supabase as any)
                 .from('socios')
                 .update({ 
-                  user_id: session.user.id,
+                  estado: 'activo',
                 })
-                .eq('id', socioId);
+                .eq('id', socioIdFinal);
 
               if (linkError) {
-                // Si el error es porque el campo no existe, ignorarlo
-                if (linkError.message?.includes('column') || linkError.code === 'PGRST204' || linkError.code === '42703') {
-                  console.log('[INVITE_ACCEPT] Campo user_id no disponible en tabla socios, continuando sin vincular');
-                } else {
-                  console.warn('[INVITE_ACCEPT_LINK_WARNING]', linkError);
-                }
-                // Continuar aunque falle el link, el usuario ya está autenticado
+                console.warn('[INVITE_ACCEPT_LINK_WARNING]', linkError);
+                // Continuar aunque falle el update, el usuario ya está autenticado
               } else {
-                console.log('[INVITE_ACCEPT] Usuario vinculado correctamente al socio');
+                console.log('[INVITE_ACCEPT] Socio activado correctamente');
               }
             } catch (linkErr: any) {
-              // Si el error es porque el campo no existe, ignorarlo
-              if (linkErr?.message?.includes('column') || linkErr?.code === 'PGRST204' || linkErr?.code === '42703') {
-                console.log('[INVITE_ACCEPT] Campo user_id no disponible en tabla socios, continuando sin vincular');
-              } else {
-                console.warn('[INVITE_ACCEPT_LINK_EXCEPTION]', linkErr);
-              }
+              console.warn('[INVITE_ACCEPT_LINK_EXCEPTION]', linkErr);
             }
           }
 
@@ -105,34 +102,31 @@ function InviteAcceptPageContent() {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
-        // Si hay socio_id y usuario autenticado, intentar vincularlos
-        // (puede que el campo user_id no exista en la tabla)
-        if (socioId) {
+        // Obtener socio_id desde URL o desde metadata del usuario
+        let socioIdFinal = socioId;
+        if (!socioIdFinal && session.user) {
+          const metadata = session.user.user_metadata || {};
+          socioIdFinal = metadata.socio_id || null;
+        }
+
+        // Si hay socio_id y usuario autenticado, actualizar estado del socio
+        // NOTA: user_id no existe en la tabla socios, solo actualizamos el estado
+        if (socioIdFinal) {
           try {
             const { error: linkError } = await (supabase as any)
               .from('socios')
               .update({ 
-                user_id: session.user.id,
+                estado: 'activo',
               })
-              .eq('id', socioId);
+              .eq('id', socioIdFinal);
 
             if (linkError) {
-              // Si el error es porque el campo no existe, ignorarlo
-              if (linkError.message?.includes('column') || linkError.code === 'PGRST204' || linkError.code === '42703') {
-                console.log('[INVITE_ACCEPT] Campo user_id no disponible en tabla socios, continuando sin vincular');
-              } else {
-                console.warn('[INVITE_ACCEPT_LINK_WARNING]', linkError);
-              }
+              console.warn('[INVITE_ACCEPT_LINK_WARNING]', linkError);
             } else {
-              console.log('[INVITE_ACCEPT] Usuario vinculado correctamente al socio');
+              console.log('[INVITE_ACCEPT] Socio activado correctamente');
             }
           } catch (linkErr: any) {
-            // Si el error es porque el campo no existe, ignorarlo
-            if (linkErr?.message?.includes('column') || linkErr?.code === 'PGRST204' || linkErr?.code === '42703') {
-              console.log('[INVITE_ACCEPT] Campo user_id no disponible en tabla socios, continuando sin vincular');
-            } else {
-              console.warn('[INVITE_ACCEPT_LINK_EXCEPTION]', linkErr);
-            }
+            console.warn('[INVITE_ACCEPT_LINK_EXCEPTION]', linkErr);
           }
         }
         

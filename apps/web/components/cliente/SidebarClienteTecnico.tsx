@@ -29,6 +29,7 @@ export function SidebarClienteTecnico({
 }: SidebarClienteTecnicoProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [unreadNotificacionesCliente, setUnreadNotificacionesCliente] = useState(0);
   const currentUser = useCurrentUser();
   const router = useRouter();
 
@@ -45,6 +46,21 @@ export function SidebarClienteTecnico({
 
     return ROLE_LABELS[normalized] ?? normalized;
   }, [currentUser?.role]);
+
+  // Escuchar custom event para actualizar contador de notificaciones no leídas
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<{ rol: string; count: number }>;
+      if (custom.detail?.rol === 'cliente') {
+        setUnreadNotificacionesCliente(custom.detail.count ?? 0);
+      }
+    };
+
+    window.addEventListener('grows:notificaciones-unread-count', handler);
+    return () => window.removeEventListener('grows:notificaciones-unread-count', handler);
+  }, []);
 
   const menuItems = [
     { id: 'chat', label: 'Chat', icon: MessageCircle },
@@ -101,11 +117,18 @@ export function SidebarClienteTecnico({
                   }`}
                   title={!isExpanded ? item.label : undefined}
                 >
-                  <Icon
-                    className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-                      isActive ? 'text-[#4A6FA5]' : 'text-white group-hover:text-[#E8C547]'
-                    }`}
-                  />
+                  <div className="relative">
+                    <Icon
+                      className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                        isActive ? 'text-[#4A6FA5]' : 'text-white group-hover:text-[#E8C547]'
+                      }`}
+                    />
+                    {item.id === 'notificaciones' && unreadNotificacionesCliente > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                        {unreadNotificacionesCliente > 9 ? '9+' : unreadNotificacionesCliente}
+                      </span>
+                    )}
+                  </div>
                   {isExpanded && <span>{item.label}</span>}
                 </button>
               </li>

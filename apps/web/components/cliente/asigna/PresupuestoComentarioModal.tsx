@@ -101,6 +101,7 @@ export function PresupuestoComentarioModal({
         headers: {
           'Content-Type': 'application/json',
           'x-organizacion-id': currentUser.orgId,
+          'x-usuario-id': currentUser.id,
         },
         body: JSON.stringify({
           org_id: currentUser.orgId,
@@ -108,7 +109,8 @@ export function PresupuestoComentarioModal({
           tarea_id: tareaId,
           remitente_id: currentUser.id,
           destinatario_id: socioId,
-          mensaje: mensajeCompleto,
+          contenido: mensajeCompleto,
+          tipo: 'presupuesto',
           leido: false,
         }),
       });

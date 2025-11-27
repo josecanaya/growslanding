@@ -56,66 +56,52 @@ export function PresupuestoPDFModal({
       setError(null);
 
       try {
-        // Obtener el pdf_path desde eventos relacionados con las tareas del presupuesto
-        // Buscamos eventos que tengan pdf_path para alguna de las tareas
-        const tareaIds = presupuestos.map((p) => p.tarea_id);
-
-        // Intentar obtener eventos con pdf_path para estas tareas
-        const { data: eventos, error: eventosError } = await supabase
-          .from('eventos')
-          .select('pdf_path, tarea_id')
-          .in('tarea_id', tareaIds)
-          .not('pdf_path', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        if (eventosError) {
-          console.error('[PresupuestoPDFModal] Error fetching eventos:', eventosError);
-          // Si no hay eventos, intentar buscar en otra tabla o usar un path por defecto
+        const tareaIds = presupuestos.map((p) => p.tarea_id).filter(Boolean);
+        const searchParams = new URLSearchParams();
+        if (tareaIds.length > 0) {
+          searchParams.set('tarea_ids', tareaIds.join(','));
         }
 
-        let pdfPath: string | null = null;
+        const res = await fetch(`/api/presupuestos/pdf?${searchParams.toString()}`, {
+          method: 'GET',
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => ({}));
 
-        if (eventos && eventos.length > 0 && eventos[0].pdf_path) {
-          pdfPath = eventos[0].pdf_path;
-        } else {
-          // Si no encontramos en eventos, intentar construir el path desde el presupuesto
-          // El PDF podría estar en media.path o en otra estructura
-          // Por ahora, intentamos buscar en la tabla de eventos con un patrón diferente
-          const { data: eventosAlt } = await supabase
-            .from('eventos')
-            .select('pdf_path, tarea_id')
-            .in('tarea_id', tareaIds)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          if (eventosAlt && eventosAlt.length > 0) {
-            const eventoConPdf = eventosAlt.find((e) => e.pdf_path);
-            if (eventoConPdf?.pdf_path) {
-              pdfPath = eventoConPdf.pdf_path;
-            }
-          }
-        }
-
-        if (!pdfPath) {
-          setError('No se encontró el PDF para este presupuesto. El socio aún no ha generado el documento.');
+        if (!res.ok || !json?.pdf_path) {
+          setError(
+            json?.error ||
+              'No se encontró el PDF para este presupuesto. El socio aún no ha generado el documento.',
+          );
           setLoading(false);
           return;
         }
 
-        // Obtener URL pública del PDF desde Supabase Storage
-        // El PDF está en el bucket 'actas'
+        const pdfPath: string = json.pdf_path;
         const pathSinPrefijo = pdfPath.startsWith('actas/') ? pdfPath.replace('actas/', '') : pdfPath;
+        
+        // Intentar obtener URL pública primero
         const { data: urlData } = supabase.storage.from('actas').getPublicUrl(pathSinPrefijo);
-
+        
         if (urlData?.publicUrl) {
+          // Verificar si la URL pública funciona (bucket público)
           setPdfUrl(urlData.publicUrl);
         } else {
-          setError('No se pudo obtener la URL del PDF.');
+          // Si no hay URL pública, generar URL firmada (bucket privado)
+          const { data: signedUrlData, error: signedError } = await supabase.storage
+            .from('actas')
+            .createSignedUrl(pathSinPrefijo, 3600); // URL válida por 1 hora
+          
+          if (signedError || !signedUrlData?.signedUrl) {
+            console.error('[PresupuestoPDFModal] Error generando URL firmada:', signedError);
+            setError('No se pudo obtener la URL del PDF.');
+          } else {
+            setPdfUrl(signedUrlData.signedUrl);
+          }
         }
       } catch (err) {
         console.error('[PresupuestoPDFModal] Error:', err);
-        setError('Error al cargar el PDF. Por favor, intentá nuevamente.');
+        setError('Error al cargar el PDF. Por favor, intenta nuevamente.');
       } finally {
         setLoading(false);
       }
@@ -127,7 +113,6 @@ export function PresupuestoPDFModal({
   const handleDownload = () => {
     if (!pdfUrl) return;
 
-    // Crear un enlace temporal para descargar
     const link = document.createElement('a');
     link.href = pdfUrl;
     link.download = `Presupuesto_${cuadrillaNombre}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -184,4 +169,3 @@ export function PresupuestoPDFModal({
     </Dialog>
   );
 }
-

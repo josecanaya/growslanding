@@ -3,6 +3,7 @@
 import { CheckCircle, Info, AlertTriangle, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import { BaseCard, Badge, Button, EmptyState } from '@/components/ui/grows';
+import { useEffect, useRef } from 'react';
 
 export type NotificacionItem = {
   id: string;
@@ -65,6 +66,19 @@ const tipoConfig: Record<
 };
 
 export function ListaNotificaciones({ items, onMarkAsRead }: ListaNotificacionesProps) {
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Animación slide-in para nuevas notificaciones
+  useEffect(() => {
+    items.forEach((item) => {
+      const element = itemRefs.current.get(item.id);
+      if (element && !item.leida) {
+        // Agregar animación solo si es nueva
+        element.style.animation = 'slideIn 0.3s ease-out';
+      }
+    });
+  }, [items]);
+
   if (!items.length) {
     return (
       <EmptyState
@@ -76,84 +90,111 @@ export function ListaNotificaciones({ items, onMarkAsRead }: ListaNotificaciones
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
-      {items.map((item) => {
-        // Validar que el tipo sea válido, usar 'info' como fallback
-        const tipoValido: NotificacionItem['tipo'] = 
-          (item.tipo && tipoConfig[item.tipo]) ? item.tipo : 'info';
-        const config = tipoConfig[tipoValido];
-        const Icon = config.icon;
-        const fechaLegible = new Date(item.fecha).toLocaleString('es-AR', {
-          day: '2-digit',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
+    <>
+      <style jsx>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+      <div className="space-y-3">
+        {items.map((item, index) => {
+          // Validar que el tipo sea válido, usar 'info' como fallback
+          const tipoValido: NotificacionItem['tipo'] = 
+            (item.tipo && tipoConfig[item.tipo]) ? item.tipo : 'info';
+          const config = tipoConfig[tipoValido];
+          const Icon = config.icon;
+          const fechaLegible = new Date(item.fecha).toLocaleString('es-AR', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit',
+          });
 
-        return (
-          <BaseCard
-            key={item.id}
-            className={clsx(
-              'relative overflow-hidden border border-growsBorder/60',
-              !item.leida ? 'bg-growsSurface' : 'bg-growsSurface/80'
-            )}
-          >
-            <span
-              className={clsx('absolute inset-y-0 left-0 w-1 rounded-r-grows-full', config.accent)}
-              aria-hidden="true"
-            />
+          // Determinar si es recibida (izquierda) o enviada (derecha)
+          // Por defecto, todas son recibidas (izquierda) ya que son notificaciones para el usuario
+          const esRecibida = true;
 
-            <div className="flex flex-col gap-3 pl-1">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div
-                    className={clsx(
-                      'mt-0.5 flex h-9 w-9 items-center justify-center rounded-full',
-                      config.iconBg
-                    )}
-                  >
-                    <Icon className={clsx('h-4 w-4', config.iconColor)} />
-                  </div>
-
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className={clsx('text-sm font-semibold', config.titleColor)}>{item.titulo}</p>
-                      {!item.leida && (
-                        <Badge variant="info" size="sm" className="bg-growsBlue/10 text-growsBlue">
-                          Nueva
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="mt-1 text-sm text-growsTextMuted">{item.mensaje}</p>
-                  </div>
-                </div>
-
-                <span className="text-xs text-growsTextMuted">{fechaLegible}</span>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs text-growsTextMuted">
-                {item.destinatario && (
-                  <Badge size="sm" className="bg-growsNeutral/40 text-growsTextMuted">
-                    {item.destinatario}
-                  </Badge>
+          return (
+            <div
+              key={item.id}
+              ref={(el) => {
+                if (el) itemRefs.current.set(item.id, el);
+              }}
+              className={clsx(
+                'flex w-full',
+                esRecibida ? 'justify-start' : 'justify-end'
+              )}
+            >
+              <div
+                className={clsx(
+                  'relative max-w-[85%] rounded-2xl px-4 py-3 shadow-sm',
+                  esRecibida
+                    ? 'bg-white rounded-tl-sm border border-gray-200'
+                    : 'bg-growsBlue text-white rounded-tr-sm',
+                  !item.leida && 'ring-2 ring-growsBlue/20'
+                )}
+              >
+                {/* Badge rojo para no leídas */}
+                {!item.leida && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    !
+                  </span>
                 )}
 
+                {/* Header con título y fecha */}
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Icon className={clsx('h-4 w-4', esRecibida ? config.iconColor : 'text-white')} />
+                    <p className={clsx(
+                      'text-base font-semibold',
+                      esRecibida ? config.titleColor : 'text-white'
+                    )}>
+                      {item.titulo}
+                    </p>
+                  </div>
+                  <span className={clsx(
+                    'text-xs',
+                    esRecibida ? 'text-growsTextMuted' : 'text-white/80'
+                  )}>
+                    {fechaLegible}
+                  </span>
+                </div>
+
+                {/* Mensaje tipo iMessage (16-17px) */}
+                <p className={clsx(
+                  'text-[16px] leading-relaxed',
+                  esRecibida ? 'text-growsText' : 'text-white'
+                )}>
+                  {item.mensaje}
+                </p>
+
+                {/* Footer con acciones */}
                 {onMarkAsRead && !item.leida && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    className="ml-auto border border-growsBorder"
-                    onClick={() => onMarkAsRead(item.id)}
-                  >
-                    Marcar como leída
-                  </Button>
+                  <div className="mt-2 flex justify-end">
+                    <button
+                      onClick={() => onMarkAsRead(item.id)}
+                      className={clsx(
+                        'text-xs font-medium underline',
+                        esRecibida ? 'text-growsBlue' : 'text-white/90'
+                      )}
+                    >
+                      Marcar como leída
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
-          </BaseCard>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 

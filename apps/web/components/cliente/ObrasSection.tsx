@@ -477,34 +477,6 @@ function ObrasSectionContent() {
 
   // Si hay una obra seleccionada, mostrar el detalle completo
   if (selectedObra) {
-    const tareasMock = [
-      {
-        id: 'tarea-1',
-        nombre: 'Excavación de fundación',
-        obraId: selectedObra.id,
-        lider: 'Juan Pérez',
-        fechaInicio: '2024-01-01',
-        fechaFin: '2024-01-05',
-        plantilla: 'Excavación',
-        checklist: ['Replanteo', 'Excavación', 'Compactación'],
-        evidencias: [],
-        estado: 'pendiente' as const,
-        etapa: 'estructura' as const,
-        precedencia: [],
-        duracion: 5,
-        esCritica: true,
-        holgura: 0,
-        earlyStart: 0,
-        earlyFinish: 5,
-        lateStart: 0,
-        lateFinish: 5,
-        tiempoTemprano: 0,
-        tiempoTardio: 5,
-        x: 100,
-        y: 100
-      }
-    ];
-
     // Validar y asegurar que tipoObra sea uno de los valores válidos
     const tipoObraValido = (tipo: string | undefined): 'nueva' | 'reforma' | 'ampliacion' => {
       if (tipo === 'nueva' || tipo === 'reforma' || tipo === 'ampliacion') {
@@ -528,14 +500,14 @@ function ObrasSectionContent() {
       tareasActivas: selectedObra.tareasActivas || 0,
       tareasCompletadas: selectedObra.tareasCompletadas || 0,
       legajoTecnico: selectedObra.legajoTecnico || [],
-      tareas: tareasMock,
+      tareas: [],
       fechaFinEstimada: '2024-12-31'
     };
 
     return (
       <DetalleObra
         obra={obraCompleta}
-        tareas={tareasMock}
+        tareas={[]}
         onVolver={() => setSelectedObra(null)}
         onActualizarTarea={(tarea) => {
           console.log('Actualizar tarea:', tarea);

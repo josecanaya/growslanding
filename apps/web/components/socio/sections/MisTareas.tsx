@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { 
@@ -152,14 +152,14 @@ export function MisTareas({ user }: MisTareasProps) {
           // Intentar primero con campos básicos que sabemos que existen
           const { data: dataSocios, error: errorSocios } = await supabase
             .from('socios')
-            .select('id, nombre, email, org_id, rol');
+            .select('id, nombre, email, org_id, telefono, estado, especialidad');
           
           if (errorSocios) {
             console.warn('[MIS_TAREAS] Error al obtener todos los socios (intentando campos básicos):', errorSocios);
             // Si falla, intentar solo con campos mínimos
             const { data: dataMinimos, error: errorMinimos } = await supabase
               .from('socios')
-              .select('id, nombre, org_id');
+              .select('id, nombre, email, org_id');
             if (!errorMinimos && dataMinimos) {
               todosLosSocios = dataMinimos;
             } else {
@@ -176,8 +176,29 @@ export function MisTareas({ user }: MisTareasProps) {
               nombre: s.nombre,
               email: s.email || '(sin email)',
               org_id: s.org_id || '(sin org_id)',
-              rol: s.rol || '(sin rol)',
+              telefono: s.telefono || '(sin teléfono)',
+              estado: s.estado || '(sin estado)',
             })));
+            
+            // Verificar si hay algún socio con el email que buscamos
+            const emailBuscado = currentUser.email?.toLowerCase().trim();
+            const socioCoincidente = todosLosSocios.find((s: any) => 
+              s.email && s.email.toLowerCase().trim() === emailBuscado
+            );
+            if (socioCoincidente) {
+              console.log('[MIS_TAREAS] ✅✅ SOCIO ENCONTRADO EN LA LISTA COMPLETA:', {
+                id: socioCoincidente.id,
+                nombre: socioCoincidente.nombre,
+                email: socioCoincidente.email,
+                org_id: socioCoincidente.org_id,
+                tieneOrgId: !!socioCoincidente.org_id,
+              });
+            } else {
+              console.warn('[MIS_TAREAS] ⚠️ NO se encontró socio con email en la lista completa:', {
+                emailBuscado: emailBuscado,
+                emailsDisponibles: todosLosSocios.map((s: any) => s.email).filter(Boolean),
+              });
+            }
           } else if (errorTodos) {
             console.error('[MIS_TAREAS] ❌ Error al obtener socios:', errorTodos);
           }
@@ -185,42 +206,123 @@ export function MisTareas({ user }: MisTareasProps) {
           // Buscar directamente por email (campo que existe en la base de datos)
           let socioPorEmail = null;
           
-          // PRIMERO: Buscar por email
-          const { data: dataPorEmail, error: errorPorEmail } = await supabase
-            .from('socios')
-            .select('id, nombre, email, org_id, rol')
-            .eq('email', currentUser.email)
-            .maybeSingle();
-          
-          console.log('[MIS_TAREAS] 🔍 Búsqueda por email:', {
-            emailBuscado: currentUser.email,
-            resultado: dataPorEmail ? '✅ Encontrado' : '❌ No encontrado',
-            error: errorPorEmail,
-          });
-          
-          if (dataPorEmail && !errorPorEmail) {
-            socioPorEmail = dataPorEmail;
-            console.log('[MIS_TAREAS] ✅ Socio encontrado por email:', socioPorEmail);
-          } else {
+          // PRIMERO: Buscar por email (exacto)
+          if (currentUser.email) {
+            const { data: dataPorEmail, error: errorPorEmail } = await supabase
+              .from('socios')
+              .select('id, nombre, email, org_id, rol, telefono, estado, especialidad')
+              .eq('email', currentUser.email.trim())
+              .maybeSingle();
             
-            // Si aún no se encontró, buscar sin importar mayúsculas/minúsculas en el campo email
-            if (!socioPorEmail && todosLosSocios && todosLosSocios.length > 0) {
-              socioPorEmail = todosLosSocios.find(
-                (s: any) => 
-                  (s.email && s.email.toLowerCase().trim() === currentUser.email?.toLowerCase().trim())
-              );
-              if (socioPorEmail) {
-                console.log('[MIS_TAREAS] ✅ Socio encontrado por email (case-insensitive):', socioPorEmail);
+            console.log('[MIS_TAREAS] 🔍 Búsqueda por email (exacto):', {
+              emailBuscado: currentUser.email.trim(),
+              resultado: dataPorEmail ? '✅ Encontrado' : '❌ No encontrado',
+              error: errorPorEmail,
+              data: dataPorEmail,
+            });
+            
+            if (dataPorEmail && !errorPorEmail) {
+              socioPorEmail = dataPorEmail;
+              console.log('[MIS_TAREAS] ✅ Socio encontrado por email (exacto):', socioPorEmail);
+            }
+          }
+          
+          // Si no se encontró, buscar sin importar mayúsculas/minúsculas
+          if (!socioPorEmail && currentUser.email && todosLosSocios && todosLosSocios.length > 0) {
+            const emailBuscado = currentUser.email.toLowerCase().trim();
+            socioPorEmail = todosLosSocios.find(
+              (s: any) => {
+                if (!s.email) return false;
+                const emailSocio = s.email.toLowerCase().trim();
+                return emailSocio === emailBuscado;
               }
+            );
+            if (socioPorEmail) {
+              console.log('[MIS_TAREAS] ✅ Socio encontrado por email (case-insensitive):', socioPorEmail);
+            } else {
+              console.log('[MIS_TAREAS] 🔍 Comparando emails:', {
+                emailBuscado: emailBuscado,
+                emailsEnBD: todosLosSocios.map((s: any) => ({
+                  email: s.email,
+                  emailLower: s.email?.toLowerCase().trim(),
+                  match: s.email?.toLowerCase().trim() === emailBuscado
+                }))
+              });
+            }
+          }
+          
+          // Si aún no se encontró, intentar búsqueda parcial
+          if (!socioPorEmail && currentUser.email && todosLosSocios && todosLosSocios.length > 0) {
+            const emailBuscado = currentUser.email.toLowerCase().trim();
+            socioPorEmail = todosLosSocios.find(
+              (s: any) => {
+                if (!s.email) return false;
+                const emailSocio = s.email.toLowerCase().trim();
+                // Buscar coincidencia parcial (por si hay espacios o caracteres extra)
+                return emailSocio.includes(emailBuscado) || emailBuscado.includes(emailSocio);
+              }
+            );
+            if (socioPorEmail) {
+              console.log('[MIS_TAREAS] ✅ Socio encontrado por email (parcial):', socioPorEmail);
             }
           }
           
           if (socioPorEmail?.org_id) {
             orgId = socioPorEmail.org_id;
             console.log('[MIS_TAREAS] ✅✅ orgId encontrado desde socios:', orgId);
+          } else if (socioPorEmail) {
+            // Si encontramos el socio pero no tiene org_id, intentar obtenerlo desde las tareas asignadas
+            console.warn('[MIS_TAREAS] ⚠️ Socio encontrado pero sin org_id, buscando desde tareas asignadas...');
+            
+            // Buscar tareas donde el responsable es el email del socio
+            const { data: tareasSocio, error: errorTareas } = await supabase
+              .from('tareas')
+              .select('org_id')
+              .eq('responsable', currentUser.email || '')
+              .limit(1)
+              .maybeSingle();
+            
+            if (tareasSocio?.org_id && !errorTareas) {
+              orgId = tareasSocio.org_id;
+              console.log('[MIS_TAREAS] ✅✅ orgId encontrado desde tareas asignadas:', orgId);
+              
+              // Actualizar el socio con el org_id encontrado
+              await supabase
+                .from('socios')
+                .update({ org_id: orgId })
+                .eq('id', socioPorEmail.id);
+              console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+            } else {
+              // Intentar buscar por cuadrilla_id
+              const { data: tareasCuadrilla, error: errorCuadrilla } = await supabase
+                .from('tareas')
+                .select('org_id')
+                .eq('cuadrilla_id', socioPorEmail.id)
+                .limit(1)
+                .maybeSingle();
+              
+              if (tareasCuadrilla?.org_id && !errorCuadrilla) {
+                orgId = tareasCuadrilla.org_id;
+                console.log('[MIS_TAREAS] ✅✅ orgId encontrado desde tareas por cuadrilla_id:', orgId);
+                
+                // Actualizar el socio con el org_id encontrado
+                await supabase
+                  .from('socios')
+                  .update({ org_id: orgId })
+                  .eq('id', socioPorEmail.id);
+                console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+              } else {
+                console.error('[MIS_TAREAS] ❌❌ No se encontró org_id ni en el socio ni en sus tareas', {
+                  socioEncontrado: socioPorEmail,
+                  emailBuscado: currentUser.email,
+                  userId: currentUser.id,
+                  errorTareas: errorTareas,
+                  errorCuadrilla: errorCuadrilla,
+                });
+              }
+            }
           } else {
-            console.error('[MIS_TAREAS] ❌❌ No se encontró socio con org_id', {
-              socioEncontrado: socioPorEmail,
+            console.error('[MIS_TAREAS] ❌❌ No se encontró socio', {
               emailBuscado: currentUser.email,
               userId: currentUser.id,
               totalSocios: todosLosSocios?.length || 0,
@@ -782,6 +884,116 @@ export function MisTareas({ user }: MisTareasProps) {
     return estado || 'Sin estado';
   };
 
+  const tareasAgrupadas = useMemo(() => {
+    const map = new Map<
+      string,
+      { obraId: string; nombreObra: string; direccion: string | null; tareas: Tarea[] }
+    >();
+
+    tareasFiltradas.forEach((tarea) => {
+      const obraId = tarea.obra_id || 'sin-obra';
+      const entry = map.get(obraId) ?? {
+        obraId,
+        nombreObra: tarea.obra?.name || 'Obra sin nombre',
+        direccion: tarea.obra?.address ?? null,
+        tareas: [],
+      };
+      entry.tareas.push(tarea);
+      map.set(obraId, entry);
+    });
+
+    return Array.from(map.values());
+  }, [tareasFiltradas]);
+
+  const renderTareaCard = (tarea: Tarea) => (
+    <Card key={tarea.id} className="hover:shadow-md transition-shadow !bg-white" style={{ backgroundColor: 'white' }}>
+      <CardHeader className="!bg-white" style={{ backgroundColor: 'white' }}>
+        <div className="flex items-start justify-between mb-2">
+          <CardTitle className="text-lg">{tarea.title || 'Sin título'}</CardTitle>
+          <Badge className={getEstadoColor(tarea.estado)}>
+            {formatearEstado(tarea.estado)}
+          </Badge>
+        </div>
+        {tarea.descripcion && (
+          <p className="text-sm text-gray-600 line-clamp-2">{tarea.descripcion}</p>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-4 !bg-white" style={{ backgroundColor: 'white' }}>
+        {tarea.obra && (
+          <div className="flex items-center text-sm text-gray-600">
+            <Building2 className="h-4 w-4 mr-2 text-gray-400" />
+            <span>{tarea.obra.name}</span>
+          </div>
+        )}
+
+        {tarea.elemento && (
+          <div className="flex items-center text-sm text-gray-600">
+            <CheckCircle className="h-4 w-4 mr-2 text-gray-400" />
+            <span>{tarea.elemento.nombre}</span>
+            {tarea.elemento.categoria && (
+              <Badge variant="outline" className="ml-2">
+                {tarea.elemento.categoria}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {tarea.cuadrilla && (
+          <div className="flex items-center text-sm text-gray-600">
+            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
+            <span>Cuadrilla: {tarea.cuadrilla.nombre}</span>
+          </div>
+        )}
+
+        {tarea.prioridad && (
+          <div className="flex items-center">
+            <Badge className={getPrioridadColor(tarea.prioridad)}>
+              Prioridad: {tarea.prioridad}
+            </Badge>
+          </div>
+        )}
+
+        {tarea.avance !== null && tarea.avance !== undefined && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Progreso</span>
+              <span className="font-semibold">{tarea.avance}%</span>
+            </div>
+            <Progress value={tarea.avance} className="h-2" />
+          </div>
+        )}
+
+        {(tarea.fecha_inicio_estimada || tarea.fecha_fin_estimada) && (
+          <div className="flex items-center text-sm text-gray-600">
+            <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+            <div>
+              {tarea.fecha_inicio_estimada && (
+                <div>Inicio: {new Date(tarea.fecha_inicio_estimada).toLocaleDateString()}</div>
+              )}
+              {tarea.fecha_fin_estimada && (
+                <div>Fin estimado: {new Date(tarea.fecha_fin_estimada).toLocaleDateString()}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 border-t">
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              console.log('Actualizar avance de tarea:', tarea.id);
+            }}
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Actualizar avance
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -863,114 +1075,40 @@ export function MisTareas({ user }: MisTareasProps) {
       {/* Lista de tareas */}
       {tareasFiltradas.length === 0 ? (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center">
-          <div className="text-6xl mb-4">📋</div>
+          <div className="text-6xl mb-4">:)</div>
           <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             {tareas.length === 0 
-              ? 'Aún no tenés tareas asignadas'
+              ? 'Aun no tenes tareas asignadas'
               : 'No hay tareas con este filtro'}
           </h2>
           <p className="text-gray-600">
             {tareas.length === 0
-              ? 'Esperá que tu líder o cliente técnico te asigne una tarea.'
-              : 'Cambiá el filtro para ver más tareas.'}
+              ? 'Espera que tu lider o cliente tecnico te asigne una tarea.'
+              : 'Cambia el filtro para ver mas tareas.'}
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tareasFiltradas.map((tarea) => (
-            <Card key={tarea.id} className="hover:shadow-md transition-shadow !bg-white" style={{ backgroundColor: 'white' }}>
-              <CardHeader className="!bg-white" style={{ backgroundColor: 'white' }}>
-                <div className="flex items-start justify-between mb-2">
-                  <CardTitle className="text-lg">{tarea.title || 'Sin título'}</CardTitle>
-                  <Badge className={getEstadoColor(tarea.estado)}>
-                    {formatearEstado(tarea.estado)}
-                  </Badge>
+        <div className="space-y-6">
+          {tareasAgrupadas.map((grupo) => (
+            <div key={grupo.obraId} className="space-y-3">
+              <div className="flex items-start justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">{grupo.nombreObra}</h3>
+                  {grupo.direccion && (
+                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-gray-400" />
+                      {grupo.direccion}
+                    </p>
+                  )}
                 </div>
-                {tarea.descripcion && (
-                  <p className="text-sm text-gray-600 line-clamp-2">{tarea.descripcion}</p>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4 !bg-white" style={{ backgroundColor: 'white' }}>
-                {/* Obra */}
-                {tarea.obra && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Building2 className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{tarea.obra.name}</span>
-                  </div>
-                )}
-
-                {/* Elemento */}
-                {tarea.elemento && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <CheckCircle className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{tarea.elemento.nombre}</span>
-                    {tarea.elemento.categoria && (
-                      <Badge variant="outline" className="ml-2">
-                        {tarea.elemento.categoria}
-                      </Badge>
-                    )}
-                  </div>
-                )}
-
-                {/* Cuadrilla */}
-                {tarea.cuadrilla && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>Cuadrilla: {tarea.cuadrilla.nombre}</span>
-                  </div>
-                )}
-
-                {/* Prioridad */}
-                {tarea.prioridad && (
-                  <div className="flex items-center">
-                    <Badge className={getPrioridadColor(tarea.prioridad)}>
-                      Prioridad: {tarea.prioridad}
-                    </Badge>
-                  </div>
-                )}
-
-                {/* Avance */}
-                {tarea.avance !== null && tarea.avance !== undefined && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Progreso</span>
-                      <span className="font-semibold">{tarea.avance}%</span>
-                    </div>
-                    <Progress value={tarea.avance} className="h-2" />
-                  </div>
-                )}
-
-                {/* Fechas */}
-                {(tarea.fecha_inicio_estimada || tarea.fecha_fin_estimada) && (
-                  <div className="flex items-center text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    <div>
-                      {tarea.fecha_inicio_estimada && (
-                        <div>Inicio: {new Date(tarea.fecha_inicio_estimada).toLocaleDateString()}</div>
-                      )}
-                      {tarea.fecha_fin_estimada && (
-                        <div>Fin estimado: {new Date(tarea.fecha_fin_estimada).toLocaleDateString()}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Botón de acción (opcional para futuro) */}
-                <div className="pt-2 border-t">
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => {
-                      // TODO: Implementar modal para actualizar avance
-                      console.log('Actualizar avance de tarea:', tarea.id);
-                    }}
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Actualizar avance
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                <Badge variant="secondary" className="text-sm">
+                  {grupo.tareas.length} tarea{grupo.tareas.length === 1 ? '' : 's'}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {grupo.tareas.map((tarea) => renderTareaCard(tarea))}
+              </div>
+            </div>
           ))}
         </div>
       )}

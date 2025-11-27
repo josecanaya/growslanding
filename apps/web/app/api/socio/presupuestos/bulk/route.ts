@@ -214,6 +214,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Si hay presupuestos enviados, crear notificación
+    // Notificación Supabase: usamos siempre remitente_id + destinatario_id (no usar socio_id ni user_id_destinatario)
     if (presupuestosEnviados.length > 0) {
       try {
         // Obtener el cliente técnico de la obra (owner de la org)
@@ -223,21 +224,24 @@ export async function POST(request: NextRequest) {
           .eq('id', orgId)
           .maybeSingle();
 
-        // Crear notificación (si tenemos owner_user_id)
-        // Nota: La tabla notificaciones requiere org_id, socio_id, obra_id
-        // Por ahora, creamos la notificación con los datos disponibles
-        await (supabase as any)
-          .from('notificaciones')
-          .insert({
-            org_id: orgId,
-            socio_id: null, // Notificación para el cliente, no para el socio
-            obra_id: payload.obra_id,
-            tarea_id: null,
-            titulo: 'Nuevo presupuesto recibido',
-            mensaje: `El socio ${socio.email || 'socio'} envió ${presupuestosEnviados.length} presupuesto(s) para la obra`,
-            tipo: 'presupuesto',
-            leida: false,
-          });
+        if (!orgData?.owner_user_id) {
+          console.warn('[PRESUPUESTOS_BULK] No se encontró owner_user_id para la organización, no se creará notificación');
+        } else {
+          await (supabase as any)
+            .from('notificaciones')
+            .insert({
+              org_id: orgId,
+              remitente_id: socio.id,                       // socio que envía
+              destinatario_id: orgData.owner_user_id,       // cliente técnico que recibe
+              obra_id: payload.obra_id,
+              tarea_id: null,
+              titulo: 'Nuevo presupuesto recibido',
+              mensaje: `El socio ${socio.email || 'socio'} envió ${presupuestosEnviados.length} presupuesto(s) para la obra`,
+              tipo: 'presupuesto',
+              leida: false,
+              created_at: new Date().toISOString(),
+            });
+        }
       } catch (notifError) {
         console.error('[PRESUPUESTOS_BULK] Error creando notificación:', notifError);
         // No fallar la operación si falla la notificación

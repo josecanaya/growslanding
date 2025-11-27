@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
   AlertCircle,
   Loader2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
 import {
@@ -17,12 +19,13 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { useSubscription } from '@/lib/subscriptions';
 import { canUseFeature, usePlanGate } from '@/lib/permissions';
+import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { SolicitarPresupuestoModal } from '@/components/clienteTecnico/presupuestos/SolicitarPresupuestoModal';
 import { PanelEstado } from './asigna/PanelEstado';
 import { StageSummaryCard } from './asigna/StageSummaryCard';
-import { PanelAuditoria } from './asigna/PanelAuditoria';
 import { PresupuestoPDFModal } from './asigna/PresupuestoPDFModal';
 import { PresupuestoListaModal } from './asigna/PresupuestoListaModal';
+import { PresupuestoRechazarModal } from './asigna/PresupuestoRechazarModal';
 import { PresupuestoComentarioModal } from './asigna/PresupuestoComentarioModal';
 
 const STAGE_DEFINITIONS = [
@@ -56,8 +59,6 @@ const FALLBACK_STAGE = {
   accent: 'border-slate-300 bg-white',
   badgeClass: 'bg-slate-100 text-slate-600 border border-slate-200',
 };
-
-const STATUS_OPTIONS = ['PEDIDO', 'PENDIENTE', 'APROBADO', 'RECHAZADO'];
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -146,12 +147,11 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const [budgets, setBudgets] = useState<RawPresupuesto[]>([]);
   const [cuadrillas, setCuadrillas] = useState<{ id: string; nombre: string }[]>([]);
   const [socioEmailMap, setSocioEmailMap] = useState<Map<string, string>>(new Map());
-
-  const [stageFilter, setStageFilter] = useState<string>('todas');
-  const [statusFilter, setStatusFilter] = useState<string>('todos');
+  const [sociosMap, setSociosMap] = useState<Map<string, string>>(new Map()); // socio_id -> nombre
 
   const [assigningBudgetId, setAssigningBudgetId] = useState<string | null>(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState<string | null>(null);
+  const [aprobandoPresupuestoSocioId, setAprobandoPresupuestoSocioId] = useState<string | null>(null);
   const [etapaActiva, setEtapaActiva] = useState<StageKey>('estructura');
   
   // Estado para el nuevo modal de presupuesto
@@ -169,184 +169,193 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     fecha_fin_estimada: string | null;
   }>>([]);
   
-  // Estados para los modales de PDF, Lista y Comentario
+  // Estados para los modales de PDF, Lista y Rechazar
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [pdfModalData, setPdfModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
   
   const [listaModalOpen, setListaModalOpen] = useState(false);
   const [listaModalData, setListaModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
   
+  const [rechazarModalOpen, setRechazarModalOpen] = useState(false);
+  const [rechazarModalData, setRechazarModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
   const [comentarioModalOpen, setComentarioModalOpen] = useState(false);
   const [comentarioModalData, setComentarioModalData] = useState<{ cuadrillaNombre: string; presupuestos: any[] } | null>(null);
   const [elementosMap, setElementosMap] = useState<Map<string, { id: string; nombre: string | null; unidad?: string | null; cantidad?: number | null }>>(new Map());
 
-  useEffect(() => {
-    let active = true;
+  // Estado para banner de éxito
+  const [successBanner, setSuccessBanner] = useState<{ message: string; tareasAprobadas: number } | null>(null);
 
-    async function load() {
-      if (!currentUser?.orgId) {
-        setError('No se pudo identificar tu organización.');
-        setLoading(false);
+  // Calcular obraIdActual para usar en modales
+  const obraIdActual = useMemo(() => {
+    return obraId || (tasks.length > 0 ? tasks[0]?.obraId : null);
+  }, [obraId, tasks]);
+
+  // Función reutilizable para cargar/refrescar datos
+  const refetchData = useCallback(async (showLoading = false) => {
+    if (!currentUser?.orgId) {
+      setError('No se pudo identificar tu organización.');
+      return;
+    }
+
+    if (showLoading) {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      let obraIds: string[] = [];
+
+      if (obraId) {
+        obraIds = [obraId];
+      } else {
+        const { data: obrasData, error: obrasError } = await supabase
+          .from('obras')
+          .select('id')
+          .eq('org_id', currentUser.orgId);
+
+        if (obrasError) {
+          throw obrasError;
+        }
+
+        type ObraRow = { id: string | null };
+        const obraRows = ((obrasData ?? []) as unknown) as ObraRow[];
+        obraIds = obraRows.map((obra) => obra.id ?? '').filter(Boolean);
+      }
+
+      if (!obraIds.length) {
+        setTasks([]);
+        setBudgets([]);
+        setCuadrillas([]);
+        if (showLoading) setLoading(false);
         return;
       }
 
-      setLoading(true);
-      setError(null);
+      const { data: rawTasks, error: tareasError } = await supabase
+        .from('tareas')
+        .select('*')
+        .in('obra_id', obraIds);
 
-      try {
-        let obraIds: string[] = [];
+      if (tareasError) throw tareasError;
 
-        if (obraId) {
-          obraIds = [obraId];
-        } else {
-          const { data: obrasData, error: obrasError } = await supabase
-            .from('obras')
-            .select('id')
-            .eq('org_id', currentUser.orgId);
-
-          if (obrasError) {
-            throw obrasError;
-          }
-
-          type ObraRow = { id: string | null };
-          const obraRows = ((obrasData ?? []) as unknown) as ObraRow[];
-          obraIds = obraRows.map((obra) => obra.id ?? '').filter(Boolean);
-        }
-
-        if (!obraIds.length) {
-          if (!active) return;
-          setTasks([]);
-          setBudgets([]);
-          setCuadrillas([]);
-          setLoading(false);
-          return;
-        }
-
-        const { data: rawTasks, error: tareasError } = await supabase
-          .from('tareas')
-          .select('*')
-          .in('obra_id', obraIds);
-
-        if (tareasError) throw tareasError;
-
-        // Cargar elementos para las tareas
-        const elementoIds = (rawTasks ?? [])
-          .map((t: RawTarea) => (t as any).elemento_id)
-          .filter((id: string | null | undefined): id is string => !!id);
+      // Cargar elementos para las tareas
+      const elementoIds = (rawTasks ?? [])
+        .map((t: RawTarea) => (t as any).elemento_id)
+        .filter((id: string | null | undefined): id is string => !!id);
+      
+      let elementosData: any[] = [];
+      if (elementoIds.length > 0) {
+        const { data: elementos, error: elementosError } = await supabase
+          .from('elementos')
+          .select('id, nombre, unidad, cantidad')
+          .in('id', elementoIds);
         
-        let elementosData: any[] = [];
-        if (elementoIds.length > 0) {
-          const { data: elementos, error: elementosError } = await supabase
-            .from('elementos')
-            .select('id, nombre, unidad, cantidad')
-            .in('id', elementoIds);
-          
-          if (!elementosError && elementos) {
-            elementosData = elementos;
-          }
-        }
-
-        const elementosMapLocal = new Map(
-          elementosData.map((el: any) => [
-            el.id,
-            { id: el.id, nombre: el.nombre, unidad: el.unidad, cantidad: el.cantidad },
-          ])
-        );
-        setElementosMap(elementosMapLocal);
-
-        const mappedTasks: TaskInfo[] = (rawTasks ?? []).map((row: RawTarea) => {
-          const rawStage =
-            row.etapa ??
-            row.tipo ??
-            row.category ??
-            (row as any).stage ??
-            row.fase ??
-            null;
-
-          return {
-            id: row.id,
-            titulo:
-              row.title ??
-              row.nombre ??
-              (row as any).titulo ??
-              (row as any).name ??
-              'Tarea sin título',
-            etapa: rawStage ? String(rawStage) : null,
-            obraId: row.obra_id,
-            responsable: row.responsable ?? null,
-            cuadrillaId: row.cuadrilla_id ?? null,
-            estado: row.estado ?? null,
-            duracion_estimada: (row as any).duracion_estimada ?? null,
-          };
-        });
-
-        const tareaIds = mappedTasks.map((t) => t.id);
-
-        // Obtener socios para mapear socio_id -> email
-        const socioIds = new Set<string>();
-        const [{ data: rawBudgets }, { data: cuadrillasData }, { data: sociosData }] = await Promise.all([
-          tareaIds.length
-            ? supabase
-                .from('tareas_presupuestos')
-                .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, socio_id, cantidad, unidad')
-                .in('tarea_id', tareaIds)
-            : Promise.resolve({ data: [] }),
-          supabase
-            .from('cuadrillas')
-            .select('id, nombre, org_id')
-            .eq('org_id', currentUser.orgId),
-          // Obtener socios para mapear socio_id -> email
-          supabase
-            .from('socios')
-            .select('id, nombre, email, telefono, org_id')
-            .eq('org_id', currentUser.orgId),
-        ]);
-
-        // Extraer socio_ids de los presupuestos
-        (rawBudgets ?? []).forEach((b: any) => {
-          if (b.socio_id) socioIds.add(b.socio_id);
-        });
-
-        // Crear mapa de socio_id -> email
-        const socioEmailMap = new Map<string, string>();
-        (sociosData ?? []).forEach((s: any) => {
-          if (s.id && s.email) {
-            socioEmailMap.set(s.id, s.email);
-          }
-        });
-
-        if (!active) return;
-
-        setTasks(mappedTasks);
-        setBudgets((rawBudgets ?? []) as RawPresupuesto[]);
-        setCuadrillas((cuadrillasData ?? []) as { id: string; nombre: string }[]);
-        setSocioEmailMap(socioEmailMap);
-      } catch (err) {
-        const errorMessage =
-          err && typeof err === 'object' && 'message' in err
-            ? (err as { message: string }).message
-            : String(err);
-        console.error('[AsignarSection] Error fetching data', errorMessage, err);
-        try {
-          console.error('[AsignarSection] Error detail', JSON.stringify(err, null, 2));
-        } catch {
-          // ignore JSON stringify issues
-        }
-        if (active) {
-          setError('No se pudieron obtener las tareas y presupuestos.');
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
+        if (!elementosError && elementos) {
+          elementosData = elementos;
         }
       }
+
+      const elementosMapLocal = new Map(
+        elementosData.map((el: any) => [
+          el.id,
+          { id: el.id, nombre: el.nombre, unidad: el.unidad, cantidad: el.cantidad },
+        ])
+      );
+      setElementosMap(elementosMapLocal);
+
+      const mappedTasks: TaskInfo[] = (rawTasks ?? []).map((row: RawTarea) => {
+        const rawStage =
+          row.etapa ??
+          row.tipo ??
+          row.category ??
+          (row as any).stage ??
+          row.fase ??
+          null;
+
+        return {
+          id: row.id,
+          titulo:
+            row.title ??
+            row.nombre ??
+            (row as any).titulo ??
+            (row as any).name ??
+            'Tarea sin título',
+          etapa: rawStage ? String(rawStage) : null,
+          obraId: row.obra_id,
+          responsable: row.responsable ?? null,
+          cuadrillaId: row.cuadrilla_id ?? null,
+          estado: row.estado ?? null,
+          duracion_estimada: (row as any).duracion_estimada ?? null,
+        };
+      });
+
+      const tareaIds = mappedTasks.map((t) => t.id);
+
+      // Obtener socios para mapear socio_id -> email
+      const socioIds = new Set<string>();
+      const [{ data: rawBudgets }, { data: cuadrillasData }, { data: sociosData }] = await Promise.all([
+        tareaIds.length
+          ? supabase
+              .from('tareas_presupuestos')
+              .select('id, tarea_id, monto, moneda, estado, notas, created_at, updated_at, socio_id, cantidad, unidad')
+              .in('tarea_id', tareaIds)
+          : Promise.resolve({ data: [] }),
+        supabase
+          .from('cuadrillas')
+          .select('id, nombre, org_id')
+          .eq('org_id', currentUser.orgId),
+        // Obtener socios para mapear socio_id -> email
+        supabase
+          .from('socios')
+          .select('id, nombre, email, telefono, org_id')
+          .eq('org_id', currentUser.orgId),
+      ]);
+
+      // Extraer socio_ids de los presupuestos
+      (rawBudgets ?? []).forEach((b: any) => {
+        if (b.socio_id) socioIds.add(b.socio_id);
+      });
+
+      // Crear mapa de socio_id -> email
+      const socioEmailMap = new Map<string, string>();
+      // Crear mapa de socio_id -> nombre
+      const sociosMap = new Map<string, string>();
+      (sociosData ?? []).forEach((s: any) => {
+        if (s.id) {
+          if (s.email) {
+            socioEmailMap.set(s.id, s.email);
+          }
+          if (s.nombre) {
+            sociosMap.set(s.id, s.nombre);
+          }
+        }
+      });
+
+      setTasks(mappedTasks);
+      setBudgets((rawBudgets ?? []) as RawPresupuesto[]);
+      setCuadrillas((cuadrillasData ?? []) as { id: string; nombre: string }[]);
+      setSocioEmailMap(socioEmailMap);
+      setSociosMap(sociosMap);
+    } catch (err) {
+      const errorMessage =
+        err && typeof err === 'object' && 'message' in err
+          ? (err as { message: string }).message
+          : String(err);
+      console.error('[AsignarSection] Error fetching data', errorMessage, err);
+      try {
+        console.error('[AsignarSection] Error detail', JSON.stringify(err, null, 2));
+      } catch {
+        // ignore JSON stringify issues
+      }
+      setError('No se pudieron obtener las tareas y presupuestos.');
+    } finally {
+      if (showLoading) {
+        setLoading(false);
+      }
     }
+  }, [currentUser?.orgId, obraId, supabase]);
 
-    void load();
-
-    return () => {
-      active = false;
-    };
+  useEffect(() => {
+    void refetchData(true);
   }, [currentUser?.orgId, obraId, supabase]);
 
   const taskMap = useMemo(() => {
@@ -373,9 +382,17 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     return map;
   }, [budgets]);
 
+  const tasksForBuckets = useMemo(() => {
+    return tasks.filter((task) => {
+      const hasBudgets = (budgetsByTask.get(task.id)?.length ?? 0) > 0;
+      const isPending = !task.cuadrillaId;
+      return hasBudgets || isPending;
+    });
+  }, [tasks, budgetsByTask]);
+
   const tareasPendientes = useMemo(
-    () => tasks.filter((task) => !task.cuadrillaId),
-    [tasks]
+    () => tasksForBuckets.filter((task) => !task.cuadrillaId),
+    [tasksForBuckets]
   );
 
   const tareasSinPresupuesto = useMemo(() => {
@@ -410,7 +427,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       tasks: [],
     });
 
-    tareasPendientes.forEach((task) => {
+    tasksForBuckets.forEach((task) => {
       const stageKey = normalizeStage(task.etapa) ?? FALLBACK_STAGE.key;
       const bucket = map.get(stageKey);
       if (bucket) {
@@ -425,7 +442,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     }
 
     return ordered;
-  }, [tareasPendientes]);
+  }, [tasksForBuckets]);
 
   useEffect(() => {
     const firstWithTasks = stageBuckets.find((bucket) => bucket.tasks.length > 0);
@@ -454,7 +471,8 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         .filter((budget) => tareaIds.includes(budget.tarea_id))
         .map((budget) => {
           const tarea = taskMap.get(budget.tarea_id);
-          const cuadrillaNombre = cuadrillaMap.get(budget.socio_id ?? '') ?? 'Sin cuadrilla';
+          // Usar el mapa de socios en lugar de cuadrillas
+          const socioNombre = sociosMap.get(budget.socio_id ?? '') ?? 'Socio sin nombre';
           // Intentar extraer duración ofrecida de las notas
           let duracionOfrecida: number | null = null;
           if (budget.notas) {
@@ -467,7 +485,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             id: budget.id,
             tarea_id: budget.tarea_id,
             tarea_titulo: tarea?.titulo ?? 'Tarea sin título',
-            cuadrilla_nombre: cuadrillaNombre,
+            cuadrilla_nombre: socioNombre,
             monto: budget.monto ?? null,
             moneda: budget.moneda ?? null,
             estado: budget.estado ?? null,
@@ -499,26 +517,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         })),
       };
     });
-  }, [stageBuckets, budgetsByTask, budgets, taskMap, cuadrillaMap]);
-
-  const filteredBudgets = useMemo(() => {
-    return budgets.filter((budget) => {
-      const tarea = taskMap.get(budget.tarea_id);
-      if (!tarea) return false;
-
-      if (stageFilter !== 'todas') {
-        const etapa = tarea.etapa ? tarea.etapa.toLowerCase() : '';
-        if (!etapa.includes(stageFilter)) return false;
-      }
-
-      if (statusFilter !== 'todos') {
-        const estado = (budget.estado ?? '').toUpperCase();
-        if (estado !== statusFilter.toUpperCase()) return false;
-      }
-
-      return true;
-    });
-  }, [budgets, taskMap, cuadrillaMap, stageFilter, statusFilter]);
+  }, [stageBuckets, budgetsByTask, budgets, taskMap, sociosMap]);
 
   // handleOpenModal removido - ahora se usa handleOpenPresupuestoModal
 
@@ -605,9 +604,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     setPresupuestoModalOpen(true);
   };
 
-  const handlePresupuestoSuccess = () => {
+  const handlePresupuestoSuccess = async () => {
     // Recargar datos después de crear presupuesto
-    window.location.reload(); // Simple reload, o podrías hacer un refetch más elegante
+    await refetchData(false);
   };
 
   const handleVerPdf = (cuadrillaNombre: string, presupuestos: any[]) => {
@@ -618,6 +617,11 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   const handleVerLista = (cuadrillaNombre: string, presupuestos: any[]) => {
     setListaModalData({ cuadrillaNombre, presupuestos });
     setListaModalOpen(true);
+  };
+
+  const handleRechazarPresupuesto = (cuadrillaNombre: string, presupuestos: any[]) => {
+    setRechazarModalData({ cuadrillaNombre, presupuestos });
+    setRechazarModalOpen(true);
   };
 
   const handleComentar = (cuadrillaNombre: string, presupuestos: any[]) => {
@@ -764,16 +768,19 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       }
 
       // Crear notificación para el socio
+      // Notificación Supabase: usamos siempre remitente_id + destinatario_id (no usar socio_id)
       try {
         await (supabase as any).from('notificaciones').insert({
           org_id: currentUser.orgId,
-          socio_id: socioId,
+          remitente_id: currentUser.id,
+          destinatario_id: socioId,
           obra_id: tarea.obraId,
           tarea_id: budget.tarea_id,
           titulo: 'Tarea asignada',
           mensaje: `Te asignaron la tarea "${tarea.titulo}" en la obra.`,
           tipo: 'asignacion',
           leida: false,
+          created_at: new Date().toISOString(),
         });
       } catch (notifError) {
         console.error('[AsignarSection] Error creando notificación:', notifError);
@@ -825,6 +832,131 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       });
     } finally {
       setAssigningBudgetId(null);
+    }
+  };
+
+  const handleAprobarPresupuesto = async (socioId: string, etapaId: string) => {
+    if (!currentUser?.orgId || !currentUser?.id) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar la organización o usuario.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Obtener obraId desde las tareas si no está disponible
+    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
+    if (!obraIdActual) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar la obra.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    console.log('[AsignarSection] Aprobando presupuesto:', { socioId, etapaId, obraIdActual, orgId: currentUser.orgId });
+
+    setAprobandoPresupuestoSocioId(socioId);
+
+    try {
+      const url = `/api/presupuestos/aprobar-socio`;
+      console.log('[AsignarSection] Llamando a:', url);
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          socio_id: socioId,
+          obra_id: obraIdActual,
+          etapa_id: etapaId,
+        }),
+      });
+
+      console.log('[AsignarSection] Respuesta del endpoint:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type')
+      });
+
+      // Verificar que la respuesta sea JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('[AsignarSection] Respuesta no es JSON:', text.substring(0, 200));
+        toast({
+          title: 'Error al aprobar presupuesto',
+          description: `El servidor respondió con un error (${response.status}). Verificá la consola para más detalles.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const data = await response.json().catch((err) => {
+        console.error('[AsignarSection] Error parseando respuesta:', err);
+        return { success: false, error: 'Error al parsear la respuesta del servidor' };
+      });
+
+      console.log('[AsignarSection] Datos recibidos:', data);
+
+      if (!response.ok) {
+        toast({
+          title: 'Error al aprobar presupuesto',
+          description: data.error || `Error ${response.status}: No se pudo aprobar el presupuesto.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (data.success && data.ok) {
+        const tareasAprobadas = data.tareas_aprobadas || 0;
+        
+        // Mostrar banner de éxito
+        setSuccessBanner({
+          message: `Presupuesto aprobado con éxito. ${tareasAprobadas} tarea${tareasAprobadas === 1 ? '' : 's'} asignada${tareasAprobadas === 1 ? '' : 's'}.`,
+          tareasAprobadas,
+        });
+
+        // Ocultar banner después de 5 segundos (opcional)
+        setTimeout(() => {
+          setSuccessBanner(null);
+        }, 5000);
+
+        // Refrescar datos sin recargar la página
+        await refetchData(false);
+
+        toast({
+          title: 'Presupuesto aprobado',
+          description: `Se aprobaron y asignaron ${tareasAprobadas} tarea${tareasAprobadas === 1 ? '' : 's'} correctamente.`,
+        });
+      } else if (data.warning) {
+        toast({
+          title: 'Proceso completado con advertencias',
+          description: data.warning,
+          variant: 'default',
+        });
+        // Refrescar datos de todas formas
+        await refetchData(false);
+      } else {
+        toast({
+          title: 'Error inesperado',
+          description: 'La respuesta del servidor no fue la esperada.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('[AsignarSection] Error aprobando presupuesto:', err);
+      toast({
+        title: 'Error al aprobar presupuesto',
+        description: err instanceof Error ? err.message : 'Ocurrió un error inesperado. Intentá nuevamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setAprobandoPresupuestoSocioId(null);
     }
   };
 
@@ -896,6 +1028,28 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
   return (
     <div className="space-y-6">
+      {/* Banner de éxito */}
+      {successBanner && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+              <CheckCircle className="h-5 w-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-green-900">Presupuesto aprobado con éxito</h3>
+              <p className="text-sm text-green-700">{successBanner.message}</p>
+            </div>
+            <button
+              onClick={() => setSuccessBanner(null)}
+              className="text-green-600 hover:text-green-800"
+              aria-label="Cerrar"
+            >
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Panel de Estado */}
       <PanelEstado
         presupuestosPendientes={estadisticasPresupuestos.pendientes}
@@ -931,11 +1085,14 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
                 const presupuesto = budgets.find((b) => b.id === id);
                 if (presupuesto) handleAssignBudget(presupuesto);
               }}
+              onAprobarPresupuesto={handleAprobarPresupuesto}
               onVerPdf={handleVerPdf}
               onVerLista={handleVerLista}
+              onRechazarPresupuesto={handleRechazarPresupuesto}
               onComentar={handleComentar}
               actualizandoId={updatingBudgetId}
               asignandoId={assigningBudgetId}
+              aprobandoPresupuestoSocioId={aprobandoPresupuestoSocioId}
               disabled={!canUseCuadrillas}
             />
           );
@@ -950,35 +1107,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         />
       )}
 
-      {/* Panel de Auditoría */}
-      <PanelAuditoria
-        presupuestos={budgets.map((b) => ({
-          id: b.id,
-          tarea_id: b.tarea_id,
-          created_at: b.created_at,
-          updated_at: b.updated_at ?? null,
-          estado: b.estado ?? null,
-          monto: b.monto ?? null,
-          moneda: b.moneda ?? null,
-          notas: b.notas ?? null,
-          socio_id: b.socio_id ?? null,
-        }))}
-        tareas={taskMap}
-        cuadrillas={cuadrillaMap}
-        stageFilter={stageFilter}
-        statusFilter={statusFilter}
-        onStageFilterChange={setStageFilter}
-        onStatusFilterChange={setStatusFilter}
-        onAprobar={(id) => handleUpdateBudgetStatus(id, 'APROBADO')}
-        onRechazar={(id) => handleUpdateBudgetStatus(id, 'RECHAZADO')}
-        onAsignar={(id) => {
-          const presupuesto = budgets.find((b) => b.id === id);
-          if (presupuesto) handleAssignBudget(presupuesto);
-        }}
-        actualizandoId={updatingBudgetId}
-        asignandoId={assigningBudgetId}
-      />
-
       {/* Modal de solicitud de presupuesto */}
       {presupuestoModalOpen && presupuestoModalObraId && (
         <SolicitarPresupuestoModal
@@ -991,7 +1119,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         />
       )}
 
-      {/* Modales de PDF, Lista y Comentario */}
+      {/* Modales de PDF, Lista y Rechazar */}
       {pdfModalData && (
         <PresupuestoPDFModal
           open={pdfModalOpen}
@@ -1016,6 +1144,20 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         />
       )}
 
+      {rechazarModalData && (
+        <PresupuestoRechazarModal
+          open={rechazarModalOpen}
+          onClose={() => {
+            setRechazarModalOpen(false);
+            setRechazarModalData(null);
+          }}
+          cuadrillaNombre={rechazarModalData.cuadrillaNombre}
+          presupuestos={rechazarModalData.presupuestos}
+          obraId={obraIdActual || null}
+          onSuccess={() => refetchData(false)}
+        />
+      )}
+
       {comentarioModalData && (
         <PresupuestoComentarioModal
           open={comentarioModalOpen}
@@ -1025,11 +1167,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           }}
           cuadrillaNombre={comentarioModalData.cuadrillaNombre}
           presupuestos={comentarioModalData.presupuestos}
-          obraId={obraId}
+          obraId={obraIdActual || null}
         />
       )}
     </div>
   );
 }
-
-

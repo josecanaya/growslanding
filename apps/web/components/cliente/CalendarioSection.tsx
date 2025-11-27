@@ -30,93 +30,14 @@ interface TareaCalendario {
   prioridad: 'alta' | 'media' | 'baja';
 }
 
-const eventosMock: EventoCalendario[] = [
-  {
-    id: '1',
-    titulo: 'Reunión de planificación - Casa Residencial Norte',
-    fecha: '2024-01-25',
-    hora: '09:00',
-    tipo: 'reunion',
-    descripcion: 'Reunión semanal para revisar el progreso del proyecto',
-    ubicacion: 'Oficina Central',
-    participantes: ['Carlos Pérez', 'María González', 'Roberto Silva'],
-    completado: false
-  },
-  {
-    id: '2',
-    titulo: 'Entrega de materiales - Edificio Comercial Centro',
-    fecha: '2024-01-26',
-    hora: '14:00',
-    tipo: 'entrega',
-    descripcion: 'Entrega de materiales para la fase de estructura',
-    ubicacion: 'Obra Edificio Comercial Centro',
-    participantes: ['Proveedor ABC', 'Carlos Pérez'],
-    completado: false
-  },
-  {
-    id: '3',
-    titulo: 'Inspección técnica - Villa Familiar Sur',
-    fecha: '2024-01-28',
-    hora: '10:00',
-    tipo: 'obra',
-    descripcion: 'Inspección técnica de la estructura completada',
-    ubicacion: 'Obra Villa Familiar Sur',
-    participantes: ['Inspector Municipal', 'Roberto Silva'],
-    completado: false
-  },
-  {
-    id: '4',
-    titulo: 'Reunión cliente - Casa Residencial Norte',
-    fecha: '2024-01-30',
-    hora: '16:00',
-    tipo: 'reunion',
-    descripcion: 'Reunión con el cliente para mostrar avances',
-    ubicacion: 'Oficina Central',
-    completado: false
-  }
-];
-
-const tareasCalendarioMock: TareaCalendario[] = [
-  {
-    id: '1',
-    nombre: 'Instalación eléctrica planta baja',
-    fechaInicio: '2024-01-25',
-    fechaFin: '2024-02-05',
-    obra: 'Casa Residencial Norte',
-    responsable: 'Carlos Pérez',
-    estado: 'en_curso',
-    prioridad: 'alta'
-  },
-  {
-    id: '2',
-    nombre: 'Colocación de pisos',
-    fechaInicio: '2024-02-01',
-    fechaFin: '2024-02-15',
-    obra: 'Casa Residencial Norte',
-    responsable: 'María González',
-    estado: 'pendiente',
-    prioridad: 'media'
-  },
-  {
-    id: '3',
-    nombre: 'Pintura exterior',
-    fechaInicio: '2024-01-20',
-    fechaFin: '2024-01-30',
-    obra: 'Villa Familiar Sur',
-    responsable: 'Roberto Silva',
-    estado: 'completada',
-    prioridad: 'baja'
-  }
-];
-
 interface CalendarioSectionProps {
   onNavigate?: (section: string) => void;
 }
 
 export function CalendarioSection({ onNavigate }: CalendarioSectionProps) {
   const [fechaActual, setFechaActual] = useState(new Date());
-  const [eventos] = useState<EventoCalendario[]>(eventosMock);
-  const [tareas] = useState<TareaCalendario[]>(tareasCalendarioMock);
+  const [eventos] = useState<EventoCalendario[]>([]);
+  const [tareas] = useState<TareaCalendario[]>([]);
   const [vista, setVista] = useState<'semana' | 'mes' | 'timeline'>('semana');
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false);
   const { planId } = useSubscription();

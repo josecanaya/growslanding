@@ -107,8 +107,15 @@ export async function POST(
       return NextResponse.json({ message: 'Socio no pertenece a tu organización' }, { status: 403 });
     }
 
-    if (socio.estado !== 'activo') {
+    // Aceptar socios con estado 'activo' o 'pendiente', rechazar solo 'inactivo'
+    if (socio.estado === 'inactivo') {
+      console.log('[SOLICITAR_PRESUPUESTO] Socio inactivo rechazado:', { socioId: payload.socioId, estado: socio.estado });
       return NextResponse.json({ message: 'El socio no está activo' }, { status: 400 });
+    }
+
+    if (socio.estado && !['activo', 'pendiente'].includes(socio.estado)) {
+      console.log('[SOLICITAR_PRESUPUESTO] Estado de socio no válido:', { socioId: payload.socioId, estado: socio.estado });
+      return NextResponse.json({ message: `El socio tiene un estado no válido: ${socio.estado}` }, { status: 400 });
     }
 
     // Validar que las tareas pertenecen a la obra
@@ -273,6 +280,7 @@ export async function POST(
     }
 
     // Crear notificación para el socio
+    // Notificación Supabase: usamos siempre remitente_id + destinatario_id (no usar socio_id)
     const mensajeNotificacion =
       tareasNuevas.length === 1
         ? `Tenés 1 tarea para presupuestar en la obra`
@@ -280,13 +288,15 @@ export async function POST(
 
     const { error: notificacionError } = await (supabase as any).from('notificaciones').insert({
       org_id: orgId,
-      socio_id: payload.socioId,
+      remitente_id: user.id,            // cliente técnico
+      destinatario_id: payload.socioId, // socio al que se le pide presupuesto
       obra_id: obraId,
-      tarea_id: tareasNuevas[0] || null, // Primera tarea como referencia
+      tarea_id: tareasNuevas[0] ?? null,
       titulo: 'Nueva solicitud de presupuesto',
       mensaje: mensajeNotificacion,
       tipo: 'presupuesto',
       leida: false,
+      created_at: new Date().toISOString(),
     });
 
     if (notificacionError) {

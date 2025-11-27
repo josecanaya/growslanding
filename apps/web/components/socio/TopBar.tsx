@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Clock, ClipboardList, NotebookPen, Users, User, X } from 'lucide-react';
 import type { Route } from 'next';
@@ -26,6 +26,7 @@ export function TopBar({
   onSectionChange,
 }: TopBarProps) {
   const [showSideMenu, setShowSideMenu] = useState(false);
+  const [unreadNotificacionesSocio, setUnreadNotificacionesSocio] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -56,6 +57,21 @@ export function TopBar({
   const isActive = (route: string) => {
     return pathname === route || pathname?.startsWith(`${route}/`);
   };
+
+  // Escuchar custom event para actualizar contador de notificaciones no leídas
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<{ rol: string; count: number }>;
+      if (custom.detail?.rol === 'socio') {
+        setUnreadNotificacionesSocio(custom.detail.count ?? 0);
+      }
+    };
+
+    window.addEventListener('grows:notificaciones-unread-count', handler);
+    return () => window.removeEventListener('grows:notificaciones-unread-count', handler);
+  }, []);
 
   return (
     <>
@@ -118,7 +134,14 @@ export function TopBar({
                           active ? 'bg-white/15 font-semibold' : ''
                         }`}
                       >
-                        <Icon className="h-6 w-6" />
+                        <div className="relative">
+                          <Icon className="h-6 w-6" />
+                          {item.id === 'notificaciones' && unreadNotificacionesSocio > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                              {unreadNotificacionesSocio > 9 ? '9+' : unreadNotificacionesSocio}
+                            </span>
+                          )}
+                        </div>
                         <span className="font-medium">{item.label}</span>
                       </button>
                     );

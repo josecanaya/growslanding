@@ -50,7 +50,8 @@ function generarPDFPorEtapa({
   nombreContratista,
   fechaGeneracion,
   editing,
-}: GenerarPresupuestoPDFParams): void {
+  asBytes = false,
+}: GenerarPresupuestoPDFParams & { asBytes?: boolean }): Uint8Array | void {
   if (presupuestos.length === 0) return;
 
   const doc = new jsPDF();
@@ -256,7 +257,11 @@ function generarPDFPorEtapa({
   const etapaSlug = etapa.toLowerCase().replace('_', '-');
   const nombreArchivo = `presupuesto_${etapaSlug}_${nombreObra}_${fecha}.pdf`;
 
-  // Descargar PDF
+  // Descargar o devolver bytes
+  if (asBytes) {
+    return doc.output('arraybuffer');
+  }
+
   doc.save(nombreArchivo);
 }
 
@@ -298,4 +303,86 @@ export function generarPresupuestoPDF({
       });
     }
   });
+}
+
+/**
+ * Genera el PDF de presupuesto y devuelve los bytes (Uint8Array) sin descargarlo.
+ * Mantiene el diseño actual.
+ * @param etapaActiva - Si se proporciona, genera el PDF solo para esa etapa. Si no, usa la primera etapa con datos.
+ */
+export function generarPresupuestoPDFBytes({
+  obra,
+  presupuestosAgrupadosPorEtapa,
+  nombreContratista,
+  fechaGeneracion,
+  editing,
+  etapaActiva,
+}: GenerarTodosLosPresupuestosParams & { etapaActiva?: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES' }): Uint8Array | null {
+  const etapas = [
+    { nombre: 'ESTRUCTURA' as const, presupuestos: presupuestosAgrupadosPorEtapa.ESTRUCTURA },
+    { nombre: 'OBRA_GRIS' as const, presupuestos: presupuestosAgrupadosPorEtapa.OBRA_GRIS },
+    { nombre: 'TERMINACIONES' as const, presupuestos: presupuestosAgrupadosPorEtapa.TERMINACIONES },
+  ];
+
+  // Si se especifica una etapa activa, generar PDF solo para esa etapa
+  if (etapaActiva) {
+    console.log('[generarPresupuestoPDFBytes] Etapa activa recibida:', etapaActiva);
+    console.log('[generarPresupuestoPDFBytes] Presupuestos por etapa:', {
+      ESTRUCTURA: presupuestosAgrupadosPorEtapa.ESTRUCTURA.length,
+      OBRA_GRIS: presupuestosAgrupadosPorEtapa.OBRA_GRIS.length,
+      TERMINACIONES: presupuestosAgrupadosPorEtapa.TERMINACIONES.length,
+    });
+
+    // Comparación directa y exacta
+    let etapaEncontrada = null;
+    
+    if (etapaActiva === 'ESTRUCTURA') {
+      etapaEncontrada = etapas.find(e => e.nombre === 'ESTRUCTURA');
+    } else if (etapaActiva === 'OBRA_GRIS') {
+      etapaEncontrada = etapas.find(e => e.nombre === 'OBRA_GRIS');
+    } else if (etapaActiva === 'TERMINACIONES') {
+      etapaEncontrada = etapas.find(e => e.nombre === 'TERMINACIONES');
+    }
+
+    console.log('[generarPresupuestoPDFBytes] Etapa encontrada:', etapaEncontrada?.nombre, 'con', etapaEncontrada?.presupuestos.length || 0, 'presupuestos');
+
+    if (etapaEncontrada && etapaEncontrada.presupuestos.length > 0) {
+      console.log('[generarPresupuestoPDFBytes] Generando PDF para etapa:', etapaEncontrada.nombre);
+      const buffer = generarPDFPorEtapa({
+        obra,
+        presupuestos: etapaEncontrada.presupuestos,
+        etapa: etapaEncontrada.nombre,
+        nombreContratista,
+        fechaGeneracion,
+        editing,
+        asBytes: true,
+      }) as ArrayBuffer | undefined;
+      if (buffer) {
+        console.log('[generarPresupuestoPDFBytes] PDF generado exitosamente para:', etapaEncontrada.nombre);
+        return new Uint8Array(buffer);
+      }
+    }
+    
+    console.warn('[generarPresupuestoPDFBytes] No se pudo generar PDF para etapa:', etapaActiva);
+    // Si la etapa activa no tiene presupuestos, retornar null
+    return null;
+  }
+
+  // Si no se especifica etapa activa, buscar la primera etapa con presupuestos (comportamiento original)
+  for (const etapa of etapas) {
+    if (etapa.presupuestos.length > 0) {
+      const buffer = generarPDFPorEtapa({
+        obra,
+        presupuestos: etapa.presupuestos,
+        etapa: etapa.nombre,
+        nombreContratista,
+        fechaGeneracion,
+        editing,
+        asBytes: true,
+      }) as ArrayBuffer | undefined;
+      if (buffer) return new Uint8Array(buffer);
+    }
+  }
+
+  return null;
 }

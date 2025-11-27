@@ -105,14 +105,20 @@ export function SolicitarPresupuestoModal({
     async function loadSocios() {
       setLoadingSocios(true);
       try {
+        // Incluir socios con estado 'activo' o 'pendiente' (excluir solo 'inactivo')
         const { data, error } = await supabase
           .from('socios')
           .select('id, nombre, estado')
           .eq('org_id', orgId)
-          .eq('estado', 'activo')
+          .in('estado', ['activo', 'pendiente'])
           .order('nombre');
 
-        if (error) throw error;
+        if (error) {
+          console.error('[SolicitarPresupuestoModal] Error loading socios:', error);
+          throw error;
+        }
+        
+        console.log('[SolicitarPresupuestoModal] Socios cargados:', data?.length || 0, data);
         setSocios((data ?? []) as Socio[]);
       } catch (err) {
         console.error('[SolicitarPresupuestoModal] Error loading socios', err);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Bell, Send, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSubscription } from '@/lib/subscriptions';
@@ -11,46 +11,24 @@ import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente
 import { ListaInformes, type InformeItem } from '@/components/cliente/mensajeria/ListaInformes';
 import { MensajeriaDirecta } from '@/components/cliente/mensajeria/MensajeriaDirecta';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
+import { playNotificationFeedback } from '@/lib/ui/notificationFeedback';
 
 // Tipos de datos
 interface NotificacionesSectionProps {
   onNavigate?: (section: string) => void;
 }
 
-const informesMock: InformeItem[] = [
-  {
-    id: '1',
-    titulo: 'Informe de progreso - Semana 1',
-    tipo: 'progreso',
-    fecha: '2024-01-25',
-    obra: 'Casa Residencial Norte',
-    estado: 'enviado'
-  },
-  {
-    id: '2',
-    titulo: 'Reporte de problema - Instalación',
-    tipo: 'problema',
-    fecha: '2024-01-24',
-    obra: 'Edificio Comercial Centro',
-    estado: 'pendiente'
-  },
-  {
-    id: '3',
-    titulo: 'Solicitud de materiales',
-    tipo: 'solicitud',
-    fecha: '2024-01-23',
-    obra: 'Villa Familiar Sur',
-    estado: 'leido'
-  }
-];
-
 export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps) {
   const currentUser = useCurrentUser();
   const orgId = currentUser?.orgId ?? null;
   const usuarioId = currentUser?.id ?? null;
+  const supabase = createClientComponentClient<Database>();
+  const channelRef = useRef<any>(null);
 
   const [notificaciones, setNotificaciones] = useState<NotificacionItem[]>([]);
-  const [informes] = useState<InformeItem[]>(informesMock);
+  const [informes] = useState<InformeItem[]>([]);
   const [mostrarModalEmision, setMostrarModalEmision] = useState(false);
   const [tabValue, setTabValue] = useState<'notificaciones' | 'informes' | 'mensajes'>('notificaciones');
   const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
@@ -62,7 +40,7 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
   const headers = useMemo(() => {
     const base: Record<string, string> = {};
     if (orgId) base['x-organizacion-id'] = orgId;
-    if (usuarioId) base['x-socio-id'] = usuarioId;
+    if (usuarioId) base['x-usuario-id'] = usuarioId;
     return base;
   }, [orgId, usuarioId]);
 
@@ -99,20 +77,121 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
     fetchNotificaciones();
   }, [fetchNotificaciones]);
 
+  // Realtime subscription para notificaciones
+  useEffect(() => {
+    if (!orgId || !usuarioId) return;
+
+    const channel = supabase
+      .channel(`notificaciones_${orgId}_${usuarioId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notificaciones',
+          filter: `destinatario_id=eq.${usuarioId}`,
+        },
+        (payload) => {
+          console.log('[NotificacionesSection] Realtime event:', payload);
+          
+          if (payload.eventType === 'INSERT' && payload.new) {
+            const nuevaNotif: NotificacionItem = {
+              id: payload.new.id,
+              titulo: payload.new.titulo || 'Notificación',
+              mensaje: payload.new.mensaje || 'Sin detalle',
+              tipo: (payload.new.tipo || 'info') as NotificacionItem['tipo'],
+              fecha: payload.new.created_at || new Date().toISOString(),
+              leida: Boolean(payload.new.leida),
+              destinatario: 'Vos',
+            };
+            
+            // Agregar con animación slide-in
+            setNotificaciones((prev) => [nuevaNotif, ...prev]);
+
+            // Reproducir feedback si la notificación no está leída y el documento está visible
+            if (!payload.new.leida && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+              playNotificationFeedback();
+            }
+          } else if (payload.eventType === 'UPDATE' && payload.new) {
+            setNotificaciones((prev) =>
+              prev.map((notif) =>
+                notif.id === payload.new.id
+                  ? {
+                      ...notif,
+                      leida: Boolean(payload.new.leida),
+                    }
+                  : notif
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setNotificaciones((prev) => prev.filter((notif) => notif.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [orgId, usuarioId, supabase]);
+
   const marcarComoLeida = async (id: string) => {
     if (!verifyAccess('notificaciones', 'STARTER')) {
       return;
     }
 
     try {
-      await fetch(`/api/notificaciones/${id}/leida`, { method: 'PATCH' });
-      setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
+      const response = await fetch(`/api/notificaciones/${id}/leida`, {
+        method: 'PATCH',
+        headers: {
+          'x-organizacion-id': orgId || '',
+          'x-usuario-id': usuarioId || '',
+        },
+      });
+      
+      const json = await response.json();
+      if (json.success && json.data) {
+        // Actualizar con la lista del servidor
+        const items: NotificacionItem[] = (json.data || []).map((item: any) => ({
+          id: item.id,
+          titulo: item.titulo || 'Notificación',
+          mensaje: item.mensaje || item.descripcion || 'Sin detalle',
+          tipo: (item.tipo || 'info') as NotificacionItem['tipo'],
+          fecha: item.created_at || item.fecha || new Date().toISOString(),
+          leida: Boolean(item.leida),
+          destinatario: item.destinatario || 'Vos',
+        }));
+        setNotificaciones(items);
+      } else {
+        // Fallback: actualizar localmente
+        setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
+      }
     } catch (error) {
       console.error('[NotificacionesSection] Error marcando notificación como leída:', error);
+      // Fallback: actualizar localmente
+      setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
     }
   };
 
   const notificacionesNoLeidas = notificaciones.filter(n => !n.leida).length;
+
+  // Emitir custom event cuando cambia el contador de no leídas
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent('grows:notificaciones-unread-count', {
+        detail: {
+          rol: 'cliente',
+          count: notificacionesNoLeidas,
+        },
+      }),
+    );
+  }, [notificacionesNoLeidas]);
 
   const abrirModalInforme = () => {
     if (!verifyAccess('notificaciones', 'STARTER')) return;

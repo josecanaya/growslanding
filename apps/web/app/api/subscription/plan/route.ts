@@ -37,19 +37,7 @@ export async function GET() {
     orgError = error;
   }
 
-  // 2. Si no se encontró por metadatos, buscar por owner_user_id
-  if (!org && !orgError) {
-    const { data, error } = await (supabase as any)
-      .from('organizations')
-      .select('id, plan_actual')
-      .eq('owner_user_id', user.id)
-      .maybeSingle();
-    
-    org = data;
-    orgError = error;
-  }
-
-  // 3. Si aún no se encontró, buscar en la tabla de miembros
+  // 2. Si aún no se encontró, buscar en la tabla de miembros
   if (!org && !orgError) {
     const { data: miembro } = await (supabase as any)
       .from('miembro_organizacion')

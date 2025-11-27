@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       // Obtener datos de las obras
       const { data: obrasData, error: obrasError } = await supabase
         .from('obras')
-        .select('id, address, propietario, created_at')
+        .select('id, name, address, propietario, created_at')
         .in('id', Array.from(obraIds))
         .eq('org_id', socio.org_id);
 

@@ -1,12 +1,13 @@
-'use client';
+﻿'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Loader2, Save, Send, FileText } from 'lucide-react';
+import { Loader2, Save, Send, FileText, Eye, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
-import { generarPresupuestoPDF } from '@/lib/pdf/generarPresupuestoPDF';
+import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { EtapasButtons } from '@/components/socio/presupuestos/EtapasButtons';
 import { ResumenObra } from '@/components/socio/presupuestos/ResumenObra';
 import { ListaTareas } from '@/components/socio/presupuestos/ListaTareas';
@@ -35,6 +36,7 @@ function PresupuestosContent() {
   const [nombreContratista, setNombreContratista] = useState<string>('Contratista');
 
   const [activeEtapa, setActiveEtapa] = useState<'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES'>('ESTRUCTURA');
+  const [stagePdfPath, setStagePdfPath] = useState<string | null>(null);
 
   const {
     obra,
@@ -42,9 +44,11 @@ function PresupuestosContent() {
     editing,
     loading,
     saving,
+    pdfPath,
     onFieldChange,
     handleSaveDraft,
     handleSendPresupuesto,
+    clearPdfPath,
   } = usePresupuestos(obraId);
 
   // Cargar lista de obras si no hay obra_id
@@ -87,6 +91,45 @@ function PresupuestosContent() {
       return false;
     });
   }, [presupuestos, activeEtapa]);
+
+  // Resolver PDF correspondiente a la etapa activa usando solo sus tareas
+  useEffect(() => {
+    if (!obraId || presupuestosFiltrados.length === 0) {
+      setStagePdfPath(null);
+      return;
+    }
+
+    const tareaIds = presupuestosFiltrados.map((p) => p.tarea_id).filter(Boolean);
+    if (tareaIds.length === 0) {
+      setStagePdfPath(null);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      obra_id: obraId,
+      tarea_ids: tareaIds.join(','),
+    });
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/presupuestos/pdf?${params.toString()}`);
+        if (!res.ok) {
+          setStagePdfPath(null);
+          return;
+        }
+
+        const data = await res.json();
+        if (data?.success && data?.pdf_path) {
+          setStagePdfPath(data.pdf_path);
+        } else {
+          setStagePdfPath(null);
+        }
+      } catch (error) {
+        console.error('[PresupuestosPage] Error obteniendo PDF de etapa:', error);
+        setStagePdfPath(null);
+      }
+    })();
+  }, [obraId, activeEtapa, presupuestosFiltrados]);
 
   // Contar tareas por etapa
   const etapaCounts = useMemo(() => {
@@ -136,6 +179,103 @@ function PresupuestosContent() {
 
   const hasPresupuestos = presupuestosFiltrados.length > 0;
   const showActions = hasPresupuestos;
+
+  // Verificar si los presupuestos ya fueron enviados o aprobados
+  const presupuestosEnviados = presupuestosFiltrados.some(
+    (p) => p.estado === 'ENVIADO' || p.estado === 'APROBADO'
+  );
+  const presupuestosAprobados = presupuestosFiltrados.every(
+    (p) => p.estado === 'APROBADO'
+  );
+  const puedeEditar = !presupuestosAprobados; // Solo puede editar si NO todos están aprobados
+
+  // Función para eliminar PDF y permitir editar
+  const handleEliminarPDFYEditar = async () => {
+    const currentPdfPath = stagePdfPath || pdfPath;
+    if (!currentPdfPath || !obraId || !presupuestosFiltrados.length) return;
+
+    try {
+      const tareaIds = presupuestosFiltrados.map((p) => p.tarea_id).filter(Boolean);
+      
+      const response = await fetch('/api/presupuestos/eliminar-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          obra_id: obraId,
+          tarea_ids: tareaIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Error al eliminar el PDF');
+      }
+
+      // Limpiar el pdfPath local
+      clearPdfPath();
+      setStagePdfPath(null);
+
+      // Recargar presupuestos para actualizar el estado
+      // El hook se actualizará automáticamente cuando cambie obraId
+      // Por ahora, forzamos un pequeño delay y luego recargamos
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+
+      toast({
+        title: 'PDF eliminado',
+        description: 'Podés generar un nuevo PDF con los valores corregidos.',
+      });
+    } catch (error) {
+      console.error('[PresupuestosPage] Error eliminando PDF:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo eliminar el PDF.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Función para ver PDF enviado
+  const handleVerPDFEnviado = async () => {
+    const currentPdfPath = stagePdfPath || pdfPath;
+    if (!currentPdfPath || !obraId) return;
+
+    try {
+      const supabase = createClientComponentClient();
+      const pathSinPrefijo = currentPdfPath.startsWith('actas/') ? currentPdfPath.replace('actas/', '') : currentPdfPath;
+      
+      // Intentar obtener URL pública primero
+      const { data: urlData } = supabase.storage.from('actas').getPublicUrl(pathSinPrefijo);
+      
+      let pdfUrl: string | null = null;
+      if (urlData?.publicUrl) {
+        pdfUrl = urlData.publicUrl;
+      } else {
+        // Si no hay URL pública, generar URL firmada (bucket privado)
+        const { data: signedUrlData, error: signedError } = await supabase.storage
+          .from('actas')
+          .createSignedUrl(pathSinPrefijo, 3600); // URL válida por 1 hora
+        
+        if (signedError || !signedUrlData?.signedUrl) {
+          throw new Error('No se pudo obtener la URL del PDF.');
+        }
+        pdfUrl = signedUrlData.signedUrl;
+      }
+
+      if (pdfUrl) {
+        // Abrir PDF en nueva pestaña
+        window.open(pdfUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('[PresupuestosPage] Error abriendo PDF:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo abrir el PDF. Intentá nuevamente.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Agrupar presupuestos por etapa para el PDF (usar todos los presupuestos, no solo los filtrados)
   const presupuestosAgrupadosPorEtapa = useMemo(() => {
@@ -210,11 +350,74 @@ function PresupuestosContent() {
     }
   }, [currentUser]);
 
+  const toBase64 = (bytes: Uint8Array) => {
+    let binary = '';
+    bytes.forEach((b) => (binary += String.fromCharCode(b)));
+    return btoa(binary);
+  };
+
   // Función para generar PDF
-  const handleGenerarPDF = () => {
+  const handleGenerarPDF = async () => {
     if (!obra) return;
+    if (presupuestosFiltrados.length === 0) {
+      toast({
+        title: 'Sin tareas',
+        description: 'No hay tareas en la etapa seleccionada para generar el PDF.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
+      const fechaGeneracion = new Date();
+
+      // Generar bytes para la etapa activa
+      const pdfBytes = generarPresupuestoPDFBytes({
+        obra: {
+          id: obra.id,
+          name: obra.name || 'Sin nombre',
+          direccion_completa: obra.direccion_completa,
+          cantidad_plantas: obra.cantidad_plantas,
+          fecha_inicio: obra.fecha_inicio,
+          cliente: obra.cliente || null,
+        },
+        presupuestosAgrupadosPorEtapa,
+        nombreContratista: nombreContratista,
+        fechaGeneracion,
+        editing,
+        etapaActiva: activeEtapa, // Usar la etapa activa seleccionada
+      });
+
+      if (!pdfBytes) {
+        throw new Error('No se pudieron generar los bytes del PDF');
+      }
+
+      // Subir al backend para guardar en Storage + eventos
+      const tareaIds = presupuestosFiltrados.map((p) => p.tarea_id).filter(Boolean);
+      const payload = {
+        obra_id: obra.id,
+        tarea_ids: tareaIds,
+        etapa: activeEtapa,
+        pdfBase64: toBase64(pdfBytes),
+      };
+
+      const uploadResponse = await fetch('/api/presupuestos/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!uploadResponse.ok) {
+        const errData = await uploadResponse.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al subir el PDF');
+      }
+
+      const uploadData = await uploadResponse.json().catch(() => null);
+      if (uploadData?.success && uploadData?.path) {
+        setStagePdfPath(uploadData.path);
+      }
+
+      // Descargar localmente (mantener experiencia actual)
       generarPresupuestoPDF({
         obra: {
           id: obra.id,
@@ -226,19 +429,40 @@ function PresupuestosContent() {
         },
         presupuestosAgrupadosPorEtapa,
         nombreContratista: nombreContratista,
-        fechaGeneracion: new Date(),
+        fechaGeneracion,
         editing,
       });
 
       toast({
-        title: 'PDFs generados',
-        description: `Se generaron los presupuestos por etapa correctamente.`,
+        title: 'PDF generado',
+        description: 'PDF generado y guardado correctamente. El cliente ya puede verlo.',
       });
     } catch (error) {
       console.error('[PresupuestosPage] Error generando PDF:', error);
+
+      // Descargar localmente como fallback si no se descargó
+      try {
+        generarPresupuestoPDF({
+          obra: {
+            id: obra.id,
+            name: obra.name || 'Sin nombre',
+            direccion_completa: obra.direccion_completa,
+            cantidad_plantas: obra.cantidad_plantas,
+            fecha_inicio: obra.fecha_inicio,
+            cliente: obra.cliente || null,
+          },
+          presupuestosAgrupadosPorEtapa,
+          nombreContratista: nombreContratista,
+          fechaGeneracion: new Date(),
+          editing,
+        });
+      } catch (e) {
+        console.error('[PresupuestosPage] Error en fallback de descarga:', e);
+      }
+
       toast({
         title: 'Error',
-        description: 'No se pudo generar el PDF. Intenta nuevamente.',
+        description: 'No se pudo subir el PDF, pero se descargó localmente.',
         variant: 'destructive',
       });
     }
@@ -324,38 +548,76 @@ function PresupuestosContent() {
           
           {/* Botones */}
           <div className="px-4 py-3 flex gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => handleSaveDraft(presupuestosFiltrados)}
-              disabled={saving}
-              loading={saving}
-              className="flex-1"
-              size="sm"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Guardar borrador
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => handleSendPresupuesto(presupuestosFiltrados)}
-              disabled={saving}
-              loading={saving}
-              className="flex-1"
-              size="sm"
-            >
-              <Send className="h-4 w-4 mr-2" />
-              Enviar presupuesto
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleGenerarPDF}
-              disabled={saving}
-              className="flex-shrink-0"
-              size="sm"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Generar PDF
-            </Button>
+            {!presupuestosEnviados ? (
+              // Si NO se envió: mostrar botones de guardar, enviar y generar PDF
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleSaveDraft(presupuestosFiltrados)}
+                  disabled={saving}
+                  loading={saving}
+                  className="flex-1"
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Guardar borrador
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => handleSendPresupuesto(
+                    presupuestosFiltrados,
+                    presupuestosAgrupadosPorEtapa,
+                    nombreContratista,
+                    activeEtapa // Pasar la etapa activa directamente
+                  )}
+                  disabled={saving}
+                  loading={saving}
+                  className="flex-1"
+                  size="sm"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Enviar presupuesto
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleGenerarPDF}
+                  disabled={saving}
+                  className="flex-shrink-0"
+                  size="sm"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Generar PDF
+                </Button>
+              </>
+            ) : (
+              // Si ya se envió: mostrar botones de ver PDF y editar (si no está aprobado)
+              <>
+                {(stagePdfPath || pdfPath) && (
+                  <Button
+                    variant="primary"
+                    onClick={handleVerPDFEnviado}
+                    disabled={saving}
+                    className="flex-1"
+                    size="sm"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver PDF enviado
+                  </Button>
+                )}
+                {puedeEditar && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleEliminarPDFYEditar}
+                    disabled={saving}
+                    className="flex-1"
+                    size="sm"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
+import { generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
 
 interface PresupuestoItem {
   id: string;
@@ -45,9 +46,11 @@ interface UsePresupuestosReturn {
   editing: Map<string, { dias_reales: number | null; monto: number | null }>;
   loading: boolean;
   saving: boolean;
+  pdfPath: string | null; // PDF path guardado en eventos
   onFieldChange: (tareaId: string, field: 'dias_reales' | 'monto', value: number | null) => void;
   handleSaveDraft: (presupuestosFiltrados: PresupuestoItem[]) => Promise<void>;
-  handleSendPresupuesto: (presupuestosFiltrados: PresupuestoItem[]) => Promise<void>;
+  handleSendPresupuesto: (presupuestosFiltrados: PresupuestoItem[], presupuestosAgrupadosPorEtapa: any, nombreContratista: string, etapaActiva?: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES') => Promise<void>;
+  clearPdfPath: () => void; // Limpiar el pdfPath
 }
 
 export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
@@ -59,6 +62,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
   );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
 
   // Sincronizar editing cuando cambian los presupuestos (solo en carga inicial)
   useEffect(() => {
@@ -143,6 +147,24 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           });
         });
         setEditing(editingMap);
+
+        // Obtener pdf_path desde eventos si existe
+        if (obraId && data.presupuestos && data.presupuestos.length > 0) {
+          const tareaIds = data.presupuestos.map((p: PresupuestoItem) => p.tarea_id).filter(Boolean);
+          if (tareaIds.length > 0) {
+            try {
+              const pdfResponse = await fetch(`/api/presupuestos/pdf?obra_id=${obraId}&tarea_ids=${tareaIds.join(',')}`);
+              if (pdfResponse.ok) {
+                const pdfData = await pdfResponse.json();
+                if (pdfData.success && pdfData.pdf_path) {
+                  setPdfPath(pdfData.pdf_path);
+                }
+              }
+            } catch (error) {
+              console.error('[usePresupuestos] Error obteniendo PDF path:', error);
+            }
+          }
+        }
       } catch (error) {
         console.error('[usePresupuestos] Error:', error);
         toast({
@@ -235,11 +257,128 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     }
   }, [obraId, editing, toast]);
 
-  const handleSendPresupuesto = useCallback(async (presupuestosFiltrados: PresupuestoItem[]) => {
-    if (!obraId) return;
+  const handleSendPresupuesto = useCallback(async (
+    presupuestosFiltrados: PresupuestoItem[],
+    presupuestosAgrupadosPorEtapa: any,
+    nombreContratista: string,
+    etapaActiva?: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES'
+  ) => {
+    console.log('🔥 [handleSendPresupuesto] INICIANDO - Etapa recibida:', etapaActiva);
+    console.log('🔥 [handleSendPresupuesto] Presupuestos filtrados:', presupuestosFiltrados.length);
+    
+    if (!obraId || !obra) {
+      console.error('🔥 [handleSendPresupuesto] ERROR: No hay obraId o obra');
+      return;
+    }
 
     setSaving(true);
     try {
+      // 1. Generar PDF automáticamente para la etapa activa
+      // Si no se proporciona etapaActiva, determinar desde los presupuestos filtrados
+      let etapaFinal: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES' = etapaActiva || 'ESTRUCTURA';
+      
+      if (!etapaActiva && presupuestosFiltrados.length > 0) {
+        // Determinar la etapa activa basándose en los presupuestos filtrados
+        const primeraEtapa = (presupuestosFiltrados[0]?.tarea?.etapa || '').toUpperCase();
+        
+        if (primeraEtapa.includes('ESTRUCTURA')) etapaFinal = 'ESTRUCTURA';
+        else if (primeraEtapa.includes('GRIS') || primeraEtapa.includes('OBRA_GRIS')) etapaFinal = 'OBRA_GRIS';
+        else if (primeraEtapa.includes('TERMINACION')) etapaFinal = 'TERMINACIONES';
+      }
+
+      console.log('[handleSendPresupuesto] Etapa activa determinada:', etapaFinal);
+      console.log('[handleSendPresupuesto] Presupuestos filtrados:', presupuestosFiltrados.length);
+      console.log('[handleSendPresupuesto] Presupuestos filtrados IDs:', presupuestosFiltrados.map(p => ({ id: p.tarea_id, etapa: p.tarea?.etapa })));
+      
+      // Crear un objeto de presupuestos agrupados SOLO con los presupuestos filtrados (de la etapa activa)
+      const presupuestosAgrupadosPorEtapaFiltrados = {
+        ESTRUCTURA: etapaFinal === 'ESTRUCTURA' ? presupuestosFiltrados : [],
+        OBRA_GRIS: etapaFinal === 'OBRA_GRIS' ? presupuestosFiltrados : [],
+        TERMINACIONES: etapaFinal === 'TERMINACIONES' ? presupuestosFiltrados : [],
+      };
+      
+      console.log('[handleSendPresupuesto] Presupuestos agrupados filtrados:', {
+        ESTRUCTURA: presupuestosAgrupadosPorEtapaFiltrados.ESTRUCTURA.length,
+        OBRA_GRIS: presupuestosAgrupadosPorEtapaFiltrados.OBRA_GRIS.length,
+        TERMINACIONES: presupuestosAgrupadosPorEtapaFiltrados.TERMINACIONES.length,
+      });
+      
+      // Filtrar el editing map para solo incluir los presupuestos filtrados
+      const editingFiltrado = new Map<string, { dias_reales: number | null; monto: number | null }>();
+      presupuestosFiltrados.forEach((p) => {
+        const editData = editing.get(p.tarea_id);
+        if (editData) {
+          editingFiltrado.set(p.tarea_id, editData);
+        }
+      });
+      
+      console.log('[handleSendPresupuesto] Editing filtrado:', {
+        total: editing.size,
+        filtrado: editingFiltrado.size,
+        tareaIds: Array.from(editingFiltrado.keys()),
+      });
+      
+      const fechaGeneracion = new Date();
+      
+      let pdfBytes: Uint8Array | null = null;
+      try {
+        pdfBytes = generarPresupuestoPDFBytes({
+          obra: {
+            id: obra.id,
+            name: obra.name || 'Sin nombre',
+            direccion_completa: obra.direccion_completa,
+            cantidad_plantas: obra.cantidad_plantas,
+            fecha_inicio: obra.fecha_inicio,
+            cliente: obra.cliente || null,
+          },
+          presupuestosAgrupadosPorEtapa: presupuestosAgrupadosPorEtapaFiltrados, // Usar solo los filtrados
+          nombreContratista,
+          fechaGeneracion,
+          editing: editingFiltrado, // Usar solo el editing filtrado
+          etapaActiva: etapaFinal, // Usar la etapa determinada
+        });
+
+        if (!pdfBytes) {
+          console.error('[handleSendPresupuesto] No se generaron bytes del PDF');
+          throw new Error('No se pudieron generar los bytes del PDF. Verifica que haya presupuestos para la etapa seleccionada.');
+        }
+        
+        console.log('[handleSendPresupuesto] PDF generado exitosamente, tamaño:', pdfBytes.length, 'bytes');
+      } catch (error) {
+        console.error('[handleSendPresupuesto] Error generando PDF:', error);
+        throw error;
+      }
+
+      // 2. Subir PDF al bucket de Supabase
+      const tareaIds = presupuestosFiltrados.map((p) => p.tarea_id).filter(Boolean);
+      const toBase64 = (bytes: Uint8Array) => {
+        let binary = '';
+        bytes.forEach((b) => (binary += String.fromCharCode(b)));
+        return btoa(binary);
+      };
+
+      const uploadResponse = await fetch('/api/presupuestos/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          obra_id: obraId,
+          tarea_ids: tareaIds,
+          etapa: etapaFinal, // Usar la etapa determinada
+          pdfBase64: toBase64(pdfBytes),
+        }),
+      });
+
+      if (!uploadResponse.ok) {
+        const errData = await uploadResponse.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al subir el PDF');
+      }
+
+      const uploadData = await uploadResponse.json();
+      if (uploadData.success && uploadData.path) {
+        setPdfPath(uploadData.path);
+      }
+
+      // 3. Enviar presupuestos con estado ENVIADO
       const presupuestosToSend = presupuestosFiltrados.map((presupuesto) => {
         const editData = editing.get(presupuesto.tarea_id) || { dias_reales: null, monto: null };
         return {
@@ -266,10 +405,10 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
 
       toast({
         title: 'Presupuesto enviado',
-        description: 'El presupuesto se envió correctamente al cliente.',
+        description: 'El presupuesto se envió correctamente al cliente. El PDF fue generado y guardado automáticamente.',
       });
 
-      // Recargar datos
+      // 4. Recargar datos
       const responseReload = await fetch(`/api/socio/presupuestos?obra_id=${obraId}`);
       if (responseReload.ok) {
         const dataReload = await responseReload.json();
@@ -287,6 +426,27 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           });
         });
         setEditing(editingMap);
+
+        // Actualizar pdfPath después de enviar
+        if (uploadData?.success && uploadData?.path) {
+          setPdfPath(uploadData.path);
+        } else {
+          // Si no se obtuvo del upload, intentar obtenerlo desde eventos
+          const tareaIdsReload = (dataReload.presupuestos || []).map((p: PresupuestoItem) => p.tarea_id).filter(Boolean);
+          if (tareaIdsReload.length > 0) {
+            try {
+              const pdfResponse = await fetch(`/api/presupuestos/pdf?obra_id=${obraId}&tarea_ids=${tareaIdsReload.join(',')}`);
+              if (pdfResponse.ok) {
+                const pdfData = await pdfResponse.json();
+                if (pdfData.success && pdfData.pdf_path) {
+                  setPdfPath(pdfData.pdf_path);
+                }
+              }
+            } catch (error) {
+              console.error('[usePresupuestos] Error obteniendo PDF path después de enviar:', error);
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('[usePresupuestos] Error enviando presupuesto:', error);
@@ -298,7 +458,11 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     } finally {
       setSaving(false);
     }
-  }, [obraId, editing, toast]);
+  }, [obraId, obra, editing, toast]);
+
+  const clearPdfPath = useCallback(() => {
+    setPdfPath(null);
+  }, []);
 
   return {
     obra,
@@ -306,9 +470,11 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     editing,
     loading,
     saving,
+    pdfPath,
     onFieldChange,
     handleSaveDraft,
     handleSendPresupuesto,
+    clearPdfPath,
   };
 }
 

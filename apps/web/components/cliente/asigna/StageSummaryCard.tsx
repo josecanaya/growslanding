@@ -55,11 +55,14 @@ interface StageSummaryCardProps {
   onAprobar: (presupuestoId: string) => void;
   onRechazar: (presupuestoId: string) => void;
   onAsignar: (presupuestoId: string) => void;
+  onAprobarPresupuesto?: (socioId: string, etapaId: string) => void;
   onVerPdf?: (cuadrillaNombre: string, presupuestos: PresupuestoInfo[]) => void;
   onVerLista?: (cuadrillaNombre: string, presupuestos: PresupuestoInfo[]) => void;
+  onRechazarPresupuesto?: (cuadrillaNombre: string, presupuestos: PresupuestoInfo[]) => void;
   onComentar?: (cuadrillaNombre: string, presupuestos: PresupuestoInfo[]) => void;
   actualizandoId: string | null;
   asignandoId: string | null;
+  aprobandoPresupuestoSocioId: string | null;
   disabled?: boolean;
 }
 
@@ -74,11 +77,14 @@ export function StageSummaryCard({
   onAprobar,
   onRechazar,
   onAsignar,
+  onAprobarPresupuesto,
   onVerPdf,
   onVerLista,
+  onRechazarPresupuesto,
   onComentar,
   actualizandoId,
   asignandoId,
+  aprobandoPresupuestoSocioId,
   disabled = false,
 }: StageSummaryCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -89,7 +95,9 @@ export function StageSummaryCard({
     const grupos = new Map<string, PresupuestoInfo[]>();
     
     (presupuestos ?? []).forEach((presupuesto) => {
-      const cuadrillaKey = presupuesto.cuadrilla_nombre || 'Sin cuadrilla';
+      // El cuadrilla_nombre ya viene con el nombre del socio desde AsignarSection
+      // Si no tiene nombre, usar "Socio sin nombre" en lugar de "Sin cuadrilla"
+      const cuadrillaKey = presupuesto.cuadrilla_nombre || 'Socio sin nombre';
       if (!grupos.has(cuadrillaKey)) {
         grupos.set(cuadrillaKey, []);
       }
@@ -216,21 +224,47 @@ export function StageSummaryCard({
             )}
 
             {/* Presupuestos recibidos agrupados por cuadrilla */}
-            {presupuestos && presupuestos.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-slate-700">
-                  Presupuestos recibidos ({presupuestos.length})
-                </h4>
-                <div className="space-y-2">
-                  {Array.from(presupuestosPorCuadrilla.entries()).map(([cuadrillaNombre, presupuestosCuadrilla]) => {
+            {presupuestos && presupuestos.length > 0 && (() => {
+              // Separar presupuestos pendientes y aprobados
+              // Un grupo va a "pendientes" si tiene AL MENOS UN presupuesto no aprobado
+              // Un grupo va a "aprobados" si tiene AL MENOS UN presupuesto aprobado
+              const presupuestosPendientes = Array.from(presupuestosPorCuadrilla.entries()).filter(
+                ([_, presupuestosCuadrilla]) =>
+                  presupuestosCuadrilla.some((p) => (p.estado ?? '').toUpperCase() !== 'APROBADO')
+              );
+
+              const presupuestosAprobados = Array.from(presupuestosPorCuadrilla.entries()).filter(
+                ([_, presupuestosCuadrilla]) =>
+                  presupuestosCuadrilla.some((p) => (p.estado ?? '').toUpperCase() === 'APROBADO')
+              );
+
+              return (
+                <div className="space-y-4">
+                  {/* Presupuestos pendientes */}
+                  {presupuestosPendientes.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-slate-700">
+                        Presupuestos pendientes ({presupuestosPendientes.reduce((sum, [_, p]) => {
+                          const sinAprobar = p.filter((pres) => (pres.estado ?? '').toUpperCase() !== 'APROBADO');
+                          return sum + sinAprobar.length;
+                        }, 0)})
+                      </h4>
+                      <div className="space-y-2">
+                        {presupuestosPendientes.map(([cuadrillaNombre, presupuestosCuadrilla]) => {
+                    // Solo mostrar los presupuestos no aprobados en este bloque
+                    const presupuestosNoAprobados = presupuestosCuadrilla.filter((p) => (p.estado ?? '').toUpperCase() !== 'APROBADO');
+                    if (presupuestosNoAprobados.length === 0) return null;
+
                     const estaExpandida = cuadrillasExpandidas.has(cuadrillaNombre);
-                    const totalCuadrilla = presupuestosCuadrilla.reduce((sum, p) => {
+                    const totalCuadrilla = presupuestosNoAprobados.reduce((sum, p) => {
                       if (p.monto && p.monto > 0) {
                         return sum + Number(p.monto);
                       }
                       return sum;
                     }, 0);
-                    const monedaComun = presupuestosCuadrilla.find((p) => p.moneda)?.moneda ?? 'ARS';
+                    const monedaComun = presupuestosNoAprobados.find((p) => p.moneda)?.moneda ?? 'ARS';
+                    
+                    const socioId = presupuestosNoAprobados[0]?.socio_id;
 
                     return (
                       <div
@@ -253,7 +287,7 @@ export function StageSummaryCard({
                                 <span className="font-semibold text-sm text-slate-900">{cuadrillaNombre}</span>
                               </div>
                               <div className="mt-0.5 ml-6 text-xs text-slate-600">
-                                {presupuestosCuadrilla.length} tarea{presupuestosCuadrilla.length === 1 ? '' : 's'} • Total:{' '}
+                                {presupuestosNoAprobados.length} tarea{presupuestosNoAprobados.length === 1 ? '' : 's'} • Total:{' '}
                                 {totalCuadrilla > 0 ? (
                                   <span className="font-semibold text-slate-900">
                                     {new Intl.NumberFormat('es-AR', {
@@ -273,7 +307,7 @@ export function StageSummaryCard({
                                   variant="ghost"
                                   size="sm"
                                   icon={<FileText className="h-3.5 w-3.5" />}
-                                  onClick={() => onVerPdf(cuadrillaNombre, presupuestosCuadrilla)}
+                                  onClick={() => onVerPdf(cuadrillaNombre, presupuestosNoAprobados)}
                                   className="text-xs h-7 px-2"
                                   title="Ver PDF"
                                 >
@@ -285,23 +319,42 @@ export function StageSummaryCard({
                                   variant="ghost"
                                   size="sm"
                                   icon={<List className="h-3.5 w-3.5" />}
-                                  onClick={() => onVerLista(cuadrillaNombre, presupuestosCuadrilla)}
+                                  onClick={() => onVerLista(cuadrillaNombre, presupuestosNoAprobados)}
                                   className="text-xs h-7 px-2"
-                                  title="Ver lista"
+                                  title="Editar"
+                                  disabled={presupuestosNoAprobados.length === 0}
                                 >
-                                  Lista
+                                  Editar
                                 </Button>
                               )}
-                              {onComentar && (
+                              {onAprobarPresupuesto && presupuestosNoAprobados.length > 0 && socioId && (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  icon={aprobandoPresupuestoSocioId === socioId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle className="h-3.5 w-3.5" />}
+                                  onClick={() => {
+                                    if (socioId) {
+                                      onAprobarPresupuesto(socioId, stageKey);
+                                    }
+                                  }}
+                                  disabled={aprobandoPresupuestoSocioId === socioId || disabled}
+                                  className="text-xs h-7 px-2"
+                                  title="Aprobar presupuesto de este socio"
+                                >
+                                  Aprobar presupuesto
+                                </Button>
+                              )}
+                              {onRechazarPresupuesto && presupuestosNoAprobados.length > 0 && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  icon={<MessageSquare className="h-3.5 w-3.5" />}
-                                  onClick={() => onComentar(cuadrillaNombre, presupuestosCuadrilla)}
-                                  className="text-xs h-7 px-2"
-                                  title="Comentar"
+                                  icon={<XCircle className="h-3.5 w-3.5 text-red-500" />}
+                                  onClick={() => onRechazarPresupuesto(cuadrillaNombre, presupuestosNoAprobados)}
+                                  className="text-xs h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  title="Rechazar presupuesto"
+                                  disabled={presupuestosNoAprobados.length === 0}
                                 >
-                                  Comentar
+                                  Rechazar
                                 </Button>
                               )}
                             </div>
@@ -311,7 +364,7 @@ export function StageSummaryCard({
                         {/* Tareas de la cuadrilla - expandible */}
                         {estaExpandida && (
                           <div className="border-t border-slate-100 divide-y divide-slate-100">
-                            {presupuestosCuadrilla.map((presupuesto) => {
+                            {presupuestosNoAprobados.map((presupuesto) => {
                               const estado = (presupuesto.estado ?? 'PENDIENTE').toUpperCase();
                               const estaActualizando = actualizandoId === presupuesto.id;
                               const estaAsignando = asignandoId === presupuesto.id;
@@ -417,9 +470,160 @@ export function StageSummaryCard({
                       </div>
                     );
                   })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tareas asignadas (Presupuestos aprobados) */}
+                  {presupuestosAprobados.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <h4 className="text-sm font-semibold text-green-700">
+                          Tareas asignadas ({presupuestosAprobados.reduce((sum, [_, p]) => {
+                            const aprobados = p.filter((presup) => (presup.estado ?? '').toUpperCase() === 'APROBADO');
+                            return sum + aprobados.length;
+                          }, 0)})
+                        </h4>
+                      </div>
+                      <div className="space-y-2">
+                        {presupuestosAprobados.map(([cuadrillaNombre, presupuestosCuadrilla]) => {
+                          // Filtrar solo los presupuestos aprobados de este grupo
+                          const presupuestosAprobadosDelGrupo = presupuestosCuadrilla.filter((p) => {
+                            const estado = (p.estado ?? '').toUpperCase();
+                            return estado === 'APROBADO';
+                          });
+                          
+                          // Si no hay presupuestos aprobados en este grupo, no mostrar
+                          if (presupuestosAprobadosDelGrupo.length === 0) return null;
+                          
+                          const estaExpandida = cuadrillasExpandidas.has(cuadrillaNombre);
+                          const totalCuadrilla = presupuestosAprobadosDelGrupo.reduce((sum, p) => {
+                            if (p.monto && p.monto > 0) {
+                              return sum + Number(p.monto);
+                            }
+                            return sum;
+                          }, 0);
+                          const monedaComun = presupuestosAprobadosDelGrupo.find((p) => p.moneda)?.moneda ?? 'ARS';
+
+                          return (
+                            <div
+                              key={cuadrillaNombre}
+                              className="rounded border border-green-200 bg-green-50/30 overflow-hidden"
+                            >
+                              {/* Header de cuadrilla */}
+                              <div className="px-3 py-2.5 hover:bg-green-50/50 transition-colors">
+                                <div className="flex items-center justify-between gap-3">
+                                  <button
+                                    onClick={() => toggleCuadrilla(cuadrillaNombre)}
+                                    className="flex-1 text-left"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {estaExpandida ? (
+                                        <ChevronDown className="h-4 w-4 text-green-600" />
+                                      ) : (
+                                        <ChevronRight className="h-4 w-4 text-green-600" />
+                                      )}
+                                      <span className="font-semibold text-sm text-green-900">{cuadrillaNombre}</span>
+                                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                                        Aprobado
+                                      </span>
+                                    </div>
+                                    <div className="mt-0.5 ml-6 text-xs text-green-700">
+                                      {presupuestosAprobadosDelGrupo.length} tarea{presupuestosAprobadosDelGrupo.length === 1 ? '' : 's'} • Total:{' '}
+                                      {totalCuadrilla > 0 ? (
+                                        <span className="font-semibold text-green-900">
+                                          {new Intl.NumberFormat('es-AR', {
+                                            style: 'currency',
+                                            currency: monedaComun,
+                                          }).format(totalCuadrilla)}
+                                        </span>
+                                      ) : (
+                                        <span className="text-green-600">Sin monto informado</span>
+                                      )}
+                                    </div>
+                                  </button>
+                                  {/* Botones de acción para la cuadrilla - Solo PDF y Comentar */}
+                                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                                    {onVerPdf && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        icon={<FileText className="h-3.5 w-3.5" />}
+                                        onClick={() => onVerPdf(cuadrillaNombre, presupuestosAprobadosDelGrupo)}
+                                        className="text-xs h-7 px-2"
+                                        title="Ver PDF"
+                                      >
+                                        PDF
+                                      </Button>
+                                    )}
+                                    {onComentar && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        icon={<MessageSquare className="h-3.5 w-3.5" />}
+                                        onClick={() => onComentar(cuadrillaNombre, presupuestosAprobadosDelGrupo)}
+                                        className="text-xs h-7 px-2"
+                                        title="Comentar"
+                                      >
+                                        Comentar
+                                      </Button>
+                                    )}
+                                    {/* No mostrar Editar ni Aprobar para presupuestos aprobados */}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Tareas de la cuadrilla - expandible */}
+                              {estaExpandida && (
+                                <div className="border-t border-green-100 divide-y divide-green-100">
+                                  {presupuestosAprobadosDelGrupo.map((presupuesto) => {
+                                    const estado = (presupuesto.estado ?? 'PENDIENTE').toUpperCase();
+
+                                    return (
+                                      <div
+                                        key={presupuesto.id}
+                                        className="px-3 py-2.5 bg-green-50/50"
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <p className="font-medium text-sm text-green-900 truncate">
+                                                {presupuesto.tarea_titulo}
+                                              </p>
+                                              <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-700 shrink-0">
+                                                {estado}
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-2 text-xs text-green-700 mb-1">
+                                              {presupuesto.monto && presupuesto.monto > 0 && (
+                                                <span className="font-medium">
+                                                  {new Intl.NumberFormat('es-AR', {
+                                                    style: 'currency',
+                                                    currency: presupuesto.moneda ?? 'ARS',
+                                                  }).format(presupuesto.monto)}
+                                                </span>
+                                              )}
+                                              {presupuesto.duracion_ofrecida && (
+                                                <span>{presupuesto.duracion_ofrecida} días</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Mensaje si no hay nada */}
             {(!tareasSinPresupuesto || tareasSinPresupuesto.length === 0) && (!presupuestos || presupuestos.length === 0) && (

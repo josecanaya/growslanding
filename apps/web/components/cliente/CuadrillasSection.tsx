@@ -679,7 +679,7 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
             }
 
             try {
-              const response = await fetch('/api/socios/invitar', {
+              const response = await fetch('/api/invitaciones/crear', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -692,15 +692,16 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
               const result = await response.json();
 
               if (result.success) {
-                if (result.data?.cuadrilla_id) {
-                  await cuadrillasStore.fetchCuadrillas(currentUser.orgId);
-                }
-
+                // Cerrar el modal inmediatamente
+                setShowModalInvitarSocio(false);
+                
                 toast({
                   title: 'Socio invitado',
                   description: result.message || 'Se envió un link de acceso al socio.',
                 });
-                setShowModalInvitarSocio(false);
+                
+                // Recargar cuadrillas si es necesario
+                await cuadrillasStore.fetchCuadrillas(currentUser.orgId);
               } else {
                 toast({
                   title: 'Error',
@@ -726,7 +727,7 @@ function ModalInvitarSocio({
   onInvitar,
 }: {
   onClose: () => void;
-  onInvitar: (socioData: { nombre: string; email?: string; telefono?: string; rol?: string; especialidad?: string }) => Promise<void>;
+  onInvitar: (socioData: { nombre: string; email: string; telefono: string; especialidad: string }) => Promise<void>;
 }) {
   const especialidades: string[] = ESPECIALIDADES;
 
@@ -734,7 +735,6 @@ function ModalInvitarSocio({
     nombre: '',
     email: '',
     telefono: '',
-    rol: 'constructor' as 'constructor' | 'lider' | 'socio',
     especialidad: '' as string,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -742,7 +742,7 @@ function ModalInvitarSocio({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.nombre || (!formData.email && !formData.telefono)) {
+    if (!formData.nombre || !formData.email || !formData.telefono || !formData.especialidad) {
       return;
     }
 
@@ -750,13 +750,14 @@ function ModalInvitarSocio({
     try {
       await onInvitar({
         nombre: formData.nombre,
-        email: formData.email || undefined,
-        telefono: formData.telefono || undefined,
-        rol: formData.rol,
-        especialidad: formData.especialidad || undefined,
+        email: formData.email,
+        telefono: formData.telefono,
+        especialidad: formData.especialidad,
       });
+      // El modal se cierra automáticamente desde onInvitar si es exitoso
     } catch (error) {
       console.error('[ERROR_MODAL_INVITAR_SOCIO]', error);
+      // No cerrar el modal si hay error
     } finally {
       setIsSubmitting(false);
     }
@@ -787,66 +788,48 @@ function ModalInvitarSocio({
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-growsBlue">Email</label>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Email *</label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
               className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
               placeholder="ejemplo@email.com"
+              required
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-growsBlue">Teléfono</label>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Teléfono *</label>
             <input
               type="tel"
               value={formData.telefono}
               onChange={(e) => setFormData((prev) => ({ ...prev, telefono: e.target.value }))}
               className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
               placeholder="+54 9 11 1234-5678"
+              required
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-growsBlue">Rol</label>
-            <select
-              value={formData.rol}
-              onChange={(e) => setFormData((prev) => ({ ...prev, rol: e.target.value as 'constructor' | 'lider' | 'socio' }))}
-              className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
-              disabled={isSubmitting}
-            >
-              <option value="constructor">Constructor</option>
-              <option value="lider">Líder de cuadrilla</option>
-              <option value="socio">Socio</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-growsBlue">Especialidad</label>
+            <label className="mb-1 block text-sm font-medium text-growsBlue">Especialidad *</label>
             <select
               value={formData.especialidad}
               onChange={(e) => setFormData((prev) => ({ ...prev, especialidad: e.target.value }))}
               className="w-full rounded-grows-md border border-grows-border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-growsBlue"
+              required
               disabled={isSubmitting}
             >
-              <option value="">Seleccionar especialidad (opcional)</option>
+              <option value="">Seleccionar especialidad</option>
               {especialidades.map((esp) => (
                 <option key={esp} value={esp}>
                   {esp}
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-growsTextMuted">
-              Si seleccionás una especialidad y el rol es &quot;Líder de Cuadrilla&quot;, se creará automáticamente una cuadrilla.
-            </p>
           </div>
-
-          <p className="text-xs text-growsTextMuted">
-            * Debe proporcionar email o teléfono. Se enviará un link de acceso para que el socio se registre.
-          </p>
 
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="ghost" className="flex-1" onClick={onClose} disabled={isSubmitting}>
@@ -856,7 +839,7 @@ function ModalInvitarSocio({
               type="submit"
               variant="primary"
               className="flex-1"
-              disabled={isSubmitting || !formData.nombre || (!formData.email && !formData.telefono)}
+              disabled={isSubmitting || !formData.nombre || !formData.email || !formData.telefono || !formData.especialidad}
             >
               {isSubmitting ? 'Enviando…' : 'Enviar invitación'}
             </Button>

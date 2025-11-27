@@ -143,10 +143,10 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
 
     try {
       // Buscar cuadrillas desde la tabla socios filtrando por org_id
-      // Solo seleccionar columnas que existen en la tabla socios (según schema: id, org_id, nombre, telefono, email, rol, created_at)
+      // Solo seleccionar columnas que existen en la tabla socios (según schema: id, org_id, nombre, telefono, email, estado, especialidad, created_at)
       let query = supabase
         .from('socios')
-        .select('id, nombre, telefono, email, org_id, created_at, rol')
+        .select('id, nombre, telefono, email, org_id, estado, especialidad, created_at')
         .eq('org_id', orgId)
         .order('created_at', { ascending: false });
 
@@ -218,7 +218,8 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
           id: s.id, 
           nombre: s.nombre, 
           org_id: s.org_id,
-          rol: s.rol,
+          estado: s.estado,
+          especialidad: s.especialidad,
           telefono: s.telefono,
           email: s.email
         }))
@@ -227,8 +228,10 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
       // Convertir socios a formato Cuadrilla
       // Cada socio se convierte en una cuadrilla individual
       const cuadrillasCompletas = sociosData.map((socio: any) => {
-        // Determinar especialidad basada en el rol o usar una por defecto
-        const especialidad = determinarEspecialidadDesdeRol(socio.rol) || 'Albañilería / Estructura';
+        // Usar especialidad de la tabla socios o una por defecto
+        const especialidad = socio.especialidad || 'Albañilería / Estructura';
+        // Usar estado de la tabla socios o 'Disponible' por defecto
+        const estado = socio.estado || 'Disponible';
         
         return {
           id: socio.id,
@@ -239,7 +242,7 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
           email_encargado: socio.email || null,
           foto_encargado: null,
           especialidad: especialidad,
-          estado: 'Disponible', // Todos los socios se muestran como disponibles por defecto
+          estado: estado,
           org_id: socio.org_id,
           obra_id: null, // Los socios no tienen obra_id directo, se asigna después
           created_at: socio.created_at,

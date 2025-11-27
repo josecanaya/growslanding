@@ -177,7 +177,7 @@ export function TareasEnCurso() {
           return;
         }
 
-        const tareasBase = (data as SupabaseTarea[]) ?? [];
+        const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
 
         // Obtener precedencias para ordenar por CPM/topológico
         let precedencias: PrecedenciaRow[] = [];
@@ -312,7 +312,7 @@ export function TareasEnCurso() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="default" className="text-xs">
                   {obra.tareas.length} tarea{obra.tareas.length === 1 ? '' : 's'}
                 </Badge>
                 <ArrowRight className="h-5 w-5 text-slate-400" />
@@ -360,13 +360,13 @@ export function TareasEnCurso() {
                         {tareaEstadoLabel(tarea.estado)}
                       </Badge>
                       {tarea.estado?.toLowerCase() === 'validado' && (
-                        <Badge variant="outline" className="text-[11px] border-green-500 text-green-700">
+                        <Badge variant="success" className="text-[11px] border-green-500 text-green-700">
                           100% completada
                         </Badge>
                       )}
                       {/* Mostrar crítico si llega metadata de CPM */}
                       {tarea as any /* placeholder to show critical if present */ && (tarea as any).esCritica && (
-                        <Badge variant="outline" className="text-[11px] border-red-500 text-red-700">
+                        <Badge variant="error" className="text-[11px] border-red-500 text-red-700">
                           Camino crítico
                         </Badge>
                       )}
@@ -374,7 +374,7 @@ export function TareasEnCurso() {
                   </div>
 
                   {tarea.prioridad && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="default" className="text-xs">
                       Prioridad: {tarea.prioridad}
                     </Badge>
                   )}

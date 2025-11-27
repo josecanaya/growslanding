@@ -23,7 +23,7 @@ export function PanelViewer({ activeSection, user }: PanelViewerProps) {
   const renderSection = () => {
     switch (activeSection) {
       case 'tareas':
-        return <TareasEnCurso user={user} />;
+        return <TareasEnCurso />;
       case 'mis-tareas':
         return <MisTareas user={user} />;
       case 'cuadrilla':
@@ -33,7 +33,7 @@ export function PanelViewer({ activeSection, user }: PanelViewerProps) {
       case 'cuenta':
         return <CuentaSection user={user} />;
       default:
-        return <TareasEnCurso user={user} />;
+        return <TareasEnCurso />;
     }
   };
 

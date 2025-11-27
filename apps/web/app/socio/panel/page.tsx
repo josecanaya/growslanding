@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 
 import { PanelViewer } from '@/components/socio/PanelViewer';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
+
+export const dynamic = 'force-dynamic';
 
 export default function PanelPage() {
   const router = useRouter();
@@ -21,9 +23,11 @@ export default function PanelPage() {
   const currentUser = useCurrentUser();
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
     }
   }, []);
 
@@ -50,6 +54,10 @@ export default function PanelPage() {
     }
   }, [currentUser, router]);
 
-  return <PanelViewer activeSection={activeSection} user={user} />;
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <PanelViewer activeSection={activeSection} user={user} />
+    </Suspense>
+  );
 }
 

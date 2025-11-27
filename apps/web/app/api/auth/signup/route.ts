@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceSupabaseClient, createRouteHandlerClient } from '@/lib/supabase-server';
+import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
+
+export const runtime = 'nodejs';
 
 const SignupSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -161,4 +164,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

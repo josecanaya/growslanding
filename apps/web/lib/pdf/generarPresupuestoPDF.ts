@@ -259,7 +259,8 @@ function generarPDFPorEtapa({
 
   // Descargar o devolver bytes
   if (asBytes) {
-    return doc.output('arraybuffer');
+    const arrayBuffer = doc.output('arraybuffer') as ArrayBuffer;
+    return new Uint8Array(arrayBuffer);
   }
 
   doc.save(nombreArchivo);

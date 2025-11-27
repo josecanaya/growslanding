@@ -17,6 +17,7 @@ export const runtime = 'nodejs';
 const mediaSchema = z.object({
   kind: z.enum(['foto', 'firma']),
   dataUrl: z.string().min(10, 'Media requerida'),
+  path: z.string().optional(),
 });
 
 const checklistSchema = z.object({
@@ -283,7 +284,7 @@ export async function POST(
     // Verificar precedencias activas
     const { data: precedencias, error: precedenciasError } = await supabase
       .from('tarea_precedencias')
-      .select('id, depende_de, tarea_id')
+      .select('depende_de, tarea_id')
       .eq('tarea_id', tarea.id);
 
     console.log('[TRANSITION] Precedencias encontradas para tarea:', {
@@ -313,7 +314,7 @@ export async function POST(
             id: t.id,
             nombre: t.title,
             estado: t.estado,
-            precedenciaId: precedencias.find(p => p.depende_de === t.id)?.id
+            depende_de: precedencias.find(p => p.depende_de === t.id)?.depende_de
           }))
         );
 
@@ -343,21 +344,21 @@ export async function POST(
           tareasBloqueantes?.forEach(tb => {
             const prec = precedencias.find(p => p.depende_de === tb.id);
             if (prec) {
-              console.log(`DELETE FROM tarea_precedencias WHERE id = '${prec.id}'; -- Elimina precedencia de "${tb.title}" (${tb.id}) hacia "${tarea.title}" (${tarea.id})`);
+              console.log(`DELETE FROM tarea_precedencias WHERE tarea_id = '${prec.tarea_id}' AND depende_de = '${prec.depende_de}'; -- Elimina precedencia de "${tb.title}" (${tb.id}) hacia "${tarea.title}" (${tarea.id})`);
             }
           });
           
           // Crear mensaje detallado con IDs y nombres
           const mensajeDetallado = tareasBloqueantes?.map(tb => {
             const prec = precedencias.find(p => p.depende_de === tb.id);
-            return `- "${tb.title}" (ID: ${tb.id}, Estado: ${tb.estado})${prec ? ` - Precedencia ID: ${prec.id}` : ''}`;
+            return `- "${tb.title}" (ID: ${tb.id}, Estado: ${tb.estado})${prec ? ` - Precedencia: tarea_id=${prec.tarea_id}, depende_de=${prec.depende_de}` : ''}`;
           }).join('\n') || 'Tareas precedentes sin validar';
 
           return new Response(
             JSON.stringify({
               message: `No se puede avanzar: tareas precedentes sin validar:\n${mensajeDetallado}`,
               bloqueos: tareasBloqueantes || bloqueo,
-              precedenciasIds: precedencias.map(p => p.id),
+              precedencias: precedencias.map(p => ({ tarea_id: p.tarea_id, depende_de: p.depende_de })),
               error: 'PRECEDENCE_ERROR',
             }),
             { status: 409 }

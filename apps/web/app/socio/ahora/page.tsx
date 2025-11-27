@@ -1,36 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { TareasEnCurso } from '@/components/socio/sections/TareasEnCurso';
-import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
+export const dynamic = 'force-dynamic';
+
+// Ruta AHORA: vista de ejecución (iniciar/finalizar) separada de "Tareas".
 export default function AhoraPage() {
-  const currentUser = useCurrentUser();
-  const [user, setUser] = useState({
-    name: 'Juan Pérez',
-    avatar: '👷',
-    rating: 4.8,
-    level: 'Oro',
-  });
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (currentUser?.name) {
-      setUser((prev) => ({
-        ...prev,
-        name: currentUser.name ?? prev.name,
-        avatar: currentUser.name
-          ? currentUser.name.charAt(0).toUpperCase()
-          : prev.avatar,
-      }));
-    }
-  }, [currentUser?.name]);
-
-  return <TareasEnCurso user={user} />;
+  return (
+    <Suspense fallback={<div>Cargando...</div>}>
+      <TareasEnCurso />
+    </Suspense>
+  );
 }

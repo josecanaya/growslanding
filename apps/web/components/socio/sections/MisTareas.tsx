@@ -280,18 +280,20 @@ export function MisTareas({ user }: MisTareasProps) {
               .select('org_id')
               .eq('responsable', currentUser.email || '')
               .limit(1)
-              .maybeSingle();
+              .maybeSingle<{ org_id: string | null }>();
             
             if (tareasSocio?.org_id && !errorTareas) {
               orgId = tareasSocio.org_id;
               console.log('[MIS_TAREAS] ✅✅ orgId encontrado desde tareas asignadas:', orgId);
               
               // Actualizar el socio con el org_id encontrado
-              await supabase
-                .from('socios')
-                .update({ org_id: orgId })
-                .eq('id', socioPorEmail.id);
-              console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+              if (orgId) {
+                await (supabase as any)
+                  .from('socios')
+                  .update({ org_id: orgId })
+                  .eq('id', socioPorEmail.id);
+                console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+              }
             } else {
               // Intentar buscar por cuadrilla_id
               const { data: tareasCuadrilla, error: errorCuadrilla } = await supabase
@@ -299,18 +301,20 @@ export function MisTareas({ user }: MisTareasProps) {
                 .select('org_id')
                 .eq('cuadrilla_id', socioPorEmail.id)
                 .limit(1)
-                .maybeSingle();
+                .maybeSingle<{ org_id: string | null }>();
               
               if (tareasCuadrilla?.org_id && !errorCuadrilla) {
                 orgId = tareasCuadrilla.org_id;
                 console.log('[MIS_TAREAS] ✅✅ orgId encontrado desde tareas por cuadrilla_id:', orgId);
                 
                 // Actualizar el socio con el org_id encontrado
-                await supabase
-                  .from('socios')
-                  .update({ org_id: orgId })
-                  .eq('id', socioPorEmail.id);
-                console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+                if (orgId) {
+                  await (supabase as any)
+                    .from('socios')
+                    .update({ org_id: orgId })
+                    .eq('id', socioPorEmail.id);
+                  console.log('[MIS_TAREAS] ✅✅ org_id actualizado en el socio');
+                }
               } else {
                 console.error('[MIS_TAREAS] ❌❌ No se encontró org_id ni en el socio ni en sus tareas', {
                   socioEncontrado: socioPorEmail,

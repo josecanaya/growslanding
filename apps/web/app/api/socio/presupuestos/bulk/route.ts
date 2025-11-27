@@ -217,15 +217,15 @@ export async function POST(request: NextRequest) {
     // Notificación Supabase: usamos siempre remitente_id + destinatario_id (no usar socio_id ni user_id_destinatario)
     if (presupuestosEnviados.length > 0) {
       try {
-        // Obtener el cliente técnico de la obra (owner de la org)
-        const { data: orgData } = await supabase
-          .from('organizations')
+        // Obtener el cliente técnico de la organización desde la tabla orgs
+        const { data: orgData, error: orgError } = await supabase
+          .from('orgs')
           .select('owner_user_id')
           .eq('id', orgId)
           .maybeSingle();
 
-        if (!orgData?.owner_user_id) {
-          console.warn('[PRESUPUESTOS_BULK] No se encontró owner_user_id para la organización, no se creará notificación');
+        if (orgError || !orgData?.owner_user_id) {
+          console.warn('[PRESUPUESTOS_BULK] No se encontró owner_user_id para la organización, no se creará notificación', orgError);
         } else {
           await (supabase as any)
             .from('notificaciones')

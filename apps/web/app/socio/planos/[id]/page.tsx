@@ -19,7 +19,7 @@ interface Plano {
 function PlanosPageContent() {
   const params = useParams();
   const router = useRouter();
-  const tareaId = params.tareaId as string;
+  const id = params.id as string;
   const supabase = createClientComponentClient<Database>();
   
   const [planos, setPlanos] = useState<Plano[]>([]);
@@ -30,25 +30,54 @@ function PlanosPageContent() {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      if (!tareaId) return;
+      if (!id) return;
 
       try {
-        // Obtener obra_id de la tarea
-        const { data: tareaData } = await (supabase as any)
-          .from('tareas')
-          .select('obra_id')
-          .eq('id', tareaId)
+        let obraIdFinal: string | null = null;
+
+        // Intentar primero como obra_id
+        const { data: obraData } = await (supabase as any)
+          .from('obras')
+          .select('id')
+          .eq('id', id)
           .maybeSingle();
 
-        if (tareaData?.obra_id) {
-          setObraId(tareaData.obra_id);
-          
-          // Cargar planos de la obra
-          const response = await fetch(`/api/socio/obras/${tareaData.obra_id}/planos`);
-          if (response.ok) {
-            const data = await response.json();
-            setPlanos(data.planos || []);
+        if (obraData) {
+          // Es un obra_id
+          obraIdFinal = id;
+        } else {
+          // No es una obra, intentar como tarea_id
+          const { data: tareaData } = await (supabase as any)
+            .from('tareas')
+            .select('obra_id')
+            .eq('id', id)
+            .maybeSingle();
+
+          if (tareaData?.obra_id) {
+            obraIdFinal = tareaData.obra_id;
           }
+        }
+
+        if (!obraIdFinal) {
+          console.warn('[PlanosPage] No se pudo determinar obra_id desde el ID:', id);
+          setLoading(false);
+          return;
+        }
+
+        setObraId(obraIdFinal);
+        
+        // Cargar planos de la obra usando la API (que usa documentos_legajo)
+        const response = await fetch(`/api/socio/obras/${obraIdFinal}/planos`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setPlanos(data.planos || []);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[PlanosPage] Error cargando planos desde API:', {
+            status: response.status,
+            error: errorData,
+          });
         }
       } catch (err) {
         console.error('[PlanosPage] Error cargando planos:', err);
@@ -58,7 +87,7 @@ function PlanosPageContent() {
     };
 
     cargarDatos();
-  }, [tareaId, supabase]);
+  }, [id, supabase]);
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 0.25, 3));
@@ -111,7 +140,7 @@ function PlanosPageContent() {
                   {plano.nombre_archivo}
                 </h3>
                 <p className="text-xs text-gray-500">
-                  {new Date(plano.created_at).toLocaleDateString('es-AR')}
+                  {plano.categoria ? `${plano.categoria} • ` : ''}{new Date(plano.created_at).toLocaleDateString('es-AR')}
                 </p>
               </div>
             ))}
@@ -168,12 +197,21 @@ function PlanosPageContent() {
                     width: `${100 / zoom}%`,
                   }}
                 >
-                  <iframe
-                    src={planoSeleccionado.url}
-                    className="w-full border-0"
-                    style={{ height: '800px' }}
-                    title={planoSeleccionado.nombre_archivo}
-                  />
+                  {planoSeleccionado.url.endsWith('.pdf') ? (
+                    <iframe
+                      src={planoSeleccionado.url}
+                      className="w-full border-0"
+                      style={{ height: '800px' }}
+                      title={planoSeleccionado.nombre_archivo}
+                    />
+                  ) : (
+                    <img
+                      src={planoSeleccionado.url}
+                      alt={planoSeleccionado.nombre_archivo}
+                      className="w-full h-auto"
+                      style={{ maxHeight: '800px', objectFit: 'contain' }}
+                    />
+                  )}
                 </div>
               </div>
             </DialogContent>

@@ -6,14 +6,15 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole } from '@/lib/roles';
 
 export default async function RootPage() {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient<Database>({
-    cookies: () => cookieStore as any,
-  });
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerComponentClient<Database>({
+      cookies: () => cookieStore as any,
+    });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
   if (!session) {
     redirect('/auth/login');
@@ -26,13 +27,17 @@ export default async function RootPage() {
 
   const role = normalizeRole(roleValue);
 
-  if (role === 'SOCIO') {
-    redirect('/socio/panel');
-  }
+    if (role === 'SOCIO') {
+      redirect('/socio/panel');
+    }
 
-  if (role === 'ADMIN' || role === 'CLIENTE_TECNICO') {
-    redirect('/cliente/dashboard');
-  }
+    if (role === 'ADMIN' || role === 'CLIENTE_TECNICO') {
+      redirect('/cliente/dashboard');
+    }
 
-  redirect('/auth/select-role');
+    redirect('/auth/select-role');
+  } catch (error) {
+    console.error('[ROOT_PAGE_ERROR]', error);
+    redirect('/auth/login');
+  }
 }

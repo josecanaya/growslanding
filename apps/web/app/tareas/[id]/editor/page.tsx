@@ -290,8 +290,8 @@ function PanelLateral({ tareas, onNuevaTarea, onEliminarTarea, tareaSeleccionada
   );
 }
 
-export default function TareasEditorPage({ params }: { params: Promise<{ obraId: string }> }) {
-  const { obraId } = use(params);
+export default function TareasEditorPage({ params }: { params: Promise<{ id: string }> }) {
+  const obraId = use(params).id;
   const router = useRouter();
   const [tareas, setTareas] = useState<TareaGantt[]>(tareasIniciales);
   const [conexiones, setConexiones] = useState<Conexion[]>([]);

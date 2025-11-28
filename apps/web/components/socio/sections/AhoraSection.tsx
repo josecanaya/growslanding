@@ -167,7 +167,7 @@ export function AhoraSection() {
         const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
 
         // Obtener precedencias para ordenar por CPM
-        let precedencias: Array<{ tarea_id: string; depende_de: string | null }> = [];
+        let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
         if (tareasBase.length > 0) {
           const ids = tareasBase.map((t) => t.id);
           const { data: precData } = await supabase
@@ -175,7 +175,10 @@ export function AhoraSection() {
             .select('tarea_id, depende_de')
             .in('tarea_id', ids);
 
-          precedencias = (precData || []) as Array<{ tarea_id: string; depende_de: string | null }>;
+          precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
+            tarea_id: p.tarea_id,
+            depende_de: p.depende_de ?? undefined,
+          }));
         }
 
         // Ordenar tareas por precedencias (CPM)
@@ -276,7 +279,7 @@ export function AhoraSection() {
           .gte('created_at', hoyISO);
 
         if (eventosHoy) {
-          const tareasUnicas = new Set(eventosHoy.map(e => e.tarea_id));
+          const tareasUnicas = new Set(eventosHoy.map((e: any) => e.tarea_id));
           setTareasCompletadasHoy(tareasUnicas.size);
         }
       } catch (err) {
@@ -378,14 +381,17 @@ export function AhoraSection() {
         if (data) {
           const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
           
-          let precedencias: Array<{ tarea_id: string; depende_de: string | null }> = [];
+          let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
           if (tareasBase.length > 0) {
             const ids = tareasBase.map((t) => t.id);
             const { data: precData } = await supabase
               .from('tarea_precedencias')
               .select('tarea_id, depende_de')
               .in('tarea_id', ids);
-            precedencias = (precData || []) as Array<{ tarea_id: string; depende_de: string | null }>;
+            precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
+              tarea_id: p.tarea_id,
+              depende_de: p.depende_de ?? undefined,
+            }));
           }
 
           const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
@@ -487,7 +493,7 @@ export function AhoraSection() {
             .eq('tipo_evento', 'TAREA_FINALIZADA')
             .order('created_at', { ascending: false })
             .limit(1)
-            .maybeSingle();
+            .maybeSingle() as any;
 
           if (eventoData?.media && Array.isArray(eventoData.media) && eventoData.media.length > 0) {
             const mediaItem = eventoData.media[0];
@@ -542,14 +548,17 @@ export function AhoraSection() {
         if (data) {
           const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
           
-          let precedencias: Array<{ tarea_id: string; depende_de: string | null }> = [];
+          let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
           if (tareasBase.length > 0) {
             const ids = tareasBase.map((t) => t.id);
             const { data: precData } = await supabase
               .from('tarea_precedencias')
               .select('tarea_id, depende_de')
               .in('tarea_id', ids);
-            precedencias = (precData || []) as Array<{ tarea_id: string; depende_de: string | null }>;
+            precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
+              tarea_id: p.tarea_id,
+              depende_de: p.depende_de ?? undefined,
+            }));
           }
 
           const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
@@ -578,7 +587,7 @@ export function AhoraSection() {
         .eq('tipo_evento', 'TAREA_FINALIZADA')
         .gte('created_at', hoyISO);
       if (eventosHoy) {
-        const tareasUnicas = new Set(eventosHoy.map(e => e.tarea_id));
+        const tareasUnicas = new Set(eventosHoy.map((e: any) => e.tarea_id));
         setTareasCompletadasHoy(tareasUnicas.size);
       }
 
@@ -586,7 +595,7 @@ export function AhoraSection() {
       const { data: todasLasTareas } = await supabase
         .from('tareas')
         .select('id, estado, avance')
-        .eq('org_id', orgId)
+        .eq('org_id', orgId || '')
         .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`);
 
       if (todasLasTareas && todasLasTareas.length > 0) {

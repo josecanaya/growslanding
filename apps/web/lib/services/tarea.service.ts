@@ -13,6 +13,7 @@ import {
   EstadoTarea,
   TipoActor
 } from '../schemas';
+import { createServiceSupabaseClient } from '../supabase-server';
 
 type PrismaWithLegacy = PrismaClient & {
   miembroOrganizacion?: {
@@ -180,7 +181,110 @@ export class TareaService {
       },
     });
 
+    // Generar subtareas automáticamente si no existen
+    await this.generarSubtareasAutomaticas(data.tareaId, organizacionId);
+
     return tareaActualizada;
+  }
+
+  /**
+   * Genera subtareas automáticamente desde tareas_presupuesto
+   */
+  static async generarSubtareasAutomaticas(tareaId: string, organizacionId: string) {
+    // Verificar si ya existen subtareas
+    const supabase = createServiceSupabaseClient();
+    const { data: subtareasExistentes } = await supabase
+      .from('tareas_subtareas')
+      .select('id')
+      .eq('tarea_id', tareaId)
+      .limit(1);
+
+    if (subtareasExistentes && subtareasExistentes.length > 0) {
+      // Ya existen subtareas, no generar
+      return;
+    }
+
+    // Obtener presupuesto de la tarea desde Supabase
+    const { data: presupuesto, error: presupuestoError } = await supabase
+      .from('tareas_presupuestos')
+      .select('cantidad, unidad, dias_reales, notas')
+      .eq('tarea_id', tareaId)
+      .maybeSingle();
+
+    if (presupuestoError || !presupuesto) {
+      console.warn(`[GENERAR_SUBTAREAS] No se encontró presupuesto para tarea ${tareaId}`);
+      return;
+    }
+
+    const { cantidad, unidad, dias_reales, notas } = presupuesto;
+    
+    // Intentar obtener dias_reales de notas si no viene directamente
+    let dias = dias_reales;
+    if (!dias && notas) {
+      try {
+        const notasParsed = typeof notas === 'string' ? JSON.parse(notas) : notas;
+        dias = notasParsed?.dias_reales || notasParsed?.dias;
+      } catch {
+        // Si no se puede parsear, usar null
+      }
+    }
+    
+    if (!cantidad || !dias || dias <= 0) {
+      console.warn(`[GENERAR_SUBTAREAS] Datos inválidos: cantidad=${cantidad}, dias_reales=${dias}`);
+      return;
+    }
+
+    // Calcular rendimiento diario
+    const rendimientoDiario = cantidad / dias;
+    const subtareas: any[] = [];
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    // Generar subtareas para cada día
+    for (let i = 1; i <= dias; i++) {
+      const fechaSubtarea = new Date(hoy);
+      fechaSubtarea.setDate(hoy.getDate() + (i - 1));
+      
+      subtareas.push({
+        tarea_id: tareaId,
+        orden: i,
+        cantidad: rendimientoDiario,
+        unidad: unidad || 'unidades',
+        estado: 'pendiente',
+        fecha: fechaSubtarea.toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    // Verificar si hay leftover
+    const totalGenerado = rendimientoDiario * dias;
+    if (totalGenerado < cantidad) {
+      const leftover = cantidad - totalGenerado;
+      const fechaFinal = new Date(hoy);
+      fechaFinal.setDate(hoy.getDate() + dias);
+      
+      subtareas.push({
+        tarea_id: tareaId,
+        orden: dias + 1,
+        cantidad: leftover,
+        unidad: unidad || 'unidades',
+        estado: 'pendiente',
+        fecha: fechaFinal.toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    // Insertar subtareas masivamente
+    const { error: insertError } = await supabase
+      .from('tareas_subtareas')
+      .insert(subtareas);
+
+    if (insertError) {
+      console.error('[GENERAR_SUBTAREAS] Error insertando subtareas:', insertError);
+      throw new Error('Error al generar subtareas automáticamente');
+    }
+
+    console.log(`[GENERAR_SUBTAREAS] Generadas ${subtareas.length} subtareas para tarea ${tareaId}`);
   }
 
   /**

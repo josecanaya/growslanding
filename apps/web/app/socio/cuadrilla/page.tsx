@@ -32,5 +32,9 @@ export default function CuadrillaPage() {
     }
   }, [currentUser?.name]);
 
-  return <MiCuadrilla user={user} />;
+  return (
+    <div className="w-full">
+      <MiCuadrilla user={user} />
+    </div>
+  );
 }

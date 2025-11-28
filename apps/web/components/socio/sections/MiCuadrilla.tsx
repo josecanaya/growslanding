@@ -174,8 +174,8 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 text-center">
+      <div className="w-full px-4 py-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-12 text-center w-full">
           <Loader2 className="h-16 w-16 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Cargando datos de la cuadrilla...</p>
         </div>
@@ -185,8 +185,8 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+      <div className="w-full px-4 py-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 w-full">
           <div className="flex items-center">
             <AlertTriangle className="h-5 w-5 text-red-600 mr-2" />
             <h2 className="text-lg font-semibold text-red-900">Error</h2>
@@ -198,35 +198,35 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-4 py-6 space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Mi Cuadrilla</h2>
-        <p className="text-sm text-gray-600">
+        <h2 className="text-2xl font-bold text-gray-900">Mi Cuadrilla</h2>
+        <p className="text-sm text-gray-600 mt-1">
           {integrantes.length} integrantes • {documentos.length} documentos
         </p>
       </div>
 
       {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg p-4" style={{ backgroundColor: '#1A202C' }}>
+      <div className="grid grid-cols-2 gap-4 w-full">
+        <div className="rounded-xl p-5 shadow-md" style={{ backgroundColor: '#1A202C' }}>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm" style={{ color: '#A0AEC0' }}>Integrantes</div>
-              <div className="text-2xl font-bold" style={{ color: '#FEEB70' }}>{integrantes.length}</div>
+              <div className="text-sm font-medium" style={{ color: '#A0AEC0' }}>Integrantes</div>
+              <div className="text-3xl font-bold mt-1" style={{ color: '#FEEB70' }}>{integrantes.length}</div>
             </div>
-            <Users className="h-8 w-8" style={{ color: '#FEEB70' }} />
+            <Users className="h-10 w-10" style={{ color: '#FEEB70' }} />
           </div>
         </div>
-        <div className="rounded-lg p-4" style={{ backgroundColor: '#008080' }}>
+        <div className="rounded-xl p-5 shadow-md" style={{ backgroundColor: '#008080' }}>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm" style={{ color: '#FFFFFF' }}>Seguros al día</div>
-              <div className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>
+              <div className="text-sm font-medium" style={{ color: '#FFFFFF' }}>Seguros al día</div>
+              <div className="text-3xl font-bold mt-1" style={{ color: '#FFFFFF' }}>
                 {integrantes.filter(i => i.seguroVigente).length}
               </div>
             </div>
-            <Shield className="h-8 w-8" style={{ color: '#FFFFFF' }} />
+            <Shield className="h-10 w-10" style={{ color: '#FFFFFF' }} />
           </div>
         </div>
       </div>
@@ -252,15 +252,15 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
       )}
 
       {/* Integrantes */}
-      <div>
+      <div className="w-full">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <Users className="h-5 w-5 mr-2 text-gray-600" />
           Integrantes
         </h3>
         {integrantes.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">No hay integrantes asignados a tu cuadrilla</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center w-full">
+            <Users className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600 font-medium">No hay integrantes asignados a tu cuadrilla</p>
             <p className="text-sm text-gray-500 mt-2">Los integrantes se cargarán cuando estén disponibles</p>
           </div>
         ) : (
@@ -307,15 +307,15 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
       </div>
 
       {/* Documentación */}
-      <div>
+      <div className="w-full">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <FileText className="h-5 w-5 mr-2 text-gray-600" />
           Documentación
         </h3>
         {documentos.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">No hay documentos disponibles</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center w-full">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-gray-600 font-medium">No hay documentos disponibles</p>
             <p className="text-sm text-gray-500 mt-2">Los documentos se cargarán cuando estén disponibles</p>
           </div>
         ) : (
@@ -354,16 +354,16 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
       </div>
 
       {/* Acciones rápidas */}
-      <div className="rounded-lg p-4" style={{ backgroundColor: '#1A202C' }}>
-        <h3 className="font-semibold mb-3" style={{ color: '#FFFFFF' }}>Acciones rápidas</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors" style={{ backgroundColor: '#FEEB70', color: '#1A202C' }}>
-            <Users className="h-4 w-4" />
-            <span>Agregar integrante</span>
+      <div className="rounded-xl p-5 shadow-md w-full" style={{ backgroundColor: '#1A202C' }}>
+        <h3 className="font-semibold mb-4 text-lg" style={{ color: '#FFFFFF' }}>Acciones rápidas</h3>
+        <div className="grid grid-cols-2 gap-3 w-full">
+          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors hover:opacity-90" style={{ backgroundColor: '#FEEB70', color: '#1A202C' }}>
+            <Users className="h-5 w-5" />
+            <span className="text-sm">Agregar integrante</span>
           </button>
-          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors" style={{ backgroundColor: '#008080', color: '#FFFFFF' }}>
-            <FileText className="h-4 w-4" />
-            <span>Subir documento</span>
+          <button className="flex items-center justify-center space-x-2 text-white py-3 px-4 rounded-lg font-medium transition-colors hover:opacity-90" style={{ backgroundColor: '#008080', color: '#FFFFFF' }}>
+            <FileText className="h-5 w-5" />
+            <span className="text-sm">Subir documento</span>
           </button>
         </div>
       </div>

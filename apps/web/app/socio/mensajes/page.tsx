@@ -1,9 +1,9 @@
 'use client';
 
-import { MensajeriaSocio } from '@/components/socio/MensajeriaSocio';
+import { ChatPorObra } from '@/components/messages/ChatPorObra';
 
 export default function MensajesPage() {
-  return <MensajeriaSocio />;
+  return <ChatPorObra role="socio" />;
 }
 
 

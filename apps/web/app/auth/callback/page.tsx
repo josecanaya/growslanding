@@ -55,21 +55,47 @@ function CallbackPageContent() {
               exchangeError
             );
             
-            // Detectar error de rate limit específicamente
+            // Detectar error de rate limit PRIMERO - no hacer más peticiones
             const isRateLimit = 
               exchangeError.message?.toLowerCase().includes('rate limit') ||
               exchangeError.message?.toLowerCase().includes('too many requests') ||
               exchangeError.status === 429;
             
-            if (active) {
-              // Redirigir inmediatamente sin reintentar para evitar más requests
-              if (isRateLimit) {
+            if (isRateLimit) {
+              // Error 429: NO hacer más peticiones, redirigir inmediatamente
+              console.warn("[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login");
+              if (active) {
                 router.replace("/auth/login?error=rate_limit" as Route);
+              }
+              return;
+            }
+            
+            // Si el error es por falta de code_verifier (PKCE), intentar obtener sesión directamente
+            const isPkceError = 
+              exchangeError.message?.toLowerCase().includes('code verifier') ||
+              exchangeError.message?.toLowerCase().includes('invalid request');
+            
+            if (isPkceError) {
+              // Intentar obtener sesión directamente (puede que ya esté autenticado)
+              // SOLO UNA VEZ, sin retry
+              const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+              if (!sessionErr && sessionData.session) {
+                // Sesión válida encontrada, continuar con el flujo
+                console.log("[OAUTH_CALLBACK] Sesión recuperada después de error PKCE");
               } else {
+                // No hay sesión válida, redirigir a login
+                if (active) {
+                  router.replace("/auth/login?error=oauth_failed" as Route);
+                }
+                return;
+              }
+            } else {
+              // Otro tipo de error, redirigir sin reintentar
+              if (active) {
                 router.replace("/auth/login?error=oauth_failed" as Route);
               }
+              return;
             }
-            return;
           }
         }
 
@@ -221,11 +247,11 @@ function CallbackPageContent() {
     return () => {
       active = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     redirectTarget,
-    router,
-    searchParams,
-    supabase,
+    // No incluir supabase en dependencias (es estable)
+    // No incluir searchParams completo (solo necesitamos el code)
   ]);
 
   return (

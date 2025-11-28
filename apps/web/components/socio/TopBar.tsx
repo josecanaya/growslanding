@@ -73,20 +73,37 @@ export function TopBar({
     return () => window.removeEventListener('grows:notificaciones-unread-count', handler);
   }, []);
 
+  // Escuchar custom event para abrir el drawer desde el botón Menú del tabbar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handler = () => {
+      setShowSideMenu(true);
+    };
+
+    window.addEventListener('grows:open-side-menu', handler);
+    return () => window.removeEventListener('grows:open-side-menu', handler);
+  }, []);
+
+  // Ocultar avatar cuando está en /socio/ahora
+  const hideAvatar = pathname?.startsWith('/socio/ahora');
+
   return (
     <>
-      <header className="sticky top-0 z-40 bg-grows-blue shadow-lg">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => setShowSideMenu(true)}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-grows-blue-light text-xl text-grows-text shadow-md transition hover:bg-grows-blue-light/90 hover:shadow-lg"
-            aria-label="Abrir menu"
-          >
-            {user.avatar}
-          </button>
-          <div />
-        </div>
-      </header>
+      {!hideAvatar && (
+        <header className="sticky top-0 z-40 bg-grows-blue shadow-lg">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button
+              onClick={() => setShowSideMenu(true)}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-grows-blue-light text-xl text-grows-text shadow-md transition hover:bg-grows-blue-light/90 hover:shadow-lg"
+              aria-label="Abrir menu"
+            >
+              {user.avatar}
+            </button>
+            <div />
+          </div>
+        </header>
+      )}
 
       {showSideMenu ? (
         <>

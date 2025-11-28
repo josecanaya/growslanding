@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import type { Route } from 'next';
 
-import { TopBar } from '@/components/socio/TopBar';
-import { logout } from '@/lib/auth';
+import { SocioHeader } from '@/components/socio/SocioHeader';
+import { SocioTabBar } from '@/components/socio/SocioTabBar';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { ROLE_LABELS, normalizeRole } from '@/lib/roles';
+import { normalizeRole } from '@/lib/roles';
 
 export default function SocioLayout({
   children,
@@ -15,60 +15,9 @@ export default function SocioLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [isConnected, setIsConnected] = useState(false);
-  const [isOnBreak, setIsOnBreak] = useState(false);
-  const [user, setUser] = useState({
-    name: 'Juan Pérez',
-    avatar: '👷',
-    rating: 4.8,
-    level: 'Oro',
-  });
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const savedConnection = localStorage.getItem('isConnected');
-    const savedBreak = localStorage.getItem('isOnBreak');
-
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    if (savedConnection) {
-      setIsConnected(JSON.parse(savedConnection));
-    }
-    if (savedBreak) {
-      setIsOnBreak(JSON.parse(savedBreak));
-    }
-  }, []);
-
-  const handleConnectionToggle = () => {
-    const newConnection = !isConnected;
-    setIsConnected(newConnection);
-    localStorage.setItem('isConnected', JSON.stringify(newConnection));
-  };
-
-  const handleBreakToggle = () => {
-    const newBreak = !isOnBreak;
-    setIsOnBreak(newBreak);
-    localStorage.setItem('isOnBreak', JSON.stringify(newBreak));
-  };
-
-  const handleLogout = useCallback(() => {
-    logout({ router });
-  }, [router]);
-
+  const pathname = usePathname();
   const currentUser = useCurrentUser();
-
-  useEffect(() => {
-    if (currentUser?.name) {
-      setUser((prev) => ({
-        ...prev,
-        name: currentUser.name ?? prev.name,
-        avatar: currentUser.name
-          ? currentUser.name.charAt(0).toUpperCase()
-          : prev.avatar,
-      }));
-    }
-  }, [currentUser?.name]);
+  const isAhoraPage = pathname?.startsWith('/socio/ahora');
 
   useEffect(() => {
     if (!currentUser || currentUser.isDevUser) {
@@ -81,31 +30,28 @@ export default function SocioLayout({
     }
   }, [currentUser, router]);
 
-  const roleLabel = useMemo(() => {
-    const normalized = normalizeRole(currentUser?.role);
-    if (!normalized) {
-      return 'Socio';
-    }
-    return ROLE_LABELS[normalized] ?? normalized;
-  }, [currentUser?.role]);
-
   return (
-    <div className="flex min-h-screen flex-col bg-grows-gray">
-      <TopBar
-        isConnected={isConnected}
-        isOnBreak={isOnBreak}
-        onConnectionToggle={handleConnectionToggle}
-        onBreakToggle={handleBreakToggle}
-        onLogout={handleLogout}
-        user={user}
-        roleLabel={roleLabel}
-      />
+    <div className="w-full flex flex-col min-h-screen bg-[#F7F7F7]">
+      {/* Header GROWS fijo - siempre visible */}
+      <SocioHeader />
 
-      <main className="flex-1 overflow-y-auto pb-24">
-        <div className="space-y-6 px-4 py-6">
-          {children}
-        </div>
+      {/* Contenido principal con padding para header y footer */}
+      <main className="flex-1 overflow-y-auto pt-[70px] pb-[90px]">
+        {isAhoraPage ? (
+          // Para /socio/ahora: sin max-width, full width
+          <div className="w-full">
+            {children}
+          </div>
+        ) : (
+          // Para otras páginas: max-width centrado
+          <div className="max-w-[480px] mx-auto w-full">
+            {children}
+          </div>
+        )}
       </main>
+
+      {/* TabBar fijo - siempre visible */}
+      <SocioTabBar />
     </div>
   );
 }

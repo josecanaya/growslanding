@@ -13,7 +13,8 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get('usuario_id') ??
       request.nextUrl.searchParams.get('socio_id') ??
       request.nextUrl.searchParams.get('cliente_id');
-    // obra_id y tarea_id fueron eliminados de la tabla mensajes
+    const obraId = request.nextUrl.searchParams.get('obra_id');
+    const destinatarioId = request.nextUrl.searchParams.get('destinatario_id');
 
     if (!orgId || !usuarioId) {
       return NextResponse.json(
@@ -23,34 +24,39 @@ export async function GET(request: NextRequest) {
     }
 
     // Construir el query de búsqueda
-    // Según los datos en Supabase:
-    // - Cuando el cliente envía: remitente_id = usuarioId del cliente
-    // - Cuando el socio envía al cliente: destinatario_id = org_id (no usuarioId)
-    // Por lo tanto, necesitamos buscar mensajes donde:
-    // - remitente_id = usuarioId (mensajes enviados por el usuario)
-    // - destinatario_id = usuarioId O destinatario_id = orgId (mensajes recibidos por el usuario)
+    // Si hay obra_id y destinatario_id, filtrar por esos campos (chat específico)
+    // Si no, buscar todos los mensajes del usuario en la organización
     
     let query = supabaseAny
       .from('mensajes')
       .select('*')
       .eq('org_id', orgId);
     
-    // Construir condiciones OR para buscar mensajes donde el usuario participa
-    // Si usuarioId y orgId son diferentes, buscar en ambos
-    if (usuarioId !== orgId) {
-      // Buscar: (remitente_id = usuarioId) OR (destinatario_id = usuarioId) OR (destinatario_id = orgId)
+    // Si hay obra_id, filtrar por obra
+    if (obraId) {
+      query = query.eq('obra_id', obraId);
+    }
+
+    // Si hay destinatario_id, filtrar conversación específica
+    if (destinatarioId) {
+      // Buscar mensajes donde:
+      // - (remitente_id = usuarioId AND destinatario_id = destinatarioId) OR
+      // - (remitente_id = destinatarioId AND destinatario_id = usuarioId)
       query = query.or(
-        `remitente_id.eq.${usuarioId},destinatario_id.eq.${usuarioId},destinatario_id.eq.${orgId}`
+        `and(remitente_id.eq.${usuarioId},destinatario_id.eq.${destinatarioId}),and(remitente_id.eq.${destinatarioId},destinatario_id.eq.${usuarioId})`
       );
     } else {
-      // Si son iguales, solo buscar por uno
-      query = query.or(`remitente_id.eq.${usuarioId},destinatario_id.eq.${usuarioId}`);
+      // Buscar todos los mensajes donde el usuario participa
+      if (usuarioId !== orgId) {
+        query = query.or(
+          `remitente_id.eq.${usuarioId},destinatario_id.eq.${usuarioId},destinatario_id.eq.${orgId}`
+        );
+      } else {
+        query = query.or(`remitente_id.eq.${usuarioId},destinatario_id.eq.${usuarioId}`);
+      }
     }
     
     query = query.order('created_at', { ascending: true });
-
-    // Nota: obra_id y tarea_id fueron eliminados de la tabla mensajes
-    // Si se necesitan filtrar por obra o tarea, se debe hacer en el cliente
 
     const { data, error } = await query;
 
@@ -95,8 +101,10 @@ export async function POST(request: NextRequest) {
       destinatario_tipo: body.destinatario_tipo ?? null,
     };
     
-    // Solo agregar obra_id y tarea_id si existen en el body (para compatibilidad con código antiguo)
-    // pero no los incluimos si la tabla no los tiene
+    // Agregar obra_id si existe en el body
+    if (body.obra_id) {
+      payload.obra_id = body.obra_id;
+    }
 
     const { data, error } = await supabaseAny.from('mensajes').insert([payload]).select();
 

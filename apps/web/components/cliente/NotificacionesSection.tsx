@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge, Button } from '@/components/ui/grows';
 import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente/mensajeria/ListaNotificaciones';
 import { ListaInformes, type InformeItem } from '@/components/cliente/mensajeria/ListaInformes';
-import { MensajeriaDirecta } from '@/components/cliente/mensajeria/MensajeriaDirecta';
+import { ChatPorObra } from '@/components/messages/ChatPorObra';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -290,7 +290,7 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
         </TabsContent>
 
         <TabsContent value="mensajes" className="mt-6">
-          <MensajeriaDirecta />
+          <ChatPorObra role="cliente" />
         </TabsContent>
       </Tabs>
 

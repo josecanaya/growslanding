@@ -986,11 +986,11 @@ export function MisTareas({ user }: MisTareasProps) {
             variant="outline"
             className="w-full"
             onClick={() => {
-              console.log('Actualizar avance de tarea:', tarea.id);
+              window.location.href = `/socio/ahora?tareaId=${tarea.id}`;
             }}
           >
             <TrendingUp className="h-4 w-4 mr-2" />
-            Actualizar avance
+            Trabajar ahora
           </Button>
         </div>
       </CardContent>

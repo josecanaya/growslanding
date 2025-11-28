@@ -24,8 +24,11 @@ interface SelectUsuarioProps {
 
 // Función helper para convertir tipo de usuario al formato esperado
 function normalizeUsuarioTipo(tipo: 'cliente' | 'socio' | 'supervisor' | undefined): 'cliente' | 'socio' | null {
-  if (tipo === 'cliente' || tipo === 'socio') {
-    return tipo;
+  if (tipo === 'cliente') {
+    return 'cliente';
+  }
+  if (tipo === 'socio') {
+    return 'socio';
   }
   if (tipo === 'supervisor') {
     return 'socio'; // Tratar supervisor como socio para el chat
@@ -194,8 +197,9 @@ export function SelectUsuario({
   return (
     <Select value={value || undefined} onValueChange={(val) => {
       const usuario = usuarios.find(u => u.id === val);
-      const tipo = normalizeUsuarioTipo(usuario?.tipo);
-      onValueChange(val, tipo);
+      // Normalizar el tipo para asegurar compatibilidad con onValueChange
+      const tipoNormalizado: 'cliente' | 'socio' | null = normalizeUsuarioTipo(usuario?.tipo);
+      onValueChange(val, tipoNormalizado);
     }}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Elegir usuario" />

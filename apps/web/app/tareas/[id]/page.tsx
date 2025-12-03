@@ -466,8 +466,8 @@ const convertirTareasParaTimeline = (tareas: Tarea[], obraId: string) => {
 
 export default function TareasDetailPage() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
-  const obraId = params?.id ?? '0';
+  const params = useParams<{ obraId: string }>();
+  const obraId = params?.obraId ?? '0';
   const [obra] = useState<Obra>(obraMock);
   const [tareas] = useState<Tarea[]>(tareasMock);
   const [tabActivo, setTabActivo] = useState<'resumen' | 'tareas'>('resumen');
@@ -611,7 +611,7 @@ export default function TareasDetailPage() {
                   {/* INFO DE DEBUG */}
                   <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
-                      <strong>Debug:</strong> {tareas.length} tareas encontradas para la obra {params.id}
+                      <strong>Debug:</strong> {tareas.length} tareas encontradas para la obra {params.obraId}
                     </p>
                     <p className="text-sm text-yellow-800">
                       Estructura: {tareas.filter(t => t.etapa === 'Estructura').length} | 

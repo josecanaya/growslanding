@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X } from 'lucide-react';
+import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X, Wallet } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { logout } from '@/lib/auth';
@@ -138,6 +138,7 @@ export function SocioTabBar() {
     { id: 'ahora', label: 'Ahora', icon: Clock, route: '/socio/ahora' as Route },
     { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route },
     { id: 'presupuestos', label: 'Presupuesta', icon: NotebookPen, route: '/socio/presupuestos' as Route },
+    { id: 'billetera', label: 'Billetera', icon: Wallet, route: '/socio/billetera' as Route },
     { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route },
     { id: 'cuenta', label: 'Cuenta', icon: User, route: '/socio/cuenta' as Route },
   ];

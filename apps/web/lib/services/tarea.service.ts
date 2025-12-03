@@ -14,6 +14,7 @@ import {
   TipoActor
 } from '../schemas';
 import { createServiceSupabaseClient } from '../supabase-server';
+import { WalletService } from './wallet.service';
 
 type PrismaWithLegacy = PrismaClient & {
   miembroOrganizacion?: {
@@ -361,9 +362,10 @@ export class TareaService {
       },
     });
 
-    // Si se valida la tarea, crear pago
+    // Si se valida la tarea, crear pago y movimientos de wallet
     if (data.estadoNuevo === 'VALIDADA') {
       await this.crearPagoAutomatico(data.tareaId, actorId);
+      await this.crearMovimientosWallet(data.tareaId, organizacionId);
     }
 
     return tareaActualizada;
@@ -651,6 +653,120 @@ export class TareaService {
     }
 
     return tarea;
+  }
+
+  /**
+   * Crea movimientos de wallet cuando se valida una tarea
+   */
+  private static async crearMovimientosWallet(tareaId: string, organizacionId: string) {
+    try {
+      const supabase = createServiceSupabaseClient();
+
+      const supabaseAny = supabase as any;
+
+      // 1. Obtener presupuesto aprobado de la tarea desde Supabase
+      const { data: presupuesto, error: presupuestoError } = await supabaseAny
+        .from('tareas_presupuestos')
+        .select('id, monto, socio_id')
+        .eq('tarea_id', tareaId)
+        .eq('estado', 'APROBADO')
+        .maybeSingle();
+
+      if (presupuestoError || !presupuesto || !presupuesto.monto) {
+        console.warn('[WALLET] No se encontró presupuesto aprobado para tarea:', tareaId);
+        return;
+      }
+
+      const montoTotal = presupuesto.monto;
+      const socioId = presupuesto.socio_id;
+
+      if (!socioId) {
+        console.warn('[WALLET] Presupuesto sin socio_id:', presupuesto.id);
+        return;
+      }
+
+      // 2. Obtener org_id desde la tarea (verificar que sea correcto)
+      const { data: tarea, error: tareaError } = await supabaseAny
+        .from('tareas')
+        .select('org_id')
+        .eq('id', tareaId)
+        .maybeSingle();
+
+      if (tareaError || !tarea || !tarea.org_id) {
+        console.warn('[WALLET] No se pudo obtener org_id de la tarea:', tareaId);
+        return;
+      }
+
+      const orgId = tarea.org_id || organizacionId;
+
+      // 3. Obtener plan de la organización desde Supabase
+      const { data: organizacion, error: orgError } = await supabaseAny
+        .from('organizaciones')
+        .select('plan_actual')
+        .eq('id', orgId)
+        .maybeSingle();
+
+      if (orgError || !organizacion) {
+        console.warn('[WALLET] No se pudo obtener plan de organización:', orgId);
+        // Continuar con plan por defecto
+      }
+
+      const plan = organizacion?.plan_actual || 'FREE';
+
+      // 4. Calcular comisión según plan
+      let porcentajeComision = 0.15; // FREE: 15% por defecto
+
+      if (plan === 'PRO') {
+        porcentajeComision = 0.075; // 7.5%
+      } else if (plan === 'ENTERPRISE') {
+        porcentajeComision = 0.03; // 3%
+      }
+      // FREE o cualquier otro: 15%
+
+      const comisionGROWS = montoTotal * porcentajeComision;
+      const montoSocio = montoTotal - comisionGROWS;
+
+      // 5. Crear movimientos de wallet usando el servicio
+      try {
+        // CRÉDITO al socio (monto total - comisión)
+        await WalletService.crearCredito({
+          owner_tipo: 'SOCIO',
+          owner_id: socioId,
+          monto: montoSocio,
+          concepto: `Pago por tarea validada`,
+          tarea_id: tareaId,
+          presupuesto_id: presupuesto.id,
+        });
+
+        // DÉBITO por comisión al socio
+        await WalletService.crearDebito({
+          owner_tipo: 'SOCIO',
+          owner_id: socioId,
+          monto: comisionGROWS,
+          concepto: `Comisión GROWS (${(porcentajeComision * 100).toFixed(1)}%)`,
+          tarea_id: tareaId,
+          presupuesto_id: presupuesto.id,
+        });
+
+        // CRÉDITO a la organización (comisión)
+        await WalletService.crearCredito({
+          owner_tipo: 'ORG',
+          owner_id: orgId,
+          monto: comisionGROWS,
+          concepto: `Comisión GROWS - Tarea ${tareaId}`,
+          tarea_id: tareaId,
+          presupuesto_id: presupuesto.id,
+        });
+
+        console.log('[WALLET] Movimientos creados exitosamente para tarea:', tareaId);
+      } catch (walletError) {
+        console.error('[WALLET] Error creando movimientos:', walletError);
+        // No lanzar error para no interrumpir el flujo de validación
+      }
+    } catch (error) {
+      console.error('[WALLET] Error creando movimientos de wallet:', error);
+      // No lanzar error para no interrumpir el flujo de validación
+    }
   }
 
   /**

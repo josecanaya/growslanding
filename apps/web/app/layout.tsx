@@ -15,7 +15,7 @@ type RootLayoutProps = {
 
 export const metadata: Metadata = {
   title: 'GROWS - Panel de Socio',
-  description: 'Plataforma de gestion inteligente para la construccion',
+  description: 'Plataforma de gestión inteligente para la construcción',
 };
 
 export default function RootLayout({ children }: RootLayoutProps) {
@@ -36,12 +36,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <DevBanner />
                 <DevToolsPanel />
                 <Toaster />
-                {/* Audio global para notificaciones - El fallback a beep generado maneja el 404 */}
+                {/* Audio global para notificaciones */}
                 <audio
                   id="grows-notification-sound"
                   src="/sounds/notification.mp3"
-                  preload="none"
-                  suppressHydrationWarning
+                  preload="auto"
                 />
               </ThemeProvider>
             </UpgradeModalProvider>

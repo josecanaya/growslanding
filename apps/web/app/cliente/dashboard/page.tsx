@@ -13,6 +13,7 @@ import { CuentaSection } from '@/components/cliente/CuentaSection';
 import { TareasSection } from '@/components/cliente/TareasSection';
 import { NotificacionesSection } from '@/components/cliente/NotificacionesSection';
 import { CalendarioSection } from '@/components/cliente/CalendarioSection';
+import { BilleteraSection } from '@/components/cliente/BilleteraSection';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
 
@@ -31,7 +32,7 @@ export default function ClienteDashboardPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const sectionParam = params.get('section');
-      if (sectionParam && ['chat', 'obras', 'tareas', 'cuadrillas', 'notificaciones', 'calendario', 'cuenta'].includes(sectionParam)) {
+      if (sectionParam && ['chat', 'obras', 'tareas', 'cuadrillas', 'billetera', 'notificaciones', 'calendario', 'cuenta'].includes(sectionParam)) {
         setActiveSection(sectionParam);
         // Limpiar el parámetro de la URL después de leerlo
         const newUrl = window.location.pathname;
@@ -60,6 +61,8 @@ export default function ClienteDashboardPage() {
         return <TareasSection />;
       case 'cuadrillas':
         return <CuadrillasSection onNavigate={setActiveSection} />;
+      case 'billetera':
+        return <BilleteraSection />;
       case 'notificaciones':
         return <NotificacionesSection onNavigate={setActiveSection} />;
       case 'calendario':

@@ -487,7 +487,7 @@ export function AhoraSection() {
   // Cargar jornada actual y subtarea activa
   useEffect(() => {
     const cargarJornadaYSubtarea = async () => {
-      if (!currentUser?.id || !currentUser?.email) {
+      if (!currentUser?.id) {
         setJornadaActual(null);
         setSubtareaActual(null);
         return;
@@ -497,22 +497,6 @@ export function AhoraSection() {
       if (!orgId) return;
 
       try {
-        // Obtener el socio_id desde la tabla socios usando el email del usuario
-        const { data: socioData } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
-
-        if (!socioData?.id) {
-          console.warn('[AHORA] Socio no encontrado para email:', currentUser.email);
-          setJornadaActual(null);
-          setSubtareaActual(null);
-          return;
-        }
-
-        const socioId = socioData.id;
-
         // Verificar si existe jornada para hoy
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
@@ -521,7 +505,7 @@ export function AhoraSection() {
         const { data: jornadaData } = await (supabase as any)
           .from('jornadas_socio')
           .select('*')
-          .eq('socio_id', socioId)
+          .eq('socio_id', currentUser.id)
           .eq('fecha', hoyISO)
           .maybeSingle();
 
@@ -748,19 +732,9 @@ export function AhoraSection() {
     if (!currentUser?.id) return;
 
     // Requiere al menos una tarea o subtarea
-    if (!subtareaActual && !tareaActual && tareas.length === 0) {
+    if (!subtareaActual && !tareaActual) {
       setError('No hay tareas asignadas para iniciar jornada');
       return;
-    }
-    
-    // Si no hay tarea seleccionada pero hay tareas, asegurar que se seleccione la primera
-    if (!subtareaActual && !tareaActual && tareas.length > 0) {
-      // Asegurar que el índice esté dentro del rango
-      if (tareaActualIndex >= tareas.length || tareaActualIndex < 0) {
-        setTareaActualIndex(0);
-      }
-      // Si aún no hay tareaActual después de ajustar el índice, puede ser un problema de timing
-      // Continuar con la primera tarea disponible
     }
 
     setIsIniciando(true);
@@ -782,41 +756,11 @@ export function AhoraSection() {
         return;
       }
 
-      // Obtener el socio_id desde la tabla socios usando el email del usuario
-      if (!currentUser?.email) {
-        setError('No se pudo obtener el email del usuario');
-        setIsIniciando(false);
-        return;
-      }
-
-      const { data: socioData, error: socioError } = await (supabase as any)
-        .from('socios')
-        .select('id')
-        .eq('email', currentUser.email)
-        .maybeSingle();
-
-      if (socioError) {
-        console.error('[AHORA] Error obteniendo socio:', socioError);
-        setError('Error al obtener información del socio');
-        setIsIniciando(false);
-        return;
-      }
-
-      if (!socioData?.id) {
-        console.error('[AHORA] Socio no encontrado para email:', currentUser.email);
-        setError('No se encontró tu registro como socio. Contacta al administrador.');
-        setIsIniciando(false);
-        return;
-      }
-
-      const socioId = socioData.id;
-      console.log('[AHORA] Socio encontrado:', { socio_id: socioId, email: currentUser.email });
-
       // Verificar si ya existe una jornada para hoy
       const { data: jornadaExistente, error: errorVerificar } = await (supabase as any)
         .from('jornadas_socio')
         .select('*')
-        .eq('socio_id', socioId)
+        .eq('socio_id', currentUser.id)
         .eq('fecha', hoyISO)
         .maybeSingle();
 
@@ -835,70 +779,26 @@ export function AhoraSection() {
         return;
       }
 
-      // Validar que todos los datos requeridos estén presentes
-      if (!socioId) {
-        setError('No se pudo obtener el ID del socio');
-        setIsIniciando(false);
-        return;
-      }
-
-      if (!obraId) {
-        setError('No se pudo determinar la obra');
-        setIsIniciando(false);
-        return;
-      }
-
-      if (!hoyISO || !horaInicio) {
-        setError('Error al obtener fecha u hora');
-        setIsIniciando(false);
-        return;
-      }
-
       // Crear nueva jornada en jornadas_socio
-      const insertData = {
-        socio_id: socioId,
-        obra_id: obraId,
-        fecha: hoyISO,
-        hora_inicio: horaInicio,
-      };
-
-      console.log('[AHORA] Intentando crear jornada con datos:', insertData);
-
       const { data: nuevaJornada, error: jornadaError } = await (supabase as any)
         .from('jornadas_socio')
-        .insert(insertData)
+        .insert({
+          socio_id: currentUser.id,
+          obra_id: obraId,
+          fecha: hoyISO,
+          hora_inicio: horaInicio,
+        })
         .select()
         .single();
 
       if (jornadaError) {
-        // Mejorar el logging del error para obtener más información
-        const errorInfo: any = {
+        console.error('[AHORA] Error creando jornada:', {
           error: jornadaError,
-          message: jornadaError?.message,
-          details: jornadaError?.details,
-          hint: jornadaError?.hint,
-          code: jornadaError?.code,
-        };
-        
-        // Si el error es un objeto, intentar serializarlo
-        try {
-          const errorString = JSON.stringify(jornadaError, null, 2);
-          errorInfo.rawError = errorString;
-        } catch (e) {
-          errorInfo.rawError = String(jornadaError);
-        }
-        
-        // Agregar información del contexto
-        errorInfo.context = {
-          socio_id: socioId,
-          user_id: currentUser.id,
-          user_email: currentUser.email,
-          obra_id: obraId,
-          fecha: hoyISO,
-          hora_inicio: horaInicio,
-        };
-        
-        console.error('[AHORA] Error creando jornada:', errorInfo);
+          message: jornadaError.message,
+          details: jornadaError.details,
+          hint: jornadaError.hint,
+          code: jornadaError.code,
+        });
         
         // Si el error es por constraint único (jornada ya existe), intentar cargarla
         if (jornadaError.code === '23505' || jornadaError.message?.includes('unique') || jornadaError.message?.includes('duplicate')) {
@@ -906,7 +806,7 @@ export function AhoraSection() {
           const { data: jornadaData } = await (supabase as any)
             .from('jornadas_socio')
             .select('*')
-            .eq('socio_id', socioId)
+            .eq('socio_id', currentUser.id)
             .eq('fecha', hoyISO)
             .maybeSingle();
           
@@ -930,7 +830,7 @@ export function AhoraSection() {
         const { data: jornadaData } = await (supabase as any)
           .from('jornadas_socio')
           .select('*')
-          .eq('socio_id', socioId)
+          .eq('socio_id', currentUser.id)
           .eq('fecha', hoyISO)
           .maybeSingle();
 
@@ -988,92 +888,24 @@ export function AhoraSection() {
     }
   };
 
-  // Función auxiliar para generar un beep simple
-  const generarBeep = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800; // Frecuencia del beep
-      oscillator.type = 'sine';
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
-    } catch (err) {
-      console.warn('[AHORA] No se pudo generar beep:', err);
-    }
-  };
-
   const handleIniciarTarea = async () => {
     if (!tareaActual || !currentUser) return;
 
     setIsIniciando(true);
     
-    // Efecto visual amarillo: tornar toda la pantalla amarilla
+    // Efecto amarillo: agregar clase al body y al contenedor principal
     const mainContainer = document.querySelector('.ahora-container') as HTMLElement;
-    const htmlElement = document.documentElement;
-    
     if (mainContainer) {
-      mainContainer.classList.add('bg-yellow-200', 'transition-colors', 'duration-500');
+      mainContainer.classList.add('bg-yellow-50', 'transition-colors', 'duration-1000');
     }
-    if (htmlElement) {
-      htmlElement.classList.add('bg-yellow-200', 'transition-colors', 'duration-500');
-    }
-    document.body.classList.add('bg-yellow-200', 'transition-colors', 'duration-500');
+    document.body.classList.add('bg-yellow-50');
     
-    // Reproducir sonido de inicio
-    try {
-      // Intentar usar el elemento de audio del layout
-      const audioElement = document.getElementById('grows-notification-sound') as HTMLAudioElement;
-      if (audioElement) {
-        audioElement.volume = 0.7;
-        audioElement.currentTime = 0;
-        await audioElement.play().catch((err) => {
-          console.warn('[AHORA] No se pudo reproducir el sonido del layout:', err);
-          // Fallback: generar un beep simple
-          generarBeep();
-        });
-      } else {
-        // Fallback: generar un beep simple si no existe el elemento
-        generarBeep();
-      }
-    } catch (err) {
-      console.warn('[AHORA] Error al reproducir sonido:', err);
-      // Fallback: generar un beep simple
-      generarBeep();
-    }
-    
-    // Mantener el efecto amarillo por 3 segundos
     setTimeout(() => {
       if (mainContainer) {
-        mainContainer.classList.remove('bg-yellow-200');
-        mainContainer.classList.add('bg-yellow-50', 'transition-colors', 'duration-1000');
+        mainContainer.classList.remove('bg-yellow-50');
       }
-      if (htmlElement) {
-        htmlElement.classList.remove('bg-yellow-200');
-        htmlElement.classList.add('bg-yellow-50', 'transition-colors', 'duration-1000');
-      }
-      document.body.classList.remove('bg-yellow-200');
-      document.body.classList.add('bg-yellow-50', 'transition-colors', 'duration-1000');
-      
-      // Remover completamente el efecto después de 2 segundos más
-      setTimeout(() => {
-        if (mainContainer) {
-          mainContainer.classList.remove('bg-yellow-50');
-        }
-        if (htmlElement) {
-          htmlElement.classList.remove('bg-yellow-50');
-        }
-        document.body.classList.remove('bg-yellow-50');
-      }, 2000);
-    }, 3000);
+      document.body.classList.remove('bg-yellow-50');
+    }, 2000);
 
     try {
       // Actualizar tarea directamente: estado a "en_progreso", fecha_inicio_real y hora_inicio
@@ -1356,13 +1188,10 @@ export function AhoraSection() {
     if (!tareaId || !currentUser) return;
 
     try {
-      // Actualizar tarea principal a finalizado
+      // Actualizar tarea principal a COMPLETADA
       const { error: updateError } = await (supabase as any)
         .from('tareas')
-        .update({ 
-          estado: 'finalizado',
-          fecha_fin_real: new Date().toISOString().split('T')[0],
-        })
+        .update({ estado: 'COMPLETADA' })
         .eq('id', tareaId);
 
       if (updateError) {
@@ -1780,13 +1609,6 @@ export function AhoraSection() {
       if (!jornadaActual) return 'Iniciar jornada';
       if (!isTareaEnProgreso) return 'Comenzar tarea';
       return 'Finalizar tarea';
-    } else if (tareas.length > 0) {
-      // Si hay tareas pero no hay tarea seleccionada
-      if (!jornadaActual) return 'Iniciar jornada';
-      return 'Seleccionar tarea';
-    } else if (jornadaActual && !jornadaActual.hora_fin) {
-      // Si hay jornada activa pero no hay tareas visibles
-      return 'Finalizar jornada';
     }
     return 'Iniciar jornada';
   };
@@ -1811,27 +1633,19 @@ export function AhoraSection() {
       } else {
         handleFinalizarTarea();
       }
-    } else if (tareas.length > 0 && !jornadaActual) {
-      // Si hay tareas pero no hay tarea seleccionada y no hay jornada, iniciar jornada
-      // Primero seleccionar la primera tarea si no hay ninguna seleccionada
-      if (tareaActualIndex === 0 && tareas[0]) {
-        handleIniciarJornada();
-      }
     }
   };
 
   // Determinar si el CTA está deshabilitado
   const isCTADisabled = () => {
-    // Habilitado si hay tarea, subtarea o tareas disponibles
-    if (!subtareaActual && !tareaActual && tareas.length === 0) return true;
-    // Si hay tareas pero no hay jornada, permitir iniciar jornada
-    if (tareas.length > 0 && !jornadaActual && !subtareaActual && !tareaActual) return false;
+    // Siempre habilitado si hay tarea o subtarea
+    if (!subtareaActual && !tareaActual) return true;
     return isIniciando || isFinalizando;
   };
 
 
   return (
-    <div className={`ahora-container min-h-screen bg-white pb-20 md:pb-8 transition-colors duration-500 ${isIniciando ? 'bg-yellow-200' : isFinalizando ? 'bg-green-50' : ''}`}>
+    <div className={`ahora-container min-h-screen bg-white pb-20 md:pb-8 transition-colors duration-1000 ${isIniciando ? 'bg-yellow-50' : isFinalizando ? 'bg-green-50' : ''}`}>
       {/* Saludo dentro de la pantalla */}
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-2xl font-bold text-gray-900">
@@ -1970,34 +1784,21 @@ export function AhoraSection() {
         </div>
       )}
 
-      {/* 3. CTA PRINCIPAL - Botón gigante estilo Uber o SlideToConfirm */}
-      {/* Mostrar botón si hay tareas, subtarea o tarea actual, O si hay jornada activa (para finalizar) */}
-      {(subtareaActual || tareaActual || (tareas.length > 0 && !error) || (jornadaActual && !jornadaActual.hora_fin)) && (
+      {/* 3. CTA PRINCIPAL - Botón gigante estilo Uber */}
+      {(subtareaActual || tareaActual) && (
         <div className="px-4 mb-4">
-          {/* Si hay jornada pero la tarea no está iniciada, usar SlideToConfirm */}
-          {jornadaActual && !subtareaActual && tareaActual && !isTareaEnProgreso ? (
-            <SlideToConfirm
-              onConfirm={handleIniciarTarea}
-              label="Comenzar tarea"
-              confirmLabel="Desliza para comenzar"
-              disabled={isIniciando || isFinalizando}
-              variant="start"
-            />
-          ) : (
-            <button
-              onClick={handleCTAClick}
-              disabled={isCTADisabled()}
-              className="w-full bg-[#276EF1] text-white py-5 px-6 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#1e5dd9] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-            >
-              {isIniciando ? 'Iniciando...' : isFinalizando ? 'Finalizando...' : getCTAText()}
-            </button>
-          )}
+          <button
+            onClick={handleCTAClick}
+            disabled={isCTADisabled()}
+            className="w-full bg-[#276EF1] text-white py-5 px-6 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#1e5dd9] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+          >
+            {isIniciando ? 'Iniciando...' : isFinalizando ? 'Finalizando...' : getCTAText()}
+          </button>
         </div>
       )}
 
-      {/* 4. BLOQUE GUÍA - Estadísticas (solo después de iniciar jornada) */}
-      {jornadaActual && (
-        <div className="px-4 mb-4">
+      {/* 4. BLOQUE GUÍA - Estadísticas */}
+      <div className="px-4 mb-4">
         <div className="bg-gray-50 rounded-xl p-4">
           {tareasProgramadasHoy > 0 ? (
             <div className="flex items-center justify-between">
@@ -2019,7 +1820,6 @@ export function AhoraSection() {
           )}
         </div>
       </div>
-      )}
 
       {/* 5. NOTIFICACIÓN DEL ESTADO - Banner */}
       {subtareaActual?.estado === 'finalizada' && (
@@ -2044,10 +1844,9 @@ export function AhoraSection() {
         </div>
       )}
 
-      {/* Modales - Tarjetas (solo después de iniciar jornada) */}
-      {jornadaActual && (
-        <div className="px-4 mb-4">
-          <div className="grid grid-cols-2 gap-3">
+      {/* Modales */}
+      <div className="px-4 mb-4">
+        <div className="grid grid-cols-2 gap-3">
           {/* Checklist */}
           <button
             onClick={() => setShowChecklist(true)}
@@ -2065,7 +1864,7 @@ export function AhoraSection() {
             onClick={() => {
               const obraId = subtareaActual?.tareas?.obra_id || tareaActual?.obra_id;
               if (obraId) {
-                router.push(`/socio/planos/${obraId}`);
+                router.push(`/socio/planos/${obraId}` as any);
               } else {
                 setShowPlanos(true);
               }
@@ -2102,9 +1901,8 @@ export function AhoraSection() {
             </div>
             <span className="text-xs font-semibold text-green-900">Evidencias</span>
           </button>
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Botón Finalizar jornada - Solo si hay jornada activa */}
       {jornadaActual && !jornadaActual.hora_fin && (
@@ -2534,27 +2332,17 @@ function ModalFinalizarSubtarea({
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
-        console.error('[ModalFinalizarSubtarea] Error respuesta:', errorData);
-        throw new Error(errorData.error || 'Error al subir archivo');
+        throw new Error('Error al subir archivo');
       }
 
       const result = await response.json();
-      if (!result.success) {
-        throw new Error(result.error || 'Error al subir archivo');
-      }
-
       if (kind === 'evidencia_final') {
         setEvidenciaUrl(result.url);
       } else if (kind === 'video_final') {
         setVideoUrl(result.url);
       }
-      
-      // Recargar evidencias si estamos en el modal de evidencias
-      // Esto se hace a través del callback onEvidenciaFinalSubida si existe
     } catch (err) {
       console.error('[ModalFinalizarSubtarea] Error subiendo archivo:', err);
-      alert(err instanceof Error ? err.message : 'Error al subir archivo. Por favor, intenta nuevamente.');
     } finally {
       setUploading(false);
     }

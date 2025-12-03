@@ -12,6 +12,7 @@ import {
   ClipboardList,
   HelpCircle,
   LogOut,
+  Wallet,
 } from 'lucide-react';
 
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -67,6 +68,7 @@ export function SidebarClienteTecnico({
     { id: 'obras', label: 'Obras', icon: Building2 },
     { id: 'tareas', label: 'Tareas', icon: ClipboardList },
     { id: 'cuadrillas', label: 'Cuadrillas', icon: Users },
+    { id: 'billetera', label: 'Billetera', icon: Wallet },
     { id: 'notificaciones', label: 'Notificaciones', icon: Bell },
     { id: 'calendario', label: 'Calendario', icon: Calendar },
     { id: 'cuenta', label: 'Cuenta', icon: User },

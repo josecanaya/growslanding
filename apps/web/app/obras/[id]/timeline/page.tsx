@@ -33,7 +33,7 @@ interface Obra {
 
 export default function ObraTimelinePage() {
   const params = useParams();
-  const obraId = params.id as string;
+  const obraId = params.obraId as string;
   const [obra, setObra] = useState<Obra | null>(null);
   const [tareas, setTareas] = useState<Tarea[]>([]);
   const [loading, setLoading] = useState(true);

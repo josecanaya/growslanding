@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   transpilePackages: [],
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  turbopack: {},
   webpack: (config, { isServer }) => {
     config.experiments = {
       ...config.experiments,

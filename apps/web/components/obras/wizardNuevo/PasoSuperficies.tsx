@@ -44,22 +44,22 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
   const FOT_VALIDO = FOT <= 1.2;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="rounded-2xl bg-gray-50 px-5 py-4">
-          <h2 className="text-lg font-semibold" style={{ color: '#003C6E' }}>
+    <div className="space-y-4 md:space-y-6">
+      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
+        <div className="rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
+          <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
             Superficies y estructura
           </h2>
-          <p className="text-sm text-gray-600">
+          <p className="text-xs md:text-sm text-gray-600">
             Definí la estructura principal y la distribución de superficies
           </p>
         </div>
 
-        <div className="grid gap-6 p-5 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Cantidad de plantas</label>
+        <div className="grid gap-4 md:gap-6 p-3 md:p-4 lg:p-5 md:grid-cols-3">
+          <div className="space-y-2 md:col-span-3 lg:col-span-1">
+            <label className="text-xs md:text-sm font-medium">Cantidad de plantas</label>
             <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
               value={plantas}
               onChange={(e) => setPlantas(Math.min(5, Math.max(1, Number(e.target.value))))}
             >
@@ -71,28 +71,28 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
             </select>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Superficie total del terreno (m²)</label>
+          <div className="space-y-2 md:col-span-3 lg:col-span-2">
+            <label className="text-xs md:text-sm font-medium">Superficie total del terreno (m²)</label>
             <input
               type="number"
               min={0}
               value={terreno || ''}
               onChange={(e) => setField('terreno', Number(e.target.value))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
               placeholder="Ej: 300"
             />
           </div>
         </div>
 
-        <div className="px-5 pb-5">
+        <div className="px-3 md:px-4 lg:px-5 pb-3 md:pb-4 lg:pb-5">
           {superficies.map((p, idx) => (
-            <div key={p.planta} className="mt-4 rounded-xl border border-gray-200 p-4">
-              <div className="mb-3 text-sm font-semibold" style={{ color: '#003C6E' }}>
+            <div key={p.planta} className="mt-3 md:mt-4 rounded-lg md:rounded-xl border border-gray-200 p-3 md:p-4">
+              <div className="mb-2 md:mb-3 text-xs md:text-sm font-semibold" style={{ color: '#003C6E' }}>
                 Planta {p.planta}
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">m² cubiertos</label>
+                  <label className="text-xs md:text-sm font-medium">m² cubiertos</label>
                   <input
                     type="number"
                     min={0}
@@ -100,12 +100,12 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
                     onChange={(e) =>
                       updatePlantaSuperficie(idx, 'cubiertos', Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
                     placeholder="Ej: 120"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">m² descubiertos</label>
+                  <label className="text-xs md:text-sm font-medium">m² descubiertos</label>
                   <input
                     type="number"
                     min={0}
@@ -113,7 +113,7 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
                     onChange={(e) =>
                       updatePlantaSuperficie(idx, 'descubiertos', Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
                     placeholder="Ej: 40"
                   />
                 </div>
@@ -123,30 +123,30 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
         </div>
 
         {/* Indicadores urbanísticos */}
-        <div className="px-5 pb-5">
-          <div className="rounded-xl border border-gray-200 p-4">
-            <h3 className="mb-4 text-base font-semibold" style={{ color: '#003C6E' }}>
+        <div className="px-3 md:px-4 lg:px-5 pb-3 md:pb-4 lg:pb-5">
+          <div className="rounded-lg md:rounded-xl border border-gray-200 p-3 md:p-4">
+            <h3 className="mb-3 md:mb-4 text-sm md:text-base font-semibold" style={{ color: '#003C6E' }}>
               Indicadores urbanísticos
             </h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <div className="text-sm text-gray-600">FOS (Factor de Ocupación del Suelo)</div>
+                <div className="text-xs md:text-sm text-gray-600">FOS (Factor de Ocupación del Suelo)</div>
                 <div
-                  className={`text-3xl font-bold ${FOS_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
+                  className={`text-2xl md:text-3xl font-bold ${FOS_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
                 >
                   {FOS.toFixed(2)}%
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="text-sm text-gray-600">FOT (Factor de Ocupación Total)</div>
+                <div className="text-xs md:text-sm text-gray-600">FOT (Factor de Ocupación Total)</div>
                 <div
-                  className={`text-3xl font-bold ${FOT_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
+                  className={`text-2xl md:text-3xl font-bold ${FOT_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
                 >
                   {FOT.toFixed(2)}
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-xs text-gray-500">
+            <p className="mt-3 md:mt-4 text-[10px] md:text-xs text-gray-500">
               El FOS y FOT se calculan automáticamente según los datos cargados.
             </p>
           </div>
@@ -154,11 +154,11 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
 
         <div className="border-t border-gray-100" />
 
-        <div className="flex items-center justify-center gap-3 p-5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 p-3 md:p-4 lg:p-5">
           <button
             type="button"
             onClick={onPrev}
-            className="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50"
+            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 md:px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50 min-h-[44px]"
           >
             Atrás
           </button>
@@ -166,8 +166,8 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
             type="button"
             disabled={!puedeContinuar}
             onClick={onNext}
-            className={`rounded-lg px-6 py-2.5 font-semibold text-white transition ${
-              puedeContinuar ? '' : 'opacity-60'
+            className={`w-full sm:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition min-h-[44px] ${
+              !puedeContinuar ? 'opacity-60 cursor-not-allowed' : ''
             }`}
             style={{ backgroundColor: '#0055A4' }}
           >

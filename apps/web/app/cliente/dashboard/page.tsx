@@ -6,6 +6,8 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Route } from 'next';
 
 import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
+import { TabBarMobile } from '@/components/cliente/TabBarMobile';
+import { TopBarMobile } from '@/components/cliente/TopBarMobile';
 import ObrasSection from '@/components/cliente/ObrasSection';
 import { CuadrillasSection } from '@/components/cliente/CuadrillasSection';
 import { ValidarTareasSection } from '@/components/cliente/ValidarTareasSection';
@@ -15,6 +17,7 @@ import { NotificacionesSection } from '@/components/cliente/NotificacionesSectio
 import { CalendarioSection } from '@/components/cliente/CalendarioSection';
 import { BilleteraSection } from '@/components/cliente/BilleteraSection';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { useDeviceType } from '@/lib/hooks/useDeviceType';
 import { normalizeRole } from '@/lib/roles';
 import {
   Building2,
@@ -669,14 +672,17 @@ function PeriodSelector({
   rangoTemporal,
   totalSemanas,
   onPeriodChange,
-  className = ""
+  className = "",
+  size = 'normal'
 }: {
   rangoTemporal: number;
   totalSemanas: number;
   onPeriodChange: (periodo: number) => void;
   className?: string;
+  size?: 'small' | 'normal';
 }) {
   const periodos = [4, 8, 12, totalSemanas];
+  const isSmall = size === 'small';
   
   return (
     <div className={`flex items-center gap-1 bg-gray-50 rounded-lg p-1 border border-gray-200 ${className}`}>
@@ -684,11 +690,18 @@ function PeriodSelector({
         <button
           key={semanasValue}
           onClick={() => onPeriodChange(semanasValue)}
-          className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            rangoTemporal === semanasValue
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
+          className={`
+            rounded-md transition-colors font-medium
+            ${isSmall 
+              ? 'px-2 py-1 text-[10px]' 
+              : 'px-3 py-1.5 text-xs'
+            }
+            ${
+              rangoTemporal === semanasValue
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }
+          `}
         >
           {semanasValue === totalSemanas ? 'Total obra' : `${semanasValue} sem`}
         </button>
@@ -784,10 +797,10 @@ function TasksChart({
   
   return (
     <div className="space-y-4">
-      <div className="flex items-start gap-6">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6">
         {/* Donut Principal */}
         <div className="relative flex-shrink-0">
-          <div className="relative w-32 h-32">
+          <div className="relative w-24 h-24 md:w-32 md:h-32">
             <svg className="transform -rotate-90" width="128" height="128" viewBox="0 0 128 128">
               {/* Fondo */}
               <circle cx="64" cy="64" r="50" fill="none" stroke={colors.background} strokeWidth="12" />
@@ -847,10 +860,10 @@ function TasksChart({
             
             {/* Centro del donut - texto informativo */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <div className="text-xs text-gray-500 font-medium mb-0.5">Total</div>
-              <div className="text-2xl font-semibold text-gray-900">{total}</div>
+              <div className="text-[10px] md:text-xs text-gray-500 font-medium mb-0.5">Total</div>
+              <div className="text-lg md:text-2xl font-semibold text-gray-900">{total}</div>
               {deltaCompletadas !== 0 && (
-                <div className="text-[10px] text-gray-500 mt-0.5">
+                <div className="text-[9px] md:text-[10px] text-gray-500 mt-0.5">
                   últ. 2 sem:
                   <span className={`font-semibold ml-1 ${deltaCompletadas >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {deltaCompletadas >= 0 ? '+' : ''}{deltaCompletadas}
@@ -866,14 +879,14 @@ function TasksChart({
             if (!seg) return null;
             return (
               <div
-                className="absolute z-50 bg-gray-900 rounded-lg shadow-xl border border-gray-700 p-2 pointer-events-none min-w-[140px]"
+                className="absolute z-50 bg-gray-900 rounded-lg shadow-xl border border-gray-700 p-1.5 md:p-2 pointer-events-none min-w-[120px] md:min-w-[140px]"
                 style={{
                   left: `${tooltipPos.x + 10}px`,
                   top: `${tooltipPos.y - 10}px`,
                   transform: 'translateY(-100%)'
                 }}
               >
-                <div className="text-xs font-semibold text-gray-300 mb-1 capitalize">
+                <div className="text-[10px] md:text-xs font-semibold text-gray-300 mb-1 capitalize">
                   {hoveredSegment === 'enCurso' ? 'En curso' : 
                    hoveredSegment === 'paraValidar' ? 'Para validar' : 
                    hoveredSegment}
@@ -888,7 +901,7 @@ function TasksChart({
         </div>
         
         {/* Panel lateral - resumen accionable */}
-        <div className="flex-1 space-y-3">
+        <div className="flex-1 w-full md:w-auto space-y-3">
           {/* Lista de estados con links */}
           <div className="space-y-2">
             {/* En curso */}
@@ -1276,7 +1289,7 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
   return (
     <div className="space-y-4 w-full">
       {/* Gráfico */}
-      <div className="relative w-full" style={{ height: '380px', width: '100%' }}>
+      <div className="relative w-full h-48 md:h-64 lg:h-[380px]">
         <svg 
           viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`} 
           preserveAspectRatio="xMidYMid meet"
@@ -1309,11 +1322,12 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
                 <text
                   x={paddingLeft - 3.5}
                   y={y + 0.5}
-                  fontSize="2"
+                  fontSize="1.8"
                   fill="#9CA3AF"
                   textAnchor="end"
                   dominantBaseline="middle"
                   fontWeight="300"
+                  className="text-[8px] md:text-[10px]"
                 >
                   {value}
                 </text>
@@ -1349,7 +1363,7 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           
           {/* Línea vertical para semana actual con label (solo si está en el rango visible) */}
           {semanaActual > 0 && semanasParaGrafico.includes(semanaActual) && (
-            <g>
+            <g key="semana-actual">
               <line
                 x1={paddingLeft + ((semanasParaGrafico.indexOf(semanaActual)) / Math.max(semanasParaGrafico.length - 1, 1)) * chartWidth}
                 y1={paddingTop}
@@ -1452,22 +1466,21 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           />
           
           {/* Resaltar semana hovered (desde presupuesto) - solo si no es un hito */}
-          {hoveredSemana && !hoveredHito && semanasParaGrafico.includes(hoveredSemana) && (
-            (() => {
-              const index = semanasParaGrafico.indexOf(hoveredSemana);
-              const punto = puntosTareas[index];
-              if (!punto) return null;
-              return (
-                <circle
-                  cx={punto.x}
-                  cy={punto.y}
-                  r="6"
-                  fill="#3B82F6"
-                  opacity="0.2"
-                />
-              );
-            })()
-          )}
+          {hoveredSemana && !hoveredHito && semanasParaGrafico.includes(hoveredSemana) && (() => {
+            const index = semanasParaGrafico.indexOf(hoveredSemana);
+            const punto = puntosTareas[index];
+            if (!punto) return null;
+            return (
+              <circle
+                key={`hovered-${hoveredSemana}`}
+                cx={punto.x}
+                cy={punto.y}
+                r="6"
+                fill="#3B82F6"
+                opacity="0.2"
+              />
+            );
+          })()}
           
           {/* Hitos de obra (milestones) - marcadores circulares azules/violetas */}
           {puntosHitos.map((hito, index) => {
@@ -1499,7 +1512,7 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           
           {/* Flecha de tendencia sobre el último tramo */}
           {ultimosTramos.length === 2 && (
-            <g>
+            <g key="flecha-tendencia">
               <path
                 d={`M ${ultimosTramos[0].x} ${ultimosTramos[0].y} L ${ultimosTramos[1].x} ${ultimosTramos[1].y}`}
                 stroke={tieneAceleracion ? "#16a34a" : "#ef4444"}
@@ -1876,7 +1889,8 @@ function BudgetChart({
   const maxValorEjecutado = Math.max(...datosFiltrados.map(d => d.ejecutado), 0);
   const maxValor = Math.max(maxValorProyectado, maxValorEjecutado, 1);
   const maxValorConMargen = maxValor * 1.1; // 10% de margen superior
-  const alturaMax = 150; // Altura fija del área de barras
+  // Altura base: se ajusta con CSS responsive (120px mobile, 150px desktop)
+  // Usaremos clases Tailwind para la altura del contenedor
   
   // Calcular valores del eje Y en miles de pesos (redondeados hacia arriba)
   // Asegurar que el máximo redondeado sea al menos 10k para visualización clara
@@ -1896,10 +1910,15 @@ function BudgetChart({
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   
+  // Altura base responsive: 120px mobile, 150px desktop (se ajusta con CSS)
+  // Usamos valores fijos basados en breakpoints
+  const alturaMax = 150; // Desktop por defecto
+  const alturaMaxMobile = 120; // Mobile
+  
   return (
     <div className="space-y-4">
       {/* KPIs arriba */}
-      <div className="grid grid-cols-5 gap-4 text-xs mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 text-[10px] md:text-xs mb-3 md:mb-4">
         <div>
           <div className="text-gray-500 mb-1">Total aprobado</div>
           <div className="font-semibold text-gray-900">{formatCurrency(totalProyectado)}</div>
@@ -1923,9 +1942,9 @@ function BudgetChart({
       </div>
       
       {/* Gráfico de barras semanales - escala coherente desde 0 */}
-      <div className="relative h-48 w-full overflow-visible" id="budget-chart-container">
+      <div className="relative h-[120px] md:h-[140px] lg:h-[192px] w-full overflow-visible" id="budget-chart-container">
         {/* Eje Y con valores en miles de pesos - 0 abajo, máximo arriba */}
-        <div className="absolute left-0 top-0 bottom-7 w-14 flex flex-col justify-between pr-2 pointer-events-none">
+        <div className="absolute left-0 top-0 bottom-5 md:bottom-7 w-10 md:w-14 flex flex-col justify-between pr-1 md:pr-2 pointer-events-none">
           {valoresY.slice().reverse().map((valor, idx) => (
             <div 
               key={`y-${valor}-${idx}`} 
@@ -1934,7 +1953,7 @@ function BudgetChart({
                 alignItems: idx === 0 ? 'flex-end' : idx === valoresY.length - 1 ? 'flex-start' : 'center'
               }}
             >
-              <div className="text-[9px] text-gray-500 font-medium">
+              <div className="text-[9px] md:text-[10px] text-gray-500 font-medium">
                 ${(valor / 1000).toFixed(0)}k
               </div>
               <div className="w-2 h-px bg-gray-200 ml-1" />
@@ -1943,20 +1962,20 @@ function BudgetChart({
         </div>
         
         {/* Contenedor de barras con área del gráfico */}
-        <div className="ml-14 mr-2 h-full px-2 pb-7 relative">
-          {/* Área de gráfico con altura fija para las barras */}
-          <div className="relative" style={{ height: `${alturaMax - 25}px` }}>
+        <div className="ml-10 md:ml-14 mr-1 md:mr-2 h-full px-1 md:px-2 pb-5 md:pb-7 relative">
+          {/* Área de gráfico con altura responsive para las barras */}
+          {/* Altura: 100px mobile, 125px desktop (alturaMax - padding) */}
+          <div className="relative h-[100px] md:h-[125px]">
             {/* Líneas de referencia horizontales del eje Y */}
             {valoresY.map((valor, idx) => {
               // Calcular posición desde abajo: 0 = bottom, maxValorRedondeado = top
               const porcentajeDesdeAbajo = (valor / maxValorRedondeado) * 100;
-              const posicionDesdeBottom = (porcentajeDesdeAbajo / 100) * (alturaMax - 25);
               return (
                 <div
                   key={`grid-${valor}-${idx}`}
                   className="absolute left-0 right-0 h-px bg-gray-100 z-0"
                   style={{
-                    bottom: `${posicionDesdeBottom}px`
+                    bottom: `${porcentajeDesdeAbajo}%`
                   }}
                 />
               );
@@ -1966,13 +1985,14 @@ function BudgetChart({
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-400 z-10" />
             
             {/* Contenedor de barras: distribuidas horizontalmente, todas alineadas desde abajo */}
-            <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-1.5" style={{ height: `${alturaMax - 25}px` }}>
+            <div className="absolute bottom-0 left-0 right-0 top-0 flex items-end justify-between gap-1 md:gap-1.5">
               {datosFiltrados.map((dato, index) => {
                 // ESCALA UNIFICADA: ambas barras usan la misma escala desde 0 hasta maxValorRedondeado
                 // Domain: [0, maxValorRedondeado]
-                const alturaDisponible = alturaMax - 25;
-                const alturaProyectado = (dato.proyectado / maxValorRedondeado) * alturaDisponible;
-                const alturaEjecutado = (dato.ejecutado / maxValorRedondeado) * alturaDisponible;
+                // Altura se calcula como porcentaje del contenedor
+                // Altura en porcentaje del contenedor (100% = maxValorRedondeado)
+                const alturaProyectadoPct = (dato.proyectado / maxValorRedondeado) * 100;
+                const alturaEjecutadoPct = (dato.ejecutado / maxValorRedondeado) * 100;
                 
                 const sinEjecucion = dato.ejecutado === 0 && !(dato as any).esFutura;
                 const esFutura = (dato as any).esFutura;
@@ -1981,8 +2001,7 @@ function BudgetChart({
                 return (
                   <div 
                     key={dato.semana}
-                    className="flex-1 flex flex-col items-center justify-end group relative transition-all cursor-pointer"
-                    style={{ height: `${alturaDisponible}px` }}
+                    className="flex-1 flex flex-col items-center justify-end group relative transition-all cursor-pointer h-full"
                     onClick={() => {
                       // Handler mock: navegar a detalle de movimientos escrow
                       console.log(`Click en semana ${dato.semana} - Ver movimientos escrow`);
@@ -2026,8 +2045,8 @@ function BudgetChart({
                     <div 
                       className="w-full relative rounded-t transition-all"
                       style={{ 
-                        height: `${alturaProyectado}px`,
-                        minHeight: alturaProyectado > 0 ? '3px' : '0px',
+                        height: `${alturaProyectadoPct}%`,
+                        minHeight: alturaProyectadoPct > 0 ? '3px' : '0px',
                         opacity: esHovered ? 1 : 0.85
                       }}
                     >
@@ -2046,8 +2065,8 @@ function BudgetChart({
                             sinEjecucion ? 'bg-gray-400/30' : 'bg-green-500'
                           }`}
                           style={{ 
-                            height: `${alturaEjecutado}px`,
-                            minHeight: alturaEjecutado > 0 ? '2px' : '0px',
+                            height: dato.proyectado > 0 ? `${(alturaEjecutadoPct / alturaProyectadoPct) * 100}%` : '0%',
+                            minHeight: alturaEjecutadoPct > 0 ? '2px' : '0px',
                             opacity: esHovered ? 1 : (sinEjecucion ? 0.4 : 0.9)
                           }}
                         />
@@ -2085,7 +2104,7 @@ function BudgetChart({
                   className={`flex-1 text-center ${mostrar ? '' : 'invisible'}`}
                 >
                   {mostrar && (
-                    <span className={`text-[10px] leading-none font-medium ${esFutura ? 'text-gray-400 italic' : 'text-gray-500'}`}>
+                    <span className={`text-[9px] md:text-[10px] leading-none font-medium ${esFutura ? 'text-gray-400 italic' : 'text-gray-500'}`}>
                       {esFutura ? `S${dato.semana}*` : `S${dato.semana}`}
                     </span>
                   )}
@@ -2098,7 +2117,7 @@ function BudgetChart({
         {/* Tooltip mejorado - siempre visible al hover */}
         {hoveredIndex !== null && tooltipPos && datosFiltrados[hoveredIndex] && (
           <div
-            className="absolute z-50 bg-gray-900 rounded-lg shadow-2xl border border-gray-700 p-3 pointer-events-none min-w-[200px]"
+            className="absolute z-50 bg-gray-900 rounded-lg shadow-2xl border border-gray-700 p-2 md:p-3 pointer-events-none min-w-[160px] md:min-w-[200px]"
             style={{
               left: typeof tooltipPos.x === 'number' && tooltipPos.x > 100 
                 ? `${tooltipPos.x}px` 
@@ -2116,10 +2135,10 @@ function BudgetChart({
               e.stopPropagation();
             }}
           >
-            <div className="text-xs font-semibold text-gray-300 mb-2">
+            <div className="text-[10px] md:text-xs font-semibold text-gray-300 mb-1.5 md:mb-2">
               Semana {datosFiltrados[hoveredIndex].semana}
             </div>
-            <div className="space-y-1.5 text-xs">
+            <div className="space-y-1 md:space-y-1.5 text-[10px] md:text-xs">
               {(datosFiltrados[hoveredIndex] as any).esFutura ? (
                 <>
                   <div className="flex items-center justify-between gap-4">
@@ -2296,22 +2315,22 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
 
   return (
     <div>
-      <div className="bg-blue-50/30 rounded-xl p-8 mb-6 border border-blue-100/50 shadow-sm">
-        <h1 className="text-4xl font-semibold text-gray-900 mb-2 tracking-tight">Bienvenido a Grows</h1>
-        <p className="text-base text-gray-700 font-normal">Desde acá gestionás tus obras, tareas y presupuesto</p>
+      <div className="bg-blue-50/30 rounded-xl p-4 md:p-6 lg:p-8 mb-4 md:mb-6 border border-blue-100/50 shadow-sm">
+        <h1 className="text-xl md:text-2xl lg:text-4xl font-semibold text-gray-900 mb-2 tracking-tight">Bienvenido a Grows</h1>
+        <p className="text-sm md:text-base text-gray-700 font-normal">Desde acá gestionás tus obras, tareas y presupuesto</p>
       </div>
 
-      <div className="mb-6">
-        <div className="bg-emerald-50/60 border-l-2 border-emerald-400/60 pl-4 py-2.5 rounded-r-lg">
-          <p className="text-sm font-normal text-gray-700">Todo está bajo control · Última actividad hace 3 días</p>
+      <div className="mb-4 md:mb-6">
+        <div className="bg-emerald-50/60 border-l-2 border-emerald-400/60 pl-3 md:pl-4 py-2 md:py-2.5 rounded-r-lg">
+          <p className="text-xs md:text-sm font-normal text-gray-700">Todo está bajo control · Última actividad hace 3 días</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
-        <div className="space-y-6 w-full min-w-0">
-          <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
-            <h3 className="text-xs font-bold text-gray-900 mb-4 uppercase tracking-wide">Tus obras</h3>
-            <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 md:gap-6 lg:gap-8">
+        <div className="space-y-4 md:space-y-5 lg:space-y-6 w-full min-w-0">
+          <div className="bg-white rounded-xl p-4 md:p-5 border border-gray-200 shadow-sm">
+            <h3 className="text-xs font-bold text-gray-900 mb-3 md:mb-4 uppercase tracking-wide">Tus obras</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {mockData.obras.map((obra: any) => {
                 const esSeleccionada = obraSeleccionada === obra.id;
                 const estadoColor = obra.estado === 'ACTIVA' ? 'emerald' : obra.estado === 'PAUSADA' ? 'amber' : obra.estado === 'FINALIZADA' ? 'blue' : 'red';
@@ -2320,13 +2339,13 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
                   <button
                     key={obra.id}
                     onClick={() => setObraSeleccionada(obra.id)}
-                    className={`p-3.5 rounded-lg border text-left transition-all ${
+                    className={`p-4 md:p-3.5 rounded-lg border text-left transition-all min-h-[64px] md:min-h-0 ${
                       esSeleccionada 
                         ? 'border-blue-400 bg-blue-50/50 shadow-sm ring-1 ring-blue-200' 
                         : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
                     }`}
                   >
-                    <p className={`text-xs font-semibold mb-2 truncate leading-tight ${esSeleccionada ? 'text-gray-900' : 'text-gray-800'}`}>
+                    <p className={`text-sm md:text-xs font-semibold mb-2 truncate leading-tight ${esSeleccionada ? 'text-gray-900' : 'text-gray-800'}`}>
                       {obra.name}
                     </p>
                     <div className="flex items-center gap-1.5">
@@ -2336,7 +2355,7 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
                         estadoColor === 'blue' ? 'bg-blue-500' :
                         'bg-red-500'
                       }`} />
-                      <span className="text-[10px] font-medium text-gray-600">
+                      <span className="text-xs md:text-[10px] font-medium text-gray-600">
                         {estadoTexto}
                       </span>
                     </div>
@@ -2347,11 +2366,11 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
           </div>
 
           {/* Selector global de período */}
-          <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm mb-5">
-            <div className="flex items-center justify-between">
+          <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-200 shadow-sm mb-4 md:mb-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
               <div>
                 <h4 className="text-xs font-semibold text-gray-700 mb-1">Período de análisis</h4>
-                <p className="text-xs text-gray-500">Afecta todos los gráficos del dashboard</p>
+                <p className="text-[10px] md:text-xs text-gray-500">Afecta todos los gráficos del dashboard</p>
               </div>
               <PeriodSelector
                 rangoTemporal={rangoTemporalCompartido}
@@ -2361,17 +2380,19 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
                   actividadActual.tareasCompletadasPorSemana?.length || 22
                 )}
                 onPeriodChange={setRangoTemporalCompartido}
+                size="small"
+                className="w-full md:w-auto"
               />
             </div>
           </div>
 
           {/* Tareas y Presupuesto (arriba) */}
-          <div className="grid grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm col-span-1">
-              <div className="flex items-center justify-between mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
+            <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm lg:col-span-1">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 mb-3 md:mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">Tareas</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Estado y avance de tareas</p>
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-900">Tareas</h3>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Estado y avance de tareas</p>
                 </div>
                 {/* Badge de período (solo lectura) */}
                 {(() => {
@@ -2399,11 +2420,11 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
                 }}
               />
             </div>
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm col-span-2">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm lg:col-span-2">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 mb-3 md:mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900">Ejecución presupuestaria</h3>
-                  <p className="text-xs text-gray-500 mt-0.5">Presupuesto aprobado vs ejecutado por semana</p>
+                  <h3 className="text-xs md:text-sm font-semibold text-gray-900">Ejecución presupuestaria</h3>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Presupuesto aprobado vs ejecutado por semana</p>
                 </div>
                 {/* Badge de período (solo lectura) */}
                 {(() => {
@@ -2432,17 +2453,17 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
           </div>
 
           {/* Actividad de la obra (abajo, ancho completo) */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm w-full">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm w-full">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-3 md:mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-900">Actividad de la obra</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Evolución del avance real vs planificado</p>
+                <h3 className="text-xs md:text-sm font-semibold text-gray-900">Actividad de la obra</h3>
+                <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Evolución del avance real vs planificado</p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
                 {/* Indicador arriba a la derecha: tareas acumuladas */}
                 <div className="text-right">
-                  <div className="text-2xl font-semibold text-gray-900">{actividadActual.tareasCompletadasPorSemana[actividadActual.tareasCompletadasPorSemana.length - 1]?.completadas || 0}</div>
-                  <div className="text-xs text-gray-500">tareas acumuladas</div>
+                  <div className="text-xl md:text-2xl font-semibold text-gray-900">{actividadActual.tareasCompletadasPorSemana[actividadActual.tareasCompletadasPorSemana.length - 1]?.completadas || 0}</div>
+                  <div className="text-[10px] md:text-xs text-gray-500">tareas acumuladas</div>
                 </div>
                 
                 {/* Badge de período (solo lectura) */}
@@ -2470,9 +2491,15 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
           </div>
         </div>
 
-        <div className="lg:sticky lg:top-8 h-fit space-y-3">
+        {/* Sidebar Actions solo en desktop */}
+        <div className="hidden lg:block lg:sticky lg:top-8 h-fit space-y-3">
           <SidebarActions router={router} handleCrearObra={handleCrearObra} handleCrearTarea={handleCrearTarea} />
         </div>
+      </div>
+      
+      {/* Acciones en mobile - al final del contenido */}
+      <div className="lg:hidden mt-6">
+        <SidebarActions router={router} handleCrearObra={handleCrearObra} handleCrearTarea={handleCrearTarea} />
       </div>
     </div>
   );
@@ -2482,6 +2509,8 @@ export default function ClienteDashboardPage() {
   const router = useRouter();
   const currentUser = useCurrentUser();
   const [activeSection, setActiveSection] = useState('home');
+  const deviceType = useDeviceType();
+  const isMobile = deviceType === 'mobile';
 
   const normalizedRole = useMemo(
     () => normalizeRole(currentUser?.role),
@@ -2546,12 +2575,29 @@ export default function ClienteDashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-secundario">
-      <SidebarClienteTecnico
+      {/* Sidebar solo en desktop */}
+      {!isMobile && (
+        <SidebarClienteTecnico
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+        />
+      )}
+
+      {/* TopBar solo en mobile/tablet */}
+      <TopBarMobile
         activeSection={activeSection}
         onSectionChange={setActiveSection}
       />
 
-      <div className="ml-[220px] flex-1 p-8">{renderSection()}</div>
+      <div className={`
+        flex-1 w-full
+        ${isMobile ? 'ml-0 pt-14 pb-20 p-4' : 'ml-[220px] p-4 md:p-6 lg:p-8'}
+      `}>
+        {renderSection()}
+      </div>
+
+      {/* TabBar solo en mobile */}
+      <TabBarMobile activeSection={activeSection} />
     </div>
   );
 }

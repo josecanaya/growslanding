@@ -61,18 +61,18 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-5 py-4">
-          <div>
-            <h2 className="text-lg font-semibold" style={{ color: '#003C6E' }}>
+    <div className="space-y-4 md:space-y-6">
+      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
               Datos básicos
             </h2>
-            <p className="text-sm text-gray-600">Completá la información inicial del proyecto</p>
+            <p className="text-xs md:text-sm text-gray-600">Completá la información inicial del proyecto</p>
           </div>
           {id && (
             <div
-              className="rounded-md px-3 py-1 text-sm font-semibold"
+              className="rounded-md px-2 md:px-3 py-1 text-xs md:text-sm font-semibold flex-shrink-0"
               style={{ backgroundColor: '#E6EEF7', color: '#003C6E' }}
             >
               ID: #{id}
@@ -80,36 +80,36 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
           )}
         </div>
 
-        <div className="grid gap-6 p-5 md:grid-cols-2">
+        <div className="grid gap-4 md:gap-6 p-3 md:p-4 lg:p-5 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-medium text-gray-800">Dirección</label>
+            <label className="text-xs md:text-sm font-medium text-gray-800">Dirección</label>
             <DireccionAutocomplete value={direccion ?? ''} onChange={handleDireccionChange} />
             <button
               type="button"
               onClick={() => setIsMapModalOpen(true)}
-              className="mt-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="mt-2 w-full md:w-auto rounded-lg border border-gray-300 px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 transition hover:bg-gray-50 min-h-[44px]"
             >
               Seleccionar en mapa
             </button>
             {latitud !== undefined && longitud !== undefined && (
-              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-2 md:p-3 text-xs md:text-sm text-green-800 break-all">
                 <span className="font-medium">Coordenadas:</span> {latitud.toFixed(6)}, {longitud.toFixed(6)}
               </div>
             )}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-800">Nombre del dueño</label>
+            <label className="text-xs md:text-sm font-medium text-gray-800">Nombre del dueño</label>
             <input
               value={propietario ?? ''}
               onChange={(e) => setField('propietario', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
               placeholder="Nombre y apellido"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-800">
+            <label className="text-xs md:text-sm font-medium text-gray-800">
               Fecha de inicio estimada <span className="text-red-500">*</span>
             </label>
             <input
@@ -128,17 +128,17 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
                 
                 setField('fecha_inicio_estimada', selectedDate || undefined);
               }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
               placeholder="Seleccioná la fecha estimada de inicio"
             />
             {!fecha_inicio_estimada && (
-              <p className="text-xs text-gray-500">Este campo es obligatorio. La fecha debe ser hoy o futura.</p>
+              <p className="text-[10px] md:text-xs text-gray-500">Este campo es obligatorio. La fecha debe ser hoy o futura.</p>
             )}
           </div>
 
           <div className="space-y-3 md:col-span-2">
-            <label className="text-sm font-medium text-gray-800">Tipo de obra</label>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            <label className="text-xs md:text-sm font-medium text-gray-800">Tipo de obra</label>
+            <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-3">
               {TIPO_OBRA_OPCIONES.map((opt) => {
                 const active = tipoObra === opt.key;
                 return (
@@ -146,11 +146,11 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
                     key={opt.key}
                     type="button"
                     onClick={() => setTipoObra(opt.key)}
-                    className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                    className={`flex items-center gap-2 md:gap-3 rounded-lg md:rounded-xl border px-3 md:px-4 py-2.5 md:py-3 text-left transition min-h-[44px] ${
                       active ? 'border-blue-300 bg-blue-50 shadow-sm' : 'border-gray-300 hover:bg-gray-50'
                     }`}
                   >
-                    <span className="font-medium text-gray-900">{opt.label}</span>
+                    <span className="text-xs md:text-sm font-medium text-gray-900">{opt.label}</span>
                   </button>
                 );
               })}
@@ -158,7 +158,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
 
             {tipoObra === 'Otro' && (
               <input
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
                 placeholder="Especificá el tipo de obra"
                 onChange={(e) => setField('tipoObra', (e.target.value || 'Otro') as TipoObra)}
               />
@@ -166,15 +166,12 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
           </div>
         </div>
 
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="border-t border-gray-100 px-3 md:px-4 lg:px-5 py-3 md:py-4">
           <button
             type="button"
             disabled={!puedeContinuar}
             onClick={onNext}
-            className={`rounded-lg px-6 py-2.5 font-semibold text-white transition $ {puedeContinuar ? '' : 'opacity-60'}`.replace(
-              ' $',
-              ' '
-            )}
+            className={`w-full md:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition min-h-[44px] ${!puedeContinuar ? 'opacity-60 cursor-not-allowed' : ''}`}
             style={{ backgroundColor: '#0055A4' }}
             data-onboarding="crear-obra"
           >

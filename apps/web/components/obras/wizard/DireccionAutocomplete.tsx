@@ -194,27 +194,27 @@ export default function DireccionAutocomplete({
         </div>
       )}
       <div className="relative flex items-center gap-2">
-        <MapPin className="absolute left-3 h-4 w-4 text-gray-400" />
+        <MapPin className="absolute left-3 h-3 w-3 md:h-4 md:w-4 text-gray-400 pointer-events-none z-10" />
         <input
           value={inputValue}
           onChange={handleInputChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder={placeholder}
-          className={cn(BASE_INPUT_CLASSES, 'pl-9', className)}
+          className={cn(BASE_INPUT_CLASSES, 'pl-8 md:pl-9 text-sm min-h-[44px]', className)}
         />
-        {isRequesting && <Loader2 className="absolute right-3 h-4 w-4 animate-spin text-gray-400" />}
+        {isRequesting && <Loader2 className="absolute right-3 h-3 w-3 md:h-4 md:w-4 animate-spin text-gray-400 pointer-events-none" />}
       </div>
 
       {predictions.length > 0 && (
-        <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
+        <div className="absolute z-50 mt-2 w-full max-h-[200px] overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white shadow-xl">
           <ul>
             {predictions.map((prediction) => (
               <li
                 key={prediction.place_id}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => handlePredictionClick(prediction)}
-                className="cursor-pointer px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+                className="cursor-pointer px-3 py-2 text-xs md:text-sm text-gray-700 transition hover:bg-gray-50 min-h-[44px] flex items-center break-words"
               >
                 {prediction.description}
               </li>

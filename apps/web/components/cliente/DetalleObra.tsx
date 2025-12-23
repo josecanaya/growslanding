@@ -767,12 +767,12 @@ export function DetalleObra({
 
   return (
     <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 md:p-4 lg:p-6">
         {/* Header Principal */}
-        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#E6F2FF', borderColor: '#B3D9FF'}}>
-          <div className="px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+        <div className="rounded-xl shadow-sm border mb-4 md:mb-6" style={{backgroundColor: '#E6F2FF', borderColor: '#B3D9FF'}}>
+          <div className="px-3 md:px-4 lg:px-6 py-4 md:py-5 lg:py-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-0">
+              <div className="flex items-center space-x-2 md:space-x-4 min-w-0 flex-1">
                 <button
                   onClick={onVolver}
                   className="p-2 rounded-lg transition-all duration-300 ease-in-out"
@@ -788,35 +788,35 @@ export function DetalleObra({
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div>
-                  <h1 className="text-2xl font-bold" style={{color: '#1B263B'}}>
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-lg md:text-xl lg:text-2xl font-bold truncate" style={{color: '#1B263B'}}>
                     {obra.cliente ? obra.cliente.toUpperCase() : 'SIN CLIENTE'} {obra.tipoObra ? `(${obra.tipoObra})` : ''}
                   </h1>
-                  <div className="flex items-center space-x-4 mt-2 text-sm" style={{color: '#4a4e57'}}>
+                  <div className="flex flex-col md:flex-row md:items-center md:space-x-3 lg:space-x-4 gap-1 md:gap-0 mt-2 text-xs md:text-sm" style={{color: '#4a4e57'}}>
                     <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4" />
-                      <span>Cliente: {obra.cliente || 'No especificado'}</span>
+                      <Users className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                      <span className="truncate">Cliente: {obra.cliente || 'No especificado'}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Building className="h-4 w-4" />
-                      <span>Tipo: {obra.tipoObra ? obra.tipoObra.charAt(0).toUpperCase() + obra.tipoObra.slice(1) : 'No especificado'}</span>
+                      <Building className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                      <span className="truncate">Tipo: {obra.tipoObra ? obra.tipoObra.charAt(0).toUpperCase() + obra.tipoObra.slice(1) : 'No especificado'}</span>
                     </div>
                     <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4" />
+                      <Calendar className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
                       <span>Inicio: {new Date(obra.fechaInicio).toLocaleDateString('es-AR')}</span>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="text-right">
-                  <div className="text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
-                  <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
+              <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 flex-shrink-0">
+                <div className="text-right md:text-left">
+                  <div className="text-xl md:text-2xl lg:text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
+                  <div className="text-xs md:text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
                 </div>
                 <div className="flex space-x-2">
                   <button 
                     onClick={handleAbrirModalEditar}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
+                    className="flex items-center space-x-1 md:space-x-2 px-2 md:px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out text-xs md:text-sm"
                     style={{backgroundColor: '#1B263B', color: 'white'}}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = '#162033';
@@ -825,8 +825,9 @@ export function DetalleObra({
                       e.currentTarget.style.backgroundColor = '#1B263B';
                     }}
                   >
-                    <Edit3 className="h-4 w-4" />
-                    <span>Editar información</span>
+                    <Edit3 className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="hidden md:inline">Editar información</span>
+                    <span className="md:hidden">Editar</span>
                   </button>
                   <button className="p-2 rounded-lg transition-all duration-300 ease-in-out" style={{color: '#5b5f6a'}} onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#f5f7fa';
@@ -845,9 +846,9 @@ export function DetalleObra({
         </div>
 
         {/* Tabs de Navegación */}
-        <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
+        <div className="rounded-xl shadow-sm border mb-4 md:mb-6" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
           <div style={{borderBottomColor: '#dce3ea'}} className="border-b">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-2 md:space-x-4 lg:space-x-8 px-3 md:px-4 lg:px-6 overflow-x-auto scrollbar-hide">
               {[
                 { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                 { key: 'elementos', label: 'Elementos', icon: Layers },
@@ -856,7 +857,7 @@ export function DetalleObra({
                 <button
                   key={key}
                   onClick={() => setVistaActual(key as any)}
-                  className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ease-in-out ${
+                  className={`flex items-center space-x-1 md:space-x-2 py-3 md:py-4 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm transition-all duration-300 ease-in-out flex-shrink-0 ${
                     vistaActual === key
                       ? 'border-b-2'
                       : 'border-transparent'
@@ -876,7 +877,7 @@ export function DetalleObra({
                     }
                   }}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3 w-3 md:h-4 md:w-4" />
                   <span>{label}</span>
                 </button>
               ))}
@@ -936,9 +937,9 @@ export function DetalleObra({
 
         {/* Modal Editar Información */}
         {showModalEditar && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 md:p-4">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-4 md:p-6">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold" style={{color: '#1B263B'}}>Editar información de obra</h2>
                   <button

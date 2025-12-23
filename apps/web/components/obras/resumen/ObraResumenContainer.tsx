@@ -362,17 +362,17 @@ export default function ObraResumenContainer({
   const plantaParaAcciones = pisoSeleccionado ?? defaultPlantaId;
 
   return (
-    <div className="space-y-6 bg-[#F8FAFC] p-6 lg:p-8">
-      <div className="grid gap-6 lg:grid-cols-12">
-        <div className="space-y-6 lg:col-span-5">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]" data-onboarding="plantas-proyecto">
+    <div className="space-y-4 md:space-y-6 bg-[#F8FAFC] p-3 md:p-4 lg:p-6 xl:p-8">
+      <div className="grid gap-4 md:gap-6 lg:grid-cols-12">
+        <div className="space-y-4 md:space-y-6 lg:col-span-5">
+          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]" data-onboarding="plantas-proyecto">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">Plantas del proyecto</h3>
-              <span className="text-xs font-medium text-slate-500">
+              <h3 className="text-xs md:text-sm font-semibold text-slate-700">Plantas del proyecto</h3>
+              <span className="text-[10px] md:text-xs font-medium text-slate-500">
                 {plantasActivas} activas
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-[10px] md:text-xs text-slate-500">
               Seleccioná una planta para ver indicadores y métricas específicas.
             </p>
             <div className="mt-4">
@@ -386,7 +386,7 @@ export default function ObraResumenContainer({
 
         </div>
 
-        <div className="space-y-6 lg:col-span-7">
+        <div className="space-y-4 md:space-y-6 lg:col-span-7">
           <KpiPanel
             global={{
               metrosTotales: totalMetrosTotales,
@@ -400,26 +400,26 @@ export default function ObraResumenContainer({
             }}
           />
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#0052CC]" />
-              <h3 className="text-sm font-semibold text-slate-700">Actividad reciente</h3>
+              <Activity className="h-3 w-3 md:h-4 md:w-4 text-[#0052CC]" />
+              <h3 className="text-xs md:text-sm font-semibold text-slate-700">Actividad reciente</h3>
             </div>
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
               {actividadReciente.length === 0 ? (
-                <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-4 text-sm text-slate-500">
+                <p className="rounded-lg md:rounded-xl border border-dashed border-slate-200 bg-slate-50 px-2 md:px-3 py-3 md:py-4 text-xs md:text-sm text-slate-500">
                   Aún no se registraron actividades recientes en esta obra.
                 </p>
               ) : (
                 actividadReciente.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
-                    <div className="mt-1 flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 text-[#0052CC]">
-                      <Activity className="h-4 w-4" />
+                  <div key={item.id} className="flex items-start gap-2 md:gap-3 rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 px-2 md:px-3 py-2 md:py-3">
+                    <div className="mt-0.5 md:mt-1 flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg md:rounded-xl bg-blue-100 text-[#0052CC] flex-shrink-0">
+                      <Activity className="h-3 w-3 md:h-4 md:w-4" />
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700">{item.titulo}</p>
-                      <p className="text-xs text-slate-500">{item.detalle}</p>
-                      <p className="text-[11px] text-slate-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs md:text-sm font-semibold text-slate-700 truncate">{item.titulo}</p>
+                      <p className="text-[10px] md:text-xs text-slate-500 truncate">{item.detalle}</p>
+                      <p className="text-[9px] md:text-[11px] text-slate-400">
                         {new Date(item.timestamp).toLocaleDateString('es-AR')} · {item.usuario}
                       </p>
                     </div>
@@ -429,9 +429,9 @@ export default function ObraResumenContainer({
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm" data-onboarding="acciones-rapidas">
-            <h3 className="text-sm font-semibold text-slate-700">Acciones rápidas</h3>
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm" data-onboarding="acciones-rapidas">
+            <h3 className="text-xs md:text-sm font-semibold text-slate-700">Acciones rápidas</h3>
+            <div className="mt-3 md:mt-4 flex flex-col gap-2 md:gap-3 sm:flex-row">
               <Button
                 className="flex-1 rounded-xl bg-[#0052CC] text-white hover:bg-[#0044a8]"
                 onClick={() => onAbrirElementos?.(plantaParaAcciones)}

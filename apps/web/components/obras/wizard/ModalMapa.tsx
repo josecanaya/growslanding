@@ -212,14 +212,14 @@ export default function ModalMapa({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent className="sm:max-w-3xl bg-white">
+      <DialogContent className="sm:max-w-3xl bg-white max-w-[calc(100vw-2rem)] mx-4">
         <DialogHeader>
-          <DialogTitle>Selecciona la ubicacion</DialogTitle>
-          <DialogDescription>Arrastra el pin al punto exacto y confirma para guardar la direccion.</DialogDescription>
+          <DialogTitle className="text-base md:text-lg">Selecciona la ubicacion</DialogTitle>
+          <DialogDescription className="text-xs md:text-sm">Arrastra el pin al punto exacto y confirma para guardar la direccion.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3">
-          <div ref={mapContainerRef} className="h-80 w-full rounded-lg border border-gray-200 bg-white overflow-hidden" />
+          <div ref={mapContainerRef} className="h-64 md:h-80 w-full rounded-lg border border-gray-200 bg-white overflow-hidden" />
           {(isLoadingMap || isGeocoding) && (
             <p className="text-sm text-gray-500">Cargando mapa...</p>
           )}
@@ -231,11 +231,11 @@ export default function ModalMapa({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 py-2.5 text-xs md:text-sm font-medium text-gray-700 transition hover:bg-gray-50 min-h-[44px]"
           >
             Cancelar
           </button>
@@ -243,7 +243,7 @@ export default function ModalMapa({
             type="button"
             onClick={handleConfirm}
             disabled={!position}
-            className="rounded-lg bg-[#0052CC] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#003E99] disabled:opacity-60"
+            className="w-full sm:w-auto rounded-lg bg-[#0052CC] px-4 py-2.5 text-xs md:text-sm font-semibold text-white transition hover:bg-[#003E99] disabled:opacity-60 min-h-[44px]"
           >
             Confirmar ubicacion
           </button>

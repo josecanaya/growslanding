@@ -88,6 +88,15 @@
   .m-grows-xl { margin: 2rem; }
 
   .transition-smooth { transition: all 0.3s ease-in-out; }
+
+  /* Ocultar scrollbar pero mantener funcionalidad */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }
 
 /* Animación de inicio de tarea - Efecto tipo "Uber Start Trip" (Dorado) */
@@ -136,4 +145,25 @@
   30%  { background-color: rgba(34, 197, 94, 0.7); } /* Verde fuerte con opacidad */
   60%  { background-color: rgba(134, 239, 172, 0.5); } /* Verde suave con opacidad */
   100% { background-color: rgba(255, 255, 255, 0); }
+}
+
+/* Animaciones sutiles para "Trabajos para hoy" */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

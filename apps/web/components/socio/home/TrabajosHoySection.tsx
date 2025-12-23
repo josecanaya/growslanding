@@ -111,8 +111,11 @@ export function TrabajosHoySection() {
   if (loading) {
     return (
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">Trabajos para hoy</h2>
-        <Card className="border border-gray-200">
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-green-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Trabajos para hoy</h2>
+        </div>
+        <Card className="border-2 border-green-300 bg-green-50">
           <CardContent className="p-4">
             <div className="space-y-2 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-3/4" />
@@ -132,11 +135,20 @@ export function TrabajosHoySection() {
   }
 
   return (
-    <div className="space-y-3">
-      <h2 className="text-lg font-semibold text-gray-900">Trabajos para hoy</h2>
+    <div className="space-y-3 opacity-0 animate-[fadeIn_0.5s_ease-in-out_forwards]">
+      {/* Título con ícono */}
+      <div className="flex items-center gap-2">
+        <Clock className="h-5 w-5 text-green-600" />
+        <h2 className="text-lg font-semibold text-gray-900">Trabajos para hoy</h2>
+      </div>
+      
+      {/* Card verde suave con animación */}
       <div className="space-y-3">
         {trabajosAMostrar.map((trabajo) => (
-          <Card key={trabajo.id} className="border border-gray-200 shadow-sm">
+          <Card 
+            key={trabajo.id} 
+            className="border-2 border-green-300 bg-green-50 shadow-sm opacity-0 animate-[fadeInSlide_0.4s_ease-out_0.1s_forwards]"
+          >
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
@@ -162,9 +174,9 @@ export function TrabajosHoySection() {
                 <Button
                   onClick={() => router.push('/socio/ahora')}
                   size="sm"
-                  className="bg-[#276EF1] hover:bg-[#1E56D9] text-white text-xs h-8"
+                  className="bg-green-600 hover:bg-green-700 text-white text-xs h-9 px-4 shadow-md"
                 >
-                  <Play className="h-3 w-3 mr-1" />
+                  <Play className="h-4 w-4 mr-1.5" fill="currentColor" />
                   Continuar
                 </Button>
               </div>

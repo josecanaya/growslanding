@@ -1,11 +1,14 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useWallet } from '@/lib/hooks/useWallet';
 import { SaldoCard } from '@/components/socio/billetera/SaldoCard';
 import { MovimientosList } from '@/components/socio/billetera/MovimientosList';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function BilleteraPage() {
+  const router = useRouter();
   const { saldo, movimientos, loading, error } = useWallet();
 
   if (loading && !saldo) {
@@ -47,6 +50,19 @@ export default function BilleteraPage() {
             loading={loading}
           />
         )}
+
+        {/* Botón secundario para ver ganancias */}
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/socio/ganancias')}
+            className="text-sm text-gray-600 border-gray-300 hover:bg-gray-50"
+          >
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Ver ganancias semanales
+          </Button>
+        </div>
 
         <MovimientosList
           movimientos={movimientos}

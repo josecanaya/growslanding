@@ -152,27 +152,27 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="rounded-2xl bg-gray-50 px-5 py-4">
-          <h2 className="text-lg font-semibold" style={{ color: '#003C6E' }}>
+    <div className="space-y-4 md:space-y-6">
+      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
+        <div className="rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
+          <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
             <span data-onboarding="cargar-elementos">Carga de elementos</span>
           </h2>
-          <p className="text-sm text-gray-600">Agregá elementos constructivos a la obra (opcional)</p>
+          <p className="text-xs md:text-sm text-gray-600">Agregá elementos constructivos a la obra (opcional)</p>
         </div>
 
-        <div className="p-5">
+        <div className="p-3 md:p-4 lg:p-5">
           {/* Mensaje de error */}
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-              <p className="text-sm text-red-700">{error}</p>
+            <div className="mb-3 md:mb-4 rounded-lg border border-red-200 bg-red-50 p-2 md:p-3">
+              <p className="text-xs md:text-sm text-red-700">{error}</p>
             </div>
           )}
 
           {/* Resumen de la obra */}
-          <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <h3 className="mb-3 text-sm font-semibold text-gray-800">Resumen de la obra:</h3>
-            <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 md:grid-cols-2">
+          <div className="mb-4 md:mb-6 rounded-lg border border-gray-200 bg-gray-50 p-3 md:p-4">
+            <h3 className="mb-2 md:mb-3 text-xs md:text-sm font-semibold text-gray-800">Resumen de la obra:</h3>
+            <div className="grid grid-cols-1 gap-2 text-xs md:text-sm text-gray-600 md:grid-cols-2">
               <div><span className="font-medium">Tipo:</span> {tipoObra || 'No especificado'}</div>
               <div><span className="font-medium">Propietario:</span> {propietario || 'No especificado'}</div>
               <div className="md:col-span-2"><span className="font-medium">Dirección:</span> {direccion || 'No especificada'}</div>
@@ -203,20 +203,20 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
 
           {/* Mensaje de éxito y botón para agregar elementos */}
           {obraCreadaId && (
-            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-green-800 mb-1">
+            <div className="mb-4 md:mb-6 rounded-lg border border-green-200 bg-green-50 p-3 md:p-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs md:text-sm font-semibold text-green-800 mb-1">
                     ¡Obra creada exitosamente!
                   </h3>
-                  <p className="text-sm text-green-700">
+                  <p className="text-xs md:text-sm text-green-700">
                     Ahora podés agregar elementos constructivos a tu obra.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAgregarElementos}
-                  className="rounded-lg px-6 py-2.5 font-semibold text-white transition hover:opacity-90"
+                  className="w-full md:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition hover:opacity-90 min-h-[44px] flex-shrink-0"
                   style={{ backgroundColor: '#0055A4' }}
                 >
                   Agregar elementos
@@ -228,12 +228,12 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
 
         <div className="border-t border-gray-100" />
 
-        <div className="flex items-center justify-center gap-3 p-5">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 p-3 md:p-4 lg:p-5">
           <button
             type="button"
             onClick={onPrev}
             disabled={isSaving}
-            className="rounded-lg border border-gray-300 px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 md:px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
           >
             Atrás
           </button>
@@ -242,7 +242,7 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
             type="button"
             onClick={handleGuardarObra}
             disabled={isSaving || !currentUser?.orgId}
-            className="rounded-lg px-6 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
             style={{ backgroundColor: '#0055A4' }}
           >
             {isSaving ? 'Guardando...' : 'Guardar obra'}

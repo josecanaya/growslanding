@@ -338,6 +338,7 @@ export function ObrasListContainer() {
       nombre: obra.nombre,
       localizacion: obra.localizacion ?? '',
       fecha_inicio: obra.fecha_inicio ?? '',
+      fecha_inicio_estimada: (obra as any).fecha_inicio_estimada ?? '',
       presupuesto: obra.presupuesto?.toString() ?? '',
       descripcion: obra.descripcion ?? '',
     });

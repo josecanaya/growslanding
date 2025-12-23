@@ -180,14 +180,12 @@ export function TareasSection() {
   useEffect(() => {
     const cargarObras = async () => {
       if (!currentUser?.orgId) {
-        console.log('[TareasSection] No hay orgId disponible');
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        console.log('[TareasSection] Cargando obras para orgId:', currentUser.orgId);
         
         // Obtener obras - usar los mismos nombres de columnas que funcionan en ObrasSection
         const { data: obrasData, error: obrasError } = await supabase
@@ -198,20 +196,13 @@ export function TareasSection() {
 
         // Verificar si hay error
         if (obrasError) {
-          console.error('[TareasSection] Error cargando obras:', obrasError);
-          console.error('[TareasSection] Detalles completos del error:', JSON.stringify(obrasError, null, 2));
-          console.error('[TareasSection] Tipo de error:', typeof obrasError);
-          console.error('[TareasSection] orgId del usuario:', currentUser.orgId);
           setObras([]);
           setLoading(false);
           return;
         }
 
-        console.log('[TareasSection] Obras obtenidas:', obrasData?.length || 0);
-
         // Si no hay datos, simplemente no hay obras
         if (!obrasData || obrasData.length === 0) {
-          console.log('[TareasSection] No hay obras disponibles para este usuario');
           setObras([]);
           setLoading(false);
           return;
@@ -226,7 +217,6 @@ export function TareasSection() {
               .eq('obra_id', obra.id);
 
             if (tareasError) {
-              console.error(`Error cargando tareas para obra ${obra.id}:`, tareasError);
               return { ...obra, tareas: [] };
             }
 
@@ -274,7 +264,6 @@ export function TareasSection() {
 
         setObras(obrasFormateadas);
       } catch (error) {
-        console.error('Error en cargarObras:', error);
         setObras([]);
       } finally {
         setLoading(false);
@@ -329,7 +318,6 @@ export function TareasSection() {
           .order('created_at', { ascending: false });
 
         if (tareasError) {
-          console.error('[TareasSection] Error cargando tareas:', tareasError);
           setTareas([]);
           setOrganizaPrecedencias((prev) => ({
             ...prev,
@@ -436,7 +424,6 @@ export function TareasSection() {
             .order('created_at', { ascending: true });
 
           if (precedenciasError) {
-            console.error('[TareasSection] Error cargando precedencias:', precedenciasError);
             precedenciasMap = {};
           } else if (data) {
             precedenciasData = data;
@@ -488,7 +475,6 @@ export function TareasSection() {
 
         setTareas(tareasFormateadas);
       } catch (error) {
-        console.error('[TareasSection] Error en cargarTareas:', error);
         setTareas([]);
       } finally {
         setLoadingTareas(false);
@@ -727,7 +713,6 @@ export function TareasSection() {
                           ? 'bg-blue-50 text-blue-700 shadow-inner'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
-                      data-onboarding={tab.id === 'asignar' ? 'tab-asignar' : tab.id === 'organiza' ? 'cargar-elementos' : undefined}
                     >
                       <Icon className="h-4 w-4" />
                       <span>{tab.label}</span>

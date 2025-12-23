@@ -295,10 +295,10 @@ export async function POST(
           if (nuevasTareas.length > 0) {
             // Usar fechas del ExpansorElementos o calcular si no están disponibles
             const fechaInicioBase = new Date();
-            const tareasInsert = nuevasTareas.map((t, index) => {
-              // Usar fechas del ExpansorElementos si están disponibles, sino calcular
-              let fechaInicioEstimada: Date;
-              let fechaFinEstimada: Date;
+          const tareasInsert = nuevasTareas.map((t, index) => {
+            // Usar fechas del ExpansorElementos si están disponibles, sino calcular
+            let fechaInicioEstimada: Date;
+            let fechaFinEstimada: Date;
               
               if (t.fechaInicio && t.fechaFin) {
                 fechaInicioEstimada = new Date(t.fechaInicio);
@@ -311,19 +311,23 @@ export async function POST(
                 fechaFinEstimada.setDate(fechaFinEstimada.getDate() + t.tiempoEstimado);
               }
 
-              return {
-                org_id: obra.org_id,
-                obra_id: elementoCompleto.obra_id,
-                elemento_id: elementoCompleto.id,
-                title: t.nombre,
-                etapa: t.fase ?? null,
-                descripcion: `${t.nombre} para ${elementoCompleto.nombre}`,
-                estado: 'pendiente',
-                prioridad: 'MEDIA',
-                avance: 0,
-                fecha_inicio_estimada: fechaInicioEstimada.toISOString(),
-                fecha_fin_estimada: fechaFinEstimada.toISOString(),
-              };
+            const bloquesPlanificados = Math.max(1, Math.round(t.tiempoEstimado || 1));
+
+            return {
+              org_id: obra.org_id,
+              obra_id: elementoCompleto.obra_id,
+              elemento_id: elementoCompleto.id,
+              title: t.nombre,
+              etapa: t.fase ?? null,
+              descripcion: `${t.nombre} para ${elementoCompleto.nombre}`,
+              estado: 'pendiente' as const,
+              prioridad: 'MEDIA',
+              avance: 0,
+              bloques_planificados: bloquesPlanificados,
+              dias_presupuesto: bloquesPlanificados,
+              fecha_inicio_estimada: fechaInicioEstimada.toISOString(),
+              fecha_fin_estimada: fechaFinEstimada.toISOString(),
+            };
             });
 
             console.log('[POST_ELEMENTOS] Payload de inserción (primeras 3):', tareasInsert.slice(0, 3).map(t => ({
@@ -390,4 +394,3 @@ export async function POST(
     );
   }
 }
-

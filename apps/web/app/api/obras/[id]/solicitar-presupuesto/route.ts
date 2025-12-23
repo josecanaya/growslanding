@@ -15,6 +15,7 @@ const schema = z.object({
   tareaIds: z.array(z.string().uuid()).min(1),
   socioId: z.string().uuid(),
   notas: z.string().optional(),
+  bloques: z.number().int().min(1).max(365).optional(),
 });
 
 /**
@@ -137,6 +138,17 @@ export async function POST(
       );
     }
 
+    if (payload.bloques && payload.bloques > 0) {
+      const { error: bloquesError } = await supabase
+        .from('tareas')
+        .update({ bloques_planificados: payload.bloques })
+        .in('id', payload.tareaIds);
+
+      if (bloquesError) {
+        console.warn('[SOLICITAR_PRESUPUESTO] Error actualizando bloques planificados:', bloquesError);
+      }
+    }
+
     // Verificar si ya existen solicitudes pendientes para evitar duplicados
     const { data: existentes, error: existentesError } = await supabase
       .from('tareas_presupuestos')
@@ -160,10 +172,11 @@ export async function POST(
 
     if (tareasNuevas.length === 0) {
       // Obtener nombres de las tareas y del socio para el mensaje
+      const tareasExistentesArray = Array.from(tareasExistentes).filter((id): id is string => id !== null && id !== undefined);
       const { data: tareasInfo } = await supabase
         .from('tareas')
         .select('id, title')
-        .in('id', Array.from(tareasExistentes));
+        .in('id', tareasExistentesArray);
       
       const nombresTareas = (tareasInfo || []).map(t => t.title || 'Tarea sin título').join(', ');
       const nombreSocio = socio.nombre || 'este socio';
@@ -250,7 +263,7 @@ export async function POST(
 
     const { data: presupuestosCreados, error: insertError } = await supabase
       .from('tareas_presupuestos')
-      .insert(presupuestosInsert)
+      .insert(presupuestosInsert as any)
       .select('id');
 
     if (insertError) {
@@ -356,4 +369,3 @@ export async function POST(
     }, { status: statusCode });
   }
 }
-

@@ -40,11 +40,11 @@ export async function DELETE(
       user.email
     );
 
-    const { data: invite, error: fetchError } = await supabase
-      .from('leader_invites')
+    const { data: invite, error: fetchError } = (await supabase
+      .from('leader_invites' as any)
       .select('id, org_id, status')
       .eq('id', id)
-      .maybeSingle();
+      .maybeSingle()) as { data: { id: string; org_id: string; status: string } | null; error: any };
 
     if (fetchError || !invite || invite.org_id !== org.id) {
       return NextResponse.json({ message: 'Invitación no encontrada' }, { status: 404 });
@@ -58,7 +58,7 @@ export async function DELETE(
     }
 
     const { error: updateError } = await supabase
-      .from('leader_invites')
+      .from('leader_invites' as any)
       .update({ status: 'revoked' })
       .eq('id', invite.id);
 

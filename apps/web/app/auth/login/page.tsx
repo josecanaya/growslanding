@@ -134,6 +134,13 @@ function LoginPageContent() {
       return;
     }
 
+    if (errorParam === 'oauth_retry') {
+      // Error silencioso de PKCE - la sesión puede estar funcionando, no mostrar error
+      // Solo limpiar el mensaje y continuar normalmente
+      setStatusMessage(null);
+      return;
+    }
+
     if (errorParam) {
       setStatusMessage('No se pudo validar tu sesion. Intenta nuevamente.');
       return;

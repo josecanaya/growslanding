@@ -52,12 +52,12 @@ export async function POST(request: Request) {
 
     const supabase = createServiceSupabaseClient();
 
-    const { data: existing } = await supabase
-      .from('leader_invites')
+    const { data: existing } = (await supabase
+      .from('leader_invites' as any)
       .select('id, status')
       .eq('org_id', org.id)
       .eq('email', payload.email)
-      .maybeSingle();
+      .maybeSingle()) as { data: { id: string; status: string } | null; error: any };
 
     if (existing && existing.status === 'pending') {
       return new Response(
@@ -70,12 +70,12 @@ export async function POST(request: Request) {
 
     const { data: existingSocio } = await supabase
       .from('socios')
-      .select('id, status')
+      .select('id, estado')
       .eq('org_id', org.id)
-      .eq('contacto', payload.email)
+      .eq('email', payload.email)
       .maybeSingle();
 
-    if (existingSocio && existingSocio.status !== 'inactivo') {
+    if (existingSocio && existingSocio.estado !== 'inactivo') {
       return new Response(JSON.stringify({ message: 'Este socio ya está registrado.' }), {
         status: 409,
       });

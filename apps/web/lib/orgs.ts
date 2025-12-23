@@ -3,17 +3,16 @@ import { createServiceSupabaseClient } from './supabase-server';
 type OrgRecord = {
   id: string;
   name: string;
-  owner_user_id: string | null;
-  onboarding_completed: boolean;
+  user_id: string | null;
 };
 
 export async function ensureOrgForUser(userId: string, fallbackName: string) {
   const supabase = createServiceSupabaseClient();
 
   const { data: existing, error: fetchError } = await supabase
-    .from('orgs')
-    .select('id, name, owner_user_id, onboarding_completed')
-    .eq('owner_user_id', userId)
+    .from('organizations')
+    .select('id, name, user_id')
+      .eq('user_id', userId)
     .maybeSingle();
 
   if (fetchError) {
@@ -26,13 +25,12 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
 
   const defaultName = fallbackName || 'Organización sin nombre';
   const { data, error } = await supabase
-    .from('orgs')
+    .from('organizations')
     .insert({
       name: defaultName,
-      owner_user_id: userId,
-      onboarding_completed: false,
+      user_id: userId,
     })
-    .select('id, name, owner_user_id, onboarding_completed')
+    .select('id, name, user_id')
     .single();
 
   if (error) {
@@ -50,9 +48,9 @@ export async function resolveOrgContext(
   const supabase = createServiceSupabaseClient();
 
   const { data: ownerOrg } = await supabase
-    .from('orgs')
-    .select('id, name, owner_user_id, onboarding_completed')
-    .eq('owner_user_id', userId)
+    .from('organizations')
+        .select('id, name, user_id')
+      .eq('user_id', userId)
     .maybeSingle();
 
   if (ownerOrg) {
@@ -61,18 +59,20 @@ export async function resolveOrgContext(
 
   if (email) {
     const { data: invite } = await supabase
-      .from('leader_invites')
+      .from('leader_invites' as any)
       .select('org_id')
       .eq('email', email)
       .eq('status', 'accepted')
       .order('created_at', { ascending: false })
       .maybeSingle();
 
-    if (invite?.org_id) {
+      const inviteRecord = invite as unknown as { org_id: string } | null;
+
+      if (inviteRecord?.org_id) {
       const { data: org } = await supabase
-        .from('orgs')
-        .select('id, name, owner_user_id, onboarding_completed')
-        .eq('id', invite.org_id)
+        .from('organizations')
+        .select('id, name, user_id')
+        .eq('id', inviteRecord.org_id)
         .maybeSingle();
 
       if (org) {

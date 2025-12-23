@@ -1,3 +1,4 @@
+// ?? DEPRECATED ? No usar. Reemplazado por servicios Supabase.
 // @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import { 
@@ -15,6 +16,7 @@ import {
 } from '../schemas';
 import { createServiceSupabaseClient } from '../supabase-server';
 import { WalletService } from './wallet.service';
+import { EscrowService } from './escrow.service';
 
 type PrismaWithLegacy = PrismaClient & {
   miembroOrganizacion?: {
@@ -183,7 +185,9 @@ export class TareaService {
     });
 
     // Generar subtareas automáticamente si no existen
-    await this.generarSubtareasAutomaticas(data.tareaId, organizacionId);
+    await this.generarSubtareasAutomaticas(data.tareaId, organizacionId, {
+      bloquesPreferidos: tarea.bloquesPlanificados ?? undefined,
+    });
 
     return tareaActualizada;
   }
@@ -191,8 +195,11 @@ export class TareaService {
   /**
    * Genera subtareas automáticamente desde tareas_presupuesto
    */
-  static async generarSubtareasAutomaticas(tareaId: string, organizacionId: string) {
-    // Verificar si ya existen subtareas
+  static async generarSubtareasAutomaticas(
+    tareaId: string,
+    organizacionId: string,
+    opciones?: { bloquesPreferidos?: number }
+  ) {
     const supabase = createServiceSupabaseClient();
     const { data: subtareasExistentes } = await supabase
       .from('tareas_subtareas')
@@ -201,81 +208,117 @@ export class TareaService {
       .limit(1);
 
     if (subtareasExistentes && subtareasExistentes.length > 0) {
-      // Ya existen subtareas, no generar
       return;
     }
 
-    // Obtener presupuesto de la tarea desde Supabase
     const { data: presupuesto, error: presupuestoError } = await supabase
       .from('tareas_presupuestos')
-      .select('cantidad, unidad, dias_reales, notas')
+      .select('id, cantidad, unidad, dias_reales, notas, monto, socio_id')
       .eq('tarea_id', tareaId)
+      .eq('estado', 'APROBADO')
       .maybeSingle();
 
     if (presupuestoError || !presupuesto) {
-      console.warn(`[GENERAR_SUBTAREAS] No se encontró presupuesto para tarea ${tareaId}`);
+      console.warn('[GENERAR_SUBTAREAS] No se encontró presupuesto para tarea ' + tareaId);
       return;
     }
 
-    const { cantidad, unidad, dias_reales, notas } = presupuesto;
-    
-    // Intentar obtener dias_reales de notas si no viene directamente
+    const { data: tareaConfigurada } = await supabase
+      .from('tareas')
+      .select('bloques_planificados')
+      .eq('id', tareaId)
+      .maybeSingle();
+
+    const { cantidad, unidad, dias_reales, notas, monto } = presupuesto;
+    let evidenciaObligatoria = true;
+
     let dias = dias_reales;
+    let bloquesNotas: number | undefined;
     if (!dias && notas) {
       try {
         const notasParsed = typeof notas === 'string' ? JSON.parse(notas) : notas;
         dias = notasParsed?.dias_reales || notasParsed?.dias;
+        if (typeof notasParsed?.bloques === 'number') {
+          bloquesNotas = notasParsed.bloques;
+        }
+        if (typeof notasParsed?.bloques_planificados === 'number') {
+          bloquesNotas = notasParsed.bloques_planificados;
+        }
+        if (typeof notasParsed?.evidencia_obligatoria === 'boolean') {
+          evidenciaObligatoria = notasParsed.evidencia_obligatoria;
+        }
       } catch {
-        // Si no se puede parsear, usar null
+        // Ignorar notas que no puedan parsearse
       }
     }
-    
-    if (!cantidad || !dias || dias <= 0) {
-      console.warn(`[GENERAR_SUBTAREAS] Datos inválidos: cantidad=${cantidad}, dias_reales=${dias}`);
-      return;
+
+    const configuracionBloques =
+      opciones?.bloquesPreferidos ??
+      bloquesNotas ??
+      tareaConfigurada?.bloques_planificados ??
+      dias;
+
+    const totalBloques = Math.max(
+      1,
+      Math.ceil(
+        configuracionBloques ||
+          (cantidad ? Math.min(Math.ceil(Number(cantidad)), 365) : 1)
+      )
+    );
+
+    if (!cantidad && monto == null && !dias) {
+      console.warn('[GENERAR_SUBTAREAS] No hay datos suficientes para generar subtareas para tarea ' + tareaId);
     }
 
-    // Calcular rendimiento diario
-    const rendimientoDiario = cantidad / dias;
-    const subtareas: any[] = [];
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
+    const subtareas: any[] = [];
 
-    // Generar subtareas para cada día
-    for (let i = 1; i <= dias; i++) {
+    const cantidadTotal = typeof cantidad === 'number' ? Number(cantidad) : null;
+    const montoTotal = typeof monto === 'number' ? Number(monto) : null;
+    const cantidadBase = cantidadTotal != null ? cantidadTotal / totalBloques : null;
+    const montoBase = montoTotal != null ? montoTotal / totalBloques : null;
+    let acumuladoCantidad = 0;
+    let acumuladoMonto = 0;
+
+    for (let i = 1; i <= totalBloques; i++) {
       const fechaSubtarea = new Date(hoy);
       fechaSubtarea.setDate(hoy.getDate() + (i - 1));
-      
+      const esUltimoBloque = i === totalBloques;
+
+      let cantidadBloque: number | null = null;
+      let montoBloque: number | null = null;
+
+      if (cantidadBase != null) {
+        cantidadBloque =
+          esUltimoBloque && cantidadTotal != null
+            ? cantidadTotal - acumuladoCantidad
+            : cantidadBase;
+        acumuladoCantidad += cantidadBloque;
+      }
+
+      if (montoBase != null) {
+        montoBloque =
+          esUltimoBloque && montoTotal != null
+            ? montoTotal - acumuladoMonto
+            : montoBase;
+        acumuladoMonto += montoBloque;
+      }
+
       subtareas.push({
         tarea_id: tareaId,
         orden: i,
-        cantidad: rendimientoDiario,
+        orden_pago: i,
+        cantidad: cantidadBloque,
         unidad: unidad || 'unidades',
         estado: 'pendiente',
         fecha: fechaSubtarea.toISOString().split('T')[0],
         created_at: new Date().toISOString(),
+        monto_estimado: montoBloque,
+        evidencia_obligatoria: evidenciaObligatoria,
       });
     }
 
-    // Verificar si hay leftover
-    const totalGenerado = rendimientoDiario * dias;
-    if (totalGenerado < cantidad) {
-      const leftover = cantidad - totalGenerado;
-      const fechaFinal = new Date(hoy);
-      fechaFinal.setDate(hoy.getDate() + dias);
-      
-      subtareas.push({
-        tarea_id: tareaId,
-        orden: dias + 1,
-        cantidad: leftover,
-        unidad: unidad || 'unidades',
-        estado: 'pendiente',
-        fecha: fechaFinal.toISOString().split('T')[0],
-        created_at: new Date().toISOString(),
-      });
-    }
-
-    // Insertar subtareas masivamente
     const { error: insertError } = await supabase
       .from('tareas_subtareas')
       .insert(subtareas);
@@ -285,7 +328,7 @@ export class TareaService {
       throw new Error('Error al generar subtareas automáticamente');
     }
 
-    console.log(`[GENERAR_SUBTAREAS] Generadas ${subtareas.length} subtareas para tarea ${tareaId}`);
+    console.log('[GENERAR_SUBTAREAS] Generadas ' + subtareas.length + ' subtareas para tarea ' + tareaId);
   }
 
   /**
@@ -362,10 +405,19 @@ export class TareaService {
       },
     });
 
-    // Si se valida la tarea, crear pago y movimientos de wallet
+    // Si se valida la tarea, procesar pago (escrow o efectivo)
     if (data.estadoNuevo === 'VALIDADA') {
       await this.crearPagoAutomatico(data.tareaId, actorId);
-      await this.crearMovimientosWallet(data.tareaId, organizacionId);
+      
+      // Intentar liberar fondos de escrow si existe
+      // Si no hay escrow, asume pago en efectivo y usa la lógica anterior
+      const escrowResult = await EscrowService.liberarFondosPorTarea(data.tareaId, actorId);
+      
+      // Si no se liberó escrow (no había), usar lógica de efectivo
+      if (!escrowResult.liberado) {
+        await this.crearMovimientosWallet(data.tareaId, organizacionId);
+      }
+      // Si se liberó escrow, ya se registró el pago dentro de liberarFondosPorTarea()
     }
 
     return tareaActualizada;
@@ -656,12 +708,12 @@ export class TareaService {
   }
 
   /**
-   * Crea movimientos de wallet cuando se valida una tarea
+   * Crea movimientos de wallet cuando se valida una tarea (pago en efectivo)
+   * Usa WalletService.registrarPagoPorTarea con metodoPago: 'EFECTIVO'
    */
   private static async crearMovimientosWallet(tareaId: string, organizacionId: string) {
     try {
       const supabase = createServiceSupabaseClient();
-
       const supabaseAny = supabase as any;
 
       // 1. Obtener presupuesto aprobado de la tarea desde Supabase
@@ -685,7 +737,7 @@ export class TareaService {
         return;
       }
 
-      // 2. Obtener org_id desde la tarea (verificar que sea correcto)
+      // 2. Obtener org_id desde la tarea
       const { data: tarea, error: tareaError } = await supabaseAny
         .from('tareas')
         .select('org_id')
@@ -699,70 +751,17 @@ export class TareaService {
 
       const orgId = tarea.org_id || organizacionId;
 
-      // 3. Obtener plan de la organización desde Supabase
-      const { data: organizacion, error: orgError } = await supabaseAny
-        .from('organizaciones')
-        .select('plan_actual')
-        .eq('id', orgId)
-        .maybeSingle();
+      // 3. Registrar pago usando el servicio centralizado (pago en efectivo)
+      await WalletService.registrarPagoPorTarea({
+        tareaId,
+        socioId,
+        orgId,
+        montoTotal,
+        metodoPago: 'EFECTIVO',
+        presupuestoId: presupuesto.id,
+      });
 
-      if (orgError || !organizacion) {
-        console.warn('[WALLET] No se pudo obtener plan de organización:', orgId);
-        // Continuar con plan por defecto
-      }
-
-      const plan = organizacion?.plan_actual || 'FREE';
-
-      // 4. Calcular comisión según plan
-      let porcentajeComision = 0.15; // FREE: 15% por defecto
-
-      if (plan === 'PRO') {
-        porcentajeComision = 0.075; // 7.5%
-      } else if (plan === 'ENTERPRISE') {
-        porcentajeComision = 0.03; // 3%
-      }
-      // FREE o cualquier otro: 15%
-
-      const comisionGROWS = montoTotal * porcentajeComision;
-      const montoSocio = montoTotal - comisionGROWS;
-
-      // 5. Crear movimientos de wallet usando el servicio
-      try {
-        // CRÉDITO al socio (monto total - comisión)
-        await WalletService.crearCredito({
-          owner_tipo: 'SOCIO',
-          owner_id: socioId,
-          monto: montoSocio,
-          concepto: `Pago por tarea validada`,
-          tarea_id: tareaId,
-          presupuesto_id: presupuesto.id,
-        });
-
-        // DÉBITO por comisión al socio
-        await WalletService.crearDebito({
-          owner_tipo: 'SOCIO',
-          owner_id: socioId,
-          monto: comisionGROWS,
-          concepto: `Comisión GROWS (${(porcentajeComision * 100).toFixed(1)}%)`,
-          tarea_id: tareaId,
-          presupuesto_id: presupuesto.id,
-        });
-
-        // CRÉDITO a la organización (comisión)
-        await WalletService.crearCredito({
-          owner_tipo: 'ORG',
-          owner_id: orgId,
-          monto: comisionGROWS,
-          concepto: `Comisión GROWS - Tarea ${tareaId}`,
-          tarea_id: tareaId,
-          presupuesto_id: presupuesto.id,
-        });
-
-        console.log('[WALLET] Movimientos creados exitosamente para tarea:', tareaId);
-      } catch (walletError) {
-        console.error('[WALLET] Error creando movimientos:', walletError);
-        // No lanzar error para no interrumpir el flujo de validación
-      }
+      console.log('[WALLET] Movimientos creados exitosamente para tarea (efectivo):', tareaId);
     } catch (error) {
       console.error('[WALLET] Error creando movimientos de wallet:', error);
       // No lanzar error para no interrumpir el flujo de validación

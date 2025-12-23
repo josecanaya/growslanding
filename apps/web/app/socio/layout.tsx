@@ -18,6 +18,7 @@ export default function SocioLayout({
   const pathname = usePathname();
   const currentUser = useCurrentUser();
   const isAhoraPage = pathname?.startsWith('/socio/ahora');
+  const isHomePage = pathname === '/socio' || pathname === '/socio/';
 
   useEffect(() => {
     if (!currentUser || currentUser.isDevUser) {
@@ -37,8 +38,8 @@ export default function SocioLayout({
 
       {/* Contenido principal con padding para header y footer */}
       <main className="flex-1 overflow-y-auto pt-[70px] pb-[90px]">
-        {isAhoraPage ? (
-          // Para /socio/ahora: sin max-width, full width
+        {isAhoraPage || isHomePage ? (
+          // Para /socio/ahora y /socio (HOME): sin max-width, full width
           <div className="w-full">
             {children}
           </div>

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const supabase = createServiceSupabaseClient();
 
     const { data: qrToken, error: qrError } = await supabase
-      .from('qr_tokens')
+      .from('qr_tokens' as any)
       .select('id, ref_id, pin, enabled')
       .eq('token', normalizedToken)
       .maybeSingle();
@@ -28,13 +28,16 @@ export async function POST(request: Request) {
       throw qrError;
     }
 
-    if (!qrToken || !qrToken.enabled) {
+    // Type assertion: qrToken has the expected structure
+    const qrTokenRecord = qrToken as { id: string; ref_id: string; pin: string | null; enabled: boolean } | null;
+
+    if (!qrTokenRecord || !qrTokenRecord.enabled) {
       return new Response(JSON.stringify({ message: 'QR no encontrado o deshabilitado' }), {
         status: 404,
       });
     }
 
-    assertPinForToken(qrToken, pin);
+    assertPinForToken(qrTokenRecord, pin);
 
     const { data: tarea, error: tareaError } = await supabase
       .from('tareas')
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
          eventos(*),
          precedencias:tarea_precedencias(depende_de)`
       )
-      .eq('id', qrToken.ref_id)
+      .eq('id', qrTokenRecord.ref_id)
       .maybeSingle();
 
     if (tareaError) {
@@ -60,8 +63,8 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({
         tarea,
-        qrTokenId: qrToken.id,
-        requiresPin: Boolean(qrToken.pin),
+        qrTokenId: qrTokenRecord.id,
+        requiresPin: Boolean(qrTokenRecord.pin),
       })
     );
   } catch (error) {

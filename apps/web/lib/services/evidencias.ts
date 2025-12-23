@@ -80,7 +80,7 @@ export async function fetchEvidenciasPorSocioYObra(
       id: mediaItem.id,
       path: mediaItem.path,
       kind: mediaItem.kind,
-      created_at: mediaItem.created_at,
+      created_at: mediaItem.created_at || new Date().toISOString(),
       tarea_id: evento.tarea_id,
       tarea_nombre: tarea.title || null,
       obra_id: tarea.obra_id,

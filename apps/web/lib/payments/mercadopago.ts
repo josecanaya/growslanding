@@ -5,12 +5,13 @@ import { PLAN_CARDS } from "@/lib/subscriptions/plans";
 
 let MercadoPagoConfig: typeof import("mercadopago").MercadoPagoConfig | null =
   null;
-let PreApproval: typeof import("mercadopago/resources/preapproval").default | null =
-  null;
+let PreApproval: any = null;
+let Preference: any = null;
+let Payment: any = null;
 let mercadopagoPromise: Promise<typeof import("mercadopago")> | null = null;
 
 async function loadMercadoPagoModules() {
-  if (MercadoPagoConfig && PreApproval) {
+  if (MercadoPagoConfig && PreApproval && Preference && Payment) {
     return;
   }
 
@@ -21,6 +22,8 @@ async function loadMercadoPagoModules() {
   const mercadopago = await mercadopagoPromise;
   MercadoPagoConfig = mercadopago.MercadoPagoConfig;
   PreApproval = mercadopago.PreApproval;
+  Preference = mercadopago.Preference;
+  Payment = mercadopago.Payment;
 }
 
 export function isMercadoPagoConfigured() {
@@ -133,4 +136,134 @@ export async function cancelSubscriptionInMercadoPago(
   } as never);
 
   return { success: true, simulated: false };
+}
+
+// ===========================================
+// FUNCIONES PARA ESCROW DE TAREAS
+// ===========================================
+
+export type TaskEscrowPreferenceInput = {
+  tareaId: string;
+  socioId: string;
+  orgId: string;
+  clienteId?: string;
+  montoTotal: number;
+  moneda: string;
+  descripcion: string;
+};
+
+export type TaskEscrowPreferenceOutput = {
+  preferenceId: string;
+  checkoutUrl: string;
+  sandboxCheckoutUrl?: string;
+  raw?: any;
+};
+
+/**
+ * Crea una preferencia de pago única para una tarea (escrow)
+ * Usa Preference de MercadoPago (no PreApproval, que es para suscripciones)
+ */
+export async function createTaskEscrowPreference(
+  input: TaskEscrowPreferenceInput
+): Promise<TaskEscrowPreferenceOutput> {
+  if (!isMercadoPagoConfigured()) {
+    // Modo simulado para desarrollo
+    return {
+      preferenceId: `sim-pref-${randomUUID()}`,
+      checkoutUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pago-simulado`,
+    };
+  }
+
+  await loadMercadoPagoModules();
+
+  if (!MercadoPagoConfig || !Preference) {
+    throw new Error("Mercado Pago SDK no disponible");
+  }
+
+  const config = new MercadoPagoConfig!({
+    accessToken: process.env.MP_ACCESS_TOKEN ?? "",
+  });
+
+  const preferenceClient = new Preference!(config);
+
+  // Construir URL de retorno
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const backUrl = `${baseUrl}/cliente/tareas?escrow_success=true`;
+  const webhookUrl = `${baseUrl}/api/payments/webhook`;
+
+  const payload = {
+    items: [
+      {
+        title: input.descripcion,
+        quantity: 1,
+        unit_price: input.montoTotal,
+        currency_id: input.moneda,
+      },
+    ],
+    external_reference: `tarea-${input.tareaId}`,
+    metadata: {
+      tipo: 'tarea',
+      tareaId: input.tareaId,
+      socioId: input.socioId,
+      orgId: input.orgId,
+      clienteId: input.clienteId || null,
+    },
+    back_urls: {
+      success: backUrl,
+      failure: `${baseUrl}/cliente/tareas?escrow_error=true`,
+      pending: `${baseUrl}/cliente/tareas?escrow_pending=true`,
+    },
+    auto_return: 'approved',
+    notification_url: webhookUrl,
+    statement_descriptor: 'GROWS Tarea',
+  };
+
+  const response = await preferenceClient.create(payload as never);
+
+  const initPoint = (response as any).init_point || null;
+  const sandboxInitPoint = (response as any).sandbox_init_point || null;
+  const preferenceId = (response as any).id || randomUUID();
+
+  return {
+    preferenceId: String(preferenceId),
+    checkoutUrl: initPoint || sandboxInitPoint || '',
+    sandboxCheckoutUrl: sandboxInitPoint || undefined,
+    raw: response,
+  };
+}
+
+/**
+ * Obtiene información de un pago de MercadoPago
+ * Útil para verificar estados desde el webhook
+ */
+export async function getPaymentInfo(
+  paymentId: string
+): Promise<{ status: string; raw?: any } | null> {
+  if (!isMercadoPagoConfigured()) {
+    return { status: 'approved', raw: { simulated: true } };
+  }
+
+  await loadMercadoPagoModules();
+
+  if (!MercadoPagoConfig || !Payment) {
+    throw new Error("Mercado Pago SDK no disponible");
+  }
+
+  const config = new MercadoPagoConfig!({
+    accessToken: process.env.MP_ACCESS_TOKEN ?? "",
+  });
+
+  const paymentClient = new Payment!(config);
+
+  try {
+    const payment = await paymentClient.get({ id: paymentId } as never);
+    const status = (payment as any).status || 'unknown';
+    return {
+      status: String(status),
+      raw: payment,
+    };
+  } catch (error) {
+    console.error('[MP] Error obteniendo información de pago:', error);
+    return null;
+  }
 }

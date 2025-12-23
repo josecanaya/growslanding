@@ -25,6 +25,7 @@ export type WizardState = {
   superficies: { planta: number; cubiertos: number; descubiertos: number }[];
   latitud?: number;
   longitud?: number;
+  fecha_inicio_estimada?: string; // Fecha de inicio estimada de la obra
 };
 
 export type WizardActions = {
@@ -60,6 +61,7 @@ const initialState = (): WizardState => ({
   superficies: [{ planta: 1, cubiertos: 0, descubiertos: 0 }],
   latitud: undefined,
   longitud: undefined,
+  fecha_inicio_estimada: undefined,
 });
 
 export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({

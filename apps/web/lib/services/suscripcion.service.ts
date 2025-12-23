@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// ?? DEPRECATED ? No usar. Reemplazado por servicios Supabase.
 import { PrismaClient } from '@prisma/client';
 
 type PlanSuscripcion = 'STARTER' | 'PRO' | 'ENTERPRISE';

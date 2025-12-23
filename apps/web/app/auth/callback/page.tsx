@@ -73,19 +73,29 @@ function CallbackPageContent() {
             // Si el error es por falta de code_verifier (PKCE), intentar obtener sesión directamente
             const isPkceError = 
               exchangeError.message?.toLowerCase().includes('code verifier') ||
-              exchangeError.message?.toLowerCase().includes('invalid request');
+              exchangeError.message?.toLowerCase().includes('invalid request') ||
+              exchangeError.message?.toLowerCase().includes('both auth code and code verifier');
             
             if (isPkceError) {
+              // Este error puede ocurrir cuando:
+              // 1. El code_verifier no está en localStorage (cookies bloqueadas, modo incógnito, etc.)
+              // 2. Múltiples pestañas intentando autenticar al mismo tiempo
               // Intentar obtener sesión directamente (puede que ya esté autenticado)
               // SOLO UNA VEZ, sin retry
               const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
               if (!sessionErr && sessionData.session) {
-                // Sesión válida encontrada, continuar con el flujo
-                console.log("[OAUTH_CALLBACK] Sesión recuperada después de error PKCE");
+                // Sesión válida encontrada, continuar con el flujo normalmente
+                // No loguear este error ya que la sesión se recuperó correctamente
               } else {
-                // No hay sesión válida, redirigir a login
+                // No hay sesión válida, limpiar URL y reintentar autenticación
+                // Limpiar el código de la URL para evitar loops
                 if (active) {
-                  router.replace("/auth/login?error=oauth_failed" as Route);
+                  const cleanUrl = window.location.pathname + (redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : '');
+                  window.history.replaceState({}, '', cleanUrl);
+                  // Pequeño delay para permitir que Supabase limpie su estado interno
+                  setTimeout(() => {
+                    router.replace("/auth/login?error=oauth_retry" as Route);
+                  }, 500);
                 }
                 return;
               }

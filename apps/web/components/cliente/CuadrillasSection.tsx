@@ -15,8 +15,6 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { BaseCard, Button, EmptyState, SectionLayout } from '@/components/ui/grows';
 import { useToast } from '@/components/ui/use-toast';
 import { Building2, CheckCircle, ClipboardList, TrendingUp, UserCheck, Users, X, Trash2 } from 'lucide-react';
-import { useSubscription } from '@/lib/subscriptions';
-import { canUseFeature, usePlanGate } from '@/lib/permissions';
 import { ObraCard } from '@/components/obras/ui/ObraCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Kanban } from '@/components/cuadrillas/Kanban';
@@ -61,9 +59,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
   const [viewMode, setViewMode] = useState<'obras' | 'general'>('obras');
   const [statsExtras, setStatsExtras] = useState({ socios: 0, pendientes: 0 });
   const supabase = createClientComponentClient<Database>();
-  const { planId } = useSubscription();
-  const { verifyAccess } = usePlanGate();
-  const canUseCuadrillas = canUseFeature(planId, 'cuadrillas');
 
   useEffect(() => {
     if (currentUser?.orgId) {
@@ -97,7 +92,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
 
         setStatsExtras({ socios: total, pendientes });
       } catch (error) {
-        console.warn('[CuadrillasSection] Error cargando stats de socios', error);
         setStatsExtras({ socios: 0, pendientes: 0 });
       }
     };
@@ -122,7 +116,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.error('[CuadrillasSection] Error cargando obras:', error);
           setObras([]);
           return;
         }
@@ -141,7 +134,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
 
         setObras(obrasFormateadas);
       } catch (error) {
-        console.error('[CuadrillasSection] Excepción cargando obras:', error);
         setObras([]);
       } finally {
         setLoadingObras(false);
@@ -189,7 +181,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
           .not('cuadrilla_id', 'is', null);
         
         if (tareasError) {
-          console.error('[CuadrillasSection] Error buscando tareas asignadas:', tareasError);
           setCuadrillasAsignadasReal([]);
           return;
         }
@@ -206,7 +197,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
         
         setCuadrillasAsignadasReal(asignadas);
       } catch (error) {
-        console.error('[CuadrillasSection] Excepción buscando cuadrillas asignadas:', error);
         setCuadrillasAsignadasReal([]);
       }
     };
@@ -332,44 +322,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
     cuadrillasStore.seleccionarCuadrilla(cuadrilla);
     cuadrillasStore.abrirDrawer();
   };
-
-  if (!canUseCuadrillas) {
-    const handleClose = () => onNavigate?.('obras');
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.22),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.55),_transparent_55%)] opacity-80"
-          aria-hidden="true"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
-        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
-            <UserCheck className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-semibold text-zinc-50">Gestión de cuadrillas en plan Starter</h1>
-          <p className="text-sm text-zinc-200">
-            Organizá tus equipos, gestioná asignaciones y controlá cargas operativas al activar el plan Starter o superior.
-          </p>
-          <button
-            type="button"
-            onClick={() => verifyAccess('cuadrillas', 'STARTER')}
-            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
-          >
-            Activar plan Starter
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const progresoGeneral = selectedObra?.progreso ?? 0;
   const fechaInicio = selectedObra?.fecha_inicio || selectedObra?.created_at;
@@ -709,7 +661,6 @@ export function CuadrillasSection({ onNavigate }: CuadrillasSectionProps) {
                 });
               }
             } catch (error) {
-              console.error('[ERROR_INVITAR_SOCIO]', error);
               toast({
                 title: 'Error',
                 description: 'Error al invitar al socio',
@@ -756,7 +707,6 @@ function ModalInvitarSocio({
       });
       // El modal se cierra automáticamente desde onInvitar si es exitoso
     } catch (error) {
-      console.error('[ERROR_MODAL_INVITAR_SOCIO]', error);
       // No cerrar el modal si hay error
     } finally {
       setIsSubmitting(false);

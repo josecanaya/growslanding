@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  MessageCircle,
   Building2,
   Users,
   User,
@@ -13,6 +12,7 @@ import {
   HelpCircle,
   LogOut,
   Wallet,
+  Home,
 } from 'lucide-react';
 
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -64,7 +64,7 @@ export function SidebarClienteTecnico({
   }, []);
 
   const menuItems = [
-    { id: 'chat', label: 'Chat', icon: MessageCircle },
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'obras', label: 'Obras', icon: Building2 },
     { id: 'tareas', label: 'Tareas', icon: ClipboardList },
     { id: 'cuadrillas', label: 'Cuadrillas', icon: Users },
@@ -109,7 +109,14 @@ export function SidebarClienteTecnico({
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => onSectionChange(item.id)}
+                  onClick={() => {
+                    onSectionChange(item.id);
+                    if (item.id === 'home') {
+                      router.push('/cliente/dashboard');
+                    } else {
+                      router.push(`/cliente/dashboard?section=${item.id}`);
+                    }
+                  }}
                   className={`group flex w-full items-center rounded-xl px-4 py-3 text-left font-medium transition-all duration-200 ${
                     isExpanded ? 'gap-3 justify-start' : 'justify-center'
                   } ${

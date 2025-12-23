@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NotificacionService } from '../../../../../lib/services';
+import { NotificacionService } from '@/lib/services/notificacion.service';
 
 export async function POST(
   request: NextRequest,

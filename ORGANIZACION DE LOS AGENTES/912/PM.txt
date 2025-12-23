@@ -1,0 +1,243 @@
+=====================================================
+🚀 GROWS — INFORME PM · CIERRE SEMANA 1 (MVP 1.0)
+Fecha: Semana 1 del Sprint Quincenal
+Responsable PM: José Contrera
+=====================================================
+🧭 Objetivo de la Semana
+
+Dejar estable la base del sistema operativo del MVP 1.0, incluyendo:
+
+FSM final
+
+Subtareas (generación, validación parcial y final)
+
+Wallet con lógica completa de pagos y comisiones
+
+Flujo AHORA del socio operativo
+
+Validación del cliente usable por un usuario real
+
+Evidencias funcionando end-to-end
+
+Reglas de negocio implementadas
+
+✔ Meta alcanzada.
+============================
+🟦 1. BACKEND — Estado Final
+============================
+
+La semana 1 de backend está COMPLETA y operativa.
+
+✅ Logros principales
+
+FSM Tareas: implementada, estricta y estable.
+
+FSM Subtareas: transiciones completas, sin fugas.
+
+Generación automática de subtareas:
+
+Idempotente
+
+Orden de pago correcto
+
+Sin duplicación
+
+Validación parcial:
+
+Evidencia
+
+Pago
+
+Comisión
+
+Cambio de estado
+
+Validación final automática:
+
+Cierre de tarea padre
+
+Registro de evento
+
+Wallet:
+
+Comisiones según plan
+
+Movimientos consistentes
+
+Saldos correctos
+
+Suspensión del socio por saldo negativo
+
+Roles y permisos: SOCIO / CLIENTE funcionando
+
+Legacy Prisma: eliminado
+
+Modelo Supabase: consolidado, limpio y consistente
+
+🟢 Estado PM:
+
+Backend está “MVP-Ready”.
+Puede soportar un piloto real.
+
+==================================
+🟧 2. FRONT CLIENTE — Estado Final
+==================================
+
+La validación del cliente ya es estable y usable por usuarios reales.
+
+✅ Logros principales
+
+UI de validación totalmente funcional
+
+Evidencias visibles y cargadas correctamente
+
+Feedback claro:
+
+Éxito
+
+Error
+
+Rechazo
+
+Modales de confirmación para acciones críticas
+
+Banners según plan (Starter / Pro) correctamente integrados
+
+Eliminación completa de logs
+
+Comportamientos alineados a las reglas del backend
+
+No permite “validación completa” fuera de la lógica por bloques
+
+🟢 Estado PM:
+
+Validación cliente = Lista para producción.
+
+=================================
+🟩 3. FRONT SOCIO — Estado Final
+=================================
+
+El socio ya puede operar una obra real dentro de Grows.
+
+✅ Logros principales
+
+Integración total con FSM real
+
+AHORA funcionando con:
+
+Máx. 2 tareas activas
+
+Tareas pendientes
+
+Progreso por subtarea
+
+Evidencias:
+
+Subida con compresión
+
+Vista dedicada
+
+Errores unificados: toasts + banners
+
+Realtime funcional para tareas y subtareas
+
+Manejo correcto de suspensión por saldo negativo
+
+Funcionamiento estable del flujo diario
+
+🟢 Estado PM:
+
+Front Socio listo para uso real en campo.
+
+============================
+🟦 4. LÓGICA DE NEGOCIO
+============================
+
+Todas las reglas críticas del MVP ya están implementadas.
+
+Incluye:
+
+Planes Free / Pro / Enterprise
+
+Comisiones finales
+
+Límite de obras por plan
+
+Tope de saldo negativo ($50.000)
+
+Suspensión automática
+
+Regla de 2 tareas activas del socio
+
+Reglas de bloques (unidad de pago)
+
+FSM completa
+
+Flujo AHORA final
+
+🟢 Estado PM:
+
+Negocio congelado — no se modifica más en esta quincena.
+
+======================================
+🧱 5. ESTADO GLOBAL DEL MVP 1.0 HOY
+======================================
+Módulo	Estado	Comentarios
+Backend	🟢 Completo	Listo para pruebas reales
+Front Socio	🟢 Completo Semana 1	AHORA + Evidencias 100% operativos
+Front Cliente	🟢 Completo Semana 1	Validación perfecta
+Lógica de Negocio	🟢 Finalizada	Reglas aplicadas en todo el sistema
+
+El núcleo del producto ya funciona.
+Falta integración final y mejoras de estabilidad → Semana 2.
+
+==================================
+🔥 6. RIESGOS PM (post semana 1)
+==================================
+Riesgo 1 — Diferencias mínimas de forma entre front/back
+
+Mitigación: Pruebas cruzadas en los días 13–14.
+
+Riesgo 2 — Usuarios reales pueden exigir refinamiento
+
+Mitigación: Documentación + onboarding claro en piloto.
+
+Riesgo 3 — Realtime depende de Supabase
+
+Mitigación: fallback a recarga suave cada X segundos.
+
+=========================================
+📅 7. SIGUIENTES PASOS (SEMANA 2)
+=========================================
+
+Realtime consolidado (Socio)
+
+Jornadas + Ganancias
+
+Banners finales
+
+Revisión de permisos
+
+Separación backend definitiva
+
+QA cruzado (cliente ↔ socio ↔ backend)
+
+Preparación del Test Piloto
+
+=====================================================
+⭐ CONCLUSIÓN PM — SEMANA 1 COMPLETADA
+=====================================================
+
+Todo lo planificado para Semana 1 se cumplió y se superó.
+
+Grows ya tiene:
+
+Un backend sólido
+
+Un socio capaz de operar en obra
+
+Un cliente capaz de validar sin errores
+
+Reglas de negocio ejecutándose al 100%
+
+➡ Estamos en posición ideal para ejecutar Semana 2 y preparar el Test Piloto real.

@@ -25,6 +25,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const direccion = useWizardStore((s) => s.direccion);
   const latitud = useWizardStore((s) => s.latitud);
   const longitud = useWizardStore((s) => s.longitud);
+  const fecha_inicio_estimada = useWizardStore((s) => s.fecha_inicio_estimada);
   const setField = useWizardStore((s) => s.setField);
   const ensureId = useWizardStore((s) => s.ensureId);
   const setTipoObra = useWizardStore((s) => s.setTipoObra);
@@ -38,8 +39,9 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
     const prop = (propietario ?? '').trim();
-    return dir.length > 3 && prop.length > 2 && !!tipoObra;
-  }, [direccion, propietario, tipoObra]);
+    const fechaValida = !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
+    return dir.length > 3 && prop.length > 2 && !!tipoObra && fechaValida;
+  }, [direccion, propietario, tipoObra, fecha_inicio_estimada]);
 
   const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
     setField('direccion', value.direccion);
@@ -104,6 +106,34 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
               placeholder="Nombre y apellido"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-800">
+              Fecha de inicio estimada <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="date"
+              required
+              min={new Date().toISOString().split('T')[0]}
+              value={fecha_inicio_estimada ?? ''}
+              onChange={(e) => {
+                const selectedDate = e.target.value;
+                const today = new Date().toISOString().split('T')[0];
+                
+                if (selectedDate && selectedDate < today) {
+                  // No permitir fechas pasadas - el navegador ya lo maneja con min, pero por seguridad
+                  return;
+                }
+                
+                setField('fecha_inicio_estimada', selectedDate || undefined);
+              }}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              placeholder="Seleccioná la fecha estimada de inicio"
+            />
+            {!fecha_inicio_estimada && (
+              <p className="text-xs text-gray-500">Este campo es obligatorio. La fecha debe ser hoy o futura.</p>
+            )}
           </div>
 
           <div className="space-y-3 md:col-span-2">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { CrearTareaSchema } from '../../../lib/schemas';
-import { PermisosService } from '../../../lib/services';
+import { PermisoService } from '@/lib/services/permiso.service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,14 +16,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar permisos
-    const tienePermiso = await PermisosService.verificarPermiso(
+    const rol = await PermisoService.obtenerRolEnOrganizacion(
       usuarioId,
       organizacionId,
-      'crear_tarea'
     );
 
-    if (!tienePermiso) {
+    if (rol !== 'CLIENTE') {
       return NextResponse.json(
         { success: false, error: 'No tiene permisos para crear tareas' },
         { status: 403 }
@@ -62,7 +60,6 @@ export async function POST(request: NextRequest) {
     const { data: tarea, error: tareaError } = await supabase
       .from('tareas')
       .insert({
-        org_id: organizacionId,
         obra_id: elemento.obra_id,
         elemento_id: validatedData.elementoId,
         title: validatedData.nombre,
@@ -70,13 +67,15 @@ export async function POST(request: NextRequest) {
         estado: 'pendiente',
         prioridad: 'MEDIA',
         avance: 0,
+        bloques_planificados: validatedData.bloques ?? 0,
         fecha_inicio_estimada: null, // Se puede agregar lógica para calcular desde duracionEstimada si es necesario
         fecha_fin_estimada: validatedData.duracionEstimada ? new Date(Date.now() + validatedData.duracionEstimada * 24 * 60 * 60 * 1000).toISOString() : null,
-      })
+      } as any)
       .select(`
         id,
         title,
         descripcion,
+        bloques_planificados,
         estado,
         responsable,
         prioridad,
@@ -103,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Crear registro de estado inicial en tareas_estados
     const { error: estadoError } = await supabase
-      .from('tareas_estados')
+      .from('tareas_estados' as any)
       .insert({
         tarea_id: tarea.id,
         estado_anterior: null,
@@ -192,7 +191,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (estado) {
-      query = query.eq('estado', estado);
+      query = query.eq('estado', estado as 'pendiente' | 'en_progreso' | 'para_validar' | 'validada' | 'rechazada');
     }
 
     // Ordenar por fecha de creación descendente

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChatSection } from '@/components/cliente/ChatSection';
+// ChatSection eliminado del panel cliente - este componente demo ya no funciona
 import { Card, Button, SectionLayout } from '@/components/ui/grows';
 import { MessageCircle, Bot, Send, User } from 'lucide-react';
 
@@ -103,15 +103,12 @@ export function ChatDemo() {
           <Card title="Código de Ejemplo">
             <div className="bg-grows-neutral/30 rounded-grows-lg p-4">
               <pre className="text-sm text-grows-text-secondary overflow-x-auto">
-{`import { ChatSection } from '@/components/cliente/ChatSection';
+{`// ChatSection fue eliminado del panel cliente (MVP)
+// Este componente demo ya no está disponible
 
-export default function MiChat() {
-  return (
-    <div className="min-h-screen bg-white">
-      <ChatSection userName="Carlos Pérez" />
-    </div>
-  );
-}`}
+// La mensajería directa por obra sigue disponible en:
+// Notificaciones > tab Mensajes (componente ChatPorObra)
+`}
               </pre>
             </div>
           </Card>
@@ -131,8 +128,10 @@ export default function MiChat() {
             </Button>
           </div>
           
-          <div className="border border-grows-border rounded-grows-lg overflow-hidden">
-            <ChatSection userName={userName} />
+          <div className="border border-grows-border rounded-grows-lg overflow-hidden p-8 text-center">
+            <p className="text-grows-text-secondary">
+              ChatSection fue eliminado del panel cliente. Este componente demo ya no está disponible.
+            </p>
           </div>
         </div>
       )}

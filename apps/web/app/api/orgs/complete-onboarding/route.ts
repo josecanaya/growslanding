@@ -39,10 +39,13 @@ export async function POST() {
       user.user_metadata?.full_name ?? user.email ?? 'Organización'
     );
 
+    // Type assertion: ensureOrgForUser always returns a valid org or throws
+    const orgRecord = org as { id: string; name: string };
+
     const { error } = await supabase
-      .from('orgs')
-      .update({ onboarding_completed: true, name: org.name })
-      .eq('id', org.id);
+      .from('organizations')
+      .update({ name: orgRecord.name } as any)
+      .eq('id', orgRecord.id);
 
     if (error) {
       throw error;

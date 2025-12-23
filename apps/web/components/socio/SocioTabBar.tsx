@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X, Wallet } from 'lucide-react';
+import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X, Wallet, TrendingUp, Calendar, Camera, HelpCircle, Building } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { logout } from '@/lib/auth';
@@ -134,13 +134,19 @@ export function SocioTabBar() {
   };
 
   const menuItems = [
+    { id: 'inicio', label: 'Inicio', icon: Home, route: '/socio' as Route },
     { id: 'notificaciones', label: 'Notificaciones', icon: Bell, route: '/socio/notificaciones' as Route },
     { id: 'ahora', label: 'Ahora', icon: Clock, route: '/socio/ahora' as Route },
     { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route },
     { id: 'presupuestos', label: 'Presupuesta', icon: NotebookPen, route: '/socio/presupuestos' as Route },
+    { id: 'obras', label: 'Obras', icon: Building, route: '/socio/obras' as Route },
+    { id: 'evidencias', label: 'Evidencias', icon: Camera, route: '/socio/evidencias' as Route },
     { id: 'billetera', label: 'Billetera', icon: Wallet, route: '/socio/billetera' as Route },
+    { id: 'ganancias', label: 'Ganancias', icon: TrendingUp, route: '/socio/ganancias' as Route },
+    { id: 'jornadas', label: 'Jornadas', icon: Calendar, route: '/socio/jornadas' as Route },
     { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route },
     { id: 'cuenta', label: 'Cuenta', icon: User, route: '/socio/cuenta' as Route },
+    { id: 'ayuda', label: 'Ayuda', icon: HelpCircle, route: '/socio/cuenta' as Route }, // Por ahora redirige a cuenta
   ];
 
   const handleMenuClick = (route: Route) => {
@@ -152,6 +158,10 @@ export function SocioTabBar() {
     return pathname === route || pathname?.startsWith(`${route}/`);
   };
 
+  const isHomeActive = () => {
+    return pathname === '/socio' || pathname === '/socio/';
+  };
+
   const handleMensajesClick = () => {
     router.push('/socio/mensajes');
   };
@@ -161,9 +171,9 @@ export function SocioTabBar() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 md:hidden">
         <div className="grid grid-cols-4 h-16">
           <button
-            onClick={() => router.push('/socio/ahora')}
+            onClick={() => router.push('/socio')}
             className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-              pathname === '/socio/ahora' ? 'text-[#276EF1]' : 'text-gray-500'
+              isHomeActive() ? 'text-[#276EF1]' : 'text-gray-500'
             }`}
           >
             <Home className="h-6 w-6" />

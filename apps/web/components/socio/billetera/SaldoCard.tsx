@@ -67,3 +67,14 @@ export function SaldoCard({ saldo_actual, saldo_pendiente, moneda, loading }: Sa
   );
 }
 
+
+
+
+
+
+
+
+
+
+
+

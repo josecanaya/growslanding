@@ -50,11 +50,14 @@ export async function POST(request: Request) {
       payload.name
     );
 
+    // Type assertion: ensureOrgForUser always returns a valid org or throws
+    const orgRecord = org as { id: string; name: string };
+
     const { data, error } = await supabase
-      .from('orgs')
+      .from('organizations')
       .update({ name: payload.name })
-      .eq('id', org.id)
-      .select('id, name, onboarding_completed')
+      .eq('id', orgRecord.id)
+      .select('id, name')
       .single();
 
     if (error) {

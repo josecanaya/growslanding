@@ -34,6 +34,7 @@ import { ModalVerPlanos } from '@/components/socio/presupuestos/ModalVerPlanos';
 import type { Database } from '@/lib/types/supabase.gen';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import type { ChecklistItem } from '@/data/checklists';
+import { useToast } from '@/components/ui/use-toast';
 
 type SupabaseTarea = {
   id: string;
@@ -62,6 +63,7 @@ export function AhoraSection() {
   const searchParams = useSearchParams();
   const currentUser = useCurrentUser();
   const supabase = createClientComponentClient<Database>();
+  const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +86,178 @@ export function AhoraSection() {
   const [subtareasCompletadas, setSubtareasCompletadas] = useState(0);
   const [tareasProgramadasHoy, setTareasProgramadasHoy] = useState(0);
   const [showModalFinalizarSubtarea, setShowModalFinalizarSubtarea] = useState(false);
+  const [tareasActivasCount, setTareasActivasCount] = useState(0);
+  const [bloquesActivosCount, setBloquesActivosCount] = useState(0);
+
+  // Helper para manejar errores de API y mostrar toasts
+  const handleApiError = (error: any, defaultMessage: string) => {
+    const errorMessage = error?.message || error?.error || defaultMessage;
+    const errorCode = error?.errorCode || error?.error;
+    
+    let title = 'Error';
+    let description = errorMessage;
+    let variant: 'default' | 'destructive' = 'destructive';
+    
+    // Mapear todos los códigos de error según reglas
+    if (errorCode === 'SOCIO_TIENE_2_TAREAS_EN_PROGRESO' || errorMessage.includes('dos tareas en progreso') || errorMessage.includes('dos tareas activas')) {
+      title = 'Límite de tareas alcanzado';
+      description = 'Ya tenés 2 tareas activas. Finalizá una para continuar.';
+    } else if (errorCode === 'SOCIO_TIENE_2_BLOQUES_EN_PROGRESO' || errorMessage.includes('dos bloques en ejecucion') || errorMessage.includes('dos bloques en progreso')) {
+      title = 'Límite de bloques alcanzado';
+      description = 'No podés iniciar más bloques. Tenés 2 en curso.';
+    } else if (errorCode === 'SOCIO_SUSPENDIDO' || errorMessage.includes('SOCIO_SUSPENDIDO') || errorMessage.includes('suspendido')) {
+      title = 'Cuenta suspendida';
+      description = 'Tu cuenta está suspendida por saldo negativo.';
+    } else if (errorCode === 'TRANSICIÓN_NO_PERMITIDA' || errorMessage.includes('Transicion no permitida') || errorMessage.includes('no permitida') || errorMessage.includes('transición no permitida')) {
+      title = 'Acción no permitida';
+      description = 'Esta acción no está permitida en este estado.';
+    } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
+      title = 'Evidencia requerida';
+      description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
+    } else if (errorCode === 'BLOQUE_YA_VALIDADO' || errorMessage.includes('ya validado')) {
+      title = 'Bloque ya validado';
+      description = 'Este bloque ya fue validado.';
+    } else if (errorCode === 'BLOQUE_YA_ENVIADO' || errorMessage.includes('ya enviado')) {
+      title = 'Bloque ya enviado';
+      description = 'Este bloque ya fue enviado para validar.';
+    } else if (errorMessage.includes('sin saldo') || errorMessage.includes('saldo negativo')) {
+      title = 'Saldo insuficiente';
+      description = 'Tu cuenta está suspendida por saldo negativo.';
+    }
+    
+    toast({
+      title,
+      description,
+      variant,
+    });
+    
+    setError(description);
+  };
+
+  // Función centralizada para refrescar todos los datos
+  const fetchData = async () => {
+    if (!currentUser?.id) return;
+
+    const orgId = orgIdResuelta || currentUser.orgId;
+    if (!orgId) return;
+
+    try {
+      // Recargar tareas
+      const SELECT_FIELDS = `
+        id,
+        title,
+        descripcion,
+        estado,
+        prioridad,
+        avance,
+        fecha_inicio_estimada,
+        fecha_fin_estimada,
+        obra_id,
+        responsable,
+        obras (
+          id,
+          name,
+          address
+        ),
+        elemento_id,
+        elemento:elementos (
+          cantidad,
+          unidad
+        )
+      `;
+
+      let query = supabase
+        .from('tareas')
+        .select(SELECT_FIELDS)
+        .eq('org_id', orgId)
+        .order('created_at', { ascending: false });
+
+      if (currentUser.email) {
+        query = query.or(
+          `responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`
+        );
+      }
+
+      const { data } = await query;
+      const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
+
+      // Obtener precedencias para ordenar
+      let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
+      if (tareasBase.length > 0) {
+        const ids = tareasBase.map((t) => t.id);
+        const { data: precData } = await supabase
+          .from('tarea_precedencias')
+          .select('tarea_id, depende_de')
+          .in('tarea_id', ids);
+
+        precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
+          tarea_id: p.tarea_id,
+          depende_de: p.depende_de ?? undefined,
+        }));
+      }
+
+      const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
+      const tareasParaIniciar = tareasOrdenadas.filter(
+        (t) => {
+          const estadoLower = (t.estado || '').toLowerCase();
+          return estadoLower === 'asignada' || 
+                 estadoLower === 'pendiente' ||
+                 estadoLower === 'en_ejecucion' ||
+                 estadoLower === 'en_progreso' ||
+                 t.estado === 'ASIGNADA' ||
+                 t.estado === 'PENDIENTE' ||
+                 !t.estado;
+        }
+      );
+
+      setTareas(tareasParaIniciar);
+
+      // Recargar subtarea actual
+      const { data: subtareaPendiente } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select(`
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            obras:obras (
+              id,
+              name,
+              address
+            )
+          )
+        `)
+        .eq('estado', 'pendiente')
+        .order('orden', { ascending: true })
+        .limit(1);
+
+      if (subtareaPendiente && subtareaPendiente.length > 0) {
+        setSubtareaActual(subtareaPendiente[0]);
+        
+        const tareaId = subtareaPendiente[0].tarea_id;
+        const { data: todasSubtareas } = await (supabase as any)
+          .from('tareas_subtareas')
+          .select('id, estado')
+          .eq('tarea_id', tareaId);
+
+        if (todasSubtareas) {
+          setTotalSubtareas(todasSubtareas.length);
+          const completadas = todasSubtareas.filter(
+            (s: any) => s.estado === 'validado' || s.estado === 'validada'
+          ).length;
+          setSubtareasCompletadas(completadas);
+        }
+      }
+
+      // Recargar contadores
+      await cargarContadoresTareas();
+      await cargarContadoresBloques();
+    } catch (err) {
+      // Error silencioso - solo actualizar UI si hay datos previos
+    }
+  };
 
   // Resolver org_id si no viene en currentUser
   useEffect(() => {
@@ -114,7 +288,7 @@ export function AhoraSection() {
           setOrgIdResuelta(tareaData.org_id);
         }
       } catch (err) {
-        console.error('[AHORA] Error resolviendo org_id', err);
+        // Error silencioso
       }
     };
 
@@ -178,7 +352,6 @@ export function AhoraSection() {
         const { data, error: queryError } = await query;
 
         if (queryError) {
-          console.error('[AHORA] Error consultando tareas', queryError?.message || queryError);
           setError('No se pudieron cargar tus tareas.');
           setTareas([]);
           return;
@@ -243,7 +416,6 @@ export function AhoraSection() {
           }
         }
       } catch (err) {
-        console.error('[AHORA] Error cargando tareas', err);
         setError('Error al cargar las tareas.');
         setTareas([]);
       } finally {
@@ -291,7 +463,6 @@ export function AhoraSection() {
         
         setProgresoGeneral({ completadas, total, porcentaje });
       } catch (err) {
-        console.error('[AHORA] Error calculando progreso:', err);
         setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
       }
     };
@@ -358,7 +529,6 @@ export function AhoraSection() {
           setTareasCompletadasHoy(0);
         }
       } catch (err) {
-        console.error('[AHORA] Error calculando tareas hoy:', err);
         setTareasCompletadasHoy(0);
       }
     };
@@ -394,7 +564,6 @@ export function AhoraSection() {
         .maybeSingle();
 
       if (presupuestoError || !presupuesto) {
-        console.warn(`[GENERAR_SUBTAREAS] No se encontró presupuesto para tarea ${tareaId}`);
         return;
       }
 
@@ -412,7 +581,6 @@ export function AhoraSection() {
       }
       
       if (!cantidad || !dias || dias <= 0) {
-        console.warn(`[GENERAR_SUBTAREAS] Datos inválidos: cantidad=${cantidad}, dias_reales=${dias}`);
         return;
       }
 
@@ -424,7 +592,6 @@ export function AhoraSection() {
         .maybeSingle();
 
       if (!tareaData?.fecha_inicio_estimada) {
-        console.warn(`[GENERAR_SUBTAREAS] No se encontró fecha_inicio_estimada para tarea ${tareaId}`);
         return;
       }
 
@@ -474,13 +641,10 @@ export function AhoraSection() {
         .insert(subtareas);
 
       if (insertError) {
-        console.error('[GENERAR_SUBTAREAS] Error insertando subtareas:', insertError);
         return;
       }
-
-      console.log(`[GENERAR_SUBTAREAS] Generadas ${subtareas.length} subtareas para tarea ${tareaId}`);
     } catch (err) {
-      console.error('[GENERAR_SUBTAREAS] Error generando subtareas:', err);
+      // Error silencioso
     }
   };
 
@@ -553,7 +717,9 @@ export function AhoraSection() {
 
           if (todasSubtareas) {
             setTotalSubtareas(todasSubtareas.length);
-            const completadas = todasSubtareas.filter((s: any) => s.estado === 'finalizada').length;
+            const completadas = todasSubtareas.filter(
+              (s: any) => s.estado === 'finalizada' || s.estado === 'validada'
+            ).length;
             setSubtareasCompletadas(completadas);
           }
 
@@ -659,11 +825,13 @@ export function AhoraSection() {
           }
         }
       } catch (err) {
-        console.error('[AHORA] Error cargando jornada y subtarea:', err);
+        // Error silencioso
       }
     };
 
     cargarJornadaYSubtarea();
+    cargarContadoresTareas();
+    cargarContadoresBloques();
   }, [currentUser, orgIdResuelta, supabase, tareas]);
 
   // Cargar avance diario y evidencias finales de la tarea actual
@@ -721,7 +889,7 @@ export function AhoraSection() {
           }
         }
       } catch (err) {
-        console.error('[AHORA] Error cargando avance y evidencias:', err);
+        // Error silencioso
       }
     };
 
@@ -765,7 +933,6 @@ export function AhoraSection() {
         .maybeSingle();
 
       if (errorVerificar) {
-        console.error('[AHORA] Error verificando jornada existente:', errorVerificar);
         setError('Error al verificar jornada existente');
         setIsIniciando(false);
         return;
@@ -773,7 +940,6 @@ export function AhoraSection() {
 
       // Si ya existe una jornada, usarla
       if (jornadaExistente) {
-        console.log('[AHORA] Jornada ya existe para hoy, usando la existente');
         setJornadaActual(jornadaExistente);
         setIsIniciando(false);
         return;
@@ -792,17 +958,8 @@ export function AhoraSection() {
         .single();
 
       if (jornadaError) {
-        console.error('[AHORA] Error creando jornada:', {
-          error: jornadaError,
-          message: jornadaError.message,
-          details: jornadaError.details,
-          hint: jornadaError.hint,
-          code: jornadaError.code,
-        });
-        
         // Si el error es por constraint único (jornada ya existe), intentar cargarla
         if (jornadaError.code === '23505' || jornadaError.message?.includes('unique') || jornadaError.message?.includes('duplicate')) {
-          console.log('[AHORA] Jornada ya existe (constraint), cargando la existente');
           const { data: jornadaData } = await (supabase as any)
             .from('jornadas_socio')
             .select('*')
@@ -837,11 +994,6 @@ export function AhoraSection() {
         setJornadaActual(jornadaData);
       }
     } catch (err: any) {
-      console.error('[AHORA] Error al iniciar jornada:', {
-        error: err,
-        message: err?.message,
-        stack: err?.stack,
-      });
       setError(`Error al iniciar la jornada: ${err?.message || 'Error desconocido'}`);
     } finally {
       setIsIniciando(false);
@@ -852,37 +1004,56 @@ export function AhoraSection() {
     if (!subtareaActual || !currentUser) return;
 
     setIsIniciando(true);
+    setError(null);
     
     try {
-      const horaInicio = new Date().toISOString();
+      const response = await fetch(`/api/tareas-subtareas/${subtareaActual.id}/iniciar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      // Actualizar subtarea a en_progreso
-      const { error: updateError } = await (supabase as any)
-        .from('tareas_subtareas')
-        .update({
-          estado: 'en_progreso',
-          hora_inicio: horaInicio,
-        })
-        .eq('id', subtareaActual.id);
-
-      if (updateError) {
-        console.error('[AHORA] Error iniciando subtarea:', updateError);
-        setError('Error al iniciar la subtarea');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        handleApiError(errorData, 'Error al iniciar el bloque');
         setIsIniciando(false);
         return;
       }
 
-      // Recargar subtarea
+      // Solo actualizar UI si la API confirma éxito
       const { data: subtareaData } = await (supabase as any)
         .from('tareas_subtareas')
-        .select('*')
+        .select(`
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            obras:obras (
+              id,
+              name,
+              address
+            )
+          )
+        `)
         .eq('id', subtareaActual.id)
         .maybeSingle();
 
-      setSubtareaActual(subtareaData);
+      if (subtareaData) {
+        setSubtareaActual(subtareaData);
+        toast({
+          title: 'Bloque iniciado',
+          description: 'El bloque está ahora en progreso.',
+        });
+      }
+
+      // Recargar contadores y datos
+      await cargarContadoresBloques();
+      await fetchData();
     } catch (err) {
-      console.error('[AHORA] Error al iniciar subtarea', err);
-      setError('Error al iniciar la subtarea. Por favor, intenta nuevamente.');
+      handleApiError(err, 'Error al iniciar el bloque. Por favor, intenta nuevamente.');
     } finally {
       setIsIniciando(false);
     }
@@ -892,6 +1063,7 @@ export function AhoraSection() {
     if (!tareaActual || !currentUser) return;
 
     setIsIniciando(true);
+    setError(null);
     
     // Efecto amarillo: agregar clase al body y al contenedor principal
     const mainContainer = document.querySelector('.ahora-container') as HTMLElement;
@@ -908,77 +1080,14 @@ export function AhoraSection() {
     }, 2000);
 
     try {
-      // Actualizar tarea directamente: estado a "en_progreso", fecha_inicio_real y hora_inicio
-      const ahora = new Date();
-      const fechaInicioReal = ahora.toISOString().split('T')[0];
-      const horaInicio = ahora.toISOString();
-
-      const { error: updateError } = await (supabase as any)
-        .from('tareas')
-        .update({
-          estado: 'en_progreso',
-          fecha_inicio_real: fechaInicioReal,
-          hora_inicio: horaInicio,
-        })
-        .eq('id', tareaActual.id);
-
-      if (updateError) {
-        console.error('[AHORA] Error iniciando tarea:', updateError);
-        setError('Error al iniciar la tarea');
-        setIsIniciando(false);
-        return;
-      }
-
-      // Recargar tarea actualizada
-      const orgIdRecargar = orgIdResuelta || currentUser.orgId;
-      if (orgIdRecargar) {
-        const { data } = await supabase
-          .from('tareas')
-          .select(`
-            id,
-            title,
-            descripcion,
-            estado,
-            prioridad,
-            avance,
-            fecha_inicio_estimada,
-            fecha_inicio_real,
-            fecha_fin_estimada,
-            obra_id,
-            responsable,
-            obras (
-              id,
-              name,
-              address
-            ),
-            elemento_id,
-            elemento:elementos (
-              cantidad,
-              unidad
-            )
-          `)
-          .eq('id', tareaActual.id)
-          .maybeSingle();
-
-        if (data) {
-          const tareaActualizada = data as SupabaseTarea;
-          const index = tareas.findIndex(t => t.id === tareaActualizada.id);
-          if (index >= 0) {
-            const nuevasTareas = [...tareas];
-            nuevasTareas[index] = tareaActualizada;
-            setTareas(nuevasTareas);
-          }
-        }
-      }
-
-      // Llamar al endpoint de transición para iniciar la tarea (para mantener compatibilidad con eventos)
+      // Usar solo el endpoint FSM - no actualizar directamente
       const response = await fetch(`/api/tareas/${tareaActual.id}/transition`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          nuevo_estado: 'en_ejecucion',
+          nuevo_estado: 'en_progreso',
           notas: 'Tarea iniciada desde la sección Ahora',
           checklist: checklistItems.map(item => ({
             id: item.id,
@@ -996,12 +1105,17 @@ export function AhoraSection() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[AHORA] Error al iniciar tarea:', errorData);
-        setError(errorData.message || 'Error al iniciar la tarea');
+        const errorData = await response.json().catch(() => ({}));
+        handleApiError(errorData, 'Error al iniciar la tarea');
         setIsIniciando(false);
         return;
       }
+
+      // Solo actualizar UI si la API confirma éxito
+      toast({
+        title: 'Tarea iniciada',
+        description: 'La tarea está ahora en progreso.',
+      });
 
       // Recargar tareas después de iniciar
       const orgId = orgIdResuelta || currentUser.orgId;
@@ -1063,60 +1177,164 @@ export function AhoraSection() {
           setTareas(tareasParaIniciar);
         }
       }
+
+      // Recargar contadores y datos
+      await cargarContadoresTareas();
+      await fetchData();
     } catch (err) {
-      console.error('[AHORA] Error al iniciar tarea', err);
-      setError('Error al iniciar la tarea. Por favor, intenta nuevamente.');
+      handleApiError(err, 'Error al iniciar la tarea. Por favor, intenta nuevamente.');
     } finally {
       setIsIniciando(false);
+    }
+  };
+
+  // Cargar contadores de tareas y bloques activos
+  const cargarContadoresTareas = async () => {
+    if (!currentUser?.id) return;
+    
+    const orgId = orgIdResuelta || currentUser.orgId;
+    if (!orgId) return;
+
+    try {
+      const { data: socio } = await (supabase as any)
+        .from('socios')
+        .select('id')
+        .eq('email', currentUser.email)
+        .maybeSingle();
+
+      if (!socio?.id) return;
+
+      const { count } = await (supabase as any)
+        .from('tareas')
+        .select('*', { count: 'exact', head: true })
+        .eq('responsable_socio_id', socio.id)
+        .eq('estado', 'en_progreso');
+
+      setTareasActivasCount(count || 0);
+    } catch (err) {
+      // Error silencioso
+    }
+  };
+
+  const cargarContadoresBloques = async () => {
+    if (!currentUser?.id) return;
+    
+    const orgId = orgIdResuelta || currentUser.orgId;
+    if (!orgId) return;
+
+    try {
+      const { data: socio } = await (supabase as any)
+        .from('socios')
+        .select('id')
+        .eq('email', currentUser.email)
+        .maybeSingle();
+
+      if (!socio?.id) return;
+
+      const { count } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select('*', { count: 'exact', head: true })
+        .eq('socio_id', socio.id)
+        .eq('estado', 'en_progreso');
+
+      setBloquesActivosCount(count || 0);
+    } catch (err) {
+      // Error silencioso
+    }
+  };
+
+  const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
+    if (!subtareaActual || !currentUser) return;
+
+    setIsFinalizando(true);
+    setError(null);
+    
+    try {
+      // Primero guardar evidencia si se proporciona
+      if (evidenciaUrl || videoUrl || problemas) {
+        const { error: updateError } = await (supabase as any)
+          .from('tareas_subtareas')
+          .update({
+            evidencia_url: evidenciaUrl || null,
+            video_url: videoUrl || null,
+            problemas: problemas || null,
+            evidencia_cargada: evidenciaUrl ? true : null,
+          })
+          .eq('id', subtareaActual.id);
+
+        if (updateError) {
+          // Error silencioso - evidencia opcional
+        }
+      }
+
+      // Usar endpoint FSM para enviar a validar
+      const response = await fetch(`/api/tareas-subtareas/${subtareaActual.id}/enviar-validar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        handleApiError(errorData, 'Error al enviar el bloque para validar');
+        setIsFinalizando(false);
+        return;
+      }
+
+      // Solo actualizar UI si la API confirma éxito
+      toast({
+        title: 'Bloque enviado para validar',
+        description: 'El bloque está ahora en revisión.',
+      });
+
+      // Recargar subtarea
+      const { data: subtareaData } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select(`
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            obras:obras (
+              id,
+              name,
+              address
+            )
+          )
+        `)
+        .eq('id', subtareaActual.id)
+        .maybeSingle();
+
+      if (subtareaData) {
+        setSubtareaActual(subtareaData);
+      }
+
+      // Recargar contadores y datos
+      await cargarContadoresBloques();
+      await fetchData();
+    } catch (err) {
+      handleApiError(err, 'Error al enviar el bloque para validar. Por favor, intenta nuevamente.');
+    } finally {
+      setIsFinalizando(false);
     }
   };
 
   const handleFinalizarSubtarea = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
     if (!subtareaActual || !currentUser) return;
 
-    setIsFinalizando(true);
+    // Usar enviarParaValidar en lugar de actualizar directamente
+    await handleEnviarParaValidar(evidenciaUrl, videoUrl, problemas);
     
+    if (error) {
+      setShowModalFinalizarSubtarea(false);
+      return; // Si hubo error, no continuar
+    }
+
+    // Buscar próxima subtarea pendiente de todas las tareas
     try {
-      const horaFin = new Date().toISOString();
-
-      // Actualizar subtarea a finalizada
-      const { error: updateError } = await (supabase as any)
-        .from('tareas_subtareas')
-        .update({
-          estado: 'finalizada',
-          hora_fin: horaFin,
-          evidencia_url: evidenciaUrl || null,
-          video_url: videoUrl || null,
-          problemas: problemas || null,
-        })
-        .eq('id', subtareaActual.id);
-
-      if (updateError) {
-        console.error('[AHORA] Error finalizando subtarea:', updateError);
-        setError('Error al finalizar la subtarea');
-        setIsFinalizando(false);
-        return;
-      }
-
-      // Verificar si todas las subtareas de la tarea están completadas
-      const tareaId = subtareaActual.tarea_id || subtareaActual.tareas?.id;
-      if (tareaId) {
-        const { data: todasSubtareas } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select('id, estado')
-          .eq('tarea_id', tareaId);
-
-        if (todasSubtareas) {
-          const todasFinalizadas = todasSubtareas.every((s: any) => s.estado === 'finalizada');
-          
-          if (todasFinalizadas) {
-            // Marcar tarea como COMPLETADA y enviar notificación
-            await handleCompletarTarea();
-          }
-        }
-      }
-
-      // Buscar próxima subtarea pendiente de todas las tareas
       const { data: siguienteSubtarea } = await (supabase as any)
         .from('tareas_subtareas')
         .select(`
@@ -1125,6 +1343,7 @@ export function AhoraSection() {
             id,
             title,
             obra_id,
+            estado,
             obras:obras (
               id,
               name,
@@ -1149,7 +1368,9 @@ export function AhoraSection() {
 
           if (todasSubtareasNueva) {
             setTotalSubtareas(todasSubtareasNueva.length);
-            const completadas = todasSubtareasNueva.filter((s: any) => s.estado === 'finalizada').length;
+            const completadas = todasSubtareasNueva.filter(
+              (s: any) => s.estado === 'validado' || s.estado === 'validada'
+            ).length;
             setSubtareasCompletadas(completadas);
           }
         }
@@ -1159,28 +1380,11 @@ export function AhoraSection() {
         setTotalSubtareas(0);
         setSubtareasCompletadas(0);
       }
-
-      // Actualizar contador de tareas completadas hoy
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const hoyISO = hoy.toISOString().split('T')[0];
-      const { data: subtareasHoy } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select('id, estado, fecha')
-        .eq('fecha', hoyISO);
-
-      if (subtareasHoy) {
-        const completadasHoy = subtareasHoy.filter((s: any) => s.estado === 'finalizada').length;
-        setTareasCompletadasHoy(completadasHoy);
-      }
-
-      setShowModalFinalizarSubtarea(false);
     } catch (err) {
-      console.error('[AHORA] Error al finalizar subtarea', err);
-      setError('Error al finalizar la subtarea. Por favor, intenta nuevamente.');
-    } finally {
-      setIsFinalizando(false);
+      // Error silencioso
     }
+
+    setShowModalFinalizarSubtarea(false);
   };
 
   const handleCompletarTarea = async () => {
@@ -1195,7 +1399,6 @@ export function AhoraSection() {
         .eq('id', tareaId);
 
       if (updateError) {
-        console.error('[AHORA] Error completando tarea:', updateError);
         return;
       }
 
@@ -1232,7 +1435,7 @@ export function AhoraSection() {
         }
       }
     } catch (err) {
-      console.error('[AHORA] Error completando tarea:', err);
+      // Error silencioso
     }
   };
 
@@ -1289,29 +1492,8 @@ export function AhoraSection() {
       });
 
       if (!response.ok) {
-        let errorData: any = {};
-        let responseText = '';
-        try {
-          responseText = await response.text();
-          if (responseText) {
-            try {
-              errorData = JSON.parse(responseText);
-            } catch {
-              errorData = { message: responseText };
-            }
-          } else {
-            errorData = { message: `Error ${response.status}: ${response.statusText}` };
-          }
-        } catch (parseError) {
-          errorData = { message: `Error ${response.status}: ${response.statusText}` };
-        }
-        console.error('[AHORA] Error al finalizar tarea:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-          responseText
-        });
-        setError(errorData.message || `Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        handleApiError(errorData, `Error ${response.status}: ${response.statusText}`);
         setIsFinalizando(false);
         return;
       }
@@ -1349,7 +1531,6 @@ export function AhoraSection() {
             }
           }
         } catch (evidenciaError) {
-          console.error('[AHORA] Error al crear evidencia:', evidenciaError);
           // No bloquear el flujo si falla la creación de evidencia
         }
       }
@@ -1459,9 +1640,11 @@ export function AhoraSection() {
         const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
         setProgresoGeneral({ completadas, total, porcentaje });
       }
+
+      // Refrescar datos después de finalizar
+      await fetchData();
     } catch (err: any) {
-      console.error('[AHORA] Error al finalizar tarea', err);
-      setError(err?.message || 'Error al finalizar la tarea. Por favor, intenta nuevamente.');
+      handleApiError(err, 'Error al finalizar la tarea. Por favor, intenta nuevamente.');
     } finally {
       setIsFinalizando(false);
       // Remover efecto verde después de 2 segundos
@@ -1511,10 +1694,10 @@ export function AhoraSection() {
       if (response.ok) {
         setAvanceDiario(nuevoAvance);
         // Recargar tareas para actualizar el avance
-        window.location.reload();
+        await fetchData();
       }
     } catch (err) {
-      console.error('[AHORA] Error al guardar avance:', err);
+      // Error silencioso
     }
   };
 
@@ -1546,26 +1729,43 @@ export function AhoraSection() {
           }),
         });
       } catch (err) {
-        console.error('[AHORA] Error al guardar checklist:', err);
+        // Error silencioso
       }
     }
   };
 
+  // Mapear estados visuales según FSM
   const getEstadoBadge = (estado: string | null) => {
     const estadoLower = (estado || '').toLowerCase();
+    
+    // Estados oficiales FSM
     if (estadoLower === 'pendiente' || estadoLower === 'asignada') {
-      return { variant: 'warning' as const, label: 'Pendiente' };
+      return { variant: 'warning' as const, label: 'Listo para empezar' };
     }
     if (estadoLower === 'en_progreso' || estadoLower.includes('ejecucion')) {
-      return { variant: 'info' as const, label: 'En ejecución' };
+      return { variant: 'info' as const, label: 'En curso' };
     }
-    if (estadoLower === 'finalizado') {
-      return { variant: 'success' as const, label: 'Finalizada' };
+    if (estadoLower === 'para_validar' || estadoLower === 'finalizado' || estadoLower === 'finalizada') {
+      return { variant: 'info' as const, label: 'En revisión' };
     }
-    if (estadoLower === 'validado') {
-      return { variant: 'success' as const, label: 'Validada' };
+    if (estadoLower === 'validado' || estadoLower === 'validada') {
+      return { variant: 'success' as const, label: 'Aprobado' };
+    }
+    if (estadoLower === 'rechazado' || estadoLower === 'rechazada') {
+      return { variant: 'warning' as const, label: 'Rehacer' };
     }
     return { variant: 'default' as const, label: estado || 'Sin estado' };
+  };
+
+  const getEstadoSubtareaLabel = (estado: string | null) => {
+    const estadoLower = (estado || '').toLowerCase();
+    
+    if (estadoLower === 'pendiente') return 'Listo para empezar';
+    if (estadoLower === 'en_progreso') return 'En curso';
+    if (estadoLower === 'para_validar') return 'En revisión';
+    if (estadoLower === 'validado' || estadoLower === 'validada') return 'Aprobado';
+    if (estadoLower === 'rechazado' || estadoLower === 'rechazada') return 'Rehacer';
+    return estado || 'Sin estado';
   };
 
   const isTareaEnProgreso = tareaActual?.estado?.toLowerCase() === 'en_ejecucion' || 
@@ -1601,13 +1801,24 @@ export function AhoraSection() {
     if (subtareaActual) {
       // Flujo con subtareas
       if (!jornadaActual) return 'Iniciar jornada';
-      if (subtareaActual.estado === 'pendiente') return 'Comenzar tarea';
-      if (subtareaActual.estado === 'en_progreso') return 'Finalizar tarea';
+      if (subtareaActual.estado === 'pendiente') {
+        // Validar límite antes de mostrar botón
+        if (bloquesActivosCount >= 2) return 'Límite alcanzado (2 bloques activos)';
+        return 'Comenzar bloque';
+      }
+      if (subtareaActual.estado === 'rechazado' || subtareaActual.estado === 'rechazada') {
+        return 'Rehacer bloque';
+      }
+      if (subtareaActual.estado === 'en_progreso') return 'Enviar para validar';
       return 'Iniciar jornada';
     } else if (tareaActual) {
       // Modo compatibilidad: flujo con tarea completa
       if (!jornadaActual) return 'Iniciar jornada';
-      if (!isTareaEnProgreso) return 'Comenzar tarea';
+      if (!isTareaEnProgreso) {
+        // Validar límite antes de mostrar botón
+        if (tareasActivasCount >= 2) return 'Límite alcanzado (2 tareas activas)';
+        return 'Comenzar tarea';
+      }
       return 'Finalizar tarea';
     }
     return 'Iniciar jornada';
@@ -1619,7 +1830,13 @@ export function AhoraSection() {
       // Flujo con subtareas
       if (!jornadaActual) {
         handleIniciarJornada();
-      } else if (subtareaActual.estado === 'pendiente') {
+      } else       if (subtareaActual.estado === 'pendiente' || subtareaActual.estado === 'rechazado' || subtareaActual.estado === 'rechazada') {
+        // Validar límite antes de permitir acción
+        if (bloquesActivosCount >= 2 && subtareaActual.estado !== 'rechazado' && subtareaActual.estado !== 'rechazada') {
+          handleApiError({ errorCode: 'SOCIO_TIENE_2_BLOQUES_EN_PROGRESO' }, 'Ya tenés 2 bloques en progreso');
+          return;
+        }
+        // Rehacer bloque rechazado o iniciar bloque pendiente
         handleIniciarSubtarea();
       } else if (subtareaActual.estado === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
@@ -1629,6 +1846,11 @@ export function AhoraSection() {
       if (!jornadaActual) {
         handleIniciarJornada();
       } else if (!isTareaEnProgreso) {
+        // Validar límite antes de permitir acción
+        if (tareasActivasCount >= 2) {
+          handleApiError({ errorCode: 'SOCIO_TIENE_2_TAREAS_EN_PROGRESO' }, 'Ya tenés 2 tareas en progreso');
+          return;
+        }
         handleIniciarTarea();
       } else {
         handleFinalizarTarea();
@@ -1664,8 +1886,8 @@ export function AhoraSection() {
                 <div className={`w-2 h-2 rounded-full ${
                   subtareaActual.estado === 'en_progreso' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
                 }`}></div>
-                <Badge variant={subtareaActual.estado === 'en_progreso' ? 'info' : 'warning'}>
-                  {subtareaActual.estado === 'en_progreso' ? 'En curso' : 'Pendiente'}
+                <Badge variant={subtareaActual.estado === 'en_progreso' ? 'info' : subtareaActual.estado === 'para_validar' ? 'info' : subtareaActual.estado === 'validado' || subtareaActual.estado === 'validada' ? 'success' : 'warning'}>
+                  {getEstadoSubtareaLabel(subtareaActual.estado)}
                 </Badge>
               </div>
 
@@ -1822,7 +2044,7 @@ export function AhoraSection() {
       </div>
 
       {/* 5. NOTIFICACIÓN DEL ESTADO - Banner */}
-      {subtareaActual?.estado === 'finalizada' && (
+      {subtareaActual && (subtareaActual.estado === 'finalizada' || subtareaActual.estado === 'validada') && (
         <div className="mx-4 mb-4">
           <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
             <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
@@ -1929,7 +2151,6 @@ export function AhoraSection() {
                   .maybeSingle();
                 setJornadaActual(jornadaData);
               } catch (err) {
-                console.error('[AHORA] Error finalizando jornada:', err);
                 setError('Error al finalizar jornada');
               }
             }}
@@ -2034,6 +2255,17 @@ function ModalEvidencias({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClientComponentClient<Database>();
+  const { toast } = useToast();
+
+  // Helper para manejar errores de API
+  const handleApiError = (error: any, defaultMessage: string) => {
+    const errorMessage = error?.message || error?.error || defaultMessage;
+    toast({
+      title: 'Error',
+      description: errorMessage,
+      variant: 'destructive',
+    });
+  };
 
   useEffect(() => {
     cargarEvidencias();
@@ -2048,10 +2280,47 @@ function ModalEvidencias({
         setEvidencias(data.data || []);
       }
     } catch (err) {
-      console.error('[ModalEvidencias] Error cargando evidencias:', err);
+      // Error silencioso
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper para comprimir imagen a máximo 1200px
+  const comprimirImagen = (file: File, maxWidth: number = 1200): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo obtener contexto del canvas'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(dataUrl);
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, isCamera: boolean) => {
@@ -2060,11 +2329,10 @@ function ModalEvidencias({
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        
-        // Subir foto usando el endpoint de transition
+      // Comprimir imagen antes de subir
+      const dataUrl = await comprimirImagen(file, 1200);
+      
+      // Subir foto usando el endpoint de transition
         const response = await fetch(`/api/tareas/${tareaId}/transition`, {
           method: 'POST',
           headers: {
@@ -2110,11 +2378,12 @@ function ModalEvidencias({
           if (tipoEvidencia === 'evidencia_final') {
             onEvidenciaFinalSubida();
           }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          handleApiError(errorData, 'Error al subir la evidencia');
         }
-      };
-      reader.readAsDataURL(file);
     } catch (err) {
-      console.error('[ModalEvidencias] Error subiendo evidencia:', err);
+      // Error silencioso
     } finally {
       setUploading(false);
       // Reset inputs
@@ -2139,7 +2408,6 @@ function ModalEvidencias({
           .upload(`${tareaId}/${Date.now()}-${file.name}`, file);
 
         if (uploadError) {
-          console.error('[ModalEvidencias] Error subiendo video:', uploadError);
           return;
         }
 
@@ -2152,7 +2420,7 @@ function ModalEvidencias({
       };
       reader.readAsDataURL(file);
     } catch (err) {
-      console.error('[ModalEvidencias] Error subiendo video:', err);
+      // Error silencioso
     } finally {
       setUploading(false);
       if (videoInputRef.current) videoInputRef.current.value = '';
@@ -2317,11 +2585,58 @@ function ModalFinalizarSubtarea({
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoGalleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Helper para comprimir imagen a máximo 1200px
+  const comprimirImagen = (file: File, maxWidth: number = 1200): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('No se pudo obtener contexto del canvas'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          resolve(dataUrl);
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileUpload = async (file: File, kind: 'evidencia_final' | 'video_final') => {
     setUploading(true);
     try {
+      let fileToUpload: File | Blob = file;
+      
+      // Comprimir imagen si es evidencia final
+      if (kind === 'evidencia_final' && file.type.startsWith('image/')) {
+        const compressedDataUrl = await comprimirImagen(file, 1200);
+        // Convertir dataUrl a Blob
+        const response = await fetch(compressedDataUrl);
+        fileToUpload = await response.blob();
+      }
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       formData.append('kind', kind);
       if (tareaId) formData.append('tareaId', tareaId);
       if (obraId) formData.append('obraId', obraId);
@@ -2332,7 +2647,8 @@ function ModalFinalizarSubtarea({
       });
 
       if (!response.ok) {
-        throw new Error('Error al subir archivo');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Error al subir archivo');
       }
 
       const result = await response.json();
@@ -2342,7 +2658,7 @@ function ModalFinalizarSubtarea({
         setVideoUrl(result.url);
       }
     } catch (err) {
-      console.error('[ModalFinalizarSubtarea] Error subiendo archivo:', err);
+      // Error silencioso - se maneja en el componente padre
     } finally {
       setUploading(false);
     }

@@ -17,8 +17,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
-import { useSubscription } from '@/lib/subscriptions';
-import { canUseFeature, usePlanGate } from '@/lib/permissions';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { SolicitarPresupuestoModal } from '@/components/clienteTecnico/presupuestos/SolicitarPresupuestoModal';
 import { PanelEstado } from './asigna/PanelEstado';
@@ -135,11 +133,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   );
   const { toast } = useToast();
   const abrirModalAsignacion = useCuadrillasStore((state) => state.abrirModalAsignacion);
-  const { planId } = useSubscription();
-  const { verifyAccess } = usePlanGate();
-  const canUseCuadrillas = canUseFeature(planId, 'cuadrillas');
-
-  const ensureCuadrillaAccess = () => verifyAccess('cuadrillas');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -340,12 +333,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         err && typeof err === 'object' && 'message' in err
           ? (err as { message: string }).message
           : String(err);
-      console.error('[AsignarSection] Error fetching data', errorMessage, err);
-      try {
-        console.error('[AsignarSection] Error detail', JSON.stringify(err, null, 2));
-      } catch {
-        // ignore JSON stringify issues
-      }
       setError('No se pudieron obtener las tareas y presupuestos.');
     } finally {
       if (showLoading) {
@@ -522,10 +509,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   // handleOpenModal removido - ahora se usa handleOpenPresupuestoModal
 
   const handleOpenPresupuestoModal = (etapa?: string, tareaId?: string) => {
-    if (!ensureCuadrillaAccess()) {
-      return;
-    }
-    
     // Si no hay obraId, intentar obtenerlo de las tareas
     const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
     if (!obraIdActual) {
@@ -630,9 +613,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   const handleAbrirAsignacion = () => {
-    if (!ensureCuadrillaAccess()) {
-      return;
-    }
     abrirModalAsignacion();
   };
 
@@ -670,7 +650,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
             : 'Actualizamos el estado del presupuesto.',
       });
     } catch (err) {
-      console.error('[AsignarSection] Error updating presupuesto', err);
       toast({
         title: 'No se pudo actualizar el presupuesto',
         description: 'Intentá nuevamente en unos minutos.',
@@ -682,9 +661,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   const handleAssignBudget = async (budget: RawPresupuesto) => {
-    if (!ensureCuadrillaAccess()) {
-      return;
-    }
     if (!currentUser?.orgId) return;
 
     const tarea = taskMap.get(budget.tarea_id);
@@ -783,7 +759,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           created_at: new Date().toISOString(),
         });
       } catch (notifError) {
-        console.error('[AsignarSection] Error creando notificación:', notifError);
         // No fallar si la notificación no se crea
       }
 
@@ -824,7 +799,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         description: `Asignaste la tarea a ${socioNombre}. El socio recibirá una notificación.`,
       });
     } catch (err) {
-      console.error('[AsignarSection] Error asignando tarea', err);
       toast({
         title: 'No se pudo asignar la tarea',
         description: 'Intentá nuevamente en unos minutos.',
@@ -856,13 +830,10 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       return;
     }
 
-    console.log('[AsignarSection] Aprobando presupuesto:', { socioId, etapaId, obraIdActual, orgId: currentUser.orgId });
-
     setAprobandoPresupuestoSocioId(socioId);
 
     try {
       const url = `/api/presupuestos/aprobar-socio`;
-      console.log('[AsignarSection] Llamando a:', url);
       
       const response = await fetch(url, {
         method: 'POST',
@@ -876,18 +847,10 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         }),
       });
 
-      console.log('[AsignarSection] Respuesta del endpoint:', { 
-        status: response.status, 
-        ok: response.ok,
-        statusText: response.statusText,
-        contentType: response.headers.get('content-type')
-      });
-
       // Verificar que la respuesta sea JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
-        console.error('[AsignarSection] Respuesta no es JSON:', text.substring(0, 200));
         toast({
           title: 'Error al aprobar presupuesto',
           description: `El servidor respondió con un error (${response.status}). Verificá la consola para más detalles.`,
@@ -896,12 +859,9 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         return;
       }
 
-      const data = await response.json().catch((err) => {
-        console.error('[AsignarSection] Error parseando respuesta:', err);
+      const data = await response.json().catch(() => {
         return { success: false, error: 'Error al parsear la respuesta del servidor' };
       });
-
-      console.log('[AsignarSection] Datos recibidos:', data);
 
       if (!response.ok) {
         toast({
@@ -949,7 +909,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         });
       }
     } catch (err) {
-      console.error('[AsignarSection] Error aprobando presupuesto:', err);
       toast({
         title: 'Error al aprobar presupuesto',
         description: err instanceof Error ? err.message : 'Ocurrió un error inesperado. Intentá nuevamente.',
@@ -1093,7 +1052,6 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
               actualizandoId={updatingBudgetId}
               asignandoId={assigningBudgetId}
               aprobandoPresupuestoSocioId={aprobandoPresupuestoSocioId}
-              disabled={!canUseCuadrillas}
             />
           );
         })}

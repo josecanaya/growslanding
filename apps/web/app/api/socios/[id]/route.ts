@@ -40,15 +40,18 @@ export async function DELETE(
 
     const { data: socio, error: socioError } = await supabase
       .from('socios')
-      .select('id, org_id, contacto, status')
+      .select('id, org_id, email, estado')
       .eq('id', id)
       .maybeSingle();
 
-    if (socioError || !socio || socio.org_id !== org.id) {
+    // Type assertion: socio has the expected structure
+    const socioRecord = socio as { id: string; org_id: string; email: string | null; estado: string | null } | null;
+
+    if (socioError || !socioRecord || socioRecord.org_id !== org.id) {
       return NextResponse.json({ message: 'Socio no encontrado' }, { status: 404 });
     }
 
-    if (socio.status === 'inactivo') {
+    if (socioRecord.estado === 'inactivo') {
       return NextResponse.json({ ok: true });
     }
 
@@ -57,17 +60,17 @@ export async function DELETE(
     updates.push(
       supabase
         .from('socios')
-        .update({ status: 'inactivo' })
-        .eq('id', socio.id)
+        .update({ estado: 'inactivo' })
+        .eq('id', socioRecord.id)
     );
 
-    if (socio.contacto) {
+    if (socioRecord.email) {
       updates.push(
         supabase
-          .from('leader_invites')
+          .from('leader_invites' as any)
           .update({ status: 'revoked' })
           .eq('org_id', org.id)
-          .eq('email', socio.contacto)
+          .eq('email', socioRecord.email)
       );
     }
 

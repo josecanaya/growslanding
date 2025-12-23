@@ -24,8 +24,6 @@ import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { SUBSCRIPTION_UI_COPY } from '@/lib/subscriptions/texts';
 import { Button, SectionLayout } from '@/components/ui/grows';
-import { OnboardingCrearObraProvider, useOnboardingCrearObra } from '@/components/onboarding/OnboardingCrearObra';
-import TutorialButton from '@/components/common/TutorialButton';
 
 // Tipos de datos
 interface Obra {
@@ -56,6 +54,7 @@ interface FormState {
   nombre: string;
   localizacion: string;
   fecha_inicio: string;
+  fecha_inicio_estimada: string; // Campo obligatorio para fecha de inicio estimada
   presupuesto: string;
   descripcion: string;
 }
@@ -65,6 +64,7 @@ const initialFormState: FormState = {
   nombre: '',
   localizacion: '',
   fecha_inicio: '',
+  fecha_inicio_estimada: '',
   presupuesto: '',
   descripcion: ''
 };
@@ -98,6 +98,69 @@ const EstadoBadge = ({ estado }: { estado: string }) => {
   );
 };
 
+// Función para formatear el título de la obra
+// Convierte "casa familiar – nombre del dueño" a "Nombre del Dueño (Casa Familiar)"
+function formatearTituloObra(nombre: string, cliente?: string, tipoObra?: string): string {
+  // Si tenemos cliente y tipoObra separados, usarlos directamente
+  if (cliente && tipoObra) {
+    const tipoCapitalizado = tipoObra
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    const clienteCapitalizado = cliente
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    return `${clienteCapitalizado} (${tipoCapitalizado})`;
+  }
+
+  // Si el nombre ya viene en formato "tipo – cliente", parsearlo
+  if (nombre.includes('–') || nombre.includes('-')) {
+    const partes = nombre.split(/[–-]/).map(p => p.trim());
+    if (partes.length >= 2) {
+      const tipo = partes[0];
+      const clienteNombre = partes.slice(1).join(' ');
+      const tipoCapitalizado = tipo
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      const clienteCapitalizado = clienteNombre
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      return `${clienteCapitalizado} (${tipoCapitalizado})`;
+    }
+  }
+
+  // Si no hay separador, intentar usar cliente y tipoObra si están disponibles
+  if (cliente && tipoObra) {
+    const tipoCapitalizado = tipoObra
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    const clienteCapitalizado = cliente
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    return `${clienteCapitalizado} (${tipoCapitalizado})`;
+  }
+
+  // Si solo tenemos cliente, mostrar cliente primero
+  if (cliente) {
+    const clienteCapitalizado = cliente
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    return tipoObra ? `${clienteCapitalizado} (${tipoObra})` : clienteCapitalizado;
+  }
+
+  // Fallback: capitalizar el nombre original
+  return nombre
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 // Componente para mostrar una card de obra
 const ObraCard = ({
   obra,
@@ -118,6 +181,7 @@ const ObraCard = ({
     });
 
   const estado = obra.estado || 'ACTIVA';
+  const tituloFormateado = formatearTituloObra(obra.nombre, obra.cliente, obra.tipoObra);
 
   return (
     <div
@@ -131,82 +195,105 @@ const ObraCard = ({
         }
       }}
       className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0052CC]"
-      data-onboarding="card-obra"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-[#0052CC]">
-            <Building2 className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">{obra.nombre}</h3>
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-              <MapPin className="h-4 w-4 text-slate-400" />
-              <span>{obra.localizacion?.trim() || 'Sin ubicación definida'}</span>
+      {/* Header con título y estado */}
+      <div className="mb-4 flex items-start gap-3">
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-2 text-[#0052CC] flex-shrink-0">
+          <Building2 className="h-5 w-5" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h3 className="text-lg font-semibold text-slate-900 break-words leading-tight flex-1">
+              {tituloFormateado}
+            </h3>
+            <div className="flex-shrink-0">
+              <EstadoBadge estado={estado} />
             </div>
           </div>
-        </div>
-        <div data-onboarding="estado-obra">
-          <EstadoBadge estado={estado} />
+          <div className="flex items-start gap-2 text-sm text-slate-500">
+            <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
+            <span className="break-words line-clamp-2">{obra.localizacion?.trim() || 'Sin ubicación definida'}</span>
+          </div>
         </div>
       </div>
 
+      {/* Descripción */}
       {obra.descripcion && (
-        <p className="mt-4 line-clamp-2 text-sm text-slate-600">{obra.descripcion}</p>
+        <p className="mb-4 line-clamp-2 text-sm text-slate-600">{obra.descripcion}</p>
       )}
 
-      <div className="mt-4 flex flex-col gap-2 text-sm text-slate-500">
+      {/* Fechas estimadas */}
+      <div className="mb-4 flex flex-col gap-2 text-sm text-slate-500">
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-[#0052CC]" />
-          <span>Creada: {formatearFecha(obra.created_at)}</span>
+          <Calendar className="h-4 w-4 text-[#0052CC] flex-shrink-0" />
+          <span className="break-words">
+            <strong className="text-slate-700">Inicio estimado:</strong>{' '}
+            {(obra as any).fecha_inicio_estimada
+              ? new Date((obra as any).fecha_inicio_estimada).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                })
+              : '—'}
+          </span>
         </div>
-        {obra.fecha_inicio && (
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-[#0052CC]" />
-            <span>Inicio: {formatearFecha(obra.fecha_inicio)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-[#0052CC] flex-shrink-0" />
+          <span className="break-words">
+            <strong className="text-slate-700">Finalización estimada:</strong>{' '}
+            {(obra as any).fecha_final_estimada
+              ? new Date((obra as any).fecha_final_estimada).toLocaleDateString('es-AR', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                })
+              : '—'}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-2" data-onboarding="acciones-obra">
-        <div className="flex gap-2">
+      {/* Botones de acción */}
+      <div className="mt-auto pt-4 border-t border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onView(obra);
+              }}
+              className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+              icon={<Eye className="h-4 w-4" />}
+            >
+              Ver
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(obra);
+              }}
+              className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
+              icon={<Edit3 className="h-4 w-4" />}
+            >
+              Editar
+            </Button>
+          </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={(event) => {
               event.stopPropagation();
-              onView(obra);
+              onDelete(obra);
             }}
-            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
-            icon={<Eye className="h-4 w-4" />}
+            className="!rounded-lg !px-3 !py-1.5 !text-rose-600 hover:!bg-rose-50"
+            icon={<Trash2 className="h-4 w-4" />}
           >
-            Ver
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit(obra);
-            }}
-            className="!rounded-lg !px-3 !py-1.5 !text-slate-600 hover:!bg-slate-100 hover:!text-slate-900"
-            icon={<Edit3 className="h-4 w-4" />}
-          >
-            Editar
+            Eliminar
           </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(obra);
-          }}
-          className="!rounded-lg !px-3 !py-1.5 !text-rose-600 hover:!bg-rose-50"
-          icon={<Trash2 className="h-4 w-4" />}
-        >
-          Eliminar
-        </Button>
       </div>
     </div>
   );
@@ -224,7 +311,6 @@ function ObrasSectionContent() {
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { startOnboarding } = useOnboardingCrearObra();
 
   // Hooks para suscripciones
   const upgradeModal = useUpgradeModal();
@@ -239,15 +325,34 @@ function ObrasSectionContent() {
 
     try {
       setIsLoading(true);
-      const { data, error: fetchError } = await supabase
+      setError(null);
+      
+      // Intentar primero con los campos nuevos (si existen en la DB)
+      let query = supabase
         .from('obras')
-        .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra, plantas, terreno, superficies, latitud, longitud')
+        .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra, plantas, terreno, superficies, latitud, longitud, fecha_inicio_estimada, fecha_final_estimada')
         .eq('org_id', currentUser.orgId)
         .order('created_at', { ascending: false });
 
+      let { data, error: fetchError } = await query;
+
+      // Si falla porque los campos nuevos no existen, intentar sin ellos
+      if (fetchError && fetchError.message?.includes('column') && (fetchError.message?.includes('fecha_inicio_estimada') || fetchError.message?.includes('fecha_final_estimada'))) {
+        // Reintentar sin los campos nuevos (para compatibilidad con DB antigua)
+        const fallbackQuery = supabase
+          .from('obras')
+          .select('id, org_id, name, address, estado, created_at, propietario, tipo_obra, plantas, terreno, superficies, latitud, longitud')
+          .eq('org_id', currentUser.orgId)
+          .order('created_at', { ascending: false });
+
+        const fallbackResult = await fallbackQuery;
+        data = fallbackResult.data;
+        fetchError = fallbackResult.error;
+      }
+
       if (fetchError) {
         console.error('[LOAD_OBRAS_ERROR]', fetchError);
-        setError('Error al cargar las obras');
+        setError(`Error al cargar las obras: ${fetchError.message || 'Error desconocido'}`);
         return;
       }
 
@@ -259,6 +364,8 @@ function ObrasSectionContent() {
         estado: (obra.estado?.toLowerCase() as 'activa' | 'pausada' | 'finalizada') || 'activa',
         created_at: obra.created_at || new Date().toISOString(),
         fecha_inicio: undefined,
+        fecha_inicio_estimada: obra.fecha_inicio_estimada || undefined,
+        fecha_final_estimada: obra.fecha_final_estimada || undefined,
         presupuesto: undefined,
         descripcion: '',
         cliente: obra.propietario || undefined,
@@ -277,8 +384,8 @@ function ObrasSectionContent() {
 
       setObras(obrasMapeadas);
     } catch (err) {
-      console.error('[LOAD_OBRAS_ERROR]', err);
-      setError('Error al cargar las obras');
+      console.error('[LOAD_OBRAS_EXCEPTION]', err);
+      setError(`Error al cargar las obras: ${err instanceof Error ? err.message : 'Error desconocido'}`);
     } finally {
       setIsLoading(false);
     }
@@ -306,6 +413,7 @@ function ObrasSectionContent() {
       nombre: obra.nombre,
       localizacion: obra.localizacion || '',
       fecha_inicio: obra.fecha_inicio || '',
+      fecha_inicio_estimada: (obra as any).fecha_inicio_estimada || '',
       presupuesto: obra.presupuesto?.toString() || '',
       descripcion: obra.descripcion || ''
     });
@@ -350,7 +458,6 @@ function ObrasSectionContent() {
           .eq('org_id', currentUser.orgId);
 
         if (updateError) {
-          console.error('[UPDATE_OBRA_ERROR]', updateError);
           setError('Error al actualizar la obra');
           setIsLoading(false);
           return;
@@ -360,6 +467,21 @@ function ObrasSectionContent() {
         await loadObras();
         cerrarModal();
       } else {
+        // Validar que fecha_inicio_estimada esté presente al crear
+        if (!formState.fecha_inicio_estimada) {
+          setError('La fecha de inicio estimada es obligatoria');
+          setIsLoading(false);
+          return;
+        }
+
+        // Validar que la fecha no sea menor a hoy
+        const today = new Date().toISOString().split('T')[0];
+        if (formState.fecha_inicio_estimada < today) {
+          setError('La fecha de inicio estimada no puede ser menor a la fecha actual');
+          setIsLoading(false);
+          return;
+        }
+
         // Crear nueva obra
         const { data, error: insertError } = await supabase
           .from('obras')
@@ -368,12 +490,14 @@ function ObrasSectionContent() {
             name: formState.nombre,
             address: formState.localizacion || null,
             estado: 'pendiente',
+            fecha_inicio_estimada: formState.fecha_inicio_estimada,
+            // fecha_final_estimada será calculada automáticamente por el backend
+            // inicialmente puede ser igual a fecha_inicio_estimada hasta que haya tareas
           })
           .select()
           .single();
 
         if (insertError) {
-          console.error('[CREATE_OBRA_ERROR]', insertError);
           setError('Error al crear la obra');
           setIsLoading(false);
           return;
@@ -384,7 +508,6 @@ function ObrasSectionContent() {
         cerrarModal();
       }
     } catch (err) {
-      console.error('[SUBMIT_OBRA_ERROR]', err);
       setError('Error al guardar la obra');
     } finally {
       setIsLoading(false);
@@ -412,7 +535,6 @@ function ObrasSectionContent() {
         .eq('org_id', currentUser.orgId);
 
       if (deleteError) {
-        console.error('[DELETE_OBRA_ERROR]', deleteError);
         setError('Error al eliminar la obra');
         setIsLoading(false);
         return;
@@ -421,7 +543,6 @@ function ObrasSectionContent() {
       // Recargar obras después de eliminar
       await loadObras();
     } catch (err) {
-      console.error('[DELETE_OBRA_ERROR]', err);
       setError('Error al eliminar la obra');
     } finally {
       setIsLoading(false);
@@ -509,18 +630,10 @@ function ObrasSectionContent() {
         obra={obraCompleta}
         tareas={[]}
         onVolver={() => setSelectedObra(null)}
-        onActualizarTarea={(tarea) => {
-          console.log('Actualizar tarea:', tarea);
-        }}
-        onCrearTarea={(tarea) => {
-          console.log('Crear tarea:', tarea);
-        }}
-        onCrearTareas={(tareas) => {
-          console.log('Crear tareas:', tareas);
-        }}
-        onEliminarTarea={(tareaId) => {
-          console.log('Eliminar tarea:', tareaId);
-        }}
+        onActualizarTarea={() => {}}
+        onCrearTarea={() => {}}
+        onCrearTareas={() => {}}
+        onEliminarTarea={() => {}}
         onActualizarObra={async (obra) => {
           try {
             setIsLoading(true);
@@ -535,6 +648,7 @@ function ObrasSectionContent() {
               plantas: (obra as any).plantas || 1,
               terreno: (obra as any).terreno || 0,
               superficies: (obra as any).superficies || [],
+              fecha_inicio_estimada: (obra as any).fecha_inicio_estimada || null,
             };
 
             const response = await fetch(`/api/obras/${obra.id}`, {
@@ -566,6 +680,8 @@ function ObrasSectionContent() {
                       plantas: obraActualizada.plantas || o.plantas,
                       terreno: obraActualizada.terreno || o.terreno,
                       superficies: obraActualizada.superficies || o.superficies,
+                      fecha_inicio_estimada: obraActualizada.fecha_inicio_estimada || (o as any).fecha_inicio_estimada,
+                      fecha_final_estimada: obraActualizada.fecha_final_estimada || (o as any).fecha_final_estimada,
                     }
                   : o
               )
@@ -581,9 +697,13 @@ function ObrasSectionContent() {
               plantas: obraActualizada.plantas || prev.plantas,
               terreno: obraActualizada.terreno || prev.terreno,
               superficies: obraActualizada.superficies || prev.superficies,
+              fecha_inicio_estimada: obraActualizada.fecha_inicio_estimada || (prev as any).fecha_inicio_estimada,
+              fecha_final_estimada: obraActualizada.fecha_final_estimada || (prev as any).fecha_final_estimada,
             } : null);
+
+            // Recargar obras para asegurar sincronización
+            await loadObras();
           } catch (err) {
-            console.error('[UPDATE_OBRA_ERROR]', err);
             setError(err instanceof Error ? err.message : 'Error al actualizar la obra');
           } finally {
             setIsLoading(false);
@@ -608,21 +728,19 @@ function ObrasSectionContent() {
       subtitleClassName="text-sm text-slate-500"
       className="bg-[#F8FAFC]"
     >
-      <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="text-center text-sm text-slate-500 md:text-left">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-center text-sm text-slate-500 sm:text-left">
           {totalObras > 0
             ? `Tenés ${totalObras} ${totalObras === 1 ? 'obra' : 'obras'} activas en tu cuenta.`
             : 'Aún no registraste obras en tu organización.'}
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-3 md:justify-end">
-          <TutorialButton onClick={startOnboarding} />
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:justify-end">
           <Button
             onClick={abrirWizardCrear}
             variant="primary"
             size="lg"
-            icon={<Plus className="h-5 w-5" />}
-            className="!rounded-xl !bg-[#86EFAC] !px-6 !py-3 !text-white hover:!bg-[#4ADE80] focus:!ring-[#86EFAC] focus:!ring-offset-2"
-            data-onboarding="crear-obra"
+            icon={<Plus className="h-6 w-6" />}
+            className="!rounded-xl !bg-[#0C1D36] !px-6 !py-4 !text-base !font-semibold !text-white hover:!bg-[#1a3652] hover:!shadow-xl !transition-all !duration-200 hover:!scale-105 active:!scale-95 focus:!ring-2 focus:!ring-[#0C1D36] focus:!ring-offset-2"
           >
             Crear obra
           </Button>
@@ -638,7 +756,7 @@ function ObrasSectionContent() {
         </div>
       )}
 
-      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5" data-onboarding="estadisticas-obras">
+      <div className="mb-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {[{
           label: 'Total de obras',
           value: totalObras,
@@ -698,7 +816,7 @@ function ObrasSectionContent() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {obrasFiltradas.map((obra) => (
             <ObraCard
               key={obra.id}
@@ -763,16 +881,34 @@ function ObrasSectionContent() {
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-fecha">
-                    Fecha de inicio
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-fecha-inicio-estimada">
+                    Fecha de inicio estimada *
                   </label>
                   <input
-                    id="obra-fecha"
+                    id="obra-fecha-inicio-estimada"
                     type="date"
-                    value={formState.fecha_inicio}
-                    onChange={(event) => setFormState({ ...formState, fecha_inicio: event.target.value })}
+                    required={!isEditing}
+                    min={new Date().toISOString().split('T')[0]}
+                    value={formState.fecha_inicio_estimada}
+                    onChange={(event) => {
+                      const selectedDate = event.target.value;
+                      const today = new Date().toISOString().split('T')[0];
+                      
+                      // Validar que no sea menor a la fecha actual
+                      if (selectedDate && selectedDate < today) {
+                        setError('La fecha de inicio estimada no puede ser menor a la fecha actual');
+                        return;
+                      }
+                      
+                      setFormState({ ...formState, fecha_inicio_estimada: selectedDate });
+                      setError(null);
+                    }}
+                    placeholder="Seleccioná la fecha estimada de inicio"
                     className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
+                  {!isEditing && !formState.fecha_inicio_estimada && (
+                    <p className="text-xs text-slate-500">Este campo es obligatorio</p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-medium text-slate-700" htmlFor="obra-presupuesto">
@@ -783,6 +919,22 @@ function ObrasSectionContent() {
                     type="number"
                     value={formState.presupuesto}
                     onChange={(event) => setFormState({ ...formState, presupuesto: event.target.value })}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
+                  />
+                </div>
+              </div>
+
+              {/* Campo fecha_inicio legacy (opcional, para compatibilidad) */}
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-slate-700" htmlFor="obra-fecha">
+                    Fecha de inicio (legacy)
+                  </label>
+                  <input
+                    id="obra-fecha"
+                    type="date"
+                    value={formState.fecha_inicio}
+                    onChange={(event) => setFormState({ ...formState, fecha_inicio: event.target.value })}
                     className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-800 shadow-inner focus:border-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0052CC]/40"
                   />
                 </div>
@@ -830,9 +982,5 @@ function ObrasSectionContent() {
 
 // Componente principal exportado (con provider)
 export default function ObrasSection() {
-  return (
-    <OnboardingCrearObraProvider>
-      <ObrasSectionContent />
-    </OnboardingCrearObraProvider>
-  );
+  return <ObrasSectionContent />;
 }

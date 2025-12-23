@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Bell, Send, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useSubscription } from '@/lib/subscriptions';
-import { canUseFeature, usePlanGate } from '@/lib/permissions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge, Button } from '@/components/ui/grows';
 import { ListaNotificaciones, type NotificacionItem } from '@/components/cliente/mensajeria/ListaNotificaciones';
@@ -32,9 +30,6 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
   const [mostrarModalEmision, setMostrarModalEmision] = useState(false);
   const [tabValue, setTabValue] = useState<'notificaciones' | 'informes' | 'mensajes'>('notificaciones');
   const [cargandoNotificaciones, setCargandoNotificaciones] = useState(false);
-  const { planId } = useSubscription();
-  const { verifyAccess } = usePlanGate();
-  const canUseNotificaciones = canUseFeature(planId, 'notificaciones');
   const router = useRouter();
 
   const headers = useMemo(() => {
@@ -67,7 +62,7 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
         setNotificaciones(items);
       }
     } catch (error) {
-      console.error('[NotificacionesSection] Error fetching notificaciones:', error);
+      // Error fetching notificaciones - handled silently with empty state
     } finally {
       setCargandoNotificaciones(false);
     }
@@ -92,8 +87,6 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
           filter: `destinatario_id=eq.${usuarioId}`,
         },
         (payload) => {
-          console.log('[NotificacionesSection] Realtime event:', payload);
-          
           if (payload.eventType === 'INSERT' && payload.new) {
             const nuevaNotif: NotificacionItem = {
               id: payload.new.id,
@@ -141,10 +134,6 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
   }, [orgId, usuarioId, supabase]);
 
   const marcarComoLeida = async (id: string) => {
-    if (!verifyAccess('notificaciones', 'STARTER')) {
-      return;
-    }
-
     try {
       const response = await fetch(`/api/notificaciones/${id}/leida`, {
         method: 'PATCH',
@@ -172,7 +161,6 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
         setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
       }
     } catch (error) {
-      console.error('[NotificacionesSection] Error marcando notificación como leída:', error);
       // Fallback: actualizar localmente
       setNotificaciones((prev) => prev.map((notif) => (notif.id === id ? { ...notif, leida: true } : notif)));
     }
@@ -194,53 +182,8 @@ export function NotificacionesSection({ onNavigate }: NotificacionesSectionProps
   }, [notificacionesNoLeidas]);
 
   const abrirModalInforme = () => {
-    if (!verifyAccess('notificaciones', 'STARTER')) return;
     setMostrarModalEmision(true);
   };
-
-  if (!canUseNotificaciones) {
-    const handleClose = () => {
-      if (onNavigate) {
-        onNavigate('obras');
-        return;
-      }
-      router.push('/cliente/obras');
-    };
-
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-neutral-950/60 px-6 backdrop-blur-xl">
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(203,161,53,0.22),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(12,29,54,0.55),_transparent_55%)] opacity-80"
-          aria-hidden="true"
-        />
-        <div className="pointer-events-none absolute inset-0 bg-neutral-200/25" aria-hidden="true" />
-        <div className="relative max-w-md space-y-4 rounded-2xl border border-neutral-700/60 bg-neutral-900/80 p-8 text-center text-zinc-100 shadow-2xl backdrop-blur-md">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="absolute -right-4 -top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/70 text-white transition hover:bg-black/90"
-            aria-label="Cerrar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#CBA135]/20 text-[#CBA135]">
-            <Bell className="h-7 w-7" />
-          </div>
-          <h1 className="text-2xl font-semibold text-zinc-50">Notificaciones en plan Starter</h1>
-          <p className="text-sm text-zinc-200">
-            Enviá informes, alertas y notificaciones en vivo al subir a Starter o superior. Centralizá la comunicación de tus obras.
-          </p>
-          <button
-            type="button"
-            onClick={() => verifyAccess('notificaciones', 'STARTER')}
-            className="w-full rounded-xl bg-[#CBA135] px-4 py-3 text-sm font-semibold text-black transition hover:bg-[#d3ad45]"
-          >
-            Activar plan Starter
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <section className="min-h-screen bg-grows-gray px-10 py-8 space-y-8">

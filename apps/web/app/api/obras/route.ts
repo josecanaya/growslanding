@@ -199,7 +199,7 @@ export async function POST(request: Request) {
       if (orgCheck1.error && orgCheck1.error.code === '42P01') {
         // Tabla no existe, intentar con 'orgs'
         const orgCheck2 = await supabase
-          .from('orgs')
+          .from('organizations')
           .select('id')
           .eq('id', org_id)
           .maybeSingle();
@@ -249,10 +249,10 @@ export async function POST(request: Request) {
         } else if (user.id) {
           // Si no existe, verificar si el usuario es owner
           const { data: ownerOrg } = await supabase
-            .from('orgs')
+            .from('organizations')
             .select('id')
             .eq('id', org_id)
-            .eq('owner_user_id', user.id)
+            .eq('user_id', user.id)
             .maybeSingle();
 
           if (ownerOrg) {
@@ -294,10 +294,10 @@ export async function POST(request: Request) {
         // Verificar si el usuario es owner (si existe tabla orgs con owner_user_id)
         if (user.id) {
           const { data: ownerOrg } = await supabase
-            .from('orgs')
+            .from('organizations')
             .select('id')
             .eq('id', org_id)
-            .eq('owner_user_id', user.id)
+            .eq('user_id', user.id)
             .maybeSingle();
 
           if (ownerOrg) {
@@ -310,7 +310,7 @@ export async function POST(request: Request) {
         // Verificar si el usuario es líder (via leader_invites)
         if (!isAuthorized && user.email) {
           const { data: leaderInvite } = await supabase
-            .from('leader_invites')
+            .from('leader_invites' as any)
             .select('id, org_id')
             .eq('org_id', org_id)
             .eq('email', user.email)
@@ -364,6 +364,32 @@ export async function POST(request: Request) {
           { error: `No autorizado para esta organización. Tu email (${user.email}) no está registrado en esta organización. Por favor, solicita acceso a la organización primero o asegúrate de estar registrado como socio.` },
           { status: 403 }
         );
+      }
+
+      // 3.5) Validar límites de obras según el plan
+      try {
+        const { validarLimiteObras } = await import('@/lib/services/plan.service');
+        const validacion = await validarLimiteObras(org_id);
+        
+        if (!validacion.puedeCrear) {
+          console.log('[POST_OBRAS] Límite de obras alcanzado', {
+            obrasActivas: validacion.obrasActivas,
+            limiteObras: validacion.limiteObras,
+          });
+          return NextResponse.json(
+            { 
+              error: validacion.mensaje || 'Tu plan no permite crear más obras activas. Actualizá tu plan para continuar.',
+              detalles: {
+                obrasActivas: validacion.obrasActivas,
+                limiteObras: validacion.limiteObras,
+              }
+            },
+            { status: 403 }
+          );
+        }
+      } catch (limiteError) {
+        console.error('[POST_OBRAS] Error validando límite de obras:', limiteError);
+        // Continuar si hay error (no bloquear en caso de problemas de configuración)
       }
 
       // 4) Insertar en obras (usando name y address según el schema SQL, más todos los campos del wizard)

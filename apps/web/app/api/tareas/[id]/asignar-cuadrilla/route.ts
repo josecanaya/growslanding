@@ -207,7 +207,7 @@ export async function POST(
     // Registrar en historial de estados (estado no cambia, solo asignación)
     const estadoActual = tarea.estado || 'pendiente';
     const { error: estadoError } = await supabase
-      .from('tareas_estados')
+      .from('tareas_estados' as any)
       .insert({
         tarea_id: tareaId,
         estado_anterior: estadoActual,

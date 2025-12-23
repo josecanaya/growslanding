@@ -24,6 +24,7 @@ export const CrearTareaSchema = z.object({
   unidad: z.enum(['m²', 'm³', 'ml', 'unidad', 'kg', 'l']),
   duracionEstimada: z.number().int().positive().optional(),
   costoEstimado: z.number().positive().optional(),
+  bloques: z.number().int().min(1).max(365).optional(),
 });
 
 export const ActualizarTareaSchema = z.object({
@@ -42,6 +43,7 @@ export const ActualizarTareaSchema = z.object({
   fecha_inicio_real: z.string().optional(),
   fecha_fin_real: z.string().optional(),
   avance: z.number().int().min(0).max(100).optional(),
+  bloques: z.number().int().min(1).max(365).optional(),
 });
 
 export const AsignarSocioSchema = z.object({

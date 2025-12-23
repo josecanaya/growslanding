@@ -4,14 +4,13 @@ import type { PlanFeatureKey, SubscriptionPlanId } from '@/lib/subscriptions/typ
 
 /**
  * Define qué planes pueden usar cada feature.
+ * NOTE: Section-based gating removed. Only limit-based gating remains.
+ * Sections (chat, calendario, notificaciones, cuadrillas) are now available to all plans.
  */
 const FEATURE_RULES: Record<string, string[]> = {
   obras: ['FREE', 'STARTER', 'PRO', 'ENTERPRISE'],
-  cuadrillas: ['STARTER', 'PRO', 'ENTERPRISE'],
   validacion: ['STARTER', 'PRO', 'ENTERPRISE'],
-  chat: ['PRO', 'ENTERPRISE'],
-  calendario: ['PRO', 'ENTERPRISE'],
-  notificaciones: ['STARTER', 'PRO', 'ENTERPRISE'],
+  // Removed: chat, calendario, notificaciones, cuadrillas - now available to all plans
 };
 
 /** Verifica si un plan tiene acceso a una funcionalidad */

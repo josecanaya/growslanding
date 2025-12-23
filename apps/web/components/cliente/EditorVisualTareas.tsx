@@ -11,8 +11,6 @@ import {
   Check,
   HelpCircle
 } from 'lucide-react';
-import { OnboardingOrganizarProvider, useOnboardingOrganizar } from '@/components/onboarding/OnboardingOrganizar';
-import TutorialButton from '@/components/common/TutorialButton';
 
 interface Tarea {
   id: string;
@@ -56,8 +54,6 @@ function EditorVisualTareasContent({
 }: EditorVisualTareasProps) {
   console.log('🚀 COMPONENTE ACTUALIZADO - EditorVisualTareas con FILTROS, PRECARGA y EDICIÓN');
   console.log('📊 Tareas recibidas:', tareasIniciales.length, tareasIniciales);
-  
-  const { startOnboarding } = useOnboardingOrganizar();
   const canvasRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [nodos, setNodos] = useState<Tarea[]>([]);
@@ -287,16 +283,8 @@ function EditorVisualTareasContent({
       {/* Toolbar superior */}
       <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border p-2" style={{borderColor: '#dce3ea'}}>
         <div className="flex items-center space-x-4">
-          {/* Botón de tutorial */}
-          <TutorialButton
-            onClick={() => {
-              console.log('🔵 Click en botón tutorial - llamando startOnboarding');
-              startOnboarding();
-            }}
-            data-onboarding="tutorial-button-organizar"
-          />
           {/* Filtros por etapa */}
-          <div className="flex items-center space-x-2 pr-4 border-r" style={{borderColor: '#dce3ea'}} data-onboarding="filtros-etapa">
+          <div className="flex items-center space-x-2 pr-4 border-r" style={{borderColor: '#dce3ea'}}>
             <button
               onClick={() => toggleFiltroEtapa('estructura')}
               className="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
@@ -333,7 +321,7 @@ function EditorVisualTareasContent({
           </div>
 
           {/* Controles de zoom */}
-          <div className="flex items-center space-x-2" data-onboarding="controles-zoom">
+          <div className="flex items-center space-x-2">
             <button
               onClick={handleZoomOut}
               className="p-2 rounded transition-colors"
@@ -377,7 +365,6 @@ function EditorVisualTareasContent({
             background: '#eaf0f6',
             minHeight: '700px'
           }}
-          data-onboarding="lienzo-tareas"
           onWheel={(e) => {
             if (e.ctrlKey) {
               e.preventDefault();
@@ -408,7 +395,6 @@ function EditorVisualTareasContent({
             minWidth: '2500px',
             minHeight: '1500px'
           }}
-          data-onboarding="conectar-tareas"
         >
           {tareasVisibles.map((tarea) => (
             <div
@@ -426,7 +412,6 @@ function EditorVisualTareasContent({
                   handleClickNodo(tarea);
                 }
               }}
-              data-onboarding="nodo-tarea"
             >
               {/* Nodo de tarea */}
               <div
@@ -492,7 +477,6 @@ function EditorVisualTareasContent({
           <div 
             className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full m-4"
             onClick={(e) => e.stopPropagation()}
-            data-onboarding="modal-edicion-tarea"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold" style={{color: '#1B263B'}}>
@@ -588,9 +572,5 @@ function EditorVisualTareasContent({
 
 // Componente principal exportado (con provider)
 export function EditorVisualTareas(props: EditorVisualTareasProps) {
-  return (
-    <OnboardingOrganizarProvider>
-      <EditorVisualTareasContent {...props} />
-    </OnboardingOrganizarProvider>
-  );
+  return <EditorVisualTareasContent {...props} />;
 }

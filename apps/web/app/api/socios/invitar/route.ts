@@ -47,12 +47,15 @@ export async function POST(request: NextRequest) {
     if (email) {
       const { data: socioExistente } = await supabase
         .from('socios')
-        .select('id, status')
+        .select('id, estado')
         .eq('org_id', organizacionId)
         .eq('email', email)
         .maybeSingle();
 
-      if (socioExistente && socioExistente.status !== 'inactivo') {
+      // Type assertion: socioExistente has the expected structure
+      const socioRecord = socioExistente as { id: string; estado: string | null } | null;
+
+      if (socioRecord && socioRecord.estado !== 'inactivo') {
         return NextResponse.json(
           { success: false, error: 'Ya existe un socio activo con este email' },
           { status: 409 }
@@ -63,12 +66,15 @@ export async function POST(request: NextRequest) {
     if (telefono) {
       const { data: socioExistente } = await supabase
         .from('socios')
-        .select('id, status')
+        .select('id, estado')
         .eq('org_id', organizacionId)
         .eq('telefono', telefono)
         .maybeSingle();
 
-      if (socioExistente && socioExistente.status !== 'inactivo') {
+      // Type assertion: socioExistente has the expected structure
+      const socioRecordTelefono = socioExistente as { id: string; estado: string | null } | null;
+
+      if (socioRecordTelefono && socioRecordTelefono.estado !== 'inactivo') {
         return NextResponse.json(
           { success: false, error: 'Ya existe un socio activo con este teléfono' },
           { status: 409 }
@@ -99,7 +105,7 @@ export async function POST(request: NextRequest) {
     const { data: socio, error: socioError } = await supabase
       .from('socios')
       .insert(datosInsert)
-      .select('id, nombre, email, telefono, rol')
+      .select('id, nombre, email, telefono')
       .single();
 
     if (socioError) {
@@ -140,7 +146,7 @@ export async function POST(request: NextRequest) {
         const { data: socioSimplificado, error: errorSimplificado } = await supabase
           .from('socios')
           .insert(datosSimplificados)
-          .select('id, nombre, email, telefono, rol')
+          .select('id, nombre, email, telefono')
           .single();
 
         if (errorSimplificado) {
@@ -150,8 +156,8 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Continuar con socio simplificado
-        const socioCreado = socioSimplificado;
+        // Type assertion: socioSimplificado has the expected structure
+        const socioCreado = socioSimplificado as { id: string; nombre: string; email: string | null; telefono: string | null };
         
         // Enviar magic link si hay email
         if (email) {
@@ -218,7 +224,6 @@ export async function POST(request: NextRequest) {
             nombre: socioCreado.nombre,
             email: socioCreado.email || email || null,
             telefono: socioCreado.telefono || telefono || null,
-            rol: socioCreado.rol,
             especialidad: especialidad || null, // Se usa solo para crear cuadrilla, no se guarda en socio
             cuadrilla_id: cuadrillaIdSimplificada,
           },
@@ -240,8 +245,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Type assertion: socio has the expected structure
+    const socioRecord = socio as { id: string; nombre: string; email: string | null; telefono: string | null } | null;
+
     // Verificar que socio fue creado correctamente
-    if (!socio || !socio.id) {
+    if (!socioRecord || !socioRecord.id) {
       console.error('[ERROR_INVITAR_SOCIO] Socio no fue creado correctamente');
       return NextResponse.json(
         { success: false, error: 'Error al crear socio: no se pudo obtener el ID' },
@@ -249,13 +257,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[DEBUG_INVITAR_SOCIO] Socio creado exitosamente:', socio.id);
+    console.log('[DEBUG_INVITAR_SOCIO] Socio creado exitosamente:', socioRecord.id);
 
     // Enviar magic link si hay email
-    if (email && socio) {
+    if (email && socioRecord) {
       try {
         const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-        const redirectUrl = `${origin}/auth/invite-accept?socio_id=${socio.id}`;
+        const redirectUrl = `${origin}/auth/invite-accept?socio_id=${socioRecord.id}`;
 
         console.log('[DEBUG_INVITAR_SOCIO] Enviando magic link a:', email, 'Redirect:', redirectUrl);
 
@@ -264,7 +272,7 @@ export async function POST(request: NextRequest) {
           options: {
             emailRedirectTo: redirectUrl,
             data: {
-              socio_id: socio.id,
+              socio_id: socioRecord.id,
               org_id: organizacionId,
               rol,
               nombre,
@@ -289,7 +297,7 @@ export async function POST(request: NextRequest) {
 
     // Si el rol es 'lider' y tiene especialidad, crear automáticamente una cuadrilla
     let cuadrillaId: string | null = null;
-    if (rol === 'lider' && especialidad && socio) {
+    if (rol === 'lider' && especialidad && socioRecord) {
       try {
         const cuadrillaData = {
           org_id: organizacionId,
@@ -332,11 +340,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        socio_id: socio.id,
-        nombre: socio.nombre,
-        email: socio.email || email || null,
-        telefono: socio.telefono || telefono || null,
-        rol: socio.rol,
+        socio_id: socioRecord.id,
+        nombre: socioRecord.nombre,
+        email: socioRecord.email || email || null,
+        telefono: socioRecord.telefono || telefono || null,
         especialidad: especialidad || null, // Se usa solo para crear cuadrilla, no se guarda en socio
         cuadrilla_id: cuadrillaId,
       },

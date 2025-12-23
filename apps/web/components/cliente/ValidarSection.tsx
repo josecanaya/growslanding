@@ -8,23 +8,30 @@ import {
   Card,
   EmptyState,
 } from '@/components/ui/grows';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useToast } from '@/components/ui/use-toast';
+import { TareaFsmService } from '@/lib/services/tarea-fsm.service';
+import { useCurrentPlan } from '@/lib/subscriptions';
+import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import {
   Building2,
   CheckCircle,
   Clock,
-  FileText,
   Loader2,
   Users,
   XCircle,
-  Image as ImageIcon,
   X,
   Camera,
 } from 'lucide-react';
-
-const COMPLETED_STATES = new Set(['finalizado', 'validado']);
 
 const DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -32,11 +39,23 @@ const DATE_FORMATTER = new Intl.DateTimeFormat('es-AR', {
   year: 'numeric',
 });
 
+const CURRENCY_FORMATTER = new Intl.NumberFormat('es-AR', {
+  style: 'currency',
+  currency: 'ARS',
+});
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'Sin fecha';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Sin fecha';
   return DATE_FORMATTER.format(date);
+}
+
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return CURRENCY_FORMATTER.format(value);
 }
 
 type ValidarSectionProps = {
@@ -55,14 +74,24 @@ type RawTarea = Record<string, any> & {
   fecha_inicio?: string | null;
   fecha_fin?: string | null;
   cuadrilla_id?: string | null;
-  fecha_validacion?: string | null;
-  validado_por?: string | null;
 };
 
 type EvidenciaItem = {
   url: string;
   path: string;
   created_at?: string;
+};
+
+type ValidarSubtarea = {
+  id: string;
+  estado: string;
+  montoEstimado: number | null;
+  montoValidado: number | null;
+  fecha: string | null;
+  orden: number | null;
+  bloque_index?: number | null;
+  evidencia_url?: string | null;
+  evidencia_cargada?: boolean | null;
 };
 
 type ValidarTarea = {
@@ -76,15 +105,21 @@ type ValidarTarea = {
   fechaInicio: string | null;
   fechaFin: string | null;
   evidencias: EvidenciaItem[];
-  rawEstado: string | null;
-  hasFechaValidacion: boolean;
-  hasValidadoPor: boolean;
+  estadoOficial: 'pendiente' | 'en_progreso' | 'para_validar' | 'validada' | 'rechazada';
+  subtareas: ValidarSubtarea[];
 };
 
 type ObraItem = {
   id: string;
   nombre: string;
   count: number;
+};
+
+type ConfirmacionModal = {
+  tipo: 'validar' | 'rechazar' | null;
+  subtareaId: string | null;
+  bloqueNombre: string;
+  monto: number | null;
 };
 
 export function ValidarSection({ obraId }: ValidarSectionProps) {
@@ -94,13 +129,22 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     []
   );
   const { toast } = useToast();
+  const subscription = useCurrentPlan();
+  const upgradeModal = useUpgradeModal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tareas, setTareas] = useState<ValidarTarea[]>([]);
   const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [subtareaProcessingId, setSubtareaProcessingId] = useState<string | null>(null);
   const [imagenAmpliada, setImagenAmpliada] = useState<{ url: string; titulo: string } | null>(null);
+  const [confirmacionModal, setConfirmacionModal] = useState<ConfirmacionModal>({
+    tipo: null,
+    subtareaId: null,
+    bloqueNombre: '',
+    monto: null,
+  });
+  const [motivoRechazo, setMotivoRechazo] = useState('');
 
   const loadData = useCallback(async () => {
     if (!currentUser?.orgId) {
@@ -113,14 +157,12 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     setError(null);
 
     try {
-      // Obtener TODAS las tareas finalizadas o validadas (no filtrar por validación)
       let tareasQuery = supabase
         .from('tareas')
         .select(
-          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id, fecha_validacion, validado_por'
+          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id'
         )
-        .eq('org_id', currentUser.orgId)
-        .in('estado', ['finalizado', 'validado', 'en_revision', 'pendiente']);
+        .eq('org_id', currentUser.orgId);
 
       if (obraId) {
         tareasQuery = tareasQuery.eq('obra_id', obraId);
@@ -132,26 +174,50 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         throw tareasError;
       }
 
-      // Separar en pendientes y validadas
       const todasLasTareas = (rawTareas ?? []) as RawTarea[];
-      
-      // Filtrar solo las que tienen evidencias o están finalizadas/validadas
-      const tareasConEvidencias = todasLasTareas.filter((row: RawTarea) => {
-        const estado = (row.estado ?? '').toLowerCase();
-        return estado === 'finalizado' || estado === 'validado' || estado === 'en_revision';
-      });
 
-      const obraIds = Array.from(new Set(tareasConEvidencias.map((t) => t.obra_id)));
+      const obraIds = Array.from(new Set(todasLasTareas.map((t) => t.obra_id)));
       const cuadrillaIds = Array.from(
         new Set(
-          tareasConEvidencias
+          todasLasTareas
             .map((t) => t.cuadrilla_id)
             .filter((value): value is string => Boolean(value))
         )
       );
-      const tareaIds = tareasConEvidencias.map((t) => t.id);
+      const tareaIds = todasLasTareas.map((t) => t.id);
+      const subtareasPorTarea = new Map<string, ValidarSubtarea[]>();
 
-      // Obtener evidencias de tareas_evidencias y también de media (vía eventos)
+      if (tareaIds.length > 0) {
+        const { data: subtareasData, error: subtareasError } = await supabase
+          .from('tareas_subtareas')
+          .select('id, tarea_id, estado, monto_estimado, monto_validado, fecha, orden, orden_pago, bloque_index, evidencia_url, evidencia_cargada')
+          .in('tarea_id', tareaIds);
+
+        if (subtareasError) {
+          throw subtareasError;
+        }
+
+        if (subtareasData) {
+          subtareasData.forEach((row: any) => {
+            const tareaId = row.tarea_id;
+            if (!tareaId) return;
+            const lista = subtareasPorTarea.get(tareaId) ?? [];
+            lista.push({
+              id: row.id,
+              estado: row.estado ?? 'pendiente',
+              montoEstimado: typeof row.monto_estimado === 'number' ? row.monto_estimado : null,
+              montoValidado: typeof row.monto_validado === 'number' ? row.monto_validado : null,
+              fecha: row.fecha ?? null,
+              orden: row.orden ?? row.orden_pago ?? row.bloque_index ?? null,
+              bloque_index: row.bloque_index ?? null,
+              evidencia_url: row.evidencia_url ?? null,
+              evidencia_cargada: row.evidencia_cargada ?? false,
+            });
+            subtareasPorTarea.set(tareaId, lista);
+          });
+        }
+      }
+
       let evidenciasDirectas: any[] = [];
       let evidenciasMedia: any[] = [];
       let eventosConTareas: any[] = [];
@@ -159,15 +225,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       let cuadrillasData: any[] = [];
 
       if (tareaIds.length > 0) {
-        // Primero obtener eventos para poder buscar media
         const { data: eventosData } = await supabase
           .from('eventos')
           .select('id, tarea_id')
           .in('tarea_id', tareaIds);
-        
+
         eventosConTareas = eventosData ?? [];
-        
-        // Preparar queries en paralelo
+
         const queries: Promise<any>[] = [
           obraIds.length > 0
             ? supabase.from('obras').select('id, nombre').in('id', obraIds)
@@ -181,9 +245,8 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
             .in('tarea_id', tareaIds),
         ];
 
-        // Si hay eventos, agregar query de media
         if (eventosConTareas.length > 0) {
-          const eventoIds = eventosConTareas.map(e => e.id);
+          const eventoIds = eventosConTareas.map((e) => e.id);
           queries.push(
             supabase
               .from('media')
@@ -195,7 +258,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
 
         const results = await Promise.all(queries);
         const [obrasResult, cuadrillasResult, evidenciasResult, mediaResult] = results;
-        
+
         obrasData = (obrasResult as any).data ?? [];
         cuadrillasData = (cuadrillasResult as any).data ?? [];
         evidenciasDirectas = (evidenciasResult as any).data ?? [];
@@ -203,7 +266,6 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           evidenciasMedia = (mediaResult as any).data ?? [];
         }
       } else {
-        // Si no hay tareas, solo obtener obras y cuadrillas
         const [obrasResult, cuadrillasResult] = await Promise.all([
           obraIds.length > 0
             ? supabase.from('obras').select('id, nombre').in('id', obraIds)
@@ -216,24 +278,31 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         cuadrillasData = (cuadrillasResult as any).data ?? [];
       }
 
-      const obraRows = ((obrasData ?? []) as unknown) as Array<{ id: string | null; nombre?: string | null }>;
+      const obraRows = ((obrasData ?? []) as unknown) as Array<{
+        id: string | null;
+        nombre?: string | null;
+      }>;
       const obrasMap = new Map<string, string>();
       obraRows.forEach((obra) => {
         if (!obra.id) return;
         obrasMap.set(obra.id, obra.nombre ?? 'Obra sin nombre');
       });
 
-      const cuadrillaRows = ((cuadrillasData ?? []) as unknown) as Array<{ id: string | null; nombre?: string | null }>;
+      const cuadrillaRows = ((cuadrillasData ?? []) as unknown) as Array<{
+        id: string | null;
+        nombre?: string | null;
+      }>;
       const cuadrillaMap = new Map<string, string>();
       cuadrillaRows.forEach((c) => {
         if (!c.id) return;
         cuadrillaMap.set(c.id, c.nombre ?? 'Cuadrilla sin nombre');
       });
 
-      // Combinar evidencias de ambas fuentes
-      const evidenciasMap = new Map<string, Array<{ url: string; path: string; created_at?: string }>>();
-      
-      // Procesar evidencias de tareas_evidencias
+      const evidenciasMap = new Map<
+        string,
+        Array<{ url: string; path: string; created_at?: string }>
+      >();
+
       evidenciasDirectas.forEach((item: any) => {
         const tareaId = item.tarea_id as string;
         const url = item.url ?? item.path ?? '';
@@ -247,30 +316,29 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           created_at: item.created_at,
         });
       });
-      
-      // Procesar evidencias de media (mapear evento_id -> tarea_id)
+
       if (evidenciasMedia.length > 0) {
         const eventoToTareaMap = new Map<string, string>();
         eventosConTareas.forEach((e: any) => {
           eventoToTareaMap.set(e.id, e.tarea_id);
         });
-        
+
         evidenciasMedia.forEach((item: any) => {
           const tareaId = eventoToTareaMap.get(item.evento_id);
           if (!tareaId) return;
           const path = item.path ?? '';
           if (!path) return;
-          
-          // Generar URL p?blica desde Supabase Storage (bucket 'evidencias')
+
           let publicUrl = '';
           try {
-            const { data: urlData } = supabase.storage.from('evidencias').getPublicUrl(path);
+            const { data: urlData } = supabase.storage
+              .from('evidencias')
+              .getPublicUrl(path);
             publicUrl = urlData.publicUrl;
           } catch {
-            // Si falla, usar el path como URL
             publicUrl = path;
           }
-          
+
           if (!evidenciasMap.has(tareaId)) {
             evidenciasMap.set(tareaId, []);
           }
@@ -282,14 +350,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         });
       }
 
-      const mapped: ValidarTarea[] = tareasConEvidencias.map((row) => {
+      const mapped: ValidarTarea[] = todasLasTareas.map((row) => {
         const titulo =
           (row.title as string | null | undefined) ??
           (row.descripcion as string | null | undefined) ??
           'Tarea sin título';
 
-        const hasFechaValidacion = Object.prototype.hasOwnProperty.call(row, 'fecha_validacion');
-        const hasValidadoPor = Object.prototype.hasOwnProperty.call(row, 'validado_por');
+        const estadoOficial = TareaFsmService.mapLegacyToOficial(row.estado);
 
         return {
           id: row.id,
@@ -298,13 +365,20 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           obraId: row.obra_id,
           obraNombre: obrasMap.get(row.obra_id) ?? 'Obra sin nombre',
           responsable: (row.responsable as string | null) ?? null,
-          cuadrillaNombre: row.cuadrilla_id ? cuadrillaMap.get(row.cuadrilla_id) ?? null : null,
-          fechaInicio: (row.fecha_inicio_real as string | null) ?? (row.fecha_inicio as string | null) ?? null,
-          fechaFin: (row.fecha_fin_real as string | null) ?? (row.fecha_fin as string | null) ?? null,
+          cuadrillaNombre: row.cuadrilla_id
+            ? cuadrillaMap.get(row.cuadrilla_id) ?? null
+            : null,
+          fechaInicio:
+            (row.fecha_inicio_real as string | null) ??
+            (row.fecha_inicio as string | null) ??
+            null,
+          fechaFin:
+            (row.fecha_fin_real as string | null) ??
+            (row.fecha_fin as string | null) ??
+            null,
           evidencias: evidenciasMap.get(row.id) ?? [],
-          rawEstado: (row.estado as string | null) ?? null,
-          hasFechaValidacion,
-          hasValidadoPor,
+          estadoOficial,
+          subtareas: subtareasPorTarea.get(row.id) ?? [],
         };
       });
 
@@ -316,7 +390,6 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         return mapped.length > 0 ? mapped[0].obraId : null;
       });
     } catch (err) {
-      console.error('[ValidarSection] Error fetching data', err);
       setError('No se pudieron obtener las tareas pendientes de validación.');
     } finally {
       setLoading(false);
@@ -340,98 +413,136 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         map.get(tarea.obraId)!.count += 1;
       }
     }
-    return Array.from(map.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return Array.from(map.values()).sort((a, b) =>
+      a.nombre.localeCompare(b.nombre)
+    );
   }, [tareas]);
 
-  // Separar tareas en pendientes y validadas
   const tareasFiltradas = useMemo(() => {
     if (!obraSeleccionada) return { pendientes: [], validadas: [] };
     const filtradas = tareas.filter((t) => t.obraId === obraSeleccionada);
-    
+
+    // Solo mostrar tareas que tienen bloques en estado 'para_validar' (que el cliente puede validar)
     const pendientes = filtradas.filter((t) => {
-      const estado = (t.rawEstado ?? '').toLowerCase();
-      // Una tarea es pendiente si NO está validada
-      const estaValidada = estado === 'validado' || t.hasFechaValidacion || t.hasValidadoPor;
-      return !estaValidada;
+      const tieneBloquesParaValidar = t.subtareas.some(
+        (s) => s.estado === 'para_validar'
+      );
+      return tieneBloquesParaValidar;
     });
-    
-    const validadas = filtradas.filter((t) => {
-      const estado = (t.rawEstado ?? '').toLowerCase();
-      // Una tarea está validada si tiene estado 'validado' o tiene fecha_validacion/validado_por
-      return estado === 'validado' || t.hasFechaValidacion || t.hasValidadoPor;
-    });
-    
+
+    // Mostrar tareas que están validadas (todas las subtareas validadas o tarea en estado validada)
+    const validadas = filtradas.filter(
+      (t) =>
+        t.estadoOficial === 'validada' ||
+        (t.subtareas.length > 0 &&
+          t.subtareas.every((s) => s.estado === 'validado'))
+    );
+
     return { pendientes, validadas };
   }, [tareas, obraSeleccionada]);
 
-  const handleValidar = useCallback(
-    async (tareaId: string, accion: 'validar' | 'rechazar') => {
-      if (!currentUser?.orgId) return;
-
-      const tarea = tareas.find((t) => t.id === tareaId);
-      if (!tarea) return;
-
-      setProcessingId(tareaId);
-
-      try {
-        const payload: Record<string, any> = {
-          estado: accion === 'validar' ? 'validado' : 'pendiente',
-        };
-
-        if (tarea.hasFechaValidacion) {
-          payload.fecha_validacion = accion === 'validar' ? new Date().toISOString() : null;
-        }
-
-        if (tarea.hasValidadoPor) {
-          payload.validado_por = accion === 'validar' ? currentUser.id : null;
-        }
-
-        const { error: updateError } = await supabase
-          .from('tareas')
-          .update(payload)
-          .eq('id', tareaId)
-          .eq('org_id', currentUser.orgId);
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        // Actualizar el estado local sin eliminar la tarea
-        // La tarea se moverá automáticamente al bloque "Tareas validadas" gracias al useMemo
-        setTareas((prev) =>
-          prev.map((t) => {
-            if (t.id === tareaId) {
-              return {
-                ...t,
-                rawEstado: accion === 'validar' ? 'validado' : 'finalizado',
-                hasFechaValidacion: accion === 'validar',
-                hasValidadoPor: accion === 'validar',
-              };
-            }
-            return t;
-          })
-        );
-        
-        toast({
-          title: accion === 'validar' ? 'Tarea validada' : 'Tarea rechazada',
-          description:
-            accion === 'validar'
-              ? 'El avance quedó registrado como validado.'
-              : 'La tarea volvió al estado pendiente.',
-        });
-      } catch (err) {
-        console.error('[ValidarSection] Error updating tarea', err);
-        toast({
-          title: 'No se pudo actualizar la tarea',
-          description: 'Intentá nuevamente más tarde.',
-          variant: 'destructive',
-        });
-      } finally {
-        setProcessingId(null);
+  const handleAbrirConfirmacion = useCallback(
+    (subtareaId: string, tipo: 'validar' | 'rechazar', bloqueNombre: string, monto: number | null) => {
+      setConfirmacionModal({
+        tipo,
+        subtareaId,
+        bloqueNombre,
+        monto,
+      });
+      if (tipo === 'rechazar') {
+        setMotivoRechazo('');
       }
     },
-    [currentUser?.orgId, currentUser?.id, supabase, tareas, toast]
+    []
   );
+
+  const handleCerrarConfirmacion = useCallback(() => {
+    setConfirmacionModal({
+      tipo: null,
+      subtareaId: null,
+      bloqueNombre: '',
+      monto: null,
+    });
+    setMotivoRechazo('');
+  }, []);
+
+  const handleConfirmarAccion = useCallback(async () => {
+    if (!confirmacionModal.subtareaId || !confirmacionModal.tipo) return;
+
+    const subtareaId = confirmacionModal.subtareaId;
+    const accion = confirmacionModal.tipo;
+    setSubtareaProcessingId(subtareaId);
+    handleCerrarConfirmacion();
+
+    try {
+      const payload: {
+        accion: 'validar' | 'rechazar';
+        motivo?: string;
+      } = {
+        accion,
+      };
+
+      if (accion === 'rechazar' && motivoRechazo.trim()) {
+        payload.motivo = motivoRechazo.trim();
+      }
+
+      const response = await fetch(`/api/tareas-subtareas/${subtareaId}/validar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || `No se pudo ${accion === 'validar' ? 'validar' : 'rechazar'} el bloque.`);
+      }
+
+      const data = await response.json();
+
+      await loadData();
+
+      if (accion === 'validar') {
+        toast({
+          title: 'Bloque validado',
+          description: 'Bloque validado y pago procesado',
+        });
+      } else {
+        toast({
+          title: 'Bloque rechazado',
+          description: 'Bloque rechazado — el socio podrá retomarlo',
+        });
+      }
+
+      if (data?.tareaValidada) {
+        toast({
+          title: 'Tarea completada',
+          description: 'Todas las subtareas fueron validadas. La tarea quedó marcada como validada.',
+        });
+      }
+    } catch (err) {
+      let errorMessage = 'Error de conexión. Intente nuevamente.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed to fetch')) {
+          errorMessage = 'Error de conexión. Intente nuevamente.';
+        } else if (err.message.includes('403') || err.message.includes('permiso') || err.message.includes('FORBIDDEN')) {
+          errorMessage = 'Tu plan no habilita esta funcionalidad.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      toast({
+        title: `No se pudo ${accion === 'validar' ? 'validar' : 'rechazar'} el bloque`,
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setSubtareaProcessingId(null);
+    }
+  }, [confirmacionModal, motivoRechazo, loadData, toast, handleCerrarConfirmacion]);
 
   if (!currentUser?.orgId) {
     return (
@@ -447,7 +558,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       <div className="flex min-h-[240px] items-center justify-center rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 text-slate-500">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Cargando tareas finalizadas…</span>
+          <span>Cargando tareas pendientes de validación…</span>
         </div>
       </div>
     );
@@ -467,8 +578,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     );
   }
 
-  // No mostrar empty state si hay tareas (aunque todas estén validadas)
-  // El empty state se mostrará dentro de la sección si no hay ninguna tarea
+  const showUpgradeBanner = subscription.effectivePlanId === 'STARTER' || subscription.effectivePlanId === 'FREE';
 
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
@@ -491,12 +601,14 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                   <span>{obra.nombre}</span>
                   <Badge
                     variant={isActive ? 'info' : 'default'}
-                    className={isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : ''}
+                    className={
+                      isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : ''
+                    }
                   >
                     {obra.count}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">Tareas finalizadas y validadas</p>
+                <p className="text-xs text-slate-500">Tareas con bloques</p>
               </button>
             );
           })}
@@ -504,7 +616,29 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       </aside>
 
       <section className="flex-1 space-y-6">
-        {/* Tareas pendientes de validación */}
+        {showUpgradeBanner && (
+          <Card className="border border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm">
+            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  💼 Desbloqueá más funciones con PRO
+                </h3>
+                <p className="text-xs text-slate-600 mt-1">
+                  Accedé a más obras, automatizaciones avanzadas y funciones premium.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => upgradeModal.open({ targetPlanId: 'PRO' })}
+                className="whitespace-nowrap"
+              >
+                Ver planes PRO
+              </Button>
+            </div>
+          </Card>
+        )}
+        
         {tareasFiltradas.pendientes.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -514,143 +648,57 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
               </h2>
             </div>
             {tareasFiltradas.pendientes.map((tarea) => {
-            const estadoLabel = tarea.rawEstado ? tarea.rawEstado.toUpperCase() : 'FINALIZADO';
-            const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
-
-            return (
-              <Card key={tarea.id} className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="info" className="border-blue-200 text-blue-700">
-                        <Building2 className="mr-1 h-3 w-3" />
-                        {tarea.obraNombre}
-                      </Badge>
-                      <Badge variant="default" className="border-slate-200 text-slate-600">
-                        {estadoLabel}
-                      </Badge>
-                      {tarea.cuadrillaNombre && (
-                        <Badge variant="success" className="border-emerald-200 text-emerald-600">
-                          <Users className="mr-1 h-3 w-3" />
-                          {tarea.cuadrillaNombre}
-                        </Badge>
-                      )}
-                    </div>
-
-                    <h3 className="text-lg font-semibold text-slate-900">{tarea.titulo}</h3>
-                    {tarea.descripcion && (
-                      <p className="text-sm text-slate-600">{tarea.descripcion}</p>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {fechas}
-                      </span>
-                      {tarea.responsable && (
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" /> Responsable: {tarea.responsable}
-                        </span>
-                      )}
-                    </div>
-
-                    {tarea.evidencias.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase text-slate-500">Evidencias ({tarea.evidencias.length})</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {tarea.evidencias.map((evidencia, idx) => (
-                            <button
-                              key={`${evidencia.path}-${idx}`}
-                              onClick={() => setImagenAmpliada({ url: evidencia.url, titulo: tarea.titulo })}
-                              className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-blue-400 hover:shadow-md"
-                            >
-                              <img
-                                src={evidencia.url}
-                                alt={`Evidencia ${idx + 1} - ${tarea.titulo}`}
-                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
-                                }}
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
-                                <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="primary"
-                      disabled={processingId === tarea.id}
-                      onClick={() => void handleValidar(tarea.id, 'validar')}
-                    >
-                      {processingId === tarea.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
-                      )}
-                      <span>Validar tarea</span>
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={processingId === tarea.id}
-                      onClick={() => void handleValidar(tarea.id, 'rechazar')}
-                    >
-                      {processingId === tarea.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <XCircle className="h-4 w-4" />
-                      )}
-                      <span>Rechazar</span>
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-            })}
-          </div>
-        )}
-
-        {/* Tareas ya validadas */}
-        {tareasFiltradas.validadas.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-green-700">
-                Tareas ya validadas ({tareasFiltradas.validadas.length})
-              </h2>
-            </div>
-            {tareasFiltradas.validadas.map((tarea) => {
-              const estadoLabel = tarea.rawEstado ? tarea.rawEstado.toUpperCase() : 'VALIDADO';
               const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
+              
+              const bloquesValidadas = tarea.subtareas.filter(
+                (s) => s.estado === 'validado'
+              ).length;
+              const bloquesRechazadas = tarea.subtareas.filter(
+                (s) => s.estado === 'rechazado'
+              ).length;
+              const totalBloques = tarea.subtareas.length;
+
+              const getEstadoLabel = (estado: string) => {
+                const estadoLower = estado.toLowerCase();
+                if (estadoLower === 'para_validar') return 'PARA VALIDAR';
+                if (estadoLower === 'validado') return 'VALIDADO';
+                if (estadoLower === 'rechazado') return 'RECHAZADO';
+                if (estadoLower === 'pendiente') return 'PENDIENTE';
+                return estado.toUpperCase();
+              };
 
               return (
-                <Card key={tarea.id} className="rounded-3xl border border-green-200 bg-green-50/30 shadow-sm">
+                <Card
+                  key={tarea.id}
+                  className="rounded-3xl border border-slate-200 bg-white shadow-sm"
+                >
                   <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="space-y-3">
+                    <div className="flex-1 space-y-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="info" className="border-blue-200 text-blue-700">
                           <Building2 className="mr-1 h-3 w-3" />
                           {tarea.obraNombre}
                         </Badge>
-                        <Badge variant="success" className="border-green-200 text-green-700 bg-green-100">
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          {estadoLabel}
+                        <Badge
+                          variant="default"
+                          className="border-slate-200 text-slate-600"
+                        >
+                          {tarea.estadoOficial.toUpperCase()}
                         </Badge>
                         {tarea.cuadrillaNombre && (
-                          <Badge variant="success" className="border-emerald-200 text-emerald-600">
+                          <Badge
+                            variant="success"
+                            className="border-emerald-200 text-emerald-600"
+                          >
                             <Users className="mr-1 h-3 w-3" />
                             {tarea.cuadrillaNombre}
                           </Badge>
                         )}
                       </div>
 
-                      <h3 className="text-lg font-semibold text-slate-900">{tarea.titulo}</h3>
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        {tarea.titulo}
+                      </h3>
                       {tarea.descripcion && (
                         <p className="text-sm text-slate-600">{tarea.descripcion}</p>
                       )}
@@ -662,20 +710,49 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                         </span>
                         {tarea.responsable && (
                           <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" /> Responsable: {tarea.responsable}
+                            <Users className="h-4 w-4" /> Responsable:{' '}
+                            {tarea.responsable}
                           </span>
                         )}
                       </div>
 
+                      {totalBloques > 0 && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                          <p className="text-xs font-semibold uppercase text-slate-500 mb-2">
+                            Resumen de bloques
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-sm">
+                            <span className="text-slate-600">
+                              Total: <strong>{totalBloques}</strong>
+                            </span>
+                            <span className="text-green-600">
+                              Validadas: <strong>{bloquesValidadas}</strong>
+                            </span>
+                            {bloquesRechazadas > 0 && (
+                              <span className="text-red-600">
+                                Rechazadas: <strong>{bloquesRechazadas}</strong>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {tarea.evidencias.length > 0 && (
                         <div className="space-y-2">
-                          <p className="text-xs font-semibold uppercase text-slate-500">Evidencias ({tarea.evidencias.length})</p>
+                          <p className="text-xs font-semibold uppercase text-slate-500">
+                            Evidencias ({tarea.evidencias.length})
+                          </p>
                           <div className="grid grid-cols-3 gap-2">
                             {tarea.evidencias.map((evidencia, idx) => (
                               <button
                                 key={`${evidencia.path}-${idx}`}
-                                onClick={() => setImagenAmpliada({ url: evidencia.url, titulo: tarea.titulo })}
-                                className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-green-400 hover:shadow-md"
+                                onClick={() =>
+                                  setImagenAmpliada({
+                                    url: evidencia.url,
+                                    titulo: tarea.titulo,
+                                  })
+                                }
+                                className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-blue-400 hover:shadow-md"
                               >
                                 <img
                                   src={evidencia.url}
@@ -683,7 +760,8 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                                    target.src =
+                                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
                                   }}
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
@@ -694,14 +772,140 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                           </div>
                         </div>
                       )}
-                    </div>
 
-                    {/* Sin botones de acción para tareas validadas - solo lectura */}
-                    <div className="flex items-center">
-                      <Badge variant="success" className="border-green-300 text-green-800 bg-green-100">
-                        <CheckCircle className="mr-1 h-4 w-4" />
-                        Validado
-                      </Badge>
+                      {tarea.subtareas.length > 0 && (
+                        <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                          <p className="text-xs font-semibold uppercase text-slate-500">
+                            Bloques pagables
+                          </p>
+                          <div className="space-y-3">
+                            {tarea.subtareas.map((sub) => {
+                              const estadoSub = sub.estado;
+                              const estadoLower = estadoSub.toLowerCase();
+                              const esValidado = estadoLower === 'validado';
+                              const esRechazado = estadoLower === 'rechazado';
+                              const esParaValidar = estadoLower === 'para_validar';
+                              
+                              const bloqueNombre = `Bloque ${sub.orden ?? sub.bloque_index ?? '—'}`;
+                              
+                              const badgeVariant = esValidado
+                                ? 'success'
+                                : esRechazado
+                                ? 'error'
+                                : esParaValidar
+                                ? 'warning'
+                                : 'default';
+
+                              return (
+                                <div
+                                  key={sub.id}
+                                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-semibold text-slate-800">
+                                        {bloqueNombre}
+                                      </p>
+                                      <p className="text-xs text-slate-500">
+                                        Monto estimado: {formatCurrency(sub.montoEstimado)}
+                                      </p>
+                                      {esValidado && sub.montoValidado !== null && (
+                                        <p className="text-xs text-green-600 mt-1">
+                                          Monto validado:{' '}
+                                          {formatCurrency(sub.montoValidado)}
+                                        </p>
+                                      )}
+                                    </div>
+                                    <Badge variant={badgeVariant as any}>
+                                      {getEstadoLabel(estadoSub)}
+                                    </Badge>
+                                  </div>
+
+                                  {(sub.evidencia_url || sub.evidencia_cargada) && (
+                                    <div className="mb-3">
+                                      <p className="text-xs font-semibold uppercase text-slate-500 mb-1">
+                                        Evidencia del bloque
+                                      </p>
+                                      {sub.evidencia_url && (
+                                        <button
+                                          onClick={() =>
+                                            setImagenAmpliada({
+                                              url: sub.evidencia_url!,
+                                              titulo: bloqueNombre,
+                                            })
+                                          }
+                                          className="relative w-full h-32 rounded-lg border-2 border-slate-200 bg-slate-100 overflow-hidden group hover:border-blue-400 transition"
+                                        >
+                                          <img
+                                            src={sub.evidencia_url}
+                                            alt={`Evidencia - ${bloqueNombre}`}
+                                            className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                                            onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              target.src =
+                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                                            }}
+                                          />
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/20 transition">
+                                            <Camera className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition" />
+                                          </div>
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {esParaValidar && (
+                                    <div className="flex gap-2 mt-3">
+                                      <Button
+                                        variant="primary"
+                                        size="sm"
+                                        disabled={subtareaProcessingId === sub.id}
+                                        onClick={() =>
+                                          handleAbrirConfirmacion(
+                                            sub.id,
+                                            'validar',
+                                            bloqueNombre,
+                                            sub.montoEstimado
+                                          )
+                                        }
+                                        className="flex-1 sm:flex-none"
+                                      >
+                                        <CheckCircle className="h-4 w-4 mr-1" />
+                                        Validar
+                                      </Button>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        disabled={subtareaProcessingId === sub.id}
+                                        onClick={() =>
+                                          handleAbrirConfirmacion(
+                                            sub.id,
+                                            'rechazar',
+                                            bloqueNombre,
+                                            sub.montoEstimado
+                                          )
+                                        }
+                                        className="flex-1 sm:flex-none"
+                                      >
+                                        <XCircle className="h-4 w-4 mr-1" />
+                                        Rechazar
+                                      </Button>
+                                    </div>
+                                  )}
+                                  
+                                  {(esValidado || esRechazado) && (
+                                    <p className="text-xs text-slate-500 mt-2">
+                                      {esValidado
+                                        ? 'Este bloque ya fue validado y el pago fue procesado.'
+                                        : 'Este bloque fue rechazado. El socio podrá retomarlo.'}
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
@@ -710,16 +914,148 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           </div>
         )}
 
-        {/* Mensaje si no hay tareas */}
-        {tareasFiltradas.pendientes.length === 0 && tareasFiltradas.validadas.length === 0 && (
-          <EmptyState
-            title="No hay tareas para validar"
-            description="Esta obra no tiene tareas finalizadas o validadas."
-          />
+        {tareasFiltradas.validadas.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h2 className="text-lg font-semibold text-green-700">
+                Tareas validadas ({tareasFiltradas.validadas.length})
+              </h2>
+            </div>
+            {tareasFiltradas.validadas.map((tarea) => {
+              const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
+
+              return (
+                <Card
+                  key={tarea.id}
+                  className="rounded-3xl border border-green-200 bg-green-50/30 shadow-sm"
+                >
+                  <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="info" className="border-blue-200 text-blue-700">
+                          <Building2 className="mr-1 h-3 w-3" />
+                          {tarea.obraNombre}
+                        </Badge>
+                        <Badge
+                          variant="success"
+                          className="border-green-200 text-green-700 bg-green-100"
+                        >
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          VALIDADA
+                        </Badge>
+                        {tarea.cuadrillaNombre && (
+                          <Badge
+                            variant="success"
+                            className="border-emerald-200 text-emerald-600"
+                          >
+                            <Users className="mr-1 h-3 w-3" />
+                            {tarea.cuadrillaNombre}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        {tarea.titulo}
+                      </h3>
+                      {tarea.descripcion && (
+                        <p className="text-sm text-slate-600">{tarea.descripcion}</p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          {fechas}
+                        </span>
+                        {tarea.responsable && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-4 w-4" /> Responsable:{' '}
+                            {tarea.responsable}
+                          </span>
+                        )}
+                      </div>
+
+                      {tarea.evidencias.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold uppercase text-slate-500">
+                            Evidencias ({tarea.evidencias.length})
+                          </p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {tarea.evidencias.map((evidencia, idx) => (
+                              <button
+                                key={`${evidencia.path}-${idx}`}
+                                onClick={() =>
+                                  setImagenAmpliada({
+                                    url: evidencia.url,
+                                    titulo: tarea.titulo,
+                                  })
+                                }
+                                className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-green-400 hover:shadow-md"
+                              >
+                                <img
+                                  src={evidencia.url}
+                                  alt={`Evidencia ${idx + 1} - ${tarea.titulo}`}
+                                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src =
+                                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
+                                  <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {tarea.subtareas.length > 0 && (
+                        <div className="space-y-2 rounded-2xl border border-green-100 bg-white/80 p-4">
+                          <p className="text-xs font-semibold uppercase text-slate-500">
+                            Bloques validados
+                          </p>
+                          <div className="space-y-2">
+                            {tarea.subtareas.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="flex items-center justify-between rounded-lg border border-green-100 p-2"
+                              >
+                                <div>
+                                  <p className="text-sm font-semibold text-slate-800">
+                                    Bloque {sub.orden ?? sub.bloque_index ?? '—'}
+                                  </p>
+                                  <p className="text-xs text-slate-500">
+                                    Validado:{' '}
+                                    {formatCurrency(
+                                      sub.montoValidado ?? sub.montoEstimado
+                                    )}
+                                  </p>
+                                </div>
+                                <Badge variant="success">VALIDADO</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         )}
+
+        {tareasFiltradas.pendientes.length === 0 &&
+          tareasFiltradas.validadas.length === 0 && (
+            <EmptyState
+              title="No hay tareas para validar"
+              description="Esta obra no tiene tareas con bloques pendientes de validación."
+            />
+          )}
       </section>
 
-      {/* Modal de imagen ampliada */}
       {imagenAmpliada && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
@@ -739,16 +1075,104 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                 className="w-full h-auto max-h-[80vh] object-contain"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="16"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
+                  target.src =
+                    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23e5e7eb" width="400" height="300"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="16"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
                 }}
               />
               <div className="p-4 bg-white border-t">
-                <h3 className="font-semibold text-lg text-slate-900">{imagenAmpliada.titulo}</h3>
+                <h3 className="font-semibold text-lg text-slate-900">
+                  {imagenAmpliada.titulo}
+                </h3>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      <Dialog
+        open={confirmacionModal.tipo !== null}
+        onOpenChange={(open) => {
+          if (!open) handleCerrarConfirmacion();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmacionModal.tipo === 'validar'
+                ? 'Confirmar validación'
+                : 'Confirmar rechazo'}
+            </DialogTitle>
+            <DialogDescription>
+              {confirmacionModal.tipo === 'validar' ? (
+                <>
+                  ¿Estás seguro de que querés validar <strong>{confirmacionModal.bloqueNombre}</strong>?
+                  <br />
+                  El bloque será marcado como validado y el pago será procesado
+                  automáticamente.
+                  {confirmacionModal.monto !== null && (
+                    <>
+                      <br />
+                      <span className="font-semibold text-green-600">
+                        Monto: {formatCurrency(confirmacionModal.monto)}
+                      </span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  ¿Estás seguro de que querés rechazar <strong>{confirmacionModal.bloqueNombre}</strong>?
+                  <br />
+                  El socio podrá retomar el bloque después del rechazo.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {confirmacionModal.tipo === 'rechazar' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">
+                Motivo del rechazo (opcional)
+              </label>
+              <textarea
+                value={motivoRechazo}
+                onChange={(e) => setMotivoRechazo(e.target.value)}
+                placeholder="Describí el motivo del rechazo..."
+                className="w-full min-h-[80px] rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={handleCerrarConfirmacion}
+              disabled={!!subtareaProcessingId}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant={confirmacionModal.tipo === 'validar' ? 'primary' : 'danger'}
+              onClick={handleConfirmarAccion}
+              disabled={!!subtareaProcessingId}
+            >
+              {subtareaProcessingId ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Procesando...
+                </>
+              ) : confirmacionModal.tipo === 'validar' ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Validar bloque
+                </>
+              ) : (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Rechazar bloque
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,0 +1,94 @@
+LOGICA DE NEGOCIO – GROWS (MVP – DIA 1)
+
+1. TABLA DE PLANES (FINAL)
+--------------------------------
+FREE
+- Obras incluidas: 5
+- Obra extra: 20 USD c/u
+- Comisión: 10%–15%
+
+PRO
+- Obras incluidas: 10
+- Obra extra: 20 USD c/u
+- Comisión: 7.5% fija
+
+ENTERPRISE
+- Obras incluidas: 20
+- Obra extra: 20 USD c/u
+- Comisión: 4% fija
+
+Usuarios permitidos (MVP):
+- 1 usuario por cuenta en todos los planes
+
+2. COMISIONES Y SALDO NEGATIVO
+--------------------------------
+2.1 Comisión siempre aplicada al TOTAL del bloque validado.
+
+2.2 Comisiones dinámicas (FREE/PRO):
+- Basadas en oferta/demanda global (A)
+- Basadas en reputación del socio (B)
+MVP = A + B
+
+2.3 Saldo negativo socio:
+- Tope: $50.000 ARS
+- Suspensión automática al superar el tope
+- Reactivación automática cuando vuelve al límite
+- Escenario futuro a evaluar: saldo negativo cliente
+
+3. FSM – MAQUINA DE ESTADOS
+--------------------------------
+Estados tarea:
+- pendiente
+- en_progreso
+- para_validar
+- validada
+- rechazado (con retorno a en_progreso)
+
+Estados bloque:
+- pendiente
+- en_progreso
+- para_validar
+- validado
+- rechazado
+
+Regla:
+La tarea SOLO puede validarse cuando TODOS los bloques están validados.
+
+4. BLOQUES PAGABLES
+--------------------------------
+La cantidad de bloques = número de días del presupuesto.
+
+Cada bloque tiene:
+- porcentaje proporcional del monto total
+- evidencia obligatoria independiente
+- validación independiente
+- pago independiente
+
+5. FLUJO AHORA – SOCIO
+--------------------------------
+- Máximo 2 tareas simultáneas
+- iniciar jornada
+- iniciar bloque
+- subir evidencia (obligatoria)
+- finalizar bloque
+- enviar a validación
+- cliente valida bloque
+- repetición hasta completar tarea
+
+6. ROLES (MVP)
+--------------------------------
+Cliente:
+- solicita presupuestos
+- aprueba presupuestos
+- asigna tareas INDIRECTAMENTE al aprobar
+- valida bloques y tareas
+
+Socio:
+- ejecuta tareas
+- carga evidencias
+- marca bloques completados
+
+Supervisor: NO existe en MVP
+Multi-cuadrilla: NO existe en MVP
+
+DOCUMENTO CERRADO – LISTO PARA PM

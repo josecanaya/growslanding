@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { ActualizarTareaSchema } from '../../../../lib/schemas';
-import { PermisosService } from '../../../../lib/services';
+import { PermisoService } from '@/lib/services/permiso.service';
 
 // Asegurar que este endpoint siempre devuelva JSON
 export const runtime = 'nodejs';
@@ -59,7 +59,7 @@ export async function GET(
 
     // Obtener estados de la tarea
     const { data: estados } = await supabase
-      .from('tareas_estados')
+      .from('tareas_estados' as any)
       .select('*')
       .eq('tarea_id', id)
       .order('created_at', { ascending: false });
@@ -81,7 +81,7 @@ export async function GET(
     let evidencias: unknown[] | null = null;
     try {
       const response = await supabase
-        .from('tareas_evidencias')
+        .from('tareas_evidencias' as any)
         .select('*')
         .eq('tarea_id', id)
         .order('created_at', { ascending: false });
@@ -154,22 +154,12 @@ export async function PATCH(
       );
     }
 
-    // Verificar permisos (opcional - si falla, continuar)
-    let tienePermiso = true;
-    try {
-      tienePermiso = await PermisosService.verificarPermiso(
-        usuarioId,
-        organizacionId,
-        'actualizar_tarea'
-      );
-    } catch (permisoError) {
-      // Si falla la verificación de permisos (por ejemplo, Prisma no disponible),
-      // continuar con la actualización asumiendo que el usuario tiene permisos
-      // (la verificación de org_id ya proporciona seguridad básica)
-      console.warn('[WARNING] No se pudo verificar permisos, continuando:', permisoError);
-    }
+    const rol = await PermisoService.obtenerRolEnOrganizacion(
+      usuarioId,
+      organizacionId,
+    );
 
-    if (!tienePermiso) {
+    if (rol !== 'CLIENTE') {
       return NextResponse.json(
         { success: false, error: 'No tiene permisos para actualizar tareas' },
         { status: 403 }

@@ -181,13 +181,17 @@ function PresupuestosContent() {
   const showActions = hasPresupuestos;
 
   // Verificar si los presupuestos ya fueron enviados o aprobados
-  const presupuestosEnviados = presupuestosFiltrados.some(
+  // Solo considerar enviados si TODOS están enviados o aprobados
+  const todosEnviadosOAprobados = presupuestosFiltrados.length > 0 && presupuestosFiltrados.every(
     (p) => p.estado === 'ENVIADO' || p.estado === 'APROBADO'
   );
   const presupuestosAprobados = presupuestosFiltrados.every(
     (p) => p.estado === 'APROBADO'
   );
   const puedeEditar = !presupuestosAprobados; // Solo puede editar si NO todos están aprobados
+  const hayPendientes = presupuestosFiltrados.some(
+    (p) => p.estado === 'PENDIENTE' || !p.estado || p.estado === ''
+  );
 
   // Función para eliminar PDF y permitir editar
   const handleEliminarPDFYEditar = async () => {
@@ -548,8 +552,8 @@ function PresupuestosContent() {
           
           {/* Botones */}
           <div className="px-4 py-3 flex gap-3">
-            {!presupuestosEnviados ? (
-              // Si NO se envió: mostrar botones de guardar, enviar y generar PDF
+            {hayPendientes || !todosEnviadosOAprobados ? (
+              // Si hay pendientes o no todos están enviados/aprobados: mostrar botones de guardar, enviar y generar PDF
               <>
                 <Button
                   variant="secondary"

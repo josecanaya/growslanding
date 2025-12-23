@@ -23,19 +23,22 @@ export async function GET(request: Request) {
 
   const serviceClient = createServiceSupabaseClient();
   const { data: invite, error: inviteError } = await serviceClient
-    .from('leader_invites')
+    .from('leader_invites' as any)
     .select('id, org_id, email, nombre, rol, status, token')
     .eq('id', inviteId)
     .maybeSingle();
 
-  if (inviteError || !invite || invite.token !== token) {
+  // Type assertion: invite has the expected structure
+  const inviteRecord = invite as { id: string; org_id: string; email: string; nombre: string; rol: string; status: string; token: string } | null;
+
+  if (inviteError || !inviteRecord || inviteRecord.token !== token) {
     return redirectToLogin();
   }
 
   if (!code) {
     const { data: linkData, error: linkError } = await serviceClient.auth.admin.generateLink({
       type: 'magiclink',
-      email: invite.email,
+      email: inviteRecord.email,
       options: {
         redirectTo: url.toString(),
       },
@@ -59,35 +62,36 @@ export async function GET(request: Request) {
     return redirectToLogin();
   }
 
-  if (invite.status !== 'accepted') {
+  if (inviteRecord.status !== 'accepted') {
     await serviceClient
-      .from('leader_invites')
+      .from('leader_invites' as any)
       .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-      .eq('id', invite.id);
+      .eq('id', inviteRecord.id);
   }
 
   // Buscar o crear socio y vincular user_id
   const { data: existingSocio } = await serviceClient
     .from('socios')
-    .select('id, status, user_id')
-    .eq('org_id', invite.org_id)
-    .eq('contacto', invite.email)
+    .select('id, estado, user_id')
+    .eq('org_id', inviteRecord.org_id)
+    .eq('email', inviteRecord.email)
     .maybeSingle();
 
-  if (!existingSocio) {
+  // Type assertion: existingSocio has the expected structure
+  const socioRecord = existingSocio as { id: string; estado: string | null; user_id: string | null } | null;
+
+  if (!socioRecord) {
     // Crear nuevo socio con user_id vinculado
     const datosInsert: any = {
-      org_id: invite.org_id,
-      nombre: invite.nombre,
-      contacto: invite.email,
-      rol: invite.rol,
-      status: 'activo',
+      org_id: inviteRecord.org_id,
+      nombre: inviteRecord.nombre,
+      email: inviteRecord.email,
+      estado: 'activo',
     };
 
     // Intentar agregar user_id si el campo existe
     try {
       datosInsert.user_id = user.id;
-      datosInsert.email = invite.email;
     } catch (e) {
       // Si el campo no existe, continuar sin él
       console.warn('[WARNING] Campo user_id no disponible en tabla socios');
@@ -97,15 +101,15 @@ export async function GET(request: Request) {
   } else {
     // Actualizar socio existente: activar y vincular user_id si no está vinculado
     const updateData: any = {
-      status: 'activo',
-      nombre: invite.nombre,
+      estado: 'activo',
+      nombre: inviteRecord.nombre,
     };
 
     // Vincular user_id si no está vinculado
-    if (!existingSocio.user_id) {
+    if (!socioRecord.user_id) {
       try {
         updateData.user_id = user.id;
-        updateData.email = invite.email;
+        updateData.email = inviteRecord.email;
       } catch (e) {
         console.warn('[WARNING] No se pudo vincular user_id al socio');
       }
@@ -114,7 +118,7 @@ export async function GET(request: Request) {
     await serviceClient
       .from('socios')
       .update(updateData)
-      .eq('id', existingSocio.id);
+      .eq('id', socioRecord.id);
   }
 
   return redirectToTarget();

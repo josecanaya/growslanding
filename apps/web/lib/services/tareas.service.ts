@@ -1,4 +1,6 @@
+// ?? DEPRECATED ? No usar. Reemplazado por servicios Supabase.
 // @ts-nocheck
+// DEPRECATED: Wrapper sobre TareaService legacy. Usar servicios Supabase directos.
 // ===========================================
 // SERVICIO DE TAREAS
 // ===========================================

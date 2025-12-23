@@ -1,4 +1,6 @@
+// ?? DEPRECATED ? No usar. Reemplazado por servicios Supabase.
 // @ts-nocheck
+// DEPRECATED: Implementaci?n Prisma legacy usada solo para endpoints antiguos. No reutilizar.
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { SuscripcionService } from './suscripcion.service';

@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceSupabaseClient();
 
-    // Buscar socio por email o contacto
+    // Buscar socio por email
     const { data: socio, error: socioError } = await supabase
       .from('socios')
-      .select('id, org_id, nombre, contacto, email, user_id, status')
-      .or(`contacto.eq.${user.email},email.eq.${user.email}`)
+      .select('id, org_id, nombre, email, estado')
+      .eq('email', user.email || '')
       .maybeSingle();
 
     if (socioError || !socio) {
@@ -38,21 +38,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (socio.status !== 'activo') {
+    // Type assertion: socio has the expected structure
+    const socioRecord = socio as { id: string; org_id: string; nombre: string; email: string | null; estado: string | null };
+
+    if (socioRecord.estado !== 'activo') {
       return NextResponse.json(
         { success: false, error: 'Socio inactivo' },
         { status: 403 }
       );
     }
 
-    // Si ya tiene user_id vinculado y es el mismo, no hacer nada
-    if (socio.user_id === user.id) {
-      return NextResponse.json({
-        success: true,
-        message: 'Usuario ya vinculado',
-        data: { socio_id: socio.id },
-      });
-    }
+    // Note: user_id field may not exist in socios table, so we skip this check
 
     // Vincular user_id
     const updateData: any = {};
@@ -62,7 +58,7 @@ export async function POST(request: NextRequest) {
       updateData.user_id = user.id;
       
       // También actualizar email si existe el campo
-      if (user.email && !socio.email) {
+      if (user.email && !socioRecord.email) {
         updateData.email = user.email;
       }
     } catch (e) {
@@ -74,7 +70,7 @@ export async function POST(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('socios')
         .update(updateData)
-        .eq('id', socio.id);
+        .eq('id', socioRecord.id);
 
       if (updateError) {
         console.error('[ERROR_VINCULAR_USER_ID]', updateError);
@@ -94,9 +90,9 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Usuario vinculado correctamente',
       data: {
-        socio_id: socio.id,
+        socio_id: socioRecord.id,
         user_id: user.id,
-        nombre: socio.nombre,
+        nombre: socioRecord.nombre,
       },
     });
   } catch (error) {

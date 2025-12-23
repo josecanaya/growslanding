@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-import { visitStatusSchema, type VisitStatus } from '@/lib/fsm';
+import type { VisitStatus } from '@/lib/fsm';
 import {
   prepareEventoInsert,
   validateMediaRules,
@@ -11,6 +11,8 @@ import {
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { uploadActaPdf, uploadPhoto, uploadSignature } from '@/lib/storage';
 import type { Database } from '@/lib/types/supabase.gen';
+import { TareaFsmService, type EstadoTarea } from '@/lib/services/tarea-fsm.service';
+import { PermisoService } from '@/lib/services/permiso.service';
 
 export const runtime = 'nodejs';
 
@@ -26,8 +28,26 @@ const checklistSchema = z.object({
   checked: z.boolean(),
 });
 
+const estadoSolicitudSchema = z.enum([
+  'pendiente',
+  'en_progreso',
+  'para_validar',
+  'validada',
+  'rechazada',
+  'en_ejecucion',
+  'en ejecucion',
+  'finalizado',
+  'finalizada',
+  'terminada',
+  'terminado',
+  'en_revision',
+  'validado',
+  'rechazado',
+  'rechazada',
+]);
+
 const requestSchema = z.object({
-  nuevo_estado: visitStatusSchema,
+  nuevo_estado: estadoSolicitudSchema,
   notas: z.string().max(2000).optional(),
   checklist: z.array(checklistSchema).default([]),
   has_nc: z.boolean().default(false),
@@ -62,19 +82,21 @@ type TareaRecord = {
   } | null;
 };
 
+const ESTADO_OFICIAL_TO_VISIT: Record<EstadoTarea, VisitStatus> = {
+  pendiente: 'pendiente',
+  en_progreso: 'en_ejecucion',
+  para_validar: 'finalizado',
+  validada: 'validado',
+  rechazada: 'pendiente',
+};
+
 const mapEstadoBDaVisitStatus = (estado: string | null | undefined): VisitStatus => {
-  const value = (estado || '').trim().toLowerCase();
-  if (['en_ejecucion', 'en ejecucion', 'en_progreso', 'en progreso'].includes(value)) {
-    return 'en_ejecucion';
-  }
-  if (['finalizado', 'terminada', 'terminado', 'ejecutado', 'ejecutada'].includes(value)) {
-    return 'finalizado';
-  }
-  if (['validado', 'aprobado', 'validada'].includes(value)) {
-    return 'validado';
-  }
-  // Estados de preparación/asignación los tratamos como pendientes para permitir iniciar
-  return 'pendiente';
+  const oficial = TareaFsmService.mapLegacyToOficial(estado);
+  return ESTADO_OFICIAL_TO_VISIT[oficial];
+};
+
+const mapOficialToVisitStatus = (estado: EstadoTarea): VisitStatus => {
+  return ESTADO_OFICIAL_TO_VISIT[estado];
 };
 
 export async function POST(
@@ -107,9 +129,11 @@ export async function POST(
     }
     
     let payload: z.infer<typeof requestSchema>;
+    let nuevoEstadoCanon: EstadoTarea = 'pendiente';
     try {
       payload = requestSchema.parse(body);
       console.log('[TRANSITION] Payload validado correctamente');
+      nuevoEstadoCanon = TareaFsmService.mapLegacyToOficial(payload.nuevo_estado);
     } catch (zodError) {
       console.error('[TRANSITION_ERROR] Error de validación Zod:', zodError);
       if (zodError instanceof z.ZodError) {
@@ -196,6 +220,37 @@ export async function POST(
       return new Response(JSON.stringify({ message: 'Tarea no encontrada' }), {
         status: 404,
       });
+    }
+
+    const rolActor = await PermisoService.obtenerRolEnOrganizacion(
+      user.id,
+      tarea.org_id || tarea.obra?.org_id || '',
+    );
+
+    if (!rolActor) {
+      return new Response(JSON.stringify({ message: 'No tiene permisos para operar esta tarea' }), {
+        status: 403,
+      });
+    }
+
+    if (nuevoEstadoCanon === 'validada') {
+      const supabaseAny = supabase as any;
+      const { data: pendientesSubtareas } = await supabaseAny
+        .from('tareas_subtareas')
+        .select('id')
+        .eq('tarea_id', tarea.id)
+        .neq('estado', 'validada')
+        .limit(1);
+
+      if (pendientesSubtareas && pendientesSubtareas.length > 0) {
+        return new Response(
+          JSON.stringify({
+            message: 'No podés validar la tarea: todavía hay bloques pendientes de aprobación.',
+            error: 'SUBTAREAS_INCOMPLETAS',
+          }),
+          { status: 400 }
+        );
+      }
     }
 
     // ✅ Validar que el usuario sea el responsable de la tarea (si tiene responsable asignado)
@@ -322,7 +377,7 @@ export async function POST(
           .from('tareas')
           .select('id, title, estado')
           .in('id', dependeIds)
-          .neq('estado', 'validado');
+          .neq('estado', 'validada');
 
         console.log('[TRANSITION] Tareas predecesoras no validadas:', {
           bloqueoCount: bloqueo?.length || 0,
@@ -376,7 +431,7 @@ export async function POST(
     });
 
     // Validar checklist completo solo al finalizar
-    if (payload.nuevo_estado === 'finalizado') {
+    if (nuevoEstadoCanon === 'para_validar') {
       if (payload.checklist && payload.checklist.length > 0) {
         const itemsIncompletos = payload.checklist.filter((item) => !item.checked);
         if (itemsIncompletos.length > 0) {
@@ -414,7 +469,7 @@ export async function POST(
     const prepared = await prepareEventoInsert(
       {
         tareaId: tarea.id,
-        nuevo_estado: payload.nuevo_estado,
+        nuevo_estado: mapOficialToVisitStatus(nuevoEstadoCanon),
         checklist: payload.checklist,
         media: uploadedMedia,
         notas: payload.notas,
@@ -494,14 +549,13 @@ export async function POST(
       }
     }
 
-    const { error: updateError } = await supabase
-      .from('tareas')
-      .update({ estado: payload.nuevo_estado })
-      .eq('id', tarea.id);
-
-    if (updateError) {
-      throw updateError;
-    }
+    await TareaFsmService.enforceTransition({
+      tareaId: tarea.id,
+      nuevoEstado: nuevoEstadoCanon,
+      actorId: user.id,
+      rol: rolActor,
+      motivo: payload.motivo,
+    });
 
     return new Response(
       JSON.stringify({
@@ -554,14 +608,31 @@ export async function POST(
         ? error 
         : 'Error al transicionar tarea';
     
-    const status = message.includes('foto') || message.includes('validación') ? 400 : 500;
+    // Mapear errores específicos a códigos
+    let errorCode = 'UNKNOWN_ERROR';
+    let statusCode = message.includes('foto') || message.includes('validación') ? 400 : 500;
+    
+    if (message.includes('dos tareas en progreso') || message.includes('dos tareas activas')) {
+      errorCode = 'SOCIO_TIENE_2_TAREAS_EN_PROGRESO';
+      statusCode = 400;
+    } else if (message.includes('SOCIO_SUSPENDIDO') || message.includes('suspendido')) {
+      errorCode = 'SOCIO_SUSPENDIDO';
+      statusCode = 403;
+    } else if (message.includes('Transicion no permitida') || message.includes('no permitida')) {
+      errorCode = 'TRANSICIÓN_NO_PERMITIDA';
+      statusCode = 400;
+    } else if (message.includes('No se puede validar la tarea: existen bloques pendientes')) {
+      errorCode = 'SUBTAREAS_INCOMPLETAS';
+      statusCode = 400;
+    }
     
     return new Response(
       JSON.stringify({ 
         message,
-        error: 'UNKNOWN_ERROR',
+        error: errorCode,
+        errorCode,
       }), 
-      { status }
+      { status: statusCode }
     );
   }
 }

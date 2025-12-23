@@ -21,7 +21,7 @@ export async function createLeaderInvite({ userId, userEmail, nombre, email }: I
   const token = randomUUID();
 
   const { data, error } = await supabase
-    .from('leader_invites')
+    .from('leader_invites' as any)
     .upsert(
       {
         org_id: org.id,
@@ -41,11 +41,13 @@ export async function createLeaderInvite({ userId, userEmail, nombre, email }: I
     throw error;
   }
 
-  if (!data?.id) {
+  const inviteData = data as unknown as { id: string; token: string | null } | null;
+
+  if (!inviteData?.id) {
     throw new Error('No se pudo generar la invitación');
   }
 
-  const inviteToken = data.token ?? token;
+  const inviteToken = inviteData.token ?? token;
 
-  return { inviteId: data.id, orgId: org.id, token: inviteToken };
+  return { inviteId: inviteData.id, orgId: org.id, token: inviteToken };
 }

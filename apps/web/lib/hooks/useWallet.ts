@@ -52,7 +52,6 @@ export function useWallet() {
         moneda: data.moneda ?? 'ARS',
       });
     } catch (err) {
-      console.error('[useWallet] Error obteniendo saldo:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setSaldo({
         saldo_actual: 0,
@@ -71,7 +70,6 @@ export function useWallet() {
       const data: MovimientosResponse = await response.json();
       setMovimientos(data.movimientos || []);
     } catch (err) {
-      console.error('[useWallet] Error obteniendo movimientos:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
       setMovimientos([]);
     }
@@ -98,4 +96,7 @@ export function useWallet() {
     refresh,
   };
 }
+
+
+
 

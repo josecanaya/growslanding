@@ -44,7 +44,7 @@ export default async function LeaderPage() {
     }
 
     const { data: invite } = await supabase
-      .from('leader_invites')
+      .from('leader_invites' as any)
       .select('org_id')
       .eq('email', leaderEmail)
       .eq('status', 'accepted')
@@ -55,7 +55,13 @@ export default async function LeaderPage() {
       redirect('/auth/login');
     }
 
-    orgId = invite.org_id;
+    // Type assertion: invite has the expected structure
+    const inviteRecord = invite as unknown as { org_id: string } | null;
+    if (!inviteRecord) {
+      redirect('/auth/login');
+    }
+
+    orgId = inviteRecord.org_id;
   }
 
   if (!orgId) {
@@ -71,7 +77,7 @@ export default async function LeaderPage() {
   ] = await Promise.all([
     supabase
       .from('socios')
-      .select('id, nombre, contacto, org_id, status, rol')
+      .select('id, nombre, email, org_id, estado')
       .eq('org_id', orgId)
       .order('nombre', { ascending: true }),
     supabase
@@ -84,16 +90,16 @@ export default async function LeaderPage() {
       .eq('obra.org_id', orgId)
       .order('created_at', { ascending: true }),
     supabase
-      .from('qr_tokens')
+      .from('qr_tokens' as any)
       .select('ref_id, token, enabled')
       .eq('scope', 'tarea'),
     supabase
       .from('obras')
-      .select('id, nombre, cliente, localizacion')
+      .select('id, name, propietario, address')
       .eq('org_id', orgId)
       .order('created_at', { ascending: true }),
     supabase
-      .from('leader_invites')
+      .from('leader_invites' as any)
       .select('id, email, nombre, rol, status, created_at')
       .eq('org_id', orgId)
       .order('created_at', { ascending: false }),
@@ -103,17 +109,17 @@ export default async function LeaderPage() {
   const tareasList = ((tareas ?? []) as unknown) as TareaRow[];
 
   const tareaIds = new Set(tareasList.map((t) => t.id));
-  const tokensFiltrados = (tokens ?? []).filter((token) =>
+  const tokensFiltrados = ((tokens ?? []) as any[]).filter((token: any) =>
     tareaIds.has(token.ref_id)
   );
 
   return (
     <LeaderClient
-      socios={socios ?? []}
+      socios={(socios ?? []) as any}
       tareas={tareasList as any}
       tokens={tokensFiltrados}
-      obras={obras ?? []}
-      invites={invites ?? []}
+      obras={(obras ?? []) as any}
+      invites={(invites ?? []) as any}
     />
   );
 }

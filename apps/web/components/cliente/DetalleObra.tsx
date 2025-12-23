@@ -176,14 +176,24 @@ export function DetalleObra({
   
   // Estados para el modal de edición
   const [showModalEditar, setShowModalEditar] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    nombre: string;
+    cliente: string;
+    tipoObra: string;
+    localizacion: string;
+    plantas: number;
+    terreno: number;
+    superficies: { planta: number; cubiertos: number; descubiertos: number }[];
+    fecha_inicio_estimada?: string;
+  }>({
     nombre: obra.nombre,
     cliente: obra.cliente,
     tipoObra: obra.tipoObra,
     localizacion: (obra as any).localizacion || '',
     plantas: (obra as any).plantas || 1,
     terreno: (obra as any).terreno || 0,
-    superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }]
+    superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }],
+    fecha_inicio_estimada: (obra as any).fecha_inicio_estimada || undefined
   });
 
   const getEstadoColor = (estado: string) => {
@@ -729,7 +739,8 @@ export function DetalleObra({
       localizacion: (obra as any).localizacion || '',
       plantas: (obra as any).plantas || 1,
       terreno: (obra as any).terreno || 0,
-      superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }]
+      superficies: (obra as any).superficies || [{ planta: 1, cubiertos: 0, descubiertos: 0 }],
+      fecha_inicio_estimada: (obra as any).fecha_inicio_estimada || undefined
     });
     setShowModalEditar(true);
   };
@@ -742,7 +753,7 @@ export function DetalleObra({
     const obraActualizada = {
       ...obra,
       ...formData
-    };
+    } as any;
     onActualizarObra(obraActualizada);
     setShowModalEditar(false);
   };
@@ -755,7 +766,7 @@ export function DetalleObra({
   };
 
   return (
-    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}} data-onboarding-section="detalle-obra">
+    <div className="min-h-screen" style={{backgroundColor: '#eaf0f6'}}>
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Principal */}
         <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: '#E6F2FF', borderColor: '#B3D9FF'}}>
@@ -798,7 +809,7 @@ export function DetalleObra({
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="text-right" data-onboarding="progreso-general">
+                <div className="text-right">
                   <div className="text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
                   <div className="text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
                 </div>
@@ -807,7 +818,6 @@ export function DetalleObra({
                     onClick={handleAbrirModalEditar}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out"
                     style={{backgroundColor: '#1B263B', color: 'white'}}
-                    data-onboarding="editar-informacion"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = '#162033';
                     }}
@@ -837,7 +847,7 @@ export function DetalleObra({
         {/* Tabs de Navegación */}
         <div className="rounded-xl shadow-sm border mb-6" style={{backgroundColor: 'white', borderColor: '#dce3ea'}}>
           <div style={{borderBottomColor: '#dce3ea'}} className="border-b">
-            <nav className="flex space-x-8 px-6" data-onboarding="tabs-navegacion">
+            <nav className="flex space-x-8 px-6">
               {[
                 { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                 { key: 'elementos', label: 'Elementos', icon: Layers },
@@ -1023,6 +1033,36 @@ export function DetalleObra({
                       <option value="Edificio pequeño">Edificio pequeño</option>
                       <option value="Otro">Otro</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2" style={{color: '#1B263B'}}>
+                      Fecha de inicio estimada
+                    </label>
+                    <input
+                      type="date"
+                      min={new Date().toISOString().split('T')[0]}
+                      value={formData.fecha_inicio_estimada || ''}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value;
+                        const today = new Date().toISOString().split('T')[0];
+                        
+                        if (selectedDate && selectedDate < today) {
+                          return;
+                        }
+                        
+                        setFormData(prev => ({ ...prev, fecha_inicio_estimada: selectedDate || undefined }));
+                      }}
+                      className="w-full px-3 py-2 border rounded-lg transition-all duration-300 ease-in-out"
+                      style={{borderColor: '#d3dae3', backgroundColor: '#ffffff'}}
+                      placeholder="Seleccioná la fecha estimada de inicio"
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#1B263B';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#d3dae3';
+                      }}
+                    />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

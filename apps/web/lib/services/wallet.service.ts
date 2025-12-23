@@ -1,4 +1,5 @@
 import { createServiceSupabaseClient } from '../supabase-server';
+import { obtenerConfigPlan, calcularComision } from './plan.service';
 
 /**
  * Servicio para manejar operaciones de wallet
@@ -143,6 +144,190 @@ export class WalletService {
 
     if (updateError) {
       throw new Error(`Error actualizando saldo: ${updateError.message}`);
+    }
+  }
+
+  /**
+   * Obtiene el saldo actual de un usuario (SOCIO o ORG)
+   */
+  static async obtenerSaldo(owner_tipo: 'SOCIO' | 'ORG', owner_id: string): Promise<{
+    saldo_actual: number;
+    saldo_pendiente: number;
+    moneda: string;
+  }> {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    const { data: saldo, error } = await supabaseAny
+      .from('wallet_saldos')
+      .select('saldo_actual, saldo_pendiente, moneda')
+      .eq('owner_tipo', owner_tipo)
+      .eq('owner_id', owner_id)
+      .maybeSingle();
+
+    if (error || !saldo) {
+      // Si no existe, crear en cero y retornar
+      await this.actualizarSaldo(owner_tipo, owner_id, 0, 'CREDITO');
+      return {
+        saldo_actual: 0,
+        saldo_pendiente: 0,
+        moneda: 'ARS',
+      };
+    }
+
+    return {
+      saldo_actual: saldo.saldo_actual ?? 0,
+      saldo_pendiente: saldo.saldo_pendiente ?? 0,
+      moneda: saldo.moneda || 'ARS',
+    };
+  }
+
+  /**
+   * Obtiene movimientos de wallet con paginación
+   */
+  static async obtenerMovimientos(
+    owner_tipo: 'SOCIO' | 'ORG',
+    owner_id: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{
+    movimientos: any[];
+    total: number;
+  }> {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    // Obtener movimientos
+    const { data: movimientos, error, count } = await supabaseAny
+      .from('wallet_movimientos')
+      .select('*', { count: 'exact' })
+      .eq('owner_tipo', owner_tipo)
+      .eq('owner_id', owner_id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw new Error(`Error obteniendo movimientos: ${error.message}`);
+    }
+
+    return {
+      movimientos: movimientos || [],
+      total: count || 0,
+    };
+  }
+
+  /**
+   * Registra un pago completo por una tarea validada
+   * Crea los movimientos necesarios y actualiza saldos
+   */
+  static async registrarPagoPorTarea(params: {
+    tareaId: string;
+    socioId: string;
+    orgId: string;
+    montoTotal: number;
+    metodoPago?: 'EFECTIVO' | 'ONLINE';
+    porcentajeComision?: number;
+    presupuestoId?: string;
+    escrowId?: string;
+  }): Promise<{
+    creditoSocio: any;
+    debitoComision: any;
+    creditoGrows: any;
+  }> {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    try {
+      // 1. Obtener configuración del plan
+      const planConfig = await obtenerConfigPlan(params.orgId);
+
+      // 2. Calcular comisión según plan o override
+      const comision =
+        typeof params.porcentajeComision === 'number'
+          ? params.montoTotal * params.porcentajeComision
+          : calcularComision(params.montoTotal, planConfig);
+      const montoSocio = params.montoTotal - comision;
+
+      // 3. Asegurar saldos existan
+      await this.obtenerSaldo('SOCIO', params.socioId);
+      await this.obtenerSaldo('ORG', params.orgId);
+
+      // 4. Crear movimientos en orden
+
+      // Crédito al socio (monto total - comisión)
+      const creditoSocio = await this.crearCredito({
+        owner_tipo: 'SOCIO',
+        owner_id: params.socioId,
+        monto: montoSocio,
+        concepto: `Pago por tarea validada - Tarea ${params.tareaId}`,
+        tarea_id: params.tareaId,
+        presupuesto_id: params.presupuestoId,
+      });
+
+      // Débito del socio (comisión)
+      const debitoComision = await this.crearDebito({
+        owner_tipo: 'SOCIO',
+        owner_id: params.socioId,
+        monto: comision,
+        concepto: `Comisión GROWS (${(planConfig.comisionFija || ((planConfig.comisionMin + planConfig.comisionMax) / 2)) * 100}%)`,
+        tarea_id: params.tareaId,
+        presupuesto_id: params.presupuestoId,
+      });
+
+      // Crédito a Grows (comisión)
+      const creditoGrows = await this.crearCredito({
+        owner_tipo: 'ORG',
+        owner_id: params.orgId,
+        monto: comision,
+        concepto: `Comisión GROWS - Tarea ${params.tareaId}`,
+        tarea_id: params.tareaId,
+        presupuesto_id: params.presupuestoId,
+      });
+
+      // Actualizar campos adicionales en movimientos si existen
+      const metodoPago = params.metodoPago || 'EFECTIVO';
+      const origen = 'VALIDACION_TAREA';
+
+      // Actualizar método_pago, origen y escrow_id en los movimientos creados
+      const updates = [
+        supabaseAny
+          .from('wallet_movimientos')
+          .update({
+            metodo_pago: metodoPago,
+            origen: origen,
+            escrow_id: params.escrowId || null,
+          })
+          .eq('id', creditoSocio.id),
+        supabaseAny
+          .from('wallet_movimientos')
+          .update({
+            metodo_pago: metodoPago,
+            origen: origen,
+            escrow_id: params.escrowId || null,
+          })
+          .eq('id', debitoComision.id),
+        supabaseAny
+          .from('wallet_movimientos')
+          .update({
+            metodo_pago: metodoPago,
+            origen: origen,
+            escrow_id: params.escrowId || null,
+          })
+          .eq('id', creditoGrows.id),
+      ];
+
+      await Promise.all(updates);
+
+      console.log(`[WALLET] Pago registrado para tarea ${params.tareaId}: Socio=${montoSocio}, Comisión=${comision}`);
+
+      return {
+        creditoSocio,
+        debitoComision,
+        creditoGrows,
+      };
+    } catch (error) {
+      console.error('[WALLET] Error registrando pago por tarea:', error);
+      throw error;
     }
   }
 }

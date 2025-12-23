@@ -20,6 +20,8 @@ export type EstadoPago = 'pendiente' | 'pagado' | 'cancelado';
 
 export type TipoEvidencia = 'foto' | 'video' | 'documento' | 'firma';
 
+export type EscrowEstado = 'pendiente' | 'retenido' | 'liberado' | 'reembolsado' | 'cancelado';
+
 export type ActorTipo = 'cliente_tecnico' | 'socio';
 
 // =============================================
@@ -162,6 +164,32 @@ export interface Pago {
   // Relaciones
   tarea?: Tarea;
   cliente_tecnico?: ClienteTecnico;
+}
+
+export interface EscrowTransaccion {
+  id: string;
+  tarea_id: string;
+  presupuesto_id?: string | null;
+  socio_id: string;
+  org_id: string;
+  cliente_id?: string | null;
+  monto_total: number;
+  monto_comision: number;
+  monto_socio: number;
+  moneda: string;
+  estado: EscrowEstado;
+  mp_preference_id?: string | null;
+  mp_payment_id?: string | null;
+  mp_status?: string | null;
+  mp_raw_payload?: any;
+  proveedor: string;
+  fecha_deposito?: string | null;
+  fecha_liberacion?: string | null;
+  fecha_reembolso?: string | null;
+  motivo_reembolso?: string | null;
+  metadata?: any;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface EvidenciaTarea {

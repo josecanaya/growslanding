@@ -66,6 +66,7 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
       const nombreObra = getNombreObra();
       
       // Preparar todos los datos del wizard para enviar
+      const wizardState = useWizardStore.getState();
       const obraData = {
         org_id: currentUser.orgId,
         nombre: nombreObra,
@@ -75,6 +76,7 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
         tipo_obra: tipoObra || undefined,
         latitud: latitud !== undefined ? latitud : undefined,
         longitud: longitud !== undefined ? longitud : undefined,
+        fecha_inicio_estimada: wizardState.fecha_inicio_estimada || undefined,
         // Campos del Paso 2 (Superficies)
         plantas: plantas !== undefined && plantas > 0 ? plantas : undefined,
         terreno: terreno !== undefined && terreno > 0 ? terreno : undefined,

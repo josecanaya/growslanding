@@ -1,0 +1,172 @@
+INFORME PM — FRONT SOCIO (Sprint FSM + Bloques)
+
+Estado: COMPLETADO — Listo para revisión final
+Responsable: Agente Front Socio
+
+✅ 1. Integración completa con FSM (Tareas y Bloques)
+
+La vista del socio ahora utiliza exclusivamente los estados oficiales del backend:
+
+Tareas
+
+pendiente
+
+en_progreso
+
+para_validar
+
+validada
+
+rechazada
+
+Bloques
+
+pendiente
+
+en_progreso
+
+para_validar
+
+validado
+
+rechazado
+
+Implementación lograda:
+
+Mapeo visual consistente para todos los estados
+
+Eliminación total de estados legacy o inventados
+
+UI 100% dependiente del backend
+
+✅ 2. Acciones del socio conectadas a API real
+
+Todas las acciones del socio ahora pasan exclusivamente por los endpoints del backend:
+
+Iniciar tarea → POST /api/tareas/[id]/transition (→ en_progreso)
+
+Iniciar bloque → POST /api/tareas-subtareas/[id]/iniciar
+
+Subir evidencia → compresión 1200px + upload
+
+Enviar bloque para validar → POST /api/tareas-subtareas/[id]/enviar-validar
+
+Rehacer bloque rechazado → iniciar nuevamente (rechazado → en_progreso)
+
+Resultado:
+No hay cambios locales de estado sin aprobación del backend.
+
+✅ 3. Límites del backend respetados y visibles
+
+El front maneja correctamente los bloqueos del socio:
+
+Máx. 2 tareas activas
+
+Máx. 2 bloques activos
+
+Socio suspendido
+
+Transición no permitida
+
+Se muestran mensajes claros:
+
+“Ya tenés 2 tareas activas. Finalizá una para continuar.”
+
+“No podés iniciar más bloques. Tenés 2 en curso.”
+
+“Tu cuenta está suspendida por saldo negativo.”
+
+“Esta acción no está permitida en este estado.”
+
+✅ 4. Manejo unificado de errores
+
+Se implementó handleApiError() que cubre:
+
+SOCIO_TIENE_2_TAREAS_EN_PROGRESO
+
+SOCIO_TIENE_2_BLOQUES_EN_PROGRESO
+
+SOCIO_SUSPENDIDO
+
+EVIDENCIA_FALTANTE
+
+TRANSICIÓN_NO_PERMITIDA
+
+BLOQUE_YA_VALIDADO
+
+BLOQUE_YA_ENVIADO
+
+Todos los errores generan toast claro y consistente.
+
+No queda ningún error silencioso ni console.log activo.
+
+✅ 5. Refresco de datos después de cada acción
+
+Flujo implementado:
+
+Llamar API
+
+Validar respuesta
+
+Mostrar toast
+
+Ejecutar fetchData()
+
+Renderizar UI real desde backend
+
+✔ No hay mutaciones locales
+✔ Estado siempre sincronizado
+
+✅ 6. Compresión de evidencias
+
+Función comprimirImagen():
+
+Reducción a 1200px
+
+JPEG 85%
+
+Aplicada en todos los flujos de evidencia
+
+Mejora performance y peso de upload
+
+✅ 7. Limpieza y calidad
+
+Eliminados todos los logs innecesarios
+
+Manejo explícito de errores
+
+Código limpio y consistente
+
+Sin warnings en consola
+
+✅ 8. Vista /socio/evidencias operativa
+
+La vista está funcional:
+
+Evidencias listadas
+
+Filtrado por tarea
+
+Preview
+
+Orden cronológico
+
+Integrada al flujo de subtareas
+
+⭐ CONCLUSIÓN GENERAL
+
+El módulo del socio quedó:
+
+100% conectado al FSM real
+
+Respetando todos los límites del backend
+
+Con evidencia obligatoria + compresión profesional
+
+Sin estados inconsistentes
+
+Con errores unificados y claros
+
+Listo para producción
+
+📌 Estado del sprint: COMPLETADO

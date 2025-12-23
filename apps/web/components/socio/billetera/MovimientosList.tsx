@@ -132,3 +132,14 @@ export function MovimientosList({ movimientos, loading, moneda = 'ARS' }: Movimi
   );
 }
 
+
+
+
+
+
+
+
+
+
+
+

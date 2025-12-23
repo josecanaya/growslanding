@@ -1,0 +1,171 @@
+NFORME FINAL AL PM — Validación de Bloques (MVP 1.0)
+
+Agente: Front Cliente / Supervisor
+Estado: Implementación completada — Listo para producción
+
+🎯 Resumen Ejecutivo
+
+La sección ValidarSection fue completamente refactorizada y ahora cumple 100% con la FSM del backend, con las reglas oficiales de validación de bloques y con todos los requerimientos funcionales y de UX definidos por el PM.
+
+La UI es ahora determinista, resiliente y sin lógica legacy, centrada exclusivamente en la validación de bloques pagables, con refresco correcto de datos y feedback unificado.
+
+🟦 1. Cumplimiento de Requisitos FSM
+✔ Estados oficiales visibles:
+
+pendiente
+
+para_validar
+
+validado
+
+rechazado
+
+Se eliminó cualquier estado legacy (finalizado, en_revision, en_ejecucion).
+
+✔ Normalización garantizada:
+
+Uso de TareaFsmService.mapLegacyToOficial para asegurar consistencia en toda la vista.
+
+🟦 2. Acciones Permitidas (Reglas del Cliente)
+✔ Botones solo cuando:
+
+estado === "para_validar"
+
+✔ Ocultos automáticamente en:
+
+validado
+
+rechazado
+
+pendiente
+
+✔ El cliente ahora SOLO:
+
+valida bloques
+
+rechaza bloques
+
+🚫 No puede validar tareas completas.
+🚫 No puede cambiar estados manualmente.
+
+🟦 3. Modales de Confirmación
+✔ Modal VALIDAR
+
+Confirmación antes de enviar
+
+Llama correctamente al endpoint
+
+Cierra y refresca datos
+
+✔ Modal RECHAZAR
+
+Campo opcional de motivo
+
+Confirmación clara
+
+Refresco completo al finalizar
+
+🟦 4. Evidencias
+✔ Se muestran:
+
+Evidencias por bloque (evidence_url)
+
+Evidencias a nivel de tarea
+
+Vista ampliada mediante lightbox
+
+Sin fallos cuando hay múltiples evidencias
+
+🟦 5. Resumen de Tarea
+
+Incluye:
+
+Estado oficial de tarea
+
+Total de bloques
+
+Bloques validados
+
+Bloques rechazados
+
+🚫 Sin botón para validar tarea completa.
+El backend se encarga automáticamente cuando corresponde.
+
+🟦 6. Banner de Upgrade
+✔ Visible y funcional para:
+
+FREE
+
+STARTER
+
+✔ Oculto para:
+
+PRO
+
+ENTERPRISE
+
+Integrado con useUpgradeModal.
+
+🟦 7. UX / UI
+✔ Limpieza completa:
+
+Sin console.log
+
+Sin console.warn
+
+Sin console.error
+
+Sin referencias a metodoPago
+
+Sin lógica legacy
+
+✔ Manejo unificado de errores:
+
+Toast de error centralizado
+
+Toast de éxito según PM:
+
+“Bloque validado y pago procesado”
+“Bloque rechazado — el socio podrá retomarlo”
+
+✔ Recarga de datos confiable:
+
+loadData() se ejecuta después de cada acción.
+
+🟦 8. Endpoint Oficial — Implementado Correctamente
+✔ Uso exclusivo de:
+
+POST /api/tareas-subtareas/[id]/validar
+
+✔ Payload exacto:
+{ "accion": "validar" }
+
+{ "accion": "rechazar", "motivo": "texto opcional" }
+
+
+Sin endpoints legacy.
+Sin mutaciones directas del estado.
+
+🟩 Resultado Final
+
+El componente ValidarSection queda:
+
+✔ Totalmente alineado con la FSM del backend
+
+✔ Sin lógica incorrecta en frontend
+
+✔ Sin estados legacy
+
+✔ Sin pagos calculados en UI
+
+✔ Con acciones claras y seguras
+
+✔ Con evidencia visible y correcta
+
+✔ Con feedback unificado y profesional
+
+✔ Con refresco automático y estable
+
+✔ Listo para producción
+
+El cliente ahora experimenta un flujo simple, predecible y seguro: “Solo valido bloques, y todo funciona como debe.”

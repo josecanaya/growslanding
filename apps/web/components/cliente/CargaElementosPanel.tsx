@@ -20,8 +20,6 @@ import {
   ChevronRight,
   HelpCircle,
 } from "lucide-react";
-import { OnboardingCargarElementosProvider, useOnboardingCargarElementos } from "@/components/onboarding/OnboardingCargarElementos";
-import TutorialButton from "@/components/common/TutorialButton";
 import { catalogoCompletoJson } from "@/lib/catalogos/elementos";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -211,7 +209,6 @@ function CargaElementosPanelContent({
   plantas = [],
 }: CargaElementosPanelProps) {
   const { toast } = useToast();
-  const { startOnboarding } = useOnboardingCargarElementos();
 
   const categorias: CategoriaCatalogo[] = useMemo(
     () => catalogoCompletoJson.categorias,
@@ -524,7 +521,7 @@ function CargaElementosPanelContent({
       {/* Panel izquierdo */}
       <aside className="col-span-12 h-max rounded-l-xl border-r border-[#E5E7EB] bg-[#FFFEF5] shadow-sm lg:col-span-3">
         {/* Header fijo */}
-        <div className="sticky top-0 z-10 bg-[#F0F2F5] border-b border-[#E1E4E8] px-5 py-2" data-onboarding="seleccionar-categoria">
+        <div className="sticky top-0 z-10 bg-[#F0F2F5] border-b border-[#E1E4E8] px-5 py-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <Building2 className="h-4 w-4 text-slate-500" />
             Categorías constructivas
@@ -582,7 +579,6 @@ function CargaElementosPanelContent({
           {/* Header con botón de tutorial */}
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Cargar elementos</h2>
-            <TutorialButton onClick={startOnboarding} />
           </div>
           {/* Breadcrumb */}
           {breadcrumb && (
@@ -686,7 +682,7 @@ function CargaElementosPanelContent({
                       </button>
 
                       {isOpen && (
-                        <div className="px-5 pb-5" data-onboarding="seleccionar-tipo">
+                        <div className="px-5 pb-5">
                           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                             {subcategoria.elementos.map((elemento) => {
                               const isActive =
@@ -758,7 +754,7 @@ function CargaElementosPanelContent({
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-4 sm:grid-cols-2" data-onboarding="ver-elementos-cargados">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 {elementosCargadosPorCategoria.length === 0 ? (
                   <p className="col-span-full rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                     Todavía no hay elementos cargados. Sumá algunos desde la pestaña &quot;Cargar elementos&quot;.
@@ -848,7 +844,7 @@ function CargaElementosPanelContent({
                   )
                 )}
 
-                <div className="grid grid-cols-2 gap-3" data-onboarding="definir-cantidad">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-600">Unidad</label>
                     <Select value={unidad} onValueChange={setUnidad}>
@@ -919,7 +915,6 @@ function CargaElementosPanelContent({
                   className="w-full rounded-xl bg-[#22C55E] py-2 text-white hover:bg-[#16A34A]"
                   onClick={handleConfirmar}
                   disabled={isSaving}
-                  data-onboarding="confirmar-elemento"
                 >
                   {isSaving ? "Guardando..." : "Confirmar selección"}
                 </Button>
@@ -1046,11 +1041,7 @@ function CargaElementosPanelContent({
 
 // Componente principal exportado (con provider)
 export default function CargaElementosPanel(props: CargaElementosPanelProps) {
-  return (
-    <OnboardingCargarElementosProvider>
-      <CargaElementosPanelContent {...props} />
-    </OnboardingCargarElementosProvider>
-  );
+  return <CargaElementosPanelContent {...props} />;
 }
 
 

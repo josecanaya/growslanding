@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EventoService } from '../../../lib/services';
+import { EventoService } from '@/lib/services/evento.service';
 import { EventoQuerySchema } from '../../../lib/schemas';
 
 export async function GET(request: NextRequest) {

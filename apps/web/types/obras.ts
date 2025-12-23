@@ -8,6 +8,8 @@ export interface Obra {
   created_at: string;
   updatedAt?: string;
   fecha_inicio?: string;
+  fecha_inicio_estimada?: string; // Fecha de inicio estimada (obligatoria al crear)
+  fecha_final_estimada?: string; // Fecha de finalización estimada (calculada automáticamente)
   presupuesto?: number;
   descripcion?: string;
   cliente?: string;
@@ -31,6 +33,7 @@ export interface ObraFormState {
   nombre: string;
   localizacion: string;
   fecha_inicio: string;
+  fecha_inicio_estimada: string; // Campo obligatorio para fecha de inicio estimada
   presupuesto: string;
   descripcion: string;
 }
@@ -39,6 +42,7 @@ export const INITIAL_OBRA_FORM_STATE: ObraFormState = {
   nombre: '',
   localizacion: '',
   fecha_inicio: '',
+  fecha_inicio_estimada: '',
   presupuesto: '',
   descripcion: '',
 };

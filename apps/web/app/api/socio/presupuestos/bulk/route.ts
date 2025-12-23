@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
           const { error: updateError } = await supabase
             .from('tareas_presupuestos')
             .update({
-              monto: presupuesto.monto ?? null,
+              monto: presupuesto.monto ?? undefined,
               estado: presupuesto.estado,
               notas: notas,
               updated_at: new Date().toISOString(),
@@ -188,11 +188,11 @@ export async function POST(request: NextRequest) {
             .insert({
               tarea_id: presupuesto.tarea_id,
               socio_id: socioId,
-              monto: presupuesto.monto ?? null,
+              monto: presupuesto.monto ?? undefined,
               moneda: 'ARS',
               estado: presupuesto.estado,
               notas: notas,
-            });
+            } as any);
 
           if (insertError) {
             throw insertError;
@@ -219,20 +219,23 @@ export async function POST(request: NextRequest) {
       try {
         // Obtener el cliente técnico de la organización desde la tabla orgs
         const { data: orgData, error: orgError } = await supabase
-          .from('orgs')
-          .select('owner_user_id')
+          .from('organizations')
+          .select('user_id')
           .eq('id', orgId)
           .maybeSingle();
 
-        if (orgError || !orgData?.owner_user_id) {
-          console.warn('[PRESUPUESTOS_BULK] No se encontró owner_user_id para la organización, no se creará notificación', orgError);
+        // Type assertion: orgData has user_id field
+        const ownerUserId = (orgData as { user_id: string | null } | null)?.user_id;
+
+        if (orgError || !ownerUserId) {
+          console.warn('[PRESUPUESTOS_BULK] No se encontró user_id para la organización, no se creará notificación', orgError);
         } else {
           await (supabase as any)
             .from('notificaciones')
             .insert({
               org_id: orgId,
               remitente_id: socio.id,                       // socio que envía
-              destinatario_id: orgData.owner_user_id,       // cliente técnico que recibe
+              destinatario_id: ownerUserId,       // cliente técnico que recibe
               obra_id: payload.obra_id,
               tarea_id: null,
               titulo: 'Nuevo presupuesto recibido',

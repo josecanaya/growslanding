@@ -32,20 +32,23 @@ function CallbackPageContent() {
   const redirectTarget = sanitizeRedirect(redirectParam);
 
   const hasRunRef = useRef(false);
+  const sessionFromPkceRef = useRef<{ session: any; user: any } | null>(null);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
 
     async function resolveSession() {
       // Prevenir ejecuciones múltiples
-      if (hasRunRef.current) {
+      if (hasRunRef.current || isProcessingRef.current) {
         return;
       }
       hasRunRef.current = true;
+      isProcessingRef.current = true;
       try {
         // Intercambiar código OAuth por sesión si está presente en la URL
         const code = searchParams?.get("code");
-        if (code) {
+        if (code && !sessionFromPkceRef.current) {
           // Intentar intercambiar código UNA SOLA VEZ (sin retry para evitar loops)
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           
@@ -70,37 +73,69 @@ function CallbackPageContent() {
               return;
             }
             
-            // Si el error es por falta de code_verifier (PKCE), intentar obtener sesión directamente
+            // Si el error es por falta de code_verifier (PKCE)
             const isPkceError = 
               exchangeError.message?.toLowerCase().includes('code verifier') ||
               exchangeError.message?.toLowerCase().includes('invalid request') ||
-              exchangeError.message?.toLowerCase().includes('both auth code and code verifier');
+              exchangeError.message?.toLowerCase().includes('both auth code and code verifier') ||
+              exchangeError.message?.toLowerCase().includes('code_verifier');
             
             if (isPkceError) {
-              // Este error puede ocurrir cuando:
+              // Este error ocurre cuando:
               // 1. El code_verifier no está en localStorage (cookies bloqueadas, modo incógnito, etc.)
               // 2. Múltiples pestañas intentando autenticar al mismo tiempo
-              // Intentar obtener sesión directamente (puede que ya esté autenticado)
-              // SOLO UNA VEZ, sin retry
-              const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-              if (!sessionErr && sessionData.session) {
-                // Sesión válida encontrada, continuar con el flujo normalmente
-                // No loguear este error ya que la sesión se recuperó correctamente
-              } else {
-                // No hay sesión válida, limpiar URL y reintentar autenticación
-                // Limpiar el código de la URL para evitar loops
+              // 3. El code_verifier fue eliminado o expiró
+              
+              console.warn("[OAUTH_CALLBACK] Error PKCE - code_verifier faltante. Limpiando URL y redirigiendo.");
+              
+              // PRIMERO limpiar la URL para evitar que el código se vuelva a ejecutar
+              if (active && typeof window !== 'undefined') {
+                // Remover el parámetro 'code' de la URL inmediatamente
+                const url = new URL(window.location.href);
+                url.searchParams.delete('code');
+                url.searchParams.delete('state');
+                if (redirectTarget) {
+                  url.searchParams.set('redirect', redirectTarget);
+                }
+                // Usar replaceState para cambiar la URL sin recargar
+                window.history.replaceState({}, '', url.toString());
+                // Marcar que ya procesamos este código para evitar loops
+                hasRunRef.current = true;
+              }
+              
+              // Intentar obtener sesión SOLO UNA VEZ (puede que ya esté autenticado en otra pestaña)
+              // Si falla, redirigir sin más intentos
+              try {
+                const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+                
+                // Si hay una sesión válida, guardarla y continuar con el flujo
+                if (!sessionErr && sessionData?.session) {
+                  // Sesión válida encontrada, guardarla para usar más abajo
+                  sessionFromPkceRef.current = {
+                    session: sessionData.session,
+                    user: sessionData.session.user,
+                  };
+                  console.log("[OAUTH_CALLBACK] Sesión encontrada a pesar del error PKCE, continuando...");
+                  // NO retornar aquí, dejar que el código continúe con el flujo normal usando esta sesión
+                } else {
+                  // No hay sesión válida, redirigir a login
+                  console.warn("[OAUTH_CALLBACK] No se encontró sesión válida después de error PKCE");
+                  if (active) {
+                    router.replace("/auth/login?error=pkce_error" as Route);
+                  }
+                  return;
+                }
+              } catch (sessionCheckError) {
+                // Si falla el getSession, redirigir directamente sin más intentos
+                console.error("[OAUTH_CALLBACK] Error al verificar sesión después de PKCE:", sessionCheckError);
                 if (active) {
-                  const cleanUrl = window.location.pathname + (redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : '');
-                  window.history.replaceState({}, '', cleanUrl);
-                  // Pequeño delay para permitir que Supabase limpie su estado interno
-                  setTimeout(() => {
-                    router.replace("/auth/login?error=oauth_retry" as Route);
-                  }, 500);
+                  router.replace("/auth/login?error=pkce_error" as Route);
                 }
                 return;
               }
             } else {
               // Otro tipo de error, redirigir sin reintentar
+              console.error("[OAUTH_CALLBACK] Error OAuth no manejado:", exchangeError);
               if (active) {
                 router.replace("/auth/login?error=oauth_failed" as Route);
               }
@@ -109,7 +144,20 @@ function CallbackPageContent() {
           }
         }
 
-        const { data, error: sessionError } = await supabase.auth.getSession();
+        // Si ya tenemos una sesión del manejo PKCE, usarla; si no, obtenerla normalmente
+        let sessionData;
+        let sessionError;
+        
+        if (sessionFromPkceRef.current) {
+          // Usar la sesión que ya obtuvimos durante el manejo de PKCE
+          sessionData = { session: sessionFromPkceRef.current.session };
+          sessionError = null;
+        } else {
+          // Obtener sesión normalmente
+          const result = await supabase.auth.getSession();
+          sessionData = result.data;
+          sessionError = result.error;
+        }
 
         if (!active) {
           return;
@@ -124,12 +172,12 @@ function CallbackPageContent() {
           return;
         }
 
-        if (!data.session) {
+        if (!sessionData?.session) {
           router.replace("/auth/login?error=no_session" as Route);
           return;
         }
 
-        const sessionUser = data.session.user;
+        const sessionUser = sessionData.session.user;
         
         // Verificar si viene del registro con Google para CLIENTE_TECNICO
         const roleParam = searchParams?.get('role');
@@ -249,6 +297,8 @@ function CallbackPageContent() {
         if (active) {
           router.replace("/auth/login?error=unexpected" as Route);
         }
+      } finally {
+        isProcessingRef.current = false;
       }
     }
 
@@ -256,12 +306,14 @@ function CallbackPageContent() {
 
     return () => {
       active = false;
+      isProcessingRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     redirectTarget,
     // No incluir supabase en dependencias (es estable)
-    // No incluir searchParams completo (solo necesitamos el code)
+    // No incluir searchParams completo (solo necesitamos el code una vez)
+    // No incluir router (es estable en Next.js)
   ]);
 
   return (

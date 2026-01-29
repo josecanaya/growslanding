@@ -57,6 +57,19 @@ function SelectRolePageContent() {
         return;
       }
 
+      // Verificar rate limit antes de hacer cualquier llamada
+      if (typeof window !== 'undefined') {
+        const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+        if (rateLimitUntil) {
+          const untilTime = parseInt(rateLimitUntil, 10);
+          if (Date.now() < untilTime) {
+            // Rate limit activo, no hacer llamadas
+            console.warn('[select-role] Rate limit activo, evitando getSession');
+            return;
+          }
+        }
+      }
+
       const { data } = await supabase.auth.getSession();
       if (!active) {
         return;

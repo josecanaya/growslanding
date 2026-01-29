@@ -8,7 +8,6 @@ import { Footer } from "@/components/footer/Footer";
 import { StorytellingFlow } from "@/components/sections/landing/StorytellingFlow";
 import { CTASection } from "@/components/sections/landing/CTASection";
 import { setRequestLocale } from "next-intl/server";
-import { GrowsBot } from "@/components/chat/GrowsBot";
 import { SectionDivider } from "@/components/SectionDivider";
 
 type Props = { params: { locale: string } };
@@ -29,7 +28,6 @@ export default function HomePage({ params: { locale } }: Props) {
         <CTASection />
       </main>
       <Footer />
-      <GrowsBot />
     </div>
   );
 }

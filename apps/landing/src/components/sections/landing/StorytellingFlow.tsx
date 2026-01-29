@@ -66,7 +66,7 @@ const stages: Stage[] = [
     paragraphs: [
       'La obra se monitorea como un sistema vivo.',
       'Los datos de terreno alimentan el panel de control.',
-      'GrowsBot detecta desviaciones y sugiere correcciones.',
+      'GROWS detecta desviaciones y sugiere correcciones.',
       'Decisiones basadas en evidencia, no en intuición.'
     ]
   },

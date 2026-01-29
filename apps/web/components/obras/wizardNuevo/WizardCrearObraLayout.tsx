@@ -1,23 +1,40 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PasoDatosBasicos from './PasoDatosBasicos';
 import PasoSuperficies from './PasoSuperficies';
 import PasoCargaElementos from './PasoCargaElementos';
 import { useWizardStore } from './useWizardStore';
 
-const STEPS = [
+const STEPS_BASE = [
   { id: 1, title: 'Datos básicos' },
   { id: 2, title: 'Superficies y estructura' },
-  { id: 3, title: 'Carga de elementos' },
 ];
+
+const STEP_ELEMENTOS = { id: 3, title: 'Carga de elementos' };
 
 function WizardCrearObraLayout() {
   const [step, setStep] = useState(1);
   const reset = useWizardStore((s) => s.reset);
+  const modoObra = useWizardStore((s) => s.modoObra);
+  
+  // Construir la lista de pasos dinámicamente según el modo
+  const STEPS = useMemo(() => {
+    if (modoObra === 'ESTRUCTURADA') {
+      return [...STEPS_BASE, STEP_ELEMENTOS];
+    }
+    return STEPS_BASE;
+  }, [modoObra]);
 
-  const progress = useMemo(() => (step / STEPS.length) * 100, [step]);
+  const progress = useMemo(() => (step / STEPS.length) * 100, [step, STEPS.length]);
+
+  // Ajustar el paso actual si se cambia el modo y estamos en un paso que ya no existe
+  useEffect(() => {
+    if (step > STEPS.length) {
+      setStep(STEPS.length);
+    }
+  }, [STEPS.length, step]);
 
   function goNext() {
     setStep((s) => Math.min(STEPS.length, s + 1));
@@ -36,9 +53,12 @@ function WizardCrearObraLayout() {
       case 1:
         return <PasoDatosBasicos onNext={goNext} />;
       case 2:
-        return <PasoSuperficies onPrev={goPrev} onNext={goNext} />;
+        return <PasoSuperficies onPrev={goPrev} onNext={modoObra === 'ESTRUCTURADA' ? goNext : finish} />;
       case 3:
-        return <PasoCargaElementos onPrev={goPrev} onFinish={finish} />;
+        if (modoObra === 'ESTRUCTURADA') {
+          return <PasoCargaElementos onPrev={goPrev} onFinish={finish} />;
+        }
+        return null;
       default:
         return null;
     }

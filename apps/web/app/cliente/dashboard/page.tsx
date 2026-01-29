@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Route } from 'next';
 
 import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
 import { TabBarMobile } from '@/components/cliente/TabBarMobile';
 import { TopBarMobile } from '@/components/cliente/TopBarMobile';
+import { HomeMobile } from '@/components/cliente/home/HomeMobile';
+import { HomeDesktop } from '@/components/cliente/home/HomeDesktop';
 import ObrasSection from '@/components/cliente/ObrasSection';
 import { CuadrillasSection } from '@/components/cliente/CuadrillasSection';
 import { ValidarTareasSection } from '@/components/cliente/ValidarTareasSection';
@@ -410,7 +412,32 @@ function HomeCliente() {
     );
   }
 
-  // Datos mock para 6 obras con sus gráficos asociados
+  // Usar datos reales en lugar de mocks
+  const obrasDataReal = obrasList.map(obra => ({
+    id: obra.id,
+    name: obra.name,
+    estado: obra.estado,
+    // Datos vacíos por ahora - se cargarán desde API cuando esté disponible
+    tareas: { enCurso: 0, paraValidar: 0, completadas: 0, bloqueadas: 0, total: 0, vencidas: 0, proximas7d: 0, ritmoPromedio: 0, weeklyCompleted: [] },
+    presupuesto: { presupuestado: 0, ejecutado: 0 },
+    presupuestoSemanal: [],
+    actividad: { tareasCompletadasPorSemana: [], actividadProyectada: [], milestones: [], insight: 'success' as const },
+  }));
+
+  const mockData = {
+    obras: obrasDataReal.length > 0 ? obrasDataReal : [{
+      id: 'empty',
+      name: 'No hay obras',
+      estado: 'ACTIVA',
+      tareas: { enCurso: 0, paraValidar: 0, completadas: 0, bloqueadas: 0, total: 0, vencidas: 0, proximas7d: 0, ritmoPromedio: 0, weeklyCompleted: [] },
+      presupuesto: { presupuestado: 0, ejecutado: 0 },
+      presupuestoSemanal: [],
+      actividad: { tareasCompletadasPorSemana: [], actividadProyectada: [], milestones: [], insight: 'success' as const },
+    }],
+  };
+
+  // TEMPORAL: Eliminar datos mock hardcodeados - usando datos reales
+  /* Datos mock para 6 obras con sus gráficos asociados
   const mockData = {
     obras: [
       { 
@@ -651,6 +678,7 @@ function HomeCliente() {
       },
     ],
   };
+  */
 
   return (
     <DashboardFinal 
@@ -1115,7 +1143,10 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
   const tareasActuales = completadas[completadas.length - 1];
   
   // Path del área bajo la línea (cierra desde el último punto hasta el primer punto pasando por la base)
-  const pathArea = `${pathTareas} L ${ultimoPunto.x} ${paddingTop + chartHeight} L ${primerPunto.x} ${paddingTop + chartHeight} Z`;
+  // Validar que existan puntos antes de crear el path
+  const pathArea = primerPunto && ultimoPunto
+    ? `${pathTareas} L ${ultimoPunto.x} ${paddingTop + chartHeight} L ${primerPunto.x} ${paddingTop + chartHeight} Z`
+    : '';
   
   // ID único para el gradiente del área (verde suave tipo Google Finance)
   const gradientId = `activityGradient-${Math.random().toString(36).substr(2, 9)}`;
@@ -1167,7 +1198,7 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
   }
   
   // Path para la proyección (línea discontinua, conectada desde el último punto real)
-  const pathProyeccion = puntosProyeccion.length > 0
+  const pathProyeccion = puntosProyeccion.length > 0 && ultimoPunto
     ? `M ${ultimoPunto.x} ${ultimoPunto.y} ${puntosProyeccion.map(p => `L ${p.x} ${p.y}`).join(' ')}`
     : '';
   
@@ -1246,9 +1277,18 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
     })
     .filter(p => p !== null);
   
+  // Calcular punto hovered antes del render
+  const puntoHovered = hoveredSemana && !hoveredHito && semanasParaGrafico.includes(hoveredSemana)
+    ? (() => {
+        const index = semanasParaGrafico.indexOf(hoveredSemana);
+        return puntosTareas[index] || null;
+      })()
+    : null;
+  
   // Calcular flecha de tendencia (dirección del último tramo)
   const ultimosTramos = puntosTareas.slice(-2);
   const tieneAceleracion = ultimosTramos.length === 2 && 
+    ultimosTramos[1] && ultimosTramos[0] &&
     ultimosTramos[1].y < ultimosTramos[0].y; // Y menor = más alto = más tareas
   
   // 3. RITMO PROMEDIO
@@ -1466,21 +1506,16 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           />
           
           {/* Resaltar semana hovered (desde presupuesto) - solo si no es un hito */}
-          {hoveredSemana && !hoveredHito && semanasParaGrafico.includes(hoveredSemana) && (() => {
-            const index = semanasParaGrafico.indexOf(hoveredSemana);
-            const punto = puntosTareas[index];
-            if (!punto) return null;
-            return (
-              <circle
-                key={`hovered-${hoveredSemana}`}
-                cx={punto.x}
-                cy={punto.y}
-                r="6"
-                fill="#3B82F6"
-                opacity="0.2"
-              />
-            );
-          })()}
+          {puntoHovered && (
+            <circle
+              key={`hovered-${hoveredSemana}`}
+              cx={puntoHovered.x}
+              cy={puntoHovered.y}
+              r="6"
+              fill="#3B82F6"
+              opacity="0.2"
+            />
+          )}
           
           {/* Hitos de obra (milestones) - marcadores circulares azules/violetas */}
           {puntosHitos.map((hito, index) => {
@@ -1511,7 +1546,7 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           })}
           
           {/* Flecha de tendencia sobre el último tramo */}
-          {ultimosTramos.length === 2 && (
+          {ultimosTramos.length === 2 && ultimosTramos[0] && ultimosTramos[1] && (
             <g key="flecha-tendencia">
               <path
                 d={`M ${ultimosTramos[0].x} ${ultimosTramos[0].y} L ${ultimosTramos[1].x} ${ultimosTramos[1].y}`}
@@ -1548,24 +1583,123 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
           )}
           
           {/* Punto destacado en la semana actual (pequeño con halo sutil) */}
-          <circle
-            cx={ultimoPunto.x}
-            cy={ultimoPunto.y}
-            r="3.5"
-            fill="#16a34a"
-            stroke="white"
-            strokeWidth="1.5"
-          />
-          {/* Halo sutil */}
-          <circle
-            cx={ultimoPunto.x}
-            cy={ultimoPunto.y}
-            r="5"
-            fill="none"
-            stroke="#16a34a"
-            strokeWidth="0.5"
-            opacity="0.2"
-          />
+          {ultimoPunto && (
+            <>
+              <circle
+                cx={ultimoPunto.x}
+                cy={ultimoPunto.y}
+                r="3.5"
+                fill="#16a34a"
+                stroke="white"
+                strokeWidth="1.5"
+              />
+              {/* Halo sutil */}
+              <circle
+                cx={ultimoPunto.x}
+                cy={ultimoPunto.y}
+                r="5"
+                fill="none"
+                stroke="#16a34a"
+                strokeWidth="0.5"
+                opacity="0.2"
+              />
+            </>
+          )}
+          
+          {/* Zonas interactivas para tooltip y click - usando coordenadas del SVG */}
+          {puntosTareas.map((punto, index) => {
+            const semanaClick = semanasParaGrafico[index];
+            return (
+              <circle
+                key={index}
+                cx={punto.x}
+                cy={punto.y}
+                r="12"
+                fill="transparent"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  // Navegar a la semana correspondiente
+                  // window.location.href = `/cliente/tareas?semana=${semanaClick}`;
+                  console.log(`Navegar a semana ${semanaClick}`);
+                }}
+                onMouseMove={(e) => {
+                  const svg = e.currentTarget.ownerSVGElement;
+                  if (!svg) return;
+                  const svgRect = svg.getBoundingClientRect();
+                  const point = svg.createSVGPoint();
+                  point.x = e.clientX;
+                  point.y = e.clientY;
+                  const svgPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
+                  
+                  setHoveredIndex(index);
+                  setHoveredHito(null); // Limpiar hover de hito
+                  setTooltipPos({
+                    x: (svgPoint.x / viewBoxWidth) * 100,
+                    y: (svgPoint.y / viewBoxHeight) * 100
+                  });
+                  // Notificar al componente padre para sincronización
+                  if (onHover) {
+                    onHover(semanasParaGrafico[index]);
+                  }
+                }}
+                onMouseLeave={() => {
+                  setHoveredIndex(null);
+                  setTooltipPos(null);
+                  if (onHover) {
+                    onHover(null);
+                  }
+                }}
+              />
+            );
+          })}
+          
+          {/* Zonas interactivas para hitos */}
+          {puntosHitos.map((hito, index) => {
+            if (!hito) return null;
+            const hitoIndex = semanasParaGrafico.indexOf(hito.semana);
+            const tareasHito = hitoIndex >= 0 ? completadasParaGrafico[hitoIndex] : 0;
+            return (
+              <g key={`hito-interactive-${hito.semana}`}>
+                <circle
+                  cx={hito.x}
+                  cy={hito.y}
+                  r="12"
+                  fill="transparent"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => {
+                    // Navegar a la fase correspondiente
+                    console.log(`Navegar a hito: ${hito.nombre} (Semana ${hito.semana})`);
+                  }}
+              onMouseEnter={(e) => {
+                const svg = e.currentTarget.ownerSVGElement;
+                if (!svg) return;
+                const rect = svg.getBoundingClientRect();
+                const point = svg.createSVGPoint();
+                point.x = e.clientX;
+                point.y = e.clientY;
+                const svgPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
+                
+                setHoveredHito(hito.semana);
+                setHoveredIndex(null); // Limpiar hover de punto normal
+                setTooltipPos({
+                  x: (svgPoint.x / viewBoxWidth) * 100,
+                  y: (svgPoint.y / viewBoxHeight) * 100
+                });
+                if (onHover) {
+                  onHover(hito.semana);
+                }
+              }}
+              onMouseLeave={() => {
+                setHoveredHito(null);
+                setTooltipPos(null);
+                if (onHover) {
+                  onHover(null);
+                }
+              }}
+              />
+            </g>
+          );
+        })}
         </svg>
         
         {/* Etiquetas de ejes fuera del SVG */}
@@ -1609,101 +1743,6 @@ function ActivityChart({ actividad, rangoTemporal, onHover, hoveredSemana }: {
             </div>
           </div>
         )}
-        
-        {/* Zonas interactivas para tooltip y click - usando coordenadas del SVG */}
-        {puntosTareas.map((punto, index) => {
-          const semanaClick = semanasParaGrafico[index];
-          return (
-            <circle
-              key={index}
-              cx={punto.x}
-              cy={punto.y}
-              r="12"
-              fill="transparent"
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                // Navegar a la semana correspondiente
-                // window.location.href = `/cliente/tareas?semana=${semanaClick}`;
-                console.log(`Navegar a semana ${semanaClick}`);
-              }}
-              onMouseMove={(e) => {
-                const svg = e.currentTarget.ownerSVGElement;
-                if (!svg) return;
-                const svgRect = svg.getBoundingClientRect();
-                const point = svg.createSVGPoint();
-                point.x = e.clientX;
-                point.y = e.clientY;
-                const svgPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
-                
-                setHoveredIndex(index);
-                setHoveredHito(null); // Limpiar hover de hito
-                setTooltipPos({
-                  x: (svgPoint.x / viewBoxWidth) * 100,
-                  y: (svgPoint.y / viewBoxHeight) * 100
-                });
-                // Notificar al componente padre para sincronización
-                if (onHover) {
-                  onHover(semanasParaGrafico[index]);
-                }
-              }}
-              onMouseLeave={() => {
-                setHoveredIndex(null);
-                setTooltipPos(null);
-                if (onHover) {
-                  onHover(null);
-                }
-              }}
-            />
-          );
-        })}
-        
-        {/* Zonas interactivas para hitos */}
-        {puntosHitos.map((hito, index) => {
-          if (!hito) return null;
-          const hitoIndex = semanasParaGrafico.indexOf(hito.semana);
-          const tareasHito = hitoIndex >= 0 ? completadasParaGrafico[hitoIndex] : 0;
-          return (
-            <g key={`hito-interactive-${hito.semana}`}>
-              <circle
-                cx={hito.x}
-                cy={hito.y}
-                r="12"
-                fill="transparent"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  // Navegar a la fase correspondiente
-                  console.log(`Navegar a hito: ${hito.nombre} (Semana ${hito.semana})`);
-                }}
-              onMouseEnter={(e) => {
-                const svg = e.currentTarget.ownerSVGElement;
-                if (!svg) return;
-                const rect = svg.getBoundingClientRect();
-                const point = svg.createSVGPoint();
-                point.x = e.clientX;
-                point.y = e.clientY;
-                const svgPoint = point.matrixTransform(svg.getScreenCTM()?.inverse());
-                
-                setHoveredHito(hito.semana);
-                setHoveredIndex(null); // Limpiar hover de punto normal
-                setTooltipPos({
-                  x: (svgPoint.x / viewBoxWidth) * 100,
-                  y: (svgPoint.y / viewBoxHeight) * 100
-                });
-                if (onHover) {
-                  onHover(hito.semana);
-                }
-              }}
-              onMouseLeave={() => {
-                setHoveredHito(null);
-                setTooltipPos(null);
-                if (onHover) {
-                  onHover(null);
-                }
-              }}
-              />
-            </g>
-          );
-        })}
         
         {/* Tooltip para hitos (solo cuando hover directamente en un hito) */}
         {hoveredHito && tooltipPos && (() => {
@@ -2332,20 +2371,17 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
             <h3 className="text-xs font-bold text-gray-900 mb-3 md:mb-4 uppercase tracking-wide">Tus obras</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {mockData.obras.map((obra: any) => {
-                const esSeleccionada = obraSeleccionada === obra.id;
-                const estadoColor = obra.estado === 'ACTIVA' ? 'emerald' : obra.estado === 'PAUSADA' ? 'amber' : obra.estado === 'FINALIZADA' ? 'blue' : 'red';
-                const estadoTexto = obra.estado === 'ACTIVA' ? 'Activa' : obra.estado === 'PAUSADA' ? 'Pausada' : obra.estado === 'FINALIZADA' ? 'Terminada' : 'Cancelada';
+                // Normalizar estado (puede venir en mayúsculas o minúsculas)
+                const estadoNormalizado = obra.estado?.toUpperCase() || 'ACTIVA';
+                const estadoColor = estadoNormalizado === 'ACTIVA' ? 'emerald' : estadoNormalizado === 'PAUSADA' ? 'amber' : estadoNormalizado === 'FINALIZADA' ? 'blue' : 'gray';
+                const estadoTexto = estadoNormalizado === 'ACTIVA' ? 'Activa' : estadoNormalizado === 'PAUSADA' ? 'Pausada' : estadoNormalizado === 'FINALIZADA' ? 'Terminada' : estadoNormalizado;
                 return (
                   <button
                     key={obra.id}
-                    onClick={() => setObraSeleccionada(obra.id)}
-                    className={`p-4 md:p-3.5 rounded-lg border text-left transition-all min-h-[64px] md:min-h-0 ${
-                      esSeleccionada 
-                        ? 'border-blue-400 bg-blue-50/50 shadow-sm ring-1 ring-blue-200' 
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
-                    }`}
+                    onClick={() => router.push(`/cliente/obras?obraId=${obra.id}` as Route)}
+                    className="p-4 md:p-3.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50/50 text-left transition-all min-h-[64px] md:min-h-0"
                   >
-                    <p className={`text-sm md:text-xs font-semibold mb-2 truncate leading-tight ${esSeleccionada ? 'text-gray-900' : 'text-gray-800'}`}>
+                    <p className="text-sm md:text-xs font-semibold mb-2 truncate leading-tight text-gray-800">
                       {obra.name}
                     </p>
                     <div className="flex items-center gap-1.5">
@@ -2353,7 +2389,7 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
                         estadoColor === 'emerald' ? 'bg-emerald-500' :
                         estadoColor === 'amber' ? 'bg-amber-500' :
                         estadoColor === 'blue' ? 'bg-blue-500' :
-                        'bg-red-500'
+                        'bg-gray-400'
                       }`} />
                       <span className="text-xs md:text-[10px] font-medium text-gray-600">
                         {estadoTexto}
@@ -2365,130 +2401,6 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
             </div>
           </div>
 
-          {/* Selector global de período */}
-          <div className="bg-white rounded-2xl p-3 md:p-4 border border-gray-200 shadow-sm mb-4 md:mb-5">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-              <div>
-                <h4 className="text-xs font-semibold text-gray-700 mb-1">Período de análisis</h4>
-                <p className="text-[10px] md:text-xs text-gray-500">Afecta todos los gráficos del dashboard</p>
-              </div>
-              <PeriodSelector
-                rangoTemporal={rangoTemporalCompartido}
-                totalSemanas={Math.max(
-                  tareasActuales.weeklyCompleted?.length || 24,
-                  presupuestoSemanalActual.length || 24,
-                  actividadActual.tareasCompletadasPorSemana?.length || 22
-                )}
-                onPeriodChange={setRangoTemporalCompartido}
-                size="small"
-                className="w-full md:w-auto"
-              />
-            </div>
-          </div>
-
-          {/* Tareas y Presupuesto (arriba) */}
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
-            <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm lg:col-span-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 mb-3 md:mb-4">
-                <div>
-                  <h3 className="text-xs md:text-sm font-semibold text-gray-900">Tareas</h3>
-                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Estado y avance de tareas</p>
-                </div>
-                {/* Badge de período (solo lectura) */}
-                {(() => {
-                  const totalSemanas = tareasActuales.weeklyCompleted?.length || 24;
-                  const inicioSlice = rangoTemporalCompartido >= totalSemanas ? 0 : totalSemanas - rangoTemporalCompartido;
-                  const semanaInicio = inicioSlice + 1;
-                  const semanaFin = inicioSlice + (rangoTemporalCompartido >= totalSemanas ? totalSemanas : rangoTemporalCompartido);
-                  const periodoTexto = rangoTemporalCompartido >= totalSemanas ? 'Total obra' : `${rangoTemporalCompartido} sem`;
-                  return (
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span className="text-[10px] font-medium text-gray-600">Período: {periodoTexto}</span>
-                      <span className="text-[10px] text-gray-500">Mostrando: S{semanaInicio}–S{semanaFin}</span>
-                    </div>
-                  );
-                })()}
-              </div>
-              <TasksChart 
-                tareas={tareasActuales} 
-                rangoTemporal={rangoTemporalCompartido}
-                obraId={obraSeleccionada}
-                onSegmentClick={(estado) => {
-                  // Handler mock: navegar a tareas filtradas por estado
-                  console.log(`Navegar a tareas estado: ${estado} de obra ${obraSeleccionada}`);
-                  // TODO: router.push(`/cliente/obra/${obraSeleccionada}/tareas?estado=${estado}`);
-                }}
-              />
-            </div>
-            <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm lg:col-span-2">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 mb-3 md:mb-4">
-                <div>
-                  <h3 className="text-xs md:text-sm font-semibold text-gray-900">Ejecución presupuestaria</h3>
-                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Presupuesto aprobado vs ejecutado por semana</p>
-                </div>
-                {/* Badge de período (solo lectura) */}
-                {(() => {
-                  const totalSemanas = presupuestoSemanalActual.length || 24;
-                  const inicioSlice = rangoTemporalCompartido >= totalSemanas ? 0 : totalSemanas - rangoTemporalCompartido;
-                  const semanaInicio = inicioSlice + 1;
-                  const semanaFin = inicioSlice + (rangoTemporalCompartido >= totalSemanas ? totalSemanas : rangoTemporalCompartido);
-                  const periodoTexto = rangoTemporalCompartido >= totalSemanas ? 'Total obra' : `${rangoTemporalCompartido} sem`;
-                  return (
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span className="text-[10px] font-medium text-gray-600">Período: {periodoTexto}</span>
-                      <span className="text-[10px] text-gray-500">Mostrando: S{semanaInicio}–S{semanaFin}</span>
-                    </div>
-                  );
-                })()}
-              </div>
-              <BudgetChart 
-                presupuestoSemanal={presupuestoSemanalActual}
-                formatCurrency={formatCurrency}
-                rangoTemporal={rangoTemporalCompartido}
-                onHover={setHoveredSemanaCompartida}
-                hoveredSemana={hoveredSemanaCompartida}
-                onRangoChange={setRangoTemporalCompartido}
-              />
-            </div>
-          </div>
-
-          {/* Actividad de la obra (abajo, ancho completo) */}
-          <div className="bg-white rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm w-full">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0 mb-3 md:mb-4">
-              <div>
-                <h3 className="text-xs md:text-sm font-semibold text-gray-900">Actividad de la obra</h3>
-                <p className="text-[10px] md:text-xs text-gray-500 mt-0.5">Evolución del avance real vs planificado</p>
-              </div>
-              <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
-                {/* Indicador arriba a la derecha: tareas acumuladas */}
-                <div className="text-right">
-                  <div className="text-xl md:text-2xl font-semibold text-gray-900">{actividadActual.tareasCompletadasPorSemana[actividadActual.tareasCompletadasPorSemana.length - 1]?.completadas || 0}</div>
-                  <div className="text-[10px] md:text-xs text-gray-500">tareas acumuladas</div>
-                </div>
-                
-                {/* Badge de período (solo lectura) */}
-                {(() => {
-                  const totalSemanas = actividadActual.tareasCompletadasPorSemana?.length || 22;
-                  const inicioSlice = rangoTemporalCompartido >= totalSemanas ? 0 : totalSemanas - rangoTemporalCompartido;
-                  const semanaInicio = inicioSlice + 1;
-                  const semanaFin = inicioSlice + (rangoTemporalCompartido >= totalSemanas ? totalSemanas : rangoTemporalCompartido);
-                  const periodoTexto = rangoTemporalCompartido >= totalSemanas ? 'Total obra' : `${rangoTemporalCompartido} sem`;
-                  return (
-                    <div className="flex flex-col items-end gap-0.5">
-                      <span className="text-[10px] font-medium text-gray-600">Período: {periodoTexto}</span>
-                      <span className="text-[10px] text-gray-500">Mostrando: S{semanaInicio}–S{semanaFin}</span>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            <ActivityChart 
-              actividad={actividadActual} 
-              rangoTemporal={rangoTemporalCompartido}
-              onHover={setHoveredSemanaCompartida}
-              hoveredSemana={hoveredSemanaCompartida}
-            />
-          </div>
         </div>
 
         {/* Sidebar Actions solo en desktop */}
@@ -2507,6 +2419,7 @@ function DashboardFinal({ mockData, formatCurrency, router, handleCrearObra, han
 
 export default function ClienteDashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const currentUser = useCurrentUser();
   const [activeSection, setActiveSection] = useState('home');
   const deviceType = useDeviceType();
@@ -2518,18 +2431,14 @@ export default function ClienteDashboardPage() {
   );
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const sectionParam = params.get('section');
-      if (sectionParam && ['home', 'obras', 'tareas', 'cuadrillas', 'billetera', 'notificaciones', 'calendario', 'cuenta'].includes(sectionParam)) {
-        setActiveSection(sectionParam);
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-      } else if (!sectionParam) {
-        setActiveSection('home');
-      }
+    const sectionParam = searchParams.get('section');
+    
+    if (sectionParam && ['home', 'obras', 'tareas', 'cuadrillas', 'billetera', 'notificaciones', 'calendario', 'cuenta'].includes(sectionParam)) {
+      setActiveSection(sectionParam);
+    } else if (!sectionParam) {
+      setActiveSection('home');
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!currentUser || currentUser.isDevUser) {
@@ -2544,7 +2453,11 @@ export default function ClienteDashboardPage() {
   const renderSection = () => {
     switch (activeSection) {
       case 'home':
-        return <HomeCliente />;
+        // En mobile, usar HomeMobile; en desktop, usar HomeDesktop
+        if (isMobile) {
+          return <HomeMobile />;
+        }
+        return <HomeDesktop />;
       case 'obras':
         return <ObrasSection />;
       case 'tareas':
@@ -2560,7 +2473,7 @@ export default function ClienteDashboardPage() {
       case 'cuenta':
         return <CuentaSection />;
       default:
-        return <HomeCliente />;
+        return <HomeDesktop />;
     }
   };
 

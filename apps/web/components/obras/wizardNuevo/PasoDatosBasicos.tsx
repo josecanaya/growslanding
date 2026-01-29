@@ -6,6 +6,7 @@ import DireccionAutocomplete from '../wizard/DireccionAutocomplete';
 import ModalMapa from '../wizard/ModalMapa';
 
 const TIPO_OBRA_OPCIONES: { key: TipoObra; label: string }[] = [
+  { key: 'Obra nueva / Desde cero', label: 'Obra nueva / Desde cero' },
   { key: 'Casa familiar', label: 'Casa familiar' },
   { key: 'Ampliación', label: 'Ampliación' },
   { key: 'Reforma', label: 'Reforma' },
@@ -26,9 +27,17 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const latitud = useWizardStore((s) => s.latitud);
   const longitud = useWizardStore((s) => s.longitud);
   const fecha_inicio_estimada = useWizardStore((s) => s.fecha_inicio_estimada);
+  const plantas = useWizardStore((s) => s.plantas);
+  const superficies = useWizardStore((s) => s.superficies);
+  const modoObra = useWizardStore((s) => s.modoObra);
   const setField = useWizardStore((s) => s.setField);
   const ensureId = useWizardStore((s) => s.ensureId);
   const setTipoObra = useWizardStore((s) => s.setTipoObra);
+  const setPlantas = useWizardStore((s) => s.setPlantas);
+  const updatePlantaSuperficie = useWizardStore((s) => s.updatePlantaSuperficie);
+  
+  // Obtener m² cubiertos de la planta 1
+  const m2CubiertosPlanta1 = superficies.find((s) => s.planta === 1)?.cubiertos || 0;
 
   useMemo(() => {
     ensureId();
@@ -164,6 +173,52 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
               />
             )}
           </div>
+
+          <div className="space-y-2">
+            <label className="text-xs md:text-sm font-medium text-gray-800">Plantas</label>
+            <input
+              type="number"
+              min={1}
+              max={5}
+              value={plantas || 1}
+              onChange={(e) => setPlantas(Number(e.target.value) || 1)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
+              placeholder="1"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs md:text-sm font-medium text-gray-800">m² cubiertos</label>
+            <input
+              type="number"
+              min={0}
+              value={m2CubiertosPlanta1 || ''}
+              onChange={(e) => {
+                const planta1Index = superficies.findIndex((s) => s.planta === 1);
+                if (planta1Index >= 0) {
+                  updatePlantaSuperficie(planta1Index, 'cubiertos', Number(e.target.value) || 0);
+                }
+              }}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
+              placeholder="Ej: 120"
+            />
+          </div>
+
+          {/* Aviso informativo cuando se activa ESTRUCTURADA */}
+          {modoObra === 'ESTRUCTURADA' && (
+            <div className="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 p-3 md:p-4">
+              <div className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-xs md:text-sm font-medium text-blue-900">
+                    Activamos herramientas avanzadas por el tamaño/tipo de obra.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-gray-100 px-3 md:px-4 lg:px-5 py-3 md:py-4">

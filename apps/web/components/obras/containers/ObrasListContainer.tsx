@@ -1,7 +1,7 @@
 'use client';
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, AlertCircle, Save, X } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -132,6 +132,8 @@ export function ObrasListContainer() {
     loadObras();
   }, [loadObras]);
 
+  const searchParams = useSearchParams();
+  
   // Recargar cuando se vuelve a esta página desde otra (ej: después de crear una obra)
   useEffect(() => {
     if (pathname === '/obras') {
@@ -139,6 +141,20 @@ export function ObrasListContainer() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // Seleccionar obra automáticamente si viene en query parameter
+  useEffect(() => {
+    const obraIdFromQuery = searchParams.get('obraId');
+    if (obraIdFromQuery && obras.length > 0 && !selectedObra) {
+      const obraToSelect = obras.find(obra => obra.id === obraIdFromQuery);
+      if (obraToSelect) {
+        setSelectedObra(obraToSelect);
+        // Limpiar el query parameter después de seleccionar
+        router.replace('/cliente/obras');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, obras, selectedObra, router]);
 
   const obrasFiltradas = obras;
   const stats = useMemo<ObraStats>(() => {

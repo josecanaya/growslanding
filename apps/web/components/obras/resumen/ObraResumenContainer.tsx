@@ -1,13 +1,19 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { Building, Layers, FilePlus, Activity } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
+import { Building, Layers, FilePlus, Activity, ClipboardList } from 'lucide-react';
 import { useElementosStore } from '../elementos/useElementosStore';
 import { Button } from '@/components/ui/button';
 import { FloorSelector } from './FloorSelector';
 import { KpiPanel } from './KpiPanel';
 import { useObraStore } from './useObraStore';
 import type { PisoResumen } from './useObraStore';
+import { TasksChart } from './charts/TasksChart';
+import { BudgetChart } from './charts/BudgetChart';
+import { ActivityChart } from './charts/ActivityChart';
+import { PeriodSelector } from './charts/PeriodSelector';
 
 interface Obra {
   id: string;
@@ -57,6 +63,7 @@ export default function ObraResumenContainer({
   onAbrirElementos,
   onAbrirLegajo
 }: ObraResumenContainerProps) {
+  const router = useRouter();
   const elementos = useElementosStore((state) => state.elementos);
   const pisoSeleccionado = useObraStore((state) => state.pisoId);
   
@@ -361,6 +368,135 @@ export default function ObraResumenContainer({
   const defaultPlantaId = plantas[0]?.id ?? 'general';
   const plantaParaAcciones = pisoSeleccionado ?? defaultPlantaId;
 
+  // Estado para gráficos
+  const [rangoTemporal, setRangoTemporal] = useState(12);
+  const [hoveredSemana, setHoveredSemana] = useState<number | null>(null);
+
+  // Preparar datos para TasksChart
+  const tareasData = useMemo(() => {
+    const enCurso = tareas.filter(t => t.estado === 'en_progreso').length;
+    const paraValidar = tareas.filter(t => t.estado === 'para_validar').length;
+    const completadas = tareas.filter(t => t.estado === 'completada').length;
+    const bloqueadas = tareas.filter(t => t.estado === 'bloqueada').length;
+    const total = tareas.length;
+    
+    // Calcular tareas vencidas (comparar fechaFin con hoy)
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const vencidas = tareas.filter(t => {
+      if (!t.fechaFin || t.estado === 'completada') return false;
+      const fechaFin = new Date(t.fechaFin);
+      fechaFin.setHours(0, 0, 0, 0);
+      return fechaFin < hoy;
+    }).length;
+
+    // Calcular próximas 7 días
+    const en7Dias = new Date(hoy);
+    en7Dias.setDate(en7Dias.getDate() + 7);
+    const proximas7d = tareas.filter(t => {
+      if (!t.fechaFin || t.estado === 'completada') return false;
+      const fechaFin = new Date(t.fechaFin);
+      fechaFin.setHours(0, 0, 0, 0);
+      return fechaFin >= hoy && fechaFin <= en7Dias;
+    }).length;
+
+    // Calcular completadas por semana (últimas 12 semanas)
+    const fechaInicioObra = new Date(obra.fechaInicio);
+    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    const totalSemanas = Math.max(12, semanasDesdeInicio);
+    const weeklyCompleted: number[] = [];
+    for (let i = 0; i < totalSemanas; i++) {
+      const semanaInicio = new Date(fechaInicioObra);
+      semanaInicio.setDate(semanaInicio.getDate() + i * 7);
+      const semanaFin = new Date(semanaInicio);
+      semanaFin.setDate(semanaFin.getDate() + 7);
+      const completadasSemana = tareas.filter(t => {
+        if (t.estado !== 'completada' || !t.fechaFin) return false;
+        const fechaCompletada = new Date(t.fechaFin);
+        return fechaCompletada >= semanaInicio && fechaCompletada < semanaFin;
+      }).length;
+      weeklyCompleted.push(completadasSemana);
+    }
+
+    const last2WeeksCompleted = weeklyCompleted.slice(-2).reduce((a, b) => a + b, 0);
+    const prev2WeeksCompleted = weeklyCompleted.slice(-4, -2).reduce((a, b) => a + b, 0);
+
+    return {
+      enCurso,
+      paraValidar,
+      completadas,
+      bloqueadas,
+      total,
+      vencidas,
+      proximas7d,
+      ritmoPromedio: totalSemanas > 0 ? completadas / totalSemanas : 0,
+      weeklyCompleted,
+      last2WeeksCompleted,
+      prev2WeeksCompleted,
+    };
+  }, [tareas, obra.fechaInicio]);
+
+  // Preparar datos para BudgetChart (placeholder - necesita datos reales del presupuesto)
+  const presupuestoSemanalData = useMemo(() => {
+    // Por ahora, crear datos placeholder basados en las tareas
+    // TODO: Reemplazar con datos reales del presupuesto/escrow
+    const fechaInicioObra = new Date(obra.fechaInicio);
+    const hoy = new Date();
+    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    const totalSemanas = Math.max(12, semanasDesdeInicio);
+    
+    const data: Array<{ semana: number; proyectado: number; ejecutado: number; tareasPagadas: number }> = [];
+    for (let i = 1; i <= totalSemanas; i++) {
+      data.push({
+        semana: i,
+        proyectado: 0, // TODO: Obtener de presupuesto real
+        ejecutado: 0, // TODO: Obtener de escrow real
+        tareasPagadas: 0, // TODO: Contar tareas pagadas esa semana
+      });
+    }
+    return data;
+  }, [obra.fechaInicio]);
+
+  // Preparar datos para ActivityChart
+  const actividadData = useMemo(() => {
+    const fechaInicioObra = new Date(obra.fechaInicio);
+    const hoy = new Date();
+    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
+    const totalSemanas = Math.max(12, semanasDesdeInicio);
+    
+    const tareasCompletadasPorSemana: Array<{ semana: number; completadas: number }> = [];
+    const actividadProyectada: Array<{ semana: number; proyectado: number }> = [];
+    
+    let acumuladoCompletadas = 0;
+    const promedioSemanal = tareas.length / totalSemanas;
+    
+    for (let i = 1; i <= totalSemanas; i++) {
+      const semanaInicio = new Date(fechaInicioObra);
+      semanaInicio.setDate(semanaInicio.getDate() + (i - 1) * 7);
+      const semanaFin = new Date(semanaInicio);
+      semanaFin.setDate(semanaFin.getDate() + 7);
+      
+      const completadasSemana = tareas.filter(t => {
+        if (t.estado !== 'completada' || !t.fechaFin) return false;
+        const fechaCompletada = new Date(t.fechaFin);
+        return fechaCompletada >= semanaInicio && fechaCompletada < semanaFin;
+      }).length;
+      
+      acumuladoCompletadas += completadasSemana;
+      tareasCompletadasPorSemana.push({ semana: i, completadas: acumuladoCompletadas });
+      actividadProyectada.push({ semana: i, proyectado: Math.round(promedioSemanal * i) });
+    }
+
+    return {
+      tareasCompletadasPorSemana,
+      actividadProyectada,
+      milestones: [],
+      insight: 'success' as const,
+    };
+  }, [tareas, obra.fechaInicio]);
+
+  const totalSemanas = Math.max(12, presupuestoSemanalData.length);
+
   return (
     <div className="space-y-4 md:space-y-6 bg-[#F8FAFC] p-3 md:p-4 lg:p-6 xl:p-8">
       <div className="grid gap-4 md:gap-6 lg:grid-cols-12">
@@ -441,12 +577,70 @@ export default function ObraResumenContainer({
               <Button
                 variant="outline"
                 className="flex-1 rounded-xl border border-[#0052CC]/30 bg-blue-50 text-[#0052CC] hover:bg-blue-100"
+                onClick={() => router.push(`/cliente/dashboard?section=tareas&obraId=${obra.id}` as Route)}
+              >
+                <ClipboardList className="mr-2 h-4 w-4" /> Tareas
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 rounded-xl border border-[#0052CC]/30 bg-blue-50 text-[#0052CC] hover:bg-blue-100"
                 onClick={() => onAbrirLegajo?.(plantaParaAcciones)}
               >
                 <FilePlus className="mr-2 h-4 w-4" /> Agregar legajo
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Gráficos */}
+      <div className="space-y-6">
+        {/* Selector de período global */}
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Análisis de la obra</h2>
+          <PeriodSelector
+            rangoTemporal={rangoTemporal}
+            totalSemanas={totalSemanas}
+            onPeriodChange={setRangoTemporal}
+          />
+        </div>
+
+        {/* Gráfico de Tareas */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm md:text-base font-semibold text-slate-900">Tareas</h3>
+          </div>
+          <TasksChart
+            tareas={tareasData}
+            rangoTemporal={rangoTemporal}
+            obraId={obra.id}
+          />
+        </div>
+
+        {/* Gráfico de Presupuesto */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm md:text-base font-semibold text-slate-900">Ejecución presupuestaria</h3>
+          </div>
+          <BudgetChart
+            presupuestoSemanal={presupuestoSemanalData}
+            rangoTemporal={rangoTemporal}
+            onHover={setHoveredSemana}
+            hoveredSemana={hoveredSemana}
+          />
+        </div>
+
+        {/* Gráfico de Actividad */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm md:text-base font-semibold text-slate-900">Actividad de la obra</h3>
+          </div>
+          <ActivityChart
+            actividad={actividadData}
+            rangoTemporal={rangoTemporal}
+            onHover={setHoveredSemana}
+            hoveredSemana={hoveredSemana}
+          />
         </div>
       </div>
     </div>

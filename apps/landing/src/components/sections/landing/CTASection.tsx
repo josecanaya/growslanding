@@ -133,8 +133,8 @@ export function CTASection() {
             <div className="text-white/90">de setup</div>
           </div>
           <div className="text-center">
-            <div className="text-3xl font-bold mb-2">Chat con GrowsBot</div>
-            <div className="text-white/90">24/7</div>
+            <div className="text-3xl font-bold mb-2">Soporte</div>
+            <div className="text-white/90">por email</div>
           </div>
         </div>
       </div>

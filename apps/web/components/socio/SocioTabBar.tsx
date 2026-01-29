@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X, Wallet, TrendingUp, Calendar, Camera, HelpCircle, Building, Play, Briefcase } from 'lucide-react';
+import { Home, CheckSquare, MessageSquare, Menu, Bell, Clock, ClipboardList, NotebookPen, Users, User, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { logout } from '@/lib/auth';
@@ -9,7 +9,6 @@ import { ROLE_LABELS, normalizeRole } from '@/lib/roles';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import type { Route } from 'next';
-import { useToast } from '@/components/ui/use-toast';
 
 /**
  * TabBar fijo para todas las páginas del socio
@@ -27,9 +26,6 @@ export function SocioTabBar() {
     avatar: '👷',
   });
   const supabase = createClientComponentClient<Database>();
-  const { toast } = useToast();
-  const [jornadaActiva, setJornadaActiva] = useState(false);
-  const [iniciando, setIniciando] = useState(false);
 
   useEffect(() => {
     if (currentUser?.name) {
@@ -129,104 +125,6 @@ export function SocioTabBar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.orgId, currentUser?.email, currentUser?.id]);
 
-  // Verificar jornada activa
-  useEffect(() => {
-    const verificarJornada = async () => {
-      if (!currentUser?.id || !currentUser?.orgId) {
-        setJornadaActiva(false);
-        return;
-      }
-
-      try {
-        const { data: socioData } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('org_id', currentUser.orgId)
-          .or(`email.eq.${currentUser.email || ''},user_id.eq.${currentUser.id || ''}`)
-          .maybeSingle();
-
-        if (!socioData?.id) {
-          setJornadaActiva(false);
-          return;
-        }
-
-        const hoy = new Date().toISOString().split('T')[0];
-        const { data: jornadaData } = await (supabase as any)
-          .from('jornadas_socio')
-          .select('id')
-          .eq('socio_id', socioData.id)
-          .eq('fecha', hoy)
-          .is('hora_fin', null)
-          .maybeSingle();
-
-        setJornadaActiva(!!jornadaData);
-      } catch (error) {
-        setJornadaActiva(false);
-      }
-    };
-
-    verificarJornada();
-    // Verificar cada 30 segundos
-    const interval = setInterval(verificarJornada, 30000);
-    return () => clearInterval(interval);
-  }, [currentUser?.id, currentUser?.orgId, currentUser?.email, supabase]);
-
-  const handleIniciarJornada = async () => {
-    if (!currentUser?.id || iniciando) return;
-
-    setIniciando(true);
-
-    try {
-      const { data: socioData } = await (supabase as any)
-        .from('socios')
-        .select('id')
-        .eq('org_id', currentUser.orgId)
-        .or(`email.eq.${currentUser.email || ''},user_id.eq.${currentUser.id || ''}`)
-        .maybeSingle();
-
-      if (!socioData?.id) {
-        throw new Error('Socio no encontrado');
-      }
-
-      const hoy = new Date().toISOString().split('T')[0];
-      const ahora = new Date().toISOString();
-
-      const { data: nuevaJornada, error: jornadaError } = await (supabase as any)
-        .from('jornadas_socio')
-        .insert({
-          socio_id: socioData.id,
-          fecha: hoy,
-          hora_inicio: ahora,
-          hora_fin: null,
-        })
-        .select('id')
-        .single();
-
-      if (jornadaError) {
-        throw jornadaError;
-      }
-
-      setJornadaActiva(true);
-      router.push('/socio/ahora');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'No se pudo iniciar la jornada',
-        variant: 'destructive',
-      });
-    } finally {
-      setIniciando(false);
-    }
-  };
-
-  const handleInicioClick = () => {
-    if (jornadaActiva) {
-      router.push('/socio/ahora');
-    } else {
-      handleIniciarJornada();
-    }
-  };
-
   const roleLabel = normalizeRole(currentUser?.role)
     ? ROLE_LABELS[normalizeRole(currentUser?.role)!] ?? 'Socio'
     : 'Socio';
@@ -236,15 +134,12 @@ export function SocioTabBar() {
   };
 
   const menuItems = [
-    { id: 'inicio', label: 'Inicio', icon: Home, route: '/socio' as Route, separator: false },
-    { id: 'notificaciones', label: 'Notificaciones', icon: Bell, route: '/socio/notificaciones' as Route, separator: true },
-    { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route, separator: false },
-    { id: 'jornadas', label: 'Jornadas', icon: Calendar, route: '/socio/jornadas' as Route, separator: true },
-    { id: 'oportunidades', label: 'Oportunidades', icon: Briefcase, route: '/socio/oportunidades' as Route, separator: false },
-    { id: 'presupuestos', label: 'Presupuestos', icon: NotebookPen, route: '/socio/presupuestos' as Route, separator: false },
-    { id: 'obras', label: 'Obras', icon: Building, route: '/socio/obras' as Route, separator: true },
-    { id: 'billetera', label: 'Billetera', icon: Wallet, route: '/socio/billetera' as Route, separator: true },
-    { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route, separator: false },
+    { id: 'notificaciones', label: 'Notificaciones', icon: Bell, route: '/socio/notificaciones' as Route },
+    { id: 'ahora', label: 'Ahora', icon: Clock, route: '/socio/ahora' as Route },
+    { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route },
+    { id: 'presupuestos', label: 'Presupuesta', icon: NotebookPen, route: '/socio/presupuestos' as Route },
+    { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route },
+    { id: 'cuenta', label: 'Cuenta', icon: User, route: '/socio/cuenta' as Route },
   ];
 
   const handleMenuClick = (route: Route) => {
@@ -256,10 +151,6 @@ export function SocioTabBar() {
     return pathname === route || pathname?.startsWith(`${route}/`);
   };
 
-  const isHomeActive = () => {
-    return pathname === '/socio' || pathname === '/socio/';
-  };
-
   const handleMensajesClick = () => {
     router.push('/socio/mensajes');
   };
@@ -267,11 +158,11 @@ export function SocioTabBar() {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 md:hidden">
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-4 h-16">
           <button
-            onClick={() => router.push('/socio')}
+            onClick={() => router.push('/socio/ahora')}
             className={`flex flex-col items-center justify-center gap-1 transition-colors ${
-              isHomeActive() ? 'text-[#276EF1]' : 'text-gray-500'
+              pathname === '/socio/ahora' ? 'text-[#276EF1]' : 'text-gray-500'
             }`}
           >
             <Home className="h-6 w-6" />
@@ -287,38 +178,6 @@ export function SocioTabBar() {
           >
             <CheckSquare className="h-6 w-6" />
             <span className="text-[10px] font-medium">Mis tareas</span>
-          </button>
-          {/* Botón central grande verde INICIO */}
-          <button
-            onClick={handleInicioClick}
-            disabled={iniciando}
-            className={`
-              flex flex-col items-center justify-center gap-1
-              bg-green-500 hover:bg-green-600
-              text-white
-              rounded-t-2xl
-              -mt-2
-              h-20
-              shadow-lg
-              transition-all duration-200
-              active:scale-95
-              ${iniciando ? 'opacity-70 cursor-not-allowed' : ''}
-            `}
-          >
-            <div className={`
-              w-10 h-10
-              rounded-full
-              bg-white/20
-              flex items-center justify-center
-              ${jornadaActiva ? 'bg-white/30' : ''}
-            `}>
-              {iniciando ? (
-                <Clock className="h-5 w-5 animate-spin" />
-              ) : (
-                <Play className="h-5 w-5" fill="currentColor" />
-              )}
-            </div>
-            <span className="text-[10px] font-bold">INICIO</span>
           </button>
           <button
             onClick={handleMensajesClick}
@@ -383,32 +242,28 @@ export function SocioTabBar() {
               </div>
 
               <div className="flex-1 bg-grows-blue py-6">
-                <nav className="space-y-0">
-                  {menuItems.map((item, index) => {
+                <nav className="space-y-2">
+                  {menuItems.map((item) => {
                     const Icon = item.icon;
                     const active = isActive(item.route);
                     return (
-                      <div key={item.id}>
-                        {item.separator && index > 0 && (
-                          <div className="border-t border-white/10 mx-6 my-2" />
-                        )}
-                        <button
-                          onClick={() => handleMenuClick(item.route)}
-                          className={`flex w-full items-center space-x-4 px-6 py-4 text-left text-white transition hover:bg-white/10 ${
-                            active ? 'bg-white/15 font-semibold' : ''
-                          }`}
-                        >
-                          <div className="relative">
-                            <Icon className="h-6 w-6" />
-                            {item.id === 'notificaciones' && unreadNotificacionesSocio > 0 && (
-                              <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                                {unreadNotificacionesSocio > 9 ? '9+' : unreadNotificacionesSocio}
-                              </span>
-                            )}
-                          </div>
-                          <span className="font-medium">{item.label}</span>
-                        </button>
-                      </div>
+                      <button
+                        key={item.id}
+                        onClick={() => handleMenuClick(item.route)}
+                        className={`flex w-full items-center space-x-4 px-6 py-4 text-left text-white transition hover:bg-white/10 ${
+                          active ? 'bg-white/15 font-semibold' : ''
+                        }`}
+                      >
+                        <div className="relative">
+                          <Icon className="h-6 w-6" />
+                          {item.id === 'notificaciones' && unreadNotificacionesSocio > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                              {unreadNotificacionesSocio > 9 ? '9+' : unreadNotificacionesSocio}
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-medium">{item.label}</span>
+                      </button>
                     );
                   })}
                 </nav>

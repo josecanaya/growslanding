@@ -101,10 +101,36 @@ function LoginPageContent() {
   const [missingRole, setMissingRole] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [hasRateLimit, setHasRateLimit] = useState(false);
 
   const redirectParam = searchParams?.get('redirect') ?? null;
   const redirectTarget = sanitizeRedirect(redirectParam);
   const errorParam = searchParams?.get('error') ?? null;
+
+  // Verificar rate limit en localStorage al cargar
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+    if (rateLimitUntil) {
+      const untilTime = parseInt(rateLimitUntil, 10);
+      const now = Date.now();
+      if (now < untilTime) {
+        // Aún estamos en periodo de rate limit
+        setHasRateLimit(true);
+        const minutesLeft = Math.ceil((untilTime - now) / (1000 * 60));
+        if (!errorParam || errorParam !== 'rate_limit') {
+          setStatusMessage(
+            `Google OAuth está temporalmente deshabilitado debido a límite de velocidad. Intenta nuevamente en ${minutesLeft} minuto(s) o usa email y contraseña.`
+          );
+        }
+      } else {
+        // Rate limit expiró, limpiar
+        localStorage.removeItem('supabase_rate_limit_until');
+        setHasRateLimit(false);
+      }
+    }
+  }, [errorParam]);
 
   useEffect(() => {
     if (errorParam === 'missing-role') {
@@ -121,6 +147,12 @@ function LoginPageContent() {
     }
 
     if (errorParam === 'rate_limit') {
+      // Guardar rate limit en localStorage por 20 minutos
+      if (typeof window !== 'undefined') {
+        const rateLimitUntil = Date.now() + (20 * 60 * 1000); // 20 minutos
+        localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+        setHasRateLimit(true);
+      }
       setStatusMessage(
         'Se alcanzó el límite de velocidad de Supabase (429). Esto puede tardar 15-30 minutos en resetearse. Mientras tanto, usa email y contraseña en lugar de Google OAuth.'
       );
@@ -141,6 +173,13 @@ function LoginPageContent() {
       return;
     }
 
+    if (errorParam === 'pkce_error') {
+      setStatusMessage(
+        'No se pudo completar la autenticación con Google. Esto puede ocurrir si las cookies están bloqueadas o si abriste múltiples pestañas. Por favor, intenta nuevamente o usa email y contraseña.'
+      );
+      return;
+    }
+
     if (errorParam) {
       setStatusMessage('No se pudo validar tu sesion. Intenta nuevamente.');
       return;
@@ -153,6 +192,18 @@ function LoginPageContent() {
     let active = true;
 
     async function checkSession() {
+      // Verificar rate limit antes de hacer cualquier llamada
+      if (typeof window !== 'undefined') {
+        const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+        if (rateLimitUntil) {
+          const untilTime = parseInt(rateLimitUntil, 10);
+          if (Date.now() < untilTime) {
+            // Rate limit activo, no hacer llamadas
+            return;
+          }
+        }
+      }
+
       const { data } = await supabase.auth.getSession();
       if (!active || !data.session) {
         return;
@@ -258,6 +309,27 @@ function LoginPageContent() {
   }
 
   async function handleGoogleLogin() {
+    // Verificar si hay rate limit activo
+    const rateLimitUntil = typeof window !== 'undefined' 
+      ? localStorage.getItem('supabase_rate_limit_until')
+      : null;
+    
+    if (rateLimitUntil) {
+      const untilTime = parseInt(rateLimitUntil, 10);
+      const now = Date.now();
+      if (now < untilTime) {
+        // Aún estamos en periodo de rate limit
+        const minutesLeft = Math.ceil((untilTime - now) / (1000 * 60));
+        setStatusMessage(
+          `Google OAuth está temporalmente deshabilitado debido a límite de velocidad. Intenta nuevamente en ${minutesLeft} minuto(s) o usa email y contraseña.`
+        );
+        return;
+      } else {
+        // Rate limit expiró, limpiar
+        localStorage.removeItem('supabase_rate_limit_until');
+      }
+    }
+
     setIsGoogleLoading(true);
     setGoogleError(null);
     setStatusMessage(null);
@@ -298,9 +370,16 @@ function LoginPageContent() {
         (error as any)?.status === 429;
       
       if (isRateLimit) {
-        setGoogleError(
-          'Se alcanzó el límite de intentos de autenticación. Por favor, espera unos minutos antes de intentar nuevamente.'
+        // Guardar rate limit en localStorage por 20 minutos
+        if (typeof window !== 'undefined') {
+          const rateLimitUntil = Date.now() + (20 * 60 * 1000); // 20 minutos
+          localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+          setHasRateLimit(true);
+        }
+        setStatusMessage(
+          'Se alcanzó el límite de velocidad de Supabase (429). Esto puede tardar 15-30 minutos en resetearse. Mientras tanto, usa email y contraseña en lugar de Google OAuth.'
         );
+        setGoogleError(null); // Usar statusMessage en su lugar
       } else {
         setGoogleError(
           error instanceof Error
@@ -437,9 +516,9 @@ function LoginPageContent() {
                 type="button"
                 variant="outline"
                 onClick={handleGoogleLogin}
-                disabled={isLoading || isGoogleLoading || errorParam === 'rate_limit'}
+                disabled={isLoading || isGoogleLoading || hasRateLimit || errorParam === 'rate_limit'}
                 className="h-12 w-full rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-[#f8f8f8] disabled:opacity-50"
-                title={errorParam === 'rate_limit' ? 'Google OAuth está temporalmente deshabilitado debido al límite de velocidad' : undefined}
+                title={hasRateLimit || errorParam === 'rate_limit' ? 'Google OAuth está temporalmente deshabilitado debido al límite de velocidad' : undefined}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

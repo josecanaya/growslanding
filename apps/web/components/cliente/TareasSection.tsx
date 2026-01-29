@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Building2, TrendingUp, MapPin, User, ArrowRight, Users, CheckCircle, ClipboardList } from 'lucide-react';
 import { BaseCard, Card, Button, Badge, EmptyState } from '@/components/ui/grows';
 import type { BadgeProps } from '@/components/ui/grows';
@@ -162,6 +162,7 @@ type TabPrincipal = 'asignar' | 'organiza' | 'validar' | 'etapas' | 'resumen';
 
 export function TareasSection() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [vistaActual, setVistaActual] = useState<VistaTareas>('lista-obras');
   const [obraSeleccionada, setObraSeleccionada] = useState<string>('');
   const [tabPrincipal, setTabPrincipal] = useState<TabPrincipal>('organiza');
@@ -175,6 +176,18 @@ export function TareasSection() {
   
   const supabase = createClientComponentClient();
   const currentUser = useCurrentUser();
+
+  // Leer obraId de los query params y seleccionar la obra automáticamente
+  useEffect(() => {
+    const obraIdFromQuery = searchParams.get('obraId');
+    if (obraIdFromQuery && obras.length > 0) {
+      const obraExists = obras.find(obra => obra.id === obraIdFromQuery);
+      if (obraExists && obraSeleccionada !== obraIdFromQuery) {
+        setObraSeleccionada(obraIdFromQuery);
+        setVistaActual('detalle-obra');
+      }
+    }
+  }, [searchParams, obras, obraSeleccionada]);
 
   // Cargar obras desde Supabase
   useEffect(() => {

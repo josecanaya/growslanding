@@ -3,12 +3,15 @@
 import { create } from 'zustand';
 
 export type TipoObra =
+  | 'Obra nueva / Desde cero'
   | 'Casa familiar'
   | 'Ampliación'
   | 'Reforma'
   | 'Local comercial'
   | 'Edificio pequeño'
   | 'Otro';
+
+export type ModoObra = 'SIMPLE' | 'ESTRUCTURADA';
 
 export type LegajoPorPlanta = {
   planta: number;
@@ -26,6 +29,7 @@ export type WizardState = {
   latitud?: number;
   longitud?: number;
   fecha_inicio_estimada?: string; // Fecha de inicio estimada de la obra
+  modoObra: ModoObra; // Calculado automáticamente
 };
 
 export type WizardActions = {
@@ -40,6 +44,7 @@ export type WizardActions = {
   ) => void;
   getTotalConstruido: () => number;
   ensureId: () => void; // Genera el ID solo en el cliente si no existe
+  calcularModoObra: () => ModoObra; // Calcula el modo basado en las reglas MVP
 };
 
 function generateId(): string {
@@ -48,6 +53,30 @@ function generateId(): string {
     String.fromCharCode(65 + Math.floor(Math.random() * 26))
   ).join('');
   return `${nums}${letters}`;
+}
+
+// Función helper para calcular el modo de obra basado en las reglas MVP
+function calcularModoObra(state: WizardState): ModoObra {
+  // Regla 1: Tipo de obra = "Obra nueva / Desde cero" → ESTRUCTURADA siempre
+  if (state.tipoObra === 'Obra nueva / Desde cero') {
+    return 'ESTRUCTURADA';
+  }
+  
+  // Calcular total de m² cubiertos
+  const totalM2Cubiertos = state.superficies.reduce((acc, s) => acc + (s.cubiertos || 0), 0);
+  
+  // Regla 2: m² cubiertos ≥ 80 → ESTRUCTURADA
+  if (totalM2Cubiertos >= 80) {
+    return 'ESTRUCTURADA';
+  }
+  
+  // Regla 3: plantas ≥ 2 → ESTRUCTURADA
+  if (state.plantas >= 2) {
+    return 'ESTRUCTURADA';
+  }
+  
+  // Si no cumple nada: queda SIMPLE
+  return 'SIMPLE';
 }
 
 const initialState = (): WizardState => ({
@@ -62,13 +91,19 @@ const initialState = (): WizardState => ({
   latitud: undefined,
   longitud: undefined,
   fecha_inicio_estimada: undefined,
+  modoObra: 'SIMPLE',
 });
 
 export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({
   ...initialState(),
   reset: () => set(initialState()),
   setField: (key, value) => set({ [key]: value } as Partial<WizardState>),
-  setTipoObra: (tipo) => set({ tipoObra: tipo }),
+  setTipoObra: (tipo) => {
+    set((state) => {
+      const nuevoState = { ...state, tipoObra: tipo };
+      return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
+    });
+  },
   setPlantas: (cantidad) => {
     const current = get();
     const next = Math.max(1, Math.min(5, cantidad));
@@ -78,7 +113,10 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
       cubiertos: 0,
       descubiertos: 0,
     }));
-    set({ plantas: next, superficies: [...existing, ...added] });
+    set((state) => {
+      const nuevoState = { ...state, plantas: next, superficies: [...existing, ...added] };
+      return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
+    });
   },
   updatePlantaSuperficie: (index, field, value) => {
     const current = get();
@@ -86,7 +124,14 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
     const next = current.superficies.map((s, i) =>
       i === index ? { ...s, [field]: Math.max(0, value) } : s
     );
-    set({ superficies: next });
+    set((state) => {
+      const nuevoState = { ...state, superficies: next };
+      // Recalcular modoObra solo si cambió 'cubiertos' (para m² cubiertos)
+      if (field === 'cubiertos') {
+        return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
+      }
+      return nuevoState;
+    });
   },
   getTotalConstruido: () => {
     const { superficies } = get();
@@ -98,5 +143,9 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
     if (typeof window !== 'undefined' && !current.id) {
       set({ id: generateId() });
     }
+  },
+  calcularModoObra: (): ModoObra => {
+    const current = get();
+    return calcularModoObra(current);
   },
 }));

@@ -251,42 +251,19 @@ export const useCuadrillasStore = create<CuadrillasState>((set, get) => ({
       }) as any[];
 
       // Cargar tareas para calcular KPIs
-      // Buscar tareas asignadas a estos socios (usando socio_ids en lugar de cuadrilla_id)
+      // NOTA: La columna socio_ids no existe en la tabla tareas, por lo que se omite esta funcionalidad por ahora
+      // TODO: Implementar cuando exista una relación entre tareas y socios/cuadrillas
       const socioIds = cuadrillasCompletas.map((c) => c.id);
       let tareasPorCuadrilla: Record<string, any[]> = {};
 
-      if (socioIds.length > 0) {
-        // Buscar tareas donde el socio_id esté en el array socio_ids
-        const { data: tareasData, error: tareasError } = await supabase
-          .from('tareas')
-          .select('id, socio_ids, estado, avance')
-          .eq('org_id', orgId);
-
-        if (!tareasError && tareasData) {
-          // Agrupar tareas por socio_id (cada socio puede tener múltiples tareas)
-          tareasPorCuadrilla = (tareasData as any[]).reduce((acc: Record<string, any[]>, tarea: any) => {
-            // socio_ids puede ser un array o un string
-            const sociosEnTarea = Array.isArray(tarea.socio_ids) 
-              ? tarea.socio_ids 
-              : tarea.socio_ids 
-                ? [tarea.socio_ids] 
-                : [];
-            
-            sociosEnTarea.forEach((socioId: string) => {
-              if (socioId && socioIds.includes(socioId)) {
-                if (!acc[socioId]) {
-                  acc[socioId] = [];
-                }
-                acc[socioId].push(tarea);
-              }
-            });
-            
-            return acc;
-          }, {});
-        } else if (tareasError) {
-          console.warn('[FETCH_TAREAS_FOR_KPI_WARNING]', tareasError);
-        }
-      }
+      // Comentado temporalmente hasta que exista la columna socio_ids o una relación entre tareas y socios
+      // if (socioIds.length > 0) {
+      //   const { data: tareasData, error: tareasError } = await supabase
+      //     .from('tareas')
+      //     .select('id, socio_ids, estado, avance')
+      //     .eq('org_id', orgId);
+      //   // ... código comentado
+      // }
 
       // Mapear cuadrillas y calcular KPIs desde tareas reales
       const cuadrillasMapeadas: Cuadrilla[] = cuadrillasCompletas.map(cuadrilla => {

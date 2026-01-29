@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
 import { 
   ArrowLeft, 
   Plus, 
@@ -29,7 +31,8 @@ import {
   MapPin,
   Edit3,
   Eye,
-  Download
+  Download,
+  ClipboardList
 } from 'lucide-react';
 import { ModalCrearTarea } from './modals/ModalCrearTarea';
 // import { LegajoTecnicoSection } from './LegajoTecnicoSection';
@@ -154,6 +157,7 @@ export function DetalleObra({
   onActualizarObra,
   tabInicial = 'resumen'
 }: DetalleObraProps) {
+  const router = useRouter();
   const [showModalTarea, setShowModalTarea] = useState(false);
   const [etapaSeleccionada, setEtapaSeleccionada] = useState<'estructura' | 'obra_gris' | 'terminaciones'>('estructura');
   const [vistaActual, setVistaActual] = useState<'elementos' | 'tareas' | 'legajo' | 'resumen'>(tabInicial);
@@ -852,11 +856,18 @@ export function DetalleObra({
               {[
                 { key: 'resumen', label: 'Resumen', icon: BarChart3 },
                 { key: 'elementos', label: 'Elementos', icon: Layers },
-                { key: 'legajo', label: 'Legajo', icon: FileText }
-              ].map(({ key, label, icon: Icon }) => (
+                { key: 'legajo', label: 'Legajo', icon: FileText },
+                { key: 'tareas', label: 'Tareas', icon: ClipboardList, isAction: true }
+              ].map(({ key, label, icon: Icon, isAction }) => (
                 <button
                   key={key}
-                  onClick={() => setVistaActual(key as any)}
+                  onClick={() => {
+                    if (isAction) {
+                      router.push(`/cliente/dashboard?section=tareas&obraId=${obra.id}` as Route);
+                    } else {
+                      setVistaActual(key as any);
+                    }
+                  }}
                   className={`flex items-center space-x-1 md:space-x-2 py-3 md:py-4 px-2 md:px-1 border-b-2 font-medium text-xs md:text-sm transition-all duration-300 ease-in-out flex-shrink-0 ${
                     vistaActual === key
                       ? 'border-b-2'

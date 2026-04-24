@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import LeaderClient from './leader-client';
+
+/** Evita prerender en build (cookies + service role); evita fallar sin env en CI. */
+export const dynamic = 'force-dynamic';
 import { IS_DEV_MODE } from '@/lib/config';
 import { mockUser } from '@/lib/mockUser';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';

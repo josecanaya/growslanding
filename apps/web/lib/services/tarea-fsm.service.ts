@@ -1,8 +1,14 @@
 import { createServiceSupabaseClient } from '../supabase-server';
 import { RolActor } from './permiso.service';
 import { WalletMvpService } from './wallet-mvp.service';
+import {
+  ESTADOS_TAREA,
+  ESTADO_BLOQUE_FINAL,
+  ESTADO_TAREA_FINAL,
+  type EstadoTareaCore,
+} from '../domain/estados-core';
 
-export type EstadoTarea = 'pendiente' | 'en_progreso' | 'para_validar' | 'validada' | 'rechazada';
+export type EstadoTarea = EstadoTareaCore;
 
 const TRANSITIONS: Record<RolActor, Record<EstadoTarea, EstadoTarea[]>> = {
   SOCIO: {
@@ -103,7 +109,7 @@ export class TareaFsmService {
       );
     }
 
-    if (params.nuevoEstado === 'validada') {
+    if (params.nuevoEstado === ESTADO_TAREA_FINAL) {
       await this.assertSubtareasValidadas(params.tareaId);
     }
 
@@ -149,7 +155,7 @@ export class TareaFsmService {
       .from('tareas_subtareas')
       .select('id')
       .eq('tarea_id', tareaId)
-      .neq('estado', 'validado')
+      .neq('estado', ESTADO_BLOQUE_FINAL)
       .limit(1);
 
     if (error) {
@@ -237,6 +243,6 @@ export class TareaFsmService {
   }
 
   static getEstadosOficiales(): EstadoTarea[] {
-    return ['pendiente', 'en_progreso', 'para_validar', 'validada', 'rechazada'];
+    return [...ESTADOS_TAREA];
   }
 }

@@ -4,6 +4,7 @@ import { Building2, MapPin, Calendar, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/grows/Button';
 import { Badge } from '@/components/ui/grows/Badge';
+import { cn } from '@/lib/utils';
 
 interface ObraConPresupuestos {
   obra_id: string;
@@ -18,18 +19,27 @@ interface ObraConPresupuestos {
 interface ListaObrasProps {
   obras: ObraConPresupuestos[];
   loading?: boolean;
+  stitchMode?: boolean;
 }
 
-export function ListaObras({ obras, loading }: ListaObrasProps) {
+export function ListaObras({ obras, loading, stitchMode = false }: ListaObrasProps) {
   const router = useRouter();
 
   if (loading) {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white border border-slate-200 rounded-lg p-4 animate-pulse">
-            <div className="h-6 bg-slate-200 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+          <div
+            key={i}
+            className={cn(
+              'animate-pulse rounded-2xl border p-4',
+              stitchMode
+                ? 'border-stitch-primary/10 bg-stitch-surface-container-lowest'
+                : 'rounded-lg border-slate-200 bg-white',
+            )}
+          >
+            <div className="mb-2 h-6 w-3/4 rounded bg-slate-200" />
+            <div className="h-4 w-1/2 rounded bg-slate-200" />
           </div>
         ))}
       </div>
@@ -38,12 +48,26 @@ export function ListaObras({ obras, loading }: ListaObrasProps) {
 
   if (obras.length === 0) {
     return (
-      <div className="bg-white border border-slate-200 rounded-lg p-8 text-center">
-        <Building2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+      <div
+        className={cn(
+          'border p-8 text-center',
+          stitchMode
+            ? 'rounded-2xl border-stitch-primary/10 bg-stitch-surface-container-lowest shadow-stitch-nav'
+            : 'rounded-lg border-slate-200 bg-white',
+        )}
+      >
+        <Building2
+          className={cn('mx-auto mb-4 h-12 w-12', stitchMode ? 'text-stitch-primary/40' : 'text-slate-400')}
+        />
+        <h3
+          className={cn(
+            'mb-2 text-lg font-semibold',
+            stitchMode ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
+          )}
+        >
           No hay presupuestos pendientes
         </h3>
-        <p className="text-sm text-slate-500">
+        <p className={cn('text-sm', stitchMode ? 'text-stitch-on-surface/70' : 'text-slate-500')}>
           Cuando recibas solicitudes de presupuesto, aparecerán acá.
         </p>
       </div>
@@ -56,14 +80,26 @@ export function ListaObras({ obras, loading }: ListaObrasProps) {
         return (
           <div
             key={obra.obra_id}
-            className="bg-white border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer active:bg-slate-100"
+            className={cn(
+              'cursor-pointer border px-4 py-3 transition-colors active:scale-[0.99]',
+              stitchMode
+                ? 'mb-3 rounded-2xl border-stitch-primary/10 bg-stitch-surface-container-lowest shadow-stitch-nav hover:border-stitch-primary/25'
+                : 'border-b border-slate-100 bg-white hover:bg-slate-50 active:bg-slate-100',
+            )}
             onClick={() => router.push(`/socio/presupuestos?obra_id=${obra.obra_id}`)}
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <Building2 className="h-4 w-4 text-slate-600 flex-shrink-0" />
-                  <h3 className="text-sm font-semibold text-slate-900 truncate">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex items-center gap-2">
+                  <Building2
+                    className={cn('h-4 w-4 flex-shrink-0', stitchMode ? 'text-stitch-primary' : 'text-slate-600')}
+                  />
+                  <h3
+                    className={cn(
+                      'truncate text-sm font-semibold',
+                      stitchMode ? 'font-stitch-headline text-stitch-on-surface' : 'text-slate-900',
+                    )}
+                  >
                     {obra.obra_name}
                   </h3>
                 </div>
@@ -102,7 +138,9 @@ export function ListaObras({ obras, loading }: ListaObrasProps) {
                 </div>
               </div>
 
-              <ArrowRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <ArrowRight
+                className={cn('h-5 w-5 flex-shrink-0', stitchMode ? 'text-stitch-primary/50' : 'text-slate-400')}
+              />
             </div>
           </div>
         );

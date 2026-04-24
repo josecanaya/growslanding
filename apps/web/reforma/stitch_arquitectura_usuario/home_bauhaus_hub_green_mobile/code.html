@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Studio Architect - Bauhaus Navigation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9fb",
+                    "primary": "#001629",
+                    "primary-container": "#002b49",
+                    "secondary": "#545f6e",
+                    "tertiary": "#24a375", /* Operational Green */
+                    "surface-variant": "#e1e4e9",
+                    "outline": "#73777e",
+                    "outline-variant": "#c3c7ce",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#171c1f",
+                    "on-surface-variant": "#42474d",
+                    "surface-container": "#f0f2f5",
+                    "surface-container-high": "#e9ecef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 0, 'opsz' 24;
+        }
+        .bauhaus-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            aspect-ratio: 2 / 3;
+            width: 100%;
+            max-width: 300px;
+        }
+        .bauhaus-segment {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .bauhaus-segment:active {
+            transform: scale(0.96);
+        }
+        .icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/10">
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-6 bg-surface/80 backdrop-blur-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="grid_view">grid_view</span>
+</div>
+<h1 class="font-['Manrope'] text-lg tracking-[0.25em] font-black text-primary">STUDIO ARCHITECT</h1>
+<div class="w-9 h-9 rounded-full bg-surface-variant overflow-hidden border border-outline-variant/30">
+<img alt="User profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjO3GYcuQdUYcq72XPIUowfY6JaSyue_2YsRVvKtvB-6TSUDhPpbdN01MUpPyYNeuVj88h9WN-az54ZbWCqyuMCbe5ONglOfOkdSLfwwNqtkKa5aSdqOiUMbV3dSmH5eRumGEjTr6aRHqKAmQmon4hcWxJY0jbvgzf4FLD6WouaGbbJ-1hfioQ-K0wFpxyJtz8Uu8rCFwVduGrH-8xOwQaJMfsiBMTv9D_a7qGlPCNmCP7seDcqA0vHD4ZIeegkzKPYvuugsyuub9a"/>
+</div>
+</header>
+<main class="min-h-screen flex items-center justify-center px-8 pb-20">
+<div class="relative w-full flex flex-col items-center">
+<div class="bauhaus-grid gap-2">
+<!-- Obras: Atelier Deep Blue -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Obras" class="bauhaus-segment w-full h-full bg-primary text-on-primary rounded-tl-[80px] shadow-sm">
+<div class="icon-container">
+<span class="material-symbols-outlined text-4xl" data-icon="architecture">architecture</span>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-primary">Obras</span>
+</div>
+<!-- Tareas: Grey with subtle accent line -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Tareas" class="bauhaus-segment w-full h-full bg-surface-container-high text-primary rounded-tr-xl">
+<div class="icon-container relative">
+<div class="absolute inset-0 opacity-5 flex items-center justify-center">
+<div class="w-[120%] h-[0.5px] bg-primary rotate-45"></div>
+<div class="w-[120%] h-[0.5px] bg-primary -rotate-45"></div>
+</div>
+<span class="material-symbols-outlined text-3xl" data-icon="checklist">checklist</span>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Tareas</span>
+</div>
+<!-- Partners: Clean Light Grey -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Partners" class="bauhaus-segment w-full h-full bg-surface-container text-primary">
+<div class="icon-container">
+<div class="w-16 h-16 border border-primary/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl" data-icon="handshake">handshake</span>
+</div>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Partners</span>
+</div>
+<!-- Wallet: Deep Blue with Operational Green Accent -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Billetera" class="bauhaus-segment w-full h-full bg-primary-container text-on-primary">
+<div class="icon-container relative">
+<div class="absolute w-12 h-12 border-t-[0.5px] border-l-[0.5px] border-tertiary rounded-full opacity-40 -top-1 -left-1"></div>
+<span class="material-symbols-outlined text-3xl" data-icon="payments">payments</span>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Wallet</span>
+</div>
+<!-- Notificaciones: Operational status -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Notificaciones" class="bauhaus-segment w-full h-full bg-primary text-on-primary rounded-bl-xl">
+<div class="icon-container relative">
+<span class="material-symbols-outlined text-3xl" data-icon="notifications">notifications</span>
+<!-- Operational Green Dot -->
+<div class="absolute top-10 right-10 w-2 h-2 bg-tertiary rounded-full shadow-[0_0_8px_rgba(36,163,117,0.6)]"></div>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Notifs</span>
+</div>
+<!-- Cuenta: Professional Architecture White -->
+<div class="flex flex-col items-center gap-2">
+<button aria-label="Cuenta" class="bauhaus-segment w-full h-full bg-surface-container-high text-primary rounded-br-[80px]">
+<div class="icon-container flex flex-col gap-2">
+<span class="material-symbols-outlined text-3xl" data-icon="person">person</span>
+<div class="flex flex-col gap-1 w-6">
+<div class="w-full h-[0.5px] bg-primary/20"></div>
+<div class="w-2/3 h-[0.5px] bg-primary/20"></div>
+</div>
+</div>
+</button>
+<span class="font-label text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Perfil</span>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-10 pt-4 bg-white/95 backdrop-blur-2xl border-t border-slate-100 rounded-t-[32px]">
+<a class="flex flex-col items-center justify-center text-primary bg-primary/5 rounded-2xl px-5 py-2.5 transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined font-bold" data-icon="architecture">architecture</span>
+<span class="font-['Inter'] text-[10px] font-semibold tracking-tight mt-1">Obras</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-tight mt-1">Tareas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-tight mt-1">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-tight mt-1">Notifs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-outline hover:text-primary transition-all active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-['Inter'] text-[10px] font-medium tracking-tight mt-1">Perfil</span>
+</a>
+</nav>
+</body></html>

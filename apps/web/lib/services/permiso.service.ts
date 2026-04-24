@@ -29,20 +29,32 @@ export class PermisoService {
       .from('socios')
       .select('id, org_id, user_id')
       .eq('org_id', orgId)
-      .in('user_id', [userId, null])
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (socio && (socio.user_id === userId || !socio.user_id)) {
       return 'SOCIO';
     }
 
-    const { data: organizacion } = await supabaseAny
-      .from('organizaciones')
-      .select('owner_user_id')
+    let { data: organizacion } = await supabaseAny
+      .from('organizations')
+      .select('user_id')
       .eq('id', orgId)
       .maybeSingle();
 
-    if (organizacion?.owner_user_id === userId) {
+    // Compat temporal con esquema legacy
+    if (!organizacion) {
+      const legacyOrg = await supabaseAny
+        .from('organizaciones')
+        .select('owner_user_id')
+        .eq('id', orgId)
+        .maybeSingle();
+      if (legacyOrg.data) {
+        organizacion = { user_id: legacyOrg.data.owner_user_id };
+      }
+    }
+
+    if (organizacion?.user_id === userId) {
       return 'CLIENTE';
     }
 

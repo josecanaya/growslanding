@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARCH STUDIO - Project Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;700;800&amp;family=Inter:wght@300;400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#5d5e64",
+                    "on-primary-fixed": "#3d3f44",
+                    "tertiary-fixed-dim": "#cbc9e9",
+                    "error": "#9f403d",
+                    "primary-dim": "#515258",
+                    "on-tertiary": "#fbf7ff",
+                    "tertiary-container": "#d9d7f8",
+                    "surface-container-high": "#e4e9ea",
+                    "surface-variant": "#dde4e5",
+                    "secondary-container": "#d1e4ff",
+                    "primary": "#5d5e64",
+                    "secondary-fixed-dim": "#b9d7ff",
+                    "surface-dim": "#d4dbdd",
+                    "primary-fixed-dim": "#d3d4da",
+                    "primary-fixed": "#e2e2e8",
+                    "error-container": "#fe8983",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-fixed": "#d1e4ff",
+                    "secondary-dim": "#235586",
+                    "tertiary-fixed": "#d9d7f8",
+                    "tertiary-dim": "#51516c",
+                    "surface-bright": "#f9f9f9",
+                    "on-tertiary-fixed": "#383751",
+                    "on-background": "#2d3435",
+                    "tertiary": "#5d5c78",
+                    "on-error-container": "#752121",
+                    "surface-container-low": "#f2f4f4",
+                    "on-tertiary-fixed-variant": "#54546f",
+                    "on-secondary-fixed-variant": "#2d5e8f",
+                    "surface-container": "#ebeeef",
+                    "primary-container": "#e2e2e8",
+                    "inverse-primary": "#f3f3fa",
+                    "surface": "#f9f9f9",
+                    "on-secondary": "#f7f9ff",
+                    "on-primary-container": "#505257",
+                    "on-error": "#fff7f6",
+                    "surface-container-highest": "#dde4e5",
+                    "on-secondary-container": "#215485",
+                    "on-tertiary-container": "#4a4a65",
+                    "on-primary": "#f7f7fe",
+                    "outline-variant": "#adb3b4",
+                    "on-secondary-fixed": "#014171",
+                    "on-surface-variant": "#5a6061",
+                    "inverse-surface": "#0c0f0f",
+                    "secondary": "#326293",
+                    "error-dim": "#4e0309",
+                    "on-surface": "#2d3435",
+                    "inverse-on-surface": "#9c9d9d",
+                    "background": "#f9f9f9",
+                    "outline": "#757c7d",
+                    "on-primary-fixed-variant": "#5a5b61"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            background-color: #f9f9f9;
+            color: #2d3435;
+            font-family: 'Inter', sans-serif;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface selection:bg-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f9f9f9]/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#5d5e64] hover:opacity-70 transition-opacity cursor-pointer" data-icon="menu">menu</span>
+<h1 class="font-['Manrope'] font-black tracking-tighter text-[#5d5e64] text-lg">ARCH STUDIO</h1>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<nav class="flex gap-6">
+<a class="text-[#5d5e64] font-['Manrope'] font-bold tracking-tight text-sm hover:opacity-70 transition-opacity" href="#">Projects</a>
+<a class="text-[#5d5e64]/60 font-['Manrope'] font-bold tracking-tight text-sm hover:opacity-70 transition-opacity" href="#">Studio</a>
+<a class="text-[#5d5e64]/60 font-['Manrope'] font-bold tracking-tight text-sm hover:opacity-70 transition-opacity" href="#">Archive</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#5d5e64] hover:opacity-70 transition-opacity cursor-pointer" data-icon="search">search</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="close-up portrait of a male architect in a studio setting with soft natural window lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFREDInBnUtxMuarcHfEhynNYc9PchjqJEfaBQ5__lSUgo-i6V9jbvkAYGqS29Hx1q6YfBaefAc2k4t5bcvQEuswNTxwcc0d_S8yMke1Jz89VMsxvSlJSINl3DaBbHH1t-OR7shdmZzjQY4Ui3bLwKPuo_8ohjW8E3rZAt_fHpQLvpWej23JXp1TxkD85QkErcysAe8aEQpxGNsHRiZlBHhHHQJWhPtzAhymWumwDrEaPprFfbFbJaO0e141Sh-XQunsiccSDZ0TXh"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 min-h-screen px-6 pb-12 flex gap-8 max-w-[1600px] mx-auto">
+<!-- Left Column: Project List -->
+<aside class="w-1/4 flex flex-col gap-6">
+<div class="flex flex-col gap-2 mb-4">
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Active Pipeline</span>
+<div class="h-[2px] w-8 bg-primary"></div>
+</div>
+<div class="flex flex-col gap-4 overflow-y-auto hide-scrollbar">
+<!-- Active Project Card -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border-l-4 border-primary transition-all duration-300">
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest text-secondary font-semibold mb-2 block">Residential</span>
+<h3 class="font-['Manrope'] font-bold text-lg text-on-surface leading-tight mb-1">Residencia Velásquez</h3>
+<p class="font-['Inter'] text-xs text-on-surface-variant font-light">Valle de Bravo, MX</p>
+</div>
+<!-- Inactive Project Card -->
+<div class="bg-surface-container-low p-6 rounded-xl hover:bg-surface-container-high transition-all duration-300 cursor-pointer group">
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest text-outline font-semibold mb-2 block">Commercial</span>
+<h3 class="font-['Manrope'] font-bold text-lg text-on-surface-variant group-hover:text-on-surface leading-tight mb-1">Torre Prisma</h3>
+<p class="font-['Inter'] text-xs text-on-surface-variant font-light">CDMX</p>
+</div>
+<!-- Inactive Project Card -->
+<div class="bg-surface-container-low p-6 rounded-xl hover:bg-surface-container-high transition-all duration-300 cursor-pointer group">
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest text-outline font-semibold mb-2 block">Hospitality</span>
+<h3 class="font-['Manrope'] font-bold text-lg text-on-surface-variant group-hover:text-on-surface leading-tight mb-1">Hotel Amanali</h3>
+<p class="font-['Inter'] text-xs text-on-surface-variant font-light">Hidalgo, MX</p>
+</div>
+<!-- Inactive Project Card -->
+<div class="bg-surface-container-low p-6 rounded-xl hover:bg-surface-container-high transition-all duration-300 cursor-pointer group">
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest text-outline font-semibold mb-2 block">Public</span>
+<h3 class="font-['Manrope'] font-bold text-lg text-on-surface-variant group-hover:text-on-surface leading-tight mb-1">Biblioteca Norte</h3>
+<p class="font-['Inter'] text-xs text-on-surface-variant font-light">Monterrey, MX</p>
+</div>
+</div>
+</aside>
+<!-- Center Column: Project Details -->
+<section class="flex-1 bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col">
+<!-- Hero Header -->
+<div class="relative h-[320px] w-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="modern brutalist concrete villa architecture with large glass panels nestled in a lush green pine forest at dusk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPzZ4oMfF3WV4Xo1wyFSegIrTJXlWFqLYXSzri6YXjMFDVwNkQr_tqyWZHqTVoE_Bf6VjGLBSmM8IzzwFQyZMF8wbpsZ3Kl3U_u-COQIWT0Zk-XN-nsGCLWIh_RKn2Vr0hy7K4PTtSJto4GVb1q2Lobc7XcHrFDkDjzITyfdqLrpGcG8kbLOnmMjkqut2uULuakUyc9Vd95mWQdm-Us_NAqR93iZ9IZcZAT9nnoNMJ1pCXKwZ0axuqukzbN4Jhuy6sNAlw-8coUrwM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+<div class="absolute bottom-8 left-10">
+<h2 class="font-['Manrope'] font-extrabold text-4xl text-white tracking-tight">Residencia Velásquez</h2>
+<div class="flex items-center gap-4 mt-2">
+<span class="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span> Valle de Bravo
+                        </span>
+<span class="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-medium text-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> Phase: Construction
+                        </span>
+</div>
+</div>
+</div>
+<!-- Task List Content -->
+<div class="p-10 flex flex-col flex-1 gap-12">
+<div class="grid grid-cols-2 gap-16">
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Project Task List</span>
+<div class="h-[2px] w-8 bg-secondary"></div>
+</div>
+<ul class="flex flex-col gap-6">
+<li class="flex items-start gap-4 group">
+<div class="w-6 h-6 rounded-md border-2 border-outline-variant flex items-center justify-center mt-1 group-hover:border-secondary transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-white text-[18px] opacity-0 group-hover:opacity-100 bg-secondary rounded-sm" data-icon="check" style="font-variation-settings: 'FILL' 0, 'wght' 700;">check</span>
+</div>
+<div>
+<h4 class="font-['Inter'] font-semibold text-on-surface text-sm">Finalize concrete slab finishing</h4>
+<p class="text-xs text-on-surface-variant font-light mt-1">Review texture samples with main contractor at site office.</p>
+<div class="flex gap-2 mt-2">
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">High Priority</span>
+<span class="px-2 py-0.5 bg-surface-container-high rounded text-[10px] font-bold text-on-surface-variant uppercase tracking-tighter">Site Visit</span>
+</div>
+</div>
+</li>
+<li class="flex items-start gap-4 group opacity-60 hover:opacity-100 transition-opacity">
+<div class="w-6 h-6 rounded-md border-2 border-outline-variant flex items-center justify-center mt-1"></div>
+<div>
+<h4 class="font-['Inter'] font-semibold text-on-surface text-sm">Structural glass delivery verification</h4>
+<p class="text-xs text-on-surface-variant font-light mt-1">Confirm ETA for custom thermal panes from Vitrocsa.</p>
+</div>
+</li>
+<li class="flex items-start gap-4 group">
+<div class="w-6 h-6 rounded-md border-2 border-outline-variant flex items-center justify-center mt-1"></div>
+<div>
+<h4 class="font-['Inter'] font-semibold text-on-surface text-sm">Update landscape blueprint</h4>
+<p class="text-xs text-on-surface-variant font-light mt-1">Modify irrigation paths in Section B-B for oak preservation.</p>
+<div class="flex gap-2 mt-2">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container rounded text-[10px] font-bold uppercase tracking-tighter">Planning</span>
+</div>
+</div>
+</li>
+</ul>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.2em] font-bold text-outline">Collaborators</span>
+<div class="h-[2px] w-8 bg-outline-variant"></div>
+</div>
+<div class="flex -space-x-3">
+<img class="inline-block h-10 w-10 rounded-full ring-4 ring-white" data-alt="professional female architect with glasses in a minimalist creative office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWJ9PnXBc0viAEnNU6e9Tp0qibYywFuj-72XWVvjBD0aNNaMiDsONXOnGsghPvStveqaoqGOrg1HvRRCmr0LsXJOmJfHYYeKXTaQ0iBHmTmJuvbnHmJgjhaVa0_oOzw5pwBG7O48Qc5NbVDRvQyfqhLlDK-y9ncm5M8FCdsphPYnq_jqTwQg-9kfvl8g4WWcGDvmYcdnwsYXehz2zV8t0a7BmdWUiwD2XOYYWR_u4pMwhjz-yI0iCDm_0df7VGJy111GTtU66M7B5v"/>
+<img class="inline-block h-10 w-10 rounded-full ring-4 ring-white" data-alt="male landscape designer profile photo with soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpuhwSNQzDC4rVXffAUnxA_wRKYTmz_V8fi2pA0PCJ_dK09mw8sMn76MgUn3DOi3O87b6vOP5HLLT8tZ7VgGNZu6ilqufhmV1tuAHhQprcqwAg10M2EcCJOKatWZjV1lwIce-PBNBRJDsNjZxaNa2_w6-oZktGmH117GK2wWXKGU9zeqp4d3jDHT3cVhm0N7PtYHsHQxBZyLEAUjQREScpVvFrVUEhwFE5vqEyb-kfakgcMACrP_3S8wk2a4EAQSAuAj4nk97tUYED"/>
+<img class="inline-block h-10 w-10 rounded-full ring-4 ring-white" data-alt="professional woman in corporate attire looking confident in a bright office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyHEgL_b64bMc0z__7B1FbVeYW3dIWCzMvLWDNTgDzd20UcT-huHSwApYNt0G1j7tfio1ajdWqdSIwku5AXU7rrXiyE0IGJs4We4Xla0rGcAQ31CSE83K50ocUjyCYxHDhea4Oehk9ejiqZpXlHO89mRfOlbCumg0KuBZz0imTO9kex7IzRbnzBuGNebhNWLkYTEef9FP2nV0X8w4vUAu9p0dDMpBvdh8-bd8fGgwWFm1OUU-TYiEA9JkPBuVo8Rq3Y1dV3KehNFTz"/>
+<div class="flex items-center justify-center h-10 w-10 rounded-full ring-4 ring-white bg-surface-container-high text-[10px] font-bold text-on-surface-variant">+4</div>
+</div>
+<div class="mt-4 p-6 bg-surface-container-low rounded-xl">
+<h5 class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-2">Technical Note</h5>
+<p class="text-xs leading-relaxed text-on-surface italic">"The play of light between the concrete columns and the forest canopy remains our primary design driver for this phase."</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Primary CTA -->
+<aside class="w-1/6 flex flex-col">
+<button class="w-full bg-primary py-8 rounded-xl flex flex-col items-center justify-center gap-3 hover:bg-primary-dim transition-all duration-300 group shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-white text-3xl group-hover:scale-110 transition-transform" data-icon="add_task">add_task</span>
+<span class="font-['Manrope'] font-extrabold text-[12px] uppercase tracking-[0.2em] text-on-primary">NUEVA TAREA</span>
+</button>
+<div class="mt-8 flex flex-col gap-4">
+<div class="p-5 bg-surface-container-high rounded-xl flex items-center gap-4 cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="upload_file">upload_file</span>
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Upload Blueprint</span>
+</div>
+<div class="p-5 bg-surface-container-high rounded-xl flex items-center gap-4 cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="share">share</span>
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Share Project</span>
+</div>
+<div class="p-5 bg-surface-container-high rounded-xl flex items-center gap-4 cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-outline" data-icon="history">history</span>
+<span class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Log History</span>
+</div>
+</div>
+<div class="mt-auto pb-4">
+<div class="bg-primary/5 p-4 rounded-xl border border-primary/10">
+<span class="block text-[10px] font-bold text-primary uppercase tracking-[0.15em] mb-1">Arch Studio Cloud</span>
+<div class="w-full bg-primary/10 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-2/3"></div>
+</div>
+<span class="block text-[9px] text-primary/70 mt-2">68% Storage Used</span>
+</div>
+</div>
+</aside>
+</main>
+<!-- Navigation Shell Placeholder for Bottom (Suppressed based on Desktop Mandate) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-[#f9f9f9]/80 backdrop-blur-xl flex justify-around items-center px-8 pb-8 pt-4 z-50">
+<div class="flex items-center justify-center bg-[#5d5e64] text-white rounded-full w-12 h-12">
+<span class="material-symbols-outlined active-icon" data-icon="home_storage" style="font-variation-settings: 'FILL' 1;">home_storage</span>
+</div>
+<div class="flex items-center justify-center text-[#5d5e64]/50 w-12 h-12">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+</div>
+<div class="flex items-center justify-center text-[#5d5e64]/50 w-12 h-12">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+</div>
+<div class="flex items-center justify-center text-[#5d5e64]/50 w-12 h-12">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+</nav>
+</body></html>

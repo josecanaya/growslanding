@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { EscrowService } from "@/lib/services/escrow.service";
 
 export async function POST(request: NextRequest) {
+  const configuredSecret = process.env.MP_WEBHOOK_SECRET ?? '';
+  if (configuredSecret) {
+    const incomingSecret =
+      request.headers.get('x-webhook-secret') ??
+      request.headers.get('x-mp-webhook-secret') ??
+      '';
+    if (incomingSecret !== configuredSecret) {
+      return NextResponse.json({ error: 'Unauthorized webhook' }, { status: 401 });
+    }
+  }
+
   try {
     const event = await request.json();
     console.info("[payments.webhook] evento recibido", {

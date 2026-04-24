@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#b6c4ff",
+                    "surface": "#ecfdfd",
+                    "on-secondary-container": "#243c87",
+                    "on-error-container": "#93000a",
+                    "on-surface": "#0f1e1f",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#95aafd",
+                    "primary-container": "#0056ff",
+                    "primary": "#0042c8",
+                    "surface-dim": "#cdddde",
+                    "tertiary-fixed-dim": "#ffb5a0",
+                    "outline-variant": "#c3c5d9",
+                    "on-tertiary": "#ffffff",
+                    "inverse-surface": "#243334",
+                    "secondary": "#445aa6",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "surface-container-highest": "#d5e6e7",
+                    "on-tertiary-fixed-variant": "#872100",
+                    "on-tertiary-fixed": "#3b0900",
+                    "on-secondary-fixed-variant": "#2a418d",
+                    "primary-fixed": "#dce1ff",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "background": "#ecfdfd",
+                    "surface-container-high": "#dbebec",
+                    "on-tertiary-container": "#ffe3db",
+                    "on-primary-fixed": "#001550",
+                    "tertiary": "#982600",
+                    "on-primary-container": "#e4e7ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e1f1f2",
+                    "secondary-fixed": "#dce1ff",
+                    "outline": "#737688",
+                    "surface-variant": "#d5e6e7",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#c23402",
+                    "surface-container-low": "#e6f7f8",
+                    "inverse-on-surface": "#e3f4f5",
+                    "on-secondary-fixed": "#001550",
+                    "surface-tint": "#004ee8",
+                    "surface-bright": "#ecfdfd",
+                    "on-background": "#0f1e1f",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-surface-variant": "#434656",
+                    "on-primary-fixed-variant": "#003ab2",
+                    "tertiary-fixed": "#ffdbd1",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .tonal-layering { transition: background-color 0.3s ease; }
+        .no-line { border: none !important; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#ecfdfd]/80 backdrop-blur-md flex items-center justify-between px-6 py-3 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
+<img alt="Architect Profile" class="w-full h-full object-cover" data-alt="Professional architect headshot, clean studio lighting, neutral background, looking confident and experienced" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVP2ULLKt403cW5aMoBFZ2PJBkDg_CphrN8cdskL4aAGbmoRe_yHIbpcmDsSpHqtsiiDSsKSYT0KZIm4rWpnpDeGRIndtYH8LkfeltehMtAygnTaKybaTZ6TniEe5Za1Jxj6Zig56a-1YM427mockJ_fcPsXrQKdRA2yB9utuaGzSTJ7kdp5opUbu14S1sGkzYupnHhxvM_Bm6ZpIVQY6tdzuqGpRmVf4jjb7OGrkKnfeoIl_yMWWnijJZInAFwY0L8jJ9HJdTqSqm"/>
+</div>
+<span class="text-xl font-bold bg-gradient-to-b from-[#0042c8] to-[#0033a0] bg-clip-text text-transparent">Grows</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#dbebec]/50 transition-colors text-[#0042c8] active:scale-95 duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-24 px-6 max-w-5xl mx-auto">
+<!-- Section Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1 block">Gestión de Obra</span>
+<h1 class="text-3xl font-bold tracking-tight text-on-surface">Validaciones</h1>
+</div>
+<div class="flex items-center gap-3 bg-surface-container-low p-1.5 rounded-full">
+<button class="px-4 py-1.5 rounded-full text-sm font-semibold bg-white text-primary shadow-sm">Pendientes</button>
+<button class="px-4 py-1.5 rounded-full text-sm font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors">Historial</button>
+</div>
+</div>
+<!-- Metric Summary (Bento-ish Row) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+<div class="bg-surface-container-lowest p-6 rounded-lg tonal-layering">
+<p class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Para Validar</p>
+<p class="text-3xl font-bold text-primary">14</p>
+<p class="text-xs text-on-surface-variant mt-1">Bloques en espera</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg tonal-layering">
+<p class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant mb-2">Monto Total</p>
+<p class="text-3xl font-bold text-on-surface">$12,450.00</p>
+<p class="text-xs text-on-success font-medium mt-1">Sujeto a aprobación</p>
+</div>
+<div class="bg-primary p-6 rounded-lg tonal-layering text-white flex flex-col justify-center">
+<p class="text-sm font-medium opacity-90">Eficiencia de Revisión</p>
+<div class="flex items-end gap-2 mt-1">
+<p class="text-3xl font-bold">92%</p>
+<span class="material-symbols-outlined mb-1" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+</div>
+<!-- Blocks List: 'Para Validar' -->
+<div class="space-y-6">
+<h2 class="text-lg font-bold text-on-surface flex items-center gap-2">
+<span class="w-1.5 h-6 bg-primary rounded-full"></span>
+                Bloques Pendientes
+            </h2>
+<!-- Validation Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col lg:flex-row gap-6 hover:bg-white transition-colors duration-300">
+<div class="flex-1">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="text-xl font-bold text-on-surface">Bloque A-12</h3>
+<p class="text-sm text-on-surface-variant font-medium">Cimentación Estructural - Fase 2</p>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full">
+<span class="text-lg font-bold text-primary">$4,200.00</span>
+</div>
+</div>
+<div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+<div class="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-surface-container">
+<img alt="Evidence 1" class="w-full h-full object-cover" data-alt="Close up of steel reinforcement bars in a concrete foundation with professional focus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDO5PmGrE9kKesCXMAzOxxdHoM_l0UQ2UBsu339fQLuOFvxW2Rvc_YI0ymUVSjNI9scU5cjA6FpNflEtx0qt5lBr0G7celtht0OWUDrKvDbcayZU0tChARLVpfrRF0M62-DKV8fnwqDTns3RrX7ZWbgh7F8Q7bfyyLK4SCNeYJ8M-1fiWP1_uWRN9-s0bUkQ-d6FoNGzE07ajFPAqsPaiPFQdsthv3mTfcorKykCw0zgiM2jqHnc-n_CWkQ5lmyZ1URBqHxDURJbGJe"/>
+</div>
+<div class="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-surface-container">
+<img alt="Evidence 2" class="w-full h-full object-cover" data-alt="Wide shot of construction site foundation with clear blue sky and bright lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXksW-NumDmEe_RfPO8KcrTxkwpcAZJ-gcj9VDjwwMPbj-U5Q4S2TKD6dtNahmX69QuSA9i_b-wsfpv5V7CAMH1H-G6kXeUS06FuPKQE2aojpwaXjQNBNKQcL3CtSvPlJy7mEPnvd7ZWP8LVjpAwKTwJJNxxzWiqR_tsHwL3mFAUVPf4C4hA3MQyh8lzUGFOojBjhhwxjsJpGpkU7VWQALW4ntn1cC6Yls9wEhOdl799zBEnCpRluuRw5uPpRG_JlNDKStkv80tF6h"/>
+</div>
+<div class="w-20 h-20 rounded-md overflow-hidden flex-shrink-0 bg-surface-container relative">
+<img alt="Evidence 3" class="w-full h-full object-cover" data-alt="Detail of concrete pouring process with texture and professional depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3kxY_MD5ff_3hKcT8qt3KAUIGikSImK7n9_Mfa-JOeq2HNUdiAxQvShhrE7i8MmhIuMAs7a4nU3oa9GBDuOai8FAo-hw5Z4UltinkrygGSziLRo0U6FqBG7B9oh97-e896w3WtKWtMVYMx-6hkgYOcZ6443gbXFXKpvwC1T7ToJBR87kGdL-_pY72Ev4Rfknazjyan4iZqnCwbeia2ewZioOijbYeU3-vK7ElpKOgs9Asg96sw6Jmt2kpvHCWkA5o1jNRtXV0zFUx"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs font-bold">+2</div>
+</div>
+</div>
+</div>
+<div class="lg:w-48 flex flex-col justify-center gap-3">
+<button class="w-full py-3 rounded-full bg-gradient-to-b from-primary to-primary-container text-white font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                        Aprobar
+                    </button>
+<button class="w-full py-3 rounded-full bg-error-container text-error font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="cancel">cancel</span>
+                        Rechazar
+                    </button>
+</div>
+</div>
+<!-- Validation Card 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col lg:flex-row gap-6 hover:bg-white transition-colors duration-300">
+<div class="flex-1">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="text-xl font-bold text-on-surface">Bloque C-05</h3>
+<p class="text-sm text-on-surface-variant font-medium">Instalaciones Eléctricas - Distribución</p>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full">
+<span class="text-lg font-bold text-primary">$1,850.00</span>
+</div>
+</div>
+<div class="flex gap-2 mb-6">
+<div class="w-20 h-20 rounded-md overflow-hidden bg-surface-container">
+<img alt="Evidence 1" class="w-full h-full object-cover" data-alt="Neat electrical wiring in a professional junction box with technical precision" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBi_ED-GCR_Gj5r34O4yqKOfuF_NcEyGcJQUW-dNIarKa09Dd2RZYREiqdx3fFkMuRX1GVxWuvtg8bHVem8o9r5SQnOO6s3JGnImLCVBefgaOSufYJQigViB6rXtiBzIFhoCzT-LoflqCNI25c7cWEFGdrrN_Lo-n6sIFgdVszgIkMCAtaWBW_GeIZmMcAt7yTCGclWCDjLRio3TvTDX2Qr3cK-HBEknVfK3ehpObtf9WnCZNxvhX2yE0MKDuZ8whVjECPFapjNBEi1"/>
+</div>
+<div class="w-20 h-20 rounded-md overflow-hidden bg-surface-container">
+<img alt="Evidence 2" class="w-full h-full object-cover" data-alt="Electrical conduit installation on a high-end architectural ceiling with clean lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO5FERgk3Dx3p9tombY5jyNjnI3Zrsw35nyGbkryp9DNt2UmjTMWHbCPDnANgikFc7Ea6FVVSCDONog1JxKq8M8kFF_dDNCpE_-JIcpkpEVeST5k-5vMu-pYGAocwtstBMp66VAEEE0rPFS5-MY7q5VVqdvOPwcHxWs0VZLjHGA5q09B38VD3Kjt9gBbn0LrgSI1WCXpXe72JnVInIKT4NE7hQdtf0ZCVi6nYPWcz5Zbq6jCfKUeHk2WDytxMkPOmkq6ZdpcV_-06C"/>
+</div>
+</div>
+</div>
+<div class="lg:w-48 flex flex-col justify-center gap-3">
+<button class="w-full py-3 rounded-full bg-gradient-to-b from-primary to-primary-container text-white font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                        Aprobar
+                    </button>
+<button class="w-full py-3 rounded-full bg-error-container text-error font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="cancel">cancel</span>
+                        Rechazar
+                    </button>
+</div>
+</div>
+<!-- Validation Card 3 -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex flex-col lg:flex-row gap-6 hover:bg-white transition-colors duration-300">
+<div class="flex-1">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="text-xl font-bold text-on-surface">Bloque B-08</h3>
+<p class="text-sm text-on-surface-variant font-medium">Revestimiento de Muros - Sala Principal</p>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full">
+<span class="text-lg font-bold text-primary">$6,400.00</span>
+</div>
+</div>
+<div class="flex gap-2 mb-6">
+<div class="w-20 h-20 rounded-md overflow-hidden bg-surface-container">
+<img alt="Evidence 1" class="w-full h-full object-cover" data-alt="Texture detail of a perfectly plastered wall with soft directional light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE2PDI-PdiWBQv44f4WxBi5gidlpNiWD8aNZPQIAuUTf89zoaLLFyiUXcMxrbfCoOxPGSt83eu_RYmiy9fXikxCm4IPbwBdGgbxML0zePww_ONP8j8rXgprocm8e6hob8naO_hd3wrp4vvkwOmg1u9J91wIFRao8bM-1Z-9eO-wu2cIcppXyvZ2-zsYdThRpUhrN-jKN1LLDzcOrJxN9xuOlAe5jpQ5x9-MOiVzCJ-KIHf5Ghlmikw0HSFVMjgpX_7Io6j-jFOVF0L"/>
+</div>
+<div class="w-20 h-20 rounded-md overflow-hidden bg-surface-container">
+<img alt="Evidence 2" class="w-full h-full object-cover" data-alt="Architectural space with scaffolding and clean plaster finish under development" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB89j5hgfoj1tFNpymQBuEfmyHSf5aqSB0_iaGKm92WLjubyzoAjyVar62oPB_LmCr1cTyU4awSxCGTVD25tBSI7AdygA7NXGpr0ofoOp4JZL6I-Nbm5vwXLa2FCOD2GQUxXDi53kddrb8CWaFiDHQ_2nA37peGGQeEY4J4ScYX41fO5q-HGH3Y39_lK-7-2FgCdhDAH0GN5ImVrfz5CVFCNG4Bc78K1AJ4CMZwQ5OOHo917B9Tk7G33v5-17Tt3P6lW1w4FC8-g2Mx"/>
+</div>
+</div>
+</div>
+<div class="lg:w-48 flex flex-col justify-center gap-3">
+<button class="w-full py-3 rounded-full bg-gradient-to-b from-primary to-primary-container text-white font-bold text-sm shadow-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span>
+                        Aprobar
+                    </button>
+<button class="w-full py-3 rounded-full bg-error-container text-error font-bold text-sm active:scale-95 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="cancel">cancel</span>
+                        Rechazar
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-white/90 backdrop-blur-xl shadow-[0_-4px_24px_rgba(0,0,0,0.04)] z-50 border-t border-slate-100">
+<a class="flex flex-col items-center justify-center text-[#434656] opacity-70 hover:opacity-100 active:translate-y-0.5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Tablero</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] opacity-70 hover:opacity-100 active:translate-y-0.5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="engineering">engineering</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Contratistas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#0042c8] bg-[#dbebec] rounded-xl px-3 py-1 active:translate-y-0.5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Validaciones</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] opacity-70 hover:opacity-100 active:translate-y-0.5 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Dinero</span>
+</a>
+</nav>
+</body></html>

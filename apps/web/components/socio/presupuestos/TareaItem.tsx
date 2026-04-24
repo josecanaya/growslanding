@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Calendar, Check, Edit3 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatArgentineNumber, parseArgentineNumber } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
 
 // Formatea fechas cortas DD/MM/YYYY HH:mm
 const formatFecha = (fecha: string | null | undefined): string => {
@@ -51,9 +52,10 @@ interface TareaItemProps {
     monto: number | null;
   };
   onFieldChange: (field: 'dias_reales' | 'monto', value: number | null) => void;
+  stitchMode?: boolean;
 }
 
-export function TareaItem({ presupuesto, editing, onFieldChange }: TareaItemProps) {
+export function TareaItem({ presupuesto, editing, onFieldChange, stitchMode = false }: TareaItemProps) {
   // Solo mostrar planta y altura si existen, sin etapa
   const ubicacion = [presupuesto.elemento?.planta, presupuesto.elemento?.altura]
     .filter(Boolean)
@@ -104,10 +106,22 @@ export function TareaItem({ presupuesto, editing, onFieldChange }: TareaItemProp
   const montoValor = editing.monto ?? presupuesto.monto ?? 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 mb-3">
+    <div
+      className={cn(
+        'mb-3 rounded-xl border p-4',
+        stitchMode
+          ? 'border-stitch-primary/15 bg-stitch-surface-container-lowest shadow-stitch-nav'
+          : 'border-slate-200 bg-white shadow-sm',
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="mb-2">
-          <div className="text-sm font-semibold text-slate-900">
+          <div
+            className={cn(
+              'text-sm font-semibold',
+              stitchMode ? 'font-stitch-headline text-stitch-on-surface' : 'text-slate-900',
+            )}
+          >
             {presupuesto.tarea?.title || 'Sin título'}
           </div>
           {presupuesto.elemento && presupuesto.elemento.cantidad != null && presupuesto.elemento.unidad && (

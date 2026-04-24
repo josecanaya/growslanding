@@ -2,7 +2,14 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
-import { generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
+import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
+import {
+  USE_MOCK_DATA,
+  FORCE_PRESUPUESTOS_MOCK,
+  MOCK_OBRA_PRESUPUESTO_DETALLE,
+  MOCK_OBRAS_PARA_PRESUPUESTOS,
+  MOCK_PRESUPUESTO_ITEMS,
+} from '@/lib/mocks/socioMockData';
 
 interface PresupuestoItem {
   id: string;
@@ -64,6 +71,8 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
   const [saving, setSaving] = useState(false);
   const [pdfPath, setPdfPath] = useState<string | null>(null);
 
+  const presupuestosUsanMock = USE_MOCK_DATA || FORCE_PRESUPUESTOS_MOCK;
+
   // Sincronizar editing cuando cambian los presupuestos (solo en carga inicial)
   useEffect(() => {
     if (presupuestos.length === 0) return;
@@ -102,17 +111,46 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presupuestos.length]);
 
-  // Fetch inicial
+  // Fetch inicial (o mocks cuando USE_MOCK_DATA)
   useEffect(() => {
     async function fetchPresupuestos() {
       if (!obraId) {
-        console.log('[usePresupuestos] No hay obraId, deteniendo carga');
         setLoading(false);
         return;
       }
 
-      console.log('[usePresupuestos] Iniciando carga para obraId:', obraId);
       setLoading(true);
+
+      if (presupuestosUsanMock) {
+        const obraEnLista = MOCK_OBRAS_PARA_PRESUPUESTOS.find((o) => o.obra_id === obraId);
+        const obraMock: Obra = obraEnLista
+          ? {
+              id: obraId,
+              name: obraEnLista.obra_name,
+              direccion_completa: obraEnLista.direccion_completa ?? null,
+              fecha_inicio: obraEnLista.fecha_inicio ?? null,
+              cliente: 'Cliente demo',
+            }
+          : {
+              ...MOCK_OBRA_PRESUPUESTO_DETALLE,
+              id: obraId,
+              name: MOCK_OBRA_PRESUPUESTO_DETALLE.name,
+            };
+        setObra(obraMock);
+        const items = MOCK_PRESUPUESTO_ITEMS as PresupuestoItem[];
+        setPresupuestos(items);
+        const editingMap = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        items.forEach((p: PresupuestoItem) => {
+          editingMap.set(p.tarea_id, {
+            dias_reales: p.dias_reales ?? p.tarea?.duracion_sugerida ?? null,
+            monto: p.monto,
+          });
+        });
+        setEditing(editingMap);
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(`/api/socio/presupuestos?obra_id=${obraId}`);
         console.log('[usePresupuestos] Response status:', response.status);
@@ -181,7 +219,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     }
 
     fetchPresupuestos();
-  }, [obraId, toast]);
+  }, [obraId, toast, presupuestosUsanMock]);
 
   const onFieldChange = useCallback((tareaId: string, field: 'dias_reales' | 'monto', value: number | null) => {
     setEditing((prev) => {
@@ -194,6 +232,14 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
 
   const handleSaveDraft = useCallback(async (presupuestosFiltrados: PresupuestoItem[]) => {
     if (!obraId) return;
+
+    if (presupuestosUsanMock) {
+      toast({
+        title: 'Borrador guardado (demo)',
+        description: 'Los cambios se guardaron localmente. Sin conexión a base de datos.',
+      });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -263,11 +309,80 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     nombreContratista: string,
     etapaActiva?: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES'
   ) => {
-    console.log('🔥 [handleSendPresupuesto] INICIANDO - Etapa recibida:', etapaActiva);
-    console.log('🔥 [handleSendPresupuesto] Presupuestos filtrados:', presupuestosFiltrados.length);
-    
-    if (!obraId || !obra) {
-      console.error('🔥 [handleSendPresupuesto] ERROR: No hay obraId o obra');
+    if (!obraId || !obra) return;
+
+    if (presupuestosUsanMock) {
+      setSaving(true);
+      try {
+        let etapaFinal: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES' = etapaActiva || 'OBRA_GRIS';
+        const primeraEtapa = (presupuestosFiltrados[0]?.tarea?.etapa || '').toUpperCase();
+        if (primeraEtapa.includes('ESTRUCTURA')) etapaFinal = 'ESTRUCTURA';
+        else if (primeraEtapa.includes('GRIS') || primeraEtapa.includes('OBRA_GRIS')) etapaFinal = 'OBRA_GRIS';
+        else if (primeraEtapa.includes('TERMINACION')) etapaFinal = 'TERMINACIONES';
+
+        const presupuestosAgrupadosFiltrados = {
+          ESTRUCTURA: etapaFinal === 'ESTRUCTURA' ? presupuestosFiltrados : [],
+          OBRA_GRIS: etapaFinal === 'OBRA_GRIS' ? presupuestosFiltrados : [],
+          TERMINACIONES: etapaFinal === 'TERMINACIONES' ? presupuestosFiltrados : [],
+        };
+        const editingFiltrado = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        presupuestosFiltrados.forEach((p) => {
+          const editData = editing.get(p.tarea_id);
+          if (editData) editingFiltrado.set(p.tarea_id, editData);
+        });
+
+        const pdfBytes = generarPresupuestoPDFBytes({
+          obra: {
+            id: obra.id,
+            name: obra.name || 'Sin nombre',
+            direccion_completa: obra.direccion_completa,
+            cantidad_plantas: obra.cantidad_plantas,
+            fecha_inicio: obra.fecha_inicio,
+            cliente: obra.cliente || null,
+          },
+          presupuestosAgrupadosPorEtapa: presupuestosAgrupadosFiltrados,
+          nombreContratista,
+          fechaGeneracion: new Date(),
+          editing: editingFiltrado,
+          etapaActiva: etapaFinal,
+        });
+
+        if (pdfBytes) {
+          generarPresupuestoPDF({
+            obra: {
+              id: obra.id,
+              name: obra.name || 'Sin nombre',
+              direccion_completa: obra.direccion_completa,
+              cantidad_plantas: obra.cantidad_plantas,
+              fecha_inicio: obra.fecha_inicio,
+              cliente: obra.cliente || null,
+            },
+            presupuestosAgrupadosPorEtapa: presupuestosAgrupadosFiltrados,
+            nombreContratista,
+            fechaGeneracion: new Date(),
+            editing: editingFiltrado,
+          });
+        }
+
+        setPresupuestos((prev) =>
+          prev.map((p) => ({
+            ...p,
+            estado: presupuestosFiltrados.some((f) => f.tarea_id === p.tarea_id) ? 'ENVIADO' : p.estado,
+          }))
+        );
+        toast({
+          title: 'Presupuesto enviado (demo)',
+          description: 'El PDF se descargó. Sin conexión a base de datos.',
+        });
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: err instanceof Error ? err.message : 'No se pudo generar el PDF.',
+          variant: 'destructive',
+        });
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -458,7 +573,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     } finally {
       setSaving(false);
     }
-  }, [obraId, obra, editing, toast]);
+  }, [obraId, obra, editing, toast, presupuestosUsanMock]);
 
   const clearPdfPath = useCallback(() => {
     setPdfPath(null);

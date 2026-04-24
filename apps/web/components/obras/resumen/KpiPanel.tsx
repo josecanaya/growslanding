@@ -41,74 +41,74 @@ export function KpiPanel({ global }: KpiPanelProps) {
   const categorias = (pisoSeleccionado?.categorias ?? global.categorias).slice(0, 3);
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="grid grid-cols-1 gap-3 md:gap-4 sm:grid-cols-3" data-onboarding="estadisticas-metros">
-        <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 shadow-sm">
-          <p className="text-[10px] md:text-xs text-slate-500">Metros totales</p>
-          <p className="text-xl md:text-2xl font-semibold text-slate-800">{metrosTotales} m²</p>
+    <div className="space-y-2 md:space-y-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" data-onboarding="estadisticas-metros">
+        <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
+          <p className="text-[10px] text-slate-500">Metros totales</p>
+          <p className="text-lg md:text-xl font-semibold text-slate-800">{metrosTotales} m²</p>
           {pisoSeleccionado && (
-            <p className="mt-1 text-[9px] md:text-[11px] text-slate-500">
+            <p className="mt-0.5 text-[9px] text-slate-500">
               Piso seleccionado: <span className="font-medium">{pisoSeleccionado.nombre}</span>
             </p>
           )}
         </div>
-        <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 shadow-sm">
-          <p className="text-[10px] md:text-xs text-slate-500">Cubiertos</p>
-          <p className="text-xl md:text-2xl font-semibold text-[#0052CC]">{metrosCubiertos} m²</p>
+        <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
+          <p className="text-[10px] text-slate-500">Cubiertos</p>
+          <p className="text-lg md:text-xl font-semibold text-[#0052CC]">{metrosCubiertos} m²</p>
         </div>
-        <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 shadow-sm">
-          <p className="text-[10px] md:text-xs text-slate-500">Descubiertos</p>
-          <p className="text-xl md:text-2xl font-semibold text-[#22C55E]">{metrosDescubiertos} m²</p>
+        <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
+          <p className="text-[10px] text-slate-500">Descubiertos</p>
+          <p className="text-lg md:text-xl font-semibold text-[#22C55E]">{metrosDescubiertos} m²</p>
         </div>
       </div>
 
-      <div className="grid gap-3 md:gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm">
+      <div className="grid gap-2 lg:grid-cols-2">
+        <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <h3 className="text-xs md:text-sm font-semibold text-slate-700">Avance del piso</h3>
-              <p className="text-[10px] md:text-xs text-slate-500 truncate">
+              <h3 className="text-xs font-semibold text-slate-700">Avance del piso</h3>
+              <p className="text-[10px] text-slate-500 truncate">
                 Seguimiento del progreso {pisoSeleccionado ? `de ${pisoSeleccionado.nombre}` : 'total'}
               </p>
             </div>
-            <span className="text-base md:text-lg font-semibold text-[#0052CC] flex-shrink-0 ml-2">
+            <span className="text-sm font-semibold text-[#0052CC] flex-shrink-0 ml-2">
               {Math.round(progreso)}%
             </span>
           </div>
-          <div className="mt-3 md:mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
             <div
-              className="h-2 rounded-full bg-[#0052CC]"
+              className="h-1.5 rounded-full bg-[#0052CC]"
               style={{ width: `${Math.min(100, Math.round(progreso))}%` }}
             />
           </div>
-          <div className="mt-2 md:mt-3 grid grid-cols-3 gap-1 md:gap-0 text-[10px] md:text-xs text-slate-500">
+          <div className="mt-1.5 grid grid-cols-3 gap-0 text-[10px] text-slate-500">
             <span className="truncate">{global.tareasActivas} tareas activas</span>
             <span className="truncate text-center">{global.tareasCompletadas} completadas</span>
             <span className="truncate text-right">{elementos} elementos</span>
           </div>
         </div>
 
-        <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm">
+        <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-3 w-3 md:h-4 md:w-4 text-[#0052CC]" />
-            <h3 className="text-xs md:text-sm font-semibold text-slate-700">Categorías destacadas</h3>
+            <TrendingUp className="h-3 w-3 text-[#0052CC]" />
+            <h3 className="text-xs font-semibold text-slate-700">Categorías destacadas</h3>
           </div>
-          <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
+          <div className="mt-2 space-y-1.5">
             {categorias.length === 0 ? (
-              <p className="rounded-lg md:rounded-xl border border-dashed border-slate-200 bg-slate-50 px-2 md:px-3 py-2 text-[10px] md:text-xs text-slate-500">
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-500">
                 Todavía no hay categorías con elementos cargados.
               </p>
             ) : (
               categorias.map((cat) => (
                 <div
                   key={cat.nombre}
-                  className="flex items-center justify-between rounded-lg md:rounded-xl border border-blue-100/80 bg-blue-50/50 px-2 md:px-3 py-1.5 md:py-2"
+                  className="flex items-center justify-between rounded-lg border border-blue-100/80 bg-blue-50/50 px-2 py-1"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs md:text-sm font-medium text-slate-700 truncate">{cat.nombre}</p>
-                    <p className="text-[10px] md:text-xs text-slate-500">{cat.elementos} elementos</p>
+                    <p className="text-xs font-medium text-slate-700 truncate">{cat.nombre}</p>
+                    <p className="text-[10px] text-slate-500">{cat.elementos} elementos</p>
                   </div>
-                  <span className="text-xs md:text-sm font-semibold text-[#0052CC] flex-shrink-0 ml-2">
+                  <span className="text-xs font-semibold text-[#0052CC] flex-shrink-0 ml-2">
                     {Math.round(cat.porcentaje)}%
                   </span>
                 </div>

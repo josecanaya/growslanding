@@ -1,32 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { CrearTareaSchema } from '../../../lib/schemas';
 import { PermisoService } from '@/lib/services/permiso.service';
+import type { Database } from '@/lib/types/supabase.gen';
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
-    const organizacionId = request.headers.get('x-organizacion-id');
-    const usuarioId = request.headers.get('x-usuario-id');
-
-    if (!organizacionId || !usuarioId) {
-      return NextResponse.json(
-        { success: false, error: 'Organización y usuario requeridos' },
-        { status: 400 }
-      );
-    }
-
-    const rol = await PermisoService.obtenerRolEnOrganizacion(
-      usuarioId,
-      organizacionId,
-    );
-
-    if (rol !== 'CLIENTE') {
-      return NextResponse.json(
-        { success: false, error: 'No tiene permisos para crear tareas' },
-        { status: 403 }
-      );
-    }
 
     // Validar datos
     const validatedData = CrearTareaSchema.parse(body);
@@ -47,11 +45,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar que la obra pertenece a la organización
+    // Verificar que la obra pertenece a una organización válida
     const obra = (elemento as any).obras;
-    if (!obra || obra.org_id !== organizacionId) {
+    if (!obra?.org_id) {
       return NextResponse.json(
-        { success: false, error: 'Elemento no pertenece a la organización' },
+        { success: false, error: 'Elemento sin organización asociada' },
+        { status: 400 }
+      );
+    }
+
+    const organizacionId = obra.org_id as string;
+    const rol = await PermisoService.obtenerRolEnOrganizacion(
+      user.id,
+      organizacionId,
+    );
+    if (rol !== 'CLIENTE') {
+      return NextResponse.json(
+        { success: false, error: 'No tiene permisos para crear tareas en esta organización' },
         { status: 403 }
       );
     }
@@ -108,7 +118,7 @@ export async function POST(request: NextRequest) {
         estado_anterior: null,
         estado_nuevo: 'pendiente',
         actor_tipo: 'CLIENTE_TECNICO',
-        actor_id: usuarioId,
+        actor_id: user.id,
         motivo: 'Tarea creada',
       });
 
@@ -141,21 +151,61 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const organizacionId = request.headers.get('x-organizacion-id');
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
 
-    if (!organizacionId) {
+    if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Organización requerida' },
-        { status: 400 }
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
       );
     }
 
     const { searchParams } = new URL(request.url);
+    const orgIdParam = searchParams.get('org_id');
     const obraId = searchParams.get('obra_id');
     const elementoId = searchParams.get('elemento_id');
     const estado = searchParams.get('estado');
 
     const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    const { data: orgClienteRows } = await supabaseAny
+      .from('organizations')
+      .select('id')
+      .eq('user_id', user.id);
+    const { data: orgSocioRows } = await supabaseAny
+      .from('socios')
+      .select('org_id')
+      .eq('user_id', user.id);
+
+    const allowedOrgIds = new Set<string>([
+      ...(orgClienteRows ?? []).map((org: { id: string }) => org.id),
+      ...(orgSocioRows ?? [])
+        .map((socio: { org_id: string | null }) => socio.org_id)
+        .filter((orgId: string | null): orgId is string => Boolean(orgId)),
+    ]);
+
+    if (allowedOrgIds.size === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No pertenece a ninguna organización' },
+        { status: 403 }
+      );
+    }
+
+    const organizacionId = orgIdParam || Array.from(allowedOrgIds)[0];
+    if (!allowedOrgIds.has(organizacionId)) {
+      return NextResponse.json(
+        { success: false, error: 'No autorizado para la organización solicitada' },
+        { status: 403 }
+      );
+    }
 
     // Construir query
     let query = supabase

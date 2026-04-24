@@ -3,17 +3,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { Building, Layers, FilePlus, Activity, ClipboardList } from 'lucide-react';
+import { Layers, FilePlus, Activity, ClipboardList } from 'lucide-react';
 import { useElementosStore } from '../elementos/useElementosStore';
 import { Button } from '@/components/ui/button';
 import { FloorSelector } from './FloorSelector';
 import { KpiPanel } from './KpiPanel';
 import { useObraStore } from './useObraStore';
 import type { PisoResumen } from './useObraStore';
-import { TasksChart } from './charts/TasksChart';
-import { BudgetChart } from './charts/BudgetChart';
-import { ActivityChart } from './charts/ActivityChart';
-import { PeriodSelector } from './charts/PeriodSelector';
+
+// Demo video: datos mock para el Resumen cuando la obra es la demo (sin base de datos)
+const DEMO_OBRA_ID = 'demo-obra-1-casa-familiar';
+const MOCK_PISOS_RESUMEN_DEMO: PisoResumen[] = [
+  { id: 'PB', nombre: 'Planta Baja', porcentaje: 42, metrosTotales: 120, metrosCubiertos: 95, metrosDescubiertos: 25, elementos: 18, categorias: [{ nombre: 'Fundaciones y Estructuras', porcentaje: 85, elementos: 8 }, { nombre: 'Muros y Cerramientos', porcentaje: 60, elementos: 6 }, { nombre: 'Instalaciones', porcentaje: 30, elementos: 4 }] },
+  { id: 'P1', nombre: 'Primer Piso', porcentaje: 28, metrosTotales: 100, metrosCubiertos: 85, metrosDescubiertos: 15, elementos: 12, categorias: [{ nombre: 'Muros y Cerramientos', porcentaje: 45, elementos: 5 }, { nombre: 'Cubiertas', porcentaje: 20, elementos: 3 }, { nombre: 'Terminaciones', porcentaje: 10, elementos: 4 }] },
+];
+const MOCK_TOP_CATEGORIAS_DEMO = [
+  { nombre: 'Fundaciones y Estructuras', porcentaje: 85, elementos: 8 },
+  { nombre: 'Muros y Cerramientos', porcentaje: 52, elementos: 11 },
+  { nombre: 'Instalaciones', porcentaje: 30, elementos: 4 },
+];
 
 interface Obra {
   id: string;
@@ -66,10 +74,16 @@ export default function ObraResumenContainer({
   const router = useRouter();
   const elementos = useElementosStore((state) => state.elementos);
   const pisoSeleccionado = useObraStore((state) => state.pisoId);
+
+  const isDemoObra = obra.id === DEMO_OBRA_ID;
   
-  // Calcular métricas globales
-  const totalElementos = elementos.length;
-  const plantasActivas = new Set(elementos.map(e => e.plantaId || 'General')).size;
+  // Calcular métricas globales (demo: usar mocks)
+  const totalElementos = isDemoObra
+    ? MOCK_PISOS_RESUMEN_DEMO.reduce((acc, p) => acc + p.elementos, 0)
+    : elementos.length;
+  const plantasActivas = isDemoObra
+    ? MOCK_PISOS_RESUMEN_DEMO.length
+    : new Set(elementos.map(e => e.plantaId || 'General')).size;
   const tareasPendientes = tareas.filter(t => t.estado === 'pendiente').length;
   
   // Calcular progreso por planta con información de elementos
@@ -198,26 +212,28 @@ export default function ObraResumenContainer({
   }, [plantas, tareas, elementos]);
 
   useEffect(() => {
-    const pisosResumen: PisoResumen[] = progresoPorPlanta.map(
-      ({
-        planta,
-        porcentajeTotal,
-        metrosTotales,
-        metrosCubiertos,
-        metrosDescubiertos,
-        totalElementos,
-        categorias,
-      }) => ({
-        id: planta.id,
-        nombre: planta.nombre,
-        porcentaje: porcentajeTotal,
-        metrosTotales,
-        metrosCubiertos,
-        metrosDescubiertos,
-        elementos: totalElementos,
-        categorias,
-      }),
-    );
+    const pisosResumen: PisoResumen[] = isDemoObra
+      ? MOCK_PISOS_RESUMEN_DEMO
+      : progresoPorPlanta.map(
+          ({
+            planta,
+            porcentajeTotal,
+            metrosTotales,
+            metrosCubiertos,
+            metrosDescubiertos,
+            totalElementos,
+            categorias,
+          }) => ({
+            id: planta.id,
+            nombre: planta.nombre,
+            porcentaje: porcentajeTotal,
+            metrosTotales,
+            metrosCubiertos,
+            metrosDescubiertos,
+            elementos: totalElementos,
+            categorias,
+          }),
+        );
 
     const signature = JSON.stringify(pisosResumen);
     const currentState = useObraStore.getState();
@@ -236,21 +252,30 @@ export default function ObraResumenContainer({
       pisoId: nextId ?? null,
       signature,
     });
-  }, [progresoPorPlanta]);
+  }, [progresoPorPlanta, isDemoObra]);
 
   const totalMetrosCubiertos = useMemo(
-    () => progresoPorPlanta.reduce((acc, item) => acc + item.metrosCubiertos, 0),
-    [progresoPorPlanta],
+    () =>
+      isDemoObra
+        ? MOCK_PISOS_RESUMEN_DEMO.reduce((acc, p) => acc + p.metrosCubiertos, 0)
+        : progresoPorPlanta.reduce((acc, item) => acc + item.metrosCubiertos, 0),
+    [progresoPorPlanta, isDemoObra],
   );
 
   const totalMetrosDescubiertos = useMemo(
-    () => progresoPorPlanta.reduce((acc, item) => acc + item.metrosDescubiertos, 0),
-    [progresoPorPlanta],
+    () =>
+      isDemoObra
+        ? MOCK_PISOS_RESUMEN_DEMO.reduce((acc, p) => acc + p.metrosDescubiertos, 0)
+        : progresoPorPlanta.reduce((acc, item) => acc + item.metrosDescubiertos, 0),
+    [progresoPorPlanta, isDemoObra],
   );
 
   const totalMetrosTotales = useMemo(
-    () => progresoPorPlanta.reduce((acc, item) => acc + item.metrosTotales, 0),
-    [progresoPorPlanta],
+    () =>
+      isDemoObra
+        ? MOCK_PISOS_RESUMEN_DEMO.reduce((acc, p) => acc + p.metrosTotales, 0)
+        : progresoPorPlanta.reduce((acc, item) => acc + item.metrosTotales, 0),
+    [progresoPorPlanta, isDemoObra],
   );
 
   const categoriasBase = useMemo(() => {
@@ -297,10 +322,11 @@ export default function ObraResumenContainer({
   }, [categoriasBase, elementos]);
 
   const topCategorias = useMemo(() => {
+    if (isDemoObra) return MOCK_TOP_CATEGORIAS_DEMO;
     return [...progresoPorCategoria]
       .sort((a, b) => b.porcentaje - a.porcentaje)
       .slice(0, 3);
-  }, [progresoPorCategoria]);
+  }, [progresoPorCategoria, isDemoObra]);
 
   const actividadReciente = useMemo(() => {
     const actividades: Array<{
@@ -338,6 +364,13 @@ export default function ObraResumenContainer({
       .slice(0, 5);
   }, [elementos, tareas]);
 
+  const LIMIT_ACTIVIDAD_RECIENTE = 3;
+  const [actividadExpandida, setActividadExpandida] = useState(false);
+  const actividadesVisibles = actividadExpandida
+    ? actividadReciente
+    : actividadReciente.slice(0, LIMIT_ACTIVIDAD_RECIENTE);
+  const hayMasActividad = actividadReciente.length > LIMIT_ACTIVIDAD_RECIENTE;
+
   const estadoConfig: Record<Obra['estado'], { label: string; className: string }> = {
     activa: {
       label: 'En progreso',
@@ -368,150 +401,21 @@ export default function ObraResumenContainer({
   const defaultPlantaId = plantas[0]?.id ?? 'general';
   const plantaParaAcciones = pisoSeleccionado ?? defaultPlantaId;
 
-  // Estado para gráficos
-  const [rangoTemporal, setRangoTemporal] = useState(12);
-  const [hoveredSemana, setHoveredSemana] = useState<number | null>(null);
-
-  // Preparar datos para TasksChart
-  const tareasData = useMemo(() => {
-    const enCurso = tareas.filter(t => t.estado === 'en_progreso').length;
-    const paraValidar = tareas.filter(t => t.estado === 'para_validar').length;
-    const completadas = tareas.filter(t => t.estado === 'completada').length;
-    const bloqueadas = tareas.filter(t => t.estado === 'bloqueada').length;
-    const total = tareas.length;
-    
-    // Calcular tareas vencidas (comparar fechaFin con hoy)
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const vencidas = tareas.filter(t => {
-      if (!t.fechaFin || t.estado === 'completada') return false;
-      const fechaFin = new Date(t.fechaFin);
-      fechaFin.setHours(0, 0, 0, 0);
-      return fechaFin < hoy;
-    }).length;
-
-    // Calcular próximas 7 días
-    const en7Dias = new Date(hoy);
-    en7Dias.setDate(en7Dias.getDate() + 7);
-    const proximas7d = tareas.filter(t => {
-      if (!t.fechaFin || t.estado === 'completada') return false;
-      const fechaFin = new Date(t.fechaFin);
-      fechaFin.setHours(0, 0, 0, 0);
-      return fechaFin >= hoy && fechaFin <= en7Dias;
-    }).length;
-
-    // Calcular completadas por semana (últimas 12 semanas)
-    const fechaInicioObra = new Date(obra.fechaInicio);
-    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
-    const totalSemanas = Math.max(12, semanasDesdeInicio);
-    const weeklyCompleted: number[] = [];
-    for (let i = 0; i < totalSemanas; i++) {
-      const semanaInicio = new Date(fechaInicioObra);
-      semanaInicio.setDate(semanaInicio.getDate() + i * 7);
-      const semanaFin = new Date(semanaInicio);
-      semanaFin.setDate(semanaFin.getDate() + 7);
-      const completadasSemana = tareas.filter(t => {
-        if (t.estado !== 'completada' || !t.fechaFin) return false;
-        const fechaCompletada = new Date(t.fechaFin);
-        return fechaCompletada >= semanaInicio && fechaCompletada < semanaFin;
-      }).length;
-      weeklyCompleted.push(completadasSemana);
-    }
-
-    const last2WeeksCompleted = weeklyCompleted.slice(-2).reduce((a, b) => a + b, 0);
-    const prev2WeeksCompleted = weeklyCompleted.slice(-4, -2).reduce((a, b) => a + b, 0);
-
-    return {
-      enCurso,
-      paraValidar,
-      completadas,
-      bloqueadas,
-      total,
-      vencidas,
-      proximas7d,
-      ritmoPromedio: totalSemanas > 0 ? completadas / totalSemanas : 0,
-      weeklyCompleted,
-      last2WeeksCompleted,
-      prev2WeeksCompleted,
-    };
-  }, [tareas, obra.fechaInicio]);
-
-  // Preparar datos para BudgetChart (placeholder - necesita datos reales del presupuesto)
-  const presupuestoSemanalData = useMemo(() => {
-    // Por ahora, crear datos placeholder basados en las tareas
-    // TODO: Reemplazar con datos reales del presupuesto/escrow
-    const fechaInicioObra = new Date(obra.fechaInicio);
-    const hoy = new Date();
-    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
-    const totalSemanas = Math.max(12, semanasDesdeInicio);
-    
-    const data: Array<{ semana: number; proyectado: number; ejecutado: number; tareasPagadas: number }> = [];
-    for (let i = 1; i <= totalSemanas; i++) {
-      data.push({
-        semana: i,
-        proyectado: 0, // TODO: Obtener de presupuesto real
-        ejecutado: 0, // TODO: Obtener de escrow real
-        tareasPagadas: 0, // TODO: Contar tareas pagadas esa semana
-      });
-    }
-    return data;
-  }, [obra.fechaInicio]);
-
-  // Preparar datos para ActivityChart
-  const actividadData = useMemo(() => {
-    const fechaInicioObra = new Date(obra.fechaInicio);
-    const hoy = new Date();
-    const semanasDesdeInicio = Math.ceil((hoy.getTime() - fechaInicioObra.getTime()) / (1000 * 60 * 60 * 24 * 7));
-    const totalSemanas = Math.max(12, semanasDesdeInicio);
-    
-    const tareasCompletadasPorSemana: Array<{ semana: number; completadas: number }> = [];
-    const actividadProyectada: Array<{ semana: number; proyectado: number }> = [];
-    
-    let acumuladoCompletadas = 0;
-    const promedioSemanal = tareas.length / totalSemanas;
-    
-    for (let i = 1; i <= totalSemanas; i++) {
-      const semanaInicio = new Date(fechaInicioObra);
-      semanaInicio.setDate(semanaInicio.getDate() + (i - 1) * 7);
-      const semanaFin = new Date(semanaInicio);
-      semanaFin.setDate(semanaFin.getDate() + 7);
-      
-      const completadasSemana = tareas.filter(t => {
-        if (t.estado !== 'completada' || !t.fechaFin) return false;
-        const fechaCompletada = new Date(t.fechaFin);
-        return fechaCompletada >= semanaInicio && fechaCompletada < semanaFin;
-      }).length;
-      
-      acumuladoCompletadas += completadasSemana;
-      tareasCompletadasPorSemana.push({ semana: i, completadas: acumuladoCompletadas });
-      actividadProyectada.push({ semana: i, proyectado: Math.round(promedioSemanal * i) });
-    }
-
-    return {
-      tareasCompletadasPorSemana,
-      actividadProyectada,
-      milestones: [],
-      insight: 'success' as const,
-    };
-  }, [tareas, obra.fechaInicio]);
-
-  const totalSemanas = Math.max(12, presupuestoSemanalData.length);
-
   return (
-    <div className="space-y-4 md:space-y-6 bg-[#F8FAFC] p-3 md:p-4 lg:p-6 xl:p-8">
-      <div className="grid gap-4 md:gap-6 lg:grid-cols-12">
-        <div className="space-y-4 md:space-y-6 lg:col-span-5">
-          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-[0_2px_6px_rgba(15,23,42,0.05)]" data-onboarding="plantas-proyecto">
+    <div className="space-y-2 md:space-y-3 bg-[#F8FAFC] p-2 md:p-3 lg:p-4">
+      <div className="grid gap-2 md:gap-3 lg:grid-cols-12">
+        <div className="space-y-2 md:space-y-3 lg:col-span-5">
+          <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-[0_2px_6px_rgba(15,23,42,0.05)]" data-onboarding="plantas-proyecto">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs md:text-sm font-semibold text-slate-700">Plantas del proyecto</h3>
-              <span className="text-[10px] md:text-xs font-medium text-slate-500">
+              <h3 className="text-xs font-semibold text-slate-700">Plantas del proyecto</h3>
+              <span className="text-[10px] font-medium text-slate-500">
                 {plantasActivas} activas
               </span>
             </div>
-            <p className="mt-1 text-[10px] md:text-xs text-slate-500">
+            <p className="mt-0.5 text-[10px] text-slate-500">
               Seleccioná una planta para ver indicadores y métricas específicas.
             </p>
-            <div className="mt-4">
+            <div className="mt-2">
               <FloorSelector
                 onSelect={(id) => {
                   onVerDetallePlanta?.(id);
@@ -522,7 +426,7 @@ export default function ObraResumenContainer({
 
         </div>
 
-        <div className="space-y-4 md:space-y-6 lg:col-span-7">
+        <div className="space-y-2 md:space-y-3 lg:col-span-7">
           <KpiPanel
             global={{
               metrosTotales: totalMetrosTotales,
@@ -536,38 +440,49 @@ export default function ObraResumenContainer({
             }}
           />
 
-          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm">
+          <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm">
             <div className="flex items-center gap-2">
-              <Activity className="h-3 w-3 md:h-4 md:w-4 text-[#0052CC]" />
-              <h3 className="text-xs md:text-sm font-semibold text-slate-700">Actividad reciente</h3>
+              <Activity className="h-3 w-3 text-[#0052CC]" />
+              <h3 className="text-xs font-semibold text-slate-700">Actividad reciente</h3>
             </div>
-            <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
+            <div className="mt-2 space-y-1.5">
               {actividadReciente.length === 0 ? (
-                <p className="rounded-lg md:rounded-xl border border-dashed border-slate-200 bg-slate-50 px-2 md:px-3 py-3 md:py-4 text-xs md:text-sm text-slate-500">
+                <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-2 py-2 text-[10px] text-slate-500">
                   Aún no se registraron actividades recientes en esta obra.
                 </p>
               ) : (
-                actividadReciente.map((item) => (
-                  <div key={item.id} className="flex items-start gap-2 md:gap-3 rounded-lg md:rounded-xl border border-slate-200 bg-slate-50 px-2 md:px-3 py-2 md:py-3">
-                    <div className="mt-0.5 md:mt-1 flex h-6 w-6 md:h-8 md:w-8 items-center justify-center rounded-lg md:rounded-xl bg-blue-100 text-[#0052CC] flex-shrink-0">
-                      <Activity className="h-3 w-3 md:h-4 md:w-4" />
+                <>
+                  {actividadesVisibles.map((item) => (
+                    <div key={item.id} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5">
+                      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 text-[#0052CC] flex-shrink-0">
+                        <Activity className="h-3 w-3" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-slate-700 truncate">{item.titulo}</p>
+                        <p className="text-[10px] text-slate-500 truncate">{item.detalle}</p>
+                        <p className="text-[9px] text-slate-400">
+                          {new Date(item.timestamp).toLocaleDateString('es-AR')} · {item.usuario}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs md:text-sm font-semibold text-slate-700 truncate">{item.titulo}</p>
-                      <p className="text-[10px] md:text-xs text-slate-500 truncate">{item.detalle}</p>
-                      <p className="text-[9px] md:text-[11px] text-slate-400">
-                        {new Date(item.timestamp).toLocaleDateString('es-AR')} · {item.usuario}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                  {hayMasActividad && (
+                    <button
+                      type="button"
+                      onClick={() => setActividadExpandida((v) => !v)}
+                      className="w-full rounded-lg border border-dashed border-slate-200 bg-slate-50/50 py-1.5 text-[10px] font-medium text-[#0052CC] hover:bg-slate-100 transition"
+                    >
+                      {actividadExpandida ? 'Ver menos' : `Ver más (${actividadReciente.length - LIMIT_ACTIVIDAD_RECIENTE} más)`}
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>
 
-          <div className="rounded-2xl md:rounded-3xl border border-slate-200 bg-white p-3 md:p-4 lg:p-5 shadow-sm" data-onboarding="acciones-rapidas">
-            <h3 className="text-xs md:text-sm font-semibold text-slate-700">Acciones rápidas</h3>
-            <div className="mt-3 md:mt-4 flex flex-col gap-2 md:gap-3 sm:flex-row">
+          <div className="rounded-xl md:rounded-2xl border border-slate-200 bg-white p-2 md:p-3 shadow-sm" data-onboarding="acciones-rapidas">
+            <h3 className="text-xs font-semibold text-slate-700">Acciones rápidas</h3>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <Button
                 className="flex-1 rounded-xl bg-[#0052CC] text-white hover:bg-[#0044a8]"
                 onClick={() => onAbrirElementos?.(plantaParaAcciones)}
@@ -590,57 +505,6 @@ export default function ObraResumenContainer({
               </Button>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Gráficos */}
-      <div className="space-y-6">
-        {/* Selector de período global */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">Análisis de la obra</h2>
-          <PeriodSelector
-            rangoTemporal={rangoTemporal}
-            totalSemanas={totalSemanas}
-            onPeriodChange={setRangoTemporal}
-          />
-        </div>
-
-        {/* Gráfico de Tareas */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm md:text-base font-semibold text-slate-900">Tareas</h3>
-          </div>
-          <TasksChart
-            tareas={tareasData}
-            rangoTemporal={rangoTemporal}
-            obraId={obra.id}
-          />
-        </div>
-
-        {/* Gráfico de Presupuesto */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm md:text-base font-semibold text-slate-900">Ejecución presupuestaria</h3>
-          </div>
-          <BudgetChart
-            presupuestoSemanal={presupuestoSemanalData}
-            rangoTemporal={rangoTemporal}
-            onHover={setHoveredSemana}
-            hoveredSemana={hoveredSemana}
-          />
-        </div>
-
-        {/* Gráfico de Actividad */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 md:p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm md:text-base font-semibold text-slate-900">Actividad de la obra</h3>
-          </div>
-          <ActivityChart
-            actividad={actividadData}
-            rangoTemporal={rangoTemporal}
-            onHover={setHoveredSemana}
-            hoveredSemana={hoveredSemana}
-          />
         </div>
       </div>
     </div>

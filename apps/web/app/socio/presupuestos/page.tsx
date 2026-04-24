@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo, Suspense } from 'react';
@@ -12,8 +12,12 @@ import { EtapasButtons } from '@/components/socio/presupuestos/EtapasButtons';
 import { ResumenObra } from '@/components/socio/presupuestos/ResumenObra';
 import { ListaTareas } from '@/components/socio/presupuestos/ListaTareas';
 import { ListaObras } from '@/components/socio/presupuestos/ListaObras';
+import { ListaObrasStitch } from '@/components/socio/presupuestos/ListaObrasStitch';
+import { PresupuestoStitchBento } from '@/components/socio/presupuestos/PresupuestoStitchBento';
 import { ResumenAcumulado } from '@/components/socio/presupuestos/ResumenAcumulado';
 import { usePresupuestos } from '@/components/socio/presupuestos/hooks/usePresupuestos';
+import { USE_MOCK_DATA, FORCE_PRESUPUESTOS_MOCK, MOCK_OBRAS_PARA_PRESUPUESTOS } from '@/lib/mocks/socioMockData';
+import { cn } from '@/lib/utils';
 
 interface ObraConPresupuestos {
   obra_id: string;
@@ -23,6 +27,7 @@ interface ObraConPresupuestos {
   pendientes: number;
   enviados: number;
   aprobados: number;
+  stitch_estado?: 'aprobado' | 'visto' | 'enviado' | 'rechazado' | 'pendiente';
 }
 
 function PresupuestosContent() {
@@ -30,7 +35,8 @@ function PresupuestosContent() {
   const obraId = searchParams.get('obra_id');
   const { toast } = useToast();
   const currentUser = useCurrentUser();
-  
+  const presupuestosUsanMock = USE_MOCK_DATA || FORCE_PRESUPUESTOS_MOCK;
+
   const [obras, setObras] = useState<ObraConPresupuestos[]>([]);
   const [loadingObras, setLoadingObras] = useState(false);
   const [nombreContratista, setNombreContratista] = useState<string>('Contratista');
@@ -51,9 +57,26 @@ function PresupuestosContent() {
     clearPdfPath,
   } = usePresupuestos(obraId);
 
-  // Cargar lista de obras si no hay obra_id
+  // Cargar lista de obras si no hay obra_id (mock o API)
   useEffect(() => {
     if (obraId) return;
+
+    if (presupuestosUsanMock) {
+      setObras(
+        MOCK_OBRAS_PARA_PRESUPUESTOS.map((o) => ({
+          obra_id: o.obra_id,
+          obra_name: o.obra_name,
+          direccion_completa: o.direccion_completa ?? null,
+          fecha_inicio: o.fecha_inicio ?? null,
+          pendientes: o.pendientes,
+          enviados: o.enviados,
+          aprobados: o.aprobados,
+          stitch_estado: o.stitch_estado,
+        }))
+      );
+      setLoadingObras(false);
+      return;
+    }
 
     async function fetchObras() {
       setLoadingObras(true);
@@ -73,7 +96,7 @@ function PresupuestosContent() {
     }
 
     fetchObras();
-  }, [obraId]);
+  }, [obraId, presupuestosUsanMock]);
 
   // Filtrar presupuestos por etapa activa
   const presupuestosFiltrados = useMemo(() => {
@@ -92,9 +115,9 @@ function PresupuestosContent() {
     });
   }, [presupuestos, activeEtapa]);
 
-  // Resolver PDF correspondiente a la etapa activa usando solo sus tareas
+  // Resolver PDF correspondiente a la etapa activa (omitir en demo)
   useEffect(() => {
-    if (!obraId || presupuestosFiltrados.length === 0) {
+    if (presupuestosUsanMock || !obraId || presupuestosFiltrados.length === 0) {
       setStagePdfPath(null);
       return;
     }
@@ -129,7 +152,7 @@ function PresupuestosContent() {
         setStagePdfPath(null);
       }
     })();
-  }, [obraId, activeEtapa, presupuestosFiltrados]);
+  }, [obraId, activeEtapa, presupuestosFiltrados, presupuestosUsanMock]);
 
   // Contar tareas por etapa
   const etapaCounts = useMemo(() => {
@@ -372,6 +395,55 @@ function PresupuestosContent() {
       return;
     }
 
+    if (presupuestosUsanMock) {
+      try {
+        const fechaGeneracion = new Date();
+        const pdfBytes = generarPresupuestoPDFBytes({
+          obra: {
+            id: obra.id,
+            name: obra.name || 'Sin nombre',
+            direccion_completa: obra.direccion_completa,
+            cantidad_plantas: obra.cantidad_plantas,
+            fecha_inicio: obra.fecha_inicio,
+            cliente: obra.cliente || null,
+          },
+          presupuestosAgrupadosPorEtapa,
+          nombreContratista: nombreContratista,
+          fechaGeneracion,
+          editing,
+          etapaActiva: activeEtapa,
+        });
+        if (pdfBytes) {
+          generarPresupuestoPDF({
+            obra: {
+              id: obra.id,
+              name: obra.name || 'Sin nombre',
+              direccion_completa: obra.direccion_completa,
+              cantidad_plantas: obra.cantidad_plantas,
+              fecha_inicio: obra.fecha_inicio,
+              cliente: obra.cliente || null,
+            },
+            presupuestosAgrupadosPorEtapa,
+            nombreContratista: nombreContratista,
+            fechaGeneracion,
+            editing,
+          });
+        }
+        toast({
+          title: 'PDF generado (demo)',
+          description: 'Se descargó en tu dispositivo. No se sube al servidor en modo demo.',
+        });
+      } catch (error) {
+        console.error('[PresupuestosPage] Error generando PDF (demo):', error);
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'No se pudo generar el PDF.',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
     try {
       const fechaGeneracion = new Date();
 
@@ -474,13 +546,25 @@ function PresupuestosContent() {
 
   // Vista de lista de obras (cuando no hay obra_id)
   if (!obraId) {
+    if (presupuestosUsanMock) {
+      return (
+        <div className="min-h-screen bg-stitch-surface px-4 pb-28 pt-2 font-stitch-body text-stitch-on-surface">
+          <header className="sticky top-0 z-10 -mx-4 border-b border-stitch-surface-container bg-slate-50/95 px-4 py-4 backdrop-blur">
+            <h1 className="font-stitch-headline text-base font-extrabold tracking-widest text-stitch-primary">
+              CONSTRUCCIÓN
+            </h1>
+          </header>
+          <div className="pt-6">
+            <ListaObrasStitch obras={obras} loading={loadingObras} />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="bg-white border-b border-slate-200 px-4 py-3">
+        <div className="border-b border-slate-200 bg-white px-4 py-3">
           <h1 className="text-lg font-semibold text-slate-900">Presupuestos</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Seleccioná una obra para ver y editar los presupuestos
-          </p>
+          <p className="mt-1 text-xs text-slate-500">Seleccioná una obra para ver y editar los presupuestos</p>
         </div>
         <div className="p-4">
           <ListaObras obras={obras} loading={loadingObras} />
@@ -491,8 +575,18 @@ function PresupuestosContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex items-center gap-2 text-slate-500">
+      <div
+        className={cn(
+          'flex min-h-screen items-center justify-center',
+          presupuestosUsanMock && 'bg-stitch-surface font-stitch-body',
+        )}
+      >
+        <div
+          className={cn(
+            'flex items-center gap-2',
+            presupuestosUsanMock ? 'text-stitch-primary' : 'text-slate-500',
+          )}
+        >
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="text-sm">Cargando presupuestos...</span>
         </div>
@@ -502,10 +596,24 @@ function PresupuestosContent() {
 
   if (!obra) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div
+        className={cn(
+          'flex min-h-screen items-center justify-center p-4',
+          presupuestosUsanMock && 'bg-stitch-surface font-stitch-body',
+        )}
+      >
         <div className="text-center">
-          <h2 className="text-base font-semibold text-slate-900">Obra no encontrada</h2>
-          <p className="text-sm text-slate-500 mt-2">
+          <h2
+            className={cn(
+              'text-base font-semibold',
+              presupuestosUsanMock ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
+            )}
+          >
+            Obra no encontrada
+          </h2>
+          <p
+            className={cn('mt-2 text-sm', presupuestosUsanMock ? 'text-stitch-on-surface/70' : 'text-slate-500')}
+          >
             La obra especificada no existe o no tenés acceso a ella.
           </p>
         </div>
@@ -514,15 +622,33 @@ function PresupuestosContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-32">
+    <div
+      className={cn(
+        'min-h-screen pb-32',
+        presupuestosUsanMock
+          ? 'bg-stitch-surface font-stitch-body text-stitch-on-surface'
+          : 'bg-slate-50',
+      )}
+    >
+      {presupuestosUsanMock && (
+        <div className="px-4 pt-2">
+          <PresupuestoStitchBento
+            titulo={obra.name || 'Obra'}
+            totalMonto={totalesGlobales.totalMonto}
+            totalDias={totalesGlobales.totalDias}
+          />
+        </div>
+      )}
+
       {/* Encabezado compacto */}
-      <ResumenObra obra={obra} />
+      <ResumenObra obra={obra} stitchMode={presupuestosUsanMock} />
 
       {/* Botones de etapa */}
       <EtapasButtons
         activeEtapa={activeEtapa}
         onEtapaChange={setActiveEtapa}
         counts={etapaCounts}
+        stitchMode={presupuestosUsanMock}
       />
 
       {/* Lista de tareas */}
@@ -531,27 +657,40 @@ function PresupuestosContent() {
           presupuestos={presupuestosFiltrados}
           onFieldChange={onFieldChange}
           editing={editing}
+          stitchMode={presupuestosUsanMock}
         />
       ) : (
         <div className="px-4 py-12 text-center">
-          <p className="text-sm text-slate-500">
+          <p
+            className={cn(
+              'text-sm',
+              presupuestosUsanMock ? 'text-stitch-on-surface/70' : 'text-slate-500',
+            )}
+          >
             No hay tareas para la etapa {activeEtapa.toLowerCase()}.
           </p>
         </div>
       )}
 
-      {/* Resumen acumulado y botonera flotante */}
+      {/* Resumen acumulado y botonera flotante (por encima del TabBar del layout: bottom-[90px]) */}
       {showActions && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-10 shadow-lg">
-          {/* Resumen acumulado */}
+        <div
+          className={cn(
+            'fixed bottom-[90px] left-0 right-0 z-20 mx-auto w-full max-w-[480px] border-t backdrop-blur-sm',
+            presupuestosUsanMock
+              ? 'border-stitch-primary/10 bg-stitch-surface-container-lowest/95 shadow-stitch-nav'
+              : 'border-slate-200 bg-white/95 shadow-[0_-4px_14px_rgba(0,0,0,0.08)]',
+          )}
+        >
+          {/* Resumen (días, total, cantidad) */}
           <ResumenAcumulado
             totalDias={totales.totalDias}
             totalMonto={totales.totalMonto}
             cantidadTareas={presupuestosFiltrados.length}
+            stitchMode={presupuestosUsanMock}
           />
-          
-          {/* Botones */}
-          <div className="px-4 py-3 flex gap-3">
+          {/* Botones: Enviar presupuesto y Generar PDF siempre visibles */}
+          <div className="px-4 py-3 flex flex-col sm:flex-row gap-2 sm:flex-wrap sm:gap-3">
             {hayPendientes || !todosEnviadosOAprobados ? (
               // Si hay pendientes o no todos están enviados/aprobados: mostrar botones de guardar, enviar y generar PDF
               <>

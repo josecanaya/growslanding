@@ -331,29 +331,34 @@ export function Notificaciones({ user }: NotificacionesProps) {
   }, [totales.sinLeer]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-growsText">Notificaciones</h2>
-          <p className="text-sm text-growsTextMuted">{totales.sinLeer} sin leer</p>
-        </div>
+    <div className="space-y-5 font-stitch-body">
+      <div className="border-b border-stitch-surface-container-high pb-4">
+        <h1 className="font-stitch-headline text-xl font-extrabold tracking-tight text-stitch-primary">
+          Notificaciones
+        </h1>
+        <p className="mt-0.5 text-sm text-stitch-on-surface/65">{totales.sinLeer} sin leer</p>
         {totales.sinLeer > 0 && (
-          <Button variant="secondary" onClick={marcarTodasComoLeidas}>
-            Marcar todas como leídas
-          </Button>
+          <div className="mt-3">
+            <Button variant="secondary" size="sm" onClick={marcarTodasComoLeidas}>
+              Marcar todas como leídas
+            </Button>
+          </div>
         )}
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <BaseCard title="Total" className="text-center">
-          <p className="text-xl font-semibold text-growsBlue">{totales.total}</p>
-        </BaseCard>
-        <BaseCard title="Sin leer" className="text-center">
-          <p className="text-xl font-semibold text-growsBlue">{totales.sinLeer}</p>
-        </BaseCard>
-        <BaseCard title="Leídas" className="text-center">
-          <p className="text-xl font-semibold text-growsBlue">{totales.leidas}</p>
-        </BaseCard>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-stitch-surface-container bg-stitch-surface-container-lowest p-3 text-center shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-stitch-outline">Total</p>
+          <p className="mt-1 font-stitch-headline text-lg font-bold text-stitch-primary">{totales.total}</p>
+        </div>
+        <div className="rounded-lg border border-stitch-surface-container bg-stitch-surface-container-lowest p-3 text-center shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-stitch-outline">Sin leer</p>
+          <p className="mt-1 font-stitch-headline text-lg font-bold text-stitch-error">{totales.sinLeer}</p>
+        </div>
+        <div className="rounded-lg border border-stitch-surface-container bg-stitch-surface-container-lowest p-3 text-center shadow-sm">
+          <p className="text-[10px] font-bold uppercase tracking-wide text-stitch-outline">Leídas</p>
+          <p className="mt-1 font-stitch-headline text-lg font-bold text-stitch-tertiary">{totales.leidas}</p>
+        </div>
       </div>
 
       {/* Sección de Mensajes */}

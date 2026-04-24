@@ -20,7 +20,7 @@ export function FloorSelector({ onSelect }: FloorSelectorProps) {
   }
 
   return (
-    <div className="flex flex-col gap-2 md:gap-3">
+    <div className="flex flex-col gap-1.5">
       {pisos.map((piso) => {
         const isActive = piso.id === pisoId;
         return (
@@ -33,29 +33,29 @@ export function FloorSelector({ onSelect }: FloorSelectorProps) {
               onSelect?.(piso.id);
             }}
             className={[
-              'group flex w-full flex-col rounded-xl md:rounded-2xl border p-3 md:p-4 text-left transition min-h-[80px] md:min-h-0',
+              'group flex w-full flex-col rounded-xl border p-2 md:p-2.5 text-left transition min-h-0',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0052CC]',
               isActive
-                ? 'border-[#0052CC] bg-[#0052CC]/5 shadow-[0_4px_18px_rgba(0,82,204,0.12)]'
+                ? 'border-[#0052CC] bg-[#0052CC]/5 shadow-[0_2px_10px_rgba(0,82,204,0.1)]'
                 : 'border-slate-200 bg-white hover:border-[#0052CC]/40 hover:bg-[#0052CC]/5',
             ].join(' ')}
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-xs md:text-sm font-semibold text-[#1E293B] truncate">{piso.nombre}</p>
-                <p className="text-[10px] md:text-xs text-slate-500">{piso.metrosTotales} m² totales</p>
+                <p className="text-xs font-semibold text-[#1E293B] truncate">{piso.nombre}</p>
+                <p className="text-[10px] text-slate-500">{piso.metrosTotales} m² totales</p>
               </div>
-              <span className="rounded-full bg-[#0052CC]/10 px-2 md:px-3 py-1 text-[10px] md:text-xs font-semibold text-[#0052CC] flex-shrink-0">
+              <span className="rounded-full bg-[#0052CC]/10 px-2 py-0.5 text-[10px] font-semibold text-[#0052CC] flex-shrink-0">
                 {Math.round(piso.porcentaje)}%
               </span>
             </div>
-            <div className="mt-2 md:mt-3 h-2 w-full overflow-hidden rounded-full bg-blue-100">
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-blue-100">
               <div
-                className="h-2 rounded-full bg-[#0052CC] transition-all duration-300"
+                className="h-1.5 rounded-full bg-[#0052CC] transition-all duration-300"
                 style={{ width: `${Math.min(100, Math.round(piso.porcentaje))}%` }}
               />
             </div>
-            <div className="mt-2 md:mt-3 flex items-center justify-between gap-2 text-[10px] md:text-xs text-slate-500">
+            <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-slate-500">
               <span className="truncate">
                 Cubiertos:{' '}
                 <span className="font-semibold text-[#0052CC]">{piso.metrosCubiertos} m²</span>

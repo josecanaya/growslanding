@@ -3,8 +3,6 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, AlertCircle, Save, X } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '@/lib/types/supabase.gen';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { DetalleObra } from '@/components/cliente/DetalleObra';
 import type { LegajoDocumento } from '@/components/cliente/DetalleObra';
@@ -16,56 +14,55 @@ import { ObraCard } from '../ui/ObraCard';
 import { ObrasStatsRow } from '../ui/ObrasStatsRow';
 import { EmptyState } from '../ui/EmptyState';
 
-const DEFAULT_OBRAS: Obra[] = [
+// ——— MOCKS: 3 obras fijas (desconectado de la base de datos). Eliminar cuando conectes Supabase. ———
+const OBRAS_MOCK: Obra[] = [
   {
-    id: '1',
-    nombre: 'Obra de Prueba',
-    localizacion: 'Ubicación de prueba',
-    estado: 'ACTIVA',
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
-    fecha_inicio: '2024-01-15',
-    presupuesto: 100000,
-    descripcion: 'Esta es una obra de prueba para desarrollo',
-    cliente: 'Cliente de Prueba',
+    id: 'demo-obra-1-casa-familiar',
+    nombre: 'Casa Familiar – Juan Pérez',
+    localizacion: 'Rosario',
+    estado: 'En ejecución',
+    created_at: new Date().toISOString(),
+    fecha_inicio: '2026-03-01',
+    fecha_inicio_estimada: '2026-03-01',
+    fecha_final_estimada: '2026-06-30',
     tipoObra: 'nueva',
-    numeroPermiso: 'PERM-001',
-    progreso: 25,
-    tareasActivas: 3,
-    tareasCompletadas: 1,
+    progreso: 35,
+    tareasActivas: 2,
+    tareasCompletadas: 3,
     legajoTecnico: [],
   },
   {
-    id: '2',
-    nombre: 'Casa Barrio Norte',
-    localizacion: 'Av. Rivadavia 1234, Rosario',
-    estado: 'ACTIVA',
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    fecha_inicio: '2024-03-01',
-    presupuesto: 240000,
-    descripcion: 'Vivienda unifamiliar - nueva. Flujo creado con el nuevo wizard.',
-    cliente: 'María González',
-    tipoObra: 'nueva',
-    numeroPermiso: 'PERM-047',
-    progreso: 12,
-    tareasActivas: 1,
+    id: 'demo-obra-2-reforma-bano',
+    nombre: 'Reforma Baño – María González',
+    localizacion: 'Rosario',
+    estado: 'Pendiente',
+    created_at: new Date().toISOString(),
+    fecha_inicio: '2026-04-15',
+    fecha_inicio_estimada: '2026-04-15',
+    tipoObra: 'reforma',
+    progreso: 0,
+    tareasActivas: 0,
+    tareasCompletadas: 0,
+    legajoTecnico: [],
+  },
+  {
+    id: 'demo-obra-3-ampliacion-cocina',
+    nombre: 'Ampliación Cocina – Carlos López',
+    localizacion: 'Rosario',
+    estado: 'Creada',
+    created_at: new Date().toISOString(),
+    tipoObra: 'ampliacion',
+    progreso: 0,
+    tareasActivas: 0,
     tareasCompletadas: 0,
     legajoTecnico: [],
   },
 ];
 
-type SupabaseObraRow = {
-  id: string;
-  name?: string | null;
-  address?: string | null;
-  estado?: string | null;
-  created_at?: string | null;
-};
-
 export function ObrasListContainer() {
   const router = useRouter();
   const pathname = usePathname();
   const currentUser = useCurrentUser();
-  const supabase = createClientComponentClient<Database>();
   const [obras, setObras] = useState<Obra[]>([]);
   const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -77,55 +74,13 @@ export function ObrasListContainer() {
   const upgradeModal = useUpgradeModal();
   const obrasLimitGuard = usePlanLimitGuard('obras');
 
-  // Función para cargar obras (memoizada)
-  const loadObras = useCallback(async () => {
-    if (!currentUser?.orgId) {
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const { data, error: fetchError } = await supabase
-        .from('obras')
-        .select('id, org_id, name, address, estado, created_at')
-        .eq('org_id', currentUser.orgId)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('[LOAD_OBRAS_ERROR]', fetchError);
-        setError('Error al cargar las obras');
-        return;
-      }
-
-      // Mapear datos de Supabase al formato Obra
-      const obrasSupabase = (data ?? []) as SupabaseObraRow[];
-      const obrasMapeadas: Obra[] = obrasSupabase.map((obra) => ({
-        id: obra.id,
-        nombre: obra.name || 'Sin nombre',
-        localizacion: obra.address || '',
-        estado: (obra.estado?.toUpperCase() as 'ACTIVA' | 'PAUSADA' | 'FINALIZADA' | 'CANCELADA') || 'ACTIVA',
-        created_at: obra.created_at || new Date().toISOString(),
-        fecha_inicio: undefined,
-        presupuesto: undefined,
-        descripcion: '',
-        cliente: undefined,
-        tipoObra: 'nueva',
-        numeroPermiso: undefined,
-        progreso: 0,
-        tareasActivas: 0,
-        tareasCompletadas: 0,
-        legajoTecnico: [],
-      }));
-
-      setObras(obrasMapeadas);
-    } catch (err) {
-      console.error('[LOAD_OBRAS_ERROR]', err);
-      setError('Error al cargar las obras');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentUser?.orgId, supabase]);
+  // Solo mocks: datos fijos en código (sin backend). Eliminar cuando conectes Supabase.
+  const loadObras = useCallback(() => {
+    setIsLoading(true);
+    setObras(OBRAS_MOCK);
+    setError(null);
+    setIsLoading(false);
+  }, []);
 
   // Cargar obras al montar y cuando cambia el orgId
   useEffect(() => {
@@ -191,36 +146,52 @@ export function ObrasListContainer() {
   }
 
   if (selectedObra) {
-    const tareasMock = [
-      {
-        id: 'tarea-1',
-        nombre: 'Excavación de fundación',
-        obraId: selectedObra.id,
-        lider: 'Juan Pérez',
-        fechaInicio: '2024-01-01',
-        fechaFin: '2024-01-05',
-        plantilla: 'Excavación',
-        checklist: ['Replanteo', 'Excavación', 'Compactación'],
-        evidencias: [],
-        estado: 'pendiente' as const,
-        etapa: 'estructura' as const,
-        precedencia: [],
-        duracion: 5,
-        esCritica: true,
-        holgura: 0,
-        earlyStart: 0,
-        earlyFinish: 5,
-        lateStart: 0,
-        lateFinish: 5,
-        tiempoTemprano: 0,
-        tiempoTardio: 5,
-        x: 100,
-        y: 100,
-      },
-    ];
+    // Demo video: tareas mock completas para el Resumen (obra Casa Familiar)
+    const isDemoObra = selectedObra.id === 'demo-obra-1-casa-familiar';
+    const tareasMock = isDemoObra
+      ? [
+          { id: 't1', nombre: 'Excavación de fundación', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-01-01', fechaFin: '2024-01-05', plantilla: 'Excavación', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'estructura' as const, precedencia: [], duracion: 5, esCritica: true, holgura: 0, earlyStart: 0, earlyFinish: 5, lateStart: 0, lateFinish: 5, tiempoTemprano: 0, tiempoTardio: 5, x: 100, y: 100 },
+          { id: 't2', nombre: 'Hormigón de cimientos', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-01-08', fechaFin: '2024-01-12', plantilla: 'Estructura', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'estructura' as const, precedencia: [], duracion: 5, esCritica: true, holgura: 0, earlyStart: 5, earlyFinish: 10, lateStart: 5, lateFinish: 10, tiempoTemprano: 5, tiempoTardio: 10, x: 100, y: 150 },
+          { id: 't3', nombre: 'Mampostería PB', obraId: selectedObra.id, lider: 'María López', fechaInicio: '2024-01-15', fechaFin: '2024-02-02', plantilla: 'Obra gris', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'obra_gris' as const, precedencia: [], duracion: 14, esCritica: true, holgura: 0, earlyStart: 10, earlyFinish: 24, lateStart: 10, lateFinish: 24, tiempoTemprano: 10, tiempoTardio: 24, x: 100, y: 200 },
+          { id: 't4', nombre: 'Instalación eléctrica', obraId: selectedObra.id, lider: 'Carlos Rodríguez', fechaInicio: '2024-02-05', fechaFin: '2024-02-20', plantilla: 'Instalaciones', checklist: [], evidencias: [], estado: 'en_progreso' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 15, esCritica: false, holgura: 2, earlyStart: 24, earlyFinish: 39, lateStart: 26, lateFinish: 41, tiempoTemprano: 24, tiempoTardio: 41, x: 100, y: 250 },
+          { id: 't5', nombre: 'Revoque grueso', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-02-10', fechaFin: '2024-02-28', plantilla: 'Obra gris', checklist: [], evidencias: [], estado: 'en_progreso' as const, etapa: 'obra_gris' as const, precedencia: [], duracion: 18, esCritica: true, holgura: 0, earlyStart: 24, earlyFinish: 42, lateStart: 24, lateFinish: 42, tiempoTemprano: 24, tiempoTardio: 42, x: 100, y: 300 },
+          { id: 't6', nombre: 'Pintura interior', obraId: selectedObra.id, lider: 'Ana García', fechaInicio: '2024-03-01', fechaFin: '2024-03-15', plantilla: 'Terminaciones', checklist: [], evidencias: [], estado: 'pendiente' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 14, esCritica: false, holgura: 3, earlyStart: 42, earlyFinish: 56, lateStart: 45, lateFinish: 59, tiempoTemprano: 42, tiempoTardio: 59, x: 100, y: 350 },
+          { id: 't7', nombre: 'Carpintería de aberturas', obraId: selectedObra.id, lider: 'Pedro Martínez', fechaInicio: '2024-03-10', fechaFin: '2024-03-25', plantilla: 'Terminaciones', checklist: [], evidencias: [], estado: 'pendiente' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 15, esCritica: false, holgura: 1, earlyStart: 42, earlyFinish: 57, lateStart: 43, lateFinish: 58, tiempoTemprano: 42, tiempoTardio: 58, x: 100, y: 400 },
+        ]
+      : [
+          {
+            id: 'tarea-1',
+            nombre: 'Excavación de fundación',
+            obraId: selectedObra.id,
+            lider: 'Juan Pérez',
+            fechaInicio: '2024-01-01',
+            fechaFin: '2024-01-05',
+            plantilla: 'Excavación',
+            checklist: ['Replanteo', 'Excavación', 'Compactación'],
+            evidencias: [],
+            estado: 'pendiente' as const,
+            etapa: 'estructura' as const,
+            precedencia: [],
+            duracion: 5,
+            esCritica: true,
+            holgura: 0,
+            earlyStart: 0,
+            earlyFinish: 5,
+            lateStart: 0,
+            lateFinish: 5,
+            tiempoTemprano: 0,
+            tiempoTardio: 5,
+            x: 100,
+            y: 100,
+          },
+        ];
 
     const estadoNormalizado =
       (selectedObra.estado?.toLowerCase() as 'activa' | 'pausada' | 'finalizada') || 'activa';
+
+    const tareasActivasDemo = isDemoObra ? tareasMock.filter((t) => t.estado === 'en_progreso').length : 0;
+    const tareasCompletadasDemo = isDemoObra ? tareasMock.filter((t) => t.estado === 'completada').length : 0;
+    const progresoDemo = isDemoObra ? 35 : 0;
 
     const obraCompleta = {
       ...selectedObra,
@@ -229,9 +200,9 @@ export function ObrasListContainer() {
       tipoObra: selectedObra.tipoObra || 'nueva',
       fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
       numeroPermiso: selectedObra.numeroPermiso || 'SIN-PERMISO',
-      progreso: selectedObra.progreso || 0,
-      tareasActivas: selectedObra.tareasActivas || 0,
-      tareasCompletadas: selectedObra.tareasCompletadas || 0,
+      progreso: isDemoObra ? progresoDemo : (selectedObra.progreso || 0),
+      tareasActivas: isDemoObra ? tareasActivasDemo : (selectedObra.tareasActivas || 0),
+      tareasCompletadas: isDemoObra ? tareasCompletadasDemo : (selectedObra.tareasCompletadas || 0),
       legajoTecnico: (selectedObra.legajoTecnico as LegajoDocumento[] | undefined) || [],
       tareas: tareasMock,
       fechaFinEstimada: '2024-12-31',

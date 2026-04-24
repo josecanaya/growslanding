@@ -48,6 +48,19 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
+    const ownerPermitido = await resolveOwnerPermitido(
+      supabaseAny,
+      user.id,
+      payload.owner_tipo,
+      payload.owner_id,
+    );
+    if (!ownerPermitido) {
+      return NextResponse.json(
+        { message: 'No autorizado para operar sobre esa wallet' },
+        { status: 403 }
+      );
+    }
+
     // Crear movimiento
     const { data: movimiento, error: movimientoError } = await supabaseAny
       .from('wallet_movimientos')
@@ -148,5 +161,41 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+async function resolveOwnerPermitido(
+  supabaseAny: any,
+  userId: string,
+  ownerTipo: 'SOCIO' | 'ORG',
+  ownerId: string,
+): Promise<boolean> {
+  if (ownerTipo === 'SOCIO') {
+    const { data } = await supabaseAny
+      .from('socios')
+      .select('id')
+      .eq('id', ownerId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    return Boolean(data?.id);
+  }
+
+  let { data } = await supabaseAny
+    .from('organizations')
+    .select('id')
+    .eq('id', ownerId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!data) {
+    const legacy = await supabaseAny
+      .from('organizaciones')
+      .select('id')
+      .eq('id', ownerId)
+      .eq('owner_user_id', userId)
+      .maybeSingle();
+    data = legacy.data;
+  }
+
+  return Boolean(data?.id);
 }
 

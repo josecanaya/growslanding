@@ -1,30 +1,33 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { Route } from 'next';
-import { SidebarClienteTecnico } from '@/components/cliente/SidebarClienteTecnico';
-import { ObrasListContainer } from '@/components/obras/containers/ObrasListContainer';
+import { Plus } from 'lucide-react';
+import { SectionHeader } from '@/components/cliente/SectionHeader';
+import { ObraCard } from '@/components/cliente/ObraCard';
+import { MOCK_OBRAS } from '@/lib/mocks/clienteMockData';
+import { Button } from '@/components/ui/grows';
 
 export default function ObrasPage() {
-  const router = useRouter();
-
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
-      {/* Sidebar */}
-      <SidebarClienteTecnico 
-        activeSection="obras"
-        onSectionChange={(section) => {
-          if (section !== 'obras') {
-            router.push((`/cliente/dashboard?section=${section}`) as Route);
-          }
-        }}
+    <div className="mx-auto max-w-7xl space-y-8">
+      <SectionHeader
+        eyebrow="Proyectos"
+        title="Obras"
+        description="Listado prototipo: estado, avance y acceso al detalle / timeline."
+        action={
+          <Link href={'/cliente/obras/nueva' as Route}>
+            <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
+              Nueva obra
+            </Button>
+          </Link>
+        }
       />
-      
-      {/* Contenedor principal */}
-      <div className="flex-1 ml-[220px]">
-        <ObrasListContainer />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {MOCK_OBRAS.map((o) => (
+          <ObraCard key={o.id} {...o} />
+        ))}
       </div>
     </div>
   );
 }
-

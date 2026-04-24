@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#003473",
+                    "surface-container-low": "#f2f4f6",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#314a8d",
+                    "primary": "#163274",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-tertiary-container": "#9fbeff",
+                    "on-secondary-container": "#46647e",
+                    "inverse-primary": "#b3c5ff",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#004a9f",
+                    "surface-container": "#eceef0",
+                    "on-tertiary-fixed-variant": "#004493",
+                    "on-secondary-fixed-variant": "#2b4963",
+                    "on-primary-fixed": "#00174a",
+                    "surface-dim": "#d8dadc",
+                    "on-background": "#191c1e",
+                    "surface-bright": "#f7f9fb",
+                    "inverse-surface": "#2d3133",
+                    "secondary-fixed": "#cce5ff",
+                    "on-error": "#ffffff",
+                    "primary-fixed-dim": "#b3c5ff",
+                    "outline-variant": "#c3c6d5",
+                    "surface-variant": "#e0e3e5",
+                    "surface-container-high": "#e6e8ea",
+                    "outline": "#737784",
+                    "tertiary-fixed": "#d8e2ff",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#a8bcff",
+                    "surface": "#f7f9fb",
+                    "secondary-container": "#c1e0ff",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-surface": "#191c1e",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#adc7ff",
+                    "secondary": "#43617c",
+                    "on-secondary-fixed": "#001d31",
+                    "on-tertiary-fixed": "#001a41",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed-variant": "#2a4386",
+                    "surface-tint": "#435b9f",
+                    "on-surface-variant": "#434653",
+                    "primary-fixed": "#dbe1ff",
+                    "background": "#f7f9fb",
+                    "secondary-fixed-dim": "#abcae8",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-blade-success {
+            border-left: 4px solid #003473;
+        }
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, #163274 0%, #314a8d 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- Success Screen Content -->
+<main class="min-h-screen flex flex-col items-center justify-center px-6 py-24 relative overflow-hidden">
+<!-- Background Architectural Depth Elements -->
+<div class="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary-fixed/20 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-secondary-fixed/30 rounded-full blur-[100px] pointer-events-none"></div>
+<!-- Success Container -->
+<div class="w-full max-w-md flex flex-col items-center text-center space-y-12 z-10">
+<!-- Icon/Visual Section -->
+<div class="relative">
+<!-- Outer Glass Ring -->
+<div class="w-32 h-32 rounded-full bg-surface-container-low flex items-center justify-center relative">
+<!-- Inner Active Circle -->
+<div class="w-24 h-24 rounded-full bg-primary-gradient flex items-center justify-center shadow-[0_12px_32px_-4px_rgba(22,50,116,0.25)] scale-110">
+<span class="material-symbols-outlined text-green-400 text-5xl" style="font-variation-settings: 'FILL' 1; font-weight: 700;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Content Section -->
+<div class="space-y-4">
+<h1 class="font-headline font-extrabold text-4xl tracking-tight text-primary">
+                    Presupuesto enviado
+                </h1>
+<p class="text-secondary font-medium leading-relaxed max-w-[280px] mx-auto">
+                    Te notificaremos cuando el cliente lo revise
+                </p>
+</div>
+<!-- Transactional Context Blade (Architectural Detail) -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-6 status-blade-success shadow-[0_8px_24px_-4px_rgba(22,50,116,0.04)] flex items-center justify-between">
+<div class="text-left">
+<span class="block text-[10px] font-bold font-label tracking-widest text-secondary uppercase">REFERENCIA</span>
+<span class="font-headline font-bold text-primary">#OB-29402</span>
+</div>
+<div class="text-right">
+<span class="block text-[10px] font-bold font-label tracking-widest text-secondary uppercase">ESTADO</span>
+<span class="font-headline font-bold text-tertiary">Pendiente</span>
+</div>
+</div>
+<!-- Action Cluster -->
+<div class="w-full flex flex-col space-y-4 pt-8">
+<!-- Primary Action -->
+<button class="w-full bg-primary-gradient text-on-primary font-headline font-extrabold text-sm tracking-wider py-4 rounded-lg shadow-lg hover:-translate-y-0.5 transition-all active:scale-[0.98]">
+                    VOLVER AL INICIO
+                </button><button class="w-full bg-transparent text-primary font-headline font-bold text-sm tracking-wide py-4 rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.98] flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined text-xl">picture_as_pdf</span>
+<span>Ver presupuesto (PDF)</span>
+</button>
+<!-- Secondary Action -->
+<button class="w-full bg-transparent text-primary font-headline font-bold text-sm tracking-wide py-4 rounded-lg hover:bg-surface-container-low transition-colors active:scale-[0.98]">
+                    Ver mis presupuestos
+                </button>
+</div>
+</div>
+<!-- Decorative Floating Element -->
+<div class="mt-16 opacity-50">
+<div class="flex items-center space-x-2">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim"></div>
+<div class="w-12 h-1 rounded-full bg-surface-container-highest"></div>
+<div class="w-2 h-2 rounded-full bg-surface-container-highest"></div>
+</div>
+</div>
+</main>
+<!-- Success Feedback Overlay Detail -->
+<div class="fixed top-8 left-1/2 -translate-x-1/2 bg-surface-container-lowest/80 backdrop-blur-md px-4 py-2 rounded-full border border-outline-variant/10 shadow-sm flex items-center space-x-2 z-50">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-[10px] font-bold font-label tracking-tighter text-on-surface">OPERACIÓN COMPLETADA CON ÉXITO</span>
+</div>
+</body></html>

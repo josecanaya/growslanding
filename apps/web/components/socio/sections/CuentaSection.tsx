@@ -64,9 +64,9 @@ export function CuentaSection({ user }: CuentaSectionProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header del perfil */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="space-y-6 font-stitch-body text-stitch-on-surface">
+      {/* Header del perfil (ref. cuenta / mis datos Stitch) */}
+      <div className="rounded-xl border border-stitch-surface-container bg-stitch-surface-container-lowest p-6 shadow-sm">
         <div className="flex items-center space-x-4 mb-4">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl">
             {userData.avatar}

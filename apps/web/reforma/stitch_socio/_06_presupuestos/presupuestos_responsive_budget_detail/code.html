@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Budget Detail - AZUL OPERATIVO</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary": "#003473",
+              "on-primary-fixed-variant": "#2a4386",
+              "on-background": "#191c1e",
+              "secondary": "#43617c",
+              "on-secondary-fixed": "#001d31",
+              "on-primary-container": "#a8bcff",
+              "surface-container": "#eceef0",
+              "surface-container-low": "#f2f4f6",
+              "tertiary-fixed": "#d8e2ff",
+              "primary-fixed-dim": "#b3c5ff",
+              "surface-bright": "#f7f9fb",
+              "error-container": "#ffdad6",
+              "secondary-container": "#c1e0ff",
+              "surface-container-highest": "#e0e3e5",
+              "on-primary": "#ffffff",
+              "inverse-on-surface": "#eff1f3",
+              "surface-dim": "#d8dadc",
+              "secondary-fixed-dim": "#abcae8",
+              "on-error-container": "#93000a",
+              "primary": "#163274",
+              "on-surface-variant": "#434653",
+              "on-tertiary-fixed-variant": "#004493",
+              "surface-container-high": "#e6e8ea",
+              "surface": "#f7f9fb",
+              "on-tertiary": "#ffffff",
+              "tertiary-container": "#004a9f",
+              "primary-fixed": "#dbe1ff",
+              "surface-variant": "#e0e3e5",
+              "on-secondary-container": "#46647e",
+              "error": "#ba1a1a",
+              "background": "#f7f9fb",
+              "on-error": "#ffffff",
+              "on-tertiary-container": "#9fbeff",
+              "surface-tint": "#435b9f",
+              "surface-container-lowest": "#ffffff",
+              "on-surface": "#191c1e",
+              "inverse-primary": "#b3c5ff",
+              "on-tertiary-fixed": "#001a41",
+              "on-secondary-fixed-variant": "#2b4963",
+              "tertiary-fixed-dim": "#adc7ff",
+              "secondary-fixed": "#cce5ff",
+              "primary-container": "#314a8d",
+              "outline": "#737784",
+              "on-secondary": "#ffffff",
+              "outline-variant": "#c3c6d5",
+              "inverse-surface": "#2d3133",
+              "on-primary-fixed": "#00174a"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-32">
+<!-- Top Navigation Anchor -->
+<header class="bg-slate-50 sticky top-0 z-50 flex justify-between items-center w-full px-6 py-4">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-blue-900 scale-95 active:opacity-80 transition-transform">arrow_back</button>
+<h1 class="text-blue-900 font-['Manrope'] font-bold tracking-tight text-lg uppercase">AZUL OPERATIVO</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-900">notifications</span>
+</div>
+</header>
+<main class="max-w-2xl mx-auto px-6 py-8 space-y-8">
+<!-- Header Section: High Contrast Status -->
+<section class="space-y-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<p class="font-label text-xs font-bold tracking-widest text-on-surface-variant uppercase">Project ID: #FO-9921</p>
+</div>
+<div class="flex justify-between items-end">
+<h2 class="font-headline text-3xl font-extrabold tracking-tight text-primary">Fiber Optic Installation</h2>
+<div class="bg-tertiary-container/10 text-tertiary px-4 py-1.5 rounded-full font-bold text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Budget Sent
+                </div>
+</div>
+</section>
+<!-- Primary Financial Bento Card -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Total & Time Column -->
+<div class="bg-primary bg-gradient-to-br from-primary to-primary-container p-6 rounded-xl text-on-primary shadow-xl shadow-primary/10 flex flex-col justify-between min-h-[160px]">
+<div>
+<span class="font-label text-[10px] font-bold uppercase tracking-widest opacity-80">Total Amount</span>
+<div class="text-4xl font-headline font-black mt-1">$320.00</div>
+</div>
+<div class="flex items-center gap-2 mt-4 opacity-90">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-bold text-sm">Est. Time: 4.5h</span>
+</div>
+</div>
+<!-- Scope Breakdown Column -->
+<div class="bg-surface-container-lowest p-6 rounded-xl flex flex-col gap-4">
+<h3 class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Scope Breakdown</h3>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-on-surface-variant">Labor</span>
+<span class="text-sm font-bold text-primary">$240.00</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-on-surface-variant">Materials</span>
+<span class="text-sm font-bold text-primary">$65.00</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium text-on-surface-variant">Fees</span>
+<span class="text-sm font-bold text-primary">$15.00</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity History Timeline -->
+<section class="bg-surface-container-low p-6 rounded-xl">
+<h3 class="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant mb-6">Activity History</h3>
+<div class="relative flex justify-between items-start">
+<!-- Timeline Line -->
+<div class="absolute top-4 left-0 w-full h-[2px] bg-outline-variant/30 z-0"></div>
+<!-- Steps -->
+<div class="relative z-10 flex flex-col items-center gap-2 group">
+<div class="w-8 h-8 rounded-full bg-tertiary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">history</span>
+</div>
+<span class="text-[11px] font-bold text-tertiary">Reviewing</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-tertiary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">send</span>
+</div>
+<span class="text-[11px] font-bold text-tertiary">Sent</span>
+</div>
+<div class="relative z-10 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest text-outline flex items-center justify-center outline outline-4 outline-surface-container-low">
+<span class="material-symbols-outlined text-[16px]">inbox</span>
+</div>
+<span class="text-[11px] font-bold text-outline">Received</span>
+</div>
+</div>
+</section>
+<!-- Visual Context Card -->
+<div class="relative w-full h-48 rounded-xl overflow-hidden group">
+<img alt="Fiber optic cables" class="w-full h-full object-cover" data-alt="Close-up of vibrant blue glowing fiber optic cables bundled together in a modern high-tech data center with bokeh lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGsnkoqSpCmfngmcE5s79VbZg1TTi-k7KLaRhTtsL6gNpySJ23mLgdckYP84U74k3rWWdxcQHV2ZeJ3n_5p3j4op5bQQX0u3YrZHiB5a2GXT5-xElxKMoJrPzM6ba2jUZwX__2quXDwRnLDSEG3MQU4FJChUOWN0K3oWLhatcp52OlmCex9Oi2Wqj_hpsJmfYvTHZhkaoiqFWRwqYNq0Vd1Csmx2MCw9tYM2uStei4UfGAKmoof4jpbmauSAcAoSdf63vSRgCoNt4H"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex items-end p-6">
+<div>
+<p class="text-white font-bold text-sm">Site Survey Location</p>
+<p class="text-white/70 text-xs">Sector 4-B Terminal Box</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-3">
+<button class="w-full bg-primary bg-gradient-to-r from-primary to-primary-container text-white py-4 rounded-xl font-headline font-bold text-lg shadow-lg hover:translate-y-[-2px] transition-all active:scale-[0.98]">
+                Edit/Resend Budget
+            </button>
+<button class="w-full bg-surface-container-highest text-primary py-4 rounded-xl font-headline font-bold text-lg transition-all active:scale-[0.98]">
+                View Other Jobs
+            </button>
+</div>
+<!-- Info Box (Bottom) -->
+<div class="bg-secondary-container/20 border-l-4 border-primary p-4 rounded-r-lg flex items-center gap-4">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="text-sm font-medium text-on-secondary-container">
+                This budget is currently locked. You have <span class="font-bold">48h to edit</span> before automatic approval processing.
+            </p>
+</div>
+</main>
+<!-- Navigation Shell (BottomNavBar) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-end pb-6 pt-2 px-4 bg-white/85 backdrop-blur-xl z-50 shadow-[0_-4px_20px_rgba(22,50,116,0.05)] border-t border-slate-200/20">
+<a class="flex flex-col items-center justify-center text-slate-400 px-3 py-2 hover:text-blue-800" href="#">
+<span class="material-symbols-outlined" data-icon="construction">construction</span>
+<span class="font-['Inter'] font-bold uppercase tracking-widest text-[10px] mt-1">Jobs</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-blue-900 text-white rounded-xl px-4 py-2 scale-110 -translate-y-1 shadow-lg shadow-blue-900/20" href="#">
+<span class="material-symbols-outlined" data-icon="assignment" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-['Inter'] font-bold uppercase tracking-widest text-[10px] mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 px-3 py-2 hover:text-blue-800" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Inter'] font-bold uppercase tracking-widest text-[10px] mt-1">INICIO</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 px-3 py-2 hover:text-blue-800" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Inter'] font-bold uppercase tracking-widest text-[10px] mt-1">Wallet</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400 px-3 py-2 hover:text-blue-800" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] font-bold uppercase tracking-widest text-[10px] mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

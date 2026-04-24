@@ -2,8 +2,14 @@ import { createServiceSupabaseClient } from '../supabase-server';
 import { WalletMvpService } from './wallet-mvp.service';
 import { TareaFsmService } from './tarea-fsm.service';
 import { PermisoService, RolActor } from './permiso.service';
+import {
+  ESTADO_BLOQUE_FINAL,
+  ESTADO_BLOQUE_PARA_VALIDAR,
+  ESTADO_TAREA_FINAL,
+  type EstadoBloqueCore,
+} from '../domain/estados-core';
 
-export type EstadoSubtarea = 'pendiente' | 'en_progreso' | 'para_validar' | 'validado' | 'rechazado';
+export type EstadoSubtarea = EstadoBloqueCore;
 
 type SubtareaRecord = {
   id: string;
@@ -205,7 +211,7 @@ export class SubtareaMvpService {
       throw new Error('Subtarea no encontrada');
     }
 
-    if (subtarea.estado !== 'para_validar') {
+    if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {
       throw new Error('El bloque debe estar en estado para_validar para que el cliente opere');
     }
 
@@ -263,7 +269,7 @@ export class SubtareaMvpService {
       .from('tareas_subtareas')
       .select('id')
       .eq('tarea_id', subtarea.tarea_id)
-      .neq('estado', 'validado')
+      .neq('estado', ESTADO_BLOQUE_FINAL)
       .limit(1);
 
     const tareaValidada = !restantes || restantes.length === 0;
@@ -271,7 +277,7 @@ export class SubtareaMvpService {
     if (tareaValidada) {
       await TareaFsmService.enforceTransition({
         tareaId: subtarea.tarea_id,
-        nuevoEstado: 'validada',
+        nuevoEstado: ESTADO_TAREA_FINAL,
         actorId: actor.id,
         rol: 'CLIENTE',
         motivo: 'Validacion automatica por bloques',

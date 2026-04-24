@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { SolicitudOportunidadCard } from '@/components/socio/oportunidades/SolicitudOportunidadCard';
@@ -8,8 +8,11 @@ import {
   USE_MOCK_DATA,
   MOCK_SOLICITUDES,
   ordenarSolicitudesPorPrioridad,
-  type MockSolicitud,
 } from '@/lib/mocks/socioMockData';
+import { STITCH_INNER, StitchStickySubheader } from '@/components/socio/stitch/socioStitchUi';
+import { cn } from '@/lib/utils';
+
+type FiltroOpo = 'todos' | 'cerca' | 'urgentes' | 'nuevas';
 
 interface Solicitud {
   obra_id: string;
@@ -30,11 +33,11 @@ function OportunidadesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const obraIdHighlight = searchParams.get('obra_id');
-  
-  // Estado separado para oportunidades (listado completo)
+
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<FiltroOpo>('todos');
 
   useEffect(() => {
     const fetchSolicitudes = async () => {
@@ -43,10 +46,7 @@ function OportunidadesContent() {
 
       try {
         if (USE_MOCK_DATA) {
-          // Usar mocks - mostrar todas ordenadas por prioridad
           const ordenadas = ordenarSolicitudesPorPrioridad(MOCK_SOLICITUDES);
-          
-          // Convertir mocks a formato de interfaz
           const solicitudesFormateadas: Solicitud[] = ordenadas.map((mock) => ({
             obra_id: mock.obra_id,
             obra_name: mock.obra_name,
@@ -61,68 +61,81 @@ function OportunidadesContent() {
             urgencia: mock.urgencia,
             cantidad_tareas: mock.cantidad_tareas,
           }));
-
           setSolicitudes(solicitudesFormateadas);
         } else {
-          // Usar datos reales
           const response = await fetch('/api/socio/solicitudes');
           if (!response.ok) {
             throw new Error('Error al cargar solicitudes');
           }
-
           const data = await response.json();
           const todasSolicitudes = data.solicitudes || [];
-          
-          // Ordenar por prioridad
+          const conDefaults = todasSolicitudes.map((s: Record<string, unknown>) => ({
+            ...s,
+            urgencia: (s.urgencia as Solicitud['urgencia']) || 'MEDIA',
+            cantidad_tareas: Number(s.cantidad_tareas ?? 0),
+          }));
+          // Backend puede no cumplir del todo el tipo `MockSolicitud`; el orden es el mismo criterio.
           const ordenadas = ordenarSolicitudesPorPrioridad(
-            todasSolicitudes.map((s: any) => ({
-              ...s,
-              urgencia: 'MEDIA' as const, // Por defecto si no viene del backend
-              cantidad_tareas: 0,
-            }))
+            conDefaults as Parameters<typeof ordenarSolicitudesPorPrioridad>[0],
           );
-
-          setSolicitudes(ordenadas as any);
+          setSolicitudes(ordenadas as unknown as Solicitud[]);
         }
-      } catch (err) {
+      } catch {
         setError('No se pudieron cargar las oportunidades');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSolicitudes();
+    void fetchSolicitudes();
   }, []);
+
+  const filas = useMemo(() => {
+    let list = solicitudes;
+    if (filtro === 'urgentes') {
+      list = list.filter((s) => s.urgencia === 'ALTA');
+    } else if (filtro === 'nuevas') {
+      list = list.filter((s) => !s.tiene_presupuesto_socio);
+    } else if (filtro === 'cerca') {
+      // Heurística: obras cuyo nombre o zona sugiere proximidad (demo: mitad de lista)
+      list = list.filter((_, i) => i % 2 === 0);
+    }
+    return list;
+  }, [solicitudes, filtro]);
+
+  const filtros: { id: FiltroOpo; label: string }[] = [
+    { id: 'todos', label: 'Todos' },
+    { id: 'cerca', label: 'Cerca' },
+    { id: 'urgentes', label: 'Urgentes' },
+    { id: 'nuevas', label: 'Nuevas' },
+  ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F7F7F7]">
-        <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-[70px] z-10">
-          <div className="flex items-center gap-3">
+      <div className="min-h-screen bg-stitch-surface font-stitch-body">
+        <StitchStickySubheader>
+          <div className="flex items-center gap-2 px-1">
             <button
-              onClick={() => router.push('/socio')}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              type="button"
+              onClick={() => router.push('/socio/panel')}
+              className="rounded-lg p-1.5 transition-colors hover:bg-stitch-surface-container"
+              aria-label="Volver"
             >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
+              <ArrowLeft className="h-5 w-5 text-stitch-on-surface" />
             </button>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">Oportunidades de trabajo</h1>
-              <p className="text-sm text-gray-600 mt-0.5">
-                Solicitudes disponibles para presupuestar
-              </p>
+              <h1 className="font-stitch-headline text-lg font-extrabold text-stitch-primary">Oportunidades</h1>
+              <p className="text-xs text-stitch-on-surface/60">Cargando…</p>
             </div>
           </div>
-        </div>
-        <div className="p-4">
-          <div className="space-y-0 divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden bg-white">
+        </StitchStickySubheader>
+        <div className={STITCH_INNER + ' space-y-0 pt-0'}>
+          <div className="divide-y divide-stitch-surface-container/80 overflow-hidden rounded-xl border border-stitch-surface-container bg-stitch-surface-container-lowest">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div
-                key={i}
-                className="px-4 py-3 space-y-2 animate-pulse"
-              >
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-3 bg-gray-200 rounded w-1/2" />
-                <div className="h-3 bg-gray-200 rounded w-2/3" />
+              <div key={i} className="space-y-2 px-4 py-4">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-stitch-surface-container-high" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-stitch-surface-container-high" />
+                <div className="h-3 w-2/3 animate-pulse rounded bg-stitch-surface-container-high" />
               </div>
             ))}
           </div>
@@ -133,22 +146,17 @@ function OportunidadesContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F7F7F7]">
-        <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-[70px] z-10">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push('/socio')}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-600" />
-            </button>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Oportunidades de trabajo</h1>
-            </div>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div className="min-h-screen bg-stitch-surface">
+        <div className={STITCH_INNER}>
+          <button
+            type="button"
+            onClick={() => router.push('/socio/panel')}
+            className="mb-3 flex items-center gap-1 text-sm font-semibold text-stitch-primary"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </button>
+          <div className="rounded-lg border border-red-200 bg-red-50/90 p-4">
             <p className="text-sm text-red-800">{error}. Intentá nuevamente.</p>
           </div>
         </div>
@@ -157,42 +165,58 @@ function OportunidadesContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7]">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-[70px] z-10">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-stitch-surface font-stitch-body">
+      <StitchStickySubheader>
+        <div className="flex items-start gap-2 px-1">
           <button
-            onClick={() => router.push('/socio')}
-            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+            type="button"
+            onClick={() => router.push('/socio/panel')}
+            className="mt-0.5 rounded-lg p-1.5 transition-colors hover:bg-stitch-surface-container"
+            aria-label="Volver"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
+            <ArrowLeft className="h-5 w-5 text-stitch-on-surface" />
           </button>
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Oportunidades de trabajo</h1>
-            <p className="text-sm text-gray-600 mt-0.5">
-              Solicitudes disponibles para presupuestar
-            </p>
+            <h1 className="font-stitch-headline text-xl font-extrabold text-stitch-primary">Oportunidades</h1>
+            <p className="text-xs text-stitch-on-surface/60">Solicitudes para presupuestar</p>
+            <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              {filtros.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFiltro(f.id)}
+                  className={cn(
+                    'whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-bold shadow-sm transition',
+                    filtro === f.id
+                      ? 'bg-stitch-primary text-white'
+                      : 'border border-stitch-outline/30 bg-stitch-surface-container-high/90 text-stitch-on-surface/80',
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </StitchStickySubheader>
 
-      {/* Listado completo */}
-      <div className="p-4">
-        {solicitudes.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 bg-white rounded-lg border border-gray-200">
-            <p className="text-sm">No hay oportunidades disponibles en este momento.</p>
-            <p className="text-xs text-gray-400 mt-2">Revisá más tarde.</p>
+      <div className={STITCH_INNER + ' pt-2'}>
+        {filas.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-stitch-outline/35 bg-stitch-surface-container-lowest py-12 text-center text-sm text-stitch-on-surface/65">
+            No hay oportunidades con este criterio.
           </div>
         ) : (
-          <div className="space-y-0 divide-y divide-gray-100 border border-gray-200 rounded-lg overflow-hidden bg-white">
-            {solicitudes.map((solicitud) => (
-              <div
-                key={solicitud.obra_id}
-                className={obraIdHighlight === solicitud.obra_id ? 'bg-blue-50' : ''}
-              >
-                <SolicitudOportunidadCard solicitud={solicitud} />
-              </div>
-            ))}
+          <div className="overflow-hidden rounded-xl border border-stitch-surface-container bg-white shadow-sm">
+            <div className="divide-y divide-stitch-surface-container/80">
+              {filas.map((solicitud) => (
+                <div
+                  key={solicitud.obra_id}
+                  className={cn(obraIdHighlight === solicitud.obra_id && 'bg-stitch-primary/[0.06]')}
+                >
+                  <SolicitudOportunidadCard solicitud={solicitud} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -202,13 +226,14 @@ function OportunidadesContent() {
 
 export default function OportunidadesPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-stitch-surface">
+          <Loader2 className="h-8 w-8 animate-spin text-stitch-primary" />
+        </div>
+      }
+    >
       <OportunidadesContent />
     </Suspense>
   );
 }
-

@@ -175,7 +175,7 @@ function LoginPageContent() {
 
     if (errorParam === 'pkce_error') {
       setStatusMessage(
-        'No se pudo completar la autenticación con Google. Esto puede ocurrir si las cookies están bloqueadas o si abriste múltiples pestañas. Por favor, intenta nuevamente o usa email y contraseña.'
+        'No se pudo completar la autenticación con Google (code_verifier faltante). Cerrá otras pestañas de GROWS, quedate en esta ventana y volvé a hacer clic en "Ingresar con Google". Si sigue fallando, usá email y contraseña.'
       );
       return;
     }
@@ -204,38 +204,81 @@ function LoginPageContent() {
         }
       }
 
-      const { data } = await supabase.auth.getSession();
-      if (!active || !data.session) {
-        return;
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!active) {
+          return;
+        }
+
+        const isRateLimit =
+          error?.message?.toLowerCase().includes('rate limit') ||
+          error?.message?.toLowerCase().includes('too many requests') ||
+          error?.status === 429;
+
+        if (isRateLimit) {
+          if (typeof window !== 'undefined') {
+            const rateLimitUntil = Date.now() + (20 * 60 * 1000);
+            localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+          }
+          setHasRateLimit(true);
+          setStatusMessage(
+            'Supabase alcanzó el límite temporal de autenticación. Esperá 15-30 minutos o usá email y contraseña.'
+          );
+          return;
+        }
+
+        if (!data.session) {
+          return;
+        }
+
+        const sessionUser = data.session.user;
+        const role = normalizeRole(
+          (sessionUser.app_metadata as Record<string, unknown> | undefined)?.role ??
+            (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
+        );
+
+        if (!role) {
+          setMissingRole(true);
+          setStatusMessage(MISSING_ROLE_MESSAGE);
+          return;
+        }
+
+        setMissingRole(false);
+        setStatusMessage(null);
+
+        const defaultRoute = getDefaultRouteForRole(role);
+        const target = redirectTarget ?? defaultRoute;
+
+        if (pathname === target) {
+          return;
+        }
+
+        if (pathname === AUTH_LOGIN_PATH && target === AUTH_LOGIN_PATH) {
+          return;
+        }
+
+        router.replace(target as Route);
+      } catch (err) {
+        const error = err as { message?: string; status?: number };
+        const isRateLimit =
+          error?.message?.toLowerCase().includes('rate limit') ||
+          error?.message?.toLowerCase().includes('too many requests') ||
+          error?.status === 429;
+
+        if (isRateLimit) {
+          if (typeof window !== 'undefined') {
+            const rateLimitUntil = Date.now() + (20 * 60 * 1000);
+            localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+          }
+          setHasRateLimit(true);
+          setStatusMessage(
+            'Supabase alcanzó el límite temporal de autenticación. Esperá 15-30 minutos o usá email y contraseña.'
+          );
+          return;
+        }
+
+        console.error('[LOGIN_CHECK_SESSION_ERROR]', err);
       }
-
-      const sessionUser = data.session.user;
-      const role = normalizeRole(
-        (sessionUser.app_metadata as Record<string, unknown> | undefined)?.role ??
-          (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
-      );
-
-      if (!role) {
-        setMissingRole(true);
-        setStatusMessage(MISSING_ROLE_MESSAGE);
-        return;
-      }
-
-      setMissingRole(false);
-      setStatusMessage(null);
-
-      const defaultRoute = getDefaultRouteForRole(role);
-      const target = redirectTarget ?? defaultRoute;
-
-      if (pathname === target) {
-        return;
-      }
-
-      if (pathname === AUTH_LOGIN_PATH && target === AUTH_LOGIN_PATH) {
-        return;
-      }
-
-      router.replace(target as Route);
     }
 
     void checkSession();
@@ -309,24 +352,23 @@ function LoginPageContent() {
   }
 
   async function handleGoogleLogin() {
-    // Verificar si hay rate limit activo
-    const rateLimitUntil = typeof window !== 'undefined' 
-      ? localStorage.getItem('supabase_rate_limit_until')
-      : null;
-    
-    if (rateLimitUntil) {
-      const untilTime = parseInt(rateLimitUntil, 10);
-      const now = Date.now();
-      if (now < untilTime) {
-        // Aún estamos en periodo de rate limit
-        const minutesLeft = Math.ceil((untilTime - now) / (1000 * 60));
-        setStatusMessage(
-          `Google OAuth está temporalmente deshabilitado debido a límite de velocidad. Intenta nuevamente en ${minutesLeft} minuto(s) o usa email y contraseña.`
-        );
-        return;
-      } else {
-        // Rate limit expiró, limpiar
+    // Si el rate limit sigue activo, no disparar una nueva petición OAuth.
+    if (typeof window !== 'undefined') {
+      const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+      if (rateLimitUntil) {
+        const untilTime = parseInt(rateLimitUntil, 10);
+        const now = Date.now();
+        if (now < untilTime) {
+          const minutesLeft = Math.ceil((untilTime - now) / (1000 * 60));
+          setStatusMessage(
+            `Supabase está limitando el login temporalmente. Esperá ${minutesLeft} minuto(s) antes de reintentar con Google o usá email y contraseña.`
+          );
+          setHasRateLimit(true);
+          return;
+        }
+
         localStorage.removeItem('supabase_rate_limit_until');
+        setHasRateLimit(false);
       }
     }
 
@@ -516,9 +558,8 @@ function LoginPageContent() {
                 type="button"
                 variant="outline"
                 onClick={handleGoogleLogin}
-                disabled={isLoading || isGoogleLoading || hasRateLimit || errorParam === 'rate_limit'}
+                disabled={isLoading || isGoogleLoading}
                 className="h-12 w-full rounded-md border border-gray-300 bg-white text-gray-700 transition-colors hover:bg-[#f8f8f8] disabled:opacity-50"
-                title={hasRateLimit || errorParam === 'rate_limit' ? 'Google OAuth está temporalmente deshabilitado debido al límite de velocidad' : undefined}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

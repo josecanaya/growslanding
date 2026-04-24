@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-secondary-fixed": "#014171",
+                "tertiary-dim": "#51516c",
+                "secondary-fixed": "#d1e4ff",
+                "surface-variant": "#dde4e5",
+                "primary-dim": "#515258",
+                "secondary-fixed-dim": "#b9d7ff",
+                "tertiary": "#5d5c78",
+                "on-primary-container": "#505257",
+                "surface-tint": "#5d5e64",
+                "outline": "#757c7d",
+                "surface-container-highest": "#dde4e5",
+                "error": "#9f403d",
+                "outline-variant": "#adb3b4",
+                "on-secondary-fixed-variant": "#2d5e8f",
+                "on-surface": "#2d3435",
+                "surface-bright": "#f9f9f9",
+                "on-primary": "#f7f7fe",
+                "surface": "#f9f9f9",
+                "inverse-surface": "#0c0f0f",
+                "on-background": "#2d3435",
+                "primary-fixed": "#e2e2e8",
+                "secondary": "#326293",
+                "primary-container": "#e2e2e8",
+                "inverse-primary": "#f3f3fa",
+                "on-tertiary-fixed-variant": "#54546f",
+                "tertiary-fixed": "#d9d7f8",
+                "error-dim": "#4e0309",
+                "on-secondary-container": "#215485",
+                "on-surface-variant": "#5a6061",
+                "on-tertiary-fixed": "#383751",
+                "on-error": "#fff7f6",
+                "on-primary-fixed-variant": "#5a5b61",
+                "secondary-dim": "#235586",
+                "background": "#f9f9f9",
+                "surface-container-lowest": "#ffffff",
+                "surface-dim": "#d4dbdd",
+                "inverse-on-surface": "#9c9d9d",
+                "on-secondary": "#f7f9ff",
+                "secondary-container": "#d1e4ff",
+                "tertiary-fixed-dim": "#cbc9e9",
+                "tertiary-container": "#d9d7f8",
+                "surface-container": "#ebeeef",
+                "surface-container-high": "#e4e9ea",
+                "on-tertiary": "#fbf7ff",
+                "error-container": "#fe8983",
+                "primary": "#5d5e64",
+                "on-error-container": "#752121"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "1.5rem",
+                "full": "9999px"
+            },
+            "fontFamily": {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-4 h-16 w-full sticky top-0 z-50 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800 font-sans antialiased">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-zinc-900 dark:text-zinc-50">architecture</span>
+<span class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">ArchiFlow</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-900 dark:text-zinc-50">account_circle</span>
+</div>
+</header>
+<main class="max-w-xl mx-auto px-6 pt-8">
+<!-- Breadcrumb / Context -->
+<div class="mb-6">
+<span class="text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-1 block">Presupuesto Recibido</span>
+<h1 class="text-3xl font-extrabold tracking-tight text-primary leading-tight">Remodelación Penthouse Sky</h1>
+</div>
+<!-- Hero Status Card (Tonal Layering) -->
+<div class="bg-surface-container-lowest rounded-xl p-8 mb-8 shadow-sm">
+<div class="flex justify-between items-start mb-8">
+<div>
+<p class="text-sm text-on-surface-variant font-medium mb-1">Monto de la Oferta</p>
+<div class="flex items-baseline gap-1">
+<span class="text-xl font-bold text-secondary">$</span>
+<span class="text-5xl font-extrabold text-on-surface tracking-tighter">84.500</span>
+</div>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span class="text-sm font-semibold tracking-tight">45 Días</span>
+</div>
+</div>
+<!-- Detail Grid (Bento Style) -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-4 rounded-lg">
+<span class="material-symbols-outlined text-secondary mb-2">construction</span>
+<p class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Materiales</p>
+<p class="text-sm font-semibold text-on-surface">$52.000 Incluidos</p>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg">
+<span class="material-symbols-outlined text-secondary mb-2">engineering</span>
+<p class="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">Mano de Obra</p>
+<p class="text-sm font-semibold text-on-surface">$32.500 Proyectado</p>
+</div>
+</div>
+</div>
+<!-- Professional Contractor Info -->
+<div class="flex items-center gap-4 mb-8 p-4 bg-surface-container-low rounded-xl">
+<div class="w-16 h-16 rounded-full overflow-hidden bg-surface-variant flex-shrink-0">
+<img alt="Contractor Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a middle-aged male architect with glasses in a modern office setting, soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbQq4e0VWWV4QYAeSmUFTHuRDnjhpqT7Jqa_UxnREXRHMnrwjC67iyp8kFPpuyzbpwJ2KM60FctJmwhsK1i5vYa_4hX17AzczrEJctYt83hoeEHqMoYaNpERxQxp_-zM_PaObOLkhM1q7QNE3EXiwWT3VWr9Sz5HX2Nl-umxEzrYIr6UvAAN2LclYCzuyGjo7NE-e3Ku9Va7AZB9CPrS_Tu9l4meKP5vbY2ww3ikRBalQ03hMIHfP4XiOPwNiEg6XEyhX-Hou9y8mf"/>
+</div>
+<div class="flex-grow">
+<h3 class="text-lg font-bold text-on-surface">Arq. Julián Rossi</h3>
+<p class="text-sm text-on-surface-variant">Estudio Rossi &amp; Asociados</p>
+<div class="flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-secondary text-[14px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-xs font-bold text-on-surface">4.9</span>
+<span class="text-xs text-on-surface-variant ml-1">(124 obras terminadas)</span>
+</div>
+</div>
+<button class="text-secondary p-2 rounded-full hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined">chat_bubble</span>
+</button>
+</div>
+<!-- Architectural Visualization Section -->
+<div class="relative h-48 w-full rounded-xl overflow-hidden mb-10">
+<img alt="Project Visualization" class="w-full h-full object-cover" data-alt="Modern penthouse interior with floor to ceiling windows, marble floors, and minimalist architectural concrete elements at twilight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvHNrJyQyVOZj5PEXsUSXiZB18-MTqK2HXG1n2Bh5vUHsr_mNPXjdO4aOjS1pizM-xF_65k_X4oFfqUH_RyrDAodj9CFUijbco6CYtghxkXiIfxR5U3Qgu0VhXrT0KqnmqP2hlr-BegfHQOZ4NpqK5MGDI_u2iBtatv5oKFnZ2MRe1ykCUchrOXAw6HoFutQSxzcaSVMDnGJ5IM1aj1QRHo8dq6k2ERBZRJudiD5gWfLkt4Xo_1lYDklI-gkzdZMpfhRAjqOfJYv5s"/>
+<div class="absolute inset-0 bg-gradient-to-t from-on-surface/60 to-transparent"></div>
+<div class="absolute bottom-4 left-4 text-white">
+<p class="text-xs font-medium uppercase tracking-widest opacity-80">Referencia Visual</p>
+<p class="font-bold">Propuesta Técnica de Acabados</p>
+</div>
+</div>
+<!-- Action Section (Floating Style) -->
+<div class="fixed bottom-0 left-0 right-0 p-6 bg-surface/80 backdrop-blur-xl border-t border-outline-variant/10 flex flex-col gap-3 z-40 max-w-xl mx-auto">
+<button class="w-full h-14 bg-secondary hover:bg-on-secondary-fixed-variant text-on-secondary font-bold rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">check_circle</span>
+                Aprobar Presupuesto
+            </button>
+<button class="w-full h-14 bg-transparent border-2 border-outline-variant text-on-surface-variant font-bold rounded-xl hover:bg-surface-container-highest transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">close</span>
+                Rechazar
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 shadow-[0_-1px_3px_0_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200" href="#">
+<span class="material-symbols-outlined" data-icon="home_work">home_work</span>
+<span class="text-[11px] font-medium tracking-wide uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-900 dark:text-zinc-50 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-1 scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="foundation">foundation</span>
+<span class="text-[11px] font-medium tracking-wide uppercase">Obras</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="text-[11px] font-medium tracking-wide uppercase">Tareas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-[11px] font-medium tracking-wide uppercase">Billetera</span>
+</a>
+</nav>
+</body></html>

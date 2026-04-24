@@ -11,9 +11,16 @@ export default async function RootPage() {
     cookies: () => cookieStore as any,
   });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const result = await supabase.auth.getSession();
+  const session = result.data?.session ?? null;
+
+  if (result.error) {
+    const msg = (result.error.message ?? '').toLowerCase();
+    const is429 = (result.error as { status?: number }).status === 429;
+    if (is429 || msg.includes('rate limit') || msg.includes('too many')) {
+      redirect('/auth/login?error=rate_limit');
+    }
+  }
 
   if (!session) {
     redirect('/auth/login');

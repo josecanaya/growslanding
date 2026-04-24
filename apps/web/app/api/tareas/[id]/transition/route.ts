@@ -13,6 +13,7 @@ import { uploadActaPdf, uploadPhoto, uploadSignature } from '@/lib/storage';
 import type { Database } from '@/lib/types/supabase.gen';
 import { TareaFsmService, type EstadoTarea } from '@/lib/services/tarea-fsm.service';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { ESTADO_BLOQUE_FINAL, ESTADO_TAREA_FINAL } from '@/lib/domain/estados-core';
 
 export const runtime = 'nodejs';
 
@@ -233,13 +234,13 @@ export async function POST(
       });
     }
 
-    if (nuevoEstadoCanon === 'validada') {
+    if (nuevoEstadoCanon === ESTADO_TAREA_FINAL) {
       const supabaseAny = supabase as any;
       const { data: pendientesSubtareas } = await supabaseAny
         .from('tareas_subtareas')
         .select('id')
         .eq('tarea_id', tarea.id)
-        .neq('estado', 'validada')
+        .neq('estado', ESTADO_BLOQUE_FINAL)
         .limit(1);
 
       if (pendientesSubtareas && pendientesSubtareas.length > 0) {

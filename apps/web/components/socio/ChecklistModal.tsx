@@ -13,6 +13,8 @@ interface ChecklistModalProps {
   };
   onClose: () => void;
   onSave: (items: ChecklistItem[]) => Promise<void>;
+  /** Si se pasa (ej. demo), se usa en lugar de cargar desde API */
+  initialItems?: ChecklistItem[];
 }
 
 // Checklist genérico por defecto
@@ -24,13 +26,18 @@ const checklistDefault: ChecklistItem[] = [
   { id: "gen5", label: "Control de calidad", done: false },
 ];
 
-export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) {
-  const [items, setItems] = useState<ChecklistItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function ChecklistModal({ tarea, onClose, onSave, initialItems }: ChecklistModalProps) {
+  const [items, setItems] = useState<ChecklistItem[]>(initialItems ?? []);
+  const [loading, setLoading] = useState(!(initialItems && initialItems.length > 0));
   const [saving, setSaving] = useState(false);
   const supabase = createClientComponentClient();
 
   useEffect(() => {
+    if (initialItems && initialItems.length > 0) {
+      setItems(initialItems);
+      setLoading(false);
+      return;
+    }
     const cargarChecklist = async () => {
       try {
         setLoading(true);
@@ -94,7 +101,7 @@ export function ChecklistModal({ tarea, onClose, onSave }: ChecklistModalProps) 
     };
 
     cargarChecklist();
-  }, [tarea.id, tarea.title, tarea.nombre, supabase]);
+  }, [tarea.id, tarea.title, tarea.nombre, supabase, initialItems]);
 
   const handleToggleItem = async (itemId: string) => {
     const nuevosItems = items.map(item =>

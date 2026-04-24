@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#b6c4ff",
+                        "tertiary": "#982600",
+                        "on-primary": "#ffffff",
+                        "on-surface": "#0f1e1f",
+                        "outline-variant": "#c3c5d9",
+                        "surface-tint": "#004ee8",
+                        "surface-container": "#e1f1f2",
+                        "inverse-surface": "#243334",
+                        "secondary-fixed-dim": "#b6c4ff",
+                        "on-primary-container": "#e4e7ff",
+                        "on-background": "#0f1e1f",
+                        "on-primary-fixed-variant": "#003ab2",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#dbebec",
+                        "secondary-fixed": "#dce1ff",
+                        "background": "#ecfdfd",
+                        "outline": "#737688",
+                        "on-error": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb5a0",
+                        "surface-bright": "#ecfdfd",
+                        "error-container": "#ffdad6",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed": "#3b0900",
+                        "on-surface-variant": "#434656",
+                        "inverse-primary": "#b6c4ff",
+                        "surface-container-highest": "#d5e6e7",
+                        "surface": "#ecfdfd",
+                        "on-tertiary-container": "#ffe3db",
+                        "on-primary-fixed": "#001550",
+                        "primary": "#0042c8",
+                        "on-secondary-container": "#243c87",
+                        "primary-fixed": "#dce1ff",
+                        "surface-container-low": "#e6f7f8",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0056ff",
+                        "surface-dim": "#cdddde",
+                        "on-tertiary-fixed-variant": "#872100",
+                        "on-tertiary": "#ffffff",
+                        "secondary-container": "#95aafd",
+                        "secondary": "#445aa6",
+                        "tertiary-container": "#c23402",
+                        "on-secondary-fixed": "#001550",
+                        "on-secondary-fixed-variant": "#2a418d",
+                        "tertiary-fixed": "#ffdbd1",
+                        "inverse-on-surface": "#e3f4f5",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#d5e6e7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .action-gradient {
+            background: linear-gradient(to bottom, #0042c8, #0056ff);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen">
+<!-- NavigationDrawer (LG screens) -->
+<aside class="hidden lg:flex flex-col h-screen h-full w-64 fixed left-0 top-0 bg-[#dbebec] dark:bg-slate-900 z-30">
+<div class="px-6 py-8">
+<span class="text-2xl font-bold tracking-tighter text-[#0042c8] dark:text-white">Grows</span>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] dark:text-slate-400 font-['Manrope'] text-sm font-semibold tracking-tight hover:bg-[#ecfdfd] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span> Home
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#0042c8] dark:text-white font-bold border-r-4 border-[#0042c8] font-['Manrope'] text-sm tracking-tight" href="#">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span> Obras
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] dark:text-slate-400 font-['Manrope'] text-sm font-semibold tracking-tight hover:bg-[#ecfdfd] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span> Tareas
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] dark:text-slate-400 font-['Manrope'] text-sm font-semibold tracking-tight hover:bg-[#ecfdfd] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span> Billetera
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] dark:text-slate-400 font-['Manrope'] text-sm font-semibold tracking-tight hover:bg-[#ecfdfd] dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span> Notificaciones
+            </a>
+</nav>
+</aside>
+<!-- TopAppBar (Mobile screens) -->
+<header class="lg:hidden fixed top-0 w-full z-40 bg-[#ecfdfd]/80 dark:bg-slate-950/80 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#0042c8]" data-icon="menu">menu</span>
+<span class="text-xl font-extrabold text-[#0042c8] dark:text-white">Grows</span>
+</div>
+<span class="material-symbols-outlined text-[#0042c8]" data-icon="person">person</span>
+</header>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-20 lg:pt-8 pb-32 px-6 lg:px-12 max-w-7xl mx-auto">
+<!-- Header Section -->
+<header class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="space-y-2">
+<div class="flex items-center gap-3">
+<h1 class="text-3xl md:text-4xl font-bold tracking-tight text-on-surface">Residencial Alvear</h1>
+<span class="px-3 py-1 bg-[#d5e6e7] text-[#0042c8] text-[10px] font-bold uppercase tracking-widest rounded-full">En Progreso</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-base" data-icon="location_on">location_on</span>
+<p class="font-medium">Av. del Libertador 1450, Buenos Aires</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-6 py-3 rounded-full bg-surface-container-highest text-on-surface font-semibold hover:opacity-80 transition-all active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="assignment">assignment</span>
+<span>Ir a Tareas</span>
+</button>
+<button class="flex items-center gap-2 px-6 py-3 rounded-full action-gradient text-white font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined text-xl" data-icon="fact_check">fact_check</span>
+<span>Validaciones</span>
+</button>
+</div>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+<!-- Left Column: Summary (Bento 1) -->
+<section class="md:col-span-8 space-y-6">
+<!-- Summary Card -->
+<div class="bg-surface-container-lowest p-8 rounded-lg">
+<div class="flex justify-between items-center mb-8">
+<h2 class="text-xl font-bold text-on-surface">Resumen General</h2>
+<span class="material-symbols-outlined text-outline" data-icon="info">info</span>
+</div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-8">
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Superficie</p>
+<p class="text-2xl font-bold text-primary">1.250 <span class="text-sm font-medium text-on-surface-variant">m²</span></p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Plantas</p>
+<p class="text-2xl font-bold text-primary">12 <span class="text-sm font-medium text-on-surface-variant">Niveles</span></p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Inicio</p>
+<p class="text-2xl font-bold text-on-surface">12/03</p>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Finalización</p>
+<p class="text-2xl font-bold text-on-surface">15/12</p>
+</div>
+</div>
+</div>
+<!-- Elements Card -->
+<div class="bg-surface-container-lowest p-8 rounded-lg">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-xl font-bold text-on-surface">Elementos Estructurales</h2>
+<button class="text-primary font-bold text-sm">Ver Todos</button>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="foundation">foundation</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Columnas C1-C15</h4>
+<p class="text-xs text-on-surface-variant font-medium">Hormigón Elaborado H30</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full uppercase">Completado</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Losa Nivel 3</h4>
+<p class="text-xs text-on-surface-variant font-medium">Encofrado Metálico</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-full uppercase">En Proceso</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-xl">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+</div>
+<div>
+<h4 class="font-bold text-on-surface">Vigas Perimetrales</h4>
+<p class="text-xs text-on-surface-variant font-medium">Refuerzo Estructural</p>
+</div>
+</div>
+<span class="px-3 py-1 bg-surface-container text-outline text-[10px] font-bold rounded-full uppercase">Pendiente</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Technical Folder (Bento 2) -->
+<section class="md:col-span-4 h-full">
+<div class="bg-surface-container-high p-8 rounded-lg h-full flex flex-col">
+<div class="flex items-center justify-between mb-8">
+<h2 class="text-xl font-bold text-on-surface">Legajo Técnico</h2>
+<span class="material-symbols-outlined text-primary" data-icon="folder_zip">folder_zip</span>
+</div>
+<div class="flex-1 space-y-3 mb-10">
+<div class="group flex items-center gap-4 p-3 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-red-600" data-icon="picture_as_pdf">picture_as_pdf</span>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface truncate">Planos_Estructurales_V2.pdf</p>
+<p class="text-[10px] text-on-surface-variant">2.4 MB • 15 Oct</p>
+</div>
+</div>
+<div class="group flex items-center gap-4 p-3 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-blue-600" data-icon="image">image</span>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface truncate">Relevamiento_Terreno_01.jpg</p>
+<p class="text-[10px] text-on-surface-variant">4.1 MB • 12 Oct</p>
+</div>
+</div>
+<div class="group flex items-center gap-4 p-3 bg-surface-container-lowest/50 rounded-xl hover:bg-surface-container-lowest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-red-600" data-icon="picture_as_pdf">picture_as_pdf</span>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface truncate">Calculo_Hormigon_H30.pdf</p>
+<p class="text-[10px] text-on-surface-variant">1.1 MB • 10 Oct</p>
+</div>
+</div>
+</div>
+<div class="mt-auto space-y-4">
+<button class="w-full flex items-center justify-center gap-2 py-4 rounded-full border-2 border-dashed border-outline-variant text-on-surface-variant font-bold hover:bg-white transition-all">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+<span>Subir Documento</span>
+</button>
+<div class="p-6 bg-primary text-white rounded-lg relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="text-lg font-bold mb-1">Mapa de Obra</h4>
+<p class="text-xs opacity-80 mb-4">Ubicación exacta y accesos logísticos</p>
+<button class="px-4 py-2 bg-white text-primary rounded-full text-xs font-bold shadow-md">Abrir Mapa</button>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-20 transform rotate-12">
+<span class="material-symbols-outlined text-8xl" data-icon="map">map</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Project Image Gallery (Editorial touch) -->
+<section class="mt-12">
+<h3 class="text-lg font-bold text-on-surface mb-6">Galería de Avance</h3>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="close-up view of steel reinforcement bars on a construction site with sunlight creating strong shadows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBasx77Z_tnXV4mEpIUiAxNVInS7tgIIqeHMkaYTx1CWCeeJjlrTw1-HinxAvlyK9bABY3lZnOcLBnfA_9RlF_KAFPy8PSeovHfqBYWWH5vxP6XazFmwBeCSRQkiSjMUdyPWkcNepBUnxRNVJpLw33NnpnYc_e7lTpEa2iutsizdujjB_fDjUxZAbLUbtaXZiKVCdD8s2aen7prn0eNC7-Cr3srz7McfvDtN7y9EeCOvfUDlRem0-Mi7YQb9qTAMMQ5E-wet36FHYsM"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="architectural concrete structure under construction with a clear blue sky background and minimalist professional feel" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGkFaCLmXpjGANb7Z8tV9vQBIh3Ad3_cpr_EPLZ_5z27Ej5-ksG9fi8Ek5ZOTK7pIsolDtlZV10auCiVKYuEgCnO20z_b_OJR6KLXDpPB2yHWC1tixHShclQvUc6FwegDCpk3JKW8K_GLB3Kzn4LL06G3_uOWkVtlnASuHFM1fz-yPyWW5ZIlzZ4vwO8ke88bZ80KvVUv3nqHtSRd2flt8L7QxOgCnILsMpzXFhp7-SZuFycVxWg_yv-5sudliEdATpU4_c7_IfIuw"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="construction worker checking technical blueprints on a digital tablet in a bright daylight setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBG5YsBUgsFxW6JBKdsNoAk5XOE2tonzy7NGSumqo0rE-8HWgbixqURiWAt57465eYhearPM6qW12BUpUyx3-ueXoo0WuTAqyInFMTraoTe_vhxI1WVhr0LI1CP5NCD6EB2ucJ4y3fa2quJxXYJ1z1krZZB5EkJA9mGzJhuRToixxPTNi6B7vm7Ss1d0iyaYBoHm7Qm4O0O4gK-zrA_q4M9PPFSOR-xlXbz7VB3JFO2FUFgyQ3Fie6MzxaNiJ-mm3tVM9wVMSe9iSAD"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container-high flex items-center justify-center border-2 border-dashed border-outline-variant">
+<div class="text-center">
+<span class="material-symbols-outlined text-outline text-3xl" data-icon="add_a_photo">add_a_photo</span>
+<p class="text-[10px] font-bold text-on-surface-variant uppercase mt-1">Añadir</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile screens) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white dark:bg-slate-900 flex justify-around items-center px-4 pb-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-3xl border-t border-slate-100 dark:border-slate-800">
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 p-2 hover:text-[#0042c8] dark:hover:text-white transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#0042c8] text-white rounded-full w-14 h-14 -mt-6 shadow-lg shadow-[#0042c8]/20 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 p-2 hover:text-[#0042c8] dark:hover:text-white transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase">Tareas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 p-2 hover:text-[#0042c8] dark:hover:text-white transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase">Billetera</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 p-2 hover:text-[#0042c8] dark:hover:text-white transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase">Avisos</span>
+</a>
+</nav>
+</body></html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#b6c4ff",
+                    "surface": "#ecfdfd",
+                    "on-secondary-container": "#243c87",
+                    "on-error-container": "#93000a",
+                    "on-surface": "#0f1e1f",
+                    "on-secondary": "#ffffff",
+                    "secondary-container": "#95aafd",
+                    "primary-container": "#0056ff",
+                    "primary": "#0042c8",
+                    "surface-dim": "#cdddde",
+                    "tertiary-fixed-dim": "#ffb5a0",
+                    "outline-variant": "#c3c5d9",
+                    "on-tertiary": "#ffffff",
+                    "inverse-surface": "#243334",
+                    "secondary": "#445aa6",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "surface-container-highest": "#d5e6e7",
+                    "on-tertiary-fixed-variant": "#872100",
+                    "on-tertiary-fixed": "#3b0900",
+                    "on-secondary-fixed-variant": "#2a418d",
+                    "primary-fixed": "#dce1ff",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "background": "#ecfdfd",
+                    "surface-container-high": "#dbebec",
+                    "on-tertiary-container": "#ffe3db",
+                    "on-primary-fixed": "#001550",
+                    "tertiary": "#982600",
+                    "on-primary-container": "#e4e7ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e1f1f2",
+                    "secondary-fixed": "#dce1ff",
+                    "outline": "#737688",
+                    "surface-variant": "#d5e6e7",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#c23402",
+                    "surface-container-low": "#e6f7f8",
+                    "inverse-on-surface": "#e3f4f5",
+                    "on-secondary-fixed": "#001550",
+                    "surface-tint": "#004ee8",
+                    "surface-bright": "#ecfdfd",
+                    "on-background": "#0f1e1f",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-surface-variant": "#434656",
+                    "on-primary-fixed-variant": "#003ab2",
+                    "tertiary-fixed": "#ffdbd1",
+                    "on-primary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#ecfdfd]/80 dark:bg-slate-900/80 backdrop-blur-md flex items-center justify-between px-6 py-3 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden">
+<img alt="Architect Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a professional architect in a clean studio setting, soft daylighting, high-end professional atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeP1zR8GCaRKhKJnz8XydvQHz79fTL8K4oObqCA40aYbiOO6Xf0dwjFPF5L2X7wR8tyX3au45dV8TFNngrQgv881Im3o7Wqk3Tp7ba2rhfqXdTShRi1yBHn3dXKk5auFKxLKwVgJrnlbHkcM3Tq48-kJ85lTgNMXO8N3opmUCUMu3gsDuZAXgIwkfvqIFhL5uDcPouT1xJbcDjwqlBZzGu-roOR9a-_c4_jkE21bxl4snghnlUKqI3iHO7oNGoQL4ZOrq6v_VeIWgK"/>
+</div>
+<span class="text-xl font-bold bg-gradient-to-b from-[#0042c8] to-[#0033a0] bg-clip-text text-transparent">Grows</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-[#dbebec]/50 transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[#0042c8]">notifications</span>
+</button>
+</div>
+</header>
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-72 fixed left-0 top-0 bg-[#dbebec] dark:bg-slate-900 py-8 pl-4 z-40">
+<div class="text-2xl font-black text-[#0042c8] mb-8 px-4">Grows</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-white/40 transition-all" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-medium text-sm">Tablero</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-white text-[#0042c8] font-bold rounded-r-full mr-4 shadow-sm" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="font-medium text-sm">Contratistas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-white/40 transition-all" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="font-medium text-sm">Validaciones</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-white/40 transition-all" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-medium text-sm">Dinero</span>
+</a>
+</nav>
+<div class="mt-auto px-4 pt-8 border-t border-white/20">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">GA</div>
+<div>
+<div class="text-sm font-bold">Grows Architecture</div>
+<div class="text-xs text-on-surface-variant">Workspace</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="pt-20 pb-28 px-6 md:pl-80 md:pr-12 max-w-7xl mx-auto">
+<!-- Header & Search -->
+<section class="mb-10">
+<h1 class="text-3xl font-extrabold tracking-tight mb-6">Marketplace de Contratistas</h1>
+<div class="flex flex-col md:flex-row gap-4 items-center">
+<div class="relative w-full md:flex-1">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface-container-lowest border-none rounded-2xl shadow-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline/60" placeholder="Buscar por nombre, especialidad o región..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
+<button class="px-5 py-3 rounded-full bg-primary text-white font-semibold text-sm whitespace-nowrap active:scale-95 transition-transform">Todos</button>
+<button class="px-5 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm whitespace-nowrap hover:bg-surface-container-highest transition-colors">Electricidad</button>
+<button class="px-5 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm whitespace-nowrap hover:bg-surface-container-highest transition-colors">Estructuras</button>
+<button class="px-5 py-3 rounded-full bg-surface-container-high text-on-surface-variant font-medium text-sm whitespace-nowrap hover:bg-surface-container-highest transition-colors">Plomería</button>
+</div>
+</div>
+</section>
+<!-- Featured / Top Rated Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+<!-- Large Feature Card -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-lg p-8 relative overflow-hidden flex flex-col justify-between min-h-[320px]">
+<div class="relative z-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full">Destacado</span>
+<div class="flex text-amber-400">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+</div>
+<h2 class="text-4xl font-bold mb-2">Mendoza Electricidad</h2>
+<p class="text-on-surface-variant max-w-md text-lg">Sistemas de alta tensión y automatización industrial con certificación ISO 9001.</p>
+</div>
+<div class="relative z-10 flex gap-4 mt-6">
+<button class="px-8 py-3 bg-gradient-to-b from-[#0042c8] to-[#0033a0] text-white font-bold rounded-full shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">Ver Propuesta</button>
+<button class="px-8 py-3 bg-surface-container-highest text-on-surface font-bold rounded-full hover:bg-surface-dim transition-colors">Invitar</button>
+</div>
+<div class="absolute right-0 bottom-0 w-1/2 h-full opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[240px] absolute -right-12 -bottom-12">bolt</span>
+</div>
+</div>
+<!-- Stats Card -->
+<div class="bg-primary text-white rounded-lg p-8 flex flex-col justify-center text-center">
+<div class="text-5xl font-bold mb-2">482</div>
+<div class="text-sm font-medium opacity-80 uppercase tracking-widest mb-8">Contratistas Certificados</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between text-xs py-2 border-b border-white/10">
+<span>Disponibles Hoy</span>
+<span class="font-bold">124</span>
+</div>
+<div class="flex items-center justify-between text-xs py-2 border-b border-white/10">
+<span>En Revisión</span>
+<span class="font-bold">18</span>
+</div>
+<div class="flex items-center justify-between text-xs py-2">
+<span>Proyectos Activos</span>
+<span class="font-bold">356</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Directory List -->
+<div class="space-y-4">
+<div class="flex items-center justify-between mb-4 px-2">
+<h3 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant">Directorio Profesional</h3>
+<span class="text-xs text-outline">Ordenado por relevancia</span>
+</div>
+<!-- Profile Row 1 -->
+<div class="bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-2xl bg-surface-container overflow-hidden shrink-0">
+<img alt="Rivas Estructuras" class="w-full h-full object-cover" data-alt="Macro photo of steel beams being welded, industrial construction site, sparks and blue tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6k2qH_rXu6hi8coUmeNe3AhrU16UgW4Zc0Mz9BgMgoslb9SGhF8lvpkT9cm453CCn0JgyEmhhOE7Wlc_7MYC6_bDJe4Sx2dcD2bSAJpHyYFOpA5z_b3iK4IpDE0LHxVVvN4vEGQS6RUdByd5vIYM0H-FngCpL3dioLKAWenTQ8sZ5HUEMDfc-iU05OAsr_fLYmb2aa87hW1ZlJIDqKbXlmKqHoC2x1fo7Err8mEGwPRzfeIZev4Ywn7zD7t_IQjVUiiglFkHiHqsh"/>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h4 class="text-lg font-bold">Rivas Estructuras</h4>
+<span class="bg-[#e4e7ff] text-[#0042c8] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Disponible</span>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Córdoba, AR</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">verified</span> 12 Proyectos</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-dim transition-colors">Ver Perfil</button>
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-primary text-white font-bold text-sm active:scale-95 transition-all">Invitar</button>
+</div>
+</div>
+<!-- Profile Row 2 -->
+<div class="bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-2xl bg-surface-container overflow-hidden shrink-0">
+<img alt="Herrería Moderna" class="w-full h-full object-cover" data-alt="Blacksmith forging metal in a dim workshop, glowing orange sparks, professional craftsmanship" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATr5B4vasP8Gx6YtvV81ysPd_KXLmy4WcXCxlTMjjIOzTISUcTbGJkJs_gUeSIFzGizNqVItTHoFrs2O7ScuNbXn3VRyAmKTQcG9kWV52iUtLk3dASCZBeSkr5aGqHk9gWQQBmUsA48jAOcpgAeSm3ai99r00S7woPoc9NBsjbuWNcccW0LzJw_jjv-yplaVy-tyU0YLK_0qu2a1_xl-eYv8qrGypYwH7-e5itMqD9X8zFcwlzS7VJvhTIefqiH8AXEfloM5VP3Tp9"/>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h4 class="text-lg font-bold">Herrería Moderna</h4>
+<span class="bg-surface-container-highest text-on-surface-variant text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">En Revisión</span>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Rosario, AR</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">verified</span> 8 Proyectos</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-dim transition-colors">Ver Propuesta</button>
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full border border-primary text-primary font-bold text-sm hover:bg-primary/5 transition-colors">Mensaje</button>
+</div>
+</div>
+<!-- Profile Row 3 -->
+<div class="bg-surface-container-lowest hover:bg-surface-container-low transition-colors rounded-lg p-5 flex flex-col md:flex-row md:items-center justify-between gap-6">
+<div class="flex items-center gap-5">
+<div class="w-16 h-16 rounded-2xl bg-surface-container overflow-hidden shrink-0">
+<img alt="Instalaciones Delta" class="w-full h-full object-cover" data-alt="Close-up of organized copper piping in a modern utility room, clean architectural photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARq1wB5hm-p8clZ-i9CpnGA_7uax7Tbh4zcqqcExx8rc96qa_B0WMLg4ONBSsGrYSrQldnFiLGl67FvbM1XRcJbNgf6dQ-Vvz9SBNXfF1Nwqrfx9lLyI16VReEsvjpm5Uh6w7x6DOiCo-fmLIKgDCYzHar6kD5uOvWFwT9I07Xw9l7X3F-xLMReQI_4xV-M866FuxlBKwhk66MDaUX_AISz4iGeUQPsljrkdRXW7svQyynI6DSoFvtxBtHt2az6hDMN_2cVKpm2UL9"/>
+</div>
+<div>
+<div class="flex items-center gap-3 mb-1">
+<h4 class="text-lg font-bold">Instalaciones Delta</h4>
+<span class="bg-[#e4e7ff] text-[#0042c8] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Disponible</span>
+</div>
+<div class="flex items-center gap-4 text-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Buenos Aires, AR</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">verified</span> 45 Proyectos</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-surface-container-highest text-on-surface font-bold text-sm hover:bg-surface-dim transition-colors">Ver Perfil</button>
+<button class="flex-1 md:flex-none px-6 py-2.5 rounded-full bg-primary text-white font-bold text-sm active:scale-95 transition-all">Invitar</button>
+</div>
+</div>
+</div>
+<button class="w-full mt-12 py-4 text-primary font-bold text-sm uppercase tracking-widest hover:bg-primary/5 rounded-2xl transition-colors">Cargar más resultados</button>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl z-50 border-t border-slate-100 dark:border-slate-800 shadow-[0_-4px_24px_rgba(0,0,0,0.04)]">
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 opacity-70 transition-all active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Tablero</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#0042c8] dark:text-[#4d88ff] bg-[#dbebec] dark:bg-slate-800 rounded-xl px-3 py-1 transition-all active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Contratistas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 opacity-70 transition-all active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Validaciones</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] dark:text-slate-400 opacity-70 transition-all active:translate-y-0.5" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-[11px] font-manrope font-semibold uppercase tracking-wider">Dinero</span>
+</a>
+</nav>
+</body></html>

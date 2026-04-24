@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/grows/Badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
+import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
 
 type SupabaseTarea = {
   id: string;
@@ -246,9 +247,9 @@ export function TareasEnCurso() {
 
   if (loading) {
     return (
-      <div className="p-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-6 text-center">
-          <p className="text-sm text-slate-600">Cargando tareas asignadas...</p>
+      <div className={STITCH_INNER}>
+        <div className="rounded-xl border border-stitch-surface-container bg-stitch-surface-container-lowest p-6 text-center">
+          <p className="text-sm text-stitch-on-surface/70">Cargando tareas asignadas…</p>
         </div>
       </div>
     );
@@ -256,9 +257,9 @@ export function TareasEnCurso() {
 
   if (error) {
     return (
-      <div className="p-4">
-        <div className="bg-white border border-red-200 rounded-lg p-6">
-          <div className="flex items-center gap-2 text-red-700">
+      <div className={STITCH_INNER}>
+        <div className="rounded-xl border border-red-200 bg-red-50/90 p-6">
+          <div className="flex items-center gap-2 text-red-800">
             <AlertCircle className="h-5 w-5" />
             <p className="font-semibold">{error}</p>
           </div>
@@ -269,34 +270,38 @@ export function TareasEnCurso() {
 
   if (tareas.length === 0) {
     return (
-      <div className="p-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-6 text-center">
-          <CheckCircle className="h-8 w-8 text-slate-400 mx-auto mb-3" />
-          <p className="text-sm text-slate-600">Aun no tenes tareas asignadas.</p>
+      <div className={STITCH_INNER}>
+        <div className="rounded-xl border border-dashed border-stitch-outline/30 bg-stitch-surface-container-lowest p-8 text-center">
+          <CheckCircle className="mx-auto mb-3 h-8 w-8 text-stitch-outline" />
+          <p className="text-sm text-stitch-on-surface/70">Aún no tenés tareas asignadas.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 space-y-4">
+    <div className={STITCH_INNER + ' space-y-4 font-stitch-body'}>
       {!obraActiva && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-slate-900">Tareas asignadas</h2>
+          <StitchH2Page
+            kicker="Tareas"
+            title="Asignadas por obra"
+            description="Elegí una obra para ver el detalle de cada tarea."
+          />
           {obrasOrdenadas.map((obra) => (
             <div
               key={obra.obraId}
-              className="bg-white border border-slate-200 rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50"
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-stitch-surface-container bg-stitch-surface-container-lowest px-4 py-3 transition hover:bg-stitch-surface-container-low"
               onClick={() => setObraSeleccionada(obra.obraId)}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <Building2 className="h-4 w-4 text-slate-600" />
-                  <p className="text-sm font-semibold text-slate-900 truncate">
+                  <p className="truncate text-sm font-bold text-stitch-on-surface">
                     {obra.nombre}
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-stitch-on-surface/60">
                   {obra.direccion && (
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3 w-3" />

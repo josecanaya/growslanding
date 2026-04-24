@@ -6,6 +6,8 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useRouter } from 'next/navigation';
+import { USE_MOCK_DATA, MOCK_MENSAJES_CHAT } from '@/lib/mocks/socioMockData';
+import { useToast } from '@/components/ui/use-toast';
 
 type Mensaje = {
   id: string;
@@ -21,22 +23,27 @@ type Mensaje = {
 export function MensajeriaSocio() {
   const currentUser = useCurrentUser();
   const router = useRouter();
+  const { toast } = useToast();
   const supabase = createClientComponentClient<Database>();
-  const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [mensajes, setMensajes] = useState<Mensaje[]>(USE_MOCK_DATA ? MOCK_MENSAJES_CHAT as Mensaje[] : []);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [loading, setLoading] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [socioId, setSocioId] = useState<string | null>(null);
-  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [socioId, setSocioId] = useState<string | null>(USE_MOCK_DATA ? 'socio-1' : null);
+  const [clienteId, setClienteId] = useState<string | null>(USE_MOCK_DATA ? 'cliente-1' : null);
   const [obraId, setObraId] = useState<string | null>(null);
-  const [loadingSocio, setLoadingSocio] = useState(true);
+  const [loadingSocio, setLoadingSocio] = useState(!USE_MOCK_DATA);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const orgIdFromUser = currentUser?.orgId ?? null;
   const [orgId, setOrgId] = useState<string | null>(orgIdFromUser);
 
-  // Obtener orgId y socio_id desde email
+  // Obtener orgId y socio_id desde email (omitir en demo)
   useEffect(() => {
+    if (USE_MOCK_DATA) {
+      setLoadingSocio(false);
+      return;
+    }
     const obtenerOrgIdYSocioId = async () => {
       if (!currentUser?.email) {
         setLoadingSocio(false);
@@ -145,6 +152,11 @@ export function MensajeriaSocio() {
   }, [orgId, socioId]);
 
   const fetchMensajes = useCallback(async () => {
+    if (USE_MOCK_DATA) {
+      setMensajes(MOCK_MENSAJES_CHAT as Mensaje[]);
+      setLoading(false);
+      return;
+    }
     if (!orgId || !socioId || typeof window === 'undefined') {
       setMensajes([]);
       return;
@@ -273,7 +285,27 @@ export function MensajeriaSocio() {
   }, [mensajes]);
 
   const handleEnviar = async () => {
-    if (!orgId || !socioId || !clienteId || !nuevoMensaje.trim()) return;
+    const texto = nuevoMensaje.trim();
+    if (USE_MOCK_DATA) {
+      if (!texto) return;
+      setEnviando(true);
+      const nuevo: Mensaje = {
+        id: `msg-${Date.now()}`,
+        contenido: texto,
+        remitente_tipo: 'socio',
+        remitente_id: 'socio-1',
+        destinatario_tipo: 'cliente',
+        destinatario_id: 'cliente-1',
+        created_at: new Date().toISOString(),
+        leido: false,
+      };
+      setMensajes((prev) => [...prev, nuevo]);
+      setNuevoMensaje('');
+      toast({ title: 'Mensaje enviado (demo)', description: 'Sin conexión a base de datos.' });
+      setEnviando(false);
+      return;
+    }
+    if (!orgId || !socioId || !clienteId || !texto) return;
     setEnviando(true);
     try {
       const res = await fetch('/api/mensajes', {
@@ -285,7 +317,7 @@ export function MensajeriaSocio() {
           remitente_tipo: 'socio',
           destinatario_id: clienteId,
           destinatario_tipo: 'cliente',
-          contenido: nuevoMensaje.trim(),
+          contenido: texto,
           tipo: 'chat',
           leido: false,
         }),

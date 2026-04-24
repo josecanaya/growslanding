@@ -14,25 +14,87 @@ export const runtime = 'nodejs';
  */
 export async function GET() {
   try {
-    // Importación dinámica de prisma solo cuando se necesita
-    const { prisma } = await import('@/lib/prisma');
-    const obras = await prisma.obra.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
+    }
+
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    if (allowedOrgIds.length === 0) {
+      return NextResponse.json({ success: true, data: [], count: 0 }, { status: 200 });
+    }
+
+    const { data: obrasRaw, error: obrasError } = await supabaseAny
+      .from('obras')
+      .select(`
+        id,
+        org_id,
+        name,
+        address,
+        estado,
+        created_at,
+        updated_at,
+        organizations:organizations (
+          id,
+          name
+        )
+      `)
+      .in('org_id', allowedOrgIds)
+      .order('created_at', { ascending: false });
+
+    if (obrasError) {
+      throw obrasError;
+    }
+
+    const obraIds = (obrasRaw ?? []).map((obra: any) => obra.id);
+    const tareasPorObra = new Map<string, number>();
+
+    if (obraIds.length > 0) {
+      const { data: tareas, error: tareasError } = await supabaseAny
+        .from('tareas')
+        .select('obra_id')
+        .in('obra_id', obraIds);
+
+      if (tareasError) {
+        throw tareasError;
+      }
+
+      for (const tarea of tareas ?? []) {
+        const obraId = tarea.obra_id as string | null;
+        if (!obraId) continue;
+        tareasPorObra.set(obraId, (tareasPorObra.get(obraId) ?? 0) + 1);
+      }
+    }
+
+    const obras = (obrasRaw ?? []).map((obra: any) => {
+      const organization = Array.isArray(obra.organizations)
+        ? obra.organizations[0]
+        : obra.organizations;
+
+      return {
+        id: obra.id,
+        orgId: obra.org_id,
+        name: obra.name,
+        address: obra.address,
+        estado: obra.estado,
+        createdAt: obra.created_at,
+        updatedAt: obra.updated_at,
+        organization: organization
+          ? { id: organization.id, name: organization.name }
+          : { id: obra.org_id, name: null },
         _count: {
-          select: {
-            tareas: true,
-          },
+          tareas: tareasPorObra.get(obra.id) ?? 0,
         },
-      },
+      };
     });
 
     return NextResponse.json({
@@ -504,9 +566,27 @@ export async function POST(request: Request) {
  */
 export async function PATCH(request: Request) {
   try {
-    // Importación dinámica de prisma y auditEvent solo cuando se necesita
-    const { prisma } = await import('@/lib/prisma');
-    const { auditEvent } = await import('@/lib/audit');
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
+    }
+
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    if (allowedOrgIds.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'No pertenece a ninguna organización' },
+        { status: 403 }
+      );
+    }
     const body = await request.json();
     const { id, name, address, estado } = body;
 
@@ -520,12 +600,14 @@ export async function PATCH(request: Request) {
       );
     }
 
-    // Verificar que la obra existe
-    const existingObra = await prisma.obra.findUnique({
-      where: { id },
-    });
+    const { data: existingObra, error: existingError } = await supabaseAny
+      .from('obras')
+      .select('id, org_id, name')
+      .eq('id', id)
+      .in('org_id', allowedOrgIds)
+      .maybeSingle();
 
-    if (!existingObra) {
+    if (existingError || !existingObra) {
       return NextResponse.json(
         {
           success: false,
@@ -536,38 +618,43 @@ export async function PATCH(request: Request) {
     }
 
     // Preparar datos de actualización
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (address !== undefined) updateData.address = address;
     if (estado !== undefined) updateData.estado = estado;
+    updateData.updated_at = new Date().toISOString();
 
-    // Actualizar la obra
-    const updatedObra = await prisma.obra.update({
-      where: { id },
-      data: updateData,
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        _count: {
-          select: {
-            tareas: true,
-          },
-        },
-      },
-    });
+    const { data: updatedObra, error: updateError } = await supabaseAny
+      .from('obras')
+      .update(updateData)
+      .eq('id', id)
+      .eq('org_id', existingObra.org_id)
+      .select('id, org_id, name, address, estado, created_at, updated_at')
+      .maybeSingle();
 
-    // Auditoría: registrar actualización de obra
-    await auditEvent({ orgId: updatedObra.orgId, tipo: "OBRA_ACTUALIZADA", descripcion: updatedObra.name });
+    if (updateError || !updatedObra) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: updateError?.message || 'No se pudo actualizar la obra',
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {
         success: true,
         message: 'Obra actualizada exitosamente',
-        data: updatedObra,
+        data: {
+          id: updatedObra.id,
+          orgId: updatedObra.org_id,
+          name: updatedObra.name,
+          address: updatedObra.address,
+          estado: updatedObra.estado,
+          createdAt: updatedObra.created_at,
+          updatedAt: updatedObra.updated_at,
+        },
       },
       { status: 200 }
     );
@@ -589,9 +676,27 @@ export async function PATCH(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
-    // Importación dinámica de prisma y auditEvent solo cuando se necesita
-    const { prisma } = await import('@/lib/prisma');
-    const { auditEvent } = await import('@/lib/audit');
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
+    }
+
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    if (allowedOrgIds.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'No pertenece a ninguna organización' },
+        { status: 403 }
+      );
+    }
     const body = await request.json();
     const { id } = body;
 
@@ -605,12 +710,14 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Verificar que la obra existe
-    const existingObra = await prisma.obra.findUnique({
-      where: { id },
-    });
+    const { data: existingObra, error: existingError } = await supabaseAny
+      .from('obras')
+      .select('id, org_id, name')
+      .eq('id', id)
+      .in('org_id', allowedOrgIds)
+      .maybeSingle();
 
-    if (!existingObra) {
+    if (existingError || !existingObra) {
       return NextResponse.json(
         {
           success: false,
@@ -620,13 +727,20 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Auditoría: registrar eliminación de obra (antes de eliminar)
-    await auditEvent({ orgId: existingObra.orgId, tipo: "OBRA_ELIMINADA", descripcion: existingObra.name });
-
-    // Eliminar la obra
-    await prisma.obra.delete({
-      where: { id },
-    });
+    const { error: deleteError } = await supabaseAny
+      .from('obras')
+      .delete()
+      .eq('id', id)
+      .eq('org_id', existingObra.org_id);
+    if (deleteError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: deleteError.message || 'No se pudo eliminar la obra',
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -645,4 +759,20 @@ export async function DELETE(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function resolveAllowedOrgIds(supabaseAny: any, userId: string): Promise<string[]> {
+  const [orgClienteRows, orgSocioRows] = await Promise.all([
+    supabaseAny.from('organizations').select('id').eq('user_id', userId),
+    supabaseAny.from('socios').select('org_id').eq('user_id', userId),
+  ]);
+
+  const orgIds = new Set<string>([
+    ...((orgClienteRows.data ?? []) as Array<{ id: string }>).map((o) => o.id),
+    ...((orgSocioRows.data ?? []) as Array<{ org_id: string | null }>)
+      .map((s) => s.org_id)
+      .filter((orgId): orgId is string => Boolean(orgId)),
+  ]);
+
+  return Array.from(orgIds);
 }

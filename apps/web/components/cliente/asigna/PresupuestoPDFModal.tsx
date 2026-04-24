@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Download, Loader2 } from 'lucide-react';
 import {
@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/grows';
+import { generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
 
 interface PresupuestoInfo {
   id: string;
@@ -31,6 +32,8 @@ interface PresupuestoPDFModalProps {
   onClose: () => void;
   cuadrillaNombre: string;
   presupuestos: PresupuestoInfo[];
+  /** En demo: solo el primer socio tiene PDF; mostrar documento de ejemplo sin API. */
+  isDemoPdf?: boolean;
 }
 
 export function PresupuestoPDFModal({
@@ -38,16 +41,115 @@ export function PresupuestoPDFModal({
   onClose,
   cuadrillaNombre,
   presupuestos,
+  isDemoPdf = false,
 }: PresupuestoPDFModalProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
   const supabase = createClientComponentClient();
 
   useEffect(() => {
-    if (!open || presupuestos.length === 0) {
+    if (!open) {
       setPdfUrl(null);
       setError(null);
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+      return;
+    }
+
+    if (isDemoPdf) {
+      setLoading(true);
+      setError(null);
+      try {
+        const obra = {
+          id: 'demo-obra-1-casa-familiar',
+          name: 'CLIENTE POR DEFECTO (nueva)',
+          direccion_completa: 'Obra Casa Familiar – Demo',
+          cantidad_plantas: 2,
+          fecha_inicio: new Date().toISOString().split('T')[0],
+          cliente: 'Cliente por defecto',
+        };
+        const items =
+          presupuestos.length > 0
+            ? presupuestos.map((p) => ({
+                id: p.id,
+                tarea_id: p.tarea_id,
+                estado: p.estado ?? 'PENDIENTE',
+                dias_reales: p.duracion_ofrecida ?? p.duracion_estimada ?? 5,
+                monto: p.monto ?? 0,
+                tarea: {
+                  id: p.tarea_id,
+                  title: p.tarea_titulo,
+                  etapa: null,
+                  duracion_sugerida: null,
+                },
+                elemento: null,
+              }))
+            : [
+                {
+                  id: 'demo-1',
+                  tarea_id: 'demo-t1',
+                  estado: 'PENDIENTE',
+                  dias_reales: 5,
+                  monto: 125000,
+                  tarea: { id: 'demo-t1', title: 'Replanteo y límites', etapa: null, duracion_sugerida: null },
+                  elemento: null,
+                },
+                {
+                  id: 'demo-2',
+                  tarea_id: 'demo-t2',
+                  estado: 'PENDIENTE',
+                  dias_reales: 4,
+                  monto: 118000,
+                  tarea: { id: 'demo-t2', title: 'Excavación de fundación', etapa: null, duracion_sugerida: null },
+                  elemento: null,
+                },
+                {
+                  id: 'demo-3',
+                  tarea_id: 'demo-t3',
+                  estado: 'PENDIENTE',
+                  dias_reales: 6,
+                  monto: 132000,
+                  tarea: { id: 'demo-t3', title: 'Hormigón de cimientos', etapa: null, duracion_sugerida: null },
+                  elemento: null,
+                },
+              ];
+        const presupuestosAgrupadosPorEtapa = {
+          ESTRUCTURA: items,
+          OBRA_GRIS: [] as typeof items,
+          TERMINACIONES: [] as typeof items,
+        };
+        const bytes = generarPresupuestoPDFBytes({
+          obra,
+          presupuestosAgrupadosPorEtapa,
+          nombreContratista: cuadrillaNombre,
+          fechaGeneracion: new Date(),
+          etapaActiva: 'ESTRUCTURA',
+        });
+        if (bytes && bytes.length > 0) {
+          if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
+          const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          blobUrlRef.current = url;
+          setPdfUrl(url);
+        } else {
+          setError('No se pudo generar el PDF de ejemplo.');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error al generar el PDF de ejemplo.');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    if (presupuestos.length === 0) {
+      setPdfUrl(null);
+      setError(null);
+      setLoading(false);
       return;
     }
 
@@ -108,7 +210,7 @@ export function PresupuestoPDFModal({
     };
 
     void fetchPdfPath();
-  }, [open, presupuestos, supabase]);
+  }, [open, presupuestos, supabase, isDemoPdf]);
 
   const handleDownload = () => {
     if (!pdfUrl) return;
@@ -146,6 +248,9 @@ export function PresupuestoPDFModal({
 
           {!loading && !error && pdfUrl && (
             <div className="space-y-4">
+              {isDemoPdf && (
+                <p className="text-xs text-slate-500 text-center">Documento de ejemplo generado con el mismo formato que la app de socios.</p>
+              )}
               <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
                 <iframe
                   src={pdfUrl}

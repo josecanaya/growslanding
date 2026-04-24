@@ -6,18 +6,24 @@ import type { Route } from 'next';
 
 import { SocioHeader } from '@/components/socio/SocioHeader';
 import { SocioTabBar } from '@/components/socio/SocioTabBar';
+import { AhoraWorkNavProvider, useAhoraWorkNavOptional } from '@/components/socio/ahora/AhoraWorkNavContext';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
+import { USE_AHORA_STITCH_MOCK } from '@/lib/mocks/socioMockData';
 
-export default function SocioLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function SocioLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const currentUser = useCurrentUser();
+  const ahoraNav = useAhoraWorkNavOptional();
   const isAhoraPage = pathname?.startsWith('/socio/ahora');
+  const ahoraSoloVistaStitch = isAhoraPage && USE_AHORA_STITCH_MOCK;
+  const hideTabByWorkSession = Boolean(ahoraSoloVistaStitch && ahoraNav?.hideBottomTabBar);
+  const isHomePage =
+    pathname === '/socio' ||
+    pathname === '/socio/' ||
+    pathname === '/socio/panel' ||
+    pathname?.startsWith('/socio/panel/');
 
   useEffect(() => {
     if (!currentUser || currentUser.isDevUser) {
@@ -31,28 +37,42 @@ export default function SocioLayout({
   }, [currentUser, router]);
 
   return (
-    <div className="w-full flex flex-col min-h-screen bg-[#F7F7F7]">
-      {/* Header GROWS fijo - siempre visible */}
-      <SocioHeader />
+    <div
+      className={
+        ahoraSoloVistaStitch
+          ? 'flex min-h-screen w-full flex-col bg-[#00174a] text-white'
+          : 'flex min-h-screen w-full flex-col bg-stitch-surface font-stitch-body text-stitch-on-surface'
+      }
+    >
+      {ahoraSoloVistaStitch ? null : <SocioHeader />}
 
-      {/* Contenido principal con padding para header y footer */}
-      <main className="flex-1 overflow-y-auto pt-[70px] pb-[90px]">
-        {isAhoraPage ? (
-          // Para /socio/ahora: sin max-width, full width
-          <div className="w-full">
-            {children}
-          </div>
+      <main
+        className={
+          hideTabByWorkSession
+            ? 'flex-1 overflow-y-auto pb-4 pt-0 sm:pb-6'
+            : 'flex-1 overflow-y-auto pb-28 pt-0 sm:pb-32'
+        }
+      >
+        {isAhoraPage || isHomePage ? (
+          <div className="w-full">{children}</div>
         ) : (
           // Para otras páginas: max-width centrado
-          <div className="max-w-[480px] mx-auto w-full">
+          <div className="mx-auto w-full max-w-2xl">
             {children}
           </div>
         )}
       </main>
 
-      {/* TabBar fijo - siempre visible */}
-      <SocioTabBar />
+      {!hideTabByWorkSession && <SocioTabBar />}
     </div>
+  );
+}
+
+export default function SocioLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AhoraWorkNavProvider>
+      <SocioLayoutInner>{children}</SocioLayoutInner>
+    </AhoraWorkNavProvider>
   );
 }
 

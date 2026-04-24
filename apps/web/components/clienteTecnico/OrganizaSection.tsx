@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { useOrganizaStore, selectCanvasTasks } from '@/lib/hooks/useOrganizaStore';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { DEMO_OBRA_CASA_ID } from '@/lib/mocks/demoVideoData';
 import { agruparTareasConsolidadasPorPlanta, obtenerNombreFase, type TareaDisponible, type TareaAgrupadaConsolidada, type TareaConsolidada } from '@/lib/utils/organiza-tareas';
 import { calcularCPM, type TareaCPM, type CPMResultado } from '@/lib/utils/cpm';
 import { OnboardingOrganizarProvider, useOnboardingOrganizar } from '@/components/onboarding/OnboardingOrganizar';
@@ -480,9 +481,10 @@ function OrganizaSectionContent({
     [tareasDisponibles],
   );
 
-  // Función para guardar valores CPM en Supabase
+  // Función para guardar valores CPM en Supabase (demo: no llamar API)
   const guardarCPMEnSupabase = useCallback(
     async (obraId: string, resultadosCPM: Array<{ id: string; es: number; ef: number; ls: number; lf: number; float: number; isCritical: boolean }>) => {
+      if (obraId === DEMO_OBRA_CASA_ID) return;
       try {
         const tareasCPMData = resultadosCPM.map((result) => ({
           id: result.id,
@@ -494,15 +496,8 @@ function OrganizaSectionContent({
           isCritical: result.isCritical,
         }));
 
-        console.log('[OrganizaSection] ===== INICIANDO GUARDADO CPM =====');
-        console.log('[OrganizaSection] Guardando CPM para', tareasCPMData.length, 'tareas');
-        console.log('[OrganizaSection] URL:', `/api/obras/${obraId}/guardar-cpm`);
-        console.log('[OrganizaSection] Obra ID:', obraId);
-        console.log('[OrganizaSection] Datos a enviar (primeros 2):', JSON.stringify(tareasCPMData.slice(0, 2), null, 2));
-        
         let response: Response;
         try {
-          console.log('[OrganizaSection] Ejecutando fetch...');
           response = await fetch(`/api/obras/${obraId}/guardar-cpm`, {
             method: 'POST',
             headers: {
@@ -510,84 +505,35 @@ function OrganizaSectionContent({
             },
             body: JSON.stringify({ tareas: tareasCPMData }),
           });
-          console.log('[OrganizaSection] Fetch completado. Status:', response.status, response.statusText);
         } catch (fetchError) {
-          console.error('[OrganizaSection] ===== ERROR EN FETCH =====');
-          console.error('[OrganizaSection] Error en fetch:', fetchError);
-          console.error('[OrganizaSection] Error type:', typeof fetchError);
-          console.error('[OrganizaSection] Error message:', fetchError instanceof Error ? fetchError.message : String(fetchError));
-          console.error('[OrganizaSection] Error stack:', fetchError instanceof Error ? fetchError.stack : undefined);
-          // No lanzar error, solo loguear - el guardado de CPM es opcional
-          console.warn('[OrganizaSection] No se pudo guardar CPM en Supabase, pero el cálculo local sigue funcionando');
-          return; // Salir silenciosamente sin error
+          // Guardado CPM opcional; salir sin ruido
+          return;
         }
 
-        // Leer la respuesta como texto primero para poder parsearla después
         let responseText = '';
         try {
-          console.log('[OrganizaSection] Leyendo respuesta como texto...');
           responseText = await response.text();
-          console.log('[OrganizaSection] Respuesta recibida (longitud):', responseText.length);
-          console.log('[OrganizaSection] Respuesta recibida (primeros 200 chars):', responseText.substring(0, 200));
-          console.log('[OrganizaSection] Respuesta completa:', responseText);
         } catch (textError) {
-          console.error('[OrganizaSection] ===== ERROR LEYENDO RESPUESTA =====');
-          console.error('[OrganizaSection] Error leyendo respuesta como texto:', textError);
-          console.error('[OrganizaSection] Error type:', typeof textError);
-          throw new Error(`Error al leer respuesta del servidor: ${textError instanceof Error ? textError.message : String(textError)}`);
+          return;
         }
 
         let responseData: any = {};
         if (responseText) {
           try {
             responseData = JSON.parse(responseText);
-            console.log('[OrganizaSection] Respuesta parseada:', responseData);
-          } catch (parseError) {
-            console.error('[OrganizaSection] Error parseando respuesta JSON:', parseError);
-            console.error('[OrganizaSection] Respuesta raw completa:', responseText);
-            // Si no es JSON, usar el texto como mensaje de error
+          } catch {
             responseData = { error: responseText, rawText: true };
           }
         } else {
-          console.warn('[OrganizaSection] Respuesta vacía del servidor');
           responseData = { error: 'Respuesta vacía del servidor' };
         }
 
         if (!response.ok) {
           const errorMessage = responseData.error || responseData.details || responseData.message || `Error ${response.status}: ${response.statusText}`;
-          
-          // Log detallado línea por línea para evitar problemas de serialización
-          console.error('=== ERROR GUARDANDO CPM ===');
-          console.error('Status:', response.status);
-          console.error('Status Text:', response.statusText);
-          console.error('Error Message:', errorMessage);
-          console.error('Response Data:', JSON.stringify(responseData, null, 2));
-          console.error('Response Text (primeros 500):', responseText.substring(0, 500));
-          console.error('Response Text Length:', responseText.length);
-          console.error('Content-Type:', response.headers.get('content-type'));
-          console.error('Tareas enviadas:', tareasCPMData.length);
-          console.error('Primera tarea:', JSON.stringify(tareasCPMData[0], null, 2));
-          console.error('Obra ID:', obraId);
-          console.error('==========================');
-          
           throw new Error(errorMessage);
         }
-
-        console.log('[OrganizaSection] CPM guardado exitosamente:', responseData.message || 'OK');
-      } catch (error) {
-        // Log detallado del error capturado
-        console.error('=== ERROR CAPTURADO EN CATCH ===');
-        console.error('Error type:', typeof error);
-        console.error('Error instanceof Error:', error instanceof Error);
-        if (error instanceof Error) {
-          console.error('Error message:', error.message);
-          console.error('Error stack:', error.stack);
-        } else {
-          console.error('Error value:', String(error));
-          console.error('Error JSON:', JSON.stringify(error, null, 2));
-        }
-        console.error('================================');
-        // No mostrar toast para no interrumpir al usuario, solo log
+      } catch {
+        // Guardado CPM opcional; no inundar consola
       }
     },
     [],
@@ -679,10 +625,10 @@ function OrganizaSectionContent({
           return nodes;
         }
 
-        // Guardar CPM en Supabase (async, no bloquea el render)
-        if (obraId && resultadoCPM.tareas.length > 0) {
-          guardarCPMEnSupabase(obraId, resultadoCPM.tareas).catch((error) => {
-            console.error('[OrganizaSection] Error guardando CPM:', error);
+        // Guardar CPM en Supabase (async, no bloquea el render). Demo: no llamar API.
+        if (obraId && obraId !== DEMO_OBRA_CASA_ID && resultadoCPM.tareas.length > 0) {
+          guardarCPMEnSupabase(obraId, resultadoCPM.tareas).catch(() => {
+            // Silenciar en demo; en producción el guardado es opcional
           });
         }
 
@@ -761,6 +707,14 @@ function OrganizaSectionContent({
       return;
     }
 
+    if (obraId === DEMO_OBRA_CASA_ID) {
+      onCanvasOrderChange(() => []);
+      setPrecedenciasState({});
+      resetCanvasStore(obraId);
+      toast({ title: 'Lienzo vaciado (demo)', description: 'Cambios solo en pantalla.' });
+      return;
+    }
+
     // Borrar todas las filas de tarea_precedencias para estas tareas
     const { error } = await supabase
       .from('tarea_precedencias')
@@ -798,6 +752,12 @@ function OrganizaSectionContent({
     }
 
     setIsSaving(true);
+
+    if (obraId === DEMO_OBRA_CASA_ID) {
+      toast({ title: 'Demo', description: 'Cambios solo en pantalla, sin guardar en base de datos.' });
+      setIsSaving(false);
+      return;
+    }
 
     // Preparar datos para cada tarea
     const tareasData = canvasOrderFiltrado.map((taskId) => {
@@ -973,24 +933,45 @@ function OrganizaSectionContent({
     }
 
     const sanitizedDuration = Number.isFinite(duracionDraft) ? Math.max(1, Math.trunc(duracionDraft)) : DEFAULT_DURACION;
-    
+    const precedenciasArray = Array.isArray(precedenciaDraft) ? precedenciaDraft : precedenciaDraft ? [precedenciaDraft] : [];
+
+    if (obraId === DEMO_OBRA_CASA_ID) {
+      setPrecedenciasState((prev) => ({
+        ...prev,
+        [selectedTaskId]: {
+          dependeDe: precedenciasArray.length > 0 ? precedenciasArray : null,
+          duracion: sanitizedDuration,
+          posX: precedenciasState[selectedTaskId]?.posX ?? null,
+          posY: precedenciasState[selectedTaskId]?.posY ?? null,
+        },
+      }));
+      onPrecedenciasChange((prev) => ({
+        ...prev,
+        [selectedTaskId]: {
+          dependeDe: precedenciasArray.length > 0 ? precedenciasArray : null,
+          duracion: sanitizedDuration,
+          posX: prev[selectedTaskId]?.posX ?? null,
+          posY: prev[selectedTaskId]?.posY ?? null,
+        },
+      }));
+      if (dialogMode === 'create') {
+        upsertCanvasTask(obraId, {
+          tareaId: selectedTaskId,
+          dependeDe: precedenciasArray.length > 0 ? precedenciasArray : null,
+          duracion: sanitizedDuration,
+          x: 0,
+          y: 0,
+        });
+      }
+      toast({ title: 'Demo', description: 'Precedencias actualizadas en pantalla.' });
+      closeDialog();
+      return;
+    }
+
     // Guardar múltiples precedencias en Supabase
     try {
       const supabase = createClientComponentClient();
-      
-      // Eliminar todas las precedencias existentes para esta tarea
-      await supabase
-        .from('tarea_precedencias')
-        .delete()
-        .eq('tarea_id', selectedTaskId);
-
-      // Insertar nuevas precedencias (una fila por cada precedencia)
-      // Asegurar que precedenciasArray siempre sea un array
-      const precedenciasArray = Array.isArray(precedenciaDraft) 
-        ? precedenciaDraft 
-        : precedenciaDraft 
-          ? [precedenciaDraft] 
-          : [];
+      await supabase.from('tarea_precedencias').delete().eq('tarea_id', selectedTaskId);
       if (precedenciasArray.length > 0) {
         const precedenciasToInsert = precedenciasArray.map((predecesoraId) => ({
           tarea_id: selectedTaskId,
@@ -998,18 +979,10 @@ function OrganizaSectionContent({
           tipo_dependencia: 'FINISH_TO_START' as const,
           lag_dias: sanitizedDuration,
         }));
-
-        const { error: insertError } = await supabase
-          .from('tarea_precedencias')
-          .insert(precedenciasToInsert);
-
+        const { error: insertError } = await supabase.from('tarea_precedencias').insert(precedenciasToInsert);
         if (insertError) {
           console.error('[OrganizaSection] Error guardando precedencias:', insertError);
-          toast({
-            title: 'Error al guardar',
-            description: 'No se pudieron guardar las precedencias. Intentá nuevamente.',
-            variant: 'destructive',
-          });
+          toast({ title: 'Error al guardar', description: 'No se pudieron guardar las precedencias.', variant: 'destructive' });
           return;
         }
       }
@@ -1274,7 +1247,10 @@ function OrganizaSectionContent({
                     return updated;
                   });
 
-                  // Guardar en Supabase
+                  if (obraId === DEMO_OBRA_CASA_ID) {
+                    toast({ title: 'Demo', description: 'Conexión actualizada en pantalla.' });
+                    return;
+                  }
                   try {
                     const supabase = createClientComponentClient();
                     const { error } = await supabase
@@ -1284,33 +1260,17 @@ function OrganizaSectionContent({
                         depende_de: fromTaskId,
                         tipo_dependencia: 'FINISH_TO_START',
                         lag_dias: DEFAULT_DURACION,
-                      }, {
-                        onConflict: 'tarea_id',
-                      });
-
+                      }, { onConflict: 'tarea_id' });
                     if (error) {
                       console.error('[OrganizaSection] Error guardando conexión:', error);
-                      toast({
-                        title: 'Error',
-                        description: 'No se pudo guardar la conexión',
-                        variant: 'destructive',
-                      });
-                      // Revertir cambio local
+                      toast({ title: 'Error', description: 'No se pudo guardar la conexión', variant: 'destructive' });
                       setPrecedenciasState((prev) => {
                         const updated = { ...prev };
-                        if (updated[toTaskId]) {
-                          updated[toTaskId] = {
-                            ...updated[toTaskId],
-                            dependeDe: null,
-                          };
-                        }
+                        if (updated[toTaskId]) updated[toTaskId] = { ...updated[toTaskId], dependeDe: null };
                         return updated;
                       });
                     } else {
-                      toast({
-                        title: 'Conexión creada',
-                        description: 'La precedencia se guardó correctamente',
-                      });
+                      toast({ title: 'Conexión creada', description: 'La precedencia se guardó correctamente' });
                     }
                   } catch (error) {
                     console.error('[OrganizaSection] Error guardando conexión:', error);
@@ -1339,7 +1299,10 @@ function OrganizaSectionContent({
                     return updated;
                   });
 
-                  // Eliminar de Supabase
+                  if (obraId === DEMO_OBRA_CASA_ID) {
+                    toast({ title: 'Demo', description: 'Conexión eliminada en pantalla.' });
+                    return;
+                  }
                   try {
                     const supabase = createClientComponentClient();
                     const { error } = await supabase
@@ -1347,19 +1310,11 @@ function OrganizaSectionContent({
                       .update({ depende_de: null })
                       .eq('tarea_id', toTaskId)
                       .eq('depende_de', fromTaskId);
-
                     if (error) {
                       console.error('[OrganizaSection] Error eliminando conexión:', error);
-                      toast({
-                        title: 'Error',
-                        description: 'No se pudo eliminar la conexión',
-                        variant: 'destructive',
-                      });
+                      toast({ title: 'Error', description: 'No se pudo eliminar la conexión', variant: 'destructive' });
                     } else {
-                      toast({
-                        title: 'Conexión eliminada',
-                        description: 'La precedencia se eliminó correctamente',
-                      });
+                      toast({ title: 'Conexión eliminada', description: 'La precedencia se eliminó correctamente' });
                     }
                   } catch (error) {
                     console.error('[OrganizaSection] Error eliminando conexión:', error);

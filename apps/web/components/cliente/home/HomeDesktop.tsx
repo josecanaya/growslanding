@@ -3,9 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
-import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { Database } from '@/lib/types/supabase.gen';
 import { QuickActionsRow } from './QuickActionsRow';
 import { ObraActivaCard } from './ObraActivaCard';
 import { PeriodSelectorGlobal } from './PeriodSelectorGlobal';
@@ -19,66 +16,40 @@ interface Obra {
   estado: string;
 }
 
+// Mocks fijos (desconectado de la base de datos) — mismo criterio que /cliente y HomeMobile
+const OBRAS_MOCK: Obra[] = [
+  { id: 'demo-obra-1-casa-familiar', name: 'Casa familiar – Juan Pérez', estado: 'En ejecución' },
+  { id: 'demo-obra-2-reforma-bano', name: 'Reforma Baño – María González', estado: 'Pendiente' },
+  { id: 'demo-obra-3-ampliacion-cocina', name: 'Ampliación Cocina – Carlos López', estado: 'Creada' },
+];
+
+const MOCK_CASA_FAMILIAR = {
+  tareasEstaSemana: 8,
+  presupuestoEstaSemana: 32000,
+  avance: 85,
+  tareasPendientes: 8,
+  tareasVencidas: 3,
+  tareasProximas7d: 9,
+  presupuestoEjecutado: 350000,
+  presupuestoAprobado: 600000,
+  semanasSinEjecucion: 0,
+  completadasUltimos7d: [1, 2, 2, 3, 2, 2, 2] as number[],
+};
+
 export function HomeDesktop() {
   const router = useRouter();
-  const currentUser = useCurrentUser();
-  const supabase = createClientComponentClient<Database>();
-  const [obras, setObras] = useState<Obra[]>([]);
-  const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
+  const [obras, setObras] = useState<Obra[]>(OBRAS_MOCK);
+  const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(OBRAS_MOCK[0].id);
   const [isObraDialogOpen, setIsObraDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [periodRange, setPeriodRange] = useState(8);
-  
-  // Datos de resumen (placeholder - se cargarán con datos reales cuando estén disponibles)
-  const [tareasPendientes, setTareasPendientes] = useState(0);
-  const [tareasVencidas, setTareasVencidas] = useState(0);
-  const [tareasProximas7d, setTareasProximas7d] = useState(0);
-  const [presupuestoEjecutado, setPresupuestoEjecutado] = useState(0);
-  const [presupuestoAprobado, setPresupuestoAprobado] = useState(0);
-  const [semanasSinEjecucion, setSemanasSinEjecucion] = useState(0);
 
   useEffect(() => {
-    if (!currentUser?.orgId) {
-      setLoading(false);
-      return;
-    }
-
-    const loadObras = async () => {
-      try {
-        if (!currentUser?.orgId) return;
-        
-        const { data, error } = await supabase
-          .from('obras')
-          .select('id, name, estado')
-          .eq('org_id', currentUser.orgId)
-          .order('updated_at', { ascending: false });
-
-        if (error) throw error;
-        
-        const obrasData = ((data || []) as Array<{ id: string; name: string | null; estado: string | null }>).map(o => ({
-          id: o.id,
-          name: o.name || 'Sin nombre',
-          estado: o.estado || 'ACTIVA',
-        }));
-        
-        setObras(obrasData);
-        
-        // Seleccionar primera obra por defecto si no hay ninguna seleccionada
-        if (obrasData.length > 0 && !obraSeleccionada) {
-          setObraSeleccionada(obrasData[0].id);
-        }
-      } catch (error) {
-        console.error('Error cargando obras:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadObras();
-  }, [currentUser?.orgId, supabase]);
+    setLoading(false);
+  }, []);
 
   const obraActual = useMemo(
-    () => obras.find((o) => o.id === obraSeleccionada) || null,
+    () => obras.find((o) => o.id === obraSeleccionada) || obras[0] || null,
     [obras, obraSeleccionada]
   );
 
@@ -97,12 +68,18 @@ export function HomeDesktop() {
     }
   };
 
-  // Calcular semanas totales (placeholder - se calculará con datos reales)
-  const totalSemanas = 26; // Placeholder
-
-  // Datos para las cards (placeholder - se cargarán con datos reales)
-  const completadasUltimos7d = [0, 0, 0, 0, 0, 0, 0]; // Placeholder
-  const avance = 0; // Placeholder
+  const totalSemanas = 26;
+  const isCasaFamiliar = obraSeleccionada === OBRAS_MOCK[0].id;
+  const tareasPendientes = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasPendientes : 0;
+  const tareasVencidas = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasVencidas : 0;
+  const tareasProximas7d = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasProximas7d : 0;
+  const presupuestoEjecutado = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoEjecutado : 0;
+  const presupuestoAprobado = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoAprobado : 0;
+  const semanasSinEjecucion = isCasaFamiliar ? MOCK_CASA_FAMILIAR.semanasSinEjecucion : 0;
+  const completadasUltimos7d = isCasaFamiliar ? MOCK_CASA_FAMILIAR.completadasUltimos7d : [0, 0, 0, 0, 0, 0, 0];
+  const tareasEstaSemana = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasEstaSemana : 0;
+  const presupuestoEstaSemana = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoEstaSemana : 0;
+  const avance = isCasaFamiliar ? MOCK_CASA_FAMILIAR.avance : 0;
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -113,8 +90,8 @@ export function HomeDesktop() {
             <div onClick={handleObraClick} className="cursor-pointer">
               <ObraActivaCard
                 obra={obraActual}
-                tareasEstaSemana={tareasPendientes}
-                presupuestoEstaSemana={presupuestoEjecutado}
+                tareasEstaSemana={tareasEstaSemana}
+                presupuestoEstaSemana={presupuestoEstaSemana}
                 avance={avance}
                 formatCurrency={formatCurrency}
                 onCambiarObra={() => {

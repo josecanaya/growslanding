@@ -1,7 +1,27 @@
 import type { Config } from 'tailwindcss';
-import { GROWS_TOKENS } from './lib/design-system/tokens';
 
-const fontStack = GROWS_TOKENS.typography.fontFamily
+// Tokens inline para que Tailwind/Turbopack resuelva sin depender de ./lib (evita "Module not found")
+const GROWS = {
+  colors: {
+    growsBlue: '#0C1D36',
+    growsBlueLight: '#4A6FA5',
+    growsGold: '#E8C547',
+    growsGray: '#F5F6F7',
+    growsSurface: '#FFFFFF',
+    growsText: '#1A1A1A',
+    growsTextMuted: '#5A5A5A',
+    growsBorder: '#E0E0E0',
+    growsError: '#A32A2A',
+    growsGreen: '#2B8A3E',
+    growsYellow: '#E5A100',
+  },
+  typography: { fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' },
+  shadows: { sm: '0 1px 2px rgba(0, 0, 0, 0.05)', md: '0 4px 6px rgba(0, 0, 0, 0.08)', lg: '0 10px 15px rgba(0, 0, 0, 0.1)' },
+  radii: { sm: '0.25rem', md: '0.5rem', lg: '1rem', xl: '1.5rem', full: '9999px' },
+  spacing: { xs: '0.25rem', sm: '0.5rem', md: '1rem', lg: '1.5rem', xl: '2rem' },
+};
+
+const fontStack = GROWS.typography.fontFamily
   .split(',')
   .map((font) => font.trim().replace(/^"(.*)"$/, '$1'));
 
@@ -14,40 +34,60 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        growsBlue: GROWS_TOKENS.colors.growsBlue,
-        growsBlueLight: GROWS_TOKENS.colors.growsBlueLight,
-        growsGold: GROWS_TOKENS.colors.growsGold,
-        growsGray: GROWS_TOKENS.colors.growsGray,
-        growsSurface: GROWS_TOKENS.colors.growsSurface,
-        growsText: GROWS_TOKENS.colors.growsText,
-        growsTextMuted: GROWS_TOKENS.colors.growsTextMuted,
-        growsBorder: GROWS_TOKENS.colors.growsBorder,
-        growsError: GROWS_TOKENS.colors.growsError,
-        growsGreen: GROWS_TOKENS.colors.growsGreen,
-        growsYellow: GROWS_TOKENS.colors.growsYellow,
+        ...GROWS.colors,
+        /** Design system ref. `reforma/stitch_socio` (Stitch / Material) */
+        stitch: {
+          surface: '#f7f9fb',
+          'on-surface': '#191c1e',
+          primary: '#163274',
+          'primary-container': '#314a8d',
+          'on-primary': '#ffffff',
+          'on-primary-container': '#a8bcff',
+          tertiary: '#003473',
+          outline: '#737784',
+          'surface-container': '#eceef0',
+          'surface-container-low': '#f2f4f6',
+          'surface-container-lowest': '#ffffff',
+          'surface-container-high': '#e6e8ea',
+          error: '#ba1a1a',
+        },
       },
       fontFamily: {
         sans: fontStack,
         grows: fontStack,
+        'stitch-headline': [
+          'Manrope',
+          'var(--font-manrope, system-ui)',
+          'system-ui',
+          'sans-serif',
+        ],
+        'stitch-body': [
+          'Inter',
+          'var(--font-inter, system-ui)',
+          'system-ui',
+          'sans-serif',
+        ],
       },
       boxShadow: {
-        'grows-sm': GROWS_TOKENS.shadows.sm,
-        'grows-md': GROWS_TOKENS.shadows.md,
-        'grows-lg': GROWS_TOKENS.shadows.lg,
+        'grows-sm': GROWS.shadows.sm,
+        'grows-md': GROWS.shadows.md,
+        'grows-lg': GROWS.shadows.lg,
+        /** Barra inferior socio (Stitch) */
+        'stitch-nav': '0 -4px 20px -2px rgba(22, 50, 116, 0.05)',
       },
       borderRadius: {
-        'grows-sm': GROWS_TOKENS.radii.sm,
-        'grows-md': GROWS_TOKENS.radii.md,
-        'grows-lg': GROWS_TOKENS.radii.lg,
-        'grows-xl': GROWS_TOKENS.radii.xl,
-        'grows-full': GROWS_TOKENS.radii.full,
+        'grows-sm': GROWS.radii.sm,
+        'grows-md': GROWS.radii.md,
+        'grows-lg': GROWS.radii.lg,
+        'grows-xl': GROWS.radii.xl,
+        'grows-full': GROWS.radii.full,
       },
       spacing: {
-        'grows-xs': GROWS_TOKENS.spacing.xs,
-        'grows-sm': GROWS_TOKENS.spacing.sm,
-        'grows-md': GROWS_TOKENS.spacing.md,
-        'grows-lg': GROWS_TOKENS.spacing.lg,
-        'grows-xl': GROWS_TOKENS.spacing.xl,
+        'grows-xs': GROWS.spacing.xs,
+        'grows-sm': GROWS.spacing.sm,
+        'grows-md': GROWS.spacing.md,
+        'grows-lg': GROWS.spacing.lg,
+        'grows-xl': GROWS.spacing.xl,
       },
       keyframes: {
         'accordion-down': {

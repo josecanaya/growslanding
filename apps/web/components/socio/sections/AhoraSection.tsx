@@ -35,6 +35,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import type { ChecklistItem } from '@/data/checklists';
 import { useToast } from '@/components/ui/use-toast';
+import { USE_MOCK_DATA, MOCK_SUBTAREA_JORNADA_HOY, MOCK_CHECKLIST_ITEMS } from '@/lib/mocks/socioMockData';
 
 type SupabaseTarea = {
   id: string;
@@ -312,6 +313,11 @@ export function AhoraSection() {
 
       setLoading(true);
       setError(null);
+
+      if (USE_MOCK_DATA) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const SELECT_FIELDS = `
@@ -648,9 +654,22 @@ export function AhoraSection() {
     }
   };
 
+  // Demo: mock "Tu jornada de hoy" como si estuvieras realizando una tarea (jornada activa para poder finalizar)
+  useEffect(() => {
+    if (!USE_MOCK_DATA) return;
+    setLoading(false);
+    setSubtareaActual(MOCK_SUBTAREA_JORNADA_HOY as any);
+    setJornadaActual({ id: 'mock-jornada' }); // Para que el CTA muestre "Enviar para validar" y se pueda finalizar
+    setTotalSubtareas(12);
+    setSubtareasCompletadas(2);
+    setTareasProgramadasHoy(12);
+    setTareasCompletadasHoy(2);
+  }, []);
+
   // Cargar jornada actual y subtarea activa
   useEffect(() => {
     const cargarJornadaYSubtarea = async () => {
+      if (USE_MOCK_DATA) return;
       if (!currentUser?.id) {
         setJornadaActual(null);
         setSubtareaActual(null);
@@ -1325,6 +1344,18 @@ export function AhoraSection() {
   const handleFinalizarSubtarea = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
     if (!subtareaActual || !currentUser) return;
 
+    if (USE_MOCK_DATA) {
+      toast({
+        title: 'Bloque enviado para validar (demo)',
+        description: 'Simulación: el bloque quedó en revisión. Sin conexión a base de datos.',
+      });
+      setSubtareaActual(null);
+      setSubtareasCompletadas(3);
+      setTareasCompletadasHoy(3);
+      setShowModalFinalizarSubtarea(false);
+      return;
+    }
+
     // Usar enviarParaValidar en lugar de actualizar directamente
     await handleEnviarParaValidar(evidenciaUrl, videoUrl, problemas);
     
@@ -1867,20 +1898,25 @@ export function AhoraSection() {
 
 
   return (
-    <div className={`ahora-container min-h-screen bg-white pb-20 md:pb-8 transition-colors duration-1000 ${isIniciando ? 'bg-yellow-50' : isFinalizando ? 'bg-green-50' : ''}`}>
-      {/* Saludo dentro de la pantalla */}
-      <div className="px-4 pt-4 pb-2">
-        <h1 className="text-2xl font-bold text-gray-900">
-          HOLA, {currentUser?.name?.toUpperCase() || currentUser?.email?.split('@')[0]?.toUpperCase() || 'SOCIO'}
+    <div
+      className={`ahora-container min-h-screen bg-stitch-surface pb-24 font-stitch-body transition-colors duration-1000 md:pb-8 ${isIniciando ? 'bg-amber-50/80' : isFinalizando ? 'bg-emerald-50/80' : ''}`}
+    >
+      {/* Saludo (ref. jornada activa / continuar trabajos Stitch) */}
+      <div className="px-4 pb-2 pt-4">
+        <h1 className="font-stitch-headline text-2xl font-extrabold tracking-tight text-stitch-on-surface">
+          Hola,{' '}
+          {currentUser?.name?.split(' ')[0] ||
+            currentUser?.email?.split('@')[0] ||
+            'socio'}
         </h1>
-        <p className="text-base text-gray-600 mt-1">Tu jornada de hoy</p>
+        <p className="mt-1 text-base text-stitch-on-surface/70">Tu jornada de hoy</p>
       </div>
 
       {/* 2. HERO PRINCIPAL - Card grande estilo mapa Uber */}
       {subtareaActual ? (
         <div className="mx-4 mt-4 mb-4">
-          <Card className="rounded-2xl shadow-lg overflow-hidden">
-            <CardContent className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <Card className="overflow-hidden rounded-2xl shadow-lg">
+            <CardContent className="bg-gradient-to-br from-stitch-primary/10 to-stitch-primary-container/15 p-6">
               {/* Estado */}
               <div className="flex items-center gap-2 mb-3">
                 <div className={`w-2 h-2 rounded-full ${
@@ -1944,8 +1980,8 @@ export function AhoraSection() {
       ) : tareaActual ? (
         // Modo compatibilidad: mostrar tarea completa si no hay subtareas
         <div className="mx-4 mt-4 mb-4">
-          <Card className="rounded-2xl shadow-lg overflow-hidden">
-            <CardContent className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+          <Card className="overflow-hidden rounded-2xl shadow-lg">
+            <CardContent className="bg-gradient-to-br from-stitch-primary/10 to-stitch-primary-container/15 p-6">
               {/* Estado */}
               <div className="flex items-center gap-2 mb-3">
                 <div className={`w-2 h-2 rounded-full ${
@@ -2163,11 +2199,20 @@ export function AhoraSection() {
 
 
       {/* Modales */}
-      {showChecklist && tareaActual && (
+      {showChecklist && (tareaActual || (USE_MOCK_DATA && subtareaActual)) && (
         <ChecklistModal
-          tarea={{ id: tareaActual.id, nombre: tareaActual.title || '', title: tareaActual.title || '' }}
+          tarea={
+            tareaActual
+              ? { id: tareaActual.id, nombre: tareaActual.title || '', title: tareaActual.title || '' }
+              : {
+                  id: subtareaActual?.tareas?.id || 'mock-tarea-1',
+                  nombre: subtareaActual?.tareas?.title || 'Revoque exterior',
+                  title: subtareaActual?.tareas?.title || 'Revoque exterior',
+                }
+          }
           onClose={() => setShowChecklist(false)}
           onSave={handleSaveChecklist}
+          initialItems={USE_MOCK_DATA ? MOCK_CHECKLIST_ITEMS : undefined}
         />
       )}
 

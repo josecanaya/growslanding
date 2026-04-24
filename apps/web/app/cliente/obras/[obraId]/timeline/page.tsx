@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { EtapasTimelineWrapper } from '@/components/cliente/EtapasTimelineWrapper';
+import { obraById } from '@/lib/mocks/clienteMockData';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 
 interface Tarea {
@@ -39,15 +40,15 @@ export default function ObraTimelinePage() {
   const [loading, setLoading] = useState(true);
 
   // Datos mock para demostración
-  const obraMock = useMemo<Obra>(
-    () => ({
+  const obraMock = useMemo<Obra>(() => {
+    const o = obraById(obraId);
+    return {
       id: obraId,
-      nombre: 'Casa Residencial Norte',
-      cliente: 'Familia Rodríguez',
-      localizacion: 'Av. Libertador 1234, CABA'
-    }),
-    [obraId]
-  );
+      nombre: o.nombre,
+      cliente: o.cuadrillaNombre !== '—' ? o.cuadrillaNombre : 'Cliente',
+      localizacion: o.ubicacion,
+    };
+  }, [obraId]);
 
   const tareasMock = useMemo<Tarea[]>(
     () => [

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;600;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f6fafe",
+                        "surface-container-low": "#f0f4f8",
+                        "on-error-container": "#93000a",
+                        "on-error": "#ffffff",
+                        "primary-container": "#002b49",
+                        "surface-tint": "#406182",
+                        "inverse-primary": "#a8caef",
+                        "secondary-fixed": "#d7e4f5",
+                        "on-primary-fixed-variant": "#274969",
+                        "surface-variant": "#dfe3e7",
+                        "on-background": "#171c1f",
+                        "tertiary-fixed": "#85f8c4",
+                        "surface-container": "#eaeef2",
+                        "on-primary-container": "#7293b6",
+                        "outline-variant": "#c3c7ce",
+                        "on-tertiary-container": "#24a375",
+                        "primary-fixed-dim": "#a8caef",
+                        "primary-fixed": "#cfe5ff",
+                        "primary": "#001629",
+                        "outline": "#73777e",
+                        "on-tertiary-fixed": "#002114",
+                        "background": "#f6fafe",
+                        "on-secondary-fixed-variant": "#3c4855",
+                        "secondary-fixed-dim": "#bbc8d8",
+                        "tertiary-fixed-dim": "#68dba9",
+                        "surface-container-high": "#e4e9ed",
+                        "tertiary": "#00190e",
+                        "secondary": "#545f6e",
+                        "on-surface": "#171c1f",
+                        "on-secondary-container": "#596574",
+                        "error-container": "#ffdad6",
+                        "surface": "#f6fafe",
+                        "on-primary-fixed": "#001d34",
+                        "inverse-surface": "#2c3134",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#00301f",
+                        "surface-container-highest": "#dfe3e7",
+                        "error": "#ba1a1a",
+                        "surface-container-lowest": "#ffffff",
+                        "inverse-on-surface": "#edf1f5",
+                        "surface-dim": "#d6dade",
+                        "on-tertiary-fixed-variant": "#005137",
+                        "on-surface-variant": "#42474d",
+                        "on-secondary-fixed": "#111d29",
+                        "secondary-container": "#d7e4f5",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .bauhaus-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(12, 1fr);
+            aspect-ratio: 1 / 1;
+            gap: 2rem;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body text-on-background antialiased overflow-hidden">
+<!-- Sidebar Navigation -->
+<nav class="fixed left-0 top-0 h-screen w-20 flex flex-col items-center py-8 bg-slate-50 z-50">
+<div class="mb-12">
+<span class="font-headline font-bold text-sky-950 text-xl tracking-tighter">G.</span>
+</div>
+<div class="flex flex-col gap-10 flex-grow">
+<!-- Active: Hub (based on prompt Home for Grows) -->
+<a class="group relative flex items-center justify-center text-sky-600 transition-transform scale-95 active:scale-90 after:content-[''] after:absolute after:right-[-28px] after:h-8 after:w-1 after:bg-sky-600 after:rounded-l-full" href="#">
+<span class="material-symbols-outlined text-[28px]">grid_view</span>
+</a>
+<a class="group text-slate-400 hover:text-sky-600 transition-colors duration-300 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[28px]">architecture</span>
+</a>
+<a class="group text-slate-400 hover:text-sky-600 transition-colors duration-300 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[28px]">account_tree</span>
+</a>
+<a class="group text-slate-400 hover:text-sky-600 transition-colors duration-300 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[28px]">account_balance_wallet</span>
+</a>
+<a class="group text-slate-400 hover:text-sky-600 transition-colors duration-300 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[28px]">notifications_none</span>
+</a>
+<a class="group text-slate-400 hover:text-sky-600 transition-colors duration-300 scale-95 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[28px]">person_outline</span>
+</a>
+</div>
+<div class="mt-auto">
+<a class="text-slate-400 hover:text-sky-600 transition-colors duration-300" href="#">
+<span class="material-symbols-outlined text-[28px]">settings</span>
+</a>
+</div>
+</nav>
+<!-- Top AppBar (Internal Shell) -->
+<header class="flex justify-between items-center px-12 ml-20 w-[calc(100%-5rem)] h-16 fixed top-0 left-0 bg-white/70 backdrop-blur-xl z-40">
+<div class="flex items-center gap-4">
+<h1 class="text-xl font-headline font-extrabold tracking-tighter text-sky-950">Grows Hub</h1>
+<span class="text-[10px] font-label font-semibold uppercase tracking-widest text-on-tertiary-container bg-tertiary-fixed px-2 py-0.5 rounded">Atelier v.2</span>
+</div>
+<div class="flex items-center gap-8">
+<nav class="hidden md:flex gap-6">
+<a class="text-sky-950 border-b-2 border-sky-600 pb-1 font-label text-sm tracking-wide uppercase font-semibold" href="#">Dashboard</a>
+<a class="text-slate-500 hover:text-sky-600 transition-all font-label text-sm tracking-wide uppercase font-semibold" href="#">Analytics</a>
+<a class="text-slate-500 hover:text-sky-600 transition-all font-label text-sm tracking-wide uppercase font-semibold" href="#">Project Files</a>
+</nav>
+<div class="h-8 w-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a professional architect in a minimalist studio setting with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa8HahbRYvbmgyRBobK8UDLP1btO4ngghOnMmMWL8-5PtIj5ivU3VOt8TRkgcwpqAc3irS92nPKb-E7uqoJpkz2tywLTTWzrB5Vof4H7wUXyGKtJmEfG_qyDYE90h15T_HMskGXhOE-kLkW1GmWA_bNsf746x3w5jFYIvgbR9iRtk8sa1478dliRca4kDLbrkxYBs6e0iejGuMa8fXhi7yIs5u2ZYsreG94ECM3c7m2zzlelJGyZ7Hbpc1rc31zMapJU1X9kCXCIW1"/>
+</div>
+</div>
+</header>
+<!-- Main Content Layout -->
+<main class="ml-20 pt-16 h-screen flex">
+<!-- Center Column: Bauhaus Hub -->
+<section class="flex-grow flex items-center justify-center p-12 bg-surface">
+<div class="max-w-4xl w-full">
+<div class="mb-16">
+<h2 class="font-headline text-5xl font-extralight tracking-tight text-primary leading-none">Perspective <br/><span class="font-bold">Workspace</span></h2>
+<p class="mt-4 font-body text-secondary max-w-sm">Technical clarity for architectural excellence. Select a domain to proceed.</p>
+</div>
+<!-- Bauhaus Grid Layout -->
+<div class="bauhaus-grid h-[600px] w-[600px] mx-auto">
+<!-- Project Block (Large Vertical) -->
+<div class="col-span-4 row-span-8 bg-primary rounded-xl flex flex-col justify-between p-8 group cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl">
+<span class="material-symbols-outlined text-surface text-4xl" data-icon="architecture">architecture</span>
+<div class="text-surface">
+<p class="font-label text-xs uppercase tracking-widest opacity-60 mb-1">Domain 01</p>
+<h3 class="font-headline text-2xl font-semibold">Projects</h3>
+</div>
+</div>
+<!-- Tasks Block (Medium Square) -->
+<div class="col-span-5 row-span-5 bg-surface-container-highest rounded-xl flex flex-col justify-between p-8 group cursor-pointer transition-all duration-500 hover:bg-surface-container-lowest hover:scale-[1.02] hover:shadow-xl">
+<span class="material-symbols-outlined text-primary text-4xl" data-icon="account_tree">account_tree</span>
+<div class="text-primary">
+<p class="font-label text-xs uppercase tracking-widest opacity-60 mb-1">Domain 02</p>
+<h3 class="font-headline text-xl font-semibold">Tasks</h3>
+</div>
+</div>
+<!-- Wallet Block (Small Horizontal) -->
+<div class="col-span-3 row-span-3 bg-tertiary-fixed rounded-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-lg">
+<span class="material-symbols-outlined text-on-tertiary-fixed text-3xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</div>
+<!-- Notifications (Small Square) -->
+<div class="col-span-3 row-span-3 bg-surface-container-low rounded-xl flex items-center justify-center group cursor-pointer transition-all duration-500 hover:bg-primary hover:text-white hover:scale-[1.02]">
+<span class="material-symbols-outlined text-3xl" data-icon="notifications">notifications</span>
+</div>
+<!-- Partners (Wide Horizontal) -->
+<div class="col-span-8 row-span-4 bg-secondary-container rounded-xl flex items-center justify-between px-10 group cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-lg">
+<h3 class="font-headline text-xl font-semibold text-primary">Partners</h3>
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="group">group</span>
+</div>
+<!-- Account (Bottom Square) -->
+<div class="col-span-4 row-span-4 bg-surface-container-high rounded-xl overflow-hidden relative group cursor-pointer transition-all duration-500 hover:scale-[1.02]">
+<img class="w-full h-full object-cover opacity-20 grayscale group-hover:grayscale-0 transition-all duration-700" data-alt="Abstract architectural lines and glass facade of a modern skyscraper under a clear blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaW4qJX9O8oyY0Q2ovP12DrabMjo_JEfvLpenQyegPn8X9TZJBMwJvI4pOsAJmS172cxDpxANYDkmhcBTZWn9J1eksdmedktFmYGkI8AjTObgzANCOATXJo2H99s2pXTeJFLyQ9NPP7O2WWFJbJg5Sqmd9uXRKs9tLDM3rw7wdY1js4RQI4r5V93kf7aKIf3zNf5kiudZQUmZjUV7eK5wAOMPWHsrL03BBMLj0UA2V10E9hQw2xOZpPY663Wx6cRqyIc5TBlM_08YI"/>
+<div class="absolute inset-0 p-8 flex flex-col justify-end">
+<h3 class="font-headline text-xl font-semibold text-primary">Account</h3>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Quick Actions & Activity -->
+<aside class="w-80 h-screen bg-slate-50 p-8 flex flex-col gap-12 z-30">
+<div>
+<h4 class="font-label text-xs tracking-wider uppercase text-slate-500 mb-6">Actions</h4>
+<button class="w-full bg-primary text-on-primary py-4 px-6 rounded-xl flex items-center justify-center gap-3 font-label font-bold text-sm tracking-wide transition-all hover:translate-x-[-4px] hover:shadow-xl active:scale-95">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                    + Nueva Tarea
+                </button>
+</div>
+<div class="flex-grow">
+<h4 class="font-label text-xs tracking-wider uppercase text-slate-500 mb-8">Recent Activity</h4>
+<div class="space-y-10">
+<!-- Activity Item 1 -->
+<div class="relative pl-6 border-l-2 border-tertiary-fixed/30 group">
+<div class="absolute -left-[5px] top-0 h-2 w-2 rounded-full bg-tertiary-fixed"></div>
+<p class="text-[10px] font-label text-slate-400 uppercase tracking-tighter mb-1">10:45 AM</p>
+<h5 class="text-sm font-semibold text-primary leading-snug">Project Alpha Draft Approved</h5>
+<p class="text-xs text-secondary mt-1 font-light">Lead Architect reviewed Technical Drafting v.4</p>
+</div>
+<!-- Activity Item 2 -->
+<div class="relative pl-6 border-l-2 border-tertiary-fixed/30 group">
+<div class="absolute -left-[5px] top-0 h-2 w-2 rounded-full bg-slate-200 group-hover:bg-tertiary-fixed transition-colors"></div>
+<p class="text-[10px] font-label text-slate-400 uppercase tracking-tighter mb-1">Yesterday</p>
+<h5 class="text-sm font-semibold text-primary leading-snug">New Partner Onboarded</h5>
+<p class="text-xs text-secondary mt-1 font-light">Studio Archive updated with "Loomis Studio" credentials.</p>
+</div>
+</div>
+</div>
+<div class="pt-8 mt-auto">
+<div class="p-6 bg-surface-container-low rounded-2xl">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-on-tertiary-container" data-icon="description">description</span>
+<h6 class="font-label text-xs font-bold uppercase tracking-widest text-primary">Studio Specs</h6>
+</div>
+<p class="text-[10px] text-slate-500 leading-relaxed font-light">
+                        Maintain 8px grid alignment across all CAD exports for consistency in the Studio Archive.
+                    </p>
+</div>
+</div>
+</aside>
+</main>
+<!-- Contextual FAB (Hidden as per rule on home/details if not perfectly aligned, but prompt implies high-end navigation so we rely on the Action Button in Sidebar/Right Col) -->
+</body></html>

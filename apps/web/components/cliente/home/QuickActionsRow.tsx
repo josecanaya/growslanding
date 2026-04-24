@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 
 interface QuickActionsRowProps {
   obraId?: string | null;
+  /** En desktop: mostrar los 8 botones en una sola fila arriba de los gráficos */
+  singleRow?: boolean;
 }
 
-export function QuickActionsRow({ obraId }: QuickActionsRowProps) {
+export function QuickActionsRow({ obraId, singleRow = false }: QuickActionsRowProps) {
   const router = useRouter();
 
   const handleAction = (actionType: string) => {
@@ -99,9 +101,17 @@ export function QuickActionsRow({ obraId }: QuickActionsRowProps) {
   ];
 
   return (
-    <div className="grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6">
+    <div
+      className={
+        singleRow
+          ? 'grid grid-cols-8 w-full gap-4 md:gap-6 py-5 px-1'
+          : 'grid grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-4 md:gap-6'
+      }
+    >
       {actions.map((action, index) => {
         const Icon = action.icon;
+        const size = singleRow ? 'w-12 h-12' : 'w-16 h-16 md:w-20 md:h-20';
+        const iconSize = singleRow ? 'h-5 w-5' : 'h-7 w-7 md:h-8 md:w-8';
         return (
           <button
             key={index}
@@ -109,12 +119,11 @@ export function QuickActionsRow({ obraId }: QuickActionsRowProps) {
               e.preventDefault();
               handleAction(action.actionType);
             }}
-            className="flex flex-col items-center gap-2 transition-all active:scale-[0.95]"
+            className={`flex flex-col items-center justify-center gap-1.5 transition-all active:scale-[0.95] ${singleRow ? 'min-w-0' : ''}`}
           >
-            {/* Botón circular */}
             <div
               className={`
-                w-16 h-16 md:w-20 md:h-20 rounded-full
+                ${size} rounded-full
                 flex items-center justify-center
                 border-2
                 shadow-md
@@ -128,18 +137,17 @@ export function QuickActionsRow({ obraId }: QuickActionsRowProps) {
             >
               <Icon
                 className={`
-                  h-7 w-7 md:h-8 md:w-8
+                  ${iconSize}
                   transition-colors
                   ${action.isPrimary ? 'text-white' : 'text-gray-700 hover:text-blue-600'}
                 `}
                 strokeWidth={2.5}
               />
             </div>
-            {/* Label */}
             <span
-              className={`text-xs md:text-sm text-center leading-tight max-w-[80px] font-semibold whitespace-nowrap ${
-                action.isPrimary ? 'text-blue-600' : 'text-gray-800'
-              }`}
+              className={`text-center leading-tight font-semibold whitespace-nowrap ${
+                singleRow ? 'text-[11px] md:text-xs' : 'text-xs md:text-sm max-w-[80px]'
+              } ${action.isPrimary ? 'text-blue-600' : 'text-gray-800'}`}
             >
               {action.label}
             </span>

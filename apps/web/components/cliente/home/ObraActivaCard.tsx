@@ -29,11 +29,13 @@ export function ObraActivaCard({
     const estadoUpper = estado?.toUpperCase() || '';
     switch (estadoUpper) {
       case 'ACTIVA':
+      case 'EN EJECUCIÓN':
+      case 'EN EJECUCION':
         return {
           bg: 'bg-emerald-50',
           dot: 'bg-emerald-500',
           text: 'text-emerald-700',
-          label: 'Activa',
+          label: estado?.includes('ejecución') || estado?.includes('ejecucion') ? 'En ejecución' : 'Activa',
         };
       case 'PAUSADA':
         return {
@@ -58,10 +60,17 @@ export function ObraActivaCard({
         };
       case 'PENDIENTE':
         return {
+          bg: 'bg-amber-50',
+          dot: 'bg-amber-500',
+          text: 'text-amber-700',
+          label: 'Pendiente',
+        };
+      case 'CREADA':
+        return {
           bg: 'bg-gray-50',
           dot: 'bg-gray-400',
           text: 'text-gray-600',
-          label: 'Pendiente',
+          label: 'Creada',
         };
       default:
         return {

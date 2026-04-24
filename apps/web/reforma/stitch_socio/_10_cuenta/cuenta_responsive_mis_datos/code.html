@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        h1, h2, h3 {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#f7f9fb",
+                        "primary-container": "#314a8d",
+                        "on-secondary-fixed-variant": "#2b4963",
+                        "on-secondary-fixed": "#001d31",
+                        "on-error-container": "#93000a",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#43617c",
+                        "tertiary-fixed-dim": "#adc7ff",
+                        "outline-variant": "#c3c6d5",
+                        "on-primary-fixed": "#00174a",
+                        "secondary-container": "#c1e0ff",
+                        "on-tertiary-fixed": "#001a41",
+                        "tertiary-container": "#004a9f",
+                        "surface-dim": "#d8dadc",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#d8e2ff",
+                        "primary-fixed-dim": "#b3c5ff",
+                        "surface-container-highest": "#e0e3e5",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-surface-variant": "#434653",
+                        "outline": "#737784",
+                        "on-tertiary-container": "#9fbeff",
+                        "error": "#ba1a1a",
+                        "tertiary": "#003473",
+                        "on-primary": "#ffffff",
+                        "on-secondary-container": "#46647e",
+                        "surface-container-high": "#e6e8ea",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed-variant": "#004493",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#191c1e",
+                        "on-primary-fixed-variant": "#2a4386",
+                        "secondary-fixed": "#cce5ff",
+                        "secondary-fixed-dim": "#abcae8",
+                        "background": "#f7f9fb",
+                        "inverse-primary": "#b3c5ff",
+                        "inverse-surface": "#2d3133",
+                        "surface-tint": "#435b9f",
+                        "surface-container-low": "#f2f4f6",
+                        "on-primary-container": "#a8bcff",
+                        "surface-container": "#eceef0",
+                        "on-surface": "#191c1e",
+                        "on-error": "#ffffff",
+                        "primary": "#163274",
+                        "surface": "#f7f9fb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-[#f7f9fb] dark:bg-slate-950 z-50">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary">
+<img alt="Perfil del Socio Constructor" class="w-10 h-10 rounded-full object-cover" data-alt="Professional headshot of a middle-aged man in construction attire, looking confident, soft studio lighting with neutral background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAF-GlnoO2I4sLqJDW885-Pqa2FPSxkLOooHyFWrdty5Uun96MG_LFAnAakp9XOsRdO1PH2-f40qHV5Tt5CJY8gAhsPF-HIpWjeUb5I_-FatQXtj18tYrEkCY_iYWFNFUS6pLcqmHvhBBRjqTSvpq6pILwLaI7yNGZ0siGA42LR-7lM61pz_nnjAlpIW-eHIv-BiL1UtPhGCy2wEKiOjfzt-JSFRApunXn3E0Ze-p_heIe08KtYqTWoy2O5p-XG_sGgHBd2IVrAygO"/>
+</div>
+<h1 class="font-['Manrope'] font-bold tracking-tight text-[#163274] dark:text-blue-400 text-lg">Ajustes de Perfil</h1>
+</div>
+<button class="material-symbols-outlined text-[#191c1e] dark:text-slate-400 hover:bg-[#e6e8ea] p-2 rounded-full transition-colors">
+                notifications
+            </button>
+</div>
+</header>
+<main class="max-w-3xl mx-auto px-6 py-8">
+<!-- Profile Header Card (Asymmetric Layout) -->
+<section class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-12">
+<div class="md:col-span-8 bg-surface-container-lowest p-8 rounded-xl shadow-[0_12px_32px_-4px_rgba(22,50,116,0.08)] border-l-4 border-primary">
+<p class="text-[10px] uppercase tracking-[0.1em] font-semibold text-secondary mb-2">Socio Constructor</p>
+<h2 class="text-3xl font-extrabold text-primary mb-1">Carlos Martínez</h2>
+<p class="text-on-surface-variant body-md italic">ID de Socio: #SC-98234</p>
+</div>
+<div class="md:col-span-4 bg-primary-container p-6 rounded-xl flex flex-col justify-center text-on-primary">
+<span class="material-symbols-outlined text-4xl mb-2" style="font-variation-settings: 'FILL' 1;">verified</span>
+<p class="font-bold">Perfil Verificado</p>
+<p class="text-sm opacity-80">Datos validados por el sistema el 12/10/2023</p>
+</div>
+</section>
+<!-- Form Section -->
+<section class="bg-surface-container-low p-8 rounded-xl">
+<div class="flex items-center gap-3 mb-8">
+<span class="material-symbols-outlined text-primary">person_edit</span>
+<h3 class="text-xl font-bold text-primary">Información Personal</h3>
+</div>
+<form class="space-y-8">
+<!-- Group: Identidad -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">Nombre Completo</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none" placeholder="Ej. Juan Pérez" type="text" value="Carlos Martínez"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">DNI / Documento</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none" placeholder="Ej. 12.345.678" type="text" value="32.455.901"/>
+</div>
+</div>
+<!-- Group: Profesional -->
+<div class="grid grid-cols-1 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">Especialidad</label>
+<select class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none appearance-none">
+<option>Estructuras de Hormigón</option>
+<option selected="">Instalaciones Eléctricas</option>
+<option>Drywall &amp; Construcción en Seco</option>
+<option>Plomería y Gas</option>
+</select>
+</div>
+</div>
+<!-- Group: Pagos (Tonal Layering inside the form) -->
+<div class="bg-surface-container p-6 rounded-xl space-y-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">payments</span>
+<h4 class="text-sm font-bold text-primary uppercase tracking-wider">Datos de Cobro</h4>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">CBU / CVU</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary transition-all outline-none" placeholder="22 dígitos" type="text" value="0000003100012345678901"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">Alias</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-lg p-3 text-on-surface focus:ring-2 focus:ring-primary transition-all outline-none" placeholder="Ej. mi.alias.pago" type="text" value="CARLOS.OBRA.PAGOS"/>
+</div>
+</div>
+</div>
+<!-- Group: Contacto -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">Teléfono de Contacto</label>
+<div class="relative">
+<span class="absolute left-3 top-3 material-symbols-outlined text-outline text-lg">smartphone</span>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 pl-10 text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none" type="tel" value="+54 9 11 5432-1098"/>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[10px] uppercase tracking-[0.05em] font-bold text-on-surface-variant px-1">Email</label>
+<div class="relative">
+<span class="absolute left-3 top-3 material-symbols-outlined text-outline text-lg">mail</span>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 pl-10 text-on-surface focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none" type="email" value="carlos.m@obraser.com"/>
+</div>
+</div>
+</div>
+<!-- Action Button -->
+<div class="pt-6 border-t border-outline-variant/15 flex justify-end">
+<button class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-10 py-4 rounded-lg font-bold text-sm tracking-wide shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 flex items-center gap-3" type="submit">
+<span class="material-symbols-outlined text-lg">save</span>
+                        Guardar Cambios
+                    </button>
+</div>
+</form>
+</section>
+<!-- Danger Zone (Minimalist Disclosure) -->
+<div class="mt-12 px-2">
+<button class="text-error/60 hover:text-error text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">no_accounts</span>
+                Solicitar baja de cuenta
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-2 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl z-50 rounded-t-lg shadow-[0_-12px_32px_-4px_rgba(22,50,116,0.08)] border-t border-[#c3c6d5]/15">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#163274] transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#163274] transition-all" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Billetera</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#163274] transition-all" href="#">
+<span class="material-symbols-outlined text-4xl">add_circle</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Inicio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#163274] transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Oportunidades</span>
+</a>
+<!-- Active State: Ajustes -->
+<a class="flex flex-col items-center justify-center bg-[#f2f4f6] dark:bg-blue-900/30 text-[#163274] dark:text-blue-200 rounded-xl px-3 py-1 scale-95 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-[0.05em] font-semibold mt-1">Ajustes</span>
+</a>
+</nav>
+</body></html>

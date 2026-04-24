@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-primary-container": "#505257",
+                "on-tertiary-fixed": "#383751",
+                "tertiary-container": "#d9d7f8",
+                "secondary-dim": "#235586",
+                "on-tertiary-container": "#4a4a65",
+                "surface-dim": "#d4dbdd",
+                "on-background": "#2d3435",
+                "primary-fixed": "#e2e2e8",
+                "outline": "#757c7d",
+                "error-container": "#fe8983",
+                "error-dim": "#4e0309",
+                "on-secondary-fixed": "#014171",
+                "outline-variant": "#adb3b4",
+                "on-tertiary-fixed-variant": "#54546f",
+                "on-error-container": "#752121",
+                "error": "#9f403d",
+                "primary": "#5d5e64",
+                "tertiary-fixed-dim": "#cbc9e9",
+                "on-secondary-fixed-variant": "#2d5e8f",
+                "tertiary-dim": "#51516c",
+                "tertiary": "#5d5c78",
+                "secondary": "#326293",
+                "primary-dim": "#515258",
+                "secondary-container": "#d1e4ff",
+                "inverse-on-surface": "#9c9d9d",
+                "secondary-fixed-dim": "#b9d7ff",
+                "background": "#f9f9f9",
+                "surface-container-lowest": "#ffffff",
+                "surface-container-low": "#f2f4f4",
+                "on-error": "#fff7f6",
+                "on-tertiary": "#fbf7ff",
+                "primary-fixed-dim": "#d3d4da",
+                "on-secondary-container": "#215485",
+                "surface-bright": "#f9f9f9",
+                "surface": "#f9f9f9",
+                "inverse-primary": "#f3f3fa",
+                "secondary-fixed": "#d1e4ff",
+                "on-primary-fixed": "#3d3f44",
+                "surface-container": "#ebeeef",
+                "on-surface": "#2d3435",
+                "surface-variant": "#dde4e5",
+                "primary-container": "#e2e2e8",
+                "on-surface-variant": "#5a6061",
+                "tertiary-fixed": "#d9d7f8",
+                "surface-container-high": "#e4e9ea",
+                "on-primary-fixed-variant": "#5a5b61",
+                "on-secondary": "#f7f9ff",
+                "surface-tint": "#5d5e64",
+                "on-primary": "#f7f7fe",
+                "inverse-surface": "#0c0f0f",
+                "surface-container-highest": "#dde4e5"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "1.5rem",
+                "full": "9999px"
+            },
+            "fontFamily": {
+                "headline": ["Manrope"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex min-h-screen">
+<!-- SideNavBar Anchor -->
+<aside class="hidden md:flex flex-col h-screen w-64 left-0 sticky bg-[#f2f4f4] p-4 space-y-2">
+<div class="flex items-center gap-3 px-2 mb-8 mt-2">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<div>
+<p class="text-lg font-bold text-[#5d5e64] leading-none">Monolith Studio</p>
+<p class="text-[10px] uppercase tracking-widest text-on-surface-variant mt-1">Precision Phase</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 bg-white text-[#5d5e64] rounded-lg shadow-sm font-medium text-sm transition-all duration-300" href="#">
+<span class="material-symbols-outlined text-secondary">grid_view</span>
+<span>Workspace</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5d5e64]/70 hover:bg-white/50 rounded-lg font-medium text-sm transition-all duration-300" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>Team</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5d5e64]/70 hover:bg-white/50 rounded-lg font-medium text-sm transition-all duration-300" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span>Timeline</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5d5e64]/70 hover:bg-white/50 rounded-lg font-medium text-sm transition-all duration-300" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Financials</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#5d5e64]/70 hover:bg-white/50 rounded-lg font-medium text-sm transition-all duration-300" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Resources</span>
+</a>
+</nav>
+<div class="mt-auto pt-4">
+<button class="w-full bg-primary text-on-primary py-3 rounded-xl font-bold text-sm tracking-tight flex items-center justify-center gap-2 hover:bg-primary-dim transition-colors duration-300">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Project
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col min-h-screen overflow-hidden">
+<!-- TopNavBar Anchor -->
+<header class="w-full top-0 sticky bg-[#f9f9f9] flex justify-between items-center px-8 py-4 z-10">
+<div class="flex items-center gap-8">
+<h1 class="text-xl font-black text-[#5d5e64] tracking-tighter">Canvas Arq</h1>
+<nav class="flex gap-6 items-center">
+<a class="text-[#5d5e64]/60 font-bold font-['Manrope'] tracking-tight hover:text-[#326293] transition-colors duration-300" href="#">Dashboard</a>
+<a class="text-[#5d5e64] border-b-2 border-[#5d5e64] pb-1 font-bold font-['Manrope'] tracking-tight" href="#">Projects</a>
+<a class="text-[#5d5e64]/60 font-bold font-['Manrope'] tracking-tight hover:text-[#326293] transition-colors duration-300" href="#">Archive</a>
+<a class="text-[#5d5e64]/60 font-bold font-['Manrope'] tracking-tight hover:text-[#326293] transition-colors duration-300" href="#">Partners</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-primary-dim active:opacity-80 transition-all scale-98">
+                    Enviar a presupuestar
+                </button>
+<img alt="User profile" class="w-10 h-10 rounded-full border-2 border-surface-container" data-alt="Close-up professional portrait of a male architect in a bright modern studio setting with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBORO7Hb5dzqq1eeK-Puetn1R_QYo82-UdmmpnsedKmUB2qgPDHHGQZcMaR5SLtzfrZXlCiFSFEcvjwUNz4QeXyIKyyXIe1Rr3hfapCvFjEDxa5bkiAvfSk9pwLFjNpY8eY2R44GIq8q3FD-5tpmPxDBzaJWqqK-a5FBQUvrYVhFvQqeXuzET18amH41dFNpJoOTarsWZTdduCK2-3tg80-LC7zzsJecmPoaMLdQXPcXAWuk1YibtgsEg_e_-4qLdwl7M5Il5jSjoa"/>
+</div>
+</header>
+<!-- Horizontal Workflow Layout -->
+<div class="flex flex-1 overflow-hidden p-6 gap-6">
+<!-- Left Column: Task List -->
+<section class="w-1/4 flex flex-col gap-4">
+<div class="flex justify-between items-end mb-2">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant">Lista de tareas</h2>
+<span class="text-xs font-medium text-secondary bg-secondary-container px-2 py-0.5 rounded-full">12 Pendientes</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+<!-- Task Item Active -->
+<div class="p-4 bg-surface-container-lowest rounded-xl shadow-sm border-l-4 border-secondary flex flex-col gap-1 transition-all">
+<span class="text-[10px] font-bold text-secondary uppercase tracking-tighter">Fase: Estructural</span>
+<h3 class="font-bold text-primary leading-tight">Cálculo de Estructura Metálica</h3>
+<div class="flex items-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-xs text-on-surface-variant font-medium">En Selección</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col gap-1 transition-all cursor-pointer">
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter">Fase: Revestimientos</span>
+<h3 class="font-bold text-primary/70 leading-tight">Planilla de Carpinterías</h3>
+<div class="flex items-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="text-xs text-on-surface-variant/60 font-medium">Pendiente</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col gap-1 transition-all cursor-pointer">
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter">Fase: Instalaciones</span>
+<h3 class="font-bold text-primary/70 leading-tight">Proyecto Hidráulico Nivel 1</h3>
+<div class="flex items-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="text-xs text-on-surface-variant/60 font-medium">Pendiente</span>
+</div>
+</div>
+<!-- Task Item -->
+<div class="p-4 bg-surface-container-low hover:bg-surface-container-high rounded-xl flex flex-col gap-1 transition-all cursor-pointer">
+<span class="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-tighter">Fase: Diseño</span>
+<h3 class="font-bold text-primary/70 leading-tight">Renderizado Fachada Este</h3>
+<div class="flex items-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-outline-variant"></span>
+<span class="text-xs text-on-surface-variant/60 font-medium">Pendiente</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Center Column: Selected Task Detail -->
+<section class="flex-1 flex flex-col gap-6">
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col h-full shadow-sm">
+<div class="h-48 relative">
+<img alt="Architectural detail" class="w-full h-full object-cover" data-alt="Modern architectural construction site with exposed steel beams and concrete pillars under a clear blue sky" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVXLlCPm1aUiZ6ca0Sj6-mbcsxOLte2PaE8vFPtjtmVJ-3ugMV42zzM9a2Jp00b7NgIF7Tc9APjLZxFAP_XeyM4fkZ922DD6OreaZa96EQ8PAzWgXNW3RTathjeWCxFVjbnyM-uStAkDLl88yLZ8J5ZAJIv0blwikkFKwByfZtJoWty-wcfpjpxxdshcY0LSmnN4u2JQVQHwZuO8kmRDs0EsqK4auecb7YlgQtEME8ln_5cuz0EsjRjncos4CPs9zErRqVFpN3zshs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-secondary">info</span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-surface">ID: ARQ-2024-082</span>
+</div>
+</div>
+<div class="p-8 flex flex-col gap-6">
+<div class="space-y-2">
+<h2 class="text-3xl font-extrabold text-primary tracking-tighter">Cálculo de Estructura Metálica</h2>
+<p class="text-secondary font-medium italic">Proyecto Residencial Alvear</p>
+</div>
+<div class="flex gap-8">
+<div class="flex-1">
+<h4 class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-3">Descripción corta</h4>
+<p class="text-on-surface leading-relaxed text-sm">
+                                    Dimensionamiento de pórticos principales y correas para el pabellón de invitados. Se requiere memoria de cálculo firmada y planos de detalle para fabricación en taller. Material: Acero ASTM A36.
+                                </p>
+</div>
+<div class="w-px bg-surface-container"></div>
+<div class="w-48 space-y-4">
+<div>
+<h4 class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-1">Entrega</h4>
+<p class="text-sm font-bold text-primary">15 Oct, 2024</p>
+</div>
+<div>
+<h4 class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-1">Presupuesto</h4>
+<p class="text-sm font-bold text-secondary">USD 1,200.00</p>
+</div>
+</div>
+</div>
+<div class="mt-4 pt-6 border-t border-surface-container">
+<h4 class="text-[10px] uppercase font-bold tracking-widest text-on-surface-variant mb-4">Archivos Adjuntos</h4>
+<div class="flex flex-wrap gap-3">
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-lg text-xs font-medium text-on-surface-variant border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm">description</span>
+                                    Planos_Bases.dwg
+                                </div>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-lg text-xs font-medium text-on-surface-variant border border-outline-variant/20">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                    Especificaciones_V1.pdf
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Column: Partners Selection -->
+<section class="w-1/4 flex flex-col gap-4">
+<div class="flex justify-between items-end mb-2">
+<h2 class="text-sm font-bold uppercase tracking-widest text-on-surface-variant">Selección de Partners</h2>
+<span class="text-xs text-on-surface-variant underline cursor-pointer">Ver todos</span>
+</div>
+<div class="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+<!-- Partner Card -->
+<label class="block cursor-pointer group">
+<input checked="" class="hidden peer" type="checkbox"/>
+<div class="p-4 bg-surface-container-low rounded-xl border-2 border-transparent peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="w-10 h-10 rounded-lg overflow-hidden">
+<img alt="Partner profile" class="w-full h-full object-cover" data-alt="Headshot of a professional structural engineer with glasses in a minimalist office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD61d39d9sSzh2yZ3MT3DnRK2PRclfuzRyolX2m29__V0omWgfWsnCDnmKPrM_WtSS2ytQR_0I8DrYUZvIayTf9PYt1UdbsqASASKhjvR_Zpv-O2NeiUbeDE0JdX25mejI1CFWxqloeYXiODaLLrsOd_mrGNb5PrWMlDlTvkoGis99TU7xa0uZXwZ2BRj1cXaIqTJ9oE6IyJvKSs60K_5TavlqU0utcaHiCtWyTphXz_6zW72OYalg0Koh9XEClALX5bbdFG5FwkTQ-"/>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:bg-secondary peer-checked:border-secondary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-white text-[14px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h4 class="font-bold text-primary text-sm">Eng. Marcos Russo</h4>
+<p class="text-[10px] text-on-surface-variant">Especialista en Estructuras Metálicas</p>
+<div class="flex items-center gap-1 mt-2">
+<span class="material-symbols-outlined text-[14px] text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface">4.9</span>
+<span class="text-[10px] text-on-surface-variant ml-1">(42 proyectos)</span>
+</div>
+</div>
+</label>
+<!-- Partner Card -->
+<label class="block cursor-pointer group">
+<input class="hidden peer" type="checkbox"/>
+<div class="p-4 bg-surface-container-low rounded-xl border-2 border-transparent peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="w-10 h-10 rounded-lg overflow-hidden">
+<img alt="Partner profile" class="w-full h-full object-cover" data-alt="Professional female consultant portrait with a neutral background and professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZhqxgAvx2RUC4bafeUI4i9pGCSwsPXg6NYzhPVaVP61MuMUVyBtbKR_qo70UB1tatDDyooPa_JaOa44t53lKlwbpHyxfdMOTaT3aPQAEUE5Oda3mymGgG2n8fFXc3WmrQhBQIMIKcQTeYxL9JObTI5lYew2uzyTQnvZWDZdu57uJw9-ToMww6Pg36tzVL1Qs42bVz7tJimXNwZ2a8Lk08CCy6KmlejACw_AZjF-8jvE4LxJLQBNXTkoZZrLvpvDrQblC5JFf7zFdK"/>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:bg-secondary peer-checked:border-secondary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-white text-[14px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h4 class="font-bold text-primary text-sm">Arq. Elena Gómez</h4>
+<p class="text-[10px] text-on-surface-variant">Consultora Técnica &amp; Cálculo</p>
+<div class="flex items-center gap-1 mt-2">
+<span class="material-symbols-outlined text-[14px] text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface">4.7</span>
+<span class="text-[10px] text-on-surface-variant ml-1">(18 proyectos)</span>
+</div>
+</div>
+</label>
+<!-- Partner Card -->
+<label class="block cursor-pointer group">
+<input class="hidden peer" type="checkbox"/>
+<div class="p-4 bg-surface-container-low rounded-xl border-2 border-transparent peer-checked:border-secondary peer-checked:bg-secondary-container/20 group-hover:bg-surface-container-high transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="w-10 h-10 rounded-lg overflow-hidden">
+<img alt="Partner profile" class="w-full h-full object-cover" data-alt="Middle-aged male executive in a smart casual outfit against a blurred architectural background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWhjf8dIKeaXZJ3Ul6smsn_pa1KpwTi1gZJQVhk2K7dDgSkErGp-U3Hnm8xw8sKdlD0sf_lAGYHgknWrUqiiQMpUxz_tpS_hmbLUuNM0I2Z-_Mutxr727jsj6CCDY8I9_W2Ud58lvWDYf6khgqGnNYhWLdx5wJmy24RFimeflp0XwHvaexQ2xfQQqLymHKghFg2ctLlZaBon7gGBJ3mH4TjePlx3YPVqOiY9o5FpAporRxcBTFTf1JyT-pyL0jbN-GBAmqe0a-GRwD"/>
+</div>
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant peer-checked:bg-secondary peer-checked:border-secondary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-white text-[14px] font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h4 class="font-bold text-primary text-sm">SteelWork Studio</h4>
+<p class="text-[10px] text-on-surface-variant">Agencia de Ingeniería y Montaje</p>
+<div class="flex items-center gap-1 mt-2">
+<span class="material-symbols-outlined text-[14px] text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="text-[10px] font-bold text-on-surface">5.0</span>
+<span class="text-[10px] text-on-surface-variant ml-1">(120 proyectos)</span>
+</div>
+</div>
+</label>
+</div>
+<div class="bg-surface-container-high p-4 rounded-xl space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-xs font-medium text-on-surface-variant">Selección actual:</span>
+<span class="text-sm font-bold text-primary">1 Partner</span>
+</div>
+<button class="w-full bg-secondary text-white py-3 rounded-xl font-bold text-sm hover:bg-secondary-dim transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">send</span>
+                        Enviar a presupuestar
+                    </button>
+<p class="text-[10px] text-center text-on-surface-variant/70 italic px-2">Al enviar, se creará una solicitud de cotización formal vinculada a esta tarea.</p>
+</div>
+</section>
+</div>
+</main>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #adb3b4;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #757c7d;
+        }
+    </style>
+</body></html>

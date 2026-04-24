@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Building2, MapPin, Calendar, Layers, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
+import { cn } from '@/lib/utils';
 import { ModalVerPlanos } from './ModalVerPlanos';
 
 interface Obra {
@@ -15,9 +16,11 @@ interface Obra {
 
 interface ResumenObraProps {
   obra: Obra;
+  /** Card estilo Stitch (reforma) */
+  stitchMode?: boolean;
 }
 
-export function ResumenObra({ obra }: ResumenObraProps) {
+export function ResumenObra({ obra, stitchMode = false }: ResumenObraProps) {
   const [modalPlanosOpen, setModalPlanosOpen] = useState(false);
 
   const formatFecha = (fecha: string | null | undefined) => {
@@ -32,13 +35,37 @@ export function ResumenObra({ obra }: ResumenObraProps) {
 
   return (
     <>
-      <div className="bg-white px-4 py-3 border-b border-slate-100">
+      <div
+        className={cn(
+          'px-4 py-3 border-b',
+          stitchMode
+            ? 'border-stitch-primary/10 bg-stitch-surface-container-lowest shadow-sm'
+            : 'border-slate-100 bg-white',
+        )}
+      >
         <div className="flex items-start gap-2 mb-2">
-          <Building2 className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
-          <h2 className="text-base font-semibold text-slate-900">{obra.name}</h2>
+          <Building2
+            className={cn(
+              'h-4 w-4 mt-0.5 flex-shrink-0',
+              stitchMode ? 'text-stitch-primary' : 'text-slate-600',
+            )}
+          />
+          <h2
+            className={cn(
+              'text-base font-semibold',
+              stitchMode ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
+            )}
+          >
+            {obra.name}
+          </h2>
         </div>
         
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 mb-2">
+        <div
+          className={cn(
+            'mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs',
+            stitchMode ? 'text-stitch-on-surface/75' : 'text-slate-600',
+          )}
+        >
           {obra.direccion_completa && (
             <div className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />

@@ -43,6 +43,20 @@ function CallbackPageContent() {
       if (hasRunRef.current || isProcessingRef.current) {
         return;
       }
+      // Si ya detectamos rate limit recientemente, no volver a golpear auth.
+      if (typeof window !== 'undefined') {
+        const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+        if (rateLimitUntil) {
+          const untilTime = parseInt(rateLimitUntil, 10);
+          if (Date.now() < untilTime) {
+            if (active) {
+              router.replace("/auth/login?error=rate_limit" as Route);
+            }
+            return;
+          }
+          localStorage.removeItem('supabase_rate_limit_until');
+        }
+      }
       hasRunRef.current = true;
       isProcessingRef.current = true;
       try {
@@ -67,72 +81,33 @@ function CallbackPageContent() {
             if (isRateLimit) {
               // Error 429: NO hacer más peticiones, redirigir inmediatamente
               console.warn("[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login");
+              if (typeof window !== 'undefined') {
+                const rateLimitUntil = Date.now() + (20 * 60 * 1000);
+                localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+              }
               if (active) {
                 router.replace("/auth/login?error=rate_limit" as Route);
               }
               return;
             }
             
-            // Si el error es por falta de code_verifier (PKCE)
-            const isPkceError = 
-              exchangeError.message?.toLowerCase().includes('code verifier') ||
-              exchangeError.message?.toLowerCase().includes('invalid request') ||
-              exchangeError.message?.toLowerCase().includes('both auth code and code verifier') ||
-              exchangeError.message?.toLowerCase().includes('code_verifier');
+            // "both auth code and code verifier should be non-empty" = PKCE: code_verifier faltante
+            const errMsg = (exchangeError.message ?? '').toLowerCase();
+            const isPkceError =
+              errMsg.includes('code verifier') ||
+              errMsg.includes('code_verifier') ||
+              errMsg.includes('both auth code and code verifier') ||
+              errMsg.includes('should be non-empty');
             
             if (isPkceError) {
-              // Este error ocurre cuando:
-              // 1. El code_verifier no está en localStorage (cookies bloqueadas, modo incógnito, etc.)
-              // 2. Múltiples pestañas intentando autenticar al mismo tiempo
-              // 3. El code_verifier fue eliminado o expiró
-              
-              console.warn("[OAUTH_CALLBACK] Error PKCE - code_verifier faltante. Limpiando URL y redirigiendo.");
-              
-              // PRIMERO limpiar la URL para evitar que el código se vuelva a ejecutar
-              if (active && typeof window !== 'undefined') {
-                // Remover el parámetro 'code' de la URL inmediatamente
-                const url = new URL(window.location.href);
-                url.searchParams.delete('code');
-                url.searchParams.delete('state');
-                if (redirectTarget) {
-                  url.searchParams.set('redirect', redirectTarget);
-                }
-                // Usar replaceState para cambiar la URL sin recargar
-                window.history.replaceState({}, '', url.toString());
-                // Marcar que ya procesamos este código para evitar loops
-                hasRunRef.current = true;
+              // Redirigir a login sin más llamadas; pkce_error = "usá la misma ventana, sin otras pestañas"
+              const loginPath =
+                '/auth/login?error=pkce_error' +
+                (redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : '');
+              if (active) {
+                router.replace(loginPath as Route);
               }
-              
-              // Intentar obtener sesión SOLO UNA VEZ (puede que ya esté autenticado en otra pestaña)
-              // Si falla, redirigir sin más intentos
-              try {
-                const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-                
-                // Si hay una sesión válida, guardarla y continuar con el flujo
-                if (!sessionErr && sessionData?.session) {
-                  // Sesión válida encontrada, guardarla para usar más abajo
-                  sessionFromPkceRef.current = {
-                    session: sessionData.session,
-                    user: sessionData.session.user,
-                  };
-                  console.log("[OAUTH_CALLBACK] Sesión encontrada a pesar del error PKCE, continuando...");
-                  // NO retornar aquí, dejar que el código continúe con el flujo normal usando esta sesión
-                } else {
-                  // No hay sesión válida, redirigir a login
-                  console.warn("[OAUTH_CALLBACK] No se encontró sesión válida después de error PKCE");
-                  if (active) {
-                    router.replace("/auth/login?error=pkce_error" as Route);
-                  }
-                  return;
-                }
-              } catch (sessionCheckError) {
-                // Si falla el getSession, redirigir directamente sin más intentos
-                console.error("[OAUTH_CALLBACK] Error al verificar sesión después de PKCE:", sessionCheckError);
-                if (active) {
-                  router.replace("/auth/login?error=pkce_error" as Route);
-                }
-                return;
-              }
+              return;
             } else {
               // Otro tipo de error, redirigir sin reintentar
               console.error("[OAUTH_CALLBACK] Error OAuth no manejado:", exchangeError);
@@ -164,6 +139,18 @@ function CallbackPageContent() {
         }
 
         if (sessionError) {
+          const isRateLimit =
+            sessionError.message?.toLowerCase().includes('rate limit') ||
+            sessionError.message?.toLowerCase().includes('too many requests') ||
+            sessionError.status === 429;
+          if (isRateLimit) {
+            if (typeof window !== 'undefined') {
+              const rateLimitUntil = Date.now() + (20 * 60 * 1000);
+              localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+            }
+            router.replace("/auth/login?error=rate_limit" as Route);
+            return;
+          }
           console.error(
             "[OAUTH_CALLBACK_ERROR] Error al obtener sesión:",
             sessionError

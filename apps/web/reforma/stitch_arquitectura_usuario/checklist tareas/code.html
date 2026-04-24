@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#191c1d",
+                        "on-primary": "#ffffff",
+                        "tertiary-container": "#00783d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#0042c8",
+                        "on-background": "#191c1d",
+                        "inverse-surface": "#2e3132",
+                        "on-secondary-container": "#00743a",
+                        "on-secondary-fixed-variant": "#005228",
+                        "secondary": "#006d37",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-container": "#edeeef",
+                        "inverse-on-surface": "#f0f1f2",
+                        "surface-variant": "#e1e3e4",
+                        "surface-tint": "#004ee8",
+                        "surface-dim": "#d9dadb",
+                        "on-primary-container": "#e4e7ff",
+                        "tertiary-fixed": "#6bfe9c",
+                        "on-tertiary-fixed-variant": "#005228",
+                        "secondary-fixed-dim": "#4ae183",
+                        "secondary-fixed": "#6bfe9c",
+                        "on-primary-fixed": "#001550",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#dce1ff",
+                        "on-tertiary-container": "#8fffad",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#f8f9fa",
+                        "surface-container-highest": "#e1e3e4",
+                        "surface-bright": "#f8f9fa",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f8f9fa",
+                        "tertiary-fixed-dim": "#4ae183",
+                        "tertiary": "#005d2d",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#00210c",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#737688",
+                        "secondary-container": "#6bfe9c",
+                        "outline-variant": "#c3c5d9",
+                        "on-surface-variant": "#434656",
+                        "on-primary-fixed-variant": "#003ab2",
+                        "primary-container": "#0056ff",
+                        "surface-container-low": "#f3f4f5",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "on-secondary-fixed": "#00210c",
+                        "inverse-primary": "#b6c4ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        .canvas-grid {
+            background-image: radial-gradient(#d1d5db 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen overflow-hidden flex">
+<!-- 1. LEFT SIDEBAR (SideNavBar) -->
+<aside class="h-screen w-64 hidden lg:flex flex-col bg-slate-50 dark:bg-slate-950 font-manrope text-sm font-medium p-4 space-y-2 flex-shrink-0">
+<div class="px-2 py-6 mb-4">
+<h1 class="text-xl font-extrabold text-blue-700">Grows Architecture</h1>
+<p class="text-[10px] text-slate-400 uppercase tracking-widest mt-1">Premium Plan</p>
+</div>
+<div class="mb-8 px-2">
+<div class="flex items-center justify-between p-3 bg-surface-container-lowest rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<span class="text-xs font-bold text-on-surface">Proyecto Residencial A1</span>
+<span class="material-symbols-outlined text-sm" data-icon="unfold_more">unfold_more</span>
+</div>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<!-- Active Tab: Canvas -->
+<a class="flex items-center gap-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="architecture" style="font-variation-settings: 'FILL' 1;">architecture</span>
+<span>Canvas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Packages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Budgets</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span>Validations</span>
+</a>
+</nav>
+<div class="pt-4 mt-auto border-t border-slate-200 dark:border-slate-800 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all duration-300 rounded-full" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<div class="flex items-center gap-3 p-3 mt-2 rounded-xl bg-surface-container-low">
+<img alt="Architect Profile" class="w-8 h-8 rounded-full object-cover" data-alt="close up headshot of a male architect in a clean studio environment with professional lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARXYmLEEYvo2QWUatAo-H5RzPYTY_fusfGO67QS2GZRjdG96MoEBComQuoGBLDWqA53rL6Ln667xuI7zA0gvyNtYoJGGPALFRGFWQxMgf8Yvh3mkucLn4uvKqY79gmOTQf_zIxAxt7ah7wKO7qev8E8kAbjtEzHoIEZ077Lc7bVEbF8TH8L6WIx0LhsO_JYey54RAnCALHaUmHBFkG6xptZN32U9emJZ4EZRV69G5RkBLh_Eqwkz7eb2oglO7ySDRBsjFjBtGG-WIJ"/>
+<div class="flex flex-col">
+<span class="text-xs font-bold truncate">Marc G. Studio</span>
+<span class="text-[10px] text-on-surface-variant">Admin Account</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- 2. CENTER CANVAS -->
+<main class="flex-grow relative flex flex-col overflow-hidden bg-surface">
+<!-- Top Navigation / Breadcrumbs -->
+<header class="h-16 flex items-center justify-between px-8 bg-surface-container-low/50 backdrop-blur-md z-10">
+<div class="flex items-center gap-2 text-sm">
+<span class="text-on-surface-variant">Estructura</span>
+<span class="material-symbols-outlined text-xs text-outline" data-icon="chevron_right">chevron_right</span>
+<span class="text-on-surface-variant">Piso 2</span>
+<span class="material-symbols-outlined text-xs text-outline" data-icon="chevron_right">chevron_right</span>
+<span class="text-on-surface font-bold">Depto B</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="search">search</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<!-- Canvas Body -->
+<div class="flex-grow canvas-grid relative overflow-auto p-20 cursor-grab active:cursor-grabbing">
+<!-- Node Connections Visual (Simulated lines) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" style="min-width: 2000px; min-height: 1200px;">
+<path d="M 380 250 L 520 250" fill="none" stroke="#0042c8" stroke-dasharray="4 2" stroke-width="1.5"></path>
+<path d="M 720 250 L 860 250" fill="none" stroke="#0042c8" stroke-width="1.5"></path>
+<path d="M 720 250 L 860 400" fill="none" stroke="#0042c8" stroke-width="1.5"></path>
+</svg>
+<div class="flex gap-24 relative" style="min-width: 1500px;">
+<!-- Node: Stage -->
+<div class="flex flex-col gap-6">
+<div class="w-64 bg-surface-container-lowest p-5 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.04)] border-l-4 border-primary">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded uppercase tracking-wider">Etapa</span>
+<span class="material-symbols-outlined text-on-surface-variant text-lg" data-icon="more_vert">more_vert</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Cimentación</h3>
+<p class="text-xs text-on-surface-variant mb-4">14 de Enero - 28 de Feb</p>
+<div class="flex items-center gap-2">
+<div class="px-2 py-0.5 bg-secondary/10 text-secondary text-[10px] font-bold rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                Completado
+                            </div>
+</div>
+</div>
+</div>
+<!-- Node: Category -->
+<div class="flex flex-col gap-6 pt-10">
+<div class="w-64 bg-surface-container-lowest p-5 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.06)] ring-2 ring-primary">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-wider">Categoría</span>
+<span class="material-symbols-outlined text-primary text-lg" data-icon="radio_button_checked">radio_button_checked</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Hormigón Armado</h3>
+<p class="text-xs text-on-surface-variant mb-4">Duración: 12 días</p>
+<div class="flex items-center gap-2">
+<div class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                En Progreso
+                            </div>
+</div>
+</div>
+</div>
+<!-- Nodes: Floors/Tasks -->
+<div class="flex flex-col gap-8">
+<div class="w-64 bg-surface-container-lowest p-5 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.04)]">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-wider">Piso 2</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Vigas de Carga</h3>
+<p class="text-xs text-on-surface-variant mb-4">4 días • Depto B</p>
+<div class="flex items-center gap-2">
+<div class="px-2 py-0.5 bg-error-container text-error text-[10px] font-bold rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                Crítico
+                            </div>
+</div>
+</div>
+<div class="w-64 bg-surface-container-lowest p-5 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.04)] opacity-60">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2 py-1 bg-surface-container text-on-surface-variant text-[10px] font-bold rounded uppercase tracking-wider">Tarea</span>
+</div>
+<h3 class="font-bold text-on-surface mb-1">Curado de Losa</h3>
+<p class="text-xs text-on-surface-variant mb-4">2 días</p>
+<div class="flex items-center gap-2">
+<div class="px-2 py-0.5 bg-surface-container-high text-on-surface-variant text-[10px] font-bold rounded-full flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                                Pendiente
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Controls -->
+<div class="absolute bottom-8 left-1/2 -translate-x-1/2 bg-surface-container-lowest shadow-xl rounded-full px-6 py-3 flex items-center gap-6 z-20">
+<button class="flex items-center gap-2 text-on-surface hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="add_circle">add_circle</span>
+<span class="text-xs font-bold uppercase tracking-wider">Añadir Nodo</span>
+</button>
+<div class="w-px h-6 bg-surface-container-high"></div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant" data-icon="zoom_in">zoom_in</button>
+<span class="text-[10px] font-bold text-outline">100%</span>
+<button class="material-symbols-outlined text-on-surface-variant" data-icon="zoom_out">zoom_out</button>
+</div>
+</div>
+</main>
+<!-- 3. RIGHT PANEL (Contextual Detail) -->
+<aside class="w-96 bg-surface-container-lowest border-l border-surface-container-high h-screen overflow-y-auto flex-shrink-0 flex flex-col">
+<!-- Tabs -->
+<div class="flex px-4 pt-4 border-b border-surface-container">
+<button class="flex-1 pb-3 text-xs font-bold uppercase tracking-widest text-primary border-b-2 border-primary">Detalle</button>
+<button class="flex-1 pb-3 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b-2 border-transparent">Paquete</button>
+<button class="flex-1 pb-3 text-xs font-bold uppercase tracking-widest text-on-surface-variant border-b-2 border-transparent">Actividad</button>
+</div>
+<div class="p-8 flex-grow">
+<!-- Node Detail Section -->
+<div class="mb-10">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="layers">layers</span>
+</div>
+<div>
+<h2 class="text-xl font-extrabold text-on-surface">Hormigón Armado</h2>
+<span class="text-xs text-on-surface-variant">Categoría Estructural</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-surface-container-low p-4 rounded-2xl">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant block mb-1">Duración</span>
+<span class="text-sm font-bold">12 Días</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-2xl">
+<span class="text-[10px] uppercase font-bold text-on-surface-variant block mb-1">Asignado</span>
+<span class="text-sm font-bold">Ing. Ruiz</span>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="text-xs font-extrabold uppercase tracking-widest text-on-surface-variant">Checklist de tareas</h4>
+<div class="space-y-3">
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container-high transition-colors cursor-pointer">
+<input checked="" class="w-5 h-5 rounded-full border-2 border-primary text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-on-surface line-through decoration-on-surface-variant/30">Encofrado de vigas maestras</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container-high transition-colors cursor-pointer">
+<input checked="" class="w-5 h-5 rounded-full border-2 border-primary text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-on-surface line-through decoration-on-surface-variant/30">Instalación de armadura</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container-high transition-colors cursor-pointer">
+<input class="w-5 h-5 rounded-full border-2 border-outline text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-on-surface">Vaciado de concreto H30</span>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-xl bg-surface-container/50 hover:bg-surface-container-high transition-colors cursor-pointer">
+<input class="w-5 h-5 rounded-full border-2 border-outline text-primary focus:ring-0" type="checkbox"/>
+<span class="text-sm text-on-surface">Vibrado y nivelación</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Notes / Additional Fields -->
+<div class="space-y-4">
+<h4 class="text-xs font-extrabold uppercase tracking-widest text-on-surface-variant">Alcance y notas</h4>
+<div class="bg-surface-container-low p-5 rounded-2xl">
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                        Se requiere certificación del proveedor de concreto previo al vaciado. Supervisar especialmente la zona de unión con el Piso 1.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-8 mt-auto bg-surface-container-low/30 backdrop-blur-sm">
+<button class="w-full py-4 px-6 rounded-full bg-primary text-on-primary font-bold text-sm flex items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+<span class="material-symbols-outlined" data-icon="publish" style="font-variation-settings: 'wght' 600;">publish</span>
+                Publicar paquete
+            </button>
+<p class="text-[10px] text-center text-outline mt-4 uppercase tracking-widest">Última edición hace 12 min</p>
+</div>
+</aside>
+</body></html>

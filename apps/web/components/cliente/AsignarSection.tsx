@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
   AlertCircle,
@@ -19,6 +20,16 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { useCuadrillasStore } from '@/lib/store/cuadrillasStore';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { SolicitarPresupuestoModal } from '@/components/clienteTecnico/presupuestos/SolicitarPresupuestoModal';
+import {
+  DEMO_OBRA_CASA_ID,
+  isDemoVideoEnabled,
+  getMockTareasAsigna,
+  getMockPresupuestosParaEtapa,
+  SOCIOS_ASIGNA_DEMO,
+  PRIMER_SOCIO_ASIGNA_DEMO_NOMBRE,
+} from '@/lib/mocks/demoVideoData';
+
+const DEMO_PRESUPUESTOS_STORAGE_KEY = `grows-demo-presupuestos-${DEMO_OBRA_CASA_ID}`;
 import { PanelEstado } from './asigna/PanelEstado';
 import { StageSummaryCard } from './asigna/StageSummaryCard';
 import { PresupuestoPDFModal } from './asigna/PresupuestoPDFModal';
@@ -125,7 +136,11 @@ function normalizeStage(value: string | null | undefined): StageKey | null {
   return null;
 }
 
-export function AsignarSection({ obraId }: AsignarSectionProps) {
+export function AsignarSection({ obraId: obraIdProp }: AsignarSectionProps) {
+  const searchParams = useSearchParams();
+  const obraIdFromUrl = searchParams.get('obraId') || searchParams.get('obrald');
+  const urlEsObraDemo = obraIdFromUrl === DEMO_OBRA_CASA_ID;
+  const obraId = urlEsObraDemo ? DEMO_OBRA_CASA_ID : (obraIdProp ?? obraIdFromUrl ?? null);
   const currentUser = useCurrentUser();
   const supabase = useMemo(
     () => createClientComponentClient<Database>() as any,
@@ -185,6 +200,60 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
   // Función reutilizable para cargar/refrescar datos
   const refetchData = useCallback(async (showLoading = false) => {
+    // Demo obra: solo mocks, SIN base de datos. Presupuestos en sessionStorage (máx. 5 por etapa, 15 total).
+    if (obraId === DEMO_OBRA_CASA_ID) {
+      if (showLoading) setLoading(true);
+      setError(null);
+      const mockTasks = getMockTareasAsigna(obraId);
+      const sociosMapLocal = new Map(SOCIOS_ASIGNA_DEMO.map((s) => [s.id, s.nombre]));
+      setTasks(mockTasks);
+      setCuadrillas([]);
+      setSociosMap(sociosMapLocal);
+      setSocioEmailMap(new Map());
+      setElementosMap(new Map());
+
+      const sociosDemoIds = new Set(SOCIOS_ASIGNA_DEMO.map((s) => s.id));
+      let presupuestosDemo: RawPresupuesto[] = [];
+      try {
+        const stored = typeof window !== 'undefined' ? sessionStorage.getItem(DEMO_PRESUPUESTOS_STORAGE_KEY) : null;
+        if (stored) {
+          const parsed = JSON.parse(stored) as RawPresupuesto[];
+          const soloSociosDemo = Array.isArray(parsed) && parsed.every((b) => sociosDemoIds.has((b as any).socio_id ?? ''));
+          if (soloSociosDemo && parsed.length > 0) {
+            const byEtapa = new Map<string, RawPresupuesto[]>();
+            parsed.forEach((b) => {
+              const id = String((b as any).id ?? '');
+              const match = id.match(/^demo-pres-(estructura|obra gris|terminaciones)-/);
+              const etapa = match ? match[1] : 'otros';
+              if (!byEtapa.has(etapa)) byEtapa.set(etapa, []);
+              byEtapa.get(etapa)!.push(b);
+            });
+            byEtapa.forEach((list) => presupuestosDemo.push(...list.slice(0, 5)));
+          }
+        }
+      } catch {
+        // ignorar JSON inválido
+      }
+      if (presupuestosDemo.length === 0) {
+        const estructuraIds = mockTasks.filter((t) => t.etapa === 'estructura').map((t) => t.id);
+        const obraGrisIds = mockTasks.filter((t) => t.etapa === 'obra gris').map((t) => t.id);
+        const terminacionesIds = mockTasks.filter((t) => t.etapa === 'terminaciones').map((t) => t.id);
+        presupuestosDemo = [
+          ...getMockPresupuestosParaEtapa('estructura', estructuraIds),
+          ...getMockPresupuestosParaEtapa('obra gris', obraGrisIds),
+          ...getMockPresupuestosParaEtapa('terminaciones', terminacionesIds),
+        ];
+        try {
+          if (typeof window !== 'undefined') sessionStorage.setItem(DEMO_PRESUPUESTOS_STORAGE_KEY, JSON.stringify(presupuestosDemo));
+        } catch {
+          // ignorar
+        }
+      }
+      setBudgets(presupuestosDemo);
+      if (showLoading) setLoading(false);
+      return;
+    }
+
     if (!currentUser?.orgId) {
       setError('No se pudo identificar tu organización.');
       return;
@@ -344,6 +413,26 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   useEffect(() => {
     void refetchData(true);
   }, [currentUser?.orgId, obraId, supabase]);
+
+  // Persistir presupuestos demo en sessionStorage (sin base de datos) cuando cambian
+  useEffect(() => {
+    if (obraId !== DEMO_OBRA_CASA_ID || !budgets.length || typeof window === 'undefined') return;
+    const byEtapa = new Map<string, RawPresupuesto[]>();
+    budgets.forEach((b) => {
+      const id = String((b as any).id ?? '');
+      const match = id.match(/^demo-pres-(estructura|obra gris|terminaciones)-/);
+      const etapa = match ? match[1] : 'otros';
+      if (!byEtapa.has(etapa)) byEtapa.set(etapa, []);
+      byEtapa.get(etapa)!.push(b);
+    });
+    const toSave: RawPresupuesto[] = [];
+    byEtapa.forEach((list) => toSave.push(...list.slice(0, 5)));
+    try {
+      sessionStorage.setItem(DEMO_PRESUPUESTOS_STORAGE_KEY, JSON.stringify(toSave));
+    } catch {
+      // ignorar
+    }
+  }, [obraId, budgets]);
 
   const taskMap = useMemo(() => {
     const map = new Map<string, TaskInfo>();
@@ -509,13 +598,50 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   // handleOpenModal removido - ahora se usa handleOpenPresupuestoModal
 
   const handleOpenPresupuestoModal = (etapa?: string, tareaId?: string) => {
-    // Si no hay obraId, intentar obtenerlo de las tareas
-    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
+    const urlTieneObraDemo =
+      (searchParams.get('obraId') || searchParams.get('obrald') || '') === DEMO_OBRA_CASA_ID;
+    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null) || (urlTieneObraDemo ? DEMO_OBRA_CASA_ID : null);
     if (!obraIdActual) {
       toast({
         title: 'Error',
         description: 'No se pudo identificar la obra. Seleccioná una obra primero.',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    // Demo: al hacer clic en "Solicitar presupuesto" NUNCA se abre el popup; aparecen 5 presupuestos mock (5 socios fantasía) sin API
+    const esDemo =
+      obraIdActual === DEMO_OBRA_CASA_ID ||
+      isDemoVideoEnabled() ||
+      urlTieneObraDemo;
+    if (esDemo) {
+      const etapaKey = etapa ?? etapaActiva;
+      const bucket = stageBuckets.find((b) => b.key === etapaKey || b.label === etapa);
+      const tareaIds = bucket?.tasks.map((t) => t.id) ?? [];
+      if (tareaIds.length === 0) {
+        toast({
+          title: 'Sin tareas',
+          description: 'No hay tareas en esta etapa para pedir presupuesto.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const nuevos = getMockPresupuestosParaEtapa(etapaKey, tareaIds);
+      setBudgets((prev) => {
+        const idsEtapaActual = new Set(nuevos.map((p) => (p as any).id));
+        const otros = prev.filter((b) => {
+          const id = String((b as any).id ?? '');
+          const match = id.match(/^demo-pres-(estructura|obra gris|terminaciones)-/);
+          const etapaPresu = match ? match[1] : '';
+          if (etapaPresu !== etapaKey) return true;
+          return !idsEtapaActual.has(id);
+        });
+        return [...otros, ...nuevos];
+      });
+      toast({
+        title: 'Presupuestos de ejemplo',
+        description: `Se cargaron ${nuevos.length} ofertas (Alfa, Beta, Gamma, Delta, Epsilon) para esta etapa.`,
       });
       return;
     }
@@ -620,6 +746,22 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
 
   const handleUpdateBudgetStatus = async (budgetId: string, status: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO') => {
     setUpdatingBudgetId(budgetId);
+    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
+    if (obraIdActual === DEMO_OBRA_CASA_ID) {
+      setBudgets((prev) =>
+        prev.map((budget) =>
+          budget.id === budgetId
+            ? { ...budget, estado: status, updated_at: new Date().toISOString() }
+            : budget
+        )
+      );
+      toast({
+        title: status === 'APROBADO' ? 'Presupuesto aprobado (demo)' : 'Estado actualizado',
+        description: status === 'APROBADO' ? 'Podés asignar la cuadrilla con esta oferta.' : 'Actualizamos el estado del presupuesto.',
+      });
+      setUpdatingBudgetId(null);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('tareas_presupuestos')
@@ -661,8 +803,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   const handleAssignBudget = async (budget: RawPresupuesto) => {
-    if (!currentUser?.orgId) return;
-
+    const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
     const tarea = taskMap.get(budget.tarea_id);
     const socioId = budget.socio_id;
     if (!tarea || !socioId) {
@@ -673,6 +814,29 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
       });
       return;
     }
+
+    // Demo: solo actualizar estado local
+    if (obraIdActual === DEMO_OBRA_CASA_ID) {
+      setAssigningBudgetId(budget.id);
+      const socioNombre = sociosMap.get(socioId) ?? 'Socio sin nombre';
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === budget.tarea_id ? { ...task, cuadrillaId: socioId, responsable: socioNombre } : task
+        )
+      );
+      setBudgets((prev) =>
+        prev.map((b) => {
+          if (b.id === budget.id) return { ...b, estado: 'APROBADO', updated_at: new Date().toISOString() };
+          if (b.tarea_id === budget.tarea_id) return { ...b, estado: 'RECHAZADO', updated_at: new Date().toISOString() };
+          return b;
+        })
+      );
+      toast({ title: 'Tarea asignada (demo)', description: `Asignaste la tarea a ${socioNombre}.` });
+      setAssigningBudgetId(null);
+      return;
+    }
+
+    if (!currentUser?.orgId) return;
 
     // Obtener email del socio (CRÍTICO: el socio busca tareas por email en responsable)
     let socioEmail = socioEmailMap.get(socioId);
@@ -810,21 +974,39 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
   };
 
   const handleAprobarPresupuesto = async (socioId: string, etapaId: string) => {
-    if (!currentUser?.orgId || !currentUser?.id) {
-      toast({
-        title: 'Error',
-        description: 'No se pudo identificar la organización o usuario.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Obtener obraId desde las tareas si no está disponible
     const obraIdActual = obraId || (tasks.length > 0 ? tasks[0].obraId : null);
     if (!obraIdActual) {
       toast({
         title: 'Error',
         description: 'No se pudo identificar la obra.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Demo: solo actualizar estado local
+    if (obraIdActual === DEMO_OBRA_CASA_ID) {
+      setAprobandoPresupuestoSocioId(socioId);
+      setBudgets((prev) =>
+        prev.map((b) =>
+          b.socio_id === socioId ? { ...b, estado: 'APROBADO', updated_at: new Date().toISOString() } : b
+        )
+      );
+      const socioNombre = sociosMap.get(socioId) ?? 'Socio';
+      setSuccessBanner({
+        message: `Presupuesto de ${socioNombre} aprobado (demo).`,
+        tareasAprobadas: 1,
+      });
+      setTimeout(() => setSuccessBanner(null), 5000);
+      toast({ title: 'Presupuesto aprobado (demo)', description: `Se aprobó la oferta de ${socioNombre}.` });
+      setAprobandoPresupuestoSocioId(null);
+      return;
+    }
+
+    if (!currentUser?.orgId || !currentUser?.id) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo identificar la organización o usuario.',
         variant: 'destructive',
       });
       return;
@@ -950,7 +1132,7 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
     return { pendientes, enviados, aprobados };
   }, [budgets, obraId, taskMap]);
 
-  if (!currentUser?.orgId) {
+  if (!currentUser?.orgId && obraId !== DEMO_OBRA_CASA_ID) {
     return (
       <EmptyState
         title="Iniciá sesión nuevamente"
@@ -1065,17 +1247,21 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
         />
       )}
 
-      {/* Modal de solicitud de presupuesto */}
-      {presupuestoModalOpen && presupuestoModalObraId && (
-        <SolicitarPresupuestoModal
-          open={presupuestoModalOpen}
-          onClose={() => setPresupuestoModalOpen(false)}
-          obraId={presupuestoModalObraId}
-          etapa={presupuestoModalEtapa}
-          tareas={presupuestoModalTareas}
-          onSuccess={handlePresupuestoSuccess}
-        />
-      )}
+      {/* Modal de solicitud de presupuesto: en demo NUNCA se muestra (solo aparecen 5 mocks al clickear) */}
+      {presupuestoModalOpen &&
+        presupuestoModalObraId &&
+        obraId !== DEMO_OBRA_CASA_ID &&
+        !isDemoVideoEnabled() &&
+        (searchParams.get('obraId') || searchParams.get('obrald')) !== DEMO_OBRA_CASA_ID && (
+          <SolicitarPresupuestoModal
+            open={presupuestoModalOpen}
+            onClose={() => setPresupuestoModalOpen(false)}
+            obraId={presupuestoModalObraId}
+            etapa={presupuestoModalEtapa}
+            tareas={presupuestoModalTareas}
+            onSuccess={handlePresupuestoSuccess}
+          />
+        )}
 
       {/* Modales de PDF, Lista y Rechazar */}
       {pdfModalData && (
@@ -1087,6 +1273,10 @@ export function AsignarSection({ obraId }: AsignarSectionProps) {
           }}
           cuadrillaNombre={pdfModalData.cuadrillaNombre}
           presupuestos={pdfModalData.presupuestos}
+          isDemoPdf={
+            (obraId ?? (tasks[0]?.obraId)) === DEMO_OBRA_CASA_ID &&
+            pdfModalData.cuadrillaNombre === PRIMER_SOCIO_ASIGNA_DEMO_NOMBRE
+          }
         />
       )}
 

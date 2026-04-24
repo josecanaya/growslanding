@@ -4,9 +4,13 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole, type UserRole } from '@/lib/roles';
 
+// En desarrollo local no llamar getSession en cada request (evita rate limit y loops).
+// Nunca permitir bypass de auth en producción.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const DEV_MODE_ENABLED =
-  process.env.NODE_ENV !== 'production' ||
-  process.env.NEXT_PUBLIC_DEV_MODE?.toLowerCase() === 'true';
+  !IS_PRODUCTION &&
+  (process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_DEV_MODE?.toLowerCase() === 'true');
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY =
@@ -93,9 +97,18 @@ export async function middleware(req: NextRequest) {
       supabaseKey: SUPABASE_ANON_KEY,
     } as any
   );
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+
+  const result = await supabase.auth.getSession();
+  const session = result.data?.session ?? null;
+
+  // Rate limit (429): no redirigir a login para evitar loop; dejar pasar la request
+  if (result.error) {
+    const msg = result.error.message?.toLowerCase() ?? '';
+    const is429 = (result.error as { status?: number }).status === 429;
+    if (is429 || msg.includes('rate limit') || msg.includes('too many')) {
+      return res;
+    }
+  }
 
   if (!session) {
     const loginUrl = new URL('/auth/login', req.url);

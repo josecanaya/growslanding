@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { ActualizarTareaSchema } from '../../../../lib/schemas';
 import { PermisoService } from '@/lib/services/permiso.service';
+import type { Database } from '@/lib/types/supabase.gen';
 
 // Asegurar que este endpoint siempre devuelva JSON
 export const runtime = 'nodejs';
@@ -13,16 +16,30 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const organizacionId = request.headers.get('x-organizacion-id');
-    
-    if (!organizacionId) {
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Organización requerida' },
-        { status: 400 }
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
       );
     }
 
     const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    if (allowedOrgIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No pertenece a ninguna organización' },
+        { status: 403 }
+      );
+    }
 
     // Obtener tarea con joins
     const { data: tarea, error: tareaError } = await supabase
@@ -47,7 +64,7 @@ export async function GET(
         obra:obras(id, name, address)
       `)
       .eq('id', id)
-      .eq('org_id', organizacionId)
+      .in('org_id', allowedOrgIds)
       .single();
 
     if (tareaError || !tarea) {
@@ -144,25 +161,18 @@ export async function PATCH(
       );
     }
 
-    const organizacionId = request.headers.get('x-organizacion-id');
-    const usuarioId = request.headers.get('x-usuario-id');
-
-    if (!organizacionId || !usuarioId) {
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
       return NextResponse.json(
-        { success: false, error: 'Organización y usuario requeridos' },
-        { status: 400 }
-      );
-    }
-
-    const rol = await PermisoService.obtenerRolEnOrganizacion(
-      usuarioId,
-      organizacionId,
-    );
-
-    if (rol !== 'CLIENTE') {
-      return NextResponse.json(
-        { success: false, error: 'No tiene permisos para actualizar tareas' },
-        { status: 403 }
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
       );
     }
 
@@ -177,12 +187,21 @@ export async function PATCH(
       );
     }
 
-    // Verificar que la tarea existe y pertenece a la organización
+    const supabaseAny = supabase as any;
+    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    if (allowedOrgIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No pertenece a ninguna organización' },
+        { status: 403 }
+      );
+    }
+
+    // Verificar que la tarea existe y pertenece a una organización accesible
     const { data: tareaExistente, error: checkError } = await supabase
       .from('tareas')
       .select('id, org_id')
       .eq('id', id)
-      .eq('org_id', organizacionId)
+      .in('org_id', allowedOrgIds)
       .single();
 
     if (checkError || !tareaExistente) {
@@ -190,6 +209,18 @@ export async function PATCH(
       return NextResponse.json(
         { success: false, error: 'Tarea no encontrada', details: checkError?.message },
         { status: 404 }
+      );
+    }
+
+    const organizacionId = tareaExistente.org_id;
+    const rol = await PermisoService.obtenerRolEnOrganizacion(
+      user.id,
+      organizacionId,
+    );
+    if (rol !== 'CLIENTE') {
+      return NextResponse.json(
+        { success: false, error: 'No tiene permisos para actualizar tareas' },
+        { status: 403 }
       );
     }
 
@@ -367,4 +398,20 @@ export async function PATCH(
       }
     );
   }
+}
+
+async function resolveAllowedOrgIds(supabaseAny: any, userId: string): Promise<string[]> {
+  const [orgClienteRows, orgSocioRows] = await Promise.all([
+    supabaseAny.from('organizations').select('id').eq('user_id', userId),
+    supabaseAny.from('socios').select('org_id').eq('user_id', userId),
+  ]);
+
+  const orgIds = new Set<string>([
+    ...((orgClienteRows.data ?? []) as Array<{ id: string }>).map((o) => o.id),
+    ...((orgSocioRows.data ?? []) as Array<{ org_id: string | null }>)
+      .map((s) => s.org_id)
+      .filter((orgId): orgId is string => Boolean(orgId)),
+  ]);
+
+  return Array.from(orgIds);
 }

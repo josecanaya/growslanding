@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#cdd4eb",
+                    "inverse-surface": "#0c0f10",
+                    "error-dim": "#4e0309",
+                    "surface": "#f8f9fa",
+                    "on-secondary-container": "#4a5165",
+                    "inverse-primary": "#e1ecff",
+                    "on-secondary": "#f9f8ff",
+                    "on-surface": "#2b3437",
+                    "secondary-container": "#dbe2fa",
+                    "primary": "#555f6f",
+                    "inverse-on-surface": "#9b9d9e",
+                    "primary-dim": "#495363",
+                    "on-background": "#2b3437",
+                    "primary-fixed-dim": "#cbd5e8",
+                    "tertiary-fixed": "#f4f2fe",
+                    "background": "#f8f9fa",
+                    "error-container": "#fe8983",
+                    "on-primary-fixed": "#36404f",
+                    "surface-container-high": "#e2e9ec",
+                    "tertiary-dim": "#52525c",
+                    "on-error": "#fff7f6",
+                    "surface-variant": "#dbe4e7",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary": "#faf8ff",
+                    "secondary": "#575f73",
+                    "surface-container-highest": "#dbe4e7",
+                    "on-tertiary-fixed-variant": "#65656f",
+                    "on-tertiary-fixed": "#494952",
+                    "on-secondary-fixed-variant": "#545b6f",
+                    "on-error-container": "#752121",
+                    "outline-variant": "#abb3b7",
+                    "tertiary-fixed-dim": "#e6e4f0",
+                    "primary-container": "#d9e3f6",
+                    "surface-dim": "#d1dce0",
+                    "tertiary-container": "#f4f2fe",
+                    "on-secondary-fixed": "#383f52",
+                    "surface-container-low": "#f1f4f6",
+                    "surface-bright": "#f8f9fa",
+                    "surface-tint": "#555f6f",
+                    "secondary-dim": "#4b5366",
+                    "on-primary": "#f6f7ff",
+                    "on-surface-variant": "#586064",
+                    "on-primary-fixed-variant": "#525c6c",
+                    "primary-fixed": "#d9e3f6",
+                    "error": "#9f403d",
+                    "tertiary": "#5e5e68",
+                    "on-tertiary-container": "#5b5b65",
+                    "on-primary-container": "#485262",
+                    "outline": "#737c7f",
+                    "secondary-fixed": "#dbe2fa",
+                    "surface-container": "#eaeff1"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+        .label-style { font-family: 'Inter', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- Top Navigation Shell (Mobile Only) -->
+<header class="lg:hidden flex justify-between items-center px-6 h-16 w-full fixed top-0 z-50 bg-white/80 backdrop-blur-md shadow-sm">
+<span class="text-lg font-black text-slate-800 tracking-tight">Studio Alpha</span>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-slate-700">notifications</span>
+<span class="material-symbols-outlined text-slate-700">account_circle</span>
+</div>
+</header>
+<div class="flex min-h-screen pt-16 lg:pt-0 pb-24 lg:pb-0">
+<!-- Side Navigation Shell (Desktop Only) -->
+<nav class="hidden lg:flex flex-col h-screen w-64 py-8 px-6 bg-slate-50 border-r-0 fixed left-0 top-0">
+<div class="mb-12">
+<h1 class="text-xl font-bold tracking-tighter text-slate-800">Studio Alpha</h1>
+<p class="text-xs text-slate-500 font-medium label-style uppercase tracking-widest mt-1">Project Management</p>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="text-sm font-medium">Cronograma/Canvas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-sm font-medium">Paquetes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors duration-300" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-sm font-medium">Presupuestos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-900 font-semibold border-r-2 border-slate-600 bg-slate-100" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="text-sm font-medium">Validaciones</span>
+</a>
+</div>
+<div class="pt-8 space-y-2">
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-700" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="text-sm">Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-slate-700" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 lg:ml-64 px-6 lg:px-12 py-8 max-w-4xl mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-10">
+<span class="label-style text-[10px] font-bold tracking-[0.2em] text-primary uppercase mb-2 block">Validaciones de Obra</span>
+<h2 class="text-4xl font-extrabold tracking-tight text-on-surface">Validar Bloques</h2>
+<p class="text-on-surface-variant mt-3 text-lg font-light leading-relaxed">Revisiones pendientes de ejecución y materiales para aprobación final.</p>
+</div>
+<!-- List Container (Pending Validation) -->
+<div class="space-y-6">
+<!-- Card Item 01 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(43,52,55,0.06)] group">
+<div class="flex flex-col md:flex-row">
+<!-- Evidence Photo -->
+<div class="relative w-full md:w-48 h-48 md:h-auto overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Close-up of freshly poured concrete foundation with steel reinforcement bars under bright afternoon sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6s59eQGqkuJAOtVSr3yFyhhEQh0G9nw5ndqLonjSfp0tFyv_zAnoWMowfS_4lW9wBKW7UPuyCvdqhhkMTgAwlGhwy4SumnKFxQkxKyhKae_YIUvjztnawtz0vfR1HNlQGABF_KWgOV2mJ0BC7_3m95R1whu7KDT4riXjOYVf9ur_MPl2lR0SIwfL_GeXqPseEhbrFIPS78FokRU6XWb22M9qvAqTRZZfWJvfxYIXmPdMhxr0RisYuoKprOgzXQjQGzo1ZAfHaR2O3"/>
+<div class="absolute top-3 left-3">
+<span class="label-style text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-bold uppercase tracking-wider">Para Validar</span>
+</div>
+</div>
+<!-- Details Content -->
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-on-surface leading-tight">Vaciado de Platea - Sector A1</h3>
+<span class="text-lg font-semibold text-primary">$4.250,00</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span class="label-style text-xs font-medium">Subido hace 2 horas</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3">
+<button class="flex-1 bg-primary text-on-primary py-3 px-6 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-primary/10">
+                                    Aprobar
+                                </button>
+<button class="flex-1 bg-white border border-outline-variant/30 text-on-surface py-3 px-6 rounded-xl font-bold text-sm transition-all hover:bg-surface-container-low active:scale-95">
+                                    Rechazar
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card Item 02 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(43,52,55,0.06)] group">
+<div class="flex flex-col md:flex-row">
+<!-- Evidence Photo -->
+<div class="relative w-full md:w-48 h-48 md:h-auto overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Interior of architectural building under construction with exposed wooden beams and bright natural light streaming through windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCh8upOFXamyp5F2M0taa25SYd9cd-oCoX-OpEChbAjyGwTPoR2GxTuO8AtMZ4zlZNPC8j3pDwAPBwqYoOOjuQVI0ncofasUgfBFLQcKREh6Q0ZjyYK5GN2nUeklHLWXHL5XKwX63azV19SvfPL5flTGJAYlb5VusX6B_AXas-X0mXi3Jzxadzj0IQ5rnUD26wPTFww3qhYyD7u9m-whN-OxHmCaQPsGlvo0gvG5zelKEaoCkE3YYrCU0ofeYY3Z1KN2i9fz7-yYyWI"/>
+<div class="absolute top-3 left-3">
+<span class="label-style text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-bold uppercase tracking-wider">Para Validar</span>
+</div>
+</div>
+<!-- Details Content -->
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-on-surface leading-tight">Estructura Techumbre Madera</h3>
+<span class="text-lg font-semibold text-primary">$8.900,00</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span class="label-style text-xs font-medium">Subido ayer</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3">
+<button class="flex-1 bg-primary text-on-primary py-3 px-6 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-primary/10">
+                                    Aprobar
+                                </button>
+<button class="flex-1 bg-white border border-outline-variant/30 text-on-surface py-3 px-6 rounded-xl font-bold text-sm transition-all hover:bg-surface-container-low active:scale-95">
+                                    Rechazar
+                                </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card Item 03 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(43,52,55,0.06)] group">
+<div class="flex flex-col md:flex-row">
+<!-- Evidence Photo -->
+<div class="relative w-full md:w-48 h-48 md:h-auto overflow-hidden">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="Industrial electrical panel with complex colorful wiring and modern circuit breakers in a clean mechanical room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCKhYGrx5W6oi1zhQcGdDGCMISGzvn7MK8n1iKrJqbPDLyt8eH9O3SG2ZigGwd6sImuGrgpDPFffBvctea8tYw-Ge7VZ3zVBaL_mqp08K7sJtY8Z_TyhnT9t4R_6EdoFGPkI4oGppTik7ZRwKgiiy1yjROsFnEzj5YOevgy4x1F1OfOYnp04dJyjZwK1A3kQVIITN40k6-IolcxFwn1nIQGgHk0rBu1mV8WPsAbaNI3GOi_whqj1YwXuH7lXemePsRj6hBxe-e6AKhz"/>
+<div class="absolute top-3 left-3">
+<span class="label-style text-[9px] bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-bold uppercase tracking-wider">Para Validar</span>
+</div>
+</div>
+<!-- Details Content -->
+<div class="flex-1 p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-2">
+<h3 class="text-xl font-bold text-on-surface leading-tight">Instalación Tablero Central</h3>
+<span class="text-lg font-semibold text-primary">$2.100,00</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-sm mb-4">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span class="label-style text-xs font-medium">Subido hace 4 días</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3">
+<button class="flex-1 bg-primary text-on-primary py-3 px-6 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-primary/10">
+                                    Aprobar
+                                </button>
+<button class="flex-1 bg-white border border-outline-variant/30 text-on-surface py-3 px-6 rounded-xl font-bold text-sm transition-all hover:bg-surface-container-low active:scale-95">
+                                    Rechazar
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Bottom Navigation Shell (Mobile Only) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/90 backdrop-blur-xl border-t border-slate-100 shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<span class="material-symbols-outlined">home_work</span>
+<span class="label-style text-[10px] font-bold tracking-tighter mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<span class="material-symbols-outlined">foundation</span>
+<span class="label-style text-[10px] font-bold tracking-tighter mt-1">Obras</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="label-style text-[10px] font-bold tracking-tighter mt-1">Tareas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-400" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="label-style text-[10px] font-bold tracking-tighter mt-1">Billetera</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-900 bg-slate-100 rounded-xl px-4 py-2" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="label-style text-[10px] font-bold tracking-tighter mt-1">Notif</span>
+</a>
+</nav>
+</body></html>

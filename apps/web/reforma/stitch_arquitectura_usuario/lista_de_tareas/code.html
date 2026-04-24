@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#014171",
+                    "tertiary-dim": "#51516c",
+                    "secondary-fixed": "#d1e4ff",
+                    "surface-variant": "#dde4e5",
+                    "primary-dim": "#515258",
+                    "secondary-fixed-dim": "#b9d7ff",
+                    "tertiary": "#5d5c78",
+                    "on-primary-container": "#505257",
+                    "surface-tint": "#5d5e64",
+                    "outline": "#757c7d",
+                    "surface-container-highest": "#dde4e5",
+                    "error": "#9f403d",
+                    "outline-variant": "#adb3b4",
+                    "on-secondary-fixed-variant": "#2d5e8f",
+                    "on-surface": "#2d3435",
+                    "surface-bright": "#f9f9f9",
+                    "on-primary": "#f7f7fe",
+                    "surface": "#f9f9f9",
+                    "inverse-surface": "#0c0f0f",
+                    "on-background": "#2d3435",
+                    "primary-fixed": "#e2e2e8",
+                    "secondary": "#326293",
+                    "primary-container": "#e2e2e8",
+                    "inverse-primary": "#f3f3fa",
+                    "on-tertiary-fixed-variant": "#54546f",
+                    "tertiary-fixed": "#d9d7f8",
+                    "error-dim": "#4e0309",
+                    "on-secondary-container": "#215485",
+                    "on-surface-variant": "#5a6061",
+                    "on-tertiary-fixed": "#383751",
+                    "on-error": "#fff7f6",
+                    "on-primary-fixed-variant": "#5a5b61",
+                    "secondary-dim": "#235586",
+                    "background": "#f9f9f9",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#d4dbdd",
+                    "inverse-on-surface": "#9c9d9d",
+                    "surface-container-low": "#f2f4f4",
+                    "primary-fixed-dim": "#d3d4da",
+                    "on-primary-fixed": "#3d3f44",
+                    "on-tertiary-container": "#4a4a65",
+                    "on-secondary": "#f7f9ff",
+                    "secondary-container": "#d1e4ff",
+                    "tertiary-fixed-dim": "#cbc9e9",
+                    "tertiary-container": "#d9d7f8",
+                    "surface-container": "#ebeeef",
+                    "surface-container-high": "#e4e9ea",
+                    "on-tertiary": "#fbf7ff",
+                    "error-container": "#fe8983",
+                    "primary": "#5d5e64",
+                    "on-error-container": "#752121"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<!-- TopAppBar Shell -->
+<header class="flex justify-between items-center px-4 h-16 w-full sticky top-0 z-50 bg-white dark:bg-zinc-950 border-b border-zinc-100 dark:border-zinc-800 font-sans antialiased">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-zinc-900 dark:text-zinc-50" data-icon="architecture">architecture</span>
+<span class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">ArchiFlow</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-zinc-900 dark:text-zinc-50" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<main class="max-w-5xl mx-auto px-4 py-8">
+<!-- Project Title Section -->
+<section class="mb-12">
+<div class="inline-flex items-center gap-2 mb-2">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-xs font-bold tracking-widest uppercase text-on-surface-variant font-label">Proyecto Actual</span>
+</div>
+<h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-primary leading-tight">Residencia Cantilever v2</h1>
+<p class="text-on-surface-variant mt-2 max-w-2xl">Seguimiento detallado de hitos constructivos y documentación técnica en sitio.</p>
+</section>
+<!-- Task List Header/Filter -->
+<div class="flex items-center justify-between mb-8 overflow-x-auto gap-4 pb-2">
+<div class="flex gap-2 shrink-0">
+<button class="px-5 py-2 rounded-full bg-primary text-on-primary text-sm font-semibold transition-colors">Todas</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">Pendientes</button>
+<button class="px-5 py-2 rounded-full bg-surface-container-high text-on-surface-variant text-sm font-medium hover:bg-surface-container-highest transition-colors">En Progreso</button>
+</div>
+<button class="flex items-center gap-2 text-secondary text-sm font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-[20px]" data-icon="filter_list">filter_list</span>
+<span>Filtrar</span>
+</button>
+</div>
+<!-- Task Grid (Editorial Asymmetry) -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+<!-- In Progress Task (Highlight) -->
+<div class="md:col-span-7 bg-surface-container-lowest rounded-xl p-8 shadow-[0_32px_48px_-12px_rgba(45,52,53,0.04)] relative group transition-all">
+<div class="absolute top-8 right-8">
+<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                        En Progreso
+                    </span>
+</div>
+<span class="text-[10px] font-bold text-outline uppercase tracking-widest font-label block mb-4">Cimentación y Estructura</span>
+<h3 class="text-2xl font-bold text-primary mb-3">Verificación de armaduras en voladizo norte</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-6">Inspección técnica de los diámetros y espaciamiento de barras según plano E-04. Pendiente firma de residente.</p>
+<div class="flex items-center justify-between pt-6 border-t border-outline-variant/15">
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-surface-container-lowest" data-alt="portrait of a professional male architect in a white shirt looking at the camera" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1CRqxMGVY6ncEcRp9SiAZeWmwp5COLrKlAWp5ZvbKGnl3BktAt0Teo-WWT6tLq1mminXR6T0edkO-uPjxUwOqhQwVvB4JcZ5cq540xEwOhLXh-8KzNwUwWFAc_bpIfh2kjCylP7N80NyAvO6L--p9UM8PnEm3xNkA6TrSZV5fVdspat2vV3Ko1ggl5Dtfjq9F5pRlj5aXurchf7tsaw92FkP5ADDSiVW3lJvU1wp31tqae9FgiTl_wYojnEilAJVceeW95QbULite"/>
+<img class="w-8 h-8 rounded-full border-2 border-surface-container-lowest" data-alt="portrait of a focused female structural engineer with dark hair" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzA3F5ISL4yw-RBnie7wEpb5Ui48zQ4QEBw4P4sr3r8vfaRgrNL4Sybn06EDeOAwlRaTw6UcDl453_TlFgrT29gqw0rr5kYNSh1UBXr4OP6JEQHmIdOzbgVP333aPuE8HCPa1dTSCvuBBwn8T16J28S4dH4Svf5rQKquiWD-zdnUN37kt4a9FmKk9AhIDCvOpXtzmVoZ3j4S123Urbgwcnb-Sk8Bfk77huqcTpA1KFne21_ELbvKJWWELwLKflStnJIbJe3kLH86z4"/>
+</div>
+<span class="text-xs text-outline font-medium">Actualizado hace 2h</span>
+</div>
+</div>
+<!-- Task Item Small -->
+<div class="md:col-span-5 bg-surface-container-low rounded-xl p-6 flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start mb-4">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Pendiente</span>
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</div>
+<h3 class="font-bold text-lg text-primary mb-2">Instalaciones Sanitarias</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2">Revisión de pendientes en colector principal nivel -1 antes del vaciado.</p>
+</div>
+<div class="mt-6 flex items-center gap-2 text-outline-variant">
+<span class="material-symbols-outlined text-[18px]" data-icon="event">event</span>
+<span class="text-xs font-medium">Vence: 24 Oct</span>
+</div>
+</div>
+<!-- Task Item Small -->
+<div class="md:col-span-4 bg-surface-container-low rounded-xl p-6">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Pendiente</span>
+<span class="material-symbols-outlined text-outline" data-icon="more_vert">more_vert</span>
+</div>
+<h3 class="font-bold text-lg text-primary mb-2">Carpintería de Aluminio</h3>
+<p class="text-on-surface-variant text-sm mb-4">Confirmación de medidas de vanos para perfiles serie 8000.</p>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[18px]" data-icon="attach_file">attach_file</span>
+<span class="text-xs font-bold">4</span>
+</div>
+</div>
+</div>
+<!-- Task Item Small -->
+<div class="md:col-span-4 bg-surface-container-low rounded-xl p-6">
+<div class="flex justify-between items-start mb-4">
+<span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                        En Progreso
+                    </span>
+</div>
+<h3 class="font-bold text-lg text-primary mb-2">Acabados Interiores</h3>
+<p class="text-on-surface-variant text-sm mb-4">Muestra de microcemento en muro de sala principal. Secado en curso.</p>
+<div class="w-full bg-surface-container-high h-1 rounded-full overflow-hidden">
+<div class="bg-secondary w-1/3 h-full"></div>
+</div>
+</div>
+<!-- Task Item Small -->
+<div class="md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+<div class="flex justify-between items-start mb-4">
+<span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-bold uppercase tracking-wider">Pendiente</span>
+</div>
+<h3 class="font-bold text-lg text-primary mb-2">Pruebas Eléctricas</h3>
+<p class="text-on-surface-variant text-sm">Prueba de carga en tablero general y circuitos de iluminación exterior.</p>
+<div class="mt-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]" data-icon="priority_high">priority_high</span>
+<span class="text-xs font-bold text-error uppercase">Urgente</span>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for 'Nueva Tarea' -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-primary text-on-primary rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 z-50">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800 shadow-[0_-1px_3px_0_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+<span class="material-symbols-outlined" data-icon="home_work">home_work</span>
+<span class="text-[11px] font-medium tracking-wide uppercase mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+<span class="material-symbols-outlined" data-icon="foundation">foundation</span>
+<span class="text-[11px] font-medium tracking-wide uppercase mt-1">Obras</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-900 dark:text-zinc-50 bg-zinc-100 dark:bg-zinc-800 rounded-xl px-3 py-1 scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
+<span class="text-[11px] font-medium tracking-wide uppercase mt-1">Tareas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500 px-3 py-1 hover:text-zinc-900 dark:hover:text-zinc-200 transition-colors">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="text-[11px] font-medium tracking-wide uppercase mt-1">Billetera</span>
+</div>
+</nav>
+</body></html>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Notificaciones } from '@/components/socio/sections/Notificaciones';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { STITCH_INNER } from '@/components/socio/stitch/socioStitchUi';
 
 export default function NotificacionesPage() {
   const currentUser = useCurrentUser();
@@ -32,5 +33,9 @@ export default function NotificacionesPage() {
     }
   }, [currentUser?.name]);
 
-  return <Notificaciones user={user} />;
+  return (
+    <div className={STITCH_INNER}>
+      <Notificaciones user={user} />
+    </div>
+  );
 }

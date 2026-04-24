@@ -79,6 +79,87 @@ type CargaElementosPanelProps = {
 
 type ConfiguracionKey = string;
 
+// Demo video: obra demo sin base de datos — muchos elementos de todas las categorías para el video
+const DEMO_OBRA_ID = "demo-obra-1-casa-familiar";
+const MOCK_ELEMENTOS_OBRA: ElementoSupabase[] = [
+  // Trabajos Preliminares (11)
+  { id: "mock-1", nombre: "Limpieza inicial del terreno", categoria: "Trabajos Preliminares", subcategoria: "Limpieza y Preparación del Terreno", cantidad: 120, unidad: "m²", descripcion: "Tipo Limpieza: media | Desmalezado: sí", created_at: new Date().toISOString() },
+  { id: "mock-2", nombre: "Nivelación manual del terreno", categoria: "Trabajos Preliminares", subcategoria: "Limpieza y Preparación del Terreno", cantidad: 80, unidad: "m²", descripcion: "Intensidad: media", created_at: new Date().toISOString() },
+  { id: "mock-3", nombre: "Nivelación mecánica del terreno", categoria: "Trabajos Preliminares", subcategoria: "Limpieza y Preparación del Terreno", cantidad: 200, unidad: "m²", descripcion: "Maquinaria: mini cargadora", created_at: new Date().toISOString() },
+  { id: "mock-4", nombre: "Pequeñas demoliciones", categoria: "Trabajos Preliminares", subcategoria: "Demoliciones y Retiro", cantidad: 15, unidad: "m³", descripcion: "Tipo: tabique", created_at: new Date().toISOString() },
+  { id: "mock-5", nombre: "Retiro de escombros", categoria: "Trabajos Preliminares", subcategoria: "Demoliciones y Retiro", cantidad: 20, unidad: "m³", descripcion: "Destino: municipal | Carga: mecánica", created_at: new Date().toISOString() },
+  { id: "mock-6", nombre: "Baño químico de obra (alquiler)", categoria: "Trabajos Preliminares", subcategoria: "Instalaciones Provisionales", cantidad: 1, unidad: "unidad", descripcion: "Tipo: estándar | Mantenimiento: semanal", created_at: new Date().toISOString() },
+  { id: "mock-7", nombre: "Obrador provisorio (casilla)", categoria: "Trabajos Preliminares", subcategoria: "Instalaciones Provisionales", cantidad: 1, unidad: "unidad", descripcion: "Tipo: casilla chapa", created_at: new Date().toISOString() },
+  { id: "mock-8", nombre: "Electricidad provisoria de obra", categoria: "Trabajos Preliminares", subcategoria: "Instalaciones Provisionales", cantidad: 1, unidad: "unidad", descripcion: "Tipo: pilar de obra", created_at: new Date().toISOString() },
+  { id: "mock-9", nombre: "Cercado perimetral", categoria: "Trabajos Preliminares", subcategoria: "Cercado y Seguridad", cantidad: 45, unidad: "metro", descripcion: "Material: malla romboidal", created_at: new Date().toISOString() },
+  { id: "mock-10", nombre: "Cartel de obra reglamentario", categoria: "Trabajos Preliminares", subcategoria: "Cercado y Seguridad", cantidad: 1, unidad: "unidad", descripcion: "Material: chapa", created_at: new Date().toISOString() },
+  { id: "mock-11", nombre: "Señalización preventiva", categoria: "Trabajos Preliminares", subcategoria: "Cercado y Seguridad", cantidad: 1, unidad: "unidad", descripcion: "Tipo: cintas y conos", created_at: new Date().toISOString() },
+  // Fundación y Estructura (12)
+  { id: "mock-12", nombre: "Excavación de fundación manual", categoria: "Fundación y Estructura", subcategoria: "Excavación", cantidad: 85, unidad: "m³", descripcion: "Replanteo y compactación", created_at: new Date().toISOString() },
+  { id: "mock-13", nombre: "Excavación de fundación mecánica", categoria: "Fundación y Estructura", subcategoria: "Excavación", cantidad: 120, unidad: "m³", descripcion: "Maquinaria: retro", created_at: new Date().toISOString() },
+  { id: "mock-14", nombre: "Platea de fundación", categoria: "Fundación y Estructura", subcategoria: "Fundaciones", cantidad: 95, unidad: "m²", descripcion: "H10 | Armadura y hormigonado", created_at: new Date().toISOString() },
+  { id: "mock-15", nombre: "Zapatas aisladas", categoria: "Fundación y Estructura", subcategoria: "Fundaciones", cantidad: 8, unidad: "unidad", descripcion: "Encofrado, armado, hormigonado", created_at: new Date().toISOString() },
+  { id: "mock-16", nombre: "Vigas de fundación", categoria: "Fundación y Estructura", subcategoria: "Fundaciones", cantidad: 24, unidad: "ml", descripcion: "H21 | Encofrado y hormigonado", created_at: new Date().toISOString() },
+  { id: "mock-17", nombre: "Bases de hormigón armado", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 8, unidad: "unidad", descripcion: "Encofrado, armadura, H21", created_at: new Date().toISOString() },
+  { id: "mock-18", nombre: "Columnas de hormigón armado", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 12, unidad: "unidad", descripcion: "20x40 | Estribos y curado", created_at: new Date().toISOString() },
+  { id: "mock-19", nombre: "Vigas de hormigón armado", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 18, unidad: "ml", descripcion: "Vigas principales y secundarias", created_at: new Date().toISOString() },
+  { id: "mock-20", nombre: "Vigas metálicas", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 6, unidad: "ml", descripcion: "Montaje y nivelación", created_at: new Date().toISOString() },
+  { id: "mock-21", nombre: "Losa maciza de hormigón armado", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 85, unidad: "m²", descripcion: "Encofrado, armado, H21", created_at: new Date().toISOString() },
+  { id: "mock-22", nombre: "Losa alivianada", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 90, unidad: "m²", descripcion: "Viguetas y bovedillas", created_at: new Date().toISOString() },
+  { id: "mock-23", nombre: "Losa pretensada", categoria: "Fundación y Estructura", subcategoria: "Hormigón Armado", cantidad: 75, unidad: "m²", descripcion: "Montaje viguetas, capa compresión", created_at: new Date().toISOString() },
+  // Muros y Cerramientos (12)
+  { id: "mock-24", nombre: "Muro de ladrillo común", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 120, unidad: "m²", descripcion: "15 cm | Revoque + pintura", created_at: new Date().toISOString() },
+  { id: "mock-25", nombre: "Muro de ladrillo cerámico hueco", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 95, unidad: "m²", descripcion: "18 cm | Revoque exterior e interior", created_at: new Date().toISOString() },
+  { id: "mock-26", nombre: "Muro de bloque de hormigón", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 80, unidad: "m²", descripcion: "Portante 15 cm | Revoque", created_at: new Date().toISOString() },
+  { id: "mock-27", nombre: "Muro de Retak / bloque celular", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 65, unidad: "m²", descripcion: "15 cm | Revoque especial", created_at: new Date().toISOString() },
+  { id: "mock-28", nombre: "Panel sándwich metálico con aislación", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 40, unidad: "m²", descripcion: "80mm | EPS | Chapa prepintada", created_at: new Date().toISOString() },
+  { id: "mock-29", nombre: "Muro cortina de vidrio (con DVH)", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 18, unidad: "m²", descripcion: "DVH 6+12+6 | Aluminio", created_at: new Date().toISOString() },
+  { id: "mock-30", nombre: "Tabique de ladrillo cerámico 8 cm", categoria: "Muros y Cerramientos", subcategoria: "Muros Interiores", cantidad: 55, unidad: "m²", descripcion: "Revoque + pintura", created_at: new Date().toISOString() },
+  { id: "mock-31", nombre: "Tabique de ladrillo cerámico 12 cm", categoria: "Muros y Cerramientos", subcategoria: "Muros Interiores", cantidad: 42, unidad: "m²", descripcion: "Yeso + pintura", created_at: new Date().toISOString() },
+  { id: "mock-32", nombre: "Tabique de durlock placa simple", categoria: "Muros y Cerramientos", subcategoria: "Muros Interiores", cantidad: 75, unidad: "m²", descripcion: "Estructura metalica, placa 12.5", created_at: new Date().toISOString() },
+  { id: "mock-33", nombre: "Tabique de durlock placa doble", categoria: "Muros y Cerramientos", subcategoria: "Muros Interiores", cantidad: 28, unidad: "m²", descripcion: "Doble placa, aislación", created_at: new Date().toISOString() },
+  { id: "mock-34", nombre: "Tabique de durlock con aislación acústica", categoria: "Muros y Cerramientos", subcategoria: "Muros Interiores", cantidad: 22, unidad: "m²", descripcion: "Lana de vidrio 50mm", created_at: new Date().toISOString() },
+  { id: "mock-35", nombre: "Revoque grueso y fino exterior", categoria: "Muros y Cerramientos", subcategoria: "Muros Exteriores", cantidad: 180, unidad: "m²", descripcion: "Cemento-arena + revoque fino", created_at: new Date().toISOString() },
+  // Instalaciones (varias)
+  { id: "mock-36", nombre: "Instalación cloacal baños", categoria: "Instalaciones", subcategoria: "Instalación Cloacal", cantidad: 2, unidad: "unidad", descripcion: "Bajada y desagües", created_at: new Date().toISOString() },
+  { id: "mock-37", nombre: "Instalación cloacal cocina", categoria: "Instalaciones", subcategoria: "Instalación Cloacal", cantidad: 1, unidad: "unidad", descripcion: "Desagüe cocina", created_at: new Date().toISOString() },
+  { id: "mock-38", nombre: "Instalación cloacal general de la casa (recorrido interno)", categoria: "Instalaciones", subcategoria: "Instalación Cloacal", cantidad: 1, unidad: "unidad", descripcion: "Recorrido interno PVC", created_at: new Date().toISOString() },
+  { id: "mock-39", nombre: "Conexión a línea municipal cloacal", categoria: "Instalaciones", subcategoria: "Instalación Cloacal", cantidad: 1, unidad: "unidad", descripcion: "Conexión a red municipal", created_at: new Date().toISOString() },
+  { id: "mock-40", nombre: "Instalación de agua baños", categoria: "Instalaciones", subcategoria: "Instalación de Agua Fría/Caliente", cantidad: 2, unidad: "unidad", descripcion: "Fría y caliente, caños", created_at: new Date().toISOString() },
+  { id: "mock-41", nombre: "Instalación de agua cocina", categoria: "Instalaciones", subcategoria: "Instalación de Agua Fría/Caliente", cantidad: 1, unidad: "unidad", descripcion: "Mesada y lavavajillas", created_at: new Date().toISOString() },
+  { id: "mock-42", nombre: "Instalación eléctrica vivienda completa", categoria: "Instalaciones", subcategoria: "Instalación Eléctrica", cantidad: 1, unidad: "unidad", descripcion: "Tablero, circuitos, tomas", created_at: new Date().toISOString() },
+  { id: "mock-43", nombre: "Instalación de gas (interno)", categoria: "Instalaciones", subcategoria: "Instalación de Gas", cantidad: 1, unidad: "unidad", descripcion: "Cañería interna, regulador", created_at: new Date().toISOString() },
+  { id: "mock-44", nombre: "Calefacción por radiadores", categoria: "Instalaciones", subcategoria: "Calefacción", cantidad: 6, unidad: "unidad", descripcion: "Radiadores aluminio", created_at: new Date().toISOString() },
+  { id: "mock-45", nombre: "Aire acondicionado split", categoria: "Instalaciones", subcategoria: "Climatización", cantidad: 3, unidad: "unidad", descripcion: "3500 frigorías", created_at: new Date().toISOString() },
+  // Cubiertas
+  { id: "mock-46", nombre: "Cubierta de chapa con aislación", categoria: "Cubiertas", subcategoria: "Cubiertas Livianas", cantidad: 95, unidad: "m²", descripcion: "Chapa prepintada, lana vidrio", created_at: new Date().toISOString() },
+  { id: "mock-47", nombre: "Cumbrera y limahoya", categoria: "Cubiertas", subcategoria: "Cubiertas Livianas", cantidad: 18, unidad: "ml", descripcion: "Cumbrera zinc, limahoya", created_at: new Date().toISOString() },
+  { id: "mock-48", nombre: "Tirantes y correas", categoria: "Cubiertas", subcategoria: "Estructura de Cubierta", cantidad: 1, unidad: "unidad", descripcion: "Estructura madera", created_at: new Date().toISOString() },
+  { id: "mock-49", nombre: "Cielo raso yeso", categoria: "Cubiertas", subcategoria: "Cielo Raso", cantidad: 85, unidad: "m²", descripcion: "Yeso proyectado", created_at: new Date().toISOString() },
+  { id: "mock-50", nombre: "Cielo raso durlock", categoria: "Cubiertas", subcategoria: "Cielo Raso", cantidad: 45, unidad: "m²", descripcion: "Placa 12.5, pintura", created_at: new Date().toISOString() },
+  // Suelos / Pisos
+  { id: "mock-51", nombre: "Contrapiso de hormigón", categoria: "Suelos / Pisos", subcategoria: "Contrapisos", cantidad: 95, unidad: "m²", descripcion: "H17, 8 cm", created_at: new Date().toISOString() },
+  { id: "mock-52", nombre: "Piso cerámico esmaltado", categoria: "Suelos / Pisos", subcategoria: "Pisos Cerámicos", cantidad: 65, unidad: "m²", descripcion: "45x45, colocación y junta", created_at: new Date().toISOString() },
+  { id: "mock-53", nombre: "Piso porcelanato", categoria: "Suelos / Pisos", subcategoria: "Pisos Cerámicos", cantidad: 42, unidad: "m²", descripcion: "60x60, interior", created_at: new Date().toISOString() },
+  { id: "mock-54", nombre: "Alfombra de goma (gimnasio/playroom)", categoria: "Suelos / Pisos", subcategoria: "Pisos Especiales", cantidad: 25, unidad: "m²", descripcion: "4 mm", created_at: new Date().toISOString() },
+  { id: "mock-55", nombre: "Piso de madera flotante", categoria: "Suelos / Pisos", subcategoria: "Pisos de Madera", cantidad: 38, unidad: "m²", descripcion: "Lamas 3 tiras", created_at: new Date().toISOString() },
+  { id: "mock-56", nombre: "Zócalo cerámico", categoria: "Suelos / Pisos", subcategoria: "Zócalos y Juntas", cantidad: 85, unidad: "ml", descripcion: "8 cm altura", created_at: new Date().toISOString() },
+  // Amenities
+  { id: "mock-57", nombre: "Parrilla de obra", categoria: "Amenities", subcategoria: "Parrilla y Quincho", cantidad: 1, unidad: "unidad", descripcion: "Horno y parrilla", created_at: new Date().toISOString() },
+  { id: "mock-58", nombre: "Piscina de obra", categoria: "Amenities", subcategoria: "Piscina", cantidad: 1, unidad: "unidad", descripcion: "8x4 m, revestimiento", created_at: new Date().toISOString() },
+  { id: "mock-59", nombre: "Deck de madera", categoria: "Amenities", subcategoria: "Decks", cantidad: 28, unidad: "m²", descripcion: "Madera tratada", created_at: new Date().toISOString() },
+  { id: "mock-60", nombre: "Solárium / galería", categoria: "Amenities", subcategoria: "Solárium", cantidad: 22, unidad: "m²", descripcion: "Cierre vidrio", created_at: new Date().toISOString() },
+  { id: "mock-61", nombre: "Portón eléctrico", categoria: "Amenities", subcategoria: "Accesos", cantidad: 1, unidad: "unidad", descripcion: "Automático, 4 m", created_at: new Date().toISOString() },
+  { id: "mock-62", nombre: "Riego automático", categoria: "Amenities", subcategoria: "Riego", cantidad: 1, unidad: "unidad", descripcion: "Sector parquizado", created_at: new Date().toISOString() },
+  // Parquizado
+  { id: "mock-63", nombre: "Preparación del suelo (parquizado)", categoria: "Parquizado", subcategoria: "Preparación del Terreno", cantidad: 120, unidad: "m²", descripcion: "Nivelación y enmienda", created_at: new Date().toISOString() },
+  { id: "mock-64", nombre: "Césped en panes", categoria: "Parquizado", subcategoria: "Césped", cantidad: 85, unidad: "m²", descripcion: "Colocación y riego", created_at: new Date().toISOString() },
+  { id: "mock-65", nombre: "Plantación de árboles", categoria: "Parquizado", subcategoria: "Plantación", cantidad: 5, unidad: "unidad", descripcion: "Árboles medianos", created_at: new Date().toISOString() },
+  { id: "mock-66", nombre: "Plantación de arbustos", categoria: "Parquizado", subcategoria: "Plantación", cantidad: 18, unidad: "unidad", descripcion: "Arbustos y canteros", created_at: new Date().toISOString() },
+  { id: "mock-67", nombre: "Sendero de ladrillos", categoria: "Parquizado", subcategoria: "Senderos y Canteros", cantidad: 25, unidad: "ml", descripcion: "Ladrillo sobre arena", created_at: new Date().toISOString() },
+  { id: "mock-68", nombre: "Iluminación exterior (parquizado)", categoria: "Parquizado", subcategoria: "Iluminación", cantidad: 8, unidad: "unidad", descripcion: "Columnas y focos LED", created_at: new Date().toISOString() },
+];
+
 const mapearTareasAFases = (
   tareas: (string | { task_id?: string; nombre: string; fase: string })[] = []
 ) => {
@@ -345,6 +426,12 @@ function CargaElementosPanelContent({
 
   const fetchElementosObra = useCallback(async () => {
     if (!obraId) return;
+    // Demo video: no llamar API, usar elementos mock (misma estructura que la UI)
+    if (obraId === DEMO_OBRA_ID) {
+      setElementosObra(MOCK_ELEMENTOS_OBRA);
+      setLoadingElementos(false);
+      return;
+    }
     try {
       setLoadingElementos(true);
       const response = await fetch(`/api/obras/${obraId}/elementos`);
@@ -411,6 +498,32 @@ function CargaElementosPanelContent({
   const handleConfirmar = async () => {
     if (!selectedElemento) return;
     setIsSaving(true);
+
+    // Demo video: agregar elemento solo en estado local, sin POST a la base de datos
+    if (obraId === DEMO_OBRA_ID) {
+      const mockElement: ElementoSupabase = {
+        id: `mock-${Date.now()}`,
+        nombre: selectedElemento.elemento.nombre,
+        categoria: selectedElemento.categoriaNombre,
+        subcategoria: selectedElemento.subcategoriaNombre,
+        cantidad,
+        unidad: unidad || selectedElemento.elemento.unidad || "unidad",
+        descripcion: buildDescripcion(configValues, observaciones) || null,
+        created_at: new Date().toISOString(),
+      };
+      setElementosObra((prev) => [...prev, mockElement]);
+      toast({
+        title: "Elemento agregado",
+        description: `${selectedElemento.elemento.nombre} se sumó a la obra`,
+      });
+      setSelectedElemento(null);
+      setCantidad(0);
+      setObservaciones("");
+      setSelectedElementoCargado(null);
+      setActiveTab("cargados");
+      setIsSaving(false);
+      return;
+    }
 
     try {
       const payload = {

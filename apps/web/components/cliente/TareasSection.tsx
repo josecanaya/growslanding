@@ -7,6 +7,7 @@ import { BaseCard, Card, Button, Badge, EmptyState } from '@/components/ui/grows
 import type { BadgeProps } from '@/components/ui/grows';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { isDemoVideoEnabled, getMockObrasWithTareasForTareasSection, getMockTareasRaw, getMockCanvasOrderAndPrecedencias, DEMO_ORG_ID } from '@/lib/mocks/demoVideoData';
 import { ResumenTareasLayout } from '@/components/tareas/ResumenTareasLayout';
 import { EtapasSection } from './EtapasSection';
 import { ValidarSection } from './ValidarSection';
@@ -177,9 +178,9 @@ export function TareasSection() {
   const supabase = createClientComponentClient();
   const currentUser = useCurrentUser();
 
-  // Leer obraId de los query params y seleccionar la obra automáticamente
+  // Leer obraId de los query params (soporta "obraId" y "obrald" por typo en URL) y seleccionar la obra
   useEffect(() => {
-    const obraIdFromQuery = searchParams.get('obraId');
+    const obraIdFromQuery = searchParams.get('obraId') || searchParams.get('obrald');
     if (obraIdFromQuery && obras.length > 0) {
       const obraExists = obras.find(obra => obra.id === obraIdFromQuery);
       if (obraExists && obraSeleccionada !== obraIdFromQuery) {
@@ -189,16 +190,58 @@ export function TareasSection() {
     }
   }, [searchParams, obras, obraSeleccionada]);
 
-  // Cargar obras desde Supabase
+  // Cargar obras desde Supabase (o mock para video demo)
   useEffect(() => {
     const cargarObras = async () => {
-      if (!currentUser?.orgId) {
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
+
+        // Demo video: solo mocks (org fijo)
+        if (isDemoVideoEnabled()) {
+          const obrasConTareas = getMockObrasWithTareasForTareasSection(DEMO_ORG_ID);
+          const obrasFormateadas: Obra[] = obrasConTareas.map((obra: any) => {
+            const tareasTotal = obra.tareas?.length || 0;
+            const tareasCompletadas = obra.tareas?.filter((t: any) => {
+              const estado = (t.estado || '').toLowerCase();
+              return estado === 'validado' || estado === 'finalizado';
+            }).length || 0;
+            const tareasPendientes = obra.tareas?.filter((t: any) => {
+              const estado = (t.estado || '').toLowerCase();
+              return estado === 'pendiente';
+            }).length || 0;
+            const tareasEnProgreso = obra.tareas?.filter((t: any) => {
+              const estado = (t.estado || '').toLowerCase();
+              return estado === 'en_progreso' || estado === 'en curso';
+            }).length || 0;
+            const avance = calcularProgreso(tareasCompletadas, tareasTotal);
+            return {
+              id: obra.id,
+              nombre: obra.name || obra.nombre || 'Sin nombre',
+              direccion: obra.address || obra.localizacion || 'Sin dirección',
+              cliente: obra.propietario || obra.cliente || 'Sin cliente',
+              estado: (obra.estado?.toLowerCase() === 'activa' || obra.estado?.toUpperCase() === 'ACTIVA') ? 'activa' as const :
+                (obra.estado?.toLowerCase() === 'pausada' || obra.estado?.toUpperCase() === 'PAUSADA') ? 'pausada' as const :
+                (obra.estado?.toLowerCase() === 'finalizada' || obra.estado?.toUpperCase() === 'FINALIZADA') ? 'finalizada' as const : 'activa' as const,
+              avance,
+              tareasTotal,
+              tareasCompletadas,
+              tareasPendientes,
+              tareasEnProgreso,
+              tareasFinalizadas: tareasCompletadas,
+              fechaInicio: obra.created_at || new Date().toISOString(),
+              responsable: 'Responsable',
+            };
+          });
+          setObras(obrasFormateadas);
+          setLoading(false);
+          return;
+        }
+
+        if (!currentUser?.orgId) {
+          setObras([]);
+          setLoading(false);
+          return;
+        }
         
         // Obtener obras - usar los mismos nombres de columnas que funcionan en ObrasSection
         const { data: obrasData, error: obrasError } = await supabase
@@ -291,7 +334,7 @@ export function TareasSection() {
     return obras.filter(obra => obra.estado === 'activa');
   }, [obras]);
 
-  // Cargar tareas desde Supabase cuando se selecciona una obra
+  // Cargar tareas desde Supabase cuando se selecciona una obra (o mock para video demo)
   useEffect(() => {
     const cargarTareas = async () => {
       if (!obraSeleccionada || !currentUser?.orgId) {
@@ -305,6 +348,30 @@ export function TareasSection() {
 
       try {
         setLoadingTareas(true);
+
+        if (isDemoVideoEnabled()) {
+          const raw = getMockTareasRaw(DEMO_ORG_ID).filter((t) => t.obra_id === obraSeleccionada);
+          const tareasFormateadas: Tarea[] = raw.map((tarea) => ({
+            id: tarea.id,
+            nombre: tarea.title || 'Tarea',
+            descripcion: '',
+            estado: 'Pendiente' as const,
+            responsable: 'Por asignar',
+            etapa: 'Estructura' as const,
+            fechaInicio: new Date().toISOString().split('T')[0],
+            fechaFin: '',
+            prioridad: 'Media' as const,
+            presupuesto: undefined,
+            dependencias: [],
+            obraId: tarea.obra_id,
+          }));
+          setTareas(tareasFormateadas);
+          const { order, precedencias } = getMockCanvasOrderAndPrecedencias(obraSeleccionada);
+          setOrganizaCanvas((prev) => ({ ...prev, [obraSeleccionada]: order }));
+          setOrganizaPrecedencias((prev) => ({ ...prev, [obraSeleccionada]: precedencias }));
+          setLoadingTareas(false);
+          return;
+        }
         
         // Obtener tareas de la obra desde Supabase con join a elementos
         const { data: tareasData, error: tareasError } = await supabase

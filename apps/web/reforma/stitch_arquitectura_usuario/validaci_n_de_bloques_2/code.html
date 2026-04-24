@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#b6c4ff",
+                    "tertiary": "#982600",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#0f1e1f",
+                    "outline-variant": "#c3c5d9",
+                    "surface-tint": "#004ee8",
+                    "surface-container": "#e1f1f2",
+                    "inverse-surface": "#243334",
+                    "secondary-fixed-dim": "#b6c4ff",
+                    "on-primary-container": "#e4e7ff",
+                    "on-background": "#0f1e1f",
+                    "on-primary-fixed-variant": "#003ab2",
+                    "on-secondary": "#ffffff",
+                    "surface-container-high": "#dbebec",
+                    "secondary-fixed": "#dce1ff",
+                    "background": "#ecfdfd",
+                    "outline": "#737688",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed-dim": "#ffb5a0",
+                    "surface-bright": "#ecfdfd",
+                    "error-container": "#ffdad6",
+                    "error": "#ba1a1a",
+                    "on-tertiary-fixed": "#3b0900",
+                    "on-surface-variant": "#434656",
+                    "inverse-primary": "#b6c4ff",
+                    "surface-container-highest": "#d5e6e7",
+                    "surface": "#ecfdfd",
+                    "on-tertiary-container": "#ffe3db",
+                    "on-primary-fixed": "#001550",
+                    "primary": "#0042c8",
+                    "on-secondary-container": "#243c87",
+                    "primary-fixed": "#dce1ff",
+                    "surface-container-low": "#e6f7f8",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#0056ff",
+                    "surface-dim": "#cdddde",
+                    "on-tertiary-fixed-variant": "#872100",
+                    "on-tertiary": "#ffffff",
+                    "secondary-container": "#95aafd",
+                    "secondary": "#445aa6",
+                    "tertiary-container": "#c23402",
+                    "on-secondary-fixed": "#001550",
+                    "on-secondary-fixed-variant": "#2a418d",
+                    "tertiary-fixed": "#ffdbd1",
+                    "inverse-on-surface": "#e3f4f5",
+                    "on-error-container": "#93000a",
+                    "surface-variant": "#d5e6e7"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Manrope"],
+                    "label": ["Manrope"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .action-gradient {
+            background: linear-gradient(180deg, #0056ff 0%, #0042c8 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen">
+<!-- NavigationDrawer (Desktop) -->
+<aside class="hidden lg:flex flex-col h-screen h-full w-64 fixed left-0 top-0 bg-[#dbebec] z-50">
+<div class="p-8">
+<span class="text-2xl font-bold tracking-tighter text-[#0042c8]">Grows</span>
+</div>
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-[#ecfdfd] transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Manrope'] text-sm font-semibold tracking-tight">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-[#ecfdfd] transition-colors" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-['Manrope'] text-sm font-semibold tracking-tight">Obras</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#0042c8] font-bold border-r-4 border-[#0042c8]" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-['Manrope'] text-sm font-semibold tracking-tight">Tareas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-[#ecfdfd] transition-colors" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-['Manrope'] text-sm font-semibold tracking-tight">Billetera</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-[#434656] hover:bg-[#ecfdfd] transition-colors" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-['Manrope'] text-sm font-semibold tracking-tight">Notificaciones</span>
+</a>
+</nav>
+</aside>
+<!-- TopAppBar (Mobile) -->
+<header class="lg:hidden fixed top-0 w-full z-40 bg-[#ecfdfd]/80 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<span class="material-symbols-outlined text-[#0042c8]">menu</span>
+<span class="text-xl font-extrabold text-[#0042c8]">Grows</span>
+<span class="material-symbols-outlined text-[#0042c8]">person</span>
+</header>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-20 lg:pt-12 pb-32 px-6 lg:px-12">
+<!-- Header Section -->
+<header class="mb-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-3 py-1 bg-[#0042c8]/10 text-primary font-bold text-[10px] tracking-widest uppercase rounded-full">Gestión de Obra</span>
+</div>
+<h1 class="text-3xl lg:text-4xl font-extrabold tracking-tight text-on-surface">Validar Bloques</h1>
+<p class="text-on-surface-variant mt-2 max-w-2xl font-medium">Revisa y aprueba los avances técnicos reportados para la liberación de pagos.</p>
+</header>
+<!-- Search & Filter Bar (Surface Container) -->
+<div class="bg-surface-container-low rounded-lg p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
+<div class="relative w-full md:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white border-none rounded-md focus:ring-2 focus:ring-primary text-sm" placeholder="Buscar por bloque o tarea..." type="text"/>
+</div>
+<div class="flex gap-2 ml-auto">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container-highest text-on-surface text-sm font-semibold rounded-md">
+<span class="material-symbols-outlined text-sm">filter_list</span> Filtrar
+                </button>
+<div class="h-8 w-[1px] bg-outline-variant/30 self-center"></div>
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-white object-cover" data-alt="professional male construction manager portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZab0WRpityrbwtyRgqh3LL_Bc7mmGRH6IftsfauZRUwYTw0tVBfKQ7jIBK4SSzkSUO0f0CpKh_DEC33JniPP5E2hu_JIojPtVOCH36cRekaB3x-2GZJhCWQDBGt8U7wEkUoM4catPdio4N1PeC2KVwgdp4vbD26C_S2Kl3DnKLjFmhTSPHlIArpEG0zaJungqaDCgB7Ghc-K2J_atLYNQ6hUkOW6Bgt2mYj40AUot1lF_Z9ZuYIJqVxEg9CcssOjsBg9P-qzCljXX"/>
+<img class="w-8 h-8 rounded-full border-2 border-white object-cover" data-alt="professional female architect portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ__oRSsWA4go4ccFdddAMGSuFBlmSajHQ44J2fJm5c4_fnjS5fiED5McIYwdBKA4JNztqHuD7W0JL5HSECZ4lgG3YZO6GBZVnSnd6ykT4BKXpyB5lYfOGXaQfoBzeThZLKDsHXSs27sPTx_36xOHRLiQn_Pkon51oIWREy-gIWtR2rn8N0ocxafzRlm3CSrAWxsYSRFeI7_eE7XbcOF6jU0lXRBoBMoGBVmdFGSyl79vZf2EF-L_KogCfsgeNDEkxbWGsNBfu7W5X"/>
+<div class="w-8 h-8 rounded-full border-2 border-white bg-primary flex items-center justify-center text-[10px] text-white font-bold">+4</div>
+</div>
+</div>
+</div>
+<!-- Blocks Grid (Asymmetric Bento Style) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+<!-- Block Card 1 (Large) -->
+<section class="xl:col-span-8 bg-surface-container-lowest rounded-lg p-6 lg:p-8 flex flex-col gap-8">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div>
+<div class="flex items-center gap-2 text-primary font-bold text-sm mb-1">
+<span class="material-symbols-outlined text-sm">apartment</span>
+                            Bloque A - Sector 04
+                        </div>
+<h3 class="text-2xl font-bold tracking-tight">Instalaciones Eléctricas</h3>
+</div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant font-bold">Estado</p>
+<span class="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full text-xs font-bold border border-amber-200">PARA VALIDAR</span>
+</div>
+</div>
+</div>
+<!-- Photos Section -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+<div class="aspect-square rounded-md overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="close-up of electrical wiring box professionally installed in a concrete wall" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHj5K7QRLKvjzL-HkayP2FVhAo36h8IXY2GgadOrr54RfqtfD2xZQW3bgiMBXJwOMHX5kKhmbDZDlZBu_sBKAOI5oRPkvzzw1-XKLYwaskBiGPt9MZvJFONL-RlLIgHdTr5f8B55cTx7VCMF-0y19JrwNW1sft8nveefGT1u8NDD99ixR6eO2hAeCX8wjEoU9ZDD3Ph_cl1J-pu9mUSbcKynuUc6ocJS_py2fg4FSrKzU2mnzF2VyOmmMvZGpldqYcWpQGCWWYi2CA"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in">
+<span class="material-symbols-outlined text-white">visibility</span>
+</div>
+</div>
+<div class="aspect-square rounded-md overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="electrician inspecting a distribution panel with technical precision" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTfoG62kWu4ITZuaJny9ECpcSGSpCPkzCdu9gFh8T1mgJOBMCSzM6df4hh7lOSPYzfWUtLFU7plK6f7NCVyu3b2TUMQK9EH-k1-0LqNgd6qmyGi4wdICcK-32YxpcRlvtCquwOW9XzGXDCMMfAgC8FXxyN1cL5R_iYaOFdeo24Aw1QwF9OIlIMfIhXGOTGeGghfYl4Ol9y5Af6IOgmf2NBUxZ2vZtq5CnqRodBDRJw3LTw4iRIJWblpowaFqaqMwmbhscpAuO8xZhq"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in">
+<span class="material-symbols-outlined text-white">visibility</span>
+</div>
+</div>
+<div class="aspect-square rounded-md overflow-hidden relative group">
+<img class="w-full h-full object-cover" data-alt="blueprint and electrical components on a wooden table at a construction site" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbyX6JuTCmBUs-ZRzffKIsUiGzFLOVTJTcg1ucIwaOLfPfYMRy124sEWVoz5nlp4wcyQ5xElkY1rXC0B_FeQ3szbMSJ20GOisyzUQxxtvpuDDwz7DNszAXm-zJy34ULO0aN7J7x0SjEaH0HykYlGp7zbiNjCgxaCdO0Q1CFuzIGsQRciJxLYUKvYOW1YGpGQs4CSwrwWUFqBcdJZTmchES39-nkjCwh5tyjAtrDuPqz--b_Sbivnu9LIXTRGeJ9Gq7KDMg27x5wuWn"/>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-zoom-in">
+<span class="material-symbols-outlined text-white">visibility</span>
+</div>
+</div>
+<div class="aspect-square rounded-md overflow-hidden bg-surface-container-high flex flex-col items-center justify-center text-on-surface-variant cursor-pointer hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">add_a_photo</span>
+<span class="text-[10px] font-bold mt-1">VER MÁS (6)</span>
+</div>
+</div>
+<!-- Metrics & Comparison -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-outline-variant/10 pt-8">
+<div class="bg-surface-container-low p-6 rounded-md">
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest mb-4">Métricas de Avance</p>
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium">Monto Estimado</span>
+<span class="text-xl font-bold text-on-surface">$12,450.00</span>
+</div>
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium">Monto a Validar</span>
+<span class="text-xl font-bold text-primary">$11,200.00</span>
+</div>
+<div class="w-full bg-outline-variant/30 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[90%]"></div>
+</div>
+</div>
+</div>
+<div class="flex flex-col justify-center gap-4">
+<p class="text-xs font-bold text-on-surface-variant uppercase tracking-widest">Acciones de Control</p>
+<div class="flex gap-4">
+<button class="flex-1 action-gradient text-white py-4 px-6 rounded-full font-bold flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined">check_circle</span> Aprobar
+                            </button>
+<button class="flex-1 bg-white border border-error/20 text-error py-4 px-6 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-error-container transition-all active:scale-95">
+<span class="material-symbols-outlined">cancel</span> Rechazar
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Sidebar Info (Bento Right) -->
+<div class="xl:col-span-4 flex flex-col gap-6">
+<!-- Summary Card -->
+<div class="bg-surface-container-high rounded-lg p-6">
+<h4 class="font-bold text-lg mb-4">Resumen Pendientes</h4>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-white rounded-md">
+<span class="text-sm font-medium">Total bloques</span>
+<span class="font-bold">12</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-white rounded-md">
+<span class="text-sm font-medium">Monto total</span>
+<span class="font-bold text-primary">$45,890.00</span>
+</div>
+<div class="flex items-center justify-between p-3 bg-white rounded-md border-l-4 border-amber-500">
+<span class="text-sm font-medium">Prioridad alta</span>
+<span class="font-bold text-amber-600">3</span>
+</div>
+</div>
+</div>
+<!-- Next in line list -->
+<div class="bg-surface-container-lowest rounded-lg p-6 flex-1">
+<h4 class="font-bold text-sm uppercase tracking-widest text-on-surface-variant mb-6">Próximos en cola</h4>
+<div class="space-y-6">
+<div class="flex gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded-md flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-outline">foundation</span>
+</div>
+<div>
+<h5 class="text-sm font-bold">Cimentación B2</h5>
+<p class="text-xs text-on-surface-variant">$4,200.00</p>
+<button class="text-primary text-[10px] font-bold mt-1 uppercase tracking-tighter hover:underline">Ver detalles</button>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded-md flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-outline">format_paint</span>
+</div>
+<div>
+<h5 class="text-sm font-bold">Pintura Exterior A1</h5>
+<p class="text-xs text-on-surface-variant">$2,150.00</p>
+<button class="text-primary text-[10px] font-bold mt-1 uppercase tracking-tighter hover:underline">Ver detalles</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Block Card 2 (Standard Density) -->
+<section class="xl:col-span-8 bg-surface-container-lowest rounded-lg p-6 lg:p-8 flex flex-col gap-6">
+<div class="flex flex-col md:flex-row justify-between items-start gap-4">
+<div class="flex gap-4">
+<div class="w-14 h-14 rounded-md overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="professional concrete floor smoothing machine in action" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByL-UKGUf2YG2oKFo183F-JUMtIuSr6xGCu8tKK2lsR79mraKJ6Njhax40F7ZUIhvSXLynToD9TH8MypC3cOw2YFxzIyxbU2VaOMP_OcKiyyG4-gV1kVbua-UEKIRiXOx1u5HEqDrXueLkwvzLOZrXVZJZmw67fO5oAufTEMIZuzcP-lY9ZjV86Z7iiLdIV-zI_tFBnJGh42CchPo7ldLLh_3JeX2DFkz7txkq2q_OEN06Nz91DaWX2YYKPSaf1iQjDY5YLYsYpru5"/>
+</div>
+<div>
+<div class="flex items-center gap-2 text-primary font-bold text-sm mb-1">
+<span class="material-symbols-outlined text-sm">home_work</span>
+                                Bloque C - Planta 02
+                            </div>
+<h3 class="text-xl font-bold tracking-tight">Acabado de Pisos</h3>
+</div>
+</div>
+<div class="flex gap-4 items-center">
+<div class="text-right">
+<p class="text-[10px] uppercase text-on-surface-variant font-bold tracking-widest">Monto</p>
+<p class="text-lg font-bold">$3,400.00</p>
+</div>
+<div class="flex flex-col gap-2">
+<button class="bg-[#0042c8] text-white p-2 rounded-full hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">check</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 bg-white flex justify-around items-center px-4 pb-4 pt-2 shadow-[0_-4px_24px_rgba(0,0,0,0.06)] rounded-t-3xl border-t border-slate-100">
+<a class="flex flex-col items-center justify-center text-[#434656] p-2 hover:text-[#0042c8]" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] p-2 hover:text-[#0042c8]" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase mt-1">Obras</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#0042c8] text-white rounded-full w-14 h-14 -mt-6 shadow-lg shadow-[#0042c8]/20" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="sr-only">Tareas</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] p-2 hover:text-[#0042c8]" href="#">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase mt-1">Cartera</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#434656] p-2 hover:text-[#0042c8]" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-['Manrope'] text-[10px] font-medium tracking-wide uppercase mt-1">Alertas</span>
+</a>
+</nav>
+</body></html>

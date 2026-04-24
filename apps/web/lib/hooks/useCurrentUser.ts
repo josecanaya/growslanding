@@ -94,6 +94,10 @@ export function useCurrentUser(): SessionUser | null {
     []
   );
 
+  // Ref para pathname: evita re-ejecutar el effect en cada navegación (reduce getSession y evita rate limit/loop)
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
   useEffect(() => {
     let active = true;
 
@@ -105,30 +109,26 @@ export function useCurrentUser(): SessionUser | null {
       };
     }
 
-    // Si ya estamos en una ruta de auth, no hacer nada más
-    if (pathname.startsWith(AUTH_PREFIX)) {
+    const currentPath = pathnameRef.current;
+    if (currentPath.startsWith(AUTH_PREFIX)) {
       return;
     }
 
-    // Si ya estamos redirigiendo, no hacer nada
     if (isRedirectingRef.current) {
       return;
     }
 
-    // Verificar rate limit en localStorage PRIMERO (antes de cualquier llamada)
     if (hasActiveRateLimit()) {
       hasRateLimitRef.current = true;
       console.warn('[useCurrentUser] Rate limit activo detectado en localStorage, evitando peticiones');
       return;
     }
 
-    // Si detectamos rate limit en ref, no hacer más peticiones
     if (hasRateLimitRef.current) {
       return;
     }
 
     async function syncInitialSession() {
-      // Evitar múltiples llamadas simultáneas
       if (sessionCheckRef.current) {
         return;
       }
@@ -136,27 +136,24 @@ export function useCurrentUser(): SessionUser | null {
 
       try {
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (!active) {
           return;
         }
 
-        // Detectar rate limit
         if (error) {
-          const isRateLimit = 
+          const isRateLimit =
             error.message?.toLowerCase().includes('rate limit') ||
             error.message?.toLowerCase().includes('too many requests') ||
             error.status === 429;
-          
+
           if (isRateLimit) {
             console.warn('[useCurrentUser] Rate limit detectado, evitando más peticiones');
             hasRateLimitRef.current = true;
-            // Guardar en localStorage para prevenir llamadas futuras
             if (typeof window !== 'undefined') {
-              const rateLimitUntil = Date.now() + (20 * 60 * 1000); // 20 minutos
+              const rateLimitUntil = Date.now() + 20 * 60 * 1000;
               localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
             }
-            // No hacer nada más, dejar que el usuario use la app en modo limitado
             return;
           }
         }
@@ -165,9 +162,7 @@ export function useCurrentUser(): SessionUser | null {
           clearClientSessionArtifacts();
           resetStore();
           setUser(null);
-          
-          // Solo redirigir si no estamos ya en auth y no estamos ya redirigiendo
-          if (!pathname.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
+          if (!pathnameRef.current.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
             isRedirectingRef.current = true;
             router.replace('/auth/login');
           }
@@ -177,13 +172,9 @@ export function useCurrentUser(): SessionUser | null {
         const mapped = mapSessionToUser(data.session);
         setStoreUser(mapped);
         setUser(mapped);
-        hasRateLimitRef.current = false; // Reset rate limit flag si tenemos sesión
+        hasRateLimitRef.current = false;
       } catch (err) {
         console.error('[useCurrentUser] Error obteniendo sesión:', err);
-        if (!active) return;
-        
-        // Si hay error de red o similar, no intentar redirigir inmediatamente
-        // para evitar loops
       } finally {
         sessionCheckRef.current = false;
       }
@@ -191,62 +182,47 @@ export function useCurrentUser(): SessionUser | null {
 
     void syncInitialSession();
 
-    // Solo suscribirse a cambios de auth si NO hay rate limit activo
     let subscription: { unsubscribe: () => void } | null = null;
-    
+
     if (!hasActiveRateLimit() && !hasRateLimitRef.current) {
       const {
         data: { subscription: authSubscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!active) {
-          return;
-        }
-
-        // Verificar rate limit antes de procesar
+        if (!active) return;
         if (hasActiveRateLimit()) {
           hasRateLimitRef.current = true;
           return;
         }
+        if (hasRateLimitRef.current && !session) return;
 
-        // Si detectamos rate limit, no procesar cambios
-        if (hasRateLimitRef.current && !session) {
+        if (!session) {
+          clearClientSessionArtifacts();
+          resetStore();
+          setUser(null);
+          if (!pathnameRef.current.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
+            isRedirectingRef.current = true;
+            router.replace('/auth/login');
+          }
           return;
         }
 
-      if (!session) {
-        clearClientSessionArtifacts();
-        resetStore();
-        setUser(null);
-        
-        // Solo redirigir si no estamos ya en auth y no estamos ya redirigiendo
-        if (!pathname.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
-          isRedirectingRef.current = true;
-          router.replace('/auth/login');
-        }
-        return;
-      }
-
-      // Reset flags si tenemos sesión válida
-      hasRateLimitRef.current = false;
-      isRedirectingRef.current = false;
-
-      const mapped = mapSessionToUser(session);
-      setStoreUser(mapped);
-      setUser(mapped);
+        hasRateLimitRef.current = false;
+        isRedirectingRef.current = false;
+        const mapped = mapSessionToUser(session);
+        setStoreUser(mapped);
+        setUser(mapped);
       });
       subscription = authSubscription;
     }
 
     return () => {
       active = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-      // Reset flags al desmontar
+      if (subscription) subscription.unsubscribe();
       isRedirectingRef.current = false;
       sessionCheckRef.current = false;
     };
-  }, [devModeEnabled, supabase, pathname, router, setStoreUser, resetStore]);
+    // Sin pathname en deps: solo montaje (y dev/supabase/store). Evita getSession en cada navegación.
+  }, [devModeEnabled, supabase, router, setStoreUser, resetStore]);
 
   return user;
 }

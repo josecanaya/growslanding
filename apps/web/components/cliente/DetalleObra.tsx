@@ -122,6 +122,13 @@ const FALLBACK_PLANTAS: PlantaResumen[] = [
   },
 ];
 
+// Obra demo: no llamar API, usar plantas mock para el video
+const DEMO_OBRA_ID = 'demo-obra-1-casa-familiar';
+const MOCK_PLANTAS_DEMO: PlantaResumen[] = [
+  { id: 'PB', nombre: 'Planta Baja', metrosCubiertos: 95, metrosDescubiertos: 25, metrosTotales: 120, orden: 1 },
+  { id: 'P1', nombre: 'Primer Piso', metrosCubiertos: 85, metrosDescubiertos: 15, metrosTotales: 100, orden: 2 },
+];
+
 const etapas = [
   { key: 'estructura', nombre: 'Estructura', color: 'bg-blue-100 text-blue-800', icon: Building },
   { key: 'obra_gris', nombre: 'Obra Gris', color: 'bg-gray-100 text-gray-800', icon: Wrench },
@@ -378,6 +385,12 @@ export function DetalleObra({
     let mounted = true;
 
     async function fetchPlantas() {
+      // Demo video: no llamar API, usar plantas mock
+      if (obra.id === DEMO_OBRA_ID) {
+        setPlantasObra(MOCK_PLANTAS_DEMO);
+        return;
+      }
+
       try {
         const response = await fetch(`/api/obras/${obra.id}/plantas`);
         if (!response.ok) {

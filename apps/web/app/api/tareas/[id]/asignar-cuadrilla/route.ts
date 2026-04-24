@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { z } from 'zod';
+import type { Database } from '@/lib/types/supabase.gen';
+import { PermisoService } from '@/lib/services/permiso.service';
 
 const AsignarCuadrillaSchema = z.object({
   cuadrilla_id: z.string().uuid('cuadrilla_id debe ser un UUID válido'),
@@ -13,23 +17,27 @@ export async function POST(
   try {
     const { id: tareaId } = await params;
     const body = await request.json();
-    const organizacionId = request.headers.get('x-organizacion-id');
-    const usuarioId = request.headers.get('x-usuario-id');
+    const cookieStore = await cookies();
+    const supabaseAuth = createRouteHandlerClient<Database>({
+      cookies: () => cookieStore as any,
+    });
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
+      );
+    }
 
     console.log('[ASIGNAR_CUADRILLA] Iniciando asignación:', {
       tareaId,
       cuadrilla_id: body.cuadrilla_id,
-      organizacionId,
-      usuarioId,
+      usuarioId: user.id,
     });
-
-    if (!organizacionId || !usuarioId) {
-      console.error('[ASIGNAR_CUADRILLA] Faltan headers:', { organizacionId, usuarioId });
-      return NextResponse.json(
-        { success: false, error: 'Organización y usuario requeridos' },
-        { status: 400 }
-      );
-    }
 
     // Validar datos
     let validatedData;
@@ -46,19 +54,17 @@ export async function POST(
 
     const supabase = createServiceSupabaseClient();
 
-    // Verificar que la tarea existe y pertenece a la organización
+    // Verificar tarea y resolver organización real desde recurso
     const { data: tarea, error: tareaError } = await supabase
       .from('tareas')
       .select('id, org_id, estado, cuadrilla_id')
       .eq('id', tareaId)
-      .eq('org_id', organizacionId)
       .single();
 
     if (tareaError || !tarea) {
       console.error('[ASIGNAR_CUADRILLA] Error al buscar tarea:', {
         tareaError,
         tareaId,
-        organizacionId,
       });
       return NextResponse.json(
         { success: false, error: 'Tarea no encontrada', details: tareaError?.message },
@@ -67,6 +73,15 @@ export async function POST(
     }
 
     console.log('[ASIGNAR_CUADRILLA] Tarea encontrada:', { tareaId: tarea.id, estado: tarea.estado });
+    const organizacionId = tarea.org_id;
+
+    const rol = await PermisoService.obtenerRolEnOrganizacion(user.id, organizacionId);
+    if (rol !== 'CLIENTE') {
+      return NextResponse.json(
+        { success: false, error: 'No tiene permisos para asignar cuadrilla' },
+        { status: 403 }
+      );
+    }
 
     // Verificar que la cuadrilla (socio) existe y pertenece a la organización
     // Las cuadrillas ahora vienen de la tabla socios
@@ -213,7 +228,7 @@ export async function POST(
         estado_anterior: estadoActual,
         estado_nuevo: estadoActual, // No cambia el estado, solo la asignación
         actor_tipo: 'CLIENTE_TECNICO',
-        actor_id: usuarioId,
+        actor_id: user.id,
         motivo: `Tarea asignada a cuadrilla: ${cuadrilla.nombre}`,
       });
 

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {},
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["Public Sans"],
+                        "body": ["Public Sans"],
+                        "label": ["Public Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Public Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .canvas-bg {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .node-connector {
+            position: absolute;
+            height: 2px;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-slate-50 dark:bg-slate-950 flex justify-between items-center w-full px-6 h-16 docked full-width top-0 border-b border-slate-200 dark:border-slate-800 fixed z-50">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100 font-sans tracking-tight">Blueprint Arch</span>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-1.5 bg-slate-100 border-none rounded text-sm w-64 focus:ring-2 focus:ring-blue-600" placeholder="Buscar en el proyecto..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors duration-200 ease-in-out rounded">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors duration-200 ease-in-out rounded">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden ml-2 border border-slate-200">
+<img alt="User avatar" class="w-full h-full object-cover" data-alt="Professional architect portrait in high-key studio lighting with neutral background for user profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQdURlCLEoSixFlWLL4YCo3tJU_aUXDBe5aPEN4DwtMQx9JdfYHCoSxSncqYpe8ZmdpYQvuwHkCujHfXefYHna3rPZeQGFeTb9qH_AMt4Ux0aOVZk6BkB2fuAVoYxqwZIwFPDTm_npncgR5s6GU7fGaUb-fTTtjeXmyodLwv2ztNweAM1ycZ75qathSWJ2WdcpfnnkbZx1klcdotFY3_Lu7b48LrllBxonujkKZR7b1gFrNlBfRnDb-bvQ_FMbCs2_ECAWnswY4AJf"/>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-16">
+<!-- SideNavBar (Shared Component) -->
+<aside class="bg-slate-50 dark:bg-slate-950 h-screen w-64 border-r border-slate-200 dark:border-slate-800 fixed left-0 top-0 h-full flex flex-col pt-16 transition-all duration-150 z-40">
+<div class="px-6 py-6 border-b border-slate-100">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-sm" data-icon="architecture">architecture</span>
+</div>
+<div>
+<h2 class="text-lg font-semibold text-slate-800 dark:text-slate-200 leading-none">Project Alpha</h2>
+<span class="text-xs text-slate-500">Construction Phase</span>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 py-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-r-4 border-blue-600 transition-all duration-150 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+<span>Canvas</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="checklist">checklist</span>
+<span>Task List</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Packages</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-all duration-150 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span>Partners</span>
+</a>
+</nav>
+<div class="px-4 py-4 space-y-1 border-t border-slate-100">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+<span>Archive</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 rounded" href="#">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span>Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content (Canvas) -->
+<main class="flex-1 ml-64 mr-80 bg-slate-100 canvas-bg relative overflow-auto p-12">
+<!-- Canvas Toolbar -->
+<div class="fixed top-20 left-[17rem] flex gap-2 bg-white/80 backdrop-blur shadow-sm p-1 rounded-lg border border-slate-200 z-10">
+<button class="p-2 hover:bg-slate-100 rounded text-slate-600"><span class="material-symbols-outlined">near_me</span></button>
+<button class="p-2 hover:bg-slate-100 rounded text-slate-600"><span class="material-symbols-outlined">add_box</span></button>
+<button class="p-2 hover:bg-slate-100 rounded text-slate-600"><span class="material-symbols-outlined">polyline</span></button>
+<div class="w-px bg-slate-200 mx-1"></div>
+<button class="p-2 hover:bg-slate-100 rounded text-slate-600"><span class="material-symbols-outlined">zoom_in</span></button>
+<button class="p-2 hover:bg-slate-100 rounded text-slate-600"><span class="material-symbols-outlined">zoom_out</span></button>
+</div>
+<!-- Canvas Area -->
+<div class="relative min-h-[1200px] w-full flex items-center justify-center">
+<!-- Group Card: Paquete Estructura -->
+<div class="relative w-[600px] bg-white border-2 border-dashed border-blue-200 rounded-xl p-8 shadow-sm">
+<div class="absolute -top-4 left-6 px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded uppercase tracking-widest">Paquete: Estructura</div>
+<div class="grid grid-cols-2 gap-12 relative">
+<!-- Node 1 -->
+<div class="relative z-10">
+<div class="bg-white border border-slate-200 rounded-lg p-4 shadow-md hover:border-blue-400 cursor-pointer transition-colors group">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: STR-01</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-blue-500 text-sm">settings</span>
+</div>
+<h3 class="font-bold text-slate-800">Cimentación</h3>
+<p class="text-[10px] text-slate-500 mt-1">Hormigón armado H-21</p>
+<div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full w-2/3 bg-blue-500"></div>
+</div>
+</div>
+<!-- Connector -->
+<div class="absolute top-1/2 -right-12 w-12 h-0.5 bg-blue-200 z-0"></div>
+</div>
+<!-- Node 2 -->
+<div class="relative z-10">
+<div class="bg-white border border-slate-200 rounded-lg p-4 shadow-md hover:border-blue-400 cursor-pointer transition-colors group">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: STR-02</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-blue-500 text-sm">settings</span>
+</div>
+<h3 class="font-bold text-slate-800">Armadura</h3>
+<p class="text-[10px] text-slate-500 mt-1">Acero nervado ADN-420</p>
+<div class="mt-4 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full w-0 bg-blue-500"></div>
+</div>
+</div>
+</div>
+<!-- Node 3 -->
+<div class="relative z-10 col-span-2 mt-8">
+<div class="bg-white border border-slate-200 rounded-lg p-4 shadow-md hover:border-blue-400 cursor-pointer transition-colors group w-1/2 mx-auto">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">ID: STR-03</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-blue-500 text-sm">settings</span>
+</div>
+<h3 class="font-bold text-slate-800">Losa de Entrepiso</h3>
+<p class="text-[10px] text-slate-500 mt-1">Viguetas pretensadas</p>
+</div>
+<!-- Vertical Connectors -->
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 w-0.5 h-8 bg-blue-200 z-0"></div>
+</div>
+</div>
+</div>
+<!-- Secondary Package (Distant) -->
+<div class="absolute bottom-20 right-20 w-[300px] bg-slate-50 border border-slate-200 rounded-xl p-6 opacity-60">
+<div class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Paquete: Instalaciones</div>
+<div class="h-16 bg-white border border-slate-200 rounded-lg mb-4"></div>
+<div class="h-16 bg-white border border-slate-200 rounded-lg"></div>
+</div>
+</div>
+</main>
+<!-- Right Panel: Socios Disponibles -->
+<aside class="w-80 bg-white border-l border-slate-200 fixed right-0 top-16 h-[calc(100vh-4rem)] flex flex-col z-40">
+<div class="p-6">
+<h3 class="text-sm font-bold text-slate-900 uppercase tracking-widest mb-1">Socios Disponibles</h3>
+<p class="text-xs text-slate-500">Filtrados por capacidad y cercanía</p>
+</div>
+<div class="flex-1 overflow-y-auto px-6">
+<div class="space-y-4">
+<!-- Partner Item -->
+<div class="p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Partner avatar" class="w-full h-full object-cover" data-alt="Close-up of a professional civil engineer smiling in a construction office environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkvC_BHdeQq2eC926Ylkva6YlHvDkeAhhvf1Pam-e47d25eWulX45c2grWAvAYrfIlH6MTFv-_U-7YVjyTsb92fPmzMHJpuYgwSlewmeNKjet9KvehXaoh3xtmeUbXKQYEKziRGPdUdQ-GkMiG4KPpzj19akAhGo9a6lmDORMqqYvF28Z2GveYOgaVN5BKJRUqkKZ224XdKRDENvxU67nZKgWO7Oh8rgjaI-x4Fs_6fcrVZh6SmKMiHFz2DxK6cFZrgyMIDzGdooHR"/>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-800 leading-none">Construtec S.A.</h4>
+<p class="text-[10px] text-blue-600 mt-1 font-medium">Especialista Estructuras</p>
+</div>
+</div>
+<div class="relative inline-block w-8 h-4">
+<input class="peer h-4 w-8 cursor-pointer appearance-none rounded-full bg-slate-200 checked:bg-blue-600 transition-colors duration-200" type="checkbox"/>
+<span class="pointer-events-none absolute left-0.5 top-0.5 h-3 w-3 transform rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-4"></span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-4 text-[10px] text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">star</span> 4.8</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">history</span> 12 Proyectos</span>
+</div>
+</div>
+<!-- Partner Item -->
+<div class="p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Partner avatar" class="w-full h-full object-cover" data-alt="Portrait of a female engineering consultant looking confident in a modern architectural office workspace" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZybvueT613h_0J4cH3ao-QIkdS6SpXAwwDAOZqfhC8x7aBTXVcR7nrX81Tum1gyy9s4b81PALeX6rf_k0lXcFBO1kOrfOomH-8-BKx9A4L_xeD4m5yU_zVLso3OGVqm7MAdfZpc3TnGN7NQB_LCQQXIbws7odXWV_UWKRue1xGLBPgN-O8UAiYjf5Auu7liO2nJLkjRCTRZHBnPe94sOuGSHOOLq5NAjnZRuqA1a2Qu0vn5_YzNk-jmWSKACLBG6OVCVyzd_xa4Yq"/>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-800 leading-none">Ing. Marta Villa</h4>
+<p class="text-[10px] text-blue-600 mt-1 font-medium">Consultoría Técnica</p>
+</div>
+</div>
+<div class="relative inline-block w-8 h-4">
+<input checked="" class="peer h-4 w-8 cursor-pointer appearance-none rounded-full bg-slate-200 checked:bg-blue-600 transition-colors duration-200" type="checkbox"/>
+<span class="pointer-events-none absolute left-0.5 top-0.5 h-3 w-3 transform rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-4"></span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-4 text-[10px] text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">star</span> 5.0</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">history</span> 45 Proyectos</span>
+</div>
+</div>
+<!-- Partner Item -->
+<div class="p-4 rounded-xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/30 transition-all">
+<div class="flex items-start justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200 overflow-hidden">
+<img alt="Partner avatar" class="w-full h-full object-cover" data-alt="Professional contractor profile photo with industrial site background in soft bokeh lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0FNTQJ4ZPDMtJqSNa9lv6_9g_EMtlri0-fEctfHzbZmXMp0mca9X2urGHwqekM71_zr7MAmouq9gBQbzqRIXlLMO5n5A6jtZyweq6KasfyLNoJgA5jq9GkaTwOn6_3g0gVwXwbmnClcOGPs9Qv4jGPIyBnatoXLcZ6Ben4ciCOY_7qxam-dkAqjwBhadFuw0_OaLcjq1G_-2yF_6rJrCTJV4kCadi_iTkOLXXWo_aluJpfSITY6KsMBCIx08YG6untLP6L7srsVM7"/>
+</div>
+<div>
+<h4 class="text-sm font-bold text-slate-800 leading-none">SteelCore Ind.</h4>
+<p class="text-[10px] text-blue-600 mt-1 font-medium">Provisión de Hierro</p>
+</div>
+</div>
+<div class="relative inline-block w-8 h-4">
+<input class="peer h-4 w-8 cursor-pointer appearance-none rounded-full bg-slate-200 checked:bg-blue-600 transition-colors duration-200" type="checkbox"/>
+<span class="pointer-events-none absolute left-0.5 top-0.5 h-3 w-3 transform rounded-full bg-white transition-transform duration-200 peer-checked:translate-x-4"></span>
+</div>
+</div>
+<div class="mt-3 flex items-center gap-4 text-[10px] text-slate-500 font-medium">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">star</span> 4.5</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">history</span> 128 Proyectos</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 border-t border-slate-100 bg-slate-50/50">
+<div class="mb-4">
+<div class="flex justify-between text-xs mb-1 font-bold">
+<span class="text-slate-500">Paquetes seleccionados</span>
+<span class="text-blue-600">01 / 05</span>
+</div>
+<div class="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full w-1/5 bg-blue-600"></div>
+</div>
+</div>
+<button class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2">
+<span>Enviar a Presupuestar</span>
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</aside>
+</div>
+</body></html>

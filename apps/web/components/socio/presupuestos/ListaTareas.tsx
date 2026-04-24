@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { TareaItem } from './TareaItem';
 
 interface PresupuestoItem {
@@ -31,12 +32,14 @@ interface ListaTareasProps {
   presupuestos: PresupuestoItem[];
   onFieldChange: (tareaId: string, field: 'dias_reales' | 'monto', value: number | null) => void;
   editing: Map<string, { dias_reales: number | null; monto: number | null }>;
+  stitchMode?: boolean;
 }
 
 export function ListaTareas({
   presupuestos,
   onFieldChange,
   editing,
+  stitchMode = false,
 }: ListaTareasProps) {
   // Agrupar por etapa
   const grupos = {
@@ -84,24 +87,43 @@ export function ListaTareas({
         const isExpanded = expanded[etapa];
 
         return (
-          <div key={etapa} className="border-b border-slate-100 last:border-b-0">
+          <div
+            key={etapa}
+            className={cn('last:border-b-0', stitchMode ? 'border-b border-stitch-primary/10' : 'border-b border-slate-100')}
+          >
             {/* Header del grupo */}
             <button
               onClick={() => toggleGrupo(etapa)}
-              className="w-full px-4 py-3 bg-slate-50 flex items-center justify-between hover:bg-slate-100 transition-colors"
+              className={cn(
+                'flex w-full items-center justify-between px-4 py-3 transition-colors',
+                stitchMode
+                  ? 'bg-stitch-surface-container-low hover:bg-stitch-surface-container-high/80'
+                  : 'bg-slate-50 hover:bg-slate-100',
+              )}
             >
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-slate-900">
+                <span
+                  className={cn(
+                    'text-sm font-semibold',
+                    stitchMode ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
+                  )}
+                >
                   {getEtapaLabel(etapa)}
                 </span>
-                <span className="text-xs text-slate-500">
+                <span
+                  className={cn('text-xs', stitchMode ? 'text-stitch-on-surface/60' : 'text-slate-500')}
+                >
                   ({items.length} {items.length === 1 ? 'tarea' : 'tareas'})
                 </span>
               </div>
               {isExpanded ? (
-                <ChevronUp className="h-4 w-4 text-slate-500" />
+                <ChevronUp
+                  className={cn('h-4 w-4', stitchMode ? 'text-stitch-primary' : 'text-slate-500')}
+                />
               ) : (
-                <ChevronDown className="h-4 w-4 text-slate-500" />
+                <ChevronDown
+                  className={cn('h-4 w-4', stitchMode ? 'text-stitch-primary' : 'text-slate-500')}
+                />
               )}
             </button>
 
@@ -116,6 +138,7 @@ export function ListaTareas({
                       key={presupuesto.id}
                       presupuesto={presupuesto}
                       editing={editData}
+                      stitchMode={stitchMode}
                       onFieldChange={(field, value) => onFieldChange(presupuesto.tarea_id, field, value)}
                     />
                   );

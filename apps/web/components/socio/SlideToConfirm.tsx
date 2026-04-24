@@ -5,18 +5,19 @@ import { ArrowRight, Check } from 'lucide-react';
 
 interface SlideToConfirmProps {
   onConfirm: () => void;
-  label: string;
+  /** Si se omite, no se muestra título encima de la pista. */
+  label?: string;
   confirmLabel?: string;
   disabled?: boolean;
   variant?: 'start' | 'finish';
 }
 
-export function SlideToConfirm({ 
-  onConfirm, 
-  label, 
+export function SlideToConfirm({
+  onConfirm,
+  label,
   confirmLabel = 'Desliza para confirmar',
   disabled = false,
-  variant = 'start'
+  variant = 'start',
 }: SlideToConfirmProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -170,10 +171,12 @@ export function SlideToConfirm({
 
   return (
     <div className="w-full">
-      <div className="mb-2 text-sm font-medium" style={{ color: '#1B263B' }}>
-        {label}
-      </div>
-      
+      {label ? (
+        <div className="mb-2 text-sm font-medium" style={{ color: '#1B263B' }}>
+          {label}
+        </div>
+      ) : null}
+
       <div
         ref={containerRef}
         className="relative w-full h-14 rounded-lg overflow-hidden cursor-pointer select-none"

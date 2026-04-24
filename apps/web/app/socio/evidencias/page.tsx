@@ -6,6 +6,7 @@ import { ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { GaleriaEvidencias } from '@/components/socio/evidencias/GaleriaEvidencias';
+import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
 import { fetchEvidenciasPorSocioYObraCliente } from '@/lib/services/evidencias';
 import type { Evidencia } from '@/lib/services/evidencias';
 
@@ -134,35 +135,29 @@ export default function EvidenciasPage() {
   }, [currentUser, supabase]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="h-6 w-6 text-gray-700" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Evidencias</h1>
-                {obraNombre && (
-                  <p className="text-sm text-gray-600 mt-1">{obraNombre}</p>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <ImageIcon className="h-5 w-5" />
-              <span>{evidencias.length} {evidencias.length === 1 ? 'evidencia' : 'evidencias'}</span>
-            </div>
+    <div className="min-h-screen bg-stitch-surface pb-28 font-stitch-body">
+      <div className={STITCH_INNER + ' space-y-4'}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="mt-0.5 rounded-lg p-2 transition-colors hover:bg-stitch-surface-container"
+            >
+              <ArrowLeft className="h-6 w-6 text-stitch-on-surface" />
+            </button>
+            <StitchH2Page
+              title="Evidencias"
+              description={obraNombre || 'Archivos y fotos de obra'}
+            />
+          </div>
+          <div className="flex items-center gap-1.5 text-sm text-stitch-on-surface/70">
+            <ImageIcon className="h-5 w-5 text-stitch-primary" />
+            <span>
+              {evidencias.length} {evidencias.length === 1 ? 'evidencia' : 'evidencias'}
+            </span>
           </div>
         </div>
-      </div>
-
-      {/* Contenido */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <GaleriaEvidencias evidencias={evidencias} loading={loading} />
       </div>
     </div>

@@ -119,7 +119,6 @@ export function StageSummaryCard({
     return sum;
   }, 0);
   const totalTareas = tareas?.length ?? 0;
-  const tareasPendientes = tareasSinPresupuesto?.length ?? 0;
 
   const toggleCuadrilla = (cuadrillaNombre: string) => {
     setCuadrillasExpandidas((prev) => {
@@ -174,9 +173,7 @@ export function StageSummaryCard({
             </div>
             <div className="text-right">
               <p className="text-xs text-slate-500">Tareas</p>
-              <p className="font-semibold text-slate-900">
-                {totalTareas} / {tareasPendientes} pendientes
-              </p>
+              <p className="font-semibold text-slate-900">{totalTareas}</p>
             </div>
           </div>
         </div>
@@ -186,43 +183,6 @@ export function StageSummaryCard({
       {isExpanded && (
         <div className="border-t border-slate-200 px-6 py-4">
           <div className="space-y-4">
-            {/* Tareas sin presupuesto */}
-            {tareasSinPresupuesto && tareasSinPresupuesto.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-slate-700">
-                    Tareas sin presupuesto ({tareasSinPresupuesto.length})
-                  </h4>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => onSolicitarPresupuesto(tareasSinPresupuesto.map((t) => t.id))}
-                    disabled={disabled}
-                    className="text-xs"
-                  >
-                    Solicitar presupuesto
-                  </Button>
-                </div>
-                <div className="space-y-1">
-                  {tareasSinPresupuesto.map((tarea) => (
-                    <div
-                      key={tarea.id}
-                      className="flex items-center justify-between rounded border border-slate-100 bg-slate-50 px-3 py-2 text-sm"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{tarea.titulo}</p>
-                        {tarea.duracion_estimada && (
-                          <p className="text-xs text-slate-500">
-                            {tarea.duracion_estimada} días estimados
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Presupuestos recibidos agrupados por cuadrilla */}
             {presupuestos && presupuestos.length > 0 && (() => {
               // Separar presupuestos pendientes y aprobados
@@ -625,9 +585,9 @@ export function StageSummaryCard({
               );
             })()}
 
-            {/* Mensaje si no hay nada */}
-            {(!tareasSinPresupuesto || tareasSinPresupuesto.length === 0) && (!presupuestos || presupuestos.length === 0) && (
-              <p className="text-sm text-slate-500">No hay tareas pendientes en esta etapa.</p>
+            {/* Mensaje si no hay presupuestos */}
+            {(!presupuestos || presupuestos.length === 0) && (
+              <p className="text-sm text-slate-500">No hay presupuestos en esta etapa.</p>
             )}
           </div>
         </div>

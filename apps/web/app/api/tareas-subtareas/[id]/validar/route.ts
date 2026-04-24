@@ -6,6 +6,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { ESTADO_BLOQUE_PARA_VALIDAR } from '@/lib/domain/estados-core';
 
 export async function POST(
   request: NextRequest,
@@ -42,7 +43,7 @@ export async function POST(
 
     const { data: subtarea } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id, tarea_id, tareas:tareas(org_id)')
+      .select('id, tarea_id, estado, tareas:tareas(org_id)')
       .eq('id', id)
       .maybeSingle();
 
@@ -62,6 +63,13 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: 'Solo el cliente puede validar o rechazar bloques' },
         { status: 403 },
+      );
+    }
+
+    if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {
+      return NextResponse.json(
+        { success: false, error: `El bloque debe estar en ${ESTADO_BLOQUE_PARA_VALIDAR}` },
+        { status: 409 },
       );
     }
 

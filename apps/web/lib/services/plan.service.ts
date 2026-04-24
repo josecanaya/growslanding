@@ -52,12 +52,22 @@ export async function obtenerConfigPlan(orgId: string): Promise<PlanConfig> {
   const supabase = createServiceSupabaseClient();
   const supabaseAny = supabase as any;
 
-  // Obtener plan de la organización
-  const { data: org, error } = await supabaseAny
-    .from('organizaciones')
+  // Fuente canónica: organizations. Fallback temporal para esquemas legacy.
+  let { data: org, error } = await supabaseAny
+    .from('organizations')
     .select('plan_actual')
     .eq('id', orgId)
     .maybeSingle();
+
+  if (error && error.code === '42P01') {
+    const legacy = await supabaseAny
+      .from('organizaciones')
+      .select('plan_actual')
+      .eq('id', orgId)
+      .maybeSingle();
+    org = legacy.data;
+    error = legacy.error;
+  }
 
   if (error || !org) {
     console.warn(`[obtenerConfigPlan] Organización no encontrada: ${orgId}, usando FREE por defecto`);

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Grows - Contratistas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#f8f9fa",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-bright": "#f8f9fa",
+                        "on-primary-container": "#8690a1",
+                        "error": "#ba1a1a",
+                        "background": "#f8f9fa",
+                        "tertiary-fixed": "#f8dfbf",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-primary-fixed": "#121c2a",
+                        "surface-tint": "#555f6f",
+                        "inverse-on-surface": "#f0f1f2",
+                        "tertiary-container": "#342611",
+                        "tertiary-fixed-dim": "#dbc3a4",
+                        "on-secondary-fixed-variant": "#004395",
+                        "on-primary-fixed-variant": "#3d4756",
+                        "secondary": "#0058be",
+                        "primary-fixed-dim": "#bdc7d9",
+                        "on-secondary-fixed": "#001a42",
+                        "on-surface-variant": "#44474c",
+                        "error-container": "#ffdad6",
+                        "outline": "#75777c",
+                        "on-tertiary-fixed-variant": "#55442d",
+                        "primary-container": "#1f2937",
+                        "surface-container": "#edeeef",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#1d1202",
+                        "on-secondary": "#ffffff",
+                        "secondary-container": "#2170e4",
+                        "surface-container-high": "#e7e8e9",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed": "#261906",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#d9e3f6",
+                        "outline-variant": "#c5c6cc",
+                        "on-surface": "#191c1d",
+                        "on-secondary-container": "#fefcff",
+                        "surface-variant": "#e1e3e4",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#bdc7d9",
+                        "on-background": "#191c1d",
+                        "primary": "#0a1422",
+                        "surface-dim": "#d9dadb",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-tertiary-container": "#a28c70",
+                        "inverse-surface": "#2e3132"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Manrope"],
+                        "label": ["Manrope"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- SideNavBar Component (JSON Anchor Implementation) -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full h-screen w-64 border-r-0 bg-gray-100 dark:bg-gray-900 font-manrope text-sm tracking-tight z-50">
+<div class="p-8">
+<div class="flex items-center gap-3 mb-10">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white" data-icon="architecture">architecture</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tighter text-gray-900 dark:text-white uppercase">Grows</h1>
+<p class="text-[10px] text-on-primary-container font-medium tracking-widest uppercase">Architectural SaaS</p>
+</div>
+</div>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Vista General</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span>Cronograma</span>
+</a>
+<!-- Active Tab: Paquetes (Closest match for Contractors management/packages) -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-blue-600 dark:text-blue-400 font-bold border-r-4 border-blue-600 hover:bg-gray-200 dark:hover:bg-gray-800" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span>Paquetes</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800" href="#">
+<span class="material-symbols-outlined" data-icon="payments">payments</span>
+<span>Presupuestos</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span>Validaciones</span>
+</a>
+</div>
+</div>
+<div class="mt-auto p-8">
+<div class="flex items-center gap-3 p-3 bg-white/50 dark:bg-white/5 rounded-xl">
+<img alt="Studio Logo" class="w-10 h-10 rounded-lg object-cover" data-alt="professional portrait of an architect in a modern office with natural light and minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP0yCP1fxHvXYcOqAClKxJL_TEOPU5x61O63igdubWjURX-nx0DtKBk9sNWmpHEOZPOmdNFArVGyqfha7UtxjhsrSyrJ4RVKj8t97lJVvJe3U7Lou7hHGxTs3ktWWQHjifW6UDh2AXIDzVKaQJECaPcAUv98Pc9zHhwYmiopa33psr6tRiBdOwYplfOoDptjlCAAGnUsIFJyDgKjMmZ0AqdhXoOyrkNOZ3suH01I8VAeFhSY48f_Szw8Knyr1a6XRhI24hamR12ieg"/>
+<div class="overflow-hidden">
+<p class="font-bold text-gray-900 dark:text-white truncate">Studio Arq</p>
+<p class="text-[10px] text-on-surface-variant truncate">Premium Plan</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- TopNavBar Component (JSON Anchor Implementation) -->
+<header class="sticky top-0 z-40 flex justify-between items-center px-8 h-16 w-full lg:pl-72 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md shadow-sm">
+<div class="flex items-center gap-6 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-lg" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border-none rounded-xl py-2 pl-10 pr-4 text-xs font-label tracking-widest uppercase focus:ring-2 focus:ring-secondary/20 placeholder:text-outline" placeholder="BUSCAR CONTRATISTA O PAQUETE..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-70 transition-transform scale-95 active:scale-100" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:opacity-70 transition-transform scale-95 active:scale-100" data-icon="account_circle">account_circle</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 p-8 min-h-screen bg-surface">
+<!-- Hero Section / Header -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div class="max-w-2xl">
+<div class="inline-block px-3 py-1 mb-4 rounded-full bg-secondary/10 text-secondary text-[10px] font-black uppercase tracking-[0.2em]">
+                    Gestión de Alianzas
+                </div>
+<h2 class="text-4xl md:text-5xl font-black text-primary tracking-tighter mb-4">Contratistas</h2>
+<p class="text-on-surface-variant font-medium leading-relaxed">
+                    Administre sus vínculos comerciales, asigne paquetes de obra y monitoree el estado de disponibilidad de sus socios estratégicos en tiempo real.
+                </p>
+</div>
+<button class="flex items-center justify-center gap-3 bg-primary text-white px-6 py-4 rounded-xl font-bold text-sm hover:bg-secondary transition-all shadow-xl shadow-primary/10 active:scale-95 group">
+<span class="material-symbols-outlined" data-icon="mail" style="font-variation-settings: 'FILL' 1;">mail</span>
+                INVITAR SOCIO
+                <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+<!-- Filter Shell (No borders, only surface shifts) -->
+<div class="mb-8 p-1 bg-surface-container-low rounded-2xl flex flex-wrap gap-2">
+<button class="px-6 py-2 bg-surface-container-lowest rounded-xl text-xs font-black tracking-widest uppercase text-primary shadow-sm">Todos (24)</button>
+<button class="px-6 py-2 rounded-xl text-xs font-black tracking-widest uppercase text-on-surface-variant hover:bg-surface-container transition-colors">Disponible (12)</button>
+<button class="px-6 py-2 rounded-xl text-xs font-black tracking-widest uppercase text-on-surface-variant hover:bg-surface-container transition-colors">Trabajando (8)</button>
+<button class="px-6 py-2 rounded-xl text-xs font-black tracking-widest uppercase text-on-surface-variant hover:bg-surface-container transition-colors">Pausado (4)</button>
+</div>
+<!-- Contractors Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Contractor Card 1 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
+<div class="flex items-start justify-between mb-6">
+<div class="relative">
+<img alt="Contractor" class="w-16 h-16 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="close-up portrait of a professional contractor in a grey shirt with a focused expression in a bright studio" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBRgLaz7OvcgyPXCK8x7ek1hzUHd_MDpiABlKIfl9gL4bwSEqLaP5l-BwNDO-9IpmhiQze8V0MsuLwD1xceefdj2CsC4FSJOiVQO_852McYg2Qn0hli3iz-T192lp3emamh-yMa-9YOJl-r22iFRnEVNSMFKNFFN4svD5jJpHe3HV6DxlHsvfMc-XsOZ2il1nS5hPLnzUEJVqTQOIXrh0X29fCgKv5Y1tp56VbBBw9VqwUm0f_I1Q_2I4Vr5rWMDGZpBDveTXAFmXcL"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-4 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="text-right">
+<span class="text-[10px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-3 py-1 rounded-full">Disponible</span>
+<p class="text-[10px] text-on-surface-variant mt-2 font-medium">Ref: #CON-902</p>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary tracking-tight mb-1">Molina &amp; Asociados</h3>
+<p class="text-sm text-on-surface-variant mb-6">Ingeniería Estructural &amp; Civil</p>
+<div class="space-y-4">
+<div class="flex flex-wrap gap-2">
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Estructura</span>
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Pilotaje</span>
+</div>
+<div class="pt-4 border-t border-surface-container/50 flex items-center justify-between">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-primary-fixed-dim flex items-center justify-center text-[10px] font-bold">M1</div>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-secondary-fixed-dim flex items-center justify-center text-[10px] font-bold text-secondary">T2</div>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:gap-2 transition-all">
+                            VER DETALLES <span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contractor Card 2 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
+<div class="flex items-start justify-between mb-6">
+<div class="relative">
+<img alt="Contractor" class="w-16 h-16 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="professional woman architect with glasses smiling in a modern bright office workspace" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUcHk7gb_ZPvTGQxKcPlhUU_fjJ2kqJ8h9eFh373Oq5n0FOKWnzI_A1pY_VHMATcbhrlutLuRBefQf9V1fEd5HdJi5l-ucOEy2io86O1w9eS_RzRT_Y5_xrRm83A3Lk_dvt3-27sag3ratBATrdG7hpC5iIxOprrAFfH9NKX1z8tSzVmhuMzdqzZexjKPDgUhKa0szWx8kNbufDXlnl0ckcnTpvJWt8rZK75QqtHHqFw-tLT4SGsfHmBrrWkRJ2M9tJ_xgSrVL9_aI"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-blue-500 border-4 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="text-right">
+<span class="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Trabajando</span>
+<p class="text-[10px] text-on-surface-variant mt-2 font-medium">Ref: #CON-441</p>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary tracking-tight mb-1">Elena Ruiz</h3>
+<p class="text-sm text-on-surface-variant mb-6">Interiorismo &amp; Acabados</p>
+<div class="space-y-4">
+<div class="flex flex-wrap gap-2">
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Revestimientos</span>
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Iluminación</span>
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">+2</span>
+</div>
+<div class="pt-4 border-t border-surface-container/50 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+<span class="text-[10px] font-bold text-blue-600">Torre Alvear • Etapa 2</span>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:gap-2 transition-all">
+                            VER DETALLES <span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contractor Card 3 -->
+<div class="bg-surface-container-lowest p-6 rounded-2xl group hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300">
+<div class="flex items-start justify-between mb-6">
+<div class="relative">
+<img alt="Contractor" class="w-16 h-16 rounded-xl object-cover grayscale group-hover:grayscale-0 transition-all duration-500" data-alt="middle-aged man in business attire looking serious and professional in an architectural studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2tW7KneNiHslytjoI_-5W2cfbHXvmRGWpbAJtUydi-IzSXrmMfMC9NiVfWWkX1pMfNawH1erO5RYUkNNuffzhIwj4Dn_oqME2Zij-cxaaEGdVtSLj--hFvl_3-Yxyd56Ae40hQezjUAsinH5Ld0U8MoOkb3K-ddPx69TxkjZY0uzyYPJ6ScpJINUZ4zH2Qz3g8rrKkYYnWtQYgKAxCmcHVeaqm4N1lGQMW8zjbPFIIuG1TJXUPAgy4D14lHL7UX7ukxr7fCQP65p_"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-gray-400 border-4 border-surface-container-lowest rounded-full"></div>
+</div>
+<div class="text-right">
+<span class="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-100 px-3 py-1 rounded-full">Pausado</span>
+<p class="text-[10px] text-on-surface-variant mt-2 font-medium">Ref: #CON-112</p>
+</div>
+</div>
+<h3 class="text-xl font-bold text-primary tracking-tight mb-1">Constructora Delta</h3>
+<p class="text-sm text-on-surface-variant mb-6">Movimiento de Suelos</p>
+<div class="space-y-4">
+<div class="flex flex-wrap gap-2">
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Maquinaria Pesada</span>
+<span class="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-surface-container text-on-primary-container rounded">Excavación</span>
+</div>
+<div class="pt-4 border-t border-surface-container/50 flex items-center justify-between">
+<p class="text-[10px] italic text-on-surface-variant">Sin obras activas</p>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 hover:gap-2 transition-all">
+                            VER DETALLES <span class="material-symbols-outlined text-sm" data-icon="open_in_new">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- List Placeholder / Action Card -->
+<div class="bg-surface-container-low border-2 border-dashed border-outline-variant/30 rounded-2xl flex flex-col items-center justify-center p-8 text-center group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="w-16 h-16 rounded-full bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="person_add">person_add</span>
+</div>
+<h4 class="font-bold text-primary mb-1">Expandir Red</h4>
+<p class="text-xs text-on-surface-variant max-w-[180px]">Invite a nuevos contratistas a unirse a su flujo de trabajo digital.</p>
+</div>
+</div>
+<!-- System Status / Footer Detail -->
+<div class="mt-16 bg-primary text-white/90 p-8 rounded-3xl flex flex-col md:flex-row items-center gap-8 overflow-hidden relative">
+<div class="absolute right-0 top-0 opacity-10 pointer-events-none translate-x-1/4 -translate-y-1/4">
+<span class="material-symbols-outlined text-[300px]" data-icon="architecture">architecture</span>
+</div>
+<div class="flex-1 z-10">
+<h4 class="text-2xl font-bold tracking-tight mb-2">Optimización de Recursos</h4>
+<p class="text-white/60 text-sm max-w-lg">Su red de contratistas está operando al 78% de su capacidad total. Considere invitar nuevos socios para los próximos proyectos de Q4.</p>
+</div>
+<div class="flex gap-4 z-10 w-full md:w-auto">
+<div class="flex-1 md:flex-none px-6 py-4 bg-white/10 backdrop-blur rounded-2xl text-center">
+<p class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Capacidad</p>
+<p class="text-2xl font-black">12/15</p>
+</div>
+<div class="flex-1 md:flex-none px-6 py-4 bg-white/10 backdrop-blur rounded-2xl text-center">
+<p class="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Eficiencia</p>
+<p class="text-2xl font-black">94%</p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (JSON Anchor Implementation - Mobile only) -->
+<nav class="lg:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-safe bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.05)] border-t border-gray-200/20">
+<div class="flex flex-col items-center justify-center text-gray-400 tap-highlight-transparent">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-manrope text-[10px] uppercase font-bold tracking-wider">Home</span>
+</div>
+<!-- Active: Obras/Paquetes context -->
+<div class="flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 tap-highlight-transparent">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+<span class="font-manrope text-[10px] uppercase font-bold tracking-wider">Obras</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 tap-highlight-transparent">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-manrope text-[10px] uppercase font-bold tracking-wider">Tareas</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 tap-highlight-transparent">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+<span class="font-manrope text-[10px] uppercase font-bold tracking-wider">Billetera</span>
+</div>
+<div class="flex flex-col items-center justify-center text-gray-400 tap-highlight-transparent">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-manrope text-[10px] uppercase font-bold tracking-wider">Notif</span>
+</div>
+</nav>
+</body></html>

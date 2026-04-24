@@ -16,6 +16,8 @@ type RootLayoutProps = {
 export const metadata: Metadata = {
   title: 'GROWS - Panel de Socio',
   description: 'Plataforma de gestión inteligente para la construcción',
+  // Icono GROWS en pestaña (oculta la N de Next para video)
+  icons: { icon: '/grows-icon.svg' },
 };
 
 export default function RootLayout({ children }: RootLayoutProps) {

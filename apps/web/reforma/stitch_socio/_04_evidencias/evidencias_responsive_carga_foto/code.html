@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carga de Evidencia | AZUL OPERATIVO</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#c1e0ff",
+                    "surface-dim": "#d8dadc",
+                    "surface-bright": "#f7f9fb",
+                    "on-secondary-fixed": "#001d31",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#b3c5ff",
+                    "surface-variant": "#e0e3e5",
+                    "surface": "#f7f9fb",
+                    "primary-fixed-dim": "#b3c5ff",
+                    "on-background": "#191c1e",
+                    "tertiary": "#003473",
+                    "surface-container-low": "#f2f4f6",
+                    "secondary-fixed-dim": "#abcae8",
+                    "surface-container-high": "#e6e8ea",
+                    "inverse-on-surface": "#eff1f3",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#00174a",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#a8bcff",
+                    "error": "#ba1a1a",
+                    "on-primary-fixed-variant": "#2a4386",
+                    "on-surface": "#191c1e",
+                    "on-secondary-container": "#46647e",
+                    "on-surface-variant": "#434653",
+                    "surface-container-highest": "#e0e3e5",
+                    "background": "#f7f9fb",
+                    "on-primary": "#ffffff",
+                    "surface-container": "#eceef0",
+                    "primary-container": "#314a8d",
+                    "primary": "#163274",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#004a9f",
+                    "tertiary-fixed-dim": "#adc7ff",
+                    "secondary-fixed": "#cce5ff",
+                    "on-secondary-fixed-variant": "#2b4963",
+                    "primary-fixed": "#dbe1ff",
+                    "on-error": "#ffffff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#435b9f",
+                    "secondary": "#43617c",
+                    "outline": "#737784",
+                    "on-tertiary-fixed-variant": "#004493",
+                    "on-tertiary-fixed": "#001a41",
+                    "on-tertiary-container": "#9fbeff",
+                    "tertiary-fixed": "#d8e2ff",
+                    "outline-variant": "#c3c6d5",
+                    "inverse-surface": "#2d3133"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-blade-success {
+            border-left: 4px solid #003473;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #163274 0%, #314a8d 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-slate-50 dark:bg-slate-900">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-blue-900 dark:text-blue-400">construction</span>
+<h1 class="text-lg font-black tracking-tighter text-blue-900 dark:text-blue-100 font-['Manrope']">AZUL OPERATIVO</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-container">
+<img alt="User Profile" data-alt="professional portrait of a male site engineer wearing a safety vest and a friendly smile in bright daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYeRtEa1o97VPq1Mrhw8B9mqdTBaDHAOAVbQtv7uNLwfDkEfCZ2GBNiWrphuK4GUY0yQeIQQYA4i4y2vqYIT0GQ_Cmr6VKKHYG1dGxVkgMjr_KDiTLVy7F5W4HsM34EnQ-l2VtkXMADgGx1Dj-IWXVaF9f-z_yTl_acptsQOYxY6Pou373yzsLdC1zG7tmf9yBVoxluUDwpFJC73sjXSZvdgbVW5rwLGNUqnjlPbd15diQR_smqhj9ZEryOumk2V8JoZ84d67cB3gE"/>
+</div>
+</div>
+</div>
+<div class="bg-slate-200 dark:bg-slate-800 h-[1px] w-full"></div>
+</header>
+<main class="max-w-4xl mx-auto px-6 pt-8">
+<!-- Task Context Banner -->
+<section class="mb-8">
+<div class="surface-container-lowest glass-panel rounded-xl p-6 status-blade-success shadow-sm">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-label text-[0.75rem] font-semibold text-primary tracking-wider uppercase mb-1 block">Tarea Finalizada</span>
+<h2 class="font-headline text-2xl font-bold tracking-tight text-on-surface">Corte de césped</h2>
+<p class="text-on-surface-variant body-md mt-1">Sector: Perímetro Norte - Lote 42</p>
+</div>
+<div class="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-xs font-bold uppercase tracking-tighter">
+                        En Proceso de Carga
+                    </div>
+</div>
+</div>
+</section>
+<!-- Camera Viewfinder / Main Action Area -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left: Viewfinder Shell -->
+<div class="lg:col-span-8">
+<div class="relative aspect-video lg:aspect-[4/3] rounded-3xl overflow-hidden bg-on-surface shadow-2xl group">
+<img alt="Camera Feed" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity duration-500" data-alt="Point of view shot of a freshly mowed commercial lawn with clean stripes and landscaping borders under bright sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCw1B8ERHB8XfyR2nEqQ682kYb3moAolupvc2T4Xd6gG-jpq6BB_s8Huk38I09wRYaHxLcPxIeSfeW9LvCjQdxLHz9isb-KL0dyICRRUQz5PDwDZ9u_xG9Zt8VmCd_1QWp6aXSZHJY2y1w7Rq1AeX62BedcaIbUDBacRPmqVLf9J_kKmRLFoU-oTo3OiWmwmQPBkNz1PCkWIWuL8kj8RdbiqAq3WQfRECRq2r0t_fHizG5axuz7fXVz7S69QgLb-u0miHJ4LGVNsA5M"/>
+<!-- Viewfinder Overlay -->
+<div class="absolute inset-0 flex flex-col justify-between p-6 pointer-events-none">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 bg-black/40 backdrop-blur-md text-white px-3 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+<span class="text-xs font-bold uppercase tracking-widest">Live View</span>
+</div>
+<button class="pointer-events-auto w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/40 transition-colors">
+<span class="material-symbols-outlined">settings_overscan</span>
+</button>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-20">
+<div class="border-r border-b border-white"></div>
+<div class="border-r border-b border-white"></div>
+<div class="border-b border-white"></div>
+<div class="border-r border-b border-white"></div>
+<div class="border-r border-b border-white"></div>
+<div class="border-b border-white"></div>
+<div class="border-r border-white"></div>
+<div class="border-r border-white"></div>
+<div></div>
+</div>
+<div class="flex justify-center items-end pb-4">
+<button class="pointer-events-auto primary-gradient w-20 h-20 rounded-full border-4 border-white flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-white text-3xl" data-weight="fill">photo_camera</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Capture Description -->
+<div class="mt-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex-1">
+<label class="font-label text-[0.75rem] font-bold text-on-surface-variant uppercase tracking-widest block mb-2">Descripción opcional</label>
+<input class="w-full bg-surface-container-highest border-none rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary focus:bg-white transition-all outline-none" placeholder="Ej: Detalle de terminación en canteros..." type="text"/>
+</div>
+<button class="primary-gradient text-white font-bold h-[52px] px-8 rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/20 hover:-translate-y-0.5 transition-all">
+<span>Sacar Foto</span>
+<span class="material-symbols-outlined">add_a_photo</span>
+</button>
+</div>
+</div>
+<!-- Right: Gallery Sidebar -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<div class="surface-container-low rounded-3xl p-6 flex-1 flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline font-bold text-lg">Galería Actual</h3>
+<span class="bg-primary-container text-on-primary-container text-xs font-black px-2 py-0.5 rounded">3 / 5</span>
+</div>
+<!-- Photo Grid -->
+<div class="grid grid-cols-2 gap-3 flex-1 content-start">
+<div class="relative aspect-square rounded-xl overflow-hidden group">
+<img alt="Photo 1" class="w-full h-full object-cover" data-alt="low angle photo of a professional lawn mower machine cutting thick grass in a construction site context" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHTMAoiBkKXJfwo-1WUNdm5WKyzQ6-0gYaVqpt5l_oqVB6GcxpdbwaV6a1-pVRjmtmaIjwliKKvdXeHyLbXoqjA3rcsygdra8EzoGVsuqn6Bqtpvrwq2HktQyd5guLMqJ7920mAOwF8dFOu-duaye7HKv08R9LFqQ1DhSqgU9-gXKZiOPIPkKiUw3rSlCS764zE9AwnuAbPPsBsdWOCYtTfuAaLLsmI42CNY9Ayce65JE2lNAszawo8z9QOm3varvLAFdXi1tnRsXW"/>
+<button class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<div class="relative aspect-square rounded-xl overflow-hidden group">
+<img alt="Photo 2" class="w-full h-full object-cover" data-alt="wide shot of a clean landscape area with decorative stones and small shrubs after maintenance work" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc1k96l4tKk2mf2KHTmiO_QDyHj9-IhgNJp4Ga6buYZ9CObZfgrDNPAMaR79Z7KUpNPNRZnBTJTzSGz43-pozqDrQIfJTUdYuOMWh5WRsNWV8NHHYVd_FMrBUzAyL8tg0DI3Sbt9DFZeYt-TaNa6jgU8jKGcHbyVRp2aH-51QeuhuLKhAdtVXh8wSNwvxDmKR8X2mmUYNGnGkm0ujdRnN80UYndYS9e4KCRumHNrDdhaIe5ZbRup1RyJolrjcCOP2kdQACANDXKNqi"/>
+<button class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<div class="relative aspect-square rounded-xl overflow-hidden group">
+<img alt="Photo 3" class="w-full h-full object-cover" data-alt="close up of sharp lawn edging and clean transition between grass and pavement under natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2UODRQDOttJ3XUKowKMVaucbMha83FXexPWRMkw7Ea842ECtNfaQkztfA-5_psv3pGkwMhiYbJ58R007kExRFPFojRaDm1O1haJQNgaL3b2m_82XB6iHLnWEJDpk5GKVna323yR8XefuTZq7O7Fn0mhowOHviVGObgQ0toGmO_sbFTGo7TbPx6ckpE5uDs5D-BvsIW-9RBSI-2LFu3b__7xwAZVUpoMmiSIeYAF2nPyJUZV6CihgqM5htxJsNx1cl6Rry99-cgIIF"/>
+<button class="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<div class="aspect-square rounded-xl bg-surface-container-highest border-2 border-dashed border-outline-variant flex items-center justify-center text-outline cursor-pointer hover:border-primary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-3xl">add</span>
+</div>
+</div>
+<!-- Final Action -->
+<div class="mt-8 pt-6 border-t border-outline-variant/30">
+<button class="w-full bg-tertiary-container text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-tertiary transition-colors shadow-sm">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span>Finalizar y Subir</span>
+</button>
+<p class="text-[11px] text-on-surface-variant text-center mt-3 font-medium uppercase tracking-tighter">Sincronización automática activa</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl shadow-[0_-4px_20px_rgba(22,50,116,0.05)]">
+<!-- Active Tab: Tasks (Context: Evidence for a task) -->
+<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 rounded-xl px-3 py-1.5 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in" style="font-variation-settings: 'FILL' 1;">assignment_turned_in</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 hover:text-blue-700 dark:hover:text-blue-300 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Safety</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 hover:text-blue-700 dark:hover:text-blue-300 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Messages</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-500 hover:text-blue-700 dark:hover:text-blue-300 transition-transform active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+<span class="font-['Inter'] text-[11px] font-semibold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

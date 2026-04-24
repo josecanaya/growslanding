@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { MiCuadrilla } from '@/components/socio/sections/MiCuadrilla';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { STITCH_INNER } from '@/components/socio/stitch/socioStitchUi';
 
 export default function CuadrillaPage() {
   const currentUser = useCurrentUser();
@@ -33,7 +34,7 @@ export default function CuadrillaPage() {
   }, [currentUser?.name]);
 
   return (
-    <div className="w-full">
+    <div className={STITCH_INNER + ' font-stitch-body'}>
       <MiCuadrilla user={user} />
     </div>
   );

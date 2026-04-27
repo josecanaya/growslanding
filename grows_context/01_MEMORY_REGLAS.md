@@ -197,3 +197,8 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** Los QR personales de socio usan `qr_tokens.scope = 'socio_asociacion'` y `ref_id = socios.id`; la asociación cliente→socio se valida solo en backend y crea/reutiliza un socio en la organización del cliente.
 - **Ámbito:** `api/socios/mi-qr`, `api/socios/asociar-qr`, UI socio cuenta y cliente cuadrillas.
 - **Obligación:** No asociar socios confiando en `socio_id` desde frontend; siempre resolver token, verificar cliente autenticado con organización activa y evitar duplicados por email/teléfono.
+
+### [2026-04-27] Perfil socio para QR
+- **Qué se decidió:** Si un usuario autenticado con rol `SOCIO` no tiene fila en `socios`, `api/socios/mi-qr` debe resolver por `user_id`/email o crear un perfil socio mínimo validado en backend antes de emitir token QR.
+- **Ámbito:** QR socio, tabla `socios`, metadata Auth.
+- **Obligación:** No bloquear el QR por falta de fila si el rol Auth es `SOCIO`; evitar duplicados buscando primero por `user_id` y email.

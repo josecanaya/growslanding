@@ -13,10 +13,18 @@ const QR_SCOPE_SOCIO = 'socio_asociacion';
 
 type SocioQrRecord = {
   id: string;
+  org_id: string | null;
   nombre: string | null;
   email: string | null;
   telefono: string | null;
   estado: string | null;
+};
+
+type AuthUserForSocio = {
+  id: string;
+  email?: string | null;
+  app_metadata?: Record<string, unknown>;
+  user_metadata?: Record<string, unknown>;
 };
 
 function buildAssociationUrl(request: Request, token: string) {
@@ -30,35 +38,39 @@ function buildAssociationUrl(request: Request, token: string) {
   return url.toString();
 }
 
-async function findSocioForUser(userId: string, email: string | null) {
-  const supabase = createServiceSupabaseClient();
-
-  if (email) {
-    const { data, error } = await supabase
-      .from('socios')
-      .select('id, nombre, email, telefono, estado')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (data) {
-      return data as SocioQrRecord;
-    }
+function isMissingColumnError(error: { code?: string; message?: string } | null) {
+  if (!error) {
+    return false;
   }
 
+  const message = String(error.message || '').toLowerCase();
+  return error.code === '42703' || error.code === 'PGRST204' || message.includes('column');
+}
+
+async function updateSocioBestEffort(socioId: string, data: Record<string, unknown>) {
+  const supabase = createServiceSupabaseClient();
+
+  const { error } = await (supabase as any)
+    .from('socios')
+    .update(data)
+    .eq('id', socioId);
+
+  if (error && !isMissingColumnError(error)) {
+    throw error;
+  }
+}
+
+async function findSocioByUserId(userId: string) {
+  const supabase = createServiceSupabaseClient();
   const { data, error } = await (supabase as any)
     .from('socios')
-    .select('id, nombre, email, telefono, estado')
+    .select('id, org_id, nombre, email, telefono, estado')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (error) {
     const missingUserIdColumn =
-      error.code === '42703' ||
-      error.code === 'PGRST204' ||
+      isMissingColumnError(error) ||
       String(error.message || '').toLowerCase().includes('user_id');
 
     if (!missingUserIdColumn) {
@@ -67,6 +79,148 @@ async function findSocioForUser(userId: string, email: string | null) {
   }
 
   return (data as SocioQrRecord | null) ?? null;
+}
+
+async function findSocioByEmail(email: string | null) {
+  if (!email) {
+    return null;
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from('socios')
+    .select('id, org_id, nombre, email, telefono, estado')
+    .eq('email', email)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data as SocioQrRecord | null) ?? null;
+}
+
+async function resolveSocioOrgId(user: AuthUserForSocio) {
+  const metadataOrgId =
+    (user.user_metadata?.org_id as string | undefined) ??
+    (user.app_metadata?.org_id as string | undefined) ??
+    null;
+
+  if (metadataOrgId) {
+    return metadataOrgId;
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data: ownerOrg, error: ownerOrgError } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (ownerOrgError) {
+    throw ownerOrgError;
+  }
+
+  if (ownerOrg?.id) {
+    return ownerOrg.id;
+  }
+
+  const displayName =
+    (user.user_metadata?.full_name as string | undefined) ??
+    (user.user_metadata?.name as string | undefined) ??
+    user.email ??
+    'Socio';
+
+  const { data: createdOrg, error: createOrgError } = await supabase
+    .from('organizations')
+    .insert({
+      name: `Perfil socio - ${displayName}`,
+      user_id: user.id,
+      plan_actual: 'FREE',
+    })
+    .select('id')
+    .single();
+
+  if (createOrgError) {
+    throw createOrgError;
+  }
+
+  return createdOrg.id;
+}
+
+async function createSocioForUser(user: AuthUserForSocio) {
+  const supabase = createServiceSupabaseClient();
+  const orgId = await resolveSocioOrgId(user);
+  const displayName =
+    (user.user_metadata?.full_name as string | undefined) ??
+    (user.user_metadata?.name as string | undefined) ??
+    user.email ??
+    'Socio constructor';
+
+  const insertPayload = {
+    org_id: orgId,
+    nombre: displayName,
+    email: user.email ?? null,
+    estado: 'activo',
+    especialidad: 'constructor',
+    user_id: user.id,
+  };
+
+  const { data, error } = await (supabase as any)
+    .from('socios')
+    .insert(insertPayload)
+    .select('id, org_id, nombre, email, telefono, estado')
+    .single();
+
+  if (error && isMissingColumnError(error)) {
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('socios')
+      .insert({
+        org_id: orgId,
+        nombre: displayName,
+        email: user.email ?? null,
+        estado: 'activo',
+        especialidad: 'constructor',
+      })
+      .select('id, org_id, nombre, email, telefono, estado')
+      .single();
+
+    if (fallbackError) {
+      throw fallbackError;
+    }
+
+    return fallbackData as SocioQrRecord;
+  }
+
+  if (error) {
+    throw error;
+  }
+
+  return data as SocioQrRecord;
+}
+
+async function resolveSocioProfileForUser(user: AuthUserForSocio) {
+  const byUserId = await findSocioByUserId(user.id);
+  if (byUserId) {
+    return byUserId;
+  }
+
+  const byEmail = await findSocioByEmail(user.email ?? null);
+  if (byEmail) {
+    await updateSocioBestEffort(byEmail.id, {
+      user_id: user.id,
+      email: byEmail.email ?? user.email ?? null,
+      estado: byEmail.estado ?? 'activo',
+    });
+    return {
+      ...byEmail,
+      email: byEmail.email ?? user.email ?? null,
+      estado: byEmail.estado ?? 'activo',
+    };
+  }
+
+  return createSocioForUser(user);
 }
 
 export async function GET(request: Request) {
@@ -100,7 +254,12 @@ export async function GET(request: Request) {
       );
     }
 
-    const socio = await findSocioForUser(user.id, user.email ?? null);
+    const socio = await resolveSocioProfileForUser({
+      id: user.id,
+      email: user.email ?? null,
+      app_metadata: user.app_metadata as Record<string, unknown>,
+      user_metadata: user.user_metadata as Record<string, unknown>,
+    });
 
     if (!socio) {
       return NextResponse.json(

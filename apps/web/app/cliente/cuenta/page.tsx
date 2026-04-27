@@ -1,7 +1,10 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
 import { Button } from '@/components/ui/grows';
+import { logout } from '@/lib/auth';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 function iniciales(nombre: string | null | undefined, email: string | null | undefined): string {
@@ -21,6 +24,7 @@ function rolLabel(role: string | null | undefined): string {
 }
 
 export default function ClienteCuentaPage() {
+  const router = useRouter();
   const u = useCurrentUser();
 
   return (
@@ -52,6 +56,17 @@ export default function ClienteCuentaPage() {
           </Button>
           <Button variant="ghost" size="sm" type="button" disabled>
             Facturación
+          </Button>
+        </div>
+        <div className="mt-6 border-t border-slate-100 pt-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            type="button"
+            icon={<LogOut className="h-4 w-4" />}
+            onClick={() => void logout({ router, redirectTo: '/auth/login' })}
+          >
+            Cerrar sesión
           </Button>
         </div>
       </div>

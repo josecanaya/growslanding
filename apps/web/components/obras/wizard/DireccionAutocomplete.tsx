@@ -22,7 +22,7 @@ function loadGoogleMapsApi() {
   }
 
   if (!googleMapsPromise) {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'AIzaSyCIzK1ydM-ADJW_yUOpNXJpr8Oh1u5eUwo';
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       return Promise.reject(new Error('Falta NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
     }
@@ -95,7 +95,7 @@ export default function DireccionAutocomplete({
       })
       .catch((err: Error) => {
         if (!isMounted) return;
-        setError(err.message);
+        setError(`${err.message}. Podés escribir la dirección manualmente.`);
       });
 
     return () => {

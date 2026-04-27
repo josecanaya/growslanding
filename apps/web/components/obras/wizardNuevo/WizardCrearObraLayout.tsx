@@ -12,20 +12,13 @@ const STEPS_BASE = [
   { id: 2, title: 'Superficies y estructura' },
 ];
 
-const STEP_ELEMENTOS = { id: 3, title: 'Carga de elementos' };
+const STEP_GUARDAR = { id: 3, title: 'Confirmar y guardar' };
 
 function WizardCrearObraLayout() {
   const [step, setStep] = useState(1);
   const reset = useWizardStore((s) => s.reset);
-  const modoObra = useWizardStore((s) => s.modoObra);
   
-  // Construir la lista de pasos dinámicamente según el modo
-  const STEPS = useMemo(() => {
-    if (modoObra === 'ESTRUCTURADA') {
-      return [...STEPS_BASE, STEP_ELEMENTOS];
-    }
-    return STEPS_BASE;
-  }, [modoObra]);
+  const STEPS = useMemo(() => [...STEPS_BASE, STEP_GUARDAR], []);
 
   const progress = useMemo(() => (step / STEPS.length) * 100, [step, STEPS.length]);
 
@@ -43,7 +36,6 @@ function WizardCrearObraLayout() {
     setStep((s) => Math.max(1, s - 1));
   }
   function finish() {
-    // TODO: conectar con Supabase y endpoint createObra
     reset();
     setStep(1);
   }
@@ -53,12 +45,9 @@ function WizardCrearObraLayout() {
       case 1:
         return <PasoDatosBasicos onNext={goNext} />;
       case 2:
-        return <PasoSuperficies onPrev={goPrev} onNext={modoObra === 'ESTRUCTURADA' ? goNext : finish} />;
+        return <PasoSuperficies onPrev={goPrev} onNext={goNext} />;
       case 3:
-        if (modoObra === 'ESTRUCTURADA') {
-          return <PasoCargaElementos onPrev={goPrev} onFinish={finish} />;
-        }
-        return null;
+        return <PasoCargaElementos onPrev={goPrev} onFinish={finish} />;
       default:
         return null;
     }

@@ -101,57 +101,8 @@ async function findSocioByEmail(email: string | null) {
   return (data as SocioQrRecord | null) ?? null;
 }
 
-async function resolveSocioOrgId(user: AuthUserForSocio) {
-  const metadataOrgId =
-    (user.user_metadata?.org_id as string | undefined) ??
-    (user.app_metadata?.org_id as string | undefined) ??
-    null;
-
-  if (metadataOrgId) {
-    return metadataOrgId;
-  }
-
-  const supabase = createServiceSupabaseClient();
-  const { data: ownerOrg, error: ownerOrgError } = await supabase
-    .from('organizations')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (ownerOrgError) {
-    throw ownerOrgError;
-  }
-
-  if (ownerOrg?.id) {
-    return ownerOrg.id;
-  }
-
-  const displayName =
-    (user.user_metadata?.full_name as string | undefined) ??
-    (user.user_metadata?.name as string | undefined) ??
-    user.email ??
-    'Socio';
-
-  const { data: createdOrg, error: createOrgError } = await supabase
-    .from('organizations')
-    .insert({
-      name: `Perfil socio - ${displayName}`,
-      user_id: user.id,
-      plan_actual: 'FREE',
-    })
-    .select('id')
-    .single();
-
-  if (createOrgError) {
-    throw createOrgError;
-  }
-
-  return createdOrg.id;
-}
-
 async function createSocioForUser(user: AuthUserForSocio) {
   const supabase = createServiceSupabaseClient();
-  const orgId = await resolveSocioOrgId(user);
   const displayName =
     (user.user_metadata?.full_name as string | undefined) ??
     (user.user_metadata?.name as string | undefined) ??
@@ -159,7 +110,6 @@ async function createSocioForUser(user: AuthUserForSocio) {
     'Socio constructor';
 
   const insertPayload = {
-    org_id: orgId,
     nombre: displayName,
     email: user.email ?? null,
     estado: 'activo',
@@ -174,10 +124,9 @@ async function createSocioForUser(user: AuthUserForSocio) {
     .single();
 
   if (error && isMissingColumnError(error)) {
-    const { data: fallbackData, error: fallbackError } = await supabase
+    const { data: fallbackData, error: fallbackError } = await (supabase as any)
       .from('socios')
       .insert({
-        org_id: orgId,
         nombre: displayName,
         email: user.email ?? null,
         estado: 'activo',
@@ -191,6 +140,12 @@ async function createSocioForUser(user: AuthUserForSocio) {
     }
 
     return fallbackData as SocioQrRecord;
+  }
+
+  if (error?.code === '23502' && String(error.message || '').includes('org_id')) {
+    throw new Error(
+      'La tabla socios todavía exige org_id. Aplicá la migración que permite socios sin organización para generar QR antes de asociarlos.',
+    );
   }
 
   if (error) {

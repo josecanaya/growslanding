@@ -64,6 +64,10 @@ export async function GET(request: NextRequest) {
         );
       }
 
+      if (!socio.org_id) {
+        return NextResponse.json({ obras: [] });
+      }
+
       // Obtener todos los presupuestos del socio
       const { data: presupuestosData, error: presupuestosError } = await supabase
         .from('tareas_presupuestos')

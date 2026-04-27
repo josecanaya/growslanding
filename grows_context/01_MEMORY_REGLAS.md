@@ -202,3 +202,8 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** Si un usuario autenticado con rol `SOCIO` no tiene fila en `socios`, `api/socios/mi-qr` debe resolver por `user_id`/email o crear un perfil socio mínimo validado en backend antes de emitir token QR.
 - **Ámbito:** QR socio, tabla `socios`, metadata Auth.
 - **Obligación:** No bloquear el QR por falta de fila si el rol Auth es `SOCIO`; evitar duplicados buscando primero por `user_id` y email.
+
+### [2026-04-27] QR antes de asociación con organización
+- **Qué se decidió:** Un socio puede generar su QR sin estar asociado a una organización. La asociación con organización ocurre después, cuando cliente/arquitecto escanea el QR.
+- **Ámbito:** QR socio, tabla `socios`, asociación cliente→socio.
+- **Obligación:** `api/socios/mi-qr` no debe exigir `org_id`; el `org_id` se define en el flujo de asociación posterior.

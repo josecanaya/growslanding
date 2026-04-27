@@ -1,38 +1,81 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
-import { MOCK_USUARIO, MOCK_OBRAS, MOCK_ORGANIZACION, obraById } from '@/lib/mocks/clienteMockData';
 import { cn } from '@/lib/utils';
 import { CLIENTE_NAV_ITEMS } from '@/components/cliente/ClienteSidebar';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
-const titleFromPath = (path: string) => {
-  if (path.startsWith('/cliente/dashboard')) return 'Grows Hub';
-  if (path.startsWith('/cliente/obras/nueva')) return 'Nueva obra';
-  if (path.startsWith('/cliente/obras/') && path.includes('/timeline')) return 'Línea de tiempo';
-  const mCentro = path.match(/^\/cliente\/obras\/([^/]+)$/);
-  if (mCentro?.[1] && mCentro[1] !== 'nueva') {
-    return obraById(mCentro[1]).nombre;
+function iniciales(nombre: string | null | undefined, email: string | null | undefined): string {
+  if (nombre?.trim()) {
+    const p = nombre.trim().split(/\s+/);
+    if (p.length >= 2) return (p[0][0] + p[1][0]).toUpperCase().slice(0, 2);
+    return nombre.trim().slice(0, 2).toUpperCase();
   }
-  if (path.startsWith('/cliente/obras')) return 'Obras';
-  if (path.startsWith('/cliente/tareas/') && path.includes('/editor')) return 'Editor de planificación';
-  if (path.startsWith('/cliente/tareas/')) return 'Tareas de la obra';
-  if (path.startsWith('/cliente/tareas')) return 'Tareas';
-  if (path.startsWith('/cliente/validar')) return 'Validaciones';
-  if (path.startsWith('/cliente/presupuesto')) return 'Presupuestos';
-  if (path.startsWith('/cliente/cuadrillas')) return 'Cuadrillas y socios';
-  if (path.startsWith('/cliente/notificaciones')) return 'Notificaciones';
-  if (path.startsWith('/cliente/cuenta')) return 'Cuenta y plan';
-  return 'Cliente';
-};
+  if (email?.trim()) return email.trim().slice(0, 2).toUpperCase();
+  return '??';
+}
 
 export function ClienteHeader() {
   const pathname = usePathname() ?? '';
-  const title = useMemo(() => titleFromPath(pathname), [pathname]);
-  const [obraSel, setObraSel] = useState(MOCK_OBRAS[0]?.id ?? '');
+  const user = useCurrentUser();
+  const [obras, setObras] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    let a = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/obras', { cache: 'no-store' });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !a) return;
+        const rows = Array.isArray(json.data) ? json.data : [];
+        setObras(rows.map((o: { id: string; name: string }) => ({ id: o.id, name: o.name || 'Obra' })));
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      a = false;
+    };
+  }, []);
+
+  const obraIdEnPath = useMemo(() => {
+    const m = pathname.match(/^\/cliente\/obras\/([^/]+)/);
+    if (!m?.[1] || m[1] === 'nueva') return null;
+    return m[1];
+  }, [pathname]);
+
+  const nombreObraDesdeLista = obraIdEnPath
+    ? obras.find((o) => o.id === obraIdEnPath)?.name
+    : null;
+
+  const title = useMemo(() => {
+    if (pathname.startsWith('/cliente/dashboard')) return 'Grows Hub';
+    if (pathname.startsWith('/cliente/obras/nueva')) return 'Nueva obra';
+    if (pathname.includes('/timeline') && nombreObraDesdeLista) return nombreObraDesdeLista;
+    if (obraIdEnPath && nombreObraDesdeLista) return nombreObraDesdeLista;
+    if (pathname.startsWith('/cliente/obras')) return 'Obras';
+    if (pathname.startsWith('/cliente/tareas/') && pathname.includes('/editor')) return 'Editor de planificación';
+    if (pathname.startsWith('/cliente/tareas/')) return 'Tareas de la obra';
+    if (pathname.startsWith('/cliente/tareas')) return 'Tareas';
+    if (pathname.startsWith('/cliente/validar')) return 'Validaciones';
+    if (pathname.startsWith('/cliente/presupuesto')) return 'Presupuestos';
+    if (pathname.startsWith('/cliente/cuadrillas')) return 'Cuadrillas y socios';
+    if (pathname.startsWith('/cliente/notificaciones')) return 'Notificaciones';
+    if (pathname.startsWith('/cliente/cuenta')) return 'Cuenta y plan';
+    return 'Cliente';
+  }, [pathname, obraIdEnPath, nombreObraDesdeLista]);
+
+  const [obraSel, setObraSel] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
+
+  useEffect(() => {
+    if (obras.length && !obraSel) {
+      setObraSel(obras[0].id);
+    }
+  }, [obras, obraSel]);
 
   return (
     <>
@@ -49,32 +92,36 @@ export function ClienteHeader() {
           <div className="min-w-0">
             <h1 className="truncate text-lg font-extrabold tracking-tight text-sky-950">{title}</h1>
             <p className="hidden text-[10px] font-semibold uppercase tracking-widest text-teal-800 sm:block">
-              Prototipo UI · {MOCK_ORGANIZACION.plan}
+              {user?.orgName || 'Organización'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <label className="hidden items-center gap-2 sm:flex">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Obra</span>
-            <select
-              className="max-w-[200px] truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800"
-              value={obraSel}
-              onChange={(e) => setObraSel(e.target.value)}
-            >
-              {MOCK_OBRAS.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
+          {obras.length > 0 && (
+            <label className="hidden items-center gap-2 sm:flex">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Obra</span>
+              <select
+                className="max-w-[200px] truncate rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-800"
+                value={obraSel}
+                onChange={(e) => setObraSel(e.target.value)}
+              >
+                {obras.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1 pr-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-700 text-xs font-bold text-white">
-              {MOCK_USUARIO.iniciales}
+              {iniciales(user?.name, user?.email)}
             </div>
             <div className="hidden leading-tight sm:block">
-              <p className="max-w-[140px] truncate text-xs font-semibold text-slate-900">{MOCK_USUARIO.nombre}</p>
-              <p className="max-w-[140px] truncate text-[10px] text-slate-500">{MOCK_USUARIO.rolLabel}</p>
+              <p className="max-w-[140px] truncate text-xs font-semibold text-slate-900">
+                {user?.name || user?.email || 'Usuario'}
+              </p>
+              <p className="max-w-[140px] truncate text-[10px] text-slate-500">{user?.role || '—'}</p>
             </div>
           </div>
         </div>

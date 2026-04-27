@@ -1,30 +1,14 @@
 /**
- * Mock data para el frontend del socio (demo / Stitch).
- * - Desarrollo: usa mocks salvo `NEXT_PUBLIC_SOCIO_USE_MOCK=false` en .env
- * - Producción: solo mocks si `NEXT_PUBLIC_SOCIO_USE_MOCK=true`
+ * Mocks del socio: desactivados por defecto. Datos reales vía Supabase/API.
+ * Activar solo para demo local: `NEXT_PUBLIC_SOCIO_USE_MOCK=true` (y análogos).
  */
-export const USE_MOCK_DATA =
-  process.env.NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_SOCIO_USE_MOCK !== 'false'
-    : process.env.NEXT_PUBLIC_SOCIO_USE_MOCK === 'true';
+export const USE_MOCK_DATA = process.env.NEXT_PUBLIC_SOCIO_USE_MOCK === 'true';
 
-/**
- * Ruta `/socio/ahora`: vista fija estilo Stitch (jornada activa, checklist, slider).
- * Desactivar: `NEXT_PUBLIC_SOCIO_AHORA_MOCK=false`
- */
 export const USE_AHORA_STITCH_MOCK =
-  process.env.NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK !== 'false'
-    : process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK === 'true';
+  process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK === 'true';
 
-/**
- * Presupuestos: siempre datos mock (listado + detalle) para ver UI sin API.
- * Desactivar: `NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK=false`
- */
 export const FORCE_PRESUPUESTOS_MOCK =
-  process.env.NODE_ENV === 'development'
-    ? process.env.NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK !== 'false'
-    : process.env.NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK === 'true';
+  process.env.NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK === 'true';
 
 export type AhoraStitchItemState = 'done' | 'active' | 'pending';
 

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useCurrentUser } from './useCurrentUser';
-import { USE_MOCK_DATA, MOCK_BILLETERA_SALDO, MOCK_BILLETERA_MOVIMIENTOS } from '@/lib/mocks/socioMockData';
 
 interface Saldo {
   saldo_actual: number;
@@ -84,15 +83,10 @@ export function useWallet() {
   }, [fetchSaldo, fetchMovimientos]);
 
   useEffect(() => {
-    if (USE_MOCK_DATA) {
-      setSaldo(MOCK_BILLETERA_SALDO);
-      setMovimientos(MOCK_BILLETERA_MOVIMIENTOS as Movimiento[]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
     if (currentUser) {
-      refresh();
+      void refresh();
+    } else {
+      setLoading(false);
     }
   }, [currentUser, refresh]);
 

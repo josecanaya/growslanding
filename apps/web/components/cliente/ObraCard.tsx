@@ -2,9 +2,16 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { MapPin, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '@/components/cliente/StatusBadge';
-import { MOCK_OBRAS } from '@/lib/mocks/clienteMockData';
 
-type ObraRow = (typeof MOCK_OBRAS)[number];
+export type ObraCardProps = {
+  id: string;
+  nombre: string;
+  tipo: string;
+  ubicacion: string;
+  estado: string;
+  avancePct: number;
+  href?: Route;
+};
 
 export function ObraCard({
   id,
@@ -14,7 +21,7 @@ export function ObraCard({
   estado,
   avancePct,
   href = `/cliente/obras/${id}` as Route,
-}: Pick<ObraRow, 'id' | 'nombre' | 'tipo' | 'ubicacion' | 'estado' | 'avancePct'> & { href?: Route }) {
+}: ObraCardProps) {
   return (
     <Link
       href={href}

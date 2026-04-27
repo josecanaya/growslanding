@@ -1,8 +1,6 @@
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-import { IS_DEV_MODE } from '@/lib/config';
-import { mockUser } from '@/lib/mockUser';
 import { ensureOrgForUser } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -11,16 +9,6 @@ export const runtime = 'nodejs';
 
 export async function POST() {
   try {
-    if (IS_DEV_MODE) {
-      return new Response(
-        JSON.stringify({
-          ok: true,
-          devMode: true,
-          orgId: mockUser.orgId,
-        })
-      );
-    }
-
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
     const {

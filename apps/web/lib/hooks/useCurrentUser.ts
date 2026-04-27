@@ -6,8 +6,6 @@ import type { Session } from '@supabase/supabase-js';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { clearClientSessionArtifacts } from '@/lib/auth';
-import { useDevMode } from '@/lib/dev-mode-context';
-import { mockUser } from '@/lib/mockUser';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { Database } from '@/lib/types/supabase.gen';
 import type { SessionUser } from '@/lib/types/auth';
@@ -66,20 +64,9 @@ function mapSessionToUser(session: Session): SessionUser {
   };
 }
 
-const devSessionUser: SessionUser = {
-  id: mockUser.id,
-  email: mockUser.email,
-  name: mockUser.name,
-  role: mockUser.role,
-  orgId: mockUser.orgId,
-  orgName: mockUser.orgName,
-  isDevUser: true,
-};
-
 export function useCurrentUser(): SessionUser | null {
   const router = useRouter();
   const pathname = usePathname() ?? '';
-  const { devModeEnabled } = useDevMode();
   const setStoreUser = useAuthStore((state) => state.setUser);
   const resetStore = useAuthStore((state) => state.reset);
   const [user, setUser] = useState<SessionUser | null>(null);
@@ -100,14 +87,6 @@ export function useCurrentUser(): SessionUser | null {
 
   useEffect(() => {
     let active = true;
-
-    if (devModeEnabled) {
-      setStoreUser(devSessionUser);
-      setUser(devSessionUser);
-      return () => {
-        active = false;
-      };
-    }
 
     const currentPath = pathnameRef.current;
     if (currentPath.startsWith(AUTH_PREFIX)) {
@@ -222,7 +201,7 @@ export function useCurrentUser(): SessionUser | null {
       sessionCheckRef.current = false;
     };
     // Sin pathname en deps: solo montaje (y dev/supabase/store). Evita getSession en cada navegación.
-  }, [devModeEnabled, supabase, router, setStoreUser, resetStore]);
+  }, [supabase, router, setStoreUser, resetStore]);
 
   return user;
 }

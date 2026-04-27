@@ -2,15 +2,16 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { User, Calendar } from 'lucide-react';
 import { StatusBadge } from '@/components/cliente/StatusBadge';
-import type { EstadoTareaMock, PrioridadMock } from '@/lib/mocks/clienteMockData';
 
-const prioridadLabel: Record<PrioridadMock, string> = {
+export type PrioridadTareaCard = 'alta' | 'media' | 'baja';
+
+const prioridadLabel: Record<PrioridadTareaCard, string> = {
   alta: 'Alta',
   media: 'Media',
   baja: 'Baja',
 };
 
-const prioridadClass: Record<PrioridadMock, string> = {
+const prioridadClass: Record<PrioridadTareaCard, string> = {
   alta: 'text-rose-700 bg-rose-50',
   media: 'text-amber-800 bg-amber-50',
   baja: 'text-slate-600 bg-slate-100',
@@ -29,11 +30,11 @@ export function TareaCard({
   id: string;
   obraId: string;
   titulo: string;
-  estado: EstadoTareaMock;
+  estado: string;
   responsable: string;
   avancePct: number;
   vence: string;
-  prioridad: PrioridadMock;
+  prioridad: PrioridadTareaCard;
 }) {
   return (
     <div className="flex flex-col rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">

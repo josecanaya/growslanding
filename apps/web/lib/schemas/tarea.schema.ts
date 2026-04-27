@@ -27,6 +27,15 @@ export const CrearTareaSchema = z.object({
   bloques: z.number().int().min(1).max(365).optional(),
 });
 
+/** Creación mínima desde obra (primer elemento de la obra). Opcional: asignar socio existente. */
+export const CrearTareaDesdeObraSimpleSchema = z.object({
+  obra_id: z.string().uuid('Obra inválida'),
+  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres').max(200),
+  descripcion: z.string().max(1000).optional(),
+  bloques: z.coerce.number().int().min(1).max(365).optional().default(1),
+  socio_id: z.string().uuid().optional(),
+});
+
 export const ActualizarTareaSchema = z.object({
   nombre: z.string().min(2).max(200).optional(),
   descripcion: z.string().max(1000).optional(),

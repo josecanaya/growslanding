@@ -1,33 +1,28 @@
 'use client';
 
-import {
-  type Dispatch,
-  type ReactNode,
-  type SetStateAction,
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-} from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-interface OnboardingContextValue {
+type Ctx = {
   isActive: boolean;
   currentStepIndex: number;
+  setIsActive: (v: boolean) => void;
+  setStepIndex: (i: number) => void;
   startOnboarding: () => void;
   stopOnboarding: () => void;
   completeOnboarding: () => void;
-  setStepIndex: Dispatch<SetStateAction<number>>;
-}
+};
 
-const OnboardingContext = createContext<OnboardingContextValue | null>(null);
+const OnboardingContext = createContext<Ctx | null>(null);
+
+const noop = () => {};
 
 export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [isActive, setIsActive] = useState(false);
   const [currentStepIndex, setStepIndex] = useState(0);
 
   const startOnboarding = useCallback(() => {
-    setIsActive(true);
     setStepIndex(0);
+    setIsActive(true);
   }, []);
 
   const stopOnboarding = useCallback(() => {
@@ -39,35 +34,34 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setStepIndex(0);
   }, []);
 
-  const value: OnboardingContextValue = {
-    isActive,
-    currentStepIndex,
-    startOnboarding,
-    stopOnboarding,
-    completeOnboarding,
-    setStepIndex,
-  };
-
-  return (
-    <OnboardingContext.Provider value={value}>
-      {children}
-    </OnboardingContext.Provider>
+  const v = useMemo(
+    () => ({
+      isActive,
+      currentStepIndex,
+      setIsActive,
+      setStepIndex,
+      startOnboarding,
+      stopOnboarding,
+      completeOnboarding,
+    }),
+    [isActive, currentStepIndex, startOnboarding, stopOnboarding, completeOnboarding],
   );
+
+  return <OnboardingContext.Provider value={v}>{children}</OnboardingContext.Provider>;
 }
 
-export function useOnboardingContext(): OnboardingContextValue {
-  const context = useContext(OnboardingContext);
-  if (!context) {
-    // Retornar valores por defecto si el contexto no está disponible
+export function useOnboardingContext(): Ctx {
+  const c = useContext(OnboardingContext);
+  if (!c) {
     return {
       isActive: false,
       currentStepIndex: 0,
-      startOnboarding: () => {},
-      stopOnboarding: () => {},
-      completeOnboarding: () => {},
-      setStepIndex: () => {},
+      setIsActive: noop,
+      setStepIndex: noop,
+      startOnboarding: noop,
+      stopOnboarding: noop,
+      completeOnboarding: noop,
     };
   }
-  return context;
+  return c;
 }
-

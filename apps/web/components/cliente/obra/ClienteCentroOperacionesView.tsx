@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
@@ -13,58 +14,147 @@ import {
   GitBranch,
   CheckSquare,
 } from 'lucide-react';
-import {
-  MOCK_OBRAS,
-  MOCK_ORGANIZACION,
-  colaboradoresForObra,
-  obraById,
-  tareasByObra,
-} from '@/lib/mocks/clienteMockData';
 import { cn } from '@/lib/utils';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import {
+  mapEstadoDbToTareaCardLabel,
+  mapPrioridadDb,
+  type ApiTareaRow,
+} from '@/lib/mappers/tarea-api-to-ui';
+
+type ObraRes = { id: string; name: string; address: string | null; estado: string | null; orgId: string };
+type StatTarea = ApiTareaRow & { descripcion?: string | null };
 
 type Props = { obraId: string };
 
-const prioridadEtiqueta = (p: string) =>
-  p === 'alta' ? 'Alta prioridad' : p === 'media' ? 'Media' : 'Baja';
+const prioridadEtiqueta = (p: string | null) => {
+  return mapPrioridadDb(p) === 'alta'
+    ? 'Alta prioridad'
+    : mapPrioridadDb(p) === 'media'
+      ? 'Media'
+      : 'Baja';
+};
+
+function badgeEstadoUi(est: string) {
+  const l = (est || '').toLowerCase();
+  if (l === 'para_validar' || l.includes('validar')) return 'para_validar';
+  if (l === 'en_progreso' || l.includes('progreso')) return 'en_progreso';
+  if (l === 'validada') return 'validada';
+  return 'otro';
+}
 
 export function ClienteCentroOperacionesView({ obraId }: Props) {
   const router = useRouter();
-  const obra = obraById(obraId);
-  const tareas = tareasByObra(obra.id);
-  const cols = colaboradoresForObra(obra.id);
-  const visibles = cols.slice(0, 3);
-  const extra = Math.max(0, cols.length - 3);
+  const user = useCurrentUser();
+  const [obras, setObras] = useState<ObraRes[]>([]);
+  const [obra, setObra] = useState<ObraRes | null>(null);
+  const [tareas, setTareas] = useState<StatTarea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const rList = await fetch('/api/obras', { cache: 'no-store' });
+      const jList = await rList.json().catch(() => ({}));
+      if (!rList.ok) {
+        setErr('No se pudieron cargar las obras');
+        setObras([]);
+        return;
+      }
+      const data = Array.isArray(jList.data) ? jList.data : [];
+      const mapped: ObraRes[] = data.map((o: any) => ({
+        id: o.id,
+        name: o.name,
+        address: o.address ?? null,
+        estado: o.estado,
+        orgId: o.orgId,
+      }));
+      setObras(mapped);
+      const one = mapped.find((o) => o.id === obraId) || null;
+      setObra(one);
+
+      if (!one) {
+        setTareas([]);
+        return;
+      }
+      const oId = one.orgId || user?.orgId;
+      if (!oId) {
+        setTareas([]);
+        return;
+      }
+      const rT = await fetch(
+        `/api/tareas?obra_id=${encodeURIComponent(one.id)}&org_id=${encodeURIComponent(oId)}`,
+        { cache: 'no-store' },
+      );
+      const jT = await rT.json().catch(() => ({}));
+      if (!rT.ok) {
+        setTareas([]);
+        return;
+      }
+      setTareas(Array.isArray(jT.data) ? jT.data : []);
+    } catch {
+      setErr('Error de red');
+    } finally {
+      setLoading(false);
+    }
+  }, [obraId, user?.orgId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const orgLabel = user?.orgName || 'Organización';
+
+  const visibles: string[] = [];
+  const extra = 0;
+
+  if (loading) {
+    return (
+      <div className="min-h-0 bg-[#f9f9f9] p-6 text-sm text-[#5a6061]">
+        Cargando centro de operaciones…
+      </div>
+    );
+  }
+
+  if (!obra) {
+    return (
+      <div className="min-h-0 bg-[#f9f9f9] p-6 text-sm text-[#5a6061]">
+        {err || 'No se encontró la obra o no tenés acceso.'}
+      </div>
+    );
+  }
+
+  const fase = obra.estado || 'En curso';
+  const avance = tareas.length
+    ? Math.min(100, Math.round(tareas.filter((t) => t.estado === 'validada').length * (100 / tareas.length)))
+    : 0;
 
   return (
     <div className="min-h-0 bg-[#f9f9f9] text-[#2d3435]">
-      {/* Barra estilo Stitch (complementa ClienteShell): marca + nav local */}
       <header className="mb-6 flex flex-col gap-4 border-b border-[#dde4e5] pb-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="font-semibold tracking-tighter text-[#5d5e64] sm:text-lg">{MOCK_ORGANIZACION.nombre}</h1>
+          <h1 className="font-semibold tracking-tighter text-[#5d5e64] sm:text-lg">{orgLabel}</h1>
           <span className="hidden rounded-md bg-[#d1e4ff] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#215485] sm:inline">
             Centro de obra
           </span>
         </div>
         <nav className="flex flex-wrap gap-4 text-xs font-bold tracking-tight text-[#5d5e64]">
           <span className="border-b-2 border-[#5d5e64] pb-0.5">Proyecto</span>
-          <button type="button" className="text-[#5d5e64]/50 transition hover:text-[#5d5e64]">
-            Estudio
-          </button>
-          <button type="button" className="text-[#5d5e64]/50 transition hover:text-[#5d5e64]">
-            Archivo
-          </button>
+          <span className="text-[#5d5e64]/50">Estudio</span>
+          <span className="text-[#5d5e64]/50">Archivo</span>
         </nav>
       </header>
 
       <div className="flex flex-col gap-6 pb-8 xl:flex-row xl:gap-8">
-        {/* Pipeline izquierda */}
         <aside className="flex w-full shrink-0 flex-col gap-4 xl:w-[260px]">
           <div className="flex flex-col gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">Active pipeline</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">Obras de la org.</span>
             <div className="h-0.5 w-8 bg-[#5d5e64]" />
           </div>
           <div className="flex max-h-[420px] flex-col gap-3 overflow-y-auto pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:max-h-[calc(100vh-14rem)]">
-            {MOCK_OBRAS.map((o) => {
+            {obras.map((o) => {
               const active = o.id === obra.id;
               return (
                 <button
@@ -75,33 +165,32 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
                     'rounded-xl p-5 text-left transition',
                     active
                       ? 'border-l-4 border-[#5d5e64] bg-white shadow-sm'
-                      : 'bg-[#f2f4f4] hover:bg-[#e4e9ea]'
+                      : 'bg-[#f2f4f4] hover:bg-[#e4e9ea]',
                   )}
                 >
                   <span
                     className={cn(
                       'mb-2 block text-[10px] font-semibold uppercase tracking-widest',
-                      active ? 'text-[#326293]' : 'text-[#757c7d]'
+                      active ? 'text-[#326293]' : 'text-[#757c7d]',
                     )}
                   >
-                    {o.tipo}
+                    {o.estado || 'Obra'}
                   </span>
                   <h3
                     className={cn(
                       'font-semibold leading-tight',
-                      active ? 'text-lg text-[#2d3435]' : 'text-base text-[#5a6061]'
+                      active ? 'text-lg text-[#2d3435]' : 'text-base text-[#5a6061]',
                     )}
                   >
-                    {o.nombre}
+                    {o.name}
                   </h3>
-                  <p className="mt-1 text-xs font-light text-[#5a6061]">{o.ubicacion}</p>
+                  <p className="mt-1 text-xs font-light text-[#5a6061]">{o.address || '—'}</p>
                 </button>
               );
             })}
           </div>
         </aside>
 
-        {/* Columna central */}
         <section className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white shadow-sm">
           <div className="relative h-[220px] w-full overflow-hidden sm:h-[280px] md:h-[320px]">
             <div
@@ -113,15 +202,15 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6 sm:bottom-8 sm:left-10">
-              <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">{obra.nombre}</h2>
+              <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-4xl">{obra.name}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
                   <MapPin className="h-3.5 w-3.5" />
-                  {obra.ubicacion}
+                  {obra.address || '—'}
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-medium text-white backdrop-blur-md">
                   <Clock className="h-3.5 w-3.5" />
-                  {obra.faseCentro}
+                  {fase}
                 </span>
               </div>
               <div className="mt-4">
@@ -140,90 +229,93 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
               <div>
                 <div className="mb-6 flex flex-col gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">
-                    Lista de tareas
-                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">Lista de tareas</span>
                   <div className="h-0.5 w-8 bg-[#326293]" />
                 </div>
                 <ul className="flex flex-col gap-6">
                   {tareas.length === 0 ? (
-                    <li className="text-sm text-[#5a6061]">No hay tareas mock para esta obra.</li>
+                    <li className="text-sm text-[#5a6061]">No hay tareas para esta obra todavía.</li>
                   ) : (
-                    tareas.map((t, idx) => (
-                      <li
-                        key={t.id}
-                        className={cn(
-                          'flex gap-4',
-                          idx === 1 ? 'opacity-70 transition-opacity hover:opacity-100' : ''
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-[#adb3b4]',
-                            t.estado === 'Validada' && 'border-[#326293] bg-[#326293]'
-                          )}
+                    tareas.map((t, idx) => {
+                      const st = mapEstadoDbToTareaCardLabel(t.estado);
+                      const b = badgeEstadoUi(t.estado);
+                      return (
+                        <li
+                          key={t.id}
+                          className={cn('flex gap-4', idx === 1 ? 'opacity-70 transition-opacity hover:opacity-100' : '')}
                         >
-                          {t.estado === 'Validada' ? (
-                            <CheckSquare className="h-3.5 w-3.5 text-white" />
-                          ) : null}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-semibold text-[#2d3435]">{t.titulo}</h4>
-                          <p className="mt-1 text-xs font-light leading-relaxed text-[#5a6061]">{t.descripcion}</p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <span className="rounded bg-[#dde4e5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#5a6061]">
-                              {prioridadEtiqueta(t.prioridad)}
-                            </span>
-                            {t.estado === 'Para validar' ? (
-                              <span className="rounded bg-[#d1e4ff] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#215485]">
-                                Para validar
-                              </span>
-                            ) : null}
-                            {t.estado === 'En progreso' ? (
-                              <span className="rounded bg-[#ebeeef] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#5a6061]">
-                                En obra
-                              </span>
-                            ) : null}
+                          <div
+                            className={cn(
+                              'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-[#adb3b4]',
+                              st === 'Validada' && 'border-[#326293] bg-[#326293]',
+                            )}
+                          >
+                            {st === 'Validada' ? <CheckSquare className="h-3.5 w-3.5 text-white" /> : null}
                           </div>
-                        </div>
-                      </li>
-                    ))
+                          <div>
+                            <h4 className="text-sm font-semibold text-[#2d3435]">{t.title}</h4>
+                            {t.descripcion ? (
+                              <p className="mt-1 text-xs font-light leading-relaxed text-[#5a6061]">{t.descripcion}</p>
+                            ) : null}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <span className="rounded bg-[#dde4e5] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#5a6061]">
+                                {prioridadEtiqueta(t.prioridad)}
+                              </span>
+                              {b === 'para_validar' ? (
+                                <span className="rounded bg-[#d1e4ff] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#215485]">
+                                  Para validar
+                                </span>
+                              ) : null}
+                              {b === 'en_progreso' ? (
+                                <span className="rounded bg-[#ebeeef] px-2 py-0.5 text-[10px] font-bold uppercase tracking-tighter text-[#5a6061]">
+                                  En obra
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })
                   )}
                 </ul>
               </div>
 
               <div>
                 <div className="mb-6 flex flex-col gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">
-                    Colaboradores
-                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#757c7d]">Colaboradores</span>
                   <div className="h-0.5 w-8 bg-[#adb3b4]" />
                 </div>
-                <div className="flex -space-x-3">
-                  {visibles.map((ini, i) => (
-                    <div
-                      key={`${ini}-${i}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e4e9ea] text-[11px] font-bold text-[#5a6061] ring-4 ring-white"
-                    >
-                      {ini}
-                    </div>
-                  ))}
-                  {extra > 0 ? (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dde4e5] text-[10px] font-bold text-[#5a6061] ring-4 ring-white">
-                      +{extra}
-                    </div>
-                  ) : null}
-                </div>
+                {visibles.length === 0 ? (
+                  <p className="text-xs text-[#5a6061]">Se mostrarán iniciales cuando haya asignaciones en tareas/socios.</p>
+                ) : (
+                  <div className="flex -space-x-3">
+                    {visibles.map((ini, i) => (
+                      <div
+                        key={`${ini}-${i}`}
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e4e9ea] text-[11px] font-bold text-[#5a6061] ring-4 ring-white"
+                      >
+                        {ini}
+                      </div>
+                    ))}
+                    {extra > 0 ? (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#dde4e5] text-[10px] font-bold text-[#5a6061] ring-4 ring-white">
+                        +{extra}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
                 <div className="mt-6 rounded-xl bg-[#f2f4f4] p-6">
-                  <h5 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#5a6061]">Nota técnica</h5>
-                  <p className="text-xs italic leading-relaxed text-[#2d3435]">&ldquo;{obra.notaTecnica}&rdquo;</p>
+                  <h5 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#5a6061]">Nota</h5>
+                  <p className="text-xs leading-relaxed text-[#2d3435]">
+                    Datos de tareas y obra leídos desde la API. El panel de colaboradores se puede enlazar a socios
+                    asignados.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Columna derecha CTAs */}
         <aside className="flex w-full shrink-0 flex-col gap-4 xl:w-[200px]">
           <button
             type="button"
@@ -250,13 +342,11 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
             ))}
           </div>
           <div className="mt-auto rounded-xl border border-[#5d5e64]/10 bg-[#5d5e64]/5 p-4">
-            <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.15em] text-[#5d5e64]">
-              Grows cloud
-            </span>
+            <span className="mb-1 block text-[10px] font-bold uppercase tracking-[0.15em] text-[#5d5e64]">Avance</span>
             <div className="h-1 w-full overflow-hidden rounded-full bg-[#5d5e64]/10">
-              <div className="h-full w-2/3 rounded-full bg-[#5d5e64]" />
+              <div className="h-full rounded-full bg-[#5d5e64]" style={{ width: `${avance}%` }} />
             </div>
-            <span className="mt-2 block text-[9px] text-[#5d5e64]/70">{obra.avancePct}% avance reportado</span>
+            <span className="mt-2 block text-[9px] text-[#5d5e64]/70">{avance}% tareas validadas (aprox.)</span>
           </div>
         </aside>
       </div>

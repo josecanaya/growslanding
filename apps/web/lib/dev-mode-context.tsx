@@ -10,8 +10,6 @@ import {
   useState,
 } from 'react';
 
-import { IS_DEV_MODE } from './config';
-
 type DevModeContextValue = {
   devModeEnabled: boolean;
   setDevModeEnabled: Dispatch<SetStateAction<boolean>>;
@@ -22,7 +20,8 @@ const DevModeContext = createContext<DevModeContextValue | undefined>(
 );
 
 export function DevModeProvider({ children }: { children: ReactNode }) {
-  const [devModeEnabled, setDevModeEnabled] = useState(IS_DEV_MODE);
+  /** Por defecto off: siempre sesión Supabase real para pruebas con base de datos. */
+  const [devModeEnabled, setDevModeEnabled] = useState(false);
 
   const value = useMemo(
     () => ({ devModeEnabled, setDevModeEnabled }),

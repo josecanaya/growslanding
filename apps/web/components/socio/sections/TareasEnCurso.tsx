@@ -34,6 +34,8 @@ type SupabaseTarea = {
   fecha_fin_estimada: string | null;
   obra_id: string | null;
   responsable: string | null;
+  costo_presupuestado?: number | null;
+  dias_presupuesto?: number | null;
   obras?: {
     id: string;
     name: string | null;
@@ -90,6 +92,8 @@ export function TareasEnCurso() {
     fecha_fin_estimada,
     obra_id,
     responsable,
+    costo_presupuestado,
+    dias_presupuesto,
     obras (
       id,
       name,
@@ -157,16 +161,36 @@ export function TareasEnCurso() {
       setError(null);
 
       try {
+        const supabaseAny = supabase as any;
+
+        let socioAuthId: string | null = null;
+        if (currentUser.email) {
+          const { data: rowSocio } = await supabaseAny
+            .from('socios')
+            .select('id')
+            .eq('org_id', orgId)
+            .eq('email', currentUser.email)
+            .maybeSingle();
+          socioAuthId = rowSocio?.id ?? null;
+        }
+
         let query = supabase
           .from('tareas')
           .select(SELECT_FIELDS)
           .eq('org_id', orgId)
           .order('created_at', { ascending: false });
 
+        const partes: string[] = [];
         if (currentUser.email) {
-          query = query.or(
-            `responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`
-          );
+          partes.push(`responsable.eq.${currentUser.email}`);
+          partes.push(`responsable.ilike.%${currentUser.email}%`);
+        }
+        if (socioAuthId) {
+          partes.push(`responsable_socio_id.eq.${socioAuthId}`);
+          partes.push(`cuadrilla_id.eq.${socioAuthId}`);
+        }
+        if (partes.length > 0) {
+          query = query.or(partes.join(','));
         }
 
         const { data, error } = await query;
@@ -382,6 +406,23 @@ export function TareasEnCurso() {
                     <Badge variant="default" className="text-xs">
                       Prioridad: {tarea.prioridad}
                     </Badge>
+                  )}
+
+                  {(tarea.dias_presupuesto != null || tarea.costo_presupuestado != null) && (
+                    <p className="text-xs text-slate-600">
+                      {tarea.dias_presupuesto != null ? (
+                        <span className="mr-2">Bloques/días: {tarea.dias_presupuesto}</span>
+                      ) : null}
+                      {tarea.costo_presupuestado != null ? (
+                        <span>
+                          Presupuesto:{' '}
+                          {tarea.costo_presupuestado.toLocaleString('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS',
+                          })}
+                        </span>
+                      ) : null}
+                    </p>
                   )}
 
                   {(tarea.fecha_inicio_estimada || tarea.fecha_fin_estimada) && (

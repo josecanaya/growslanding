@@ -15,7 +15,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MOCK_ORGANIZACION } from '@/lib/mocks/clienteMockData';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 export const CLIENTE_NAV_ITEMS = [
   { href: '/cliente/dashboard' as Route, label: 'Hub', icon: LayoutGrid },
@@ -30,6 +30,8 @@ export const CLIENTE_NAV_ITEMS = [
 
 export function ClienteSidebar({ className }: { className?: string }) {
   const pathname = usePathname() ?? '';
+  const user = useCurrentUser();
+  const orgLabel = user?.orgName || user?.orgId?.slice(0, 8) || 'Grows';
 
   return (
     <aside
@@ -63,15 +65,15 @@ export function ClienteSidebar({ className }: { className?: string }) {
       </nav>
       <div className="mt-auto flex flex-col items-center gap-4">
         <span
-          title={MOCK_ORGANIZACION.nombre}
+          title={user?.orgName || ''}
           className="max-w-[3rem] truncate text-[9px] font-semibold uppercase leading-tight text-slate-400"
         >
-          {MOCK_ORGANIZACION.plan}
+          {orgLabel}
         </span>
         <button
           type="button"
           className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-white hover:text-sky-600"
-          title="Ajustes (mock)"
+          title="Ajustes"
         >
           <Settings className="h-5 w-5" strokeWidth={1.75} />
         </button>

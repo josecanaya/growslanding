@@ -1,10 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
-import { CrearTareaSchema } from '../../../lib/schemas';
+import { CrearTareaSchema, CrearTareaDesdeObraSimpleSchema } from '../../../lib/schemas';
 import { PermisoService } from '@/lib/services/permiso.service';
 import type { Database } from '@/lib/types/supabase.gen';
+
+async function puedeCrearTareasEnOrganizacion(
+  supabase: ReturnType<typeof createServiceSupabaseClient>,
+  user: { id: string; email?: string | null },
+  orgId: string,
+): Promise<boolean> {
+  const rol = await PermisoService.obtenerRolEnOrganizacion(user.id, orgId);
+  if (rol === 'CLIENTE') return true;
+
+  if (user.email) {
+    const { data } = await (supabase as any)
+      .from('leader_invites')
+      .select('id')
+      .eq('org_id', orgId)
+      .eq('email', user.email)
+      .eq('status', 'accepted')
+      .maybeSingle();
+    if (data) return true;
+  }
+  return false;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,69 +47,173 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const parsedFull = CrearTareaSchema.safeParse(body);
+    const parsedSimple = CrearTareaDesdeObraSimpleSchema.safeParse(body);
 
-    // Validar datos
-    const validatedData = CrearTareaSchema.parse(body);
-
-    const supabase = createServiceSupabaseClient();
-
-    // Verificar que el elemento pertenece a la organización
-    const { data: elemento, error: elementoError } = await supabase
-      .from('elementos')
-      .select('id, obra_id, obras!inner(org_id)')
-      .eq('id', validatedData.elementoId)
-      .single();
-
-    if (elementoError || !elemento) {
+    if (!parsedFull.success && !parsedSimple.success) {
       return NextResponse.json(
-        { success: false, error: 'Elemento no encontrado' },
-        { status: 404 }
-      );
-    }
-
-    // Verificar que la obra pertenece a una organización válida
-    const obra = (elemento as any).obras;
-    if (!obra?.org_id) {
-      return NextResponse.json(
-        { success: false, error: 'Elemento sin organización asociada' },
+        {
+          success: false,
+          error: 'Datos inválidos',
+          details: {
+            completo: parsedFull.success ? null : parsedFull.error.flatten(),
+            simple: parsedSimple.success ? null : parsedSimple.error.flatten(),
+          },
+        },
         { status: 400 }
       );
     }
 
-    const organizacionId = obra.org_id as string;
-    const rol = await PermisoService.obtenerRolEnOrganizacion(
-      user.id,
-      organizacionId,
-    );
-    if (rol !== 'CLIENTE') {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    type InsertPack = {
+      obra_id: string;
+      elemento_id: string;
+      org_id: string;
+      title: string;
+      descripcion: string | null;
+      bloques_planificados: number;
+      dias_presupuesto: number;
+      etapa: string | null;
+      fecha_fin_estimada: string | null;
+    };
+
+    let pack: InsertPack;
+
+    if (parsedFull.success) {
+      const validatedData = parsedFull.data;
+      const { data: elemento, error: elementoError } = await supabase
+        .from('elementos')
+        .select('id, obra_id, obras!inner(org_id)')
+        .eq('id', validatedData.elementoId)
+        .single();
+
+      if (elementoError || !elemento) {
+        return NextResponse.json(
+          { success: false, error: 'Elemento no encontrado' },
+          { status: 404 }
+        );
+      }
+
+      const obra = (elemento as any).obras;
+      if (!obra?.org_id) {
+        return NextResponse.json(
+          { success: false, error: 'Elemento sin organización asociada' },
+          { status: 400 }
+        );
+      }
+
+      const n = Math.max(
+        1,
+        validatedData.bloques ?? validatedData.duracionEstimada ?? 1,
+      );
+
+      pack = {
+        obra_id: elemento.obra_id,
+        elemento_id: validatedData.elementoId,
+        org_id: obra.org_id as string,
+        title: validatedData.nombre,
+        descripcion: validatedData.descripcion ?? null,
+        bloques_planificados: n,
+        dias_presupuesto: n,
+        etapa: validatedData.etapa,
+        fecha_fin_estimada: validatedData.duracionEstimada
+          ? new Date(
+              Date.now() + validatedData.duracionEstimada * 24 * 60 * 60 * 1000,
+            ).toISOString()
+          : null,
+      };
+    } else if (parsedSimple.success) {
+      const s = parsedSimple.data;
+      const { data: obraRow, error: obraErr } = await supabase
+        .from('obras')
+        .select('id, org_id')
+        .eq('id', s.obra_id)
+        .single();
+
+      if (obraErr || !obraRow?.org_id) {
+        return NextResponse.json(
+          { success: false, error: 'Obra no encontrada' },
+          { status: 404 }
+        );
+      }
+
+      const { data: primerElemento, error: elErr } = await supabase
+        .from('elementos')
+        .select('id')
+        .eq('obra_id', s.obra_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (elErr || !primerElemento) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'La obra no tiene elementos en el catálogo. Agregá al menos un elemento a la obra antes de crear la tarea.',
+          },
+          { status: 400 }
+        );
+      }
+
+      const n = Math.max(1, s.bloques);
+      pack = {
+        obra_id: s.obra_id,
+        elemento_id: primerElemento.id,
+        org_id: obraRow.org_id,
+        title: s.nombre,
+        descripcion: s.descripcion ?? null,
+        bloques_planificados: n,
+        dias_presupuesto: n,
+        etapa: null,
+        fecha_fin_estimada: null,
+      };
+    } else {
       return NextResponse.json(
-        { success: false, error: 'No tiene permisos para crear tareas en esta organización' },
+        { success: false, error: 'No se pudo interpretar el cuerpo de la solicitud' },
+        { status: 400 }
+      );
+    }
+
+    const okPerm = await puedeCrearTareasEnOrganizacion(supabase, user, pack.org_id);
+    if (!okPerm) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'No tiene permisos para crear tareas en esta organización',
+        },
         { status: 403 }
       );
     }
 
-    // Crear tarea en Supabase
     const { data: tarea, error: tareaError } = await supabase
       .from('tareas')
       .insert({
-        obra_id: elemento.obra_id,
-        elemento_id: validatedData.elementoId,
-        title: validatedData.nombre,
-        descripcion: validatedData.descripcion || null,
+        obra_id: pack.obra_id,
+        elemento_id: pack.elemento_id,
+        org_id: pack.org_id,
+        title: pack.title,
+        descripcion: pack.descripcion,
         estado: 'pendiente',
         prioridad: 'MEDIA',
         avance: 0,
-        bloques_planificados: validatedData.bloques ?? 0,
-        fecha_inicio_estimada: null, // Se puede agregar lógica para calcular desde duracionEstimada si es necesario
-        fecha_fin_estimada: validatedData.duracionEstimada ? new Date(Date.now() + validatedData.duracionEstimada * 24 * 60 * 60 * 1000).toISOString() : null,
+        bloques_planificados: pack.bloques_planificados,
+        dias_presupuesto: pack.dias_presupuesto,
+        etapa: pack.etapa,
+        fecha_inicio_estimada: null,
+        fecha_fin_estimada: pack.fecha_fin_estimada,
       } as any)
       .select(`
         id,
         title,
         descripcion,
         bloques_planificados,
+        dias_presupuesto,
         estado,
         responsable,
+        responsable_socio_id,
         prioridad,
         avance,
         fecha_inicio_estimada,
@@ -96,25 +222,75 @@ export async function POST(request: NextRequest) {
         fecha_fin_real,
         elemento_id,
         obra_id,
+        org_id,
         created_at,
         updated_at,
         elemento:elementos(id, nombre, categoria, subcategoria)
       `)
       .single();
 
-    if (tareaError) {
+    if (tareaError || !tarea) {
       console.error('Error creando tarea:', tareaError);
       return NextResponse.json(
-        { success: false, error: tareaError.message },
+        { success: false, error: tareaError?.message ?? 'Error al crear tarea' },
         { status: 500 }
       );
     }
 
-    // Crear registro de estado inicial en tareas_estados
+    let tareaOut: typeof tarea = tarea;
+
+    if (parsedSimple.success && parsedSimple.data.socio_id) {
+      const sid = parsedSimple.data.socio_id;
+      const { data: socioData } = await supabaseAny
+        .from('socios')
+        .select('id, nombre, email, org_id')
+        .eq('id', sid)
+        .eq('org_id', pack.org_id)
+        .maybeSingle();
+
+      if (socioData?.email) {
+        const { data: updated, error: uErr } = await supabaseAny
+          .from('tareas')
+          .update({
+            responsable: socioData.email,
+            responsable_socio_id: socioData.id,
+            cuadrilla_id: socioData.id,
+          })
+          .eq('id', tarea.id)
+          .eq('org_id', pack.org_id)
+          .select(
+            `
+            id,
+            title,
+            descripcion,
+            bloques_planificados,
+            dias_presupuesto,
+            estado,
+            responsable,
+            responsable_socio_id,
+            prioridad,
+            avance,
+            fecha_inicio_estimada,
+            fecha_fin_estimada,
+            elemento_id,
+            obra_id,
+            org_id,
+            created_at,
+            updated_at,
+            elemento:elementos(id, nombre, categoria, subcategoria)
+          `,
+          )
+          .single();
+        if (!uErr && updated) {
+          tareaOut = updated;
+        }
+      }
+    }
+
     const { error: estadoError } = await supabase
       .from('tareas_estados' as any)
       .insert({
-        tarea_id: tarea.id,
+        tarea_id: tareaOut.id,
         estado_anterior: null,
         estado_nuevo: 'pendiente',
         actor_tipo: 'CLIENTE_TECNICO',
@@ -124,20 +300,21 @@ export async function POST(request: NextRequest) {
 
     if (estadoError) {
       console.error('Error creando estado inicial (no crítico):', estadoError);
-      // No fallamos la creación de la tarea si falla el estado
     }
 
-    return NextResponse.json({
-      success: true,
-      data: tarea,
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        success: true,
+        data: tareaOut,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error en POST /api/tareas:', error);
-    
-    if (error instanceof Error && error.name === 'ZodError') {
+
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Datos inválidos', details: error.message },
+        { success: false, error: 'Datos inválidos', details: error.flatten() },
         { status: 400 }
       );
     }
@@ -217,6 +394,10 @@ export async function GET(request: NextRequest) {
         estado,
         responsable,
         prioridad,
+        etapa,
+        dias_presupuesto,
+        is_critical,
+        costo_presupuestado,
         fecha_inicio_estimada,
         fecha_fin_estimada,
         fecha_inicio_real,

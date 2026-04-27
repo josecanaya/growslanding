@@ -3,28 +3,13 @@ import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import LeaderClient from './leader-client';
-
-/** Evita prerender en build (cookies + service role); evita fallar sin env en CI. */
-export const dynamic = 'force-dynamic';
-import { IS_DEV_MODE } from '@/lib/config';
-import { mockUser } from '@/lib/mockUser';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 
-export default async function LeaderPage() {
-  const isDevMode = IS_DEV_MODE;
-  if (isDevMode) {
-    return (
-      <LeaderClient
-        socios={[]}
-        tareas={[]}
-        tokens={[]}
-        obras={[]}
-        invites={[]}
-      />
-    );
-  }
+/** Evita prerender en build (cookies + service role); evita fallar sin env en CI. */
+export const dynamic = 'force-dynamic';
 
+export default async function LeaderPage() {
   const supabase = createServiceSupabaseClient();
   let orgId: string | null = null;
 
@@ -73,7 +58,7 @@ export default async function LeaderPage() {
 
   const [
     { data: socios = [] },
-    { data: tareas = [] },
+    { data: tareasRaw = [] },
     { data: tokens = [] },
     { data: obras = [] },
     { data: invites = [] },
@@ -86,11 +71,11 @@ export default async function LeaderPage() {
     supabase
       .from('tareas')
       .select(
-        `id, obra_id, tipo, descripcion, estado, referente_id, socio_ids, created_at,
-           obra:obras(id, nombre, cliente, org_id),
-           eventos(id, nuevo_estado, actor_name, created_at, notas, pdf_path, has_nc)`
+        `id, title, descripcion, estado, obra_id, created_at,
+         responsable_socio_id, cuadrilla_id,
+         obra:obras(id, name, propietario, address, org_id)`
       )
-      .eq('obra.org_id', orgId)
+      .eq('org_id', orgId)
       .order('created_at', { ascending: true }),
     supabase
       .from('qr_tokens' as any)
@@ -108,20 +93,80 @@ export default async function LeaderPage() {
       .order('created_at', { ascending: false }),
   ]);
 
-  type TareaRow = { id: string };
-  const tareasList = ((tareas ?? []) as unknown) as TareaRow[];
+  type EstadoLeaderUi = 'pendiente' | 'en_ejecucion' | 'finalizado' | 'validado';
+
+  function mapEstadoLeaderUi(estado: string | null): EstadoLeaderUi {
+    const u = (estado || '').toLowerCase();
+    if (u === 'pendiente') return 'pendiente';
+    if (u === 'en_progreso') return 'en_ejecucion';
+    if (u === 'para_validar') return 'finalizado';
+    if (u === 'validada' || u === 'rechazada') return 'validado';
+    return 'pendiente';
+  }
+
+  type TareaRow = {
+    id: string;
+    obra_id: string;
+    tipo: string;
+    descripcion: string;
+    estado: EstadoLeaderUi;
+    referente_id: string | null;
+    socio_ids: string[];
+    created_at: string;
+    obra: { nombre: string | null; cliente: string | null } | null;
+    eventos: any[];
+  };
+
+  const tareasList: TareaRow[] = (tareasRaw ?? []).map((t: any) => {
+    const sid = t.responsable_socio_id ?? t.cuadrilla_id;
+    return {
+      id: t.id,
+      obra_id: t.obra_id,
+      tipo: t.title ?? 'Sin título',
+      descripcion: t.descripcion ?? '',
+      estado: mapEstadoLeaderUi(t.estado),
+      referente_id: t.responsable_socio_id ?? null,
+      socio_ids: sid ? [sid] : [],
+      created_at: t.created_at,
+      obra: t.obra
+        ? {
+            nombre: t.obra.name ?? null,
+            cliente: t.obra.propietario ?? null,
+          }
+        : null,
+      eventos: [],
+    };
+  });
 
   const tareaIds = new Set(tareasList.map((t) => t.id));
   const tokensFiltrados = ((tokens ?? []) as any[]).filter((token: any) =>
     tareaIds.has(token.ref_id)
   );
 
+  const sociosMapped =
+    (socios ?? []).map((s: any) => ({
+      id: s.id,
+      nombre: s.nombre,
+      contacto: s.email ?? null,
+      org_id: s.org_id,
+      status: s.estado ?? 'activo',
+      rol: 'SOCIO',
+    })) ?? [];
+
+  const obrasMapped =
+    (obras ?? []).map((o: any) => ({
+      id: o.id,
+      nombre: o.name ?? '',
+      cliente: o.propietario ?? null,
+      localizacion: o.address ?? null,
+    })) ?? [];
+
   return (
     <LeaderClient
-      socios={(socios ?? []) as any}
+      socios={sociosMapped as any}
       tareas={tareasList as any}
       tokens={tokensFiltrados}
-      obras={(obras ?? []) as any}
+      obras={obrasMapped as any}
       invites={(invites ?? []) as any}
     />
   );

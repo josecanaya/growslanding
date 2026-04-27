@@ -3,7 +3,6 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
-import { IS_DEV_MODE } from '@/lib/config';
 import { resolveOrgContext } from '@/lib/orgs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -16,10 +15,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-
-    if (IS_DEV_MODE) {
-      return NextResponse.json({ ok: true, devMode: true, id });
-    }
 
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });

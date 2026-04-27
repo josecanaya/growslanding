@@ -125,7 +125,9 @@ export async function GET(
       console.log('[SOCIOS_TAREAS] ✅ Filtro por nombre:', nombre);
     }
 
-    // ✅ Buscar tareas donde cuadrilla_id = socio_id (RESPALDO)
+    // ✅ Por id de socio en columna canónica
+    filtros.push(`responsable_socio_id.eq.${socioId}`);
+    // ✅ Buscar tareas donde cuadrilla_id = socio_id (RESPALDO legacy)
     filtros.push(`cuadrilla_id.eq.${socioId}`);
     console.log('[SOCIOS_TAREAS] ✅ Filtro por cuadrilla_id:', socioId);
     

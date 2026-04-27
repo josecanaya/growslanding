@@ -72,6 +72,7 @@ export async function PATCH(
       .from('tareas')
       .update({
         responsable: socioData.email, // Email del socio para que lo encuentre
+        responsable_socio_id: socio_id,
         cuadrilla_id: socio_id,
       })
       .eq('id', tareaId)

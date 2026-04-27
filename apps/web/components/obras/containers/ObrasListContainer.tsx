@@ -9,64 +9,51 @@ import type { LegajoDocumento } from '@/components/cliente/DetalleObra';
 import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import { usePlanLimitGuard } from '@/lib/subscriptions';
 import { Button, Card, SectionLayout } from '@/components/ui/grows';
-import { Obra, ObraFormState, ObraStats, INITIAL_OBRA_FORM_STATE } from '@/types/obras';
+import { Obra, ObraFormState, ObraStats, ObraTimelineTask, INITIAL_OBRA_FORM_STATE } from '@/types/obras';
+import { apiTareaToObraTimelineTask, type ApiTareaRow } from '@/lib/mappers/tarea-api-to-ui';
 import { ObraCard } from '../ui/ObraCard';
 import { ObrasStatsRow } from '../ui/ObrasStatsRow';
 import { EmptyState } from '../ui/EmptyState';
 
-// ——— MOCKS: 3 obras fijas (desconectado de la base de datos). Eliminar cuando conectes Supabase. ———
-const OBRAS_MOCK: Obra[] = [
-  {
-    id: 'demo-obra-1-casa-familiar',
-    nombre: 'Casa Familiar – Juan Pérez',
-    localizacion: 'Rosario',
-    estado: 'En ejecución',
-    created_at: new Date().toISOString(),
-    fecha_inicio: '2026-03-01',
-    fecha_inicio_estimada: '2026-03-01',
-    fecha_final_estimada: '2026-06-30',
+type ObraConOrg = Obra & { orgId?: string };
+
+function mapApiToObra(o: {
+  id: string;
+  name: string;
+  address: string | null;
+  estado: string | null;
+  createdAt: string;
+  orgId: string;
+  _count?: { tareas?: number };
+}): ObraConOrg {
+  const est = String(o.estado || 'ACTIVA').toUpperCase();
+  return {
+    id: o.id,
+    nombre: o.name,
+    localizacion: o.address || '',
+    estado: est,
+    created_at: o.createdAt,
+    fecha_inicio: o.createdAt?.split('T')[0],
+    orgId: o.orgId,
     tipoObra: 'nueva',
-    progreso: 35,
-    tareasActivas: 2,
-    tareasCompletadas: 3,
-    legajoTecnico: [],
-  },
-  {
-    id: 'demo-obra-2-reforma-bano',
-    nombre: 'Reforma Baño – María González',
-    localizacion: 'Rosario',
-    estado: 'Pendiente',
-    created_at: new Date().toISOString(),
-    fecha_inicio: '2026-04-15',
-    fecha_inicio_estimada: '2026-04-15',
-    tipoObra: 'reforma',
     progreso: 0,
-    tareasActivas: 0,
+    tareasActivas: o._count?.tareas ?? 0,
     tareasCompletadas: 0,
     legajoTecnico: [],
-  },
-  {
-    id: 'demo-obra-3-ampliacion-cocina',
-    nombre: 'Ampliación Cocina – Carlos López',
-    localizacion: 'Rosario',
-    estado: 'Creada',
-    created_at: new Date().toISOString(),
-    tipoObra: 'ampliacion',
-    progreso: 0,
-    tareasActivas: 0,
-    tareasCompletadas: 0,
-    legajoTecnico: [],
-  },
-];
+  };
+}
 
 export function ObrasListContainer() {
   const router = useRouter();
   const pathname = usePathname();
   const currentUser = useCurrentUser();
-  const [obras, setObras] = useState<Obra[]>([]);
-  const [selectedObra, setSelectedObra] = useState<Obra | null>(null);
+  const [obras, setObras] = useState<ObraConOrg[]>([]);
+  const [selectedObra, setSelectedObra] = useState<ObraConOrg | null>(null);
+  const [tareasDetalle, setTareasDetalle] = useState<ObraTimelineTask[]>([]);
+  const [loadingTareas, setLoadingTareas] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingObraId, setEditingObraId] = useState<string | null>(null);
   const [formState, setFormState] = useState<ObraFormState>(INITIAL_OBRA_FORM_STATE);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,18 +61,30 @@ export function ObrasListContainer() {
   const upgradeModal = useUpgradeModal();
   const obrasLimitGuard = usePlanLimitGuard('obras');
 
-  // Solo mocks: datos fijos en código (sin backend). Eliminar cuando conectes Supabase.
-  const loadObras = useCallback(() => {
+  const loadObras = useCallback(async () => {
     setIsLoading(true);
-    setObras(OBRAS_MOCK);
     setError(null);
-    setIsLoading(false);
+    try {
+      const res = await fetch('/api/obras', { cache: 'no-store' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(json.message || 'No se pudieron cargar las obras');
+        setObras([]);
+        return;
+      }
+      const rows = Array.isArray(json.data) ? json.data : [];
+      setObras(rows.map((row: any) => mapApiToObra(row)));
+    } catch {
+      setError('Error de red al cargar obras');
+      setObras([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  // Cargar obras al montar y cuando cambia el orgId
   useEffect(() => {
     loadObras();
-  }, [loadObras]);
+  }, [loadObras, currentUser?.orgId]);
 
   const searchParams = useSearchParams();
   
@@ -113,10 +112,11 @@ export function ObrasListContainer() {
 
   const obrasFiltradas = obras;
   const stats = useMemo<ObraStats>(() => {
-    const activas = obras.filter((obra) => obra.estado === 'ACTIVA').length;
-    const pausadas = obras.filter((obra) => obra.estado === 'PAUSADA').length;
-    const finalizadas = obras.filter((obra) => obra.estado === 'FINALIZADA').length;
-    const canceladas = obras.filter((obra) => obra.estado === 'CANCELADA').length;
+    const n = (s: string) => (s || '').toUpperCase();
+    const activas = obras.filter((obra) => n(obra.estado) === 'ACTIVA').length;
+    const pausadas = obras.filter((obra) => n(obra.estado) === 'PAUSADA').length;
+    const finalizadas = obras.filter((obra) => n(obra.estado) === 'FINALIZADA').length;
+    const canceladas = obras.filter((obra) => n(obra.estado) === 'CANCELADA').length;
 
     return {
       total: obras.length,
@@ -126,6 +126,44 @@ export function ObrasListContainer() {
       canceladas,
     };
   }, [obras]);
+
+  useEffect(() => {
+    if (!selectedObra) {
+      setTareasDetalle([]);
+      return;
+    }
+    const orgId = selectedObra.orgId ?? currentUser?.orgId;
+    if (!orgId) {
+      setTareasDetalle([]);
+      return;
+    }
+    let a = true;
+    (async () => {
+      setLoadingTareas(true);
+      try {
+        const res = await fetch(
+          `/api/tareas?obra_id=${encodeURIComponent(selectedObra.id)}&org_id=${encodeURIComponent(orgId)}`,
+          { cache: 'no-store' },
+        );
+        const json = await res.json().catch(() => ({}));
+        if (!a) return;
+        if (json.success && Array.isArray(json.data)) {
+          setTareasDetalle(
+            json.data.map((t: ApiTareaRow) => apiTareaToObraTimelineTask(t, selectedObra.id)),
+          );
+        } else {
+          setTareasDetalle([]);
+        }
+      } catch {
+        if (a) setTareasDetalle([]);
+      } finally {
+        if (a) setLoadingTareas(false);
+      }
+    })();
+    return () => {
+      a = false;
+    };
+  }, [selectedObra, currentUser?.orgId]);
 
 
 
@@ -146,52 +184,14 @@ export function ObrasListContainer() {
   }
 
   if (selectedObra) {
-    // Demo video: tareas mock completas para el Resumen (obra Casa Familiar)
-    const isDemoObra = selectedObra.id === 'demo-obra-1-casa-familiar';
-    const tareasMock = isDemoObra
-      ? [
-          { id: 't1', nombre: 'Excavación de fundación', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-01-01', fechaFin: '2024-01-05', plantilla: 'Excavación', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'estructura' as const, precedencia: [], duracion: 5, esCritica: true, holgura: 0, earlyStart: 0, earlyFinish: 5, lateStart: 0, lateFinish: 5, tiempoTemprano: 0, tiempoTardio: 5, x: 100, y: 100 },
-          { id: 't2', nombre: 'Hormigón de cimientos', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-01-08', fechaFin: '2024-01-12', plantilla: 'Estructura', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'estructura' as const, precedencia: [], duracion: 5, esCritica: true, holgura: 0, earlyStart: 5, earlyFinish: 10, lateStart: 5, lateFinish: 10, tiempoTemprano: 5, tiempoTardio: 10, x: 100, y: 150 },
-          { id: 't3', nombre: 'Mampostería PB', obraId: selectedObra.id, lider: 'María López', fechaInicio: '2024-01-15', fechaFin: '2024-02-02', plantilla: 'Obra gris', checklist: [], evidencias: [], estado: 'completada' as const, etapa: 'obra_gris' as const, precedencia: [], duracion: 14, esCritica: true, holgura: 0, earlyStart: 10, earlyFinish: 24, lateStart: 10, lateFinish: 24, tiempoTemprano: 10, tiempoTardio: 24, x: 100, y: 200 },
-          { id: 't4', nombre: 'Instalación eléctrica', obraId: selectedObra.id, lider: 'Carlos Rodríguez', fechaInicio: '2024-02-05', fechaFin: '2024-02-20', plantilla: 'Instalaciones', checklist: [], evidencias: [], estado: 'en_progreso' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 15, esCritica: false, holgura: 2, earlyStart: 24, earlyFinish: 39, lateStart: 26, lateFinish: 41, tiempoTemprano: 24, tiempoTardio: 41, x: 100, y: 250 },
-          { id: 't5', nombre: 'Revoque grueso', obraId: selectedObra.id, lider: 'Juan Pérez', fechaInicio: '2024-02-10', fechaFin: '2024-02-28', plantilla: 'Obra gris', checklist: [], evidencias: [], estado: 'en_progreso' as const, etapa: 'obra_gris' as const, precedencia: [], duracion: 18, esCritica: true, holgura: 0, earlyStart: 24, earlyFinish: 42, lateStart: 24, lateFinish: 42, tiempoTemprano: 24, tiempoTardio: 42, x: 100, y: 300 },
-          { id: 't6', nombre: 'Pintura interior', obraId: selectedObra.id, lider: 'Ana García', fechaInicio: '2024-03-01', fechaFin: '2024-03-15', plantilla: 'Terminaciones', checklist: [], evidencias: [], estado: 'pendiente' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 14, esCritica: false, holgura: 3, earlyStart: 42, earlyFinish: 56, lateStart: 45, lateFinish: 59, tiempoTemprano: 42, tiempoTardio: 59, x: 100, y: 350 },
-          { id: 't7', nombre: 'Carpintería de aberturas', obraId: selectedObra.id, lider: 'Pedro Martínez', fechaInicio: '2024-03-10', fechaFin: '2024-03-25', plantilla: 'Terminaciones', checklist: [], evidencias: [], estado: 'pendiente' as const, etapa: 'terminaciones' as const, precedencia: [], duracion: 15, esCritica: false, holgura: 1, earlyStart: 42, earlyFinish: 57, lateStart: 43, lateFinish: 58, tiempoTemprano: 42, tiempoTardio: 58, x: 100, y: 400 },
-        ]
-      : [
-          {
-            id: 'tarea-1',
-            nombre: 'Excavación de fundación',
-            obraId: selectedObra.id,
-            lider: 'Juan Pérez',
-            fechaInicio: '2024-01-01',
-            fechaFin: '2024-01-05',
-            plantilla: 'Excavación',
-            checklist: ['Replanteo', 'Excavación', 'Compactación'],
-            evidencias: [],
-            estado: 'pendiente' as const,
-            etapa: 'estructura' as const,
-            precedencia: [],
-            duracion: 5,
-            esCritica: true,
-            holgura: 0,
-            earlyStart: 0,
-            earlyFinish: 5,
-            lateStart: 0,
-            lateFinish: 5,
-            tiempoTemprano: 0,
-            tiempoTardio: 5,
-            x: 100,
-            y: 100,
-          },
-        ];
-
+    const tareasMock = tareasDetalle;
     const estadoNormalizado =
       (selectedObra.estado?.toLowerCase() as 'activa' | 'pausada' | 'finalizada') || 'activa';
 
-    const tareasActivasDemo = isDemoObra ? tareasMock.filter((t) => t.estado === 'en_progreso').length : 0;
-    const tareasCompletadasDemo = isDemoObra ? tareasMock.filter((t) => t.estado === 'completada').length : 0;
-    const progresoDemo = isDemoObra ? 35 : 0;
+    const tareasActivasC = tareasMock.filter((t) => t.estado === 'en_progreso').length;
+    const tareasCompletadasC = tareasMock.filter((t) => t.estado === 'completada').length;
+    const progresoCalc =
+      tareasMock.length > 0 ? Math.min(100, Math.round((tareasCompletadasC / tareasMock.length) * 100)) : 0;
 
     const obraCompleta = {
       ...selectedObra,
@@ -200,13 +200,28 @@ export function ObrasListContainer() {
       tipoObra: selectedObra.tipoObra || 'nueva',
       fechaInicio: selectedObra.fecha_inicio || new Date().toISOString(),
       numeroPermiso: selectedObra.numeroPermiso || 'SIN-PERMISO',
-      progreso: isDemoObra ? progresoDemo : (selectedObra.progreso || 0),
-      tareasActivas: isDemoObra ? tareasActivasDemo : (selectedObra.tareasActivas || 0),
-      tareasCompletadas: isDemoObra ? tareasCompletadasDemo : (selectedObra.tareasCompletadas || 0),
+      progreso: tareasMock.length ? progresoCalc : selectedObra.progreso || 0,
+      tareasActivas: tareasMock.length ? tareasActivasC : selectedObra.tareasActivas || 0,
+      tareasCompletadas: tareasMock.length ? tareasCompletadasC : selectedObra.tareasCompletadas || 0,
       legajoTecnico: (selectedObra.legajoTecnico as LegajoDocumento[] | undefined) || [],
       tareas: tareasMock,
       fechaFinEstimada: '2024-12-31',
     };
+
+    if (loadingTareas && tareasDetalle.length === 0) {
+      return (
+        <SectionLayout title="Obra" subtitle="Cargando tareas…">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((item) => (
+              <Card key={item} className="animate-pulse">
+                <div className="mb-4 h-6 w-3/4 rounded bg-grows-neutral" />
+                <div className="h-4 w-2/3 rounded bg-grows-neutral" />
+              </Card>
+            ))}
+          </div>
+        </SectionLayout>
+      );
+    }
 
     return (
       <DetalleObra
@@ -228,13 +243,6 @@ export function ObrasListContainer() {
       subtitle="Gestiona todas tus obras de construcción"
     >
       <div className="mb-6 flex justify-end gap-3">
-        <button
-          onClick={handleAddMock}
-          className="rounded-md border border-grows-border bg-white px-4 py-2 text-sm font-semibold text-grows-primary hover:bg-grows-surface"
-          type="button"
-        >
-          Agregar demo
-        </button>
         <Button
           onClick={handleOpenWizard}
           variant="primary"
@@ -294,33 +302,14 @@ export function ObrasListContainer() {
 
   function handleOpenBasicModal() {
     setIsEditing(false);
+    setEditingObraId(null);
     setFormState(INITIAL_OBRA_FORM_STATE);
     setIsModalOpen(true);
   }
 
-  function handleAddMock() {
-    const nuevaObra: Obra = {
-      id: Date.now().toString(),
-      nombre: 'Demo Wizard - Casa Moderna',
-      localizacion: 'San Martín 550, Pueblo Esther',
-      estado: 'ACTIVA',
-      created_at: new Date().toISOString(),
-      fecha_inicio: '2025-01-10',
-      presupuesto: 180000,
-      descripcion: 'Generada con el nuevo flujo (mock para pruebas visuales).',
-      cliente: 'Cliente Demo',
-      tipoObra: 'nueva',
-      numeroPermiso: 'MOCK-2025',
-      progreso: 8,
-      tareasActivas: 0,
-      tareasCompletadas: 0,
-      legajoTecnico: [],
-    };
-    setObras((prev) => [nuevaObra, ...prev]);
-  }
-
-  function handleEditObra(obra: Obra) {
+  function handleEditObra(obra: ObraConOrg) {
     setIsEditing(true);
+    setEditingObraId(obra.id);
     setFormState({
       nombre: obra.nombre,
       localizacion: obra.localizacion ?? '',
@@ -332,12 +321,14 @@ export function ObrasListContainer() {
     setIsModalOpen(true);
   }
 
-  function handleSelectObra(obra: Obra) {
+  function handleSelectObra(obra: ObraConOrg) {
     setSelectedObra(obra);
   }
 
   function handleCloseModal() {
     setIsModalOpen(false);
+    setIsEditing(false);
+    setEditingObraId(null);
     setFormState(INITIAL_OBRA_FORM_STATE);
     setError(null);
   }
@@ -357,21 +348,21 @@ export function ObrasListContainer() {
     setError(null);
 
     try {
-      if (isEditing) {
-        const obraIndex = obras.findIndex((item) => item.nombre === formState.nombre);
-        if (obraIndex !== -1) {
-          const obraActualizada: Obra = {
-            ...obras[obraIndex],
-            ...formState,
+      if (isEditing && editingObraId) {
+        const editing = obras.find((item) => item.id === editingObraId);
+        if (editing) {
+          const obraActualizada: ObraConOrg = {
+            ...editing,
+            nombre: formState.nombre,
+            localizacion: formState.localizacion,
             presupuesto: formState.presupuesto ? parseFloat(formState.presupuesto) : undefined,
+            descripcion: formState.descripcion,
             updatedAt: new Date().toISOString(),
           };
-          setObras((prev) =>
-            prev.map((item) => (item.id === obraActualizada.id ? obraActualizada : item)),
-          );
+          setObras((prev) => prev.map((item) => (item.id === obraActualizada.id ? obraActualizada : item)));
         }
       } else {
-        const nuevaObra: Obra = {
+        const nuevaObra: ObraConOrg = {
           id: Date.now().toString(),
           nombre: formState.nombre,
           localizacion: formState.localizacion,
@@ -380,6 +371,8 @@ export function ObrasListContainer() {
           fecha_inicio: formState.fecha_inicio,
           presupuesto: formState.presupuesto ? parseFloat(formState.presupuesto) : undefined,
           descripcion: formState.descripcion,
+          orgId: currentUser?.orgId ?? undefined,
+          legajoTecnico: [],
         };
         setObras((prev) => [...prev, nuevaObra]);
       }
@@ -391,7 +384,7 @@ export function ObrasListContainer() {
     }
   }
 
-  function handleDeleteObra(obra: Obra) {
+  function handleDeleteObra(obra: ObraConOrg) {
     if (window.confirm(`¿Estás seguro de que querés eliminar la obra "${obra.nombre}"?`)) {
       setObras((prev) => prev.filter((item) => item.id !== obra.id));
     }

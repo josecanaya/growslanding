@@ -45,15 +45,15 @@ export function ValidacionCard({
         </span>
         <span className="inline-flex items-center gap-1">
           <Camera className="h-3.5 w-3.5" />
-          {fotos} fotos simuladas
+          {fotos} evidencias
         </span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="primary" size="sm" type="button" onClick={onAprobar}>
-          Aprobar (mock)
+          Aprobar
         </Button>
         <Button variant="secondary" size="sm" type="button" onClick={onRechazar}>
-          Rechazar (mock)
+          Rechazar
         </Button>
       </div>
     </div>

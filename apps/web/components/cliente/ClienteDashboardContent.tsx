@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
+import { useEffect, useState } from 'react';
 import {
   Landmark,
   Network,
@@ -14,13 +15,8 @@ import {
   ClipboardList,
   BadgeCheck,
 } from 'lucide-react';
-import {
-  MOCK_ACTIVIDAD_HUB,
-  MOCK_ORGANIZACION,
-  MOCK_USUARIO,
-  MOCK_OBRAS,
-} from '@/lib/mocks/clienteMockData';
 import { cn } from '@/lib/utils';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 const mint = '#85f8c4';
 
@@ -49,8 +45,71 @@ function BauhausDomainLink({
   );
 }
 
+type Actividad = { id: string; hora: string; titulo: string; detalle: string; tone: 'mint' | 'slate' };
+
+function inicialesU(n: string | null | undefined, e: string | null | undefined) {
+  if (n?.trim()) {
+    const p = n.trim().split(/\s+/);
+    if (p.length >= 2) return (p[0][0] + p[1][0]).toUpperCase().slice(0, 2);
+    return n.trim().slice(0, 2).toUpperCase();
+  }
+  if (e?.trim()) return e.trim().slice(0, 2).toUpperCase();
+  return '??';
+}
+
 export function ClienteDashboardContent() {
-  const primeraObra = MOCK_OBRAS[0]?.id ?? 'obra-san-martin';
+  const user = useCurrentUser();
+  const [primeraObra, setPrimeraObra] = useState<string | null>(null);
+  const [actividad, setActividad] = useState<Actividad[]>([]);
+
+  useEffect(() => {
+    let a = true;
+    (async () => {
+      try {
+        const rO = await fetch('/api/obras', { cache: 'no-store' });
+        const jO = await rO.json().catch(() => ({}));
+        if (!a) return;
+        if (rO.ok && Array.isArray(jO.data) && jO.data[0]?.id) {
+          setPrimeraObra(jO.data[0].id);
+        } else {
+          setPrimeraObra(null);
+        }
+        const org = user?.orgId;
+        if (!org) {
+          setActividad([]);
+          return;
+        }
+        const rT = await fetch(
+          `/api/tareas?org_id=${encodeURIComponent(org)}`,
+          { cache: 'no-store' },
+        );
+        const jT = await rT.json().catch(() => ({}));
+        if (!a) return;
+        if (!rT.ok || !Array.isArray(jT.data)) {
+          setActividad([]);
+          return;
+        }
+        const items: Actividad[] = jT.data.slice(0, 6).map((t: any, i: number) => ({
+          id: String(t.id ?? i),
+          hora: t.created_at
+            ? new Date(t.created_at).toLocaleString('es-AR', { hour: '2-digit', minute: '2-digit' })
+            : '—',
+          titulo: t.title || 'Tarea',
+          detalle: t.obra?.name ? `${t.obra.name}` : t.estado || '',
+          tone: 'slate' as const,
+        }));
+        setActividad(items);
+      } catch {
+        if (a) {
+          setPrimeraObra(null);
+          setActividad([]);
+        }
+      }
+    })();
+    return () => {
+      a = false;
+    };
+  }, [user?.orgId]);
 
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
@@ -65,7 +124,7 @@ export function ClienteDashboardContent() {
                 className="rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-[#24a375]"
                 style={{ backgroundColor: mint, color: '#002114' }}
               >
-                {MOCK_ORGANIZACION.plan}
+                {user?.orgName || 'Grows'}
               </span>
             </div>
             <div className="flex items-center gap-6">
@@ -81,7 +140,7 @@ export function ClienteDashboardContent() {
                 </span>
               </nav>
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-bold text-slate-700">
-                {MOCK_USUARIO.iniciales}
+                {inicialesU(user?.name, user?.email)}
               </div>
             </div>
           </header>
@@ -94,7 +153,7 @@ export function ClienteDashboardContent() {
                 <span className="font-bold">Workspace</span>
               </h2>
               <p className="mt-4 max-w-sm text-sm text-[#545f6e]">
-                Claridad técnica para la excelencia en obra. Elegí un dominio para continuar (prototipo mock).
+                Claridad técnica para la excelencia en obra. Elegí un dominio para continuar.
               </p>
             </div>
 
@@ -175,7 +234,7 @@ export function ClienteDashboardContent() {
           <div>
             <h4 className="mb-6 text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</h4>
             <Link
-              href={`/cliente/tareas/${primeraObra}` as Route}
+              href={(primeraObra ? `/cliente/tareas/${primeraObra}` : '/cliente/tareas') as Route}
               className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-4 px-6 text-sm font-bold tracking-wide text-white shadow-lg transition hover:-translate-x-1 hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="h-5 w-5" />
@@ -185,22 +244,23 @@ export function ClienteDashboardContent() {
           <div className="min-h-0 flex-1">
             <h4 className="mb-8 text-xs font-semibold uppercase tracking-wider text-slate-500">Recent activity</h4>
             <div className="space-y-10">
-              {MOCK_ACTIVIDAD_HUB.map((a) => (
-                <div key={a.id} className="relative border-l-2 border-emerald-200/40 pl-6">
-                  <div
-                    className={cn(
-                      'absolute -left-[5px] top-0 h-2 w-2 rounded-full',
-                      a.tone === 'mint' ? 'bg-emerald-400' : 'bg-slate-300'
-                    )}
-                  />
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-tighter text-slate-400">
-                    {a.dia ? `${a.dia} · ` : ''}
-                    {a.hora}
-                  </p>
-                  <h5 className="text-sm font-semibold leading-snug text-[#001629]">{a.titulo}</h5>
-                  <p className="mt-1 text-xs font-light text-[#545f6e]">{a.detalle}</p>
-                </div>
-              ))}
+              {actividad.length === 0 ? (
+                <p className="text-sm text-slate-500">No hay actividad reciente de tareas.</p>
+              ) : (
+                actividad.map((a) => (
+                  <div key={a.id} className="relative border-l-2 border-emerald-200/40 pl-6">
+                    <div
+                      className={cn(
+                        'absolute -left-[5px] top-0 h-2 w-2 rounded-full',
+                        a.tone === 'mint' ? 'bg-emerald-400' : 'bg-slate-300',
+                      )}
+                    />
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-tighter text-slate-400">{a.hora}</p>
+                    <h5 className="text-sm font-semibold leading-snug text-[#001629]">{a.titulo}</h5>
+                    <p className="mt-1 text-xs font-light text-[#545f6e]">{a.detalle}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           <div className="mt-auto border-t border-slate-200/60 pt-6">

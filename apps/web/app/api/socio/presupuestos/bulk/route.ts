@@ -4,8 +4,6 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
-import { IS_DEV_MODE } from '@/lib/config';
-
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -51,15 +49,6 @@ export async function POST(request: NextRequest) {
         );
       }
       throw e;
-    }
-
-    if (IS_DEV_MODE) {
-      return NextResponse.json({
-        ok: true,
-        updated: payload.presupuestos.length,
-        created: 0,
-        devMode: true,
-      });
     }
 
     // Autenticación

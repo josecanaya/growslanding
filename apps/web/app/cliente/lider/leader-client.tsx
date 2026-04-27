@@ -220,14 +220,27 @@ export default function LeaderClient({ socios, tareas, tokens, obras, invites }:
   async function handleCrearTarea(values: z.infer<typeof nuevaTareaSchema>) {
     setPendingAction(true);
     try {
+      const payload: Record<string, unknown> = {
+        obra_id: values.obra_id,
+        nombre: values.tipo,
+        descripcion: values.descripcion,
+        bloques: 1,
+      };
+      if (socioId) {
+        payload.socio_id = socioId;
+      }
       const response = await fetch('/api/tareas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...values, estado: 'pendiente' }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({ message: 'Error' }));
-        throw new Error(data.message ?? 'No se pudo crear la tarea');
+        const data = await response.json().catch(() => ({ error: 'Error' }));
+        throw new Error(
+          (data as { error?: string }).error ??
+            (data as { message?: string }).message ??
+            'No se pudo crear la tarea'
+        );
       }
       showSuccess('Tarea creada correctamente');
       tareaForm.reset({ obra_id: values.obra_id, tipo: '', descripcion: '' });

@@ -40,6 +40,15 @@ function isLegacyLanding(pathname: string) {
   return pathname === '/es' || pathname === '/es/';
 }
 
+function isOnboardingRoute(pathname: string) {
+  return (
+    pathname === '/onboarding' ||
+    pathname.startsWith('/onboarding/') ||
+    pathname === '/cliente/onboarding' ||
+    pathname.startsWith('/cliente/onboarding/')
+  );
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
@@ -137,15 +146,15 @@ export async function middleware(req: NextRequest) {
       null) as string | null;
 
   if (role === 'CLIENTE_TECNICO' && !orgId) {
-    if (pathname.startsWith('/onboarding')) {
+    if (isOnboardingRoute(pathname)) {
       return res;
     }
-    const onboardingUrl = new URL('/onboarding', req.url);
+    const onboardingUrl = new URL('/cliente/onboarding', req.url);
     onboardingUrl.searchParams.set('redirect', `${pathname}${search}`);
     return NextResponse.redirect(onboardingUrl);
   }
 
-  if (pathname.startsWith('/onboarding')) {
+  if (isOnboardingRoute(pathname)) {
     const fallbackUrl = new URL(
       role === 'SOCIO' ? '/socio/panel' : '/cliente/dashboard',
       req.url
@@ -179,5 +188,6 @@ export const config = {
     '/auth/login',
     '/auth/callback',
     '/onboarding',
+    '/cliente/onboarding',
   ],
 };

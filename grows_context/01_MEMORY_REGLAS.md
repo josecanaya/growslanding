@@ -192,3 +192,8 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** `POST /api/tareas` acepta cuerpo **simple** (`obra_id`, `nombre`, `descripcion`, `bloques`, `socio_id` opcional) resolviendo el **primer elemento** de la obra; insert incluye `org_id`, `dias_presupuesto` y `bloques_planificados` alineados. Líder con `leader_invites` aceptado puede crear como el owner. Asignación opcional en el mismo POST setea `responsable`, `responsable_socio_id` y `cuadrilla_id` (compat). Vista socio filtra también por `responsable_socio_id` / `cuadrilla_id`.
 - **Ámbito:** API tareas, panel `/cliente/lider`, `TareasEnCurso` socio.
 - **Obligación:** Sin elementos en la obra, no crear tarea (mensaje claro). No duplicar servicios; reutilizar columnas existentes.
+
+### [2026-04-27] QR de asociación de socio
+- **Qué se decidió:** Los QR personales de socio usan `qr_tokens.scope = 'socio_asociacion'` y `ref_id = socios.id`; la asociación cliente→socio se valida solo en backend y crea/reutiliza un socio en la organización del cliente.
+- **Ámbito:** `api/socios/mi-qr`, `api/socios/asociar-qr`, UI socio cuenta y cliente cuadrillas.
+- **Obligación:** No asociar socios confiando en `socio_id` desde frontend; siempre resolver token, verificar cliente autenticado con organización activa y evitar duplicados por email/teléfono.

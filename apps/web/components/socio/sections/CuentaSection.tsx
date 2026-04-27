@@ -6,6 +6,7 @@ import { User, Star, Award, Calendar, MapPin, Phone, Mail, Settings, LogOut, Shi
 
 import { logout } from '@/lib/auth';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { SocioQrCard } from '@/components/socio/SocioQrCard';
 
 interface CuentaSectionProps {
   user: {
@@ -107,6 +108,8 @@ export function CuentaSection({ user }: CuentaSectionProps) {
           </div>
         ) : null}
       </div>
+
+      <SocioQrCard />
 
       {/* Información de contacto */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">

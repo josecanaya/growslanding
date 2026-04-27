@@ -22,6 +22,15 @@ type OrganizationPayload = {
   address?: string;
 };
 
+function isSafeRedirectTarget(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('/auth')) {
+    return false;
+  }
+
+  return value !== '/onboarding' && !value.startsWith('/onboarding/') &&
+    value !== '/cliente/onboarding' && !value.startsWith('/cliente/onboarding/');
+}
+
 function OnboardingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,10 +54,7 @@ function OnboardingPageContent() {
   const [createdOrgName, setCreatedOrgName] = useState<string | null>(null);
 
   const redirectParam = searchParams?.get('redirect') ?? null;
-  const redirectTarget =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('/auth')
-      ? redirectParam
-      : null;
+  const redirectTarget = isSafeRedirectTarget(redirectParam) ? redirectParam : null;
 
   useEffect(() => {
     if (devModeEnabled) {

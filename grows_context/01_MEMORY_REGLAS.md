@@ -207,3 +207,23 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** Un socio puede generar su QR sin estar asociado a una organización. La asociación con organización ocurre después, cuando cliente/arquitecto escanea el QR.
 - **Ámbito:** QR socio, tabla `socios`, asociación cliente→socio.
 - **Obligación:** `api/socios/mi-qr` no debe exigir `org_id`; el `org_id` se define en el flujo de asociación posterior.
+
+### [2026-04-24] Lenguaje: agenda de socios (UI)
+- **Qué se decidió:** La relación cliente/profesional ↔ socio se entiende como agenda/contactos de obra. En UI se debe usar “Agendar socio”, “Agenda de socios” y “Socio agendado”, evitando “asociar” o “vincular” salvo nombres técnicos internos.
+- **Ámbito:** Pantallas cliente (agenda, cuadrillas), cuenta socio, mensajes de producto.
+- **Obligación:** Nuevo copy y CTAs alineados a agenda/contacto; rutas y tablas legacy pueden conservar nombres técnicos.
+
+### [2026-04-24] QR/ID público sin organización previa
+- **Qué se decidió:** Un socio puede generar QR/ID público para ser agendado sin pertenecer previamente a una organización cliente.
+- **Ámbito:** `api/socios/mi-qr`, perfil `socios`, flujo cliente `agendar`.
+- **Obligación:** No bloquear emisión de QR/ID por falta de `org_id` en el perfil del socio; la organización del cliente se valida solo al agendar.
+
+### [2026-04-24] UI visible: agenda (sin “asociar/vincular”)
+- **Qué se decidió:** En textos visibles al usuario, la relación cliente/profesional ↔ socio se dice Agenda de socios / Socio agendado / Contacto de obra; no usar “asociar” ni “vincular” en labels, modales ni CTA.
+- **Ámbito:** Frontend cliente y socio.
+- **Obligación:** Revisar copy en pantallas nuevas; nombres de rutas/API legacy pueden quedar en inglés o técnico.
+
+### [2026-04-24] Referencia Stitch (reforma) para agenda y QR cuenta
+- **Qué se decidió:** La UI de Agenda de socios y la tarjeta QR en cuenta socio toman estructura, jerarquía y estilo de los HTML en `reforma/stitch_arquitectura_socio_existente/agenda_de_socios`, `.../agendar_socio_scanner` y `reforma/stitch_socio/_10_cuenta/qr`, adaptados a Tailwind del repo.
+- **Ámbito:** `app/cliente/agenda-socios`, `components/socio/SocioQrCard`, `CuentaSection`.
+- **Obligación:** No reemplazar esos mocks por diseño distinto sin pedido explícito.

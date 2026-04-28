@@ -6,6 +6,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { CrearTareaSchema, CrearTareaDesdeObraSimpleSchema } from '../../../lib/schemas';
 import { PermisoService } from '@/lib/services/permiso.service';
 import type { Database } from '@/lib/types/supabase.gen';
+import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 async function puedeCrearTareasEnOrganizacion(
   supabase: ReturnType<typeof createServiceSupabaseClient>,
@@ -241,18 +242,31 @@ export async function POST(request: NextRequest) {
 
     if (parsedSimple.success && parsedSimple.data.socio_id) {
       const sid = parsedSimple.data.socio_id;
+      const puedeAsignar = await socioEsContactoDeOrg(supabase, sid, pack.org_id);
+      if (!puedeAsignar) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'El contacto no está en tu agenda de socios o no corresponde a esta organización.',
+          },
+          { status: 403 },
+        );
+      }
+
       const { data: socioData } = await supabaseAny
         .from('socios')
-        .select('id, nombre, email, org_id')
+        .select('id, nombre, email, telefono, org_id')
         .eq('id', sid)
-        .eq('org_id', pack.org_id)
         .maybeSingle();
 
-      if (socioData?.email) {
+      const responsableAsignar =
+        socioData?.email || socioData?.telefono || socioData?.nombre || null;
+
+      if (socioData && responsableAsignar) {
         const { data: updated, error: uErr } = await supabaseAny
           .from('tareas')
           .update({
-            responsable: socioData.email,
+            responsable: responsableAsignar,
             responsable_socio_id: socioData.id,
             cuadrilla_id: socioData.id,
           })

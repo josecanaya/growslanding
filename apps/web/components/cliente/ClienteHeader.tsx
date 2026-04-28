@@ -62,6 +62,7 @@ export function ClienteHeader() {
     if (pathname.startsWith('/cliente/tareas')) return 'Tareas';
     if (pathname.startsWith('/cliente/validar')) return 'Validaciones';
     if (pathname.startsWith('/cliente/presupuesto')) return 'Presupuestos';
+    if (pathname.startsWith('/cliente/agenda-socios')) return 'Agenda de socios';
     if (pathname.startsWith('/cliente/cuadrillas')) return 'Cuadrillas y socios';
     if (pathname.startsWith('/cliente/notificaciones')) return 'Notificaciones';
     if (pathname.startsWith('/cliente/cuenta')) return 'Cuenta y plan';

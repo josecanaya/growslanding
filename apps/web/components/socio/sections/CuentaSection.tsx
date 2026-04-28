@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Star, Award, Calendar, MapPin, Phone, Mail, Settings, LogOut, Shield, FileText, TrendingUp, Bell } from 'lucide-react';
+import { Award, MapPin, Phone, Mail, Settings, LogOut, Shield, FileText, TrendingUp, Bell } from 'lucide-react';
 
 import { logout } from '@/lib/auth';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -42,112 +42,80 @@ export function CuentaSection({ user }: CuentaSectionProps) {
     diasVencimiento?: number;
   }>>([]);
 
-  const getLevelColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'bronce': return 'text-amber-600 bg-amber-100';
-      case 'plata': return 'text-gray-600 bg-gray-100';
-      case 'oro': return 'text-yellow-600 bg-yellow-100';
-      case 'platino': return 'text-purple-600 bg-purple-100';
-      default: return 'text-yellow-600 bg-yellow-100';
-    }
-  };
-
-  const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}>
-        ★
-      </span>
-    ));
-  };
-
   const handleLogout = () => {
     logout({ router });
   };
 
+  const oficioLabel =
+    userData.level && userData.level !== '—' ? userData.level : 'Constructor/a — obra';
+
   return (
-    <div className="space-y-6 font-stitch-body text-stitch-on-surface">
-      {/* Header del perfil (ref. cuenta / mis datos Stitch) */}
-      <div className="rounded-xl border border-stitch-surface-container bg-stitch-surface-container-lowest p-6 shadow-sm">
-        <div className="flex items-center space-x-4 mb-4">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 text-2xl">
+    <div className="space-y-8 bg-[#f7f9fb] pb-8 font-stitch-body text-stitch-on-surface">
+      {/* Perfil compacto (ref. stitch_socio / cuenta / qr) */}
+      <section className="flex flex-col items-center text-center">
+        <div className="relative">
+          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-[#d8e2ff] text-3xl font-bold text-[#163274] shadow-xl">
             {userData.avatar}
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-900">{userData.name}</h2>
-            <div className="flex items-center space-x-2 mb-2">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLevelColor(userData.level)}`}>
-                <Award className="h-3 w-3 mr-1" />
-                {userData.level}
-              </span>
-              <div className="flex text-sm">
-                {renderStars(userData.rating)}
-              </div>
-              <span className="text-sm text-gray-500">{userData.rating}</span>
-            </div>
-            {userData.fechaRegistro ? (
-              <p className="text-sm text-gray-600">
-                Miembro desde {new Date(userData.fechaRegistro).toLocaleDateString()}
-              </p>
-            ) : null}
+          <div className="absolute -bottom-1 -right-1 rounded-lg border-2 border-white bg-[#003473] p-1.5 text-white shadow-lg">
+            <Award className="h-3 w-3" />
           </div>
         </div>
-
-        {/* Progreso al siguiente nivel */}
-        {userData.proximoNivel && userData.progresoNivel > 0 ? (
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="flex justify-between text-sm text-gray-600 mb-1">
-              <span>Progreso a {userData.proximoNivel}</span>
-              <span>{userData.progresoNivel}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${userData.progresoNivel}%` }}
-              ></div>
-            </div>
-          </div>
+        <h2 className="mt-4 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-3xl font-extrabold tracking-tight text-[#163274]">
+          {userData.name}
+        </h2>
+        <p className="mt-1 text-sm font-medium tracking-wide text-[#43617c]">{oficioLabel}</p>
+        {userData.fechaRegistro ? (
+          <p className="mt-2 text-xs text-[#434653]">
+            Miembro desde {new Date(userData.fechaRegistro).toLocaleDateString()}
+          </p>
         ) : null}
-      </div>
+      </section>
 
-      <SocioQrCard />
+      <SocioQrCard fallbackDisplayName={userData.name} fallbackOficio={oficioLabel} />
 
       {/* Información de contacto */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Información de contacto</h3>
+      <div className="rounded-2xl border border-[#c3c6d5]/20 bg-white p-5 shadow-[0_12px_32px_rgba(22,50,116,0.06)]">
+        <h3 className="mb-1 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-bold text-[#191c1e]">
+          Tus datos
+        </h3>
+        <p className="mb-4 text-xs text-[#434653]">
+          Completá teléfono y ubicación cuando configures tu perfil; ayudan a que te encuentren como
+          contacto de obra.
+        </p>
         <div className="space-y-3">
-          {userData.email ? (
-            <div className="flex items-center text-sm text-gray-600">
-              <Mail className="h-4 w-4 mr-3 text-gray-400" />
+          <div className="flex items-center text-sm text-gray-600">
+            <Mail className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
+            {userData.email ? (
               <span>{userData.email}</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-sm text-gray-400">
-              <Mail className="h-4 w-4 mr-3 text-gray-300" />
-              <span>Email no disponible</span>
-            </div>
-          )}
-          {userData.telefono ? (
-            <div className="flex items-center text-sm text-gray-600">
-              <Phone className="h-4 w-4 mr-3 text-gray-400" />
+            ) : (
+              <span className="text-amber-800">Falta email — agregalo para recuperar tu cuenta</span>
+            )}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <Phone className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
+            {userData.telefono ? (
               <span>{userData.telefono}</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-sm text-gray-400">
-              <Phone className="h-4 w-4 mr-3 text-gray-300" />
-              <span>Teléfono no disponible</span>
-            </div>
-          )}
-          {userData.ubicacion ? (
-            <div className="flex items-center text-sm text-gray-600">
-              <MapPin className="h-4 w-4 mr-3 text-gray-400" />
+            ) : (
+              <span className="text-gray-400">Teléfono no cargado todavía</span>
+            )}
+          </div>
+          <div className="flex items-center text-sm text-gray-600">
+            <MapPin className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
+            {userData.ubicacion ? (
               <span>{userData.ubicacion}</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-sm text-gray-400">
-              <MapPin className="h-4 w-4 mr-3 text-gray-300" />
-              <span>Ubicación no disponible</span>
-            </div>
-          )}
+            ) : (
+              <span className="text-gray-400">Ubicación no indicada</span>
+            )}
+          </div>
+        </div>
+        <div className="mt-5 border-t border-[#eceef0] pt-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-[#163274]">
+            Especialidades
+          </p>
+          <p className="mt-2 text-sm text-[#434653]">
+            Cuando el perfil avance, vas a poder listar oficios y certificaciones acá.
+          </p>
         </div>
       </div>
 

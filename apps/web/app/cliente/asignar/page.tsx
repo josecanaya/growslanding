@@ -17,7 +17,7 @@ export default function ClienteAsignarPage() {
   return (
     <SectionLayout
       title="Asignar cuadrillas"
-      subtitle="Solicitá presupuestos, compará propuestas y asigná la cuadrilla ideal para cada tarea."
+      subtitle="Usá socios agendados en tu agenda de contactos de obra para asignar tareas y solicitar presupuestos."
     >
       <Suspense fallback={<AsignarSectionFallback />}>
         <AsignarSection />

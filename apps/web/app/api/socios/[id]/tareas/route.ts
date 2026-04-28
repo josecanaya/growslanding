@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 export async function GET(
   request: NextRequest,
@@ -18,38 +19,17 @@ export async function GET(
 
     const supabase = createServiceSupabaseClient();
 
-    // Obtener socio y su información de contacto
-    // Nota: Puede que algunos campos no existan, los manejamos con select parcial
-    let { data: socio, error: socioError } = await supabase
+    const { data: socio, error: socioError } = await supabase
       .from('socios')
       .select('id, org_id, nombre, email, telefono, estado, especialidad')
       .eq('id', socioId)
-      .eq('org_id', organizacionId)
       .maybeSingle();
 
-    // Si no se encuentra con org_id, intentar sin org_id (por si hay inconsistencias)
-    if (!socio && !socioError) {
-      console.log('[SOCIOS_TAREAS] No se encontró con org_id, intentando sin org_id...');
-      const resultSinOrg = await supabase
-        .from('socios')
-        .select('id, org_id, nombre, email, telefono, estado, especialidad')
-        .eq('id', socioId)
-        .maybeSingle();
-      socio = resultSinOrg.data;
-      socioError = resultSinOrg.error;
-      
-      // Si encontramos el socio sin org_id, actualizar el org_id si tenemos uno
-      if (socio && organizacionId && !socio.org_id) {
-        await supabase
-          .from('socios')
-          .update({ org_id: organizacionId })
-          .eq('id', socioId);
-        socio.org_id = organizacionId;
-        console.log('[SOCIOS_TAREAS] ✅ org_id actualizado en el socio');
-      }
-    }
+    const vinculoOrg =
+      socio?.org_id === organizacionId ||
+      (await socioEsContactoDeOrg(supabase, socioId, organizacionId));
 
-    if (socioError || !socio) {
+    if (socioError || !socio || !vinculoOrg) {
       console.error('[SOCIOS_TAREAS] Error al buscar socio:', socioError);
       return NextResponse.json(
         { success: false, error: 'Socio no encontrado' },

@@ -3,6 +3,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
+import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 export const runtime = 'nodejs';
 
@@ -52,17 +53,29 @@ export async function PATCH(
       );
     }
 
-    // Obtener email del socio
+    const okContacto = await socioEsContactoDeOrg(supabase, socio_id, tareaData.org_id as string);
+    if (!okContacto) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'El socio no está en tu agenda o no corresponde a esta organización.',
+        },
+        { status: 403 },
+      );
+    }
+
     const { data: socioData, error: socioError } = await supabaseAny
       .from('socios')
-      .select('id, nombre, email, org_id')
+      .select('id, nombre, email, telefono, org_id')
       .eq('id', socio_id)
-      .eq('org_id', tareaData.org_id)
       .maybeSingle();
 
-    if (socioError || !socioData || !socioData.email) {
+    const responsableText =
+      socioData?.email || socioData?.telefono || socioData?.nombre || null;
+
+    if (socioError || !socioData || !responsableText) {
       return NextResponse.json(
-        { success: false, error: 'Socio no encontrado o sin email' },
+        { success: false, error: 'Socio no encontrado o sin datos de contacto' },
         { status: 404 }
       );
     }
@@ -71,7 +84,7 @@ export async function PATCH(
     const { error: updateError } = await supabaseAny
       .from('tareas')
       .update({
-        responsable: socioData.email, // Email del socio para que lo encuentre
+        responsable: responsableText,
         responsable_socio_id: socio_id,
         cuadrilla_id: socio_id,
       })

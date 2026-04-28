@@ -6,6 +6,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 // No usar resolveOrgContext - obtener org_id directamente de la obra
 import type { Database } from '@/lib/types/supabase.gen';
 import { IS_DEV_MODE } from '@/lib/config';
+import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -104,8 +105,12 @@ export async function POST(
       return NextResponse.json({ message: 'Socio no encontrado' }, { status: 404 });
     }
 
-    if (socio.org_id !== orgId) {
-      return NextResponse.json({ message: 'Socio no pertenece a tu organización' }, { status: 403 });
+    const esContacto = await socioEsContactoDeOrg(supabase, payload.socioId, orgId);
+    if (!esContacto) {
+      return NextResponse.json(
+        { message: 'Agendá primero al socio en tu agenda de contactos para solicitarle presupuesto.' },
+        { status: 403 },
+      );
     }
 
     // Aceptar socios con estado 'activo' o 'pendiente', rechazar solo 'inactivo'

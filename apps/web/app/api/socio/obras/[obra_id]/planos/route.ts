@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
+import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -59,7 +60,11 @@ export async function GET(
       );
     }
 
-    if (obra.org_id !== socio.org_id) {
+    const puede = await socioPuedeAccederDatosObra(supabase, socio.id, {
+      id: obra.id,
+      org_id: obra.org_id as string,
+    });
+    if (!puede) {
       return NextResponse.json(
         { message: 'No tienes acceso a esta obra' },
         { status: 403 }

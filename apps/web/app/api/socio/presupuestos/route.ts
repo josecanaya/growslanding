@@ -4,6 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { IS_DEV_MODE } from '@/lib/config';
+import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -64,10 +65,6 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      if (!socio.org_id) {
-        return NextResponse.json({ obras: [] });
-      }
-
       // Obtener todos los presupuestos del socio
       const { data: presupuestosData, error: presupuestosError } = await supabase
         .from('tareas_presupuestos')
@@ -115,8 +112,7 @@ export async function GET(request: NextRequest) {
       const { data: obrasData, error: obrasError } = await supabase
         .from('obras')
         .select('id, name, address, propietario, created_at')
-        .in('id', Array.from(obraIds))
-        .eq('org_id', socio.org_id);
+        .in('id', Array.from(obraIds));
 
       console.log('[PRESUPUESTOS_GET] Obras encontradas:', obrasData?.length || 0);
       console.log('[PRESUPUESTOS_GET] Error obras:', obrasError);
@@ -229,9 +225,7 @@ export async function GET(request: NextRequest) {
     }
 
     const socioId = socio.id;
-    const orgId = socio.org_id;
 
-    // Obtener la obra y validar que pertenece a la misma org
     const { data: obra, error: obraError } = await supabase
       .from('obras')
       .select('id, org_id')
@@ -246,9 +240,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validar que la obra pertenece a la misma org
     const obraTyped = obra as any;
-    if (obraTyped.org_id !== orgId) {
+    const puedeVer = await socioPuedeAccederDatosObra(supabase, socioId, {
+      id: obraTyped.id as string,
+      org_id: obraTyped.org_id as string,
+    });
+    if (!puedeVer) {
       return NextResponse.json(
         { message: 'No tienes acceso a esta obra' },
         { status: 403 }

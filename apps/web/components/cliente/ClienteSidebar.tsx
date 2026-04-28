@@ -10,6 +10,7 @@ import {
   BadgeCheck,
   FileSpreadsheet,
   Users,
+  BookUser,
   Bell,
   UserCircle,
   Settings,
@@ -24,6 +25,7 @@ export const CLIENTE_NAV_ITEMS = [
   { href: '/cliente/validar' as Route, label: 'Validar', icon: BadgeCheck },
   { href: '/cliente/presupuesto' as Route, label: 'Presupuesto', icon: FileSpreadsheet },
   { href: '/cliente/cuadrillas' as Route, label: 'Cuadrillas', icon: Users },
+  { href: '/cliente/agenda-socios' as Route, label: 'Agenda socios', icon: BookUser },
   { href: '/cliente/notificaciones' as Route, label: 'Alertas', icon: Bell },
   { href: '/cliente/cuenta' as Route, label: 'Cuenta', icon: UserCircle },
 ] as const;

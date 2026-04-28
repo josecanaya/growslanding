@@ -27,15 +27,85 @@ type AuthUserForSocio = {
   user_metadata?: Record<string, unknown>;
 };
 
+const PUBLIC_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
 function buildAssociationUrl(request: Request, token: string) {
   const origin =
     request.headers.get('origin') ||
     process.env.NEXT_PUBLIC_APP_URL ||
     new URL(request.url).origin;
 
-  const url = new URL('/cliente/cuadrillas', origin);
-  url.searchParams.set('asociar_socio', token);
+  const url = new URL('/cliente/agenda-socios', origin);
+  url.searchParams.set('agendar_socio', token);
   return url.toString();
+}
+
+async function ensurePublicCodigo(
+  supabase: ReturnType<typeof createServiceSupabaseClient>,
+  socioId: string,
+): Promise<string | null> {
+  const { data: row, error: readErr } = await (supabase as any)
+    .from('socios')
+    .select('public_codigo')
+    .eq('id', socioId)
+    .maybeSingle();
+
+  if (readErr) {
+    const msg = String(readErr.message || '').toLowerCase();
+    if (readErr.code === '42703' || msg.includes('public_codigo')) {
+      return null;
+    }
+    throw readErr;
+  }
+
+  const existing = (row as { public_codigo?: string | null } | null)?.public_codigo;
+  if (existing) {
+    return existing;
+  }
+
+  for (let attempt = 0; attempt < 14; attempt++) {
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+      code += PUBLIC_CODE_ALPHABET[Math.floor(Math.random() * PUBLIC_CODE_ALPHABET.length)];
+    }
+
+    const { data: updated, error: updErr } = await (supabase as any)
+      .from('socios')
+      .update({ public_codigo: code })
+      .eq('id', socioId)
+      .is('public_codigo', null)
+      .select('public_codigo')
+      .maybeSingle();
+
+    if (!updErr && (updated as { public_codigo?: string } | null)?.public_codigo) {
+      return (updated as { public_codigo: string }).public_codigo;
+    }
+
+    if (updErr?.code === '23505') {
+      continue;
+    }
+
+    if (updErr) {
+      const msg = String(updErr.message || '').toLowerCase();
+      if (updErr.code === '42703' || msg.includes('public_codigo')) {
+        return null;
+      }
+      throw updErr;
+    }
+
+    const { data: again } = await (supabase as any)
+      .from('socios')
+      .select('public_codigo')
+      .eq('id', socioId)
+      .maybeSingle();
+
+    const c = (again as { public_codigo?: string | null } | null)?.public_codigo;
+    if (c) {
+      return c;
+    }
+  }
+
+  return null;
 }
 
 function isMissingColumnError(error: { code?: string; message?: string } | null) {
@@ -178,6 +248,17 @@ async function resolveSocioProfileForUser(user: AuthUserForSocio) {
   return createSocioForUser(user);
 }
 
+async function cuentaEsSoloClienteSinPerfilSocio(userId: string): Promise<boolean> {
+  const supabase = createServiceSupabaseClient();
+  const any = supabase as any;
+  const { data: orgRow } = await any.from('organizations').select('id').eq('user_id', userId).maybeSingle();
+  if (!orgRow) {
+    return false;
+  }
+  const { data: socioRow } = await any.from('socios').select('id').eq('user_id', userId).maybeSingle();
+  return !socioRow;
+}
+
 export async function GET(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -202,11 +283,28 @@ export async function GET(request: Request) {
         (user.user_metadata as Record<string, unknown> | undefined)?.role,
     );
 
-    if (role !== 'SOCIO') {
+    if (role === 'CLIENTE_TECNICO' || role === 'ADMIN') {
       return NextResponse.json(
-        { success: false, error: 'Solo un socio puede generar su QR personal' },
+        {
+          success: false,
+          error: 'Solo un perfil constructor puede mostrar el QR de socio.',
+        },
         { status: 403 },
       );
+    }
+
+    if (role !== 'SOCIO') {
+      const tieneSocioVinculado = Boolean(await findSocioByUserId(user.id));
+      if (!tieneSocioVinculado && (await cuentaEsSoloClienteSinPerfilSocio(user.id))) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              'Esta cuenta es de cliente/arquitecto. Iniciá sesión con un usuario constructor para ver tu QR.',
+          },
+          { status: 403 },
+        );
+      }
     }
 
     const socio = await resolveSocioProfileForUser({
@@ -220,7 +318,7 @@ export async function GET(request: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: 'No encontramos un perfil de socio asociado a tu usuario.',
+          error: 'No encontramos tu perfil de socio constructor.',
         },
         { status: 404 },
       );
@@ -228,7 +326,7 @@ export async function GET(request: Request) {
 
     if (socio.estado && socio.estado.toLowerCase() === 'inactivo') {
       return NextResponse.json(
-        { success: false, error: 'El socio está inactivo y no puede asociarse por QR.' },
+        { success: false, error: 'El socio está inactivo y no puede mostrar QR para ser agendado.' },
         { status: 403 },
       );
     }
@@ -270,10 +368,13 @@ export async function GET(request: Request) {
       token = (createdToken as { token: string }).token;
     }
 
+    const publicCodigo = await ensurePublicCodigo(supabase, socio.id);
+
     return NextResponse.json({
       success: true,
       data: {
         token,
+        publicCodigo,
         associationUrl: buildAssociationUrl(request, token),
         socio: {
           id: socio.id,

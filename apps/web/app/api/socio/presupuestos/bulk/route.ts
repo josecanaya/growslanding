@@ -4,6 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
+import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -80,9 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const socioId = socio.id;
-    const orgId = socio.org_id;
 
-    // Validar que la obra pertenece a la misma org
     const { data: obra, error: obraError } = await supabase
       .from('obras')
       .select('id, org_id')
@@ -97,7 +96,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (obra.org_id !== orgId) {
+    const puede = await socioPuedeAccederDatosObra(supabase, socioId, {
+      id: obra.id,
+      org_id: obra.org_id as string,
+    });
+    if (!puede) {
       return NextResponse.json(
         { message: 'No tienes acceso a esta obra' },
         { status: 403 }

@@ -7,6 +7,7 @@ import { CrearTareaSchema, CrearTareaDesdeObraSimpleSchema } from '../../../lib/
 import { PermisoService } from '@/lib/services/permiso.service';
 import type { Database } from '@/lib/types/supabase.gen';
 import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
+import { listAccessibleOrgIds } from '@/lib/orgs';
 
 async function puedeCrearTareasEnOrganizacion(
   supabase: ReturnType<typeof createServiceSupabaseClient>,
@@ -364,24 +365,23 @@ export async function GET(request: NextRequest) {
     const elementoId = searchParams.get('elemento_id');
     const estado = searchParams.get('estado');
 
-    const supabase = createServiceSupabaseClient();
-    const supabaseAny = supabase as any;
+    let supabase;
+    try {
+      supabase = createServiceSupabaseClient();
+    } catch (cfgErr) {
+      console.error('[GET /api/tareas] Supabase service client:', cfgErr);
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            'Falta configuración del servidor: SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (.env local).',
+        },
+        { status: 503 },
+      );
+    }
 
-    const { data: orgClienteRows } = await supabaseAny
-      .from('organizations')
-      .select('id')
-      .eq('user_id', user.id);
-    const { data: orgSocioRows } = await supabaseAny
-      .from('socios')
-      .select('org_id')
-      .eq('user_id', user.id);
-
-    const allowedOrgIds = new Set<string>([
-      ...(orgClienteRows ?? []).map((org: { id: string }) => org.id),
-      ...(orgSocioRows ?? [])
-        .map((socio: { org_id: string | null }) => socio.org_id)
-        .filter((orgId: string | null): orgId is string => Boolean(orgId)),
-    ]);
+    const allowedList = await listAccessibleOrgIds(supabase, user.id, user.email);
+    const allowedOrgIds = new Set<string>(allowedList);
 
     if (allowedOrgIds.size === 0) {
       return NextResponse.json(
@@ -390,10 +390,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const organizacionId = orgIdParam || Array.from(allowedOrgIds)[0];
+    const organizacionId = orgIdParam?.trim() || Array.from(allowedOrgIds)[0];
+    if (!organizacionId) {
+      return NextResponse.json(
+        { success: false, error: 'No se pudo determinar la organización (org_id)' },
+        { status: 400 }
+      );
+    }
     if (!allowedOrgIds.has(organizacionId)) {
       return NextResponse.json(
-        { success: false, error: 'No autorizado para la organización solicitada' },
+        {
+          success: false,
+          error: 'No tenés acceso a la organización solicitada',
+        },
         { status: 403 }
       );
     }
@@ -445,10 +454,14 @@ export async function GET(request: NextRequest) {
     const { data: tareas, error: tareasError } = await query;
 
     if (tareasError) {
-      console.error('Error obteniendo tareas:', tareasError);
+      console.error('[GET /api/tareas] query:', tareasError.code, tareasError.message);
       return NextResponse.json(
-        { success: false, error: tareasError.message },
-        { status: 500 }
+        {
+          success: false,
+          error: 'No se pudieron cargar las tareas',
+          details: tareasError.message,
+        },
+        { status: 502 },
       );
     }
 

@@ -96,6 +96,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!obra.org_id) {
+      return NextResponse.json(
+        { message: 'Obra sin organización asociada' },
+        { status: 400 }
+      );
+    }
+
+    const orgId = obra.org_id;
+
     const puede = await socioPuedeAccederDatosObra(supabase, socioId, {
       id: obra.id,
       org_id: obra.org_id as string,

@@ -4,6 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { obraSchema } from '@/lib/schemas/obras';
+import { listAccessibleOrgIds } from '@/lib/orgs';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -26,9 +27,22 @@ export async function GET() {
       return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
     }
 
-    const supabase = createServiceSupabaseClient();
+    let supabase;
+    try {
+      supabase = createServiceSupabaseClient();
+    } catch (cfgErr) {
+      console.error('[GET /api/obras] Supabase service client:', cfgErr);
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            'Falta configuración del servidor: SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY (.env local).',
+        },
+        { status: 503 },
+      );
+    }
     const supabaseAny = supabase as any;
-    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    const allowedOrgIds = await listAccessibleOrgIds(supabase, user.id, user.email);
     if (allowedOrgIds.length === 0) {
       return NextResponse.json({ success: true, data: [], count: 0 }, { status: 200 });
     }
@@ -43,7 +57,7 @@ export async function GET() {
         estado,
         created_at,
         updated_at,
-        organizations:organizations (
+        organizations (
           id,
           name
         )
@@ -52,7 +66,15 @@ export async function GET() {
       .order('created_at', { ascending: false });
 
     if (obrasError) {
-      throw obrasError;
+      console.error('[GET /api/obras] query obras:', obrasError.code, obrasError.message);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No se pudieron cargar las obras',
+          details: obrasError.message,
+        },
+        { status: 502 },
+      );
     }
 
     const obraIds = (obrasRaw ?? []).map((obra: any) => obra.id);
@@ -65,7 +87,7 @@ export async function GET() {
         .in('obra_id', obraIds);
 
       if (tareasError) {
-        throw tareasError;
+        console.error('[GET /api/obras] conteo tareas:', tareasError.message);
       }
 
       for (const tarea of tareas ?? []) {
@@ -108,6 +130,7 @@ export async function GET() {
       {
         success: false,
         message: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );
@@ -580,7 +603,7 @@ export async function PATCH(request: Request) {
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
-    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    const allowedOrgIds = await listAccessibleOrgIds(supabase, user.id, user.email);
     if (allowedOrgIds.length === 0) {
       return NextResponse.json(
         { success: false, message: 'No pertenece a ninguna organización' },
@@ -690,7 +713,7 @@ export async function DELETE(request: Request) {
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
-    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    const allowedOrgIds = await listAccessibleOrgIds(supabase, user.id, user.email);
     if (allowedOrgIds.length === 0) {
       return NextResponse.json(
         { success: false, message: 'No pertenece a ninguna organización' },
@@ -761,18 +784,3 @@ export async function DELETE(request: Request) {
   }
 }
 
-async function resolveAllowedOrgIds(supabaseAny: any, userId: string): Promise<string[]> {
-  const [orgClienteRows, orgSocioRows] = await Promise.all([
-    supabaseAny.from('organizations').select('id').eq('user_id', userId),
-    supabaseAny.from('socios').select('org_id').eq('user_id', userId),
-  ]);
-
-  const orgIds = new Set<string>([
-    ...((orgClienteRows.data ?? []) as Array<{ id: string }>).map((o) => o.id),
-    ...((orgSocioRows.data ?? []) as Array<{ org_id: string | null }>)
-      .map((s) => s.org_id)
-      .filter((orgId): orgId is string => Boolean(orgId)),
-  ]);
-
-  return Array.from(orgIds);
-}

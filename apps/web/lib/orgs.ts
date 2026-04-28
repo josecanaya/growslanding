@@ -1,4 +1,6 @@
 import { createServiceSupabaseClient } from './supabase-server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './types/supabase.gen';
 
 type OrgRecord = {
   id: string;
@@ -83,4 +85,59 @@ export async function resolveOrgContext(
 
   const created = await ensureOrgForUser(userId, fallbackName);
   return { org: created, role: 'owner' };
+}
+
+/**
+ * IDs de organización a los que el usuario tiene acceso (dueño, socio vinculado o líder invitado).
+ * Usar con cliente service-role en rutas API.
+ */
+export async function listAccessibleOrgIds(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  userEmail?: string | null,
+): Promise<string[]> {
+  const orgIds = new Set<string>();
+
+  const { data: ownerRows, error: ownerErr } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('user_id', userId);
+  if (ownerErr) {
+    console.warn('[listAccessibleOrgIds] organizations:', ownerErr.message);
+  }
+  for (const o of ownerRows ?? []) {
+    orgIds.add(o.id);
+  }
+
+  const { data: socioRows, error: socioErr } = await supabase
+    .from('socios')
+    .select('org_id')
+    .eq('user_id', userId);
+  if (socioErr) {
+    console.warn('[listAccessibleOrgIds] socios:', socioErr.message);
+  }
+  for (const s of socioRows ?? []) {
+    if (s.org_id) {
+      orgIds.add(s.org_id);
+    }
+  }
+
+  if (userEmail) {
+    const { data: inviteRows, error: invErr } = await supabase
+      .from('leader_invites' as any)
+      .select('org_id')
+      .eq('email', userEmail)
+      .eq('status', 'accepted');
+    if (invErr) {
+      console.warn('[listAccessibleOrgIds] leader_invites:', invErr.message);
+    }
+    const invites = (inviteRows ?? []) as unknown as Array<{ org_id: string | null }>;
+    for (const row of invites) {
+      if (row.org_id) {
+        orgIds.add(row.org_id);
+      }
+    }
+  }
+
+  return Array.from(orgIds);
 }

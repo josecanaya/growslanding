@@ -76,7 +76,7 @@ export async function GET() {
     if (socioIds.length > 0) {
       const { data: socios, error: sociosError } = await supabase
         .from('socios')
-        .select('id, nombre, email, telefono, estado, rol, contacto')
+        .select('id, nombre, email, telefono, estado, org_id, especialidad')
         .in('id', socioIds);
 
       if (sociosError) {

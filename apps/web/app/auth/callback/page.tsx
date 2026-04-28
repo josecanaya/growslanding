@@ -24,6 +24,32 @@ function sanitizeRedirect(target: string | null): string | null {
   return target;
 }
 
+const PKCE_STORAGE_PREFIX = "grows_pkce:";
+
+function pkceStorageKey(code: string) {
+  return `${PKCE_STORAGE_PREFIX}${code}`;
+}
+
+/** Strict Mode monta dos veces: el 2.º intercambio reusa el code y rompe PKCE; esperamos al primero o reusamos sesión. */
+async function waitForPkcePeer(
+  supabase: ReturnType<typeof createClientComponentClient<Database>>,
+  code: string,
+  maxMs = 10_000,
+) {
+  const key = pkceStorageKey(code);
+  const start = Date.now();
+  while (Date.now() - start < maxMs) {
+    if (typeof window !== "undefined" && sessionStorage.getItem(key) === "done") {
+      return;
+    }
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 80));
+  }
+}
+
 function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,7 +58,6 @@ function CallbackPageContent() {
   const redirectTarget = sanitizeRedirect(redirectParam);
 
   const hasRunRef = useRef(false);
-  const sessionFromPkceRef = useRef<{ session: any; user: any } | null>(null);
   const isProcessingRef = useRef(false);
 
   useEffect(() => {
@@ -60,79 +85,94 @@ function CallbackPageContent() {
       hasRunRef.current = true;
       isProcessingRef.current = true;
       try {
-        // Intercambiar código OAuth por sesión si está presente en la URL
-        const code = searchParams?.get("code");
-        if (code && !sessionFromPkceRef.current) {
-          // Intentar intercambiar código UNA SOLA VEZ (sin retry para evitar loops)
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          
-          if (exchangeError) {
-            console.error(
-              "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
-              exchangeError
-            );
-            
-            // Detectar error de rate limit PRIMERO - no hacer más peticiones
-            const isRateLimit = 
-              exchangeError.message?.toLowerCase().includes('rate limit') ||
-              exchangeError.message?.toLowerCase().includes('too many requests') ||
-              exchangeError.status === 429;
-            
-            if (isRateLimit) {
-              // Error 429: NO hacer más peticiones, redirigir inmediatamente
-              console.warn("[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login");
-              if (typeof window !== 'undefined') {
-                const rateLimitUntil = Date.now() + (20 * 60 * 1000);
-                localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+        const rawCode = searchParams?.get("code");
+        const code = rawCode?.trim() ? rawCode.trim() : "";
+
+        if (code && typeof window !== "undefined") {
+          const pkceKey = pkceStorageKey(code);
+          const peerState = sessionStorage.getItem(pkceKey);
+
+          if (peerState === "done") {
+            // Ya intercambiado en este tab (p. ej. segundo montaje de Strict Mode)
+          } else if (peerState === "running") {
+            await waitForPkcePeer(supabase, code);
+          } else {
+            sessionStorage.setItem(pkceKey, "running");
+            try {
+              const { data: existingBefore } = await supabase.auth.getSession();
+              if (!existingBefore.session) {
+                const { error: exchangeError } =
+                  await supabase.auth.exchangeCodeForSession(code);
+
+                if (exchangeError) {
+                  console.error(
+                    "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
+                    exchangeError,
+                  );
+
+                  const isRateLimit =
+                    exchangeError.message?.toLowerCase().includes("rate limit") ||
+                    exchangeError.message?.toLowerCase().includes("too many requests") ||
+                    exchangeError.status === 429;
+
+                  if (isRateLimit) {
+                    console.warn(
+                      "[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login",
+                    );
+                    sessionStorage.removeItem(pkceKey);
+                    const rateLimitUntil = Date.now() + 20 * 60 * 1000;
+                    localStorage.setItem(
+                      "supabase_rate_limit_until",
+                      rateLimitUntil.toString(),
+                    );
+                    if (active) {
+                      router.replace("/auth/login?error=rate_limit" as Route);
+                    }
+                    return;
+                  }
+
+                  const errMsg = (exchangeError.message ?? "").toLowerCase();
+                  const isPkceError =
+                    errMsg.includes("code verifier") ||
+                    errMsg.includes("code_verifier") ||
+                    errMsg.includes("both auth code and code verifier") ||
+                    errMsg.includes("should be non-empty");
+
+                  sessionStorage.removeItem(pkceKey);
+
+                  if (isPkceError) {
+                    const loginPath =
+                      "/auth/login?error=pkce_error" +
+                      (redirectTarget
+                        ? `&redirect=${encodeURIComponent(redirectTarget)}`
+                        : "");
+                    if (active) {
+                      router.replace(loginPath as Route);
+                    }
+                    return;
+                  }
+
+                  console.error(
+                    "[OAUTH_CALLBACK] Error OAuth no manejado:",
+                    exchangeError,
+                  );
+                  if (active) {
+                    router.replace("/auth/login?error=oauth_failed" as Route);
+                  }
+                  return;
+                }
               }
-              if (active) {
-                router.replace("/auth/login?error=rate_limit" as Route);
-              }
-              return;
-            }
-            
-            // "both auth code and code verifier should be non-empty" = PKCE: code_verifier faltante
-            const errMsg = (exchangeError.message ?? '').toLowerCase();
-            const isPkceError =
-              errMsg.includes('code verifier') ||
-              errMsg.includes('code_verifier') ||
-              errMsg.includes('both auth code and code verifier') ||
-              errMsg.includes('should be non-empty');
-            
-            if (isPkceError) {
-              // Redirigir a login sin más llamadas; pkce_error = "usá la misma ventana, sin otras pestañas"
-              const loginPath =
-                '/auth/login?error=pkce_error' +
-                (redirectTarget ? `&redirect=${encodeURIComponent(redirectTarget)}` : '');
-              if (active) {
-                router.replace(loginPath as Route);
-              }
-              return;
-            } else {
-              // Otro tipo de error, redirigir sin reintentar
-              console.error("[OAUTH_CALLBACK] Error OAuth no manejado:", exchangeError);
-              if (active) {
-                router.replace("/auth/login?error=oauth_failed" as Route);
-              }
-              return;
+              sessionStorage.setItem(pkceKey, "done");
+            } catch (e) {
+              sessionStorage.removeItem(pkceKey);
+              throw e;
             }
           }
         }
 
-        // Si ya tenemos una sesión del manejo PKCE, usarla; si no, obtenerla normalmente
-        let sessionData;
-        let sessionError;
-        
-        if (sessionFromPkceRef.current) {
-          // Usar la sesión que ya obtuvimos durante el manejo de PKCE
-          sessionData = { session: sessionFromPkceRef.current.session };
-          sessionError = null;
-        } else {
-          // Obtener sesión normalmente
-          const result = await supabase.auth.getSession();
-          sessionData = result.data;
-          sessionError = result.error;
-        }
+        const result = await supabase.auth.getSession();
+        const sessionData = result.data;
+        const sessionError = result.error;
 
         if (!active) {
           return;

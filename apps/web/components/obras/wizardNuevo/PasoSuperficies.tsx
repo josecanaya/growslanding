@@ -1,7 +1,15 @@
 'use client';
 
 import { useMemo } from 'react';
+import { Ruler } from 'lucide-react';
 import { useWizardStore } from './useWizardStore';
+import {
+  hubSectionShell,
+  hubLabel,
+  hubInput,
+  hubPrimaryButton,
+  hubSecondaryButton,
+} from './nuevaObraHubStyles';
 
 type PasoSuperficiesProps = {
   onPrev: () => void;
@@ -18,11 +26,8 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
   const getTotalConstruido = useWizardStore((s) => s.getTotalConstruido);
 
   const totalConstruido = useMemo(() => getTotalConstruido(), [superficies, getTotalConstruido]);
-
   const puedeContinuar = useMemo(() => plantas >= 1 && plantas <= 5, [plantas]);
 
-  // Calcular FOS (Factor de Ocupación del Suelo)
-  // FOS = (área construida en planta baja / superficie total del terreno) × 100
   const FOS = useMemo(() => {
     if (!terreno || terreno <= 0) return 0;
     const plantaBaja = superficies.find((s) => s.planta === 1);
@@ -31,68 +36,68 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
     return (areaPlantaBaja / terreno) * 100;
   }, [terreno, superficies]);
 
-  // Calcular FOT (Factor de Ocupación Total)
-  // FOT = (superficie total construida en todas las plantas / superficie total del terreno)
   const FOT = useMemo(() => {
     if (!terreno || terreno <= 0) return 0;
     return totalConstruido / terreno;
   }, [terreno, totalConstruido]);
 
-  // Determinar si los valores están dentro del rango permitido
-  // Valores típicos: FOS < 60%, FOT < 1.2 (ajustar según normativa local)
   const FOS_VALIDO = FOS <= 60;
   const FOT_VALIDO = FOT <= 1.2;
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
-          <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
-            Superficies y estructura
-          </h2>
-          <p className="text-xs md:text-sm text-gray-600">
-            Definí la estructura principal y la distribución de superficies
-          </p>
+    <section className={hubSectionShell()}>
+      <div className="mb-8 flex items-center gap-3">
+        <Ruler className="h-6 w-6 flex-shrink-0 text-[#001629]" strokeWidth={1.75} />
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-[#001629]">Superficie y plantas</h2>
+          <p className="mt-0.5 text-sm text-[#42474d]">Terreno, cubiertos y descubiertos por nivel</p>
         </div>
+      </div>
 
-        <div className="grid gap-4 md:gap-6 p-3 md:p-4 lg:p-5 md:grid-cols-3">
-          <div className="space-y-2 md:col-span-3 lg:col-span-1">
-            <label className="text-xs md:text-sm font-medium">Cantidad de plantas</label>
+      <div className="space-y-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className={hubLabel()}>Superficie total del terreno</label>
+            <div className="flex items-center overflow-hidden rounded-lg bg-[#f0f4f8] ring-2 ring-transparent focus-within:ring-[#24a375]">
+              <input
+                type="number"
+                min={0}
+                value={terreno || ''}
+                placeholder="Ej. 300"
+                onChange={(e) => setField('terreno', Number(e.target.value))}
+                className="min-h-[48px] w-full flex-1 border-0 bg-transparent px-3 py-2 text-sm outline-none"
+              />
+              <span className="pr-4 text-sm font-medium text-[#42474d]">m²</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className={hubLabel()}>Cantidad de plantas</label>
             <select
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
+              className={`${hubInput()} appearance-none bg-[length:1rem] bg-[right_1rem_center] bg-no-repeat pr-10`}
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2342474d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+              }}
               value={plantas}
               onChange={(e) => setPlantas(Math.min(5, Math.max(1, Number(e.target.value))))}
             >
               {[1, 2, 3, 4, 5].map((n) => (
                 <option key={n} value={n}>
-                  {n}
+                  {n} {n === 1 ? 'planta' : 'plantas'}
                 </option>
               ))}
             </select>
           </div>
-
-          <div className="space-y-2 md:col-span-3 lg:col-span-2">
-            <label className="text-xs md:text-sm font-medium">Superficie total del terreno (m²)</label>
-            <input
-              type="number"
-              min={0}
-              value={terreno || ''}
-              onChange={(e) => setField('terreno', Number(e.target.value))}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-              placeholder="Ej: 300"
-            />
-          </div>
         </div>
 
-        <div className="px-3 md:px-4 lg:px-5 pb-3 md:pb-4 lg:pb-5">
+        <div className="space-y-4">
           {superficies.map((p, idx) => (
-            <div key={p.planta} className="mt-3 md:mt-4 rounded-lg md:rounded-xl border border-gray-200 p-3 md:p-4">
-              <div className="mb-2 md:mb-3 text-xs md:text-sm font-semibold" style={{ color: '#003C6E' }}>
+            <div key={p.planta} className="rounded-xl border border-[#dfe3e7] bg-[#f6fafc] px-5 py-4">
+              <p className="mb-4 text-xs font-bold uppercase tracking-wider text-[#002b49]">
                 Planta {p.planta}
-              </div>
-              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-medium">m² cubiertos</label>
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label className={hubLabel()}>Cubiertos</label>
                   <input
                     type="number"
                     min={0}
@@ -100,12 +105,11 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
                     onChange={(e) =>
                       updatePlantaSuperficie(idx, 'cubiertos', Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-                    placeholder="Ej: 120"
+                    className={hubInput()}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs md:text-sm font-medium">m² descubiertos</label>
+                <div className="flex flex-col gap-1.5">
+                  <label className={hubLabel()}>Descubiertos</label>
                   <input
                     type="number"
                     min={0}
@@ -113,8 +117,7 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
                     onChange={(e) =>
                       updatePlantaSuperficie(idx, 'descubiertos', Number(e.target.value))
                     }
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-                    placeholder="Ej: 40"
+                    className={hubInput()}
                   />
                 </div>
               </div>
@@ -122,59 +125,46 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
           ))}
         </div>
 
-        {/* Indicadores urbanísticos */}
-        <div className="px-3 md:px-4 lg:px-5 pb-3 md:pb-4 lg:pb-5">
-          <div className="rounded-lg md:rounded-xl border border-gray-200 p-3 md:p-4">
-            <h3 className="mb-3 md:mb-4 text-sm md:text-base font-semibold" style={{ color: '#003C6E' }}>
-              Indicadores urbanísticos
-            </h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <div className="text-xs md:text-sm text-gray-600">FOS (Factor de Ocupación del Suelo)</div>
-                <div
-                  className={`text-2xl md:text-3xl font-bold ${FOS_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
-                >
-                  {FOS.toFixed(2)}%
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="text-xs md:text-sm text-gray-600">FOT (Factor de Ocupación Total)</div>
-                <div
-                  className={`text-2xl md:text-3xl font-bold ${FOT_VALIDO ? 'text-green-600' : 'text-amber-600'}`}
-                >
-                  {FOT.toFixed(2)}
-                </div>
-              </div>
-            </div>
-            <p className="mt-3 md:mt-4 text-[10px] md:text-xs text-gray-500">
-              El FOS y FOT se calculan automáticamente según los datos cargados.
-            </p>
-          </div>
+        <div className="rounded-xl border border-dashed border-[#c3c7ce] bg-[#f6fafe] p-6 text-center opacity-95">
+          <p className="text-sm font-semibold text-[#001629]">Planos preliminares</p>
+          <p className="mt-1 text-xs text-[#42474d]">Opcional • PDF o DWG (próximamente)</p>
         </div>
 
-        <div className="border-t border-gray-100" />
+        <div className="rounded-xl border border-[#dfe3e7] bg-white p-5">
+          <h3 className="mb-4 text-sm font-bold text-[#001629]">Indicadores urbanísticos</h3>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#42474d]">FOS</p>
+              <p className={`mt-1 text-3xl font-extrabold ${FOS_VALIDO ? 'text-[#146c43]' : 'text-[#b45309]'}`}>
+                {FOS.toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#42474d]">FOT</p>
+              <p className={`mt-1 text-3xl font-extrabold ${FOT_VALIDO ? 'text-[#146c43]' : 'text-[#b45309]'}`}>
+                {FOT.toFixed(2)}
+              </p>
+            </div>
+          </div>
+          <p className="mt-4 text-[11px] leading-relaxed text-[#596574]">
+            Se calculan en vivo con los datos cargados arriba.
+          </p>
+        </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 p-3 md:p-4 lg:p-5">
-          <button
-            type="button"
-            onClick={onPrev}
-            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 md:px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50 min-h-[44px]"
-          >
+        <div className="flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 sm:flex-row sm:justify-between">
+          <button type="button" onClick={onPrev} className={`${hubSecondaryButton()} w-full sm:w-auto`}>
             Atrás
           </button>
           <button
             type="button"
             disabled={!puedeContinuar}
             onClick={onNext}
-            className={`w-full sm:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition min-h-[44px] ${
-              !puedeContinuar ? 'opacity-60 cursor-not-allowed' : ''
-            }`}
-            style={{ backgroundColor: '#0055A4' }}
+            className={`${hubPrimaryButton()} w-full px-12 sm:w-auto ${!puedeContinuar ? 'opacity-55' : ''}`}
           >
             Siguiente
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

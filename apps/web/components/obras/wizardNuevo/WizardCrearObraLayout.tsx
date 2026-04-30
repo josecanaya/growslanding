@@ -5,24 +5,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import PasoDatosBasicos from './PasoDatosBasicos';
 import PasoSuperficies from './PasoSuperficies';
 import PasoCargaElementos from './PasoCargaElementos';
+import { NuevaObraHubAside } from './NuevaObraHubAside';
 import { useWizardStore } from './useWizardStore';
 
-const STEPS_BASE = [
-  { id: 1, title: 'Datos básicos' },
-  { id: 2, title: 'Superficies y estructura' },
-];
-
-const STEP_GUARDAR = { id: 3, title: 'Confirmar y guardar' };
+const STEPHUB_META = [
+  { id: 1, headline: 'Datos', subtitle: 'Datos básicos del proyecto y ubicación' },
+  {
+    id: 2,
+    headline: 'Superficie',
+    subtitle: 'Superficies por planta, terreno e indicadores',
+  },
+  { id: 3, headline: 'Activación', subtitle: 'Revisión final y alta de obra' },
+] as const;
 
 function WizardCrearObraLayout() {
   const [step, setStep] = useState(1);
   const reset = useWizardStore((s) => s.reset);
-  
-  const STEPS = useMemo(() => [...STEPS_BASE, STEP_GUARDAR], []);
 
-  const progress = useMemo(() => (step / STEPS.length) * 100, [step, STEPS.length]);
+  const STEPS = useMemo(() => [...STEPHUB_META], []);
 
-  // Ajustar el paso actual si se cambia el modo y estamos en un paso que ya no existe
   useEffect(() => {
     if (step > STEPS.length) {
       setStep(STEPS.length);
@@ -40,6 +41,8 @@ function WizardCrearObraLayout() {
     setStep(1);
   }
 
+  const currentMeta = STEPS.find((s) => s.id === step);
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -54,87 +57,89 @@ function WizardCrearObraLayout() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f6f7f9' }}>
-      <div className="mx-auto max-w-6xl px-3 md:px-4 py-4 md:py-6 lg:py-8">
-        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-          {/* Sidebar pasos (izquierda) */}
-          <aside className="lg:col-span-3">
-            <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-3 md:p-4 shadow-sm">
-              <div className="mb-3 md:mb-4" data-onboarding="crear-obra" style={{ scrollMarginTop: '20px' }}>
-                <h2 className="text-sm md:text-base font-semibold" style={{ color: '#003C6E' }}>
-                  Crear nueva obra
-                </h2>
-                <p className="text-xs md:text-sm text-gray-600">Completá la información paso a paso</p>
-              </div>
-              <nav className="space-y-1">
-                {STEPS.map((s) => {
-                  const active = s.id === step;
-                  return (
+    <div className="min-h-screen bg-[#f6fafe] pb-28 text-[#171c1f]">
+      <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 lg:pt-8">
+        {/* Hero */}
+        <header className="mb-10 text-center lg:mb-12">
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#001629] sm:text-4xl">
+            Nueva obra
+          </h1>
+          <p className="mt-2 text-base text-[#42474d] sm:text-lg">Configurá tu obra en minutos.</p>
+        </header>
+
+        {/* Stepper (hub horizontal) */}
+        <div className="mb-10 flex justify-center lg:mb-14">
+          <nav aria-label="Progreso del asistente" className="w-full max-w-lg sm:max-w-xl">
+            <ol className="grid grid-cols-3 gap-3 px-2 sm:gap-6">
+              {STEPS.map((meta) => {
+                const active = step === meta.id;
+                const done = step > meta.id;
+
+                const circleClass = active
+                  ? 'bg-[#002b49] text-white shadow-md shadow-black/25'
+                  : done
+                    ? 'bg-[#02446f] text-white'
+                    : 'bg-[#e4e9ed] text-[#596574]';
+
+                return (
+                  <li key={meta.id} className="flex justify-center">
                     <button
-                      key={s.id}
                       type="button"
-                      onClick={() => setStep(s.id)}
-                      className={`flex w-full items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-1.5 md:py-2 text-left transition min-h-[44px] ${
-                        active
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'hover:bg-gray-50 border border-transparent'
-                      }`}
+                      data-onboarding={meta.id === 1 ? 'crear-obra' : undefined}
+                      onClick={() => setStep(meta.id)}
+                      className="flex w-full max-w-[7.5rem] flex-col items-center gap-2 rounded-xl p-2 transition active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#24a375] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f6fafe]"
+                      aria-current={active ? 'step' : undefined}
                     >
                       <span
-                        className={`flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-md text-[10px] md:text-xs font-semibold flex-shrink-0 ${
-                          active ? 'text-white' : 'text-blue-700'
-                        }`}
-                        style={{ backgroundColor: active ? '#0055A4' : 'transparent', border: active ? 'none' : '1px solid #C2D4E6' }}
+                        className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold sm:h-[2.5rem] sm:w-[2.5rem] ${circleClass}`}
                       >
-                        {s.id}
+                        {meta.id}
                       </span>
-                      <span className={`text-xs md:text-sm ${active ? 'font-semibold' : ''}`} style={{ color: active ? '#0055A4' : '#0f172a' }}>
-                        {s.title}
+                      <span
+                        className={`text-center text-[11px] font-semibold uppercase tracking-wide leading-tight sm:text-xs ${active ? 'text-[#001629]' : 'text-[#596574]'}`}
+                      >
+                        {meta.headline}
                       </span>
                     </button>
-                  );
-                })}
-              </nav>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+        </div>
 
-              {/* Progreso */}
-              <div className="mt-4 md:mt-6">
-                <div className="mb-1.5 md:mb-2 flex items-center justify-between text-[10px] md:text-xs text-gray-600">
-                  <span>Progreso</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="h-1.5 md:h-2 w-full rounded-full bg-gray-100">
-                  <div
-                    className="h-1.5 md:h-2 rounded-full"
-                    style={{ width: `${progress}%`, backgroundColor: '#0055A4' }}
-                  />
-                </div>
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-start lg:gap-12 xl:gap-14">
+          <div className="min-w-0 space-y-4 lg:col-span-7">
+            {currentMeta ? (
+              <div className="mb-2 sm:mb-4">
+                <p className="text-xs font-bold uppercase tracking-widest text-[#42474d]">
+                  Paso {step} de {STEPS.length}
+                </p>
+                <h2 className="mt-1 text-xl font-bold tracking-tight text-[#001629] sm:text-2xl">
+                  {currentMeta.subtitle}
+                </h2>
               </div>
-            </div>
-          </aside>
+            ) : null}
 
-          {/* Contenido del paso (derecha) */}
-          <section className="lg:col-span-9">
-            <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-3 md:p-4 lg:p-6 shadow-md">
-              <div className="mb-4 md:mb-6">
-                <h1 className="text-lg md:text-xl lg:text-2xl font-semibold" style={{ color: '#003C6E' }}>
-                  {STEPS.find((s) => s.id === step)?.title}
-                </h1>
-                <p className="text-xs md:text-sm text-gray-600">Completá los datos requeridos abajo</p>
-              </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+              >
+                {renderStep()}
+              </motion.div>
+            </AnimatePresence>
+          </div>
 
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                >
-                  {renderStep()}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </section>
+          <div className="min-w-0 lg:col-span-5">
+            <p className="mb-4 hidden font-bold uppercase tracking-[0.2em] text-[#42474d] lg:block">
+              Resumen
+            </p>
+            <NuevaObraHubAside />
+          </div>
         </div>
       </div>
     </div>

@@ -1,692 +1,449 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import {
-  ArrowLeft,
-  Box,
-  CheckSquare,
-  ChevronRight,
-  Layers3,
-  LayoutGrid,
-  Network,
-  Package,
-  Plus,
-  FileStack,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ReactFlowProvider } from '@xyflow/react';
+import type { Connection } from '@xyflow/react';
+
+import { ArrowLeft, ChevronRight } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
-import {
-  getCanvasObraEditorMock,
-  newId,
-  type BloqueEditorMock,
-  type CanvasObraMock,
-  type EtapaEditorMock,
-  type PaquetePresupuestoMock,
-  type TareaEditorMock,
-} from '@/lib/mocks/canvasObraEditorMock';
-import { TareaFlowEditor } from './TareaFlowEditor';
 import { Button } from '@/components/ui/grows';
-import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import type { CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
+import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
+import {
+  cabeceraContextoNivel,
+  labelCrearContextual,
+  sortSiblingsByPrecedence,
+  vistaPrincipalPorContenedor,
+} from './canvasMultinivelHelpers';
+import { CanvasLeftInspector } from './CanvasLeftInspector';
+import { EtapasTimelineView } from './nivel-views/EtapasTimelineView';
+import { HubGridNivelView } from './nivel-views/HubGridNivelView';
+import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
+import { TareasCanvasPanel } from './TareasCanvasPanel';
+import { useCanvasMultinivel } from './useCanvasMultinivel';
 
-type Level = 1 | 2 | 3;
+type Props = { obraId: string };
 
-type Props = {
-  obraId: string;
-};
-
-function defaultTarea(over: Partial<TareaEditorMock> = {}): TareaEditorMock {
-  return {
-    id: newId('t'),
-    nombre: 'Nueva tarea',
-    estado: 'Pendiente',
-    responsable: 'Sin asignar',
-    checklist: [
-      { id: newId('ck'), label: 'Ítem de checklist', done: false },
-    ],
-    evidencia: [],
-    validacion: { estado: 'pendiente' },
-    paqueteId: null,
-    dias: 2,
-    pos: { x: 120 + Math.random() * 80, y: 80 + Math.random() * 60 },
-    ...over,
-  };
+function edgeCriticoVisible(
+  sis: CanvasPrecedenceEdge[],
+  vis: { type: string; esCritica?: boolean }[],
+  cpmCritCount: number | null,
+): boolean {
+  if (cpmCritCount != null && cpmCritCount > 0) return true;
+  return (
+    sis.some((e) => e.critical) || vis.some((vn) => vn.type === 'tarea' && vn.esCritica)
+  );
 }
 
 export function CanvasObraEditor({ obraId }: Props) {
   const router = useRouter();
-  const initial = useMemo(() => getCanvasObraEditorMock(obraId), [obraId]);
-  const [model, setModel] = useState<CanvasObraMock>(initial);
-  const [etapaId, setEtapaId] = useState<string | null>(null);
-  const [bloqueId, setBloqueId] = useState<string | null>(null);
-  const [selectedTareaId, setSelectedTareaId] = useState<string | null>(null);
-  const [sideTab, setSideTab] = useState<'tarea' | 'paquetes' | 'estructura'>('tarea');
+  const [connectTareas, setConnectTareas] = useState(false);
+  const [connectEtapas, setConnectEtapas] = useState(false);
+  const [pendingEtapasSource, setPendingEtapasSource] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
-  const level: Level = !etapaId ? 1 : !bloqueId ? 2 : 3;
+  const {
+    obraNombre,
+    setObraNombre,
+    nodes,
+    siblingEdges,
+    containerNode,
+    containerId,
+    visibleNodes,
+    childTypeToCreate,
+    selectedId,
+    setSelectedId,
+    selectedNode,
+    breadcrumbItems,
+    goToBreadcrumbIndex,
+    goUpLevel,
+    enterNode,
+    createChildNode,
+    patchNode,
+    updatePosition,
+    deleteNode,
+    duplicateNode,
+    createChildOf,
+    tryPrecedenceConnection,
+    removeEdgeIds,
+    patchEdge,
+    addChecklistItem,
+    toggleChecklistItem,
+    updateChecklistLabel,
+    removeChecklistItem,
+  } = useCanvasMultinivel(obraId);
 
-  const etapa = useMemo(
-    () => model.etapas.find((e) => e.id === etapaId) ?? null,
-    [model.etapas, etapaId]
+  const vista = vistaPrincipalPorContenedor(containerNode);
+  const cabecera = useMemo(
+    () => cabeceraContextoNivel(obraNombre, containerNode),
+    [obraNombre, containerNode],
   );
-  const bloque = useMemo(
-    () => (etapa ? etapa.bloques.find((b) => b.id === bloqueId) ?? null : null),
-    [etapa, bloqueId]
+
+  const sortedEtapas = useMemo(
+    () => sortSiblingsByPrecedence(visibleNodes, siblingEdges),
+    [visibleNodes, siblingEdges],
   );
 
-  const selectedTarea: TareaEditorMock | null = useMemo(() => {
-    if (!bloque || !selectedTareaId) return null;
-    return bloque.tareas.find((t) => t.id === selectedTareaId) ?? null;
-  }, [bloque, selectedTareaId]);
+  useEffect(() => {
+    setSelectedEdgeId(null);
+    setConnectTareas(false);
+    setConnectEtapas(false);
+    setPendingEtapasSource(null);
+  }, [containerId]);
 
-  const updateBloque = useCallback((eid: string, bid: string, next: BloqueEditorMock) => {
-    setModel((m) => {
-      const nextEtapas = m.etapas.map((e) =>
-        e.id === eid
-          ? { ...e, bloques: e.bloques.map((b) => (b.id === bid ? next : b)) }
-          : e
-      );
-      return { ...m, etapas: nextEtapas, paquetes: syncPaquetes(m.paquetes, nextEtapas) };
+  useEffect(() => {
+    setSelectedEdgeId((eid) => {
+      if (eid == null) return null;
+      return siblingEdges.some((e) => e.id === eid) ? eid : null;
     });
-  }, []);
+  }, [siblingEdges]);
 
-  const onAddEtapa = useCallback(() => {
-    const id = newId('et');
-    const n: EtapaEditorMock = {
-      id,
-      slug: 'estructura',
-      titulo: 'Nueva etapa',
-      subtitulo: 'Descripción (mock)',
-      bloques: [
-        {
-          id: newId('bl'),
-          titulo: 'Bloque inicial',
-          descripcion: 'Arrastrá tareas al grafo',
-          tareas: [defaultTarea({ nombre: 'Tarea 1' })],
-          edges: [],
-        },
-      ],
-    };
-    setModel((m) => ({ ...m, etapas: [...m.etapas, n] }));
-    setEtapaId(id);
-    setBloqueId(n.bloques[0]!.id);
-  }, []);
+  useEffect(() => {
+    setSelectedEdgeId(null);
+    setConnectTareas(false);
+    setConnectEtapas(false);
+    setPendingEtapasSource(null);
+    setSelectedId(null);
+  }, [obraId, setSelectedId]);
 
-  const onAddBloque = useCallback(() => {
-    if (!etapaId) return;
-    const b: BloqueEditorMock = {
-      id: newId('bl'),
-      titulo: 'Nuevo bloque / fase',
-      descripcion: 'Doble click en el mapa (mock)',
-      tareas: [defaultTarea()],
-      edges: [],
-    };
-    setModel((m) => ({
-      ...m,
-      etapas: m.etapas.map((e) =>
-        e.id === etapaId ? { ...e, bloques: [...e.bloques, b] } : e
-      ),
-    }));
-    setBloqueId(b.id);
-  }, [etapaId]);
+  const puedeCrear = childTypeToCreate !== null;
+  const labelBotonCrear = labelCrearContextual(childTypeToCreate);
+  const selectedEdge =
+    selectedEdgeId === null ? null : siblingEdges.find((e) => e.id === selectedEdgeId) ?? null;
 
-  const onAddTarea = useCallback(() => {
-    if (!etapaId || !bloqueId || !etapa) return;
-    const t = defaultTareaAtEnd(etapa, bloqueId);
-    if (!t) return;
-    setModel((m) => ({
-      ...m,
-      etapas: m.etapas.map((e) => {
-        if (e.id !== etapaId) return e;
-        return {
-          ...e,
-          bloques: e.bloques.map((b) => {
-            if (b.id !== bloqueId) return b;
-            return { ...b, tareas: [...b.tareas, t] };
-          }),
-        };
-      }),
-    }));
-    setSelectedTareaId(t.id);
-  }, [etapa, etapaId, bloqueId]);
+  const taskCpmBundle = useMemo(() => {
+    if (vista !== 'tareas') return null;
+    return computeCanvasTaskCpm(visibleNodes, siblingEdges);
+  }, [vista, visibleNodes, siblingEdges]);
+
+  const muestraLegendCritico =
+    vista === 'tareas' &&
+    edgeCriticoVisible(siblingEdges, visibleNodes, taskCpmBundle?.resultado.critical_count ?? null);
+
+  const childCount = useCallback((id: string) => countChildren(nodes, id), [nodes]);
+
+  useEffect(() => {
+    if (selectedNode || selectedEdge) setInspectorOpen(true);
+  }, [selectedNode, selectedEdge]);
+
+  const onTimelineSecond = useCallback(
+    (sourceId: string, targetId: string) => {
+      const ok = tryPrecedenceConnection({
+        source: sourceId,
+        target: targetId,
+        sourceHandle: 'src',
+        targetHandle: 'tgt',
+      } as Connection);
+      setPendingEtapasSource(null);
+      return ok;
+    },
+    [tryPrecedenceConnection],
+  );
+
+  const leftContext = (
+    <aside className="hidden w-[286px] shrink-0 flex-col gap-4 p-5 xl:flex">
+      <div className="rounded-[28px] bg-[#001629] p-5 text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]">
+        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#85f8c4]">
+          Obra · canvas
+        </p>
+        <input
+          className="mt-3 w-full border-b border-white/10 bg-transparent text-2xl font-black tracking-[-0.04em] text-white outline-none focus:border-[#85f8c4]"
+          value={obraNombre}
+          aria-label="Nombre de la obra"
+          onChange={(e) => setObraNombre(e.target.value)}
+        />
+        <p className="mt-4 text-sm leading-6 text-white/66">{cabecera.contextoUbicacion}</p>
+      </div>
+
+      <div className="rounded-[26px] bg-white/80 p-4 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
+        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
+          Ubicación
+        </p>
+        <div className="mt-3 space-y-2">
+          {breadcrumbItems.map((item, idx) => (
+            <button
+              key={item.id ?? 'root'}
+              type="button"
+              onClick={() => goToBreadcrumbIndex(idx)}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm font-bold transition',
+                idx === breadcrumbItems.length - 1
+                  ? 'bg-[#d7e4f5] text-[#001629]'
+                  : 'text-[#596574] hover:bg-[#f0f4f8]',
+              )}
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#406182]">
+                {idx + 1}
+              </span>
+              <span className="min-w-0 truncate">{item.title}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <ContextCard label="Nivel actual" value={cabecera.nivelActualTitulo} />
+      <ContextCard label="Vista" value={cabecera.vistaActual} />
+      <div className="rounded-[26px] bg-[#f0f4f8]/95 p-4 text-sm leading-6 text-[#545f6e] shadow-[0_12px_32px_rgba(23,28,31,0.04)]">
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
+          Acción sugerida
+        </p>
+        {cabecera.accionSugerida}
+      </div>
+    </aside>
+  );
+
+  const vistaCentral = (
+    <>
+      {vista === 'etapas' && visibleNodes.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-[#bcc3d9] bg-white/85 px-6 py-14 text-center text-[#596574]">
+          <p className="text-base font-bold text-[#0f1e1f]">Sin etapas todavía</p>
+          <p className="mx-auto mt-2 max-w-md text-sm">
+            Creá la primera con <strong>{labelBotonCrear}</strong>. Luego aparecerán en orden horizontal según precedencias definidas entre fases.
+          </p>
+        </div>
+      )}
+
+      {vista === 'etapas' && visibleNodes.length > 0 && (
+        <EtapasTimelineView
+          ordered={sortedEtapas}
+          selectedId={selectedId}
+          connectMode={connectEtapas}
+          pendingSourceId={pendingEtapasSource}
+          childCount={(id) => countChildren(nodes, id)}
+          onSelect={(id) => {
+            setSelectedEdgeId(null);
+            setSelectedId(id);
+          }}
+          onEnter={enterNode}
+          onConnectFirst={(id) => {
+            setSelectedEdgeId(null);
+            setPendingEtapasSource(id);
+            setSelectedId(id);
+          }}
+          onConnectSecond={onTimelineSecond}
+        />
+      )}
+
+      {vista === 'plantas' && containerNode && (
+        <HubGridNivelView
+          variant="planta"
+          hubNode={containerNode}
+          items={visibleNodes}
+          selectedId={selectedId}
+          childCount={childCount}
+          onSelect={(id) => {
+            setSelectedEdgeId(null);
+            setSelectedId(id);
+          }}
+          onEnter={enterNode}
+        />
+      )}
+
+      {vista === 'sectores' && containerNode && (
+        <HubGridNivelView
+          variant="sector"
+          hubNode={containerNode}
+          items={visibleNodes}
+          selectedId={selectedId}
+          childCount={childCount}
+          onSelect={(id) => {
+            setSelectedEdgeId(null);
+            setSelectedId(id);
+          }}
+          onEnter={enterNode}
+        />
+      )}
+
+      {vista === 'ambientes' && containerNode && (
+        <HubGridNivelView
+          variant="ambiente"
+          hubNode={containerNode}
+          items={visibleNodes}
+          selectedId={selectedId}
+          childCount={childCount}
+          onSelect={(id) => {
+            setSelectedEdgeId(null);
+            setSelectedId(id);
+          }}
+          onEnter={enterNode}
+        />
+      )}
+
+      {vista === 'tareas' && (
+        <ReactFlowProvider>
+          <div className="flex min-h-0 w-full flex-1 flex-col">
+            <TareasCanvasPanel
+              taskCpmBundle={taskCpmBundle}
+              visibleNodes={visibleNodes}
+              nodes={nodes}
+              siblingEdges={siblingEdges}
+              selectedId={selectedId}
+              setSelectedId={setSelectedId}
+              selectedEdgeId={selectedEdgeId}
+              setSelectedEdgeId={setSelectedEdgeId}
+              containerId={containerId}
+              enterNode={enterNode}
+              updatePosition={updatePosition}
+              connectMode={connectTareas}
+              onToggleConnect={() => setConnectTareas((x) => !x)}
+              tryPrecedenceConnection={tryPrecedenceConnection}
+              removeEdgeIds={removeEdgeIds}
+            />
+          </div>
+        </ReactFlowProvider>
+      )}
+    </>
+  );
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-[#ecfdfd] text-[#0f1e1f]">
-      <header className="sticky top-0 z-40 border-b border-[#c3c5d9]/60 bg-[#ecfdfd]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
+    <div className="flex min-h-[100dvh] min-w-[1024px] flex-col bg-[#f6fafe] text-[#0f1e1f]">
+      <header className="sticky top-0 z-40 bg-white/72 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-xl">
+        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
+              type="button"
               className="shrink-0"
-              onClick={() => {
-                if (level === 3) {
-                  setBloqueId(null);
-                  setSelectedTareaId(null);
-                } else if (level === 2) {
-                  setEtapaId(null);
-                  setBloqueId(null);
-                } else {
-                  router.push('/cliente/tareas' as Route);
-                }
-              }}
+              onClick={() => router.push(`/cliente/tareas/${obraId}` as Route)}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#434656]">Grows</p>
-              <h1 className="truncate text-sm font-extrabold text-[#01124f] md:text-base">
-                {model.obraNombre}
-              </h1>
+            <div className="min-w-0 xl:hidden">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6b728e]">Obra · canvas</p>
+              <input
+                className="w-full max-w-md truncate border-b border-transparent bg-transparent text-base font-extrabold text-[#01124f] outline-none focus:border-[#0042c8]"
+                value={obraNombre}
+                aria-label="Nombre de la obra"
+                onChange={(e) => setObraNombre(e.target.value)}
+              />
             </div>
-            <nav
-              className="hidden min-w-0 items-center gap-1 text-[10px] font-medium text-[#434656] md:flex"
-              aria-label="Migas"
-            >
-              <span className="shrink-0">Obra</span>
-              <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
-              {etapa && (
-                <>
-                  <span className="max-w-[100px] truncate text-[#0f1e1f]">{etapa.titulo}</span>
-                  <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
-                </>
-              )}
-              {bloque && (
-                <span className="max-w-[120px] truncate text-[#0042c8]">{bloque.titulo}</span>
-              )}
-            </nav>
           </div>
-          <div className="hidden shrink-0 items-center gap-2 sm:flex">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onAddEtapa}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Etapa
-            </Button>
-            {level >= 2 && etapaId && (
+          <div className="flex flex-wrap items-center gap-2">
+            {vista === 'etapas' && (
               <Button
                 type="button"
-                variant="secondary"
+                variant={connectEtapas ? 'primary' : 'secondary'}
                 size="sm"
-                onClick={onAddBloque}
+                onClick={() => {
+                  setConnectEtapas((v) => !v);
+                  setPendingEtapasSource(null);
+                }}
               >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Nodo
+                {connectEtapas ? 'Listo · orden de fases' : 'Conectar orden de fases'}
               </Button>
             )}
-            {level === 3 && etapaId && bloqueId && (
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={onAddTarea}
-              >
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                Tarea
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 border-t border-[#c3c5d9]/30 px-4 py-2 md:hidden">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onAddEtapa}
-          >
-            <Plus className="mr-1 h-3.5 w-3.5" />
-            Etapa
-          </Button>
-          {level >= 2 && etapaId && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onAddBloque}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Nodo
+            <Button type="button" variant="secondary" size="sm" onClick={() => goUpLevel()} disabled={!containerNode}>
+              ← Subir nivel
             </Button>
-          )}
-          {level === 3 && etapaId && bloqueId && (
             <Button
               type="button"
               variant="primary"
               size="sm"
-              onClick={onAddTarea}
+              disabled={!puedeCrear}
+              onClick={() => createChildNode()}
             >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Tarea
+              {labelBotonCrear}
             </Button>
-          )}
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-[1680px] px-4 pb-4 md:px-5 xl:hidden">
+          <div className="rounded-full bg-[#f0f4f8]/90 px-4 py-2.5 shadow-[0_12px_32px_rgba(23,28,31,0.04)] backdrop-blur-md">
+            <div className="flex flex-wrap gap-x-1 gap-y-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#7a8492]">
+              {breadcrumbItems.map((item, idx) => (
+                <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
+                  {idx > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" aria-hidden />}
+                  <button
+                    type="button"
+                    onClick={() => goToBreadcrumbIndex(idx)}
+                    className={cn(
+                      'max-w-[260px] truncate rounded-full px-2 py-0.5 transition hover:bg-white',
+                      idx === breadcrumbItems.length - 1
+                        ? 'font-black text-[#001629]'
+                        : 'text-[#7a8492]',
+                    )}
+                  >
+                    {item.title}
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2 text-[12px] text-[#4b556b]">
+              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
+                <strong className="text-[#001629]">Nivel actual:</strong> {cabecera.nivelActualTitulo}
+              </span>
+              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
+                <strong className="text-[#001629]">Vista:</strong> {cabecera.vistaActual}
+              </span>
+              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
+                <strong className="text-[#001629]">Acción:</strong> {cabecera.accionSugerida}
+              </span>
+            </div>
+          </div>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 min-h-0">
-        <aside className="hidden w-56 flex-col border-r border-[#c3c5d9]/50 bg-white/50 md:flex">
-          <p className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-[#434656]">Panel</p>
-          <button
-            type="button"
-            onClick={() => setSideTab('tarea')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2.5 text-left text-sm font-medium transition',
-              sideTab === 'tarea' ? 'bg-[#d9e3f6] text-[#0a1422]' : 'text-[#434656] hover:bg-[#e6f7f8]'
-            )}
-          >
-            <Box className="h-4 w-4" />
-            Canvas
-          </button>
-          <button
-            type="button"
-            onClick={() => setSideTab('estructura')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2.5 text-left text-sm font-medium transition',
-              sideTab === 'estructura' ? 'bg-[#d9e3f6] text-[#0a1422]' : 'text-[#434656] hover:bg-[#e6f7f8]'
-            )}
-          >
-            <CheckSquare className="h-4 w-4" />
-            Tareas
-          </button>
-          <button
-            type="button"
-            onClick={() => setSideTab('paquetes')}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2.5 text-left text-sm font-medium transition',
-              sideTab === 'paquetes' ? 'bg-[#d9e3f6] text-[#0a1422]' : 'text-[#434656] hover:bg-[#e6f7f8]'
-            )}
-          >
-            <Package className="h-4 w-4" />
-            Paquetes
-          </button>
-        </aside>
+      <div className="mx-auto flex w-full max-w-[1680px] flex-1 min-h-0">
+        {leftContext}
 
-        <div className="flex min-w-0 flex-1 flex-col p-3 md:p-5">
-          {level === 1 && (
-            <section>
-              <div className="mb-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#0042c8]">Nivel 1</p>
-                <h2 className="text-xl font-extrabold text-[#0f1e1f]">Timeline de etapas</h2>
-                <p className="mt-1 text-sm text-[#434656]">
-                  Elegí una etapa para ver bloques. Los datos son mock; luego: tareas → validación → wallet.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {model.etapas.map((e) => {
-                  const totalNodos = e.bloques.length;
-                  const totalT = e.bloques.reduce((a, b) => a + b.tareas.length, 0);
-                  return (
-                    <button
-                      type="button"
-                      key={e.id}
-                      onClick={() => {
-                        setEtapaId(e.id);
-                        setBloqueId(null);
-                        setSelectedTareaId(null);
-                      }}
-                      className="group flex flex-col rounded-2xl border border-[#c3c5d9] bg-white p-5 text-left shadow-sm transition hover:border-[#0042c8] hover:shadow-md"
-                    >
-                      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-[#b6c4ff]/30 text-[#0042c8]">
-                        <Layers3 className="h-5 w-5" />
-                      </div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#434656]">Etapa</p>
-                      <h3 className="text-lg font-extrabold text-[#0f1e1f] group-hover:text-[#0042c8]">
-                        {e.titulo}
-                      </h3>
-                      <p className="mt-1 text-sm text-[#434656]">{e.subtitulo}</p>
-                      <div className="mt-4 flex gap-2 text-xs text-[#434656]">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-[#e6f7f8] px-2 py-1">
-                          <LayoutGrid className="h-3.5 w-3.5" />
-                          {totalNodos} bloques
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-[#e1f1f2] px-2 py-1">
-                          <FileStack className="h-3.5 w-3.5" />
-                          {totalT} tareas
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col p-5">
+          {muestraLegendCritico && (
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#f0cdd2] bg-[#fffbfb] px-3 py-2 text-xs text-[#7a2730]">
+              <span className="font-extrabold uppercase tracking-wider text-[#b42b3a]">Camino crítico</span>
+              <span>
+                Calculado con CPM (duración y precedencias). Resalte rojo cuando holgura es 0 o marcaste override
+                manual en tarea/arista.
+              </span>
+              {connectTareas ? (
+                <span className="font-semibold text-[#0042c8]">
+                  Modo conectar: arrastrá entre handles de tareas.
+                </span>
+              ) : null}
+            </div>
           )}
 
-          {level === 2 && etapa && (
-            <section>
-              <div className="mb-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#0042c8]">Nivel 2</p>
-                <h2 className="text-xl font-extrabold text-[#0f1e1f]">Bloques en {etapa.titulo}</h2>
-                <p className="mt-1 text-sm text-[#434656]">
-                  Cada bloque abre el grafo de tareas (nivel 3). Navegá con los botones arriba o la miniatura.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {etapa.bloques.map((b) => {
-                  return (
-                    <button
-                      type="button"
-                      key={b.id}
-                      onClick={() => {
-                        setBloqueId(b.id);
-                        setSelectedTareaId(null);
-                      }}
-                      className="flex flex-col rounded-2xl border border-[#c3c5d9] bg-white p-5 text-left shadow-sm transition hover:border-[#0056ff] hover:shadow"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-[#434656]">
-                            Bloque / fase
-                          </p>
-                          <h3 className="text-lg font-extrabold text-[#0f1e1f]">{b.titulo}</h3>
-                          <p className="text-sm text-[#434656]">{b.descripcion}</p>
-                        </div>
-                        <span className="shrink-0 rounded-full bg-[#0042c8] px-2 py-0.5 text-[10px] font-bold text-white">
-                          {b.tareas.length} tareas
-                        </span>
-                      </div>
-                      <div className="mt-3 flex h-20 items-center justify-center gap-0.5 rounded-xl bg-[#f3f4f5] text-[#737688]">
-                        <Network className="h-5 w-5" />
-                        <span className="ml-1 text-xs font-medium">Grafo CPM</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+          <div className="flex min-h-[min(68vh,760px)] min-w-0 flex-1 flex-col">{vistaCentral}</div>
+        </main>
 
-          {level === 3 && etapa && bloque && etapaId && bloqueId && (
-            <section className="flex min-h-0 flex-1 flex-col">
-              <div className="mb-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#0042c8]">Nivel 3</p>
-                <h2 className="text-lg font-extrabold text-[#0f1e1f] md:text-xl">
-                  {bloque.titulo}
-                </h2>
-                <p className="text-sm text-[#434656]">
-                  Arrastrá nodos, conectá dependencias, zoom con controles. 
-                  {sideTab === 'tarea' && ' · Panel: checklist, validación y entrega a wallet (mock).'}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1 md:hidden">
-                  {(
-                    [
-                      ['tarea', 'Detalle', Box],
-                      ['estructura', 'Lista', CheckSquare],
-                      ['paquetes', 'Paquetes', Package],
-                    ] as const
-                  ).map(([k, label, Icon]) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => setSideTab(k)}
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
-                        sideTab === k
-                          ? 'border-[#0042c8] bg-[#d9e3f6] text-[#0a1422]'
-                          : 'border-[#c3c5d9] bg-white text-[#434656]'
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
-                <div className="min-h-0">
-                  <TareaFlowEditor
-                    flowKey={`${etapaId}-${bloqueId}`}
-                    bloque={bloque}
-                    onBloqueChange={(next) => updateBloque(etapaId, bloqueId, next)}
-                    onSelectTarea={(id) => setSelectedTareaId(id)}
-                  />
-                </div>
-                <div className="flex max-h-[min(70vh,640px)] flex-col overflow-hidden rounded-2xl border border-[#c3c5d9] bg-white shadow-sm">
-                  {sideTab === 'paquetes' && <PaquetesPanel paquetes={model.paquetes} />}
-                  {sideTab === 'estructura' && etapaId && (
-                    <ChecklistEstructura
-                      tareas={bloque.tareas}
-                      onPick={(id) => setSelectedTareaId(id)}
-                    />
-                  )}
-                  {sideTab === 'tarea' && etapaId && bloqueId && bloque && (
-                    <TareaDetailPanel
-                      tarea={selectedTarea}
-                      bloque={bloque}
-                      onBloqueChange={(next) => updateBloque(etapaId, bloqueId, next)}
-                    />
-                  )}
-                </div>
-              </div>
-            </section>
-          )}
-        </div>
+        <CanvasLeftInspector
+          obraId={obraId}
+          taskCpmBundle={taskCpmBundle}
+          selectedEdge={selectedEdge}
+          selectedNode={selectedNode}
+          nodes={nodes}
+          siblingEdges={siblingEdges}
+          patchEdge={patchEdge}
+          removeEdgeIds={removeEdgeIds}
+          setSelectedEdgeId={setSelectedEdgeId}
+          patchNode={patchNode}
+          enterNode={enterNode}
+          createChildOf={createChildOf}
+          deleteNode={deleteNode}
+          duplicateNode={duplicateNode}
+          addChecklistItem={addChecklistItem}
+          toggleChecklistItem={toggleChecklistItem}
+          updateChecklistLabel={updateChecklistLabel}
+          removeChecklistItem={removeChecklistItem}
+          isOpen={inspectorOpen}
+          onToggleOpen={() => setInspectorOpen((v) => !v)}
+        />
       </div>
     </div>
   );
 }
 
-function defaultTareaAtEnd(etapa: EtapaEditorMock, bloqueId: string): TareaEditorMock | null {
-  const b = etapa.bloques.find((x) => x.id === bloqueId);
-  if (!b) return null;
-  const last = b.tareas[b.tareas.length - 1];
-  const y = last ? last.pos.y : 100;
-  const x = last ? last.pos.x + 200 : 120;
-  return defaultTarea({ pos: { x, y: y + 40 } });
-}
-
-function syncPaquetes(
-  paquetes: PaquetePresupuestoMock[],
-  etapas: EtapaEditorMock[]
-): PaquetePresupuestoMock[] {
-  const map = new Map(paquetes.map((p) => [p.id, { ...p, tareaIds: [] as string[] }]));
-  for (const e of etapas) {
-    for (const b of e.bloques) {
-      for (const t of b.tareas) {
-        if (t.paqueteId && map.has(t.paqueteId)) {
-          map.get(t.paqueteId)!.tareaIds.push(t.id);
-        }
-      }
-    }
-  }
-  return paquetes.map((p) => map.get(p.id) ?? p);
-}
-
-function predecesorasDeTarea(bloque: BloqueEditorMock, tareaId: string): string[] {
-  return bloque.edges.filter((e) => e.target === tareaId).map((e) => e.source);
-}
-
-function bloqueConPredecesoras(
-  bloque: BloqueEditorMock,
-  tareaId: string,
-  sourceIds: string[]
-): BloqueEditorMock {
-  const sinEntrada = bloque.edges.filter((e) => e.target !== tareaId);
-  const unicos = Array.from(new Set(sourceIds)).filter((id) => id !== tareaId);
-  const nuevas = unicos.map((source) => ({
-    id: newId('edge'),
-    source,
-    target: tareaId,
-  }));
-  return { ...bloque, edges: [...sinEntrada, ...nuevas] };
-}
-
-function tareaEnBloque(
-  bloque: BloqueEditorMock,
-  tareaId: string,
-  tarea: TareaEditorMock
-): BloqueEditorMock {
-  return {
-    ...bloque,
-    tareas: bloque.tareas.map((x) => (x.id === tareaId ? tarea : x)),
-  };
-}
-
-function TareaDetailPanel({
-  tarea,
-  bloque,
-  onBloqueChange,
-}: {
-  tarea: TareaEditorMock | null;
-  bloque: BloqueEditorMock;
-  onBloqueChange: (b: BloqueEditorMock) => void;
-}) {
-  if (!tarea) {
-    return (
-      <div className="p-4 text-sm text-[#434656]">
-        <p className="font-semibold text-[#0f1e1f]">Ninguna tarea seleccionada</p>
-        <p className="mt-1">Hacé click en un nodo del grafo o en la pestaña Tareas y elegí de la lista.</p>
-      </div>
-    );
-  }
-
-  const otrasTareas = bloque.tareas.filter((x) => x.id !== tarea.id);
-  const predIds = predecesorasDeTarea(bloque, tarea.id);
-
-  const setTarea = (next: TareaEditorMock) => {
-    onBloqueChange(tareaEnBloque(bloque, tarea.id, next));
-  };
-
+function ContextCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="overflow-y-auto p-4">
-      <h3 className="text-sm font-extrabold leading-snug text-[#0f1e1f]">{tarea.nombre}</h3>
-      <p className="mt-1 text-xs text-[#434656]">Solo edición: checklist, días y predecesoras (se reflejan en el grafo).</p>
-
-      <label className="mt-4 block text-[10px] font-bold uppercase text-[#434656]">Cantidad de días</label>
-      <input
-        type="number"
-        min={1}
-        step={1}
-        className="mt-1 w-full rounded-lg border border-[#c3c5d9] px-2 py-2 text-sm"
-        value={tarea.dias}
-        onChange={(e) => {
-          const n = Math.max(1, parseInt(e.target.value, 10) || 1);
-          setTarea({ ...tarea, dias: n });
-        }}
-      />
-
-      <p className="mt-4 text-[10px] font-bold uppercase text-[#434656]">Predecesoras</p>
-      {otrasTareas.length === 0 ? (
-        <p className="mt-1 text-xs text-[#434656]">Solo hay esta tarea en el bloque.</p>
-      ) : (
-        <ul className="mt-2 space-y-1.5">
-          {otrasTareas.map((o) => {
-            const onPred = predIds.includes(o.id);
-            return (
-              <li key={o.id} className="flex items-center gap-2">
-                <Checkbox
-                  id={`p-${o.id}`}
-                  checked={onPred}
-                  onCheckedChange={() => {
-                    const next = onPred
-                      ? predIds.filter((id) => id !== o.id)
-                      : [...predIds, o.id];
-                    onBloqueChange(bloqueConPredecesoras(bloque, tarea.id, next));
-                  }}
-                />
-                <label htmlFor={`p-${o.id}`} className="cursor-pointer text-sm text-[#0f1e1f]">
-                  {o.nombre} <span className="text-[#434656]">({o.dias} d)</span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      <p className="mt-4 text-[10px] font-bold uppercase text-[#434656]">Checklist</p>
-      <ul className="mt-2 space-y-2">
-        {tarea.checklist.map((c) => (
-          <li key={c.id} className="flex items-start gap-2">
-            <Checkbox
-              checked={c.done}
-              onCheckedChange={(v) =>
-                setTarea({
-                  ...tarea,
-                  checklist: tarea.checklist.map((x) =>
-                    x.id === c.id ? { ...x, done: Boolean(v) } : x
-                  ),
-                })
-              }
-            />
-            <input
-              className="flex-1 border-b border-transparent bg-transparent text-sm focus:border-[#0042c8] outline-none"
-              value={c.label}
-              onChange={(e) =>
-                setTarea({
-                  ...tarea,
-                  checklist: tarea.checklist.map((x) =>
-                    x.id === c.id ? { ...x, label: e.target.value } : x
-                  ),
-                })
-              }
-            />
-          </li>
-        ))}
-      </ul>
-      <Button
-        type="button"
-        size="sm"
-        variant="secondary"
-        className="mt-2"
-        onClick={() =>
-          setTarea({
-            ...tarea,
-            checklist: [...tarea.checklist, { id: newId('ck'), label: 'Nuevo ítem', done: false }],
-          })
-        }
-      >
-        <Plus className="mr-1 h-3 w-3" />
-        Ítem
-      </Button>
-    </div>
-  );
-}
-
-function ChecklistEstructura({
-  tareas,
-  onPick,
-}: {
-  tareas: TareaEditorMock[];
-  onPick: (id: string) => void;
-}) {
-  return (
-    <div className="max-h-full overflow-y-auto p-3">
-      <h3 className="text-sm font-extrabold">Checklist tareas (Stitch)</h3>
-      <p className="text-xs text-[#434656]">Elegí una tarea para abrir en el panel.</p>
-      <ul className="mt-2 space-y-1">
-        {tareas.map((t) => (
-          <li key={t.id}>
-            <button
-              type="button"
-              onClick={() => onPick(t.id)}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-[#e1e3e4] bg-[#f8f9fa] px-2 py-2 text-left text-sm"
-            >
-              <span className="font-medium">{t.nombre}</span>
-              <span className="shrink-0 text-[10px] text-[#434656]">{t.dias} d</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function PaquetesPanel({ paquetes }: { paquetes: PaquetePresupuestoMock[] }) {
-  return (
-    <div className="max-h-full overflow-y-auto p-3">
-      <h3 className="text-sm font-extrabold">Paquetes de presupuesto</h3>
-      <p className="text-xs text-[#434656]">Agrupá tareas para oferta / cierre. Mock.</p>
-      <ul className="mt-2 space-y-2">
-        {paquetes.map((p) => (
-          <li key={p.id} className="rounded-lg border border-[#c3c5d9] bg-[#f3f4f5] p-2">
-            <p className="text-sm font-bold text-[#0f1e1f]">{p.nombre}</p>
-            <p className="text-xs text-[#434656]">{p.montoRef}</p>
-            <p className="mt-1 text-[10px] text-[#0042c8]">{p.tareaIds.length} tareas vinculadas</p>
-          </li>
-        ))}
-      </ul>
-      <p className="mt-3 text-[10px] text-[#434656]">Para reasignar, usá el desplegable en el detalle de tarea (versión v2: drag a paquete).</p>
+    <div className="rounded-[26px] bg-white/80 p-4 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
+      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-black leading-5 text-[#001629]">{value}</p>
     </div>
   );
 }

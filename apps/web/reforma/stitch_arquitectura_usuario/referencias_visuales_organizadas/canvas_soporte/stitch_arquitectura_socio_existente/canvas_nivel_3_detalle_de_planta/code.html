@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;400;500;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#111d29",
+                    "inverse-primary": "#a8caef",
+                    "surface-tint": "#406182",
+                    "on-primary": "#ffffff",
+                    "on-secondary-fixed-variant": "#3c4855",
+                    "tertiary-fixed": "#85f8c4",
+                    "surface-variant": "#dfe3e7",
+                    "surface-container-high": "#e4e9ed",
+                    "surface-dim": "#d6dade",
+                    "secondary": "#545f6e",
+                    "tertiary-container": "#00301f",
+                    "outline-variant": "#c3c7ce",
+                    "tertiary": "#00190e",
+                    "inverse-surface": "#2c3134",
+                    "secondary-fixed": "#d7e4f5",
+                    "outline": "#73777e",
+                    "primary": "#001629",
+                    "on-tertiary-fixed": "#002114",
+                    "on-secondary-container": "#596574",
+                    "on-primary-fixed-variant": "#274969",
+                    "on-tertiary-container": "#24a375",
+                    "on-error": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "background": "#f6fafe",
+                    "on-tertiary": "#ffffff",
+                    "on-background": "#171c1f",
+                    "error": "#ba1a1a",
+                    "surface-container-highest": "#dfe3e7",
+                    "surface-container-low": "#f0f4f8",
+                    "surface-container": "#eaeef2",
+                    "on-primary-container": "#7293b6",
+                    "error-container": "#ffdad6",
+                    "surface-bright": "#f6fafe",
+                    "on-surface-variant": "#42474d",
+                    "tertiary-fixed-dim": "#68dba9",
+                    "surface": "#f6fafe",
+                    "primary-fixed-dim": "#a8caef",
+                    "inverse-on-surface": "#edf1f5",
+                    "on-error-container": "#93000a",
+                    "on-primary-fixed": "#001d34",
+                    "on-surface": "#171c1f",
+                    "secondary-fixed-dim": "#bbc8d8",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#002b49",
+                    "on-tertiary-fixed-variant": "#005137",
+                    "secondary-container": "#d7e4f5",
+                    "primary-fixed": "#cfe5ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "1.5rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "display": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .canvas-dot-grid {
+            background-image: radial-gradient(#dfe3e7 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .glass-panel {
+            background: rgba(246, 250, 254, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body selection:bg-tertiary-fixed-dim selection:text-on-tertiary-fixed overflow-hidden">
+<!-- SideNavBar Anchor -->
+<aside class="fixed left-0 top-0 h-full flex flex-col z-50 bg-slate-50 dark:bg-slate-900 h-screen w-72 flex-shrink-0 font-manrope text-sm tracking-tight font-medium">
+<div class="px-8 py-10">
+<div class="flex items-center gap-3 mb-12">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<div>
+<h1 class="text-xl font-extrabold text-[#002B49] dark:text-blue-50 leading-none">Arch Studio</h1>
+<span class="text-[10px] uppercase tracking-widest text-slate-500">Technical Suite</span>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-4 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all rounded-r-xl" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Active: Project Canvas -->
+<a class="flex items-center gap-4 bg-white dark:bg-slate-800 text-[#002B49] dark:text-blue-100 font-bold rounded-l-none rounded-r-xl border-l-4 border-emerald-500 px-4 py-3 translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_tree</span>
+<span>Project Canvas</span>
+</a>
+<a class="flex items-center gap-4 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all rounded-r-xl" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Resource Library</span>
+</a>
+<a class="flex items-center gap-4 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all rounded-r-xl" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span>Team Workspace</span>
+</a>
+<a class="flex items-center gap-4 text-slate-500 dark:text-slate-400 px-4 py-3 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all rounded-r-xl" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-8">
+<button class="w-full bg-primary text-on-primary py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+                Deploy Project
+            </button>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<main class="ml-72 flex flex-col h-screen">
+<!-- TopAppBar Anchor -->
+<header class="flex items-center justify-between px-10 h-20 w-full bg-white/70 backdrop-blur-lg shadow-[0_12px_32px_rgba(23,28,31,0.06)] z-40 sticky top-0 font-manrope">
+<div class="flex items-center gap-8">
+<div class="text-lg font-black tracking-tighter text-[#002B49]">Workspace Editor</div>
+<div class="flex gap-6 uppercase tracking-widest text-[10px] font-bold">
+<a class="text-slate-400 hover:text-emerald-600 transition-colors" href="#">Drafts</a>
+<a class="text-[#002B49] border-b-2 border-emerald-500 pb-1" href="#">Review</a>
+<a class="text-slate-400 hover:text-emerald-600 transition-colors" href="#">Production</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<input class="bg-surface-container-low border-none rounded-full px-6 py-2 text-[10px] w-64 focus:ring-2 focus:ring-on-tertiary-container transition-all" placeholder="SEARCH CANVAS..." type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1.5 text-slate-400 text-lg">search</span>
+</div>
+<div class="flex items-center gap-4 text-slate-400">
+<button class="hover:text-emerald-600 active:scale-95 duration-150"><span class="material-symbols-outlined">grid_view</span></button>
+<button class="hover:text-emerald-600 active:scale-95 duration-150 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-emerald-500 rounded-full"></span>
+</button>
+<button class="hover:text-emerald-600 active:scale-95 duration-150"><span class="material-symbols-outlined">help_outline</span></button>
+</div>
+<img alt="Lead Architect" class="w-10 h-10 rounded-full object-cover border-2 border-surface-variant" data-alt="A professional close-up portrait of a lead architect with a confident and visionary expression, set against a blurred background of a modern glass architectural studio. The lighting is crisp and natural, highlighting technical precision. The image follows a high-key light mode aesthetic with cool blue and slate tones to match a premium professional software interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBJ4KrOHHPgUVwWiThWgC3fU_6PAJoldv4RGApHcTW4X035bICmcXFBpnm1k1fCV8cgren7rssRiX7mlbOypCSgD8Ib3l8pnEDt81p0QdCtWhkchKmK88iclgBCG4qIZZakSHk4D2wLgMAsnPhFRgroJ3D6d6ljpv25ZibO1jFDH4yZnCCj5IgzhFi5jUlyGca97RvSkz-EGXuZi1OInueH5XOFZTg1nJPjHEkq2wHSVnxPA0FPJHokt7Ln70qAwzP9vcjC1kt146E"/>
+</div>
+</header>
+<!-- Canvas Area -->
+<section class="flex-1 flex overflow-hidden relative canvas-dot-grid">
+<!-- Contextual Breadcrumb Layer -->
+<div class="absolute top-8 left-10 z-30 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+<span class="hover:text-primary cursor-pointer transition-colors">Projects</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="hover:text-primary cursor-pointer transition-colors">Obra Demo</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="hover:text-primary cursor-pointer transition-colors">Obra Gris</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-emerald-600">Piso 4</span>
+</div>
+<!-- Central Node Diagram Canvas -->
+<div class="flex-1 flex items-center justify-center p-20">
+<div class="relative w-full max-w-5xl h-[600px]">
+<!-- Central Hub: Piso 4 -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-primary-container flex flex-col items-center justify-center text-on-primary shadow-2xl z-20 border-[8px] border-white ring-1 ring-slate-200">
+<span class="material-symbols-outlined text-4xl mb-1" style="font-variation-settings: 'FILL' 1;">layers</span>
+<div class="font-manrope font-black text-xl">PISO 4</div>
+<div class="text-[10px] opacity-60 tracking-widest uppercase">Root Node</div>
+</div>
+<!-- Connection Lines (SVG) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none opacity-20" preserveaspectratio="none">
+<line class="text-primary" stroke="currentColor" stroke-width="2" x1="50%" x2="20%" y1="50%" y2="25%"></line>
+<line class="text-primary" stroke="currentColor" stroke-width="2" x1="50%" x2="80%" y1="50%" y2="25%"></line>
+<line class="text-primary" stroke="currentColor" stroke-width="2" x1="50%" x2="15%" y1="50%" y2="75%"></line>
+<line class="text-primary" stroke="currentColor" stroke-width="2" x1="50%" x2="85%" y1="50%" y2="75%"></line>
+<line class="text-primary" stroke="currentColor" stroke-width="2" x1="50%" x2="50%" y1="50%" y2="85%"></line>
+</svg>
+<!-- Sector Nodes -->
+<!-- Depto A -->
+<div class="absolute top-[25%] left-[20%] -translate-x-1/2 -translate-y-1/2 group">
+<div class="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-emerald-500/20 p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:shadow-emerald-500/10 hover:border-emerald-500 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-xl">apartment</span>
+</div>
+<span class="font-bold text-slate-800 text-sm">Depto A</span>
+<span class="text-[9px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter">Approved</span>
+</div>
+</div>
+<!-- Depto B -->
+<div class="absolute top-[25%] left-[80%] -translate-x-1/2 -translate-y-1/2 group">
+<div class="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-transparent p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-xl">apartment</span>
+</div>
+<span class="font-bold text-slate-800 text-sm">Depto B</span>
+<span class="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter">Reviewing</span>
+</div>
+</div>
+<!-- Palier -->
+<div class="absolute top-[85%] left-[50%] -translate-x-1/2 -translate-y-1/2 group">
+<div class="w-32 h-32 rounded-xl bg-surface-container-lowest border-2 border-transparent p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed-dim flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined text-xl">sensor_door</span>
+</div>
+<span class="font-bold text-slate-800 text-sm">Palier</span>
+<span class="text-[9px] text-slate-400 uppercase font-medium">Common Area</span>
+</div>
+</div>
+<!-- Depto C -->
+<div class="absolute top-[75%] left-[15%] -translate-x-1/2 -translate-y-1/2 group">
+<div class="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-transparent p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-primary-fixed-dim flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined text-xl">apartment</span>
+</div>
+<span class="font-bold text-slate-800 text-sm">Depto C</span>
+<span class="text-[9px] bg-error-container text-on-error-container px-2 py-0.5 rounded-full uppercase font-bold tracking-tighter">Alert</span>
+</div>
+</div>
+<!-- Nucleo Vertical -->
+<div class="absolute top-[75%] left-[85%] -translate-x-1/2 -translate-y-1/2 group">
+<div class="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-transparent p-4 flex flex-col items-center justify-center gap-2 shadow-lg hover:border-primary-fixed-dim transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
+<span class="material-symbols-outlined text-xl">elevator</span>
+</div>
+<span class="font-bold text-slate-800 text-sm">Nucleo Vertical</span>
+<span class="text-[9px] text-slate-400 uppercase font-medium">Circulation</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Panel: Sector Details -->
+<aside class="w-96 glass-panel border-l border-white h-full p-8 overflow-y-auto flex flex-col gap-8 shadow-[-20px_0_40px_rgba(0,0,0,0.02)]">
+<div>
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Sector Details</h2>
+<span class="material-symbols-outlined text-slate-400 cursor-pointer">close</span>
+</div>
+<div class="p-6 rounded-xl bg-surface-container-lowest border border-emerald-500/10">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-14 h-14 rounded-xl bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+<span class="material-symbols-outlined text-3xl">apartment</span>
+</div>
+<div>
+<h3 class="font-manrope font-black text-xl text-primary">Depto A</h3>
+<p class="text-[10px] text-on-tertiary-container font-bold uppercase tracking-widest">Selected Sector</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 bg-surface-container-low rounded-lg">
+<div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Surface Area</div>
+<div class="text-sm font-bold text-primary">84.5 m²</div>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg">
+<div class="text-[9px] text-slate-500 uppercase font-bold mb-1">Occupancy</div>
+<div class="text-sm font-bold text-primary">Residential</div>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Blueprint Preview</h4>
+<div class="aspect-square w-full bg-slate-200 rounded-xl overflow-hidden relative group cursor-zoom-in">
+<img alt="Floor Plan Detail" class="w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 transition-opacity" data-alt="A highly detailed architectural floor plan drawing of a high-end apartment unit. The blueprint features clean, black lines on a textured white drafting paper background. The layout shows room divisions, kitchen cabinetry, and bathroom fixtures with technical annotations. The lighting is bright and even, conveying an atmosphere of precision, professionalism, and high-end design development." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpW4W00-2sTt8KkdGU39WLQFkUmv_Aqi11PUdKdj_Ba1QA2nJG9ZqP6IuG_0wsI8U9XsGCtcXK7U7ktou81QtSHxDuxYgSO9QWhnjjMJ4Cn6FXdw6BRGy06v9wAB4Nwh3dVgvuNkVRmjSSrz1WG43LzHVJZDK14uhL9GeqfAEpimM2LDIZ3jAhTdZSP1LsPb9FDBu8GSCjHj6DiagjIUpcBTXTSjFnpBQgI2JGrPLkMbzFH7nkLlyG7rHaLKrHbg_DRdLVYAmSQ0tA"/>
+<div class="absolute inset-0 bg-primary/20 mix-blend-multiply"></div>
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-lg flex items-center gap-2 text-[10px] font-bold text-primary">
+<span class="material-symbols-outlined text-sm">fullscreen</span>
+                            VIEW FULL SPEC
+                        </div>
+</div>
+</div>
+<div class="space-y-3">
+<h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400">Technical Progress</h4>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-[11px] font-bold text-primary mb-1">
+<span>Masonry / Structure</span>
+<span class="text-on-tertiary-container">100%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] font-bold text-primary mb-1">
+<span>Electrical Network</span>
+<span class="text-on-tertiary-container">65%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-on-tertiary-container w-[65%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-[11px] font-bold text-primary mb-1">
+<span>Plumbing Systems</span>
+<span class="text-primary-container opacity-40">20%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[20%]"></div>
+</div>
+</div>
+</div>
+</div>
+<button class="mt-auto w-full py-4 bg-surface-container-high text-primary font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined group-hover:rotate-180 transition-transform">autorenew</span>
+                    Request Sector Update
+                </button>
+</aside>
+</section>
+<!-- Canvas Controls -->
+<div class="fixed bottom-10 left-[calc(18rem+2.5rem)] z-30 flex items-center gap-4 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-white">
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 transition-all"><span class="material-symbols-outlined">zoom_in</span></button>
+<div class="h-6 w-px bg-slate-200"></div>
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 transition-all"><span class="material-symbols-outlined">zoom_out</span></button>
+<div class="h-6 w-px bg-slate-200"></div>
+<button class="w-12 h-12 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 transition-all"><span class="material-symbols-outlined">center_focus_strong</span></button>
+<button class="px-6 h-12 flex items-center justify-center rounded-xl bg-primary text-white text-xs font-bold tracking-widest gap-2">
+<span class="material-symbols-outlined text-sm">history</span>
+                V.2.4 REVISION
+            </button>
+</div>
+</main>
+</body></html>

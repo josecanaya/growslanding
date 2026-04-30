@@ -2,6 +2,17 @@
 
 import { create } from 'zustand';
 
+import { CALCULO_ACTIVACION_TIPO, calculateFee, type PlanPagoActivacion } from '@/lib/obras/calculateFee';
+
+export type ActivacionParaPagoSnapshot = {
+  m2CubiertosTotales: number;
+  planPago: PlanPagoActivacion;
+  totalUsd: number;
+  installmentUsd: number | null;
+  calculoTipo: string;
+  subtotalUsd: number;
+};
+
 export type TipoObra =
   | 'Obra nueva / Desde cero'
   | 'Casa familiar'
@@ -30,12 +41,18 @@ export type WizardState = {
   longitud?: number;
   fecha_inicio_estimada?: string; // Fecha de inicio estimada de la obra
   modoObra: ModoObra; // Calculado automáticamente
+  /** Plan seleccionado en la tarjeta de activación */
+  planPagoActivacion: PlanPagoActivacion;
+  /** Snapshot al confirmar "Continuar al pago" (sin checkout aún) */
+  activacionParaPago: ActivacionParaPagoSnapshot | null;
 };
 
 export type WizardActions = {
   reset: () => void;
   setField: <K extends keyof WizardState>(key: K, value: WizardState[K]) => void;
   setTipoObra: (tipo: TipoObra | '') => void;
+  setPlanPagoActivacion: (plan: PlanPagoActivacion) => void;
+  confirmarContinuarActivacionParaPago: () => void;
   setPlantas: (cantidad: number) => void;
   updatePlantaSuperficie: (
     index: number,
@@ -43,6 +60,7 @@ export type WizardActions = {
     value: number
   ) => void;
   getTotalConstruido: () => number;
+  getM2CubiertosTotales: () => number;
   ensureId: () => void; // Genera el ID solo en el cliente si no existe
   calcularModoObra: () => ModoObra; // Calcula el modo basado en las reglas MVP
 };
@@ -92,12 +110,35 @@ const initialState = (): WizardState => ({
   longitud: undefined,
   fecha_inicio_estimada: undefined,
   modoObra: 'SIMPLE',
+  planPagoActivacion: 'contado',
+  activacionParaPago: null,
 });
 
 export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({
   ...initialState(),
   reset: () => set(initialState()),
   setField: (key, value) => set({ [key]: value } as Partial<WizardState>),
+  setPlanPagoActivacion: (plan) =>
+    set((state) => ({
+      ...state,
+      planPagoActivacion: plan,
+      activacionParaPago: null,
+    })),
+  confirmarContinuarActivacionParaPago: () => {
+    const s = get();
+    const m2CubiertosTotales = s.superficies.reduce((acc, sf) => acc + (sf.cubiertos || 0), 0);
+    const r = calculateFee(m2CubiertosTotales, s.planPagoActivacion);
+    set({
+      activacionParaPago: {
+        m2CubiertosTotales,
+        planPago: s.planPagoActivacion,
+        totalUsd: r.totalUsd,
+        installmentUsd: r.installmentUsd,
+        calculoTipo: CALCULO_ACTIVACION_TIPO,
+        subtotalUsd: r.subtotalUsd,
+      },
+    });
+  },
   setTipoObra: (tipo) => {
     set((state) => {
       const nuevoState = { ...state, tipoObra: tipo };
@@ -114,7 +155,12 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
       descubiertos: 0,
     }));
     set((state) => {
-      const nuevoState = { ...state, plantas: next, superficies: [...existing, ...added] };
+      const nuevoState = {
+        ...state,
+        plantas: next,
+        superficies: [...existing, ...added],
+        activacionParaPago: null,
+      };
       return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
     });
   },
@@ -125,7 +171,7 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
       i === index ? { ...s, [field]: Math.max(0, value) } : s
     );
     set((state) => {
-      const nuevoState = { ...state, superficies: next };
+      const nuevoState = { ...state, superficies: next, activacionParaPago: null };
       // Recalcular modoObra solo si cambió 'cubiertos' (para m² cubiertos)
       if (field === 'cubiertos') {
         return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
@@ -136,6 +182,10 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
   getTotalConstruido: () => {
     const { superficies } = get();
     return superficies.reduce((acc, s) => acc + (s.cubiertos || 0) + (s.descubiertos || 0), 0);
+  },
+  getM2CubiertosTotales: () => {
+    const { superficies } = get();
+    return superficies.reduce((acc, s) => acc + (s.cubiertos || 0), 0);
   },
   ensureId: () => {
     const current = get();

@@ -1,9 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useWizardStore, TipoObra } from './useWizardStore';
+import { useMemo, useState, useEffect } from 'react';
+import { Building2 } from 'lucide-react';
+import { useWizardStore, type TipoObra } from './useWizardStore';
 import DireccionAutocomplete from '../wizard/DireccionAutocomplete';
 import ModalMapa from '../wizard/ModalMapa';
+import {
+  hubSectionShell,
+  hubLabel,
+  hubInput,
+  hubPrimaryButton,
+  hubSecondaryButton,
+} from './nuevaObraHubStyles';
 
 const TIPO_OBRA_OPCIONES: { key: TipoObra; label: string }[] = [
   { key: 'Obra nueva / Desde cero', label: 'Obra nueva / Desde cero' },
@@ -35,11 +43,10 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const setTipoObra = useWizardStore((s) => s.setTipoObra);
   const setPlantas = useWizardStore((s) => s.setPlantas);
   const updatePlantaSuperficie = useWizardStore((s) => s.updatePlantaSuperficie);
-  
-  // Obtener m² cubiertos de la planta 1
+
   const m2CubiertosPlanta1 = superficies.find((s) => s.planta === 1)?.cubiertos || 0;
 
-  useMemo(() => {
+  useEffect(() => {
     ensureId();
   }, [ensureId]);
 
@@ -48,7 +55,8 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
     const prop = (propietario ?? '').trim();
-    const fechaValida = !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
+    const fechaValida =
+      !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
     return dir.length > 3 && prop.length > 2 && !!tipoObra && fechaValida;
   }, [direccion, propietario, tipoObra, fecha_inicio_estimada]);
 
@@ -70,84 +78,88 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0 rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
-              Datos básicos
-            </h2>
-            <p className="text-xs md:text-sm text-gray-600">Completá la información inicial del proyecto</p>
-          </div>
-          {id && (
-            <div
-              className="rounded-md px-2 md:px-3 py-1 text-xs md:text-sm font-semibold flex-shrink-0"
-              style={{ backgroundColor: '#E6EEF7', color: '#003C6E' }}
-            >
-              ID: #{id}
+    <>
+      <section className={hubSectionShell()}>
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-6 w-6 flex-shrink-0 text-[#001629]" strokeWidth={1.75} />
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-[#001629] md:text-xl">
+                Datos del proyecto
+              </h2>
+              <p className="mt-0.5 text-sm text-[#42474d]">Ubicación, propiedad y clasificación inicial</p>
             </div>
-          )}
+          </div>
+          {id ? (
+            <span className="rounded-full bg-[#d7e4f5] px-3 py-1 text-xs font-bold text-[#002b49]">
+              #{id}
+            </span>
+          ) : null}
         </div>
 
-        <div className="grid gap-4 md:gap-6 p-3 md:p-4 lg:p-5 md:grid-cols-2">
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">Dirección</label>
-            <DireccionAutocomplete value={direccion ?? ''} onChange={handleDireccionChange} />
-            <button
-              type="button"
-              onClick={() => setIsMapModalOpen(true)}
-              className="mt-2 w-full md:w-auto rounded-lg border border-gray-300 px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 transition hover:bg-gray-50 min-h-[44px]"
-            >
-              Seleccionar en mapa
-            </button>
-            {latitud !== undefined && longitud !== undefined && (
-              <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-2 md:p-3 text-xs md:text-sm text-green-800 break-all">
-                <span className="font-medium">Coordenadas:</span> {latitud.toFixed(6)}, {longitud.toFixed(6)}
-              </div>
-            )}
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className={hubLabel()}>Dirección de obra</label>
+              <DireccionAutocomplete
+                value={direccion ?? ''}
+                onChange={handleDireccionChange}
+                placeholder="Ej. Av. Libertador 1200, CABA"
+                className={hubInput()}
+              />
+              <button
+                type="button"
+                onClick={() => setIsMapModalOpen(true)}
+                className={`${hubSecondaryButton()} mt-2 w-full md:mt-3 md:inline-flex md:w-auto`}
+              >
+                Seleccionar en mapa
+              </button>
+              {latitud !== undefined && longitud !== undefined ? (
+                <div className="mt-3 rounded-xl border border-[#24a375]/25 bg-emerald-50/80 px-4 py-3 text-xs leading-relaxed text-[#065f46]">
+                  <span className="font-semibold">Coordenadas</span>{' '}
+                  {latitud.toFixed(6)}, {longitud.toFixed(6)}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className={hubLabel()}>Propietario</label>
+              <input
+                value={propietario ?? ''}
+                onChange={(e) => setField('propietario', e.target.value)}
+                placeholder="Nombre completo"
+                className={hubInput()}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className={hubLabel()}>
+                Fecha de inicio estimada <span className="font-bold text-[#ba1a1a]">*</span>
+              </label>
+              <input
+                type="date"
+                required
+                min={new Date().toISOString().split('T')[0]}
+                value={fecha_inicio_estimada ?? ''}
+                onChange={(e) => {
+                  const selectedDate = e.target.value;
+                  const today = new Date().toISOString().split('T')[0];
+                  if (selectedDate && selectedDate < today) {
+                    return;
+                  }
+                  setField('fecha_inicio_estimada', selectedDate || undefined);
+                }}
+                className={hubInput()}
+              />
+              {!fecha_inicio_estimada ? (
+                <p className="text-xs text-[#42474d]">Obligatoria. Solo fechas desde hoy en adelante.</p>
+              ) : null}
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">Nombre del dueño</label>
-            <input
-              value={propietario ?? ''}
-              onChange={(e) => setField('propietario', e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-              placeholder="Nombre y apellido"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">
-              Fecha de inicio estimada <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              required
-              min={new Date().toISOString().split('T')[0]}
-              value={fecha_inicio_estimada ?? ''}
-              onChange={(e) => {
-                const selectedDate = e.target.value;
-                const today = new Date().toISOString().split('T')[0];
-                
-                if (selectedDate && selectedDate < today) {
-                  // No permitir fechas pasadas - el navegador ya lo maneja con min, pero por seguridad
-                  return;
-                }
-                
-                setField('fecha_inicio_estimada', selectedDate || undefined);
-              }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-              placeholder="Seleccioná la fecha estimada de inicio"
-            />
-            {!fecha_inicio_estimada && (
-              <p className="text-[10px] md:text-xs text-gray-500">Este campo es obligatorio. La fecha debe ser hoy o futura.</p>
-            )}
-          </div>
-
-          <div className="space-y-3 md:col-span-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">Tipo de obra</label>
-            <div className="grid grid-cols-2 gap-2 md:gap-3 md:grid-cols-3">
+          <div className="flex flex-col gap-3">
+            <label className={hubLabel()}>Tipo de obra</label>
+            <div className="flex flex-wrap gap-2">
               {TIPO_OBRA_OPCIONES.map((opt) => {
                 const active = tipoObra === opt.key;
                 return (
@@ -155,85 +167,92 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
                     key={opt.key}
                     type="button"
                     onClick={() => setTipoObra(opt.key)}
-                    className={`flex items-center gap-2 md:gap-3 rounded-lg md:rounded-xl border px-3 md:px-4 py-2.5 md:py-3 text-left transition min-h-[44px] ${
-                      active ? 'border-blue-300 bg-blue-50 shadow-sm' : 'border-gray-300 hover:bg-gray-50'
+                    className={`rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 ${
+                      active
+                        ? 'bg-[#002b49] text-white shadow-sm'
+                        : 'bg-[#d7e4f5] text-[#596574] hover:bg-[#c9d9ec]'
                     }`}
                   >
-                    <span className="text-xs md:text-sm font-medium text-gray-900">{opt.label}</span>
+                    {opt.label}
                   </button>
                 );
               })}
             </div>
 
-            {tipoObra === 'Otro' && (
+            {tipoObra === 'Otro' ? (
               <input
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-                placeholder="Especificá el tipo de obra"
+                placeholder="Describí el tipo de obra"
                 onChange={(e) => setField('tipoObra', (e.target.value || 'Otro') as TipoObra)}
+                className={hubInput()}
               />
-            )}
+            ) : null}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">Plantas</label>
-            <input
-              type="number"
-              min={1}
-              max={5}
-              value={plantas || 1}
-              onChange={(e) => setPlantas(Number(e.target.value) || 1)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-              placeholder="1"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs md:text-sm font-medium text-gray-800">m² cubiertos</label>
-            <input
-              type="number"
-              min={0}
-              value={m2CubiertosPlanta1 || ''}
-              onChange={(e) => {
-                const planta1Index = superficies.findIndex((s) => s.planta === 1);
-                if (planta1Index >= 0) {
-                  updatePlantaSuperficie(planta1Index, 'cubiertos', Number(e.target.value) || 0);
-                }
-              }}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-300 focus:ring-2 focus:ring-blue-100 min-h-[44px]"
-              placeholder="Ej: 120"
-            />
-          </div>
-
-          {/* Aviso informativo cuando se activa ESTRUCTURADA */}
-          {modoObra === 'ESTRUCTURADA' && (
-            <div className="md:col-span-2 rounded-lg border border-blue-200 bg-blue-50 p-3 md:p-4">
-              <div className="flex items-start gap-2">
-                <svg className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <p className="text-xs md:text-sm font-medium text-blue-900">
-                    Activamos herramientas avanzadas por el tamaño/tipo de obra.
-                  </p>
-                </div>
-              </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className={hubLabel()}>Cantidad de plantas</label>
+              <select
+                className={`${hubInput()} appearance-none bg-[length:1rem] bg-[right_1rem_center] bg-no-repeat pr-10`}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2342474d' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                }}
+                value={plantas}
+                onChange={(e) => setPlantas(Number(e.target.value) || 1)}
+              >
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? 'planta' : 'plantas'}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-        </div>
 
-        <div className="border-t border-gray-100 px-3 md:px-4 lg:px-5 py-3 md:py-4">
-          <button
-            type="button"
-            disabled={!puedeContinuar}
-            onClick={onNext}
-            className={`w-full md:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition min-h-[44px] ${!puedeContinuar ? 'opacity-60 cursor-not-allowed' : ''}`}
-            style={{ backgroundColor: '#0055A4' }}
-            data-onboarding="crear-obra"
-          >
-            Siguiente
-          </button>
+            <div className="flex flex-col gap-1.5">
+              <label className={hubLabel()}>Metros cubiertos (plantas baja / resumen rápido)</label>
+              <div className="flex items-center overflow-hidden rounded-lg bg-[#f0f4f8] ring-2 ring-transparent focus-within:ring-[#24a375]">
+                <input
+                  type="number"
+                  min={0}
+                  value={m2CubiertosPlanta1 || ''}
+                  placeholder="0.00"
+                  onChange={(e) => {
+                    const planta1Index = superficies.findIndex((s) => s.planta === 1);
+                    if (planta1Index >= 0) {
+                      updatePlantaSuperficie(planta1Index, 'cubiertos', Number(e.target.value) || 0);
+                    }
+                  }}
+                  className="min-h-[48px] w-full flex-1 border-0 bg-transparent px-3 py-2 text-sm outline-none"
+                />
+                <span className="pr-4 text-sm font-medium text-[#42474d]">m²</span>
+              </div>
+              <p className="text-xs text-[#42474d]">
+                Podés afinar todas las plantas en el siguiente paso.
+              </p>
+            </div>
+          </div>
+
+          {modoObra === 'ESTRUCTURADA' ? (
+            <div className="flex gap-3 rounded-xl border border-[#cfe5ff]/80 bg-[#f6fafe] p-4">
+              <Building2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#002b49]" />
+              <p className="text-sm font-medium text-[#274969]">
+                Activamos herramientas avanzadas por el tamaño/tipo de obra.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-10 flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              disabled={!puedeContinuar}
+              onClick={onNext}
+              className={`${hubPrimaryButton()} w-full px-12 sm:w-auto`}
+              data-onboarding="crear-obra"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
       <ModalMapa
         open={isMapModalOpen}
@@ -243,6 +262,6 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
         initialLng={longitud}
         onConfirm={handleConfirmarMapa}
       />
-    </div>
+    </>
   );
 }

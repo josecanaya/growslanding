@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { Route } from 'next';
+import { Layers } from 'lucide-react';
 import { useWizardStore } from './useWizardStore';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { crearObra } from '@/services/obrasService';
 import { DetalleObra } from '@/components/cliente/DetalleObra';
+import { hubSectionShell, hubPrimaryButton, hubSecondaryButton } from './nuevaObraHubStyles';
 
 type PasoCargaElementosProps = {
   onPrev: () => void;
@@ -15,8 +18,7 @@ type PasoCargaElementosProps = {
 export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElementosProps) {
   const router = useRouter();
   const currentUser = useCurrentUser();
-  
-  // Datos del wizard
+
   const direccion = useWizardStore((s) => s.direccion);
   const propietario = useWizardStore((s) => s.propietario);
   const tipoObra = useWizardStore((s) => s.tipoObra);
@@ -27,35 +29,26 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
   const superficies = useWizardStore((s) => s.superficies);
   const reset = useWizardStore((s) => s.reset);
 
-  // Estados
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [obraCreadaId, setObraCreadaId] = useState<string | null>(null);
   const [mostrarDetalleConElementos, setMostrarDetalleConElementos] = useState(false);
 
-  // Función para generar el nombre de la obra
   const getNombreObra = () => {
-    if (tipoObra && propietario) {
-      return `${tipoObra} - ${propietario}`;
-    }
-    if (tipoObra) {
-      return tipoObra;
-    }
-    if (propietario) {
-      return `Obra - ${propietario}`;
-    }
-    return 'Nueva Obra';
+    if (tipoObra && propietario) return `${tipoObra} — ${propietario}`;
+    if (tipoObra) return tipoObra;
+    if (propietario) return `Obra — ${propietario}`;
+    return 'Nueva obra';
   };
 
-  // Función para guardar la obra en Supabase
   const handleGuardarObra = async () => {
     if (!currentUser?.orgId) {
-      setError('No se pudo obtener la organización. Por favor, inicia sesión nuevamente.');
+      setError('No se pudo obtener la organización. Por favor, iniciá sesión nuevamente.');
       return;
     }
 
     if (!direccion || direccion.trim().length < 3) {
-      setError('La dirección es requerida (mínimo 3 caracteres).');
+      setError('La dirección es obligatoria (mínimo 3 caracteres).');
       return;
     }
 
@@ -63,59 +56,50 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
     setError(null);
 
     try {
-      const nombreObra = getNombreObra();
-      
-      // Preparar todos los datos del wizard para enviar
       const wizardState = useWizardStore.getState();
       const obraData = {
         org_id: currentUser.orgId,
-        nombre: nombreObra,
+        nombre: getNombreObra(),
         localizacion: direccion.trim(),
-        // Campos del Paso 1 (Datos básicos)
         propietario: propietario?.trim() || undefined,
         tipo_obra: tipoObra || undefined,
         latitud: latitud !== undefined ? latitud : undefined,
         longitud: longitud !== undefined ? longitud : undefined,
         fecha_inicio_estimada: wizardState.fecha_inicio_estimada || undefined,
-        // Campos del Paso 2 (Superficies)
         plantas: plantas !== undefined && plantas > 0 ? plantas : undefined,
         terreno: terreno !== undefined && terreno > 0 ? terreno : undefined,
         superficies: superficies && superficies.length > 0 ? superficies : undefined,
-        // Estado por defecto
-        estado: 'pendiente',
+        estado: 'pendiente' as const,
       };
-      
+
       const obraCreada = await crearObra(obraData);
 
-      // Guardar el ID de la obra creada para mostrar el botón de agregar elementos
       if (obraCreada?.id) {
         setObraCreadaId(obraCreada.id);
       }
 
-      // Resetear el wizard
       reset();
       onFinish();
-      
-      // Redirigir al dashboard con la sección de obras
       router.push('/cliente/dashboard?section=obras');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[ERROR_CREAR_OBRA]', err);
-      setError(err.message || 'Error al crear la obra. Por favor, intenta nuevamente.');
+      setError(err instanceof Error ? err.message : 'Error al crear la obra. Probá nuevamente.');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Función para mostrar el detalle de la obra con el tab de elementos
   const handleAgregarElementos = () => {
     if (obraCreadaId) {
       setMostrarDetalleConElementos(true);
     }
   };
 
-  // Si se debe mostrar el detalle con elementos, mostrar el componente DetalleObra
+  const volverLista = () => {
+    router.push('/cliente/obras' as Route);
+  };
+
   if (mostrarDetalleConElementos && obraCreadaId) {
-    // Crear un objeto obra mock para el DetalleObra
     const obraParaDetalle: Parameters<typeof DetalleObra>[0]['obra'] = {
       id: obraCreadaId,
       nombre: getNombreObra(),
@@ -152,104 +136,134 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <div className="rounded-xl md:rounded-2xl border border-gray-200 bg-white p-1 shadow-sm">
-        <div className="rounded-xl md:rounded-2xl bg-gray-50 px-3 md:px-4 lg:px-5 py-3 md:py-4">
-          <h2 className="text-base md:text-lg font-semibold" style={{ color: '#003C6E' }}>
-            <span data-onboarding="cargar-elementos">Carga de elementos</span>
-          </h2>
-          <p className="text-xs md:text-sm text-gray-600">Agregá elementos constructivos a la obra (opcional)</p>
-        </div>
-
-        <div className="p-3 md:p-4 lg:p-5">
-          {/* Mensaje de error */}
-          {error && (
-            <div className="mb-3 md:mb-4 rounded-lg border border-red-200 bg-red-50 p-2 md:p-3">
-              <p className="text-xs md:text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          {/* Resumen de la obra */}
-          <div className="mb-4 md:mb-6 rounded-lg border border-gray-200 bg-gray-50 p-3 md:p-4">
-            <h3 className="mb-2 md:mb-3 text-xs md:text-sm font-semibold text-gray-800">Resumen de la obra:</h3>
-            <div className="grid grid-cols-1 gap-2 text-xs md:text-sm text-gray-600 md:grid-cols-2">
-              <div><span className="font-medium">Tipo:</span> {tipoObra || 'No especificado'}</div>
-              <div><span className="font-medium">Propietario:</span> {propietario || 'No especificado'}</div>
-              <div className="md:col-span-2"><span className="font-medium">Dirección:</span> {direccion || 'No especificada'}</div>
-              {(latitud && longitud) && (
-                <div className="md:col-span-2"><span className="font-medium">Coordenadas:</span> {latitud.toFixed(6)}, {longitud.toFixed(6)}</div>
-              )}
-              {plantas > 0 && (
-                <div><span className="font-medium">Plantas:</span> {plantas}</div>
-              )}
-              {terreno > 0 && (
-                <div><span className="font-medium">Terreno:</span> {terreno} m²</div>
-              )}
-              {superficies && superficies.length > 0 && (
-                <div className="md:col-span-2">
-                  <span className="font-medium">Superficies:</span>
-                  <ul className="ml-4 mt-1 list-disc space-y-0.5">
-                    {superficies.map((s) => (
-                      <li key={s.planta}>
-                        Planta {s.planta}: {s.cubiertos || 0} m² cubiertos, {s.descubiertos || 0} m² descubiertos
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              <div className="md:col-span-2"><span className="font-medium">Nombre generado:</span> {getNombreObra()}</div>
-            </div>
+    <section className={hubSectionShell()}>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Layers className="h-6 w-6 shrink-0 text-[#001629]" strokeWidth={1.75} />
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-[#001629]">
+              <span data-onboarding="cargar-elementos">Revisión y creación</span>
+            </h2>
+            <p className="mt-0.5 text-sm text-[#42474d]">
+              Opcionalmente agregás elementos después. Aquí cerramos el alta.
+            </p>
           </div>
-
-          {/* Mensaje de éxito y botón para agregar elementos */}
-          {obraCreadaId && (
-            <div className="mb-4 md:mb-6 rounded-lg border border-green-200 bg-green-50 p-3 md:p-4">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-                <div className="min-w-0 flex-1">
-                  <h3 className="text-xs md:text-sm font-semibold text-green-800 mb-1">
-                    ¡Obra creada exitosamente!
-                  </h3>
-                  <p className="text-xs md:text-sm text-green-700">
-                    Ahora podés agregar elementos constructivos a tu obra.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleAgregarElementos}
-                  className="w-full md:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition hover:opacity-90 min-h-[44px] flex-shrink-0"
-                  style={{ backgroundColor: '#0055A4' }}
-                >
-                  Agregar elementos
-                </button>
-              </div>
-            </div>
-          )}
         </div>
+      </div>
 
-        <div className="border-t border-gray-100" />
+      {error ? (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+      ) : null}
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 p-3 md:p-4 lg:p-5">
+      <div className="mb-10 rounded-xl border border-[#dfe3e7] bg-[#f6fafc] p-5 md:p-6">
+        <h3 className="mb-5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#002b49]">
+          Resumen de carga
+        </h3>
+        <dl className="grid grid-cols-1 gap-4 text-sm text-[#171c1f] md:grid-cols-2">
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Tipo</dt>
+            <dd className="mt-1 font-medium">{tipoObra || '—'}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Propietario</dt>
+            <dd className="mt-1 font-medium">{propietario || '—'}</dd>
+          </div>
+          <div className="md:col-span-2">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Dirección</dt>
+            <dd className="mt-1 font-medium">{direccion?.trim() || '—'}</dd>
+          </div>
+          {typeof latitud === 'number' && typeof longitud === 'number' ? (
+            <div className="md:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">
+                Coordenadas
+              </dt>
+              <dd className="mt-1 break-all font-medium">
+                {latitud.toFixed(6)}, {longitud.toFixed(6)}
+              </dd>
+            </div>
+          ) : null}
+          {plantas > 0 ? (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Plantas</dt>
+              <dd className="mt-1 font-medium">{plantas}</dd>
+            </div>
+          ) : null}
+          {terreno > 0 ? (
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Terreno</dt>
+              <dd className="mt-1 font-medium">{terreno} m²</dd>
+            </div>
+          ) : null}
+          {superficies?.length > 0 ? (
+            <div className="md:col-span-2">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574] mb-2">
+                Superficies por planta
+              </dt>
+              <dd>
+                <ul className="space-y-1.5 rounded-lg bg-white p-4 text-[#596574]">
+                  {superficies.map((s) => (
+                    <li key={s.planta} className="text-sm leading-relaxed text-[#171c1f]">
+                      <span className="font-semibold text-[#001629]">Planta {s.planta}</span>{' '}
+                      {s.cubiertos || 0} m² cubiertos · {s.descubiertos || 0} m² descubiertos
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          ) : null}
+          <div className="md:col-span-2 border-t border-[#eaeef2] pt-5">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">
+              Nombre generado en GROWS
+            </dt>
+            <dd className="mt-1 text-lg font-bold text-[#001629]">{getNombreObra()}</dd>
+          </div>
+        </dl>
+      </div>
+
+      {obraCreadaId ? (
+        <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
+          <p className="font-bold text-emerald-950">¡Obra creada exitosamente!</p>
+          <p className="mt-1 text-sm text-emerald-900/90">
+            Podés agregar elementos constructivos como siguiente paso.
+          </p>
           <button
             type="button"
-            onClick={onPrev}
-            disabled={isSaving}
-            className="w-full sm:w-auto rounded-lg border border-gray-300 px-4 md:px-6 py-2.5 font-semibold text-gray-800 transition hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
+            onClick={handleAgregarElementos}
+            className={`${hubPrimaryButton()} mt-4 w-full sm:w-auto`}
           >
-            Atrás
+            Agregar elementos
           </button>
-          
+        </div>
+      ) : null}
+
+      <div className="flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 md:flex-row md:items-center md:justify-between">
+        <button
+          type="button"
+          disabled={isSaving}
+          onClick={onPrev}
+          className={`${hubSecondaryButton()} w-full md:w-auto`}
+        >
+          Atrás
+        </button>
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:justify-end md:flex-none">
+          <button
+            type="button"
+            disabled={isSaving}
+            className={`${hubSecondaryButton()} w-full whitespace-nowrap sm:w-auto`}
+            onClick={() => volverLista()}
+          >
+            Volver a obras
+          </button>
           <button
             type="button"
             onClick={handleGuardarObra}
             disabled={isSaving || !currentUser?.orgId}
-            className="w-full sm:w-auto rounded-lg px-4 md:px-6 py-2.5 font-semibold text-white transition hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
-            style={{ backgroundColor: '#0055A4' }}
+            className={`${hubPrimaryButton()} w-full whitespace-nowrap px-10 sm:w-auto`}
           >
-            {isSaving ? 'Guardando...' : 'Guardar obra'}
+            {isSaving ? 'Creando obra…' : 'Crear obra en GROWS'}
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
-

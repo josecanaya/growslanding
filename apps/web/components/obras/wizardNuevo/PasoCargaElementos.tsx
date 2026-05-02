@@ -9,6 +9,12 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { crearObra } from '@/services/obrasService';
 import { DetalleObra } from '@/components/cliente/DetalleObra';
 import { hubSectionShell, hubPrimaryButton, hubSecondaryButton } from './nuevaObraHubStyles';
+import {
+  CANVAS_PROJECT_KIND_LABEL,
+  canvasProjectKindToLegacyApiTipoObra,
+  seedSessionCanvasProjectKind,
+  type CanvasProjectKind,
+} from '@/lib/canvas/canvasProjectProfile';
 
 type PasoCargaElementosProps = {
   onPrev: () => void;
@@ -35,8 +41,12 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
   const [mostrarDetalleConElementos, setMostrarDetalleConElementos] = useState(false);
 
   const getNombreObra = () => {
-    if (tipoObra && propietario) return `${tipoObra} — ${propietario}`;
-    if (tipoObra) return tipoObra;
+    const label =
+      tipoObra && tipoObra in CANVAS_PROJECT_KIND_LABEL
+        ? CANVAS_PROJECT_KIND_LABEL[tipoObra as CanvasProjectKind]
+        : tipoObra || 'Obra';
+    if (tipoObra && propietario) return `${label} — ${propietario}`;
+    if (tipoObra) return label;
     if (propietario) return `Obra — ${propietario}`;
     return 'Nueva obra';
   };
@@ -62,7 +72,9 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
         nombre: getNombreObra(),
         localizacion: direccion.trim(),
         propietario: propietario?.trim() || undefined,
-        tipo_obra: tipoObra || undefined,
+        tipo_obra: tipoObra
+          ? canvasProjectKindToLegacyApiTipoObra(tipoObra as CanvasProjectKind)
+          : undefined,
         latitud: latitud !== undefined ? latitud : undefined,
         longitud: longitud !== undefined ? longitud : undefined,
         fecha_inicio_estimada: wizardState.fecha_inicio_estimada || undefined,
@@ -73,6 +85,10 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
       };
 
       const obraCreada = await crearObra(obraData);
+
+      if (obraCreada?.id && wizardState.tipoObra) {
+        seedSessionCanvasProjectKind(obraCreada.id, wizardState.tipoObra as CanvasProjectKind);
+      }
 
       if (obraCreada?.id) {
         setObraCreadaId(obraCreada.id);
@@ -162,7 +178,11 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoCargaElemen
         <dl className="grid grid-cols-1 gap-4 text-sm text-[#171c1f] md:grid-cols-2">
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Tipo</dt>
-            <dd className="mt-1 font-medium">{tipoObra || '—'}</dd>
+            <dd className="mt-1 font-medium">
+              {tipoObra && tipoObra in CANVAS_PROJECT_KIND_LABEL
+                ? CANVAS_PROJECT_KIND_LABEL[tipoObra as CanvasProjectKind]
+                : tipoObra || '—'}
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-wide text-[#596574]">Propietario</dt>

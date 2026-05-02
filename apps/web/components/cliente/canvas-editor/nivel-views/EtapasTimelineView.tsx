@@ -3,9 +3,11 @@
 import { ArrowUpRight, ChevronRight, Layers3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CanvasNode } from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { labelEstadoNivel, labelTipoNodo } from '../canvasMultinivelHelpers';
 
 type Props = {
+  projectKind: CanvasProjectKind;
   ordered: CanvasNode[];
   selectedId: string | null;
   connectMode: boolean;
@@ -51,6 +53,7 @@ function statusStyle(n: CanvasNode) {
 }
 
 export function EtapasTimelineView({
+  projectKind,
   ordered,
   selectedId,
   connectMode,
@@ -138,7 +141,7 @@ export function EtapasTimelineView({
                     </span>
                   </div>
                   <span className="mt-7 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8a94a5]">
-                    {labelTipoNodo(n.type)} · {String(idx + 1).padStart(2, '0')}
+                    {labelTipoNodo(n.type, projectKind)} · {String(idx + 1).padStart(2, '0')}
                   </span>
                   <p className="mt-2 line-clamp-2 text-2xl font-black leading-tight tracking-[-0.04em] text-[#001629]">
                     {n.title}

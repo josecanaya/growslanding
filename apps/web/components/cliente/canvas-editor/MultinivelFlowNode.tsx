@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import type { CanvasNode } from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import {
   Boxes,
   Building2,
@@ -29,6 +30,7 @@ export type MultinivelNodeData = {
   precedentOutCount: number;
   /** Resultado CPM local (solo tareas del ambiente actual); derivado en memoria. */
   cpmSnap: TareaCPMResultado | null;
+  projectKind: CanvasProjectKind;
 };
 
 function iconForType(type: CanvasNode['type']) {
@@ -108,6 +110,7 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
     precedentInCount,
     precedentOutCount,
     cpmSnap,
+    projectKind,
   } = data;
   const Ico = iconForType(node.type);
   const wClass = cardWidths(node.type);
@@ -173,7 +176,7 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
 
         <div className="mb-1 flex items-start justify-between gap-2 pt-1">
           <span className="text-[10px] font-bold uppercase tracking-wide text-[#434656]">
-            {labelTipoNodo(node.type)}
+            {labelTipoNodo(node.type, projectKind)}
           </span>
           <Ico className="h-4 w-4 shrink-0 text-[#0042c8]" aria-hidden strokeWidth={1.75} />
         </div>

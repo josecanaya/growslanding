@@ -7,7 +7,8 @@ export const PRECIO_ACTIVACION_OBRA_USD_POR_M2 = 8 as const;
 
 export type PlanPagoActivacion = 'contado' | '3' | '6' | '12';
 
-export type PctPlanActivacion = -10 | 5 | 15 | 35;
+/** -10 = descuento pago único; 0 = sin ajuste en cuotas */
+export type PctPlanActivacion = -10 | 0;
 
 export type ResultadoActivacionObraCalculo = {
   subtotalUsd: number;
@@ -16,18 +17,20 @@ export type ResultadoActivacionObraCalculo = {
   installmentUsd: number | null;
   pctAjusteNumerico: PctPlanActivacion;
   ajustePctLabel: string;
-  /** Positivo: recargo vs subtotal | Negativo: descuento (ahorro) vs subtotal */
+  /** Negativo: ahorro vs subtotal | 0: sin recargo ni descuento */
   ahorroORecargoUsd: number;
   plan: PlanPagoActivacion;
 };
 
-const MULTIPLICADORES: Record<PlanPagoActivacion, { mult: number; pct: PctPlanActivacion; label: string }> =
-  {
-    contado: { mult: 0.9, pct: -10, label: '−10%' },
-    '3': { mult: 1.05, pct: 5, label: '+5%' },
-    '6': { mult: 1.15, pct: 15, label: '+15%' },
-    '12': { mult: 1.35, pct: 35, label: '+35%' },
-  };
+const MULTIPLICADORES: Record<
+  PlanPagoActivacion,
+  { mult: number; pct: PctPlanActivacion; label: string }
+> = {
+  contado: { mult: 0.9, pct: -10, label: 'Pago único -10%' },
+  '3': { mult: 1, pct: 0, label: 'Sin recargo' },
+  '6': { mult: 1, pct: 0, label: 'Sin recargo' },
+  '12': { mult: 1, pct: 0, label: 'Sin recargo' },
+};
 
 function roundUsd(n: number): number {
   return Math.round(n * 100) / 100;
@@ -62,13 +65,13 @@ export function calculateFee(m2: number, paymentPlan: PlanPagoActivacion): Resul
   };
 }
 
-export const CALCULO_ACTIVACION_TIPO = 'activacion_obra_usd_m2_plan' as const;
+export const CALCULO_ACTIVACION_TIPO = 'activacion_obra_usd_m2_plan_v2' as const;
 
 export const PLANES_ACTIVACION_UI: Readonly<
   Array<{ id: PlanPagoActivacion; titulo: string; detallePct: string }>
 > = [
-  { id: 'contado', titulo: 'Pago único', detallePct: '−10%' },
-  { id: '3', titulo: '3 cuotas', detallePct: '+5%' },
-  { id: '6', titulo: '6 cuotas', detallePct: '+15%' },
-  { id: '12', titulo: '12 cuotas', detallePct: '+35%' },
+  { id: 'contado', titulo: 'Pago único', detallePct: '10% de descuento' },
+  { id: '3', titulo: '3 cuotas', detallePct: 'sin recargo' },
+  { id: '6', titulo: '6 cuotas', detallePct: 'sin recargo' },
+  { id: '12', titulo: '12 cuotas', detallePct: 'sin recargo' },
 ];

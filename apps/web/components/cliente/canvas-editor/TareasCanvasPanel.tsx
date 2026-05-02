@@ -29,6 +29,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import type { CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import { canEnterNode } from './canvasMultinivelHelpers';
 import {
@@ -54,6 +55,7 @@ function buildNodeData(
   selected: boolean,
   handlesEnabled: boolean,
   taskCpmBundle: CanvasTaskCpmBundle | null,
+  projectKind: CanvasProjectKind,
 ): MultinivelNodeData {
   const childCount = countChildren(nodes, n.id);
   const { inC, outC } = precedenciasIo(n.id, siblingEdges);
@@ -67,6 +69,7 @@ function buildNodeData(
     precedentInCount: inC,
     precedentOutCount: outC,
     cpmSnap,
+    projectKind,
   };
 }
 
@@ -145,6 +148,7 @@ function ToolbarIconButton({
 }
 
 type Props = {
+  projectKind: CanvasProjectKind;
   /** CPM sobre tareas del ambiente actual (misma función que OrganizaSection). null si ciclo/vacío. */
   taskCpmBundle: CanvasTaskCpmBundle | null;
   visibleNodes: CanvasNode[];
@@ -164,6 +168,7 @@ type Props = {
 };
 
 export function TareasCanvasPanel({
+  projectKind,
   taskCpmBundle,
   visibleNodes,
   nodes,
@@ -226,10 +231,11 @@ export function TareasCanvasPanel({
               selectedId === n.id,
               connectMode,
               taskCpmBundle,
+              projectKind,
             ),
           }) as Node<MultinivelNodeData>,
       ),
-    [visibleNodes, nodes, siblingEdges, selectedId, connectMode, taskCpmBundle],
+    [visibleNodes, nodes, siblingEdges, selectedId, connectMode, taskCpmBundle, projectKind],
   );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialRf);
@@ -250,6 +256,7 @@ export function TareasCanvasPanel({
               selectedId === n.id,
               connectMode,
               taskCpmBundle,
+              projectKind,
             ),
           }) as Node<MultinivelNodeData>,
       ),
@@ -263,6 +270,7 @@ export function TareasCanvasPanel({
     setRfNodes,
     connectMode,
     taskCpmBundle,
+    projectKind,
   ]);
 
   useEffect(() => {

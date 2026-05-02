@@ -8,6 +8,8 @@ import {
   Map,
 } from 'lucide-react';
 import type { CanvasNode } from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+import { nextChildCanvasType } from '@/lib/canvas/canvasProjectProfile';
 import { cn } from '@/lib/utils';
 import { labelEstadoNivel, labelTipoNodo } from '../canvasMultinivelHelpers';
 
@@ -54,6 +56,71 @@ const variantMeta: Record<
   },
 };
 
+type HubLevelMeta = (typeof variantMeta)[Variant];
+
+function plantaHubMeta(kind: CanvasProjectKind): HubLevelMeta {
+  const base = variantMeta.planta;
+  if (kind === 'galpon_industrial') {
+    return {
+      ...base,
+      title: 'Sectores generales',
+      subtitle:
+        'Organizá la fase en sectores amplios (naves, zonas) antes de definir áreas operativas y tareas.',
+      empty: 'Todavía no hay sectores generales en esta etapa.',
+    };
+  }
+  return base;
+}
+
+function childMetricLabelUnderSectorNode(kind: CanvasProjectKind): string {
+  const next = nextChildCanvasType({ type: 'sector' }, kind);
+  if (next === 'tarea') return 'tareas';
+  if (next === 'ambiente') return 'ambientes';
+  return 'hijos';
+}
+
+function sectorHubMeta(kind: CanvasProjectKind): HubLevelMeta {
+  const base = variantMeta.sector;
+  if (kind === 'galpon_industrial') {
+    return {
+      ...base,
+      hubBadge: 'Sector general activo',
+      eyebrow: 'Mapa de sector general',
+      title: 'Áreas operativas',
+      subtitle: 'Definí zonas, equipos o frentes de trabajo antes del canvas de tareas.',
+      empty: 'Todavía no hay áreas operativas en este sector general.',
+      childLabel: 'tareas',
+    };
+  }
+  return base;
+}
+
+function ambienteHubMeta(hubNode: CanvasNode): HubLevelMeta {
+  const base = variantMeta.ambiente;
+  if (hubNode.type === 'planta') {
+    return {
+      ...base,
+      hubBadge: 'Planta activa',
+      eyebrow: 'Mapa de planta',
+      title: 'Ambientes',
+      subtitle: 'Entrá a cada ambiente para trabajar el canvas nodal de tareas.',
+      empty: 'Todavía no hay ambientes en esta planta o sector.',
+    };
+  }
+  return base;
+}
+
+function hubMetaForView(
+  variant: Variant,
+  kind: CanvasProjectKind,
+  hubNode: CanvasNode,
+): HubLevelMeta {
+  if (variant === 'planta') return plantaHubMeta(kind);
+  if (variant === 'sector') return sectorHubMeta(kind);
+  if (variant === 'ambiente') return ambienteHubMeta(hubNode);
+  return variantMeta[variant];
+}
+
 function statusStyle(node: CanvasNode) {
   switch (node.estadoNivel ?? 'pendiente') {
     case 'completado':
@@ -94,6 +161,7 @@ function progressValue(n: CanvasNode): number {
 }
 
 type Props = {
+  projectKind: CanvasProjectKind;
   variant: Variant;
   hubNode: CanvasNode;
   items: CanvasNode[];
@@ -104,6 +172,7 @@ type Props = {
 };
 
 export function HubGridNivelView({
+  projectKind,
   variant,
   hubNode,
   items,
@@ -112,7 +181,9 @@ export function HubGridNivelView({
   onEnter,
   childCount,
 }: Props) {
-  const m = variantMeta[variant];
+  const m = hubMetaForView(variant, projectKind, hubNode);
+  const sectorChildMetricLabel =
+    variant === 'sector' ? childMetricLabelUnderSectorNode(projectKind) : 'ambientes';
   const HubIcon = iconForVariant(variant);
 
   return (
@@ -142,12 +213,14 @@ export function HubGridNivelView({
 
         {variant === 'sector' ? (
           <SectorHubMap
+            projectKind={projectKind}
             hubNode={hubNode}
             items={items}
             selectedId={selectedId}
             onSelect={onSelect}
             onEnter={onEnter}
             childCount={childCount}
+            childMetricLabel={sectorChildMetricLabel}
           />
         ) : (
           <div className={cn('grid gap-7', variant === 'planta' ? 'xl:grid-cols-[380px_1fr]' : 'xl:grid-cols-[300px_1fr]')}>
@@ -178,6 +251,7 @@ export function HubGridNivelView({
             </div>
 
             <ItemsGrid
+              projectKind={projectKind}
               variant={variant}
               items={items}
               selectedId={selectedId}
@@ -196,6 +270,7 @@ export function HubGridNivelView({
 }
 
 function ItemsGrid({
+  projectKind,
   variant,
   items,
   selectedId,
@@ -206,6 +281,7 @@ function ItemsGrid({
   gridCols,
   childLabel,
 }: {
+  projectKind: CanvasProjectKind;
   variant: Variant;
   items: CanvasNode[];
   selectedId: string | null;
@@ -233,6 +309,7 @@ function ItemsGrid({
     <div className={cn('grid gap-5', gridCols)}>
       {items.map((n, idx) => (
         <LevelCard
+          projectKind={projectKind}
           key={n.id}
           node={n}
           variant={variant}
@@ -249,21 +326,25 @@ function ItemsGrid({
 }
 
 function SectorHubMap({
+  projectKind,
   hubNode,
   items,
   selectedId,
   onSelect,
   onEnter,
   childCount,
+  childMetricLabel,
 }: {
+  projectKind: CanvasProjectKind;
   hubNode: CanvasNode;
   items: CanvasNode[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   onEnter: (id: string) => void;
   childCount: (id: string) => number;
+  childMetricLabel: string;
 }) {
-  const m = variantMeta.sector;
+  const m = sectorHubMeta(projectKind);
   const positions = [
     'left-[10%] top-[16%]',
     'right-[8%] top-[18%]',
@@ -291,7 +372,11 @@ function SectorHubMap({
           <p className="mt-2 line-clamp-2 px-6 text-2xl font-black tracking-[-0.04em]">
             {hubNode.title}
           </p>
-          <p className="mt-2 text-[11px] text-white/60">{items.length} sectores</p>
+          <p className="mt-2 text-[11px] text-white/60">
+            {items.length}{' '}
+            {labelTipoNodo('sector', projectKind).toLowerCase()}
+            {items.length === 1 ? '' : 's'}
+          </p>
         </div>
         {items.length === 0 ? (
           <div className="absolute inset-0 flex items-end justify-center p-10">
@@ -307,6 +392,7 @@ function SectorHubMap({
               className={positions[idx] ?? positions[0]}
               selected={selectedId === n.id}
               childCount={childCount(n.id)}
+              childMetricLabel={childMetricLabel}
               onSelect={onSelect}
               onEnter={onEnter}
             />
@@ -338,7 +424,7 @@ function SectorHubMap({
             >
               <p className="truncate text-sm font-black text-[#001629]">{n.title}</p>
               <p className="mt-1 text-[11px] font-semibold text-[#596574]">
-                {childCount(n.id)} ambientes · {progressValue(n)}%
+                {childCount(n.id)} {childMetricLabel} · {progressValue(n)}%
               </p>
             </button>
           ))}
@@ -353,6 +439,7 @@ function SpatialSectorCard({
   className,
   selected,
   childCount,
+  childMetricLabel,
   onSelect,
   onEnter,
 }: {
@@ -360,6 +447,7 @@ function SpatialSectorCard({
   className: string;
   selected: boolean;
   childCount: number;
+  childMetricLabel: string;
   onSelect: (id: string) => void;
   onEnter: (id: string) => void;
 }) {
@@ -386,7 +474,7 @@ function SpatialSectorCard({
         {labelEstadoNivel(node.estadoNivel)}
       </span>
       <p className="mt-2 text-[10px] font-semibold text-[#596574]">
-        {childCount} ambientes · {progressValue(node)}%
+        {childCount} {childMetricLabel} · {progressValue(node)}%
       </p>
     </button>
   );
@@ -395,6 +483,7 @@ function SpatialSectorCard({
 function LevelCard({
   node,
   variant,
+  projectKind,
   selected,
   index,
   childCount,
@@ -404,6 +493,7 @@ function LevelCard({
 }: {
   node: CanvasNode;
   variant: Variant;
+  projectKind: CanvasProjectKind;
   selected: boolean;
   index: number;
   childCount: number;
@@ -443,7 +533,7 @@ function LevelCard({
       </div>
 
       <p className={cn('text-[10px] font-black uppercase tracking-[0.18em] text-[#9aa3b2]', variant === 'ambiente' ? 'mt-4' : 'mt-6')}>
-        {labelTipoNodo(node.type)} · {String(index + 1).padStart(2, '0')}
+        {labelTipoNodo(node.type, projectKind)} · {String(index + 1).padStart(2, '0')}
       </p>
       <h3 className={cn('mt-1 line-clamp-2 font-black tracking-[-0.03em] text-[#001629]', variant === 'ambiente' ? 'text-lg' : 'text-2xl')}>
         {node.title}

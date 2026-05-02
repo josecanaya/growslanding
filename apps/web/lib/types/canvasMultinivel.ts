@@ -1,3 +1,5 @@
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+
 /** Canvas operativo multinivel — sin geometría BIM; jerarquía, precedencias y tareas locales. */
 
 export type CanvasNivelTipo = 'etapa' | 'planta' | 'sector' | 'ambiente' | 'tarea';
@@ -31,6 +33,13 @@ export type CanvasPrecedenceEdge = {
   critical: boolean;
 };
 
+export type CanvasBudgetGroup = {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+};
+
 export type CanvasNode = {
   id: string;
   parentId: string | null;
@@ -57,10 +66,15 @@ export type CanvasNode = {
   tipoLabel?: string;
   /** Superficie aproximada (m²) — plantas / zonas amplias. */
   superficieM2?: number;
+  /** Agrupación local para futuro módulo de presupuestos (sin API). */
+  budgetGroupId?: string;
+  /** Auditoría de import Project XML — no mostrar en UI operativa. */
+  importSourceUid?: number;
+  importOutlineNumber?: string;
 };
 
-/** v1 sólo obraNombre + nodes + pathIds. v2 suma edges. */
-export const CANVAS_MULTINIVEL_STORAGE_VERSION = 2 as const;
+/** v1 obra+nodes+pathIds; v2 + edges; v3 + budgetGroups; v4 + projectKind */
+export const CANVAS_MULTINIVEL_STORAGE_VERSION = 4 as const;
 
 export type CanvasMultinivelPersisted = {
   v: typeof CANVAS_MULTINIVEL_STORAGE_VERSION;
@@ -70,4 +84,7 @@ export type CanvasMultinivelPersisted = {
   pathIds: string[];
   /** Precedencias entre hermanos; se filtran por nivel actual en UI */
   edges: CanvasPrecedenceEdge[];
+  /** Grupos de presupuesto locales (obra); las tareas referencian por budgetGroupId */
+  budgetGroups: CanvasBudgetGroup[];
+  projectKind: CanvasProjectKind;
 };

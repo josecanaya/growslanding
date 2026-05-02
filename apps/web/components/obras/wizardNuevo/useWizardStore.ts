@@ -2,6 +2,7 @@
 
 import { create } from 'zustand';
 
+import type { CanvasWizardProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { CALCULO_ACTIVACION_TIPO, calculateFee, type PlanPagoActivacion } from '@/lib/obras/calculateFee';
 
 export type ActivacionParaPagoSnapshot = {
@@ -13,14 +14,8 @@ export type ActivacionParaPagoSnapshot = {
   subtotalUsd: number;
 };
 
-export type TipoObra =
-  | 'Obra nueva / Desde cero'
-  | 'Casa familiar'
-  | 'Ampliación'
-  | 'Reforma'
-  | 'Local comercial'
-  | 'Edificio pequeño'
-  | 'Otro';
+/** Valor normalizado guardado en el wizard (coincide con `CanvasProjectKind` salvo `simple`). */
+export type TipoObra = CanvasWizardProjectKind | '';
 
 export type ModoObra = 'SIMPLE' | 'ESTRUCTURADA';
 
@@ -75,8 +70,7 @@ function generateId(): string {
 
 // Función helper para calcular el modo de obra basado en las reglas MVP
 function calcularModoObra(state: WizardState): ModoObra {
-  // Regla 1: Tipo de obra = "Obra nueva / Desde cero" → ESTRUCTURADA siempre
-  if (state.tipoObra === 'Obra nueva / Desde cero') {
+  if (state.tipoObra === 'edificio_multifamiliar') {
     return 'ESTRUCTURADA';
   }
   

@@ -3,7 +3,23 @@ import type {
   CanvasNivelTipo,
   CanvasNode,
   CanvasPrecedenceEdge,
+  CanvasTareaEstadoLocal,
 } from '@/lib/types/canvasMultinivel';
+import type {
+  CanvasProjectKind,
+  CabeceraNivelVista,
+  VistaNivelPrincipal,
+} from '@/lib/canvas/canvasProjectProfile';
+import {
+  cabeceraContextoNivelForKind,
+  defaultTitleForKind,
+  labelCrearContextualForKind,
+  labelTipoNodoForKind,
+  nextChildCanvasType,
+  vistaPrincipalPorContenedorForKind,
+} from '@/lib/canvas/canvasProjectProfile';
+
+export type { CabeceraNivelVista, VistaNivelPrincipal } from '@/lib/canvas/canvasProjectProfile';
 
 export function newCanvasNodeId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -19,74 +35,33 @@ export function newCanvasEdgeId(): string {
   return `ce-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-/** Bajo obra (sin nodo padre visible) sólo crean etapas */
-export function childTypeForContainer(parent: CanvasNode | null): CanvasNivelTipo | null {
-  if (!parent) return 'etapa';
-  switch (parent.type) {
-    case 'etapa':
-      return 'planta';
-    case 'planta':
-      return 'sector';
-    case 'sector':
-      return 'ambiente';
-    case 'ambiente':
-      return 'tarea';
-    default:
-      return null;
-  }
+/** Bajo obra (sin nodo padre visible) sólo crean etapas; el siguiente tipo depende del perfil de obra. */
+export function childTypeForContainer(
+  parent: CanvasNode | null,
+  projectKind: CanvasProjectKind,
+): CanvasNivelTipo | null {
+  return nextChildCanvasType(parent, projectKind);
 }
 
-export function labelCrearContextual(childType: CanvasNivelTipo | null): string {
-  switch (childType) {
-    case 'etapa':
-      return '+ Etapa';
-    case 'planta':
-      return '+ Planta / sector';
-    case 'sector':
-      return '+ Sector interno';
-    case 'ambiente':
-      return '+ Ambiente';
-    case 'tarea':
-      return '+ Tarea';
-    default:
-      return '+ Nodo';
-  }
+export function labelCrearContextual(
+  childType: CanvasNivelTipo | null,
+  projectKind: CanvasProjectKind,
+): string {
+  return labelCrearContextualForKind(childType, projectKind);
 }
 
-export function labelTipoNodo(t: CanvasNivelTipo): string {
-  switch (t) {
-    case 'etapa':
-      return 'Etapa';
-    case 'planta':
-      return 'Planta / sector';
-    case 'sector':
-      return 'Sector interno';
-    case 'ambiente':
-      return 'Ambiente';
-    case 'tarea':
-      return 'Tarea';
-  }
+export function labelTipoNodo(t: CanvasNivelTipo, projectKind: CanvasProjectKind): string {
+  return labelTipoNodoForKind(t, projectKind);
+}
+
+export function defaultTitleFor(type: CanvasNivelTipo, projectKind: CanvasProjectKind): string {
+  return defaultTitleForKind(type, projectKind);
 }
 
 export function depthFromParent(nodes: CanvasNode[], parentId: string | null): number {
   if (parentId === null) return 0;
   const p = nodes.find((n) => n.id === parentId);
   return p ? p.level + 1 : 1;
-}
-
-export function defaultTitleFor(type: CanvasNivelTipo): string {
-  switch (type) {
-    case 'etapa':
-      return 'Nueva etapa';
-    case 'planta':
-      return 'Nueva planta / sector';
-    case 'sector':
-      return 'Nuevo sector interno';
-    case 'ambiente':
-      return 'Nuevo ambiente';
-    case 'tarea':
-      return 'Nueva tarea';
-  }
 }
 
 export function staggerPosition(index: number): { x: number; y: number } {
@@ -226,81 +201,19 @@ export function checklistProgress(node: CanvasNode): { done: number; total: numb
   return { done, total };
 }
 
-export type VistaNivelPrincipal = 'etapas' | 'plantas' | 'sectores' | 'ambientes' | 'tareas';
-
-export function vistaPrincipalPorContenedor(container: CanvasNode | null): VistaNivelPrincipal {
-  if (!container) return 'etapas';
-  switch (container.type) {
-    case 'etapa':
-      return 'plantas';
-    case 'planta':
-      return 'sectores';
-    case 'sector':
-      return 'ambientes';
-    case 'ambiente':
-      return 'tareas';
-    default:
-      return 'tareas';
-  }
+export function vistaPrincipalPorContenedor(
+  container: CanvasNode | null,
+  projectKind: CanvasProjectKind,
+): VistaNivelPrincipal {
+  return vistaPrincipalPorContenedorForKind(container, projectKind);
 }
 
-export type CabeceraNivelVista = {
-  /** Texto corto para “Nivel actual: …”. */
-  nivelActualTitulo: string;
-  /** Dónde estás dentro de la jerarquía. */
-  contextoUbicacion: string;
-  vistaActual: string;
-  accionSugerida: string;
-};
-
-/** Barra contextual superior (timeline / hub / canvas). */
-export function cabeceraContextoNivel(obraNombre: string, container: CanvasNode | null): CabeceraNivelVista {
-  if (!container) {
-    return {
-      nivelActualTitulo: 'Etapas / fases',
-      contextoUbicacion: `Obra · ${obraNombre}`,
-      vistaActual: 'Timeline horizontal',
-      accionSugerida:
-        'Agregá fases nuevas y, si querés, el orden esperable en el tiempo con precedencias entre etapas.',
-    };
-  }
-  switch (container.type) {
-    case 'etapa':
-      return {
-        nivelActualTitulo: 'Planta / sector general',
-        contextoUbicacion: `Etapa · ${container.title}`,
-        vistaActual: 'Composición tipo mapa · hub + grilla',
-        accionSugerida: 'Creá niveles físicos coherentes dentro de esta fase (pisos, cocheras, azoteas…).',
-      };
-    case 'planta':
-      return {
-        nivelActualTitulo: 'Sector interno / departamento',
-        contextoUbicacion: `Planta · ${container.title}`,
-        vistaActual: 'Mapa guiado del nivel',
-        accionSugerida: 'Definí depts, palieres o núcleos como piezas claras del piso.',
-      };
-    case 'sector':
-      return {
-        nivelActualTitulo: 'Ambientes',
-        contextoUbicacion: `Sector · ${container.title}`,
-        vistaActual: 'Tarjetas de ambientes',
-        accionSugerida: 'Nombrá cocina, dormitorios, etc. antes de pasar a tareas de ejecución.',
-      };
-    case 'ambiente':
-      return {
-        nivelActualTitulo: 'Tareas operativas',
-        contextoUbicacion: `Ambiente · ${container.title}`,
-        vistaActual: 'Canvas de precedencias',
-        accionSugerida: 'Creá tareas, conectalas, usá checklist y camino crítico en el inspector izquierdo.',
-      };
-    default:
-      return {
-        nivelActualTitulo: 'Obra',
-        contextoUbicacion: container.title,
-        vistaActual: 'Vista general',
-        accionSugerida: 'Seleccioná un elemento para editarlo.',
-      };
-  }
+export function cabeceraContextoNivel(
+  obraNombre: string,
+  container: CanvasNode | null,
+  projectKind: CanvasProjectKind,
+): CabeceraNivelVista {
+  return cabeceraContextoNivelForKind(obraNombre, container, projectKind);
 }
 
 /** Orden Kahn sobre precedencias con desempate horizontal por `position.x`. Ciclo residual: el resto al final por x. */
@@ -353,5 +266,20 @@ export function labelEstadoNivel(est: CanvasNivelEstadoLocal | undefined): strin
       return 'Completado';
     case 'bloqueado':
       return 'Bloqueado';
+  }
+}
+
+export function labelEstadoTarea(est: CanvasTareaEstadoLocal | undefined): string {
+  switch (est ?? 'pendiente') {
+    case 'pendiente':
+      return 'Pendiente';
+    case 'en_progreso':
+      return 'En progreso';
+    case 'para_validar':
+      return 'Para validar';
+    case 'validada':
+      return 'Validada';
+    case 'rechazada':
+      return 'Rechazada';
   }
 }

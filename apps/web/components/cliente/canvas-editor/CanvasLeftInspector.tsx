@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import {
   Boxes,
   Building2,
@@ -13,30 +14,37 @@ import {
 } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
+import type { Connection } from '@xyflow/react';
 
 import { Button } from '@/components/ui/grows';
 import { cn } from '@/lib/utils';
-import type { CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
+import type {
+  CanvasBudgetGroup,
+  CanvasNode,
+  CanvasPrecedenceEdge,
+} from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import {
+  canAddPrecedenceEdge,
   canEnterNode,
+  checklistProgress,
   childTypeForContainer,
   labelEstadoNivel,
+  labelEstadoTarea,
   labelTipoNodo,
 } from './canvasMultinivelHelpers';
 import { aristaCriticaVisual, type CanvasTaskCpmBundle } from './canvasMultinivelCpm';
 
-function ioPred(nodeId: string, edges: CanvasPrecedenceEdge[]) {
-  let inC = 0;
-  let outC = 0;
-  for (const e of edges) {
-    if (e.targetId === nodeId) inC++;
-    if (e.sourceId === nodeId) outC++;
-  }
-  return { inC, outC };
-}
+const conn = (source: string, target: string): Connection =>
+  ({
+    source,
+    target,
+    sourceHandle: 'src',
+    targetHandle: 'tgt',
+  }) as Connection;
 
-function tareaCriticaBanner(
+function tareaCriticaVisual(
   bundle: CanvasTaskCpmBundle | null,
   siblingEdges: CanvasPrecedenceEdge[],
   n: CanvasNode | null,
@@ -49,13 +57,22 @@ function tareaCriticaBanner(
   );
 }
 
+function diasLabel(d: number | undefined): string {
+  const n = Math.max(0, Math.round(d ?? 0));
+  if (n === 1) return '1 día';
+  return `${n} días`;
+}
+
 type Props = {
   obraId: string;
+  projectKind: CanvasProjectKind;
   taskCpmBundle: CanvasTaskCpmBundle | null;
   selectedEdge: CanvasPrecedenceEdge | null;
   selectedNode: CanvasNode | null;
   nodes: CanvasNode[];
+  edges: CanvasPrecedenceEdge[];
   siblingEdges: CanvasPrecedenceEdge[];
+  containerId: string | null;
   patchEdge: (id: string, patch: Partial<Omit<CanvasPrecedenceEdge, 'id'>>) => void;
   removeEdgeIds: (ids: string[]) => void;
   setSelectedEdgeId: (id: string | null) => void;
@@ -68,15 +85,37 @@ type Props = {
   toggleChecklistItem: (taskId: string, itemId: string) => void;
   updateChecklistLabel: (taskId: string, itemId: string, label: string) => void;
   removeChecklistItem: (taskId: string, itemId: string) => void;
+  tryPrecedenceConnection: (c: Connection) => boolean;
+  budgetGroups: CanvasBudgetGroup[];
+  createBudgetGroup: (name: string) => string;
   isOpen: boolean;
   onToggleOpen: () => void;
 };
 
 const inputClass =
-  'mt-1 w-full rounded-2xl border border-[#c3c7ce]/25 bg-[#f0f4f8] px-3.5 py-3 text-sm font-medium text-[#001629] outline-none transition focus:border-[#24a375] focus:bg-white focus:ring-2 focus:ring-[#24a375]/15';
+  'mt-1 w-full rounded-xl border border-[#c3c7ce]/30 bg-white px-3 py-2 text-sm font-medium text-[#001629] outline-none transition focus:border-[#24a375] focus:ring-2 focus:ring-[#24a375]/15';
 
-const sectionCardClass =
-  'rounded-[22px] bg-white/86 p-4 shadow-[0_12px_32px_rgba(23,28,31,0.06)] ring-1 ring-[#c3c7ce]/20 backdrop-blur-sm';
+const inputCompactClass =
+  'rounded-lg border border-[#c3c7ce]/35 bg-white px-2.5 py-1.5 text-sm font-medium text-[#001629] outline-none transition focus:border-[#24a375] focus:ring-2 focus:ring-[#24a375]/12';
+
+const sectionClass =
+  'rounded-2xl border border-[#e4e9ef]/90 bg-white/85 p-4 shadow-sm';
+
+function estadoTareaBadgeClass(est: CanvasNode['estadoTarea'] | undefined): string {
+  switch (est) {
+    case 'en_progreso':
+      return 'bg-sky-50 text-sky-900 ring-1 ring-sky-200/80';
+    case 'para_validar':
+      return 'bg-amber-50 text-amber-950 ring-1 ring-amber-200/80';
+    case 'validada':
+      return 'bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/80';
+    case 'rechazada':
+      return 'bg-rose-50 text-rose-900 ring-1 ring-rose-200/80';
+    case 'pendiente':
+    default:
+      return 'bg-slate-100 text-slate-800 ring-1 ring-slate-200/90';
+  }
+}
 
 function iconForType(type: CanvasNode['type']) {
   switch (type) {
@@ -95,46 +134,16 @@ function iconForType(type: CanvasNode['type']) {
   }
 }
 
-function progressValue(n: CanvasNode | null): number {
-  return Math.min(100, Math.max(0, Math.round(n?.avancePct ?? 0)));
-}
-
-function statusPillClass(n: CanvasNode | null) {
-  if (n?.type === 'tarea') return 'bg-[#d7e4f5] text-[#0f3d66]';
-  switch (n?.estadoNivel ?? 'pendiente') {
-    case 'completado':
-      return 'bg-[#dff8ec] text-[#075c3d]';
-    case 'en_curso':
-      return 'bg-[#d7e4f5] text-[#0f3d66]';
-    case 'bloqueado':
-      return 'bg-[#ffdad6] text-[#93000a]';
-    default:
-      return 'bg-[#e8edf3] text-[#596574]';
-  }
-}
-
-function metricLabelFor(type: CanvasNode['type']) {
-  switch (type) {
-    case 'etapa':
-      return 'plantas';
-    case 'planta':
-      return 'sectores';
-    case 'sector':
-      return 'ambientes';
-    case 'ambiente':
-      return 'tareas';
-    default:
-      return 'hijos';
-  }
-}
-
 export function CanvasLeftInspector({
   obraId,
+  projectKind,
   taskCpmBundle,
   selectedEdge,
   selectedNode,
   nodes,
+  edges,
   siblingEdges,
+  containerId,
   patchEdge,
   removeEdgeIds,
   setSelectedEdgeId,
@@ -147,10 +156,33 @@ export function CanvasLeftInspector({
   toggleChecklistItem,
   updateChecklistLabel,
   removeChecklistItem,
+  tryPrecedenceConnection,
+  budgetGroups,
+  createBudgetGroup,
   isOpen,
   onToggleOpen,
 }: Props) {
   const router = useRouter();
+  const [newGroupName, setNewGroupName] = useState('');
+
+  useEffect(() => {
+    setNewGroupName('');
+  }, [selectedNode?.id, selectedEdge?.id]);
+
+  const siblingTasks = useMemo(
+    () => nodes.filter((n) => n.parentId === containerId && n.type === 'tarea'),
+    [nodes, containerId],
+  );
+
+  const edgeCpmCrit = selectedEdge ? aristaCriticaVisual(selectedEdge, taskCpmBundle) : false;
+
+  const taskCrit = useMemo(
+    () =>
+      selectedNode?.type === 'tarea'
+        ? tareaCriticaVisual(taskCpmBundle, siblingEdges, selectedNode)
+        : false,
+    [selectedNode, taskCpmBundle, siblingEdges],
+  );
 
   const taskPredIn =
     selectedNode?.type === 'tarea'
@@ -161,15 +193,24 @@ export function CanvasLeftInspector({
       ? siblingEdges.filter((e) => e.sourceId === selectedNode.id)
       : [];
 
-  const critVisual =
+  const candPred =
     selectedNode?.type === 'tarea'
-      ? tareaCriticaBanner(taskCpmBundle, siblingEdges, selectedNode)
-      : false;
+      ? siblingTasks.filter(
+          (t) =>
+            t.id !== selectedNode.id &&
+            canAddPrecedenceEdge(containerId, nodes, edges, t.id, selectedNode.id),
+        )
+      : [];
 
-  const edgeCpmCrit = selectedEdge ? aristaCriticaVisual(selectedEdge, taskCpmBundle) : false;
+  const candSucc =
+    selectedNode?.type === 'tarea'
+      ? siblingTasks.filter(
+          (t) =>
+            t.id !== selectedNode.id &&
+            canAddPrecedenceEdge(containerId, nodes, edges, selectedNode.id, t.id),
+        )
+      : [];
 
-  const selectedCpmRow =
-    selectedNode?.type === 'tarea' ? taskCpmBundle?.byId.get(selectedNode.id) ?? null : null;
   const SelectedIcon = selectedNode ? iconForType(selectedNode.type) : Boxes;
 
   if (!isOpen) {
@@ -193,22 +234,20 @@ export function CanvasLeftInspector({
   }
 
   return (
-    <aside className="flex w-[390px] shrink-0 flex-col bg-[#f0f4f8]/96 shadow-[-20px_0_40px_rgba(23,28,31,0.06)] backdrop-blur-xl">
-      <div className="px-5 pb-4 pt-5">
-        <div className="rounded-[26px] bg-[#001629] p-5 text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]">
-          <div className="flex items-start justify-between gap-3">
+    <aside className="flex w-[360px] shrink-0 flex-col bg-[#f0f4f8]/96 shadow-[-20px_0_40px_rgba(23,28,31,0.06)] backdrop-blur-xl">
+      <div className="px-4 pb-3 pt-4">
+        <div className="rounded-[22px] bg-[#001629] p-4 text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]">
+          <div className="flex items-start justify-between gap-2">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#85f8c4]">
-                Inspector
-              </p>
-              <p className="mt-2 text-sm leading-5 text-white/70">
-                Editá estructura, estado y carga operativa del elemento seleccionado.
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#85f8c4]">Inspector</p>
+              <p className="mt-1.5 text-xs leading-snug text-white/75">
+                Precedencias, checklist de ejecución y grupo de presupuesto.
               </p>
             </div>
             <button
               type="button"
               onClick={onToggleOpen}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white/80 transition hover:bg-white/16 hover:text-white"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white/80 transition hover:bg-white/16"
               title="Colapsar inspector"
               aria-label="Colapsar inspector"
             >
@@ -218,454 +257,112 @@ export function CanvasLeftInspector({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-5">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         <Button
           variant="ghost"
           size="sm"
-          className="mb-4 w-full justify-start rounded-2xl bg-white/70 text-[#406182] hover:bg-white"
+          className="mb-3 w-full justify-start rounded-xl bg-white/70 text-[#406182] hover:bg-white"
           type="button"
           onClick={() => router.push(`/cliente/tareas/${obraId}` as Route)}
         >
-          ← Volver al listado de tareas de la obra
+          ← Volver al listado de tareas
         </Button>
 
         {selectedEdge && (
-          <div className={cn(sectionCardClass, 'space-y-4')}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d7e4f5] text-[#001629]">
-              <LayoutGrid className="h-6 w-6" strokeWidth={1.6} />
-            </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#24a375]">
-              Precedencia
-            </p>
-            <p className="text-sm text-[#596574]">A debe terminar antes que B.</p>
-            <p className="rounded-2xl bg-[#f0f4f8] px-3 py-3 text-sm font-black text-[#001629]">
-              {nodes.find((x) => x.id === selectedEdge.sourceId)?.title ?? '—'} →{' '}
+          <div className={cn(sectionClass, 'space-y-3')}>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#24a375]">Precedencias</p>
+            <p className="text-sm font-bold text-[#001629]">
+              {nodes.find((x) => x.id === selectedEdge.sourceId)?.title ?? '—'}
+              <span className="mx-1 font-normal text-[#596574]">→</span>
               {nodes.find((x) => x.id === selectedEdge.targetId)?.title ?? '—'}
             </p>
-            <div>
-              <label className="text-[10px] font-bold uppercase text-[#596574]">
-                Resaltar arista (override)
-              </label>
-              <p className="mt-0.5 text-[11px] text-[#8590a8]">
-                Además del rojo automático por CPM (holgura 0). Podés marcar o quitar a mano.
-              </p>
-              <select
-                className={inputClass}
-                value={selectedEdge.critical ? 'yes' : 'no'}
-                onChange={(e) =>
-                  patchEdge(selectedEdge.id, { critical: e.target.value === 'yes' })
-                }
-              >
-                <option value="no">Normal</option>
-                <option value="yes">Forzar destacada</option>
-              </select>
-            </div>
             <p className="text-[11px] text-[#596574]">
-              <span className="font-bold text-[#0f1e1f]">CPM visual · </span>
               {edgeCpmCrit
-                ? 'Esta arista aparece destacada porque al menos uno de los extremos está en camino crítico calculado (o marcada manualmente).'
-                : 'Sin resalte automático por CPM para esta flecha (revisá duraciones y dependencias).'}
+                ? 'En camino crítico (CPM u override).'
+                : 'Sin resalte automático de camino crítico en esta flecha.'}
             </p>
+            <label className="text-[10px] font-bold uppercase text-[#596574]">Resaltar arista</label>
+            <select
+              className={inputClass}
+              value={selectedEdge.critical ? 'yes' : 'no'}
+              onChange={(e) => patchEdge(selectedEdge.id, { critical: e.target.value === 'yes' })}
+            >
+              <option value="no">Normal</option>
+              <option value="yes">Destacada (manual)</option>
+            </select>
             <Button
               variant="ghost"
               size="sm"
-              className="w-full rounded-2xl text-red-700 hover:bg-red-50"
+              className="w-full rounded-xl text-red-700 hover:bg-red-50"
               type="button"
               onClick={() => {
                 removeEdgeIds([selectedEdge.id]);
                 setSelectedEdgeId(null);
               }}
             >
-              Eliminar conexión
+              Quitar conexión
             </Button>
           </div>
         )}
 
         {!selectedEdge && !selectedNode && (
-          <div className={sectionCardClass}>
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#d7e4f5] text-[#001629]">
-              <Boxes className="h-6 w-6" strokeWidth={1.6} />
+          <div className={sectionClass}>
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#d7e4f5] text-[#001629]">
+              <Boxes className="h-5 w-5" strokeWidth={1.6} />
             </div>
-            <p className="text-lg font-black tracking-[-0.03em] text-[#001629]">
-              Seleccioná un elemento
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[#596574]">
-              Elegí una etapa, planta, sector o ambiente en el área central para cargar datos y avanzar por niveles.
+            <p className="text-base font-black text-[#001629]">Seleccioná un elemento</p>
+            <p className="mt-2 text-sm text-[#596574]">
+              Elegí un nodo o una flecha en el canvas para ver detalles.
             </p>
           </div>
         )}
 
-        {!selectedEdge && selectedNode && (
-          <div className="space-y-5">
-            <div className="relative overflow-hidden rounded-[28px] bg-white p-5 shadow-[0_12px_32px_rgba(23,28,31,0.06)] ring-1 ring-[#c3c7ce]/20">
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-[#cfe5ff]/70 blur-2xl" />
-              <div className="relative z-10">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#001629] text-[#cfe5ff]">
-                    <SelectedIcon className="h-7 w-7" strokeWidth={1.6} />
-                  </div>
-                  <span className={cn('rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]', statusPillClass(selectedNode))}>
-                    {selectedNode.type === 'tarea'
-                      ? selectedNode.estadoTarea ?? 'pendiente'
-                      : labelEstadoNivel(selectedNode.estadoNivel)}
-                  </span>
+        {!selectedEdge && selectedNode && selectedNode.type !== 'tarea' && (
+          <div className="space-y-4">
+            <div className={sectionClass}>
+              <div className="flex items-center gap-2">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#001629] text-[#cfe5ff]">
+                  <SelectedIcon className="h-5 w-5" strokeWidth={1.6} />
                 </div>
-                <p className="mt-5 text-[10px] font-black uppercase tracking-[0.22em] text-[#24a375]">
-                  {labelTipoNodo(selectedNode.type)}
-                </p>
-                <h2 className="mt-1 line-clamp-2 text-3xl font-black tracking-[-0.04em] text-[#001629]">
-                  {selectedNode.title}
-                </h2>
-                {selectedNode.descripcion || selectedNode.notas ? (
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-[#596574]">
-                    {selectedNode.descripcion || selectedNode.notas}
-                  </p>
-                ) : null}
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a94a5]">
+                  {labelTipoNodo(selectedNode.type, projectKind)}
+                </span>
               </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-2xl bg-white/86 px-3 py-3 shadow-[0_12px_32px_rgba(23,28,31,0.05)]">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#8a94a5]">
-                  {metricLabelFor(selectedNode.type)}
-                </p>
-                <p className="mt-1 text-lg font-black text-[#001629]">
-                  {countChildren(nodes, selectedNode.id)}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/86 px-3 py-3 shadow-[0_12px_32px_rgba(23,28,31,0.05)]">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#8a94a5]">
-                  Avance
-                </p>
-                <p className="mt-1 text-lg font-black text-[#001629]">
-                  {selectedNode.type === 'tarea' ? '—' : `${progressValue(selectedNode)}%`}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-white/86 px-3 py-3 shadow-[0_12px_32px_rgba(23,28,31,0.05)]">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[#8a94a5]">
-                  Conex.
-                </p>
-                <p className="mt-1 text-lg font-black text-[#001629]">
-                  {ioPred(selectedNode.id, siblingEdges).inC + ioPred(selectedNode.id, siblingEdges).outC}
-                </p>
-              </div>
-            </div>
-
-            <div className={sectionCardClass}>
-              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a94a5]">
-                Datos editables
-              </p>
-            <div>
-              <label className="text-[10px] font-bold uppercase text-[#596574]">Nombre</label>
+              <label className="mt-3 block text-[10px] font-bold uppercase text-[#596574]">Nombre</label>
               <input
                 className={inputClass}
                 value={selectedNode.title}
                 onChange={(e) => patchNode(selectedNode.id, { title: e.target.value })}
               />
-            </div>
-
-            {selectedNode.type !== 'tarea' && (
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Descripción</label>
-                  <textarea
-                    className={`${inputClass} min-h-[72px] resize-y`}
-                    placeholder="Resumen para el equipo..."
-                    value={selectedNode.descripcion ?? ''}
-                    onChange={(e) =>
-                      patchNode(selectedNode.id, { descripcion: e.target.value || undefined })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Estado</label>
-                  <select
-                    className={inputClass}
-                    value={selectedNode.estadoNivel ?? 'pendiente'}
-                    onChange={(e) =>
-                      patchNode(selectedNode.id, {
-                        estadoNivel: e.target.value as CanvasNode['estadoNivel'],
-                      })
-                    }
-                  >
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en_curso">En curso</option>
-                    <option value="completado">Completado</option>
-                    <option value="bloqueado">Bloqueado</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">
-                    Avance declarado (%)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    className={inputClass}
-                    value={selectedNode.avancePct ?? ''}
-                    placeholder="Opcional"
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      if (v === '') {
-                        patchNode(selectedNode.id, { avancePct: undefined });
-                        return;
-                      }
-                      patchNode(selectedNode.id, {
-                        avancePct: Math.min(100, Math.max(0, parseInt(v, 10) || 0)),
-                      });
-                    }}
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Notas / observaciones</label>
-                  <textarea
-                    className={`${inputClass} min-h-[64px] resize-y`}
-                    value={selectedNode.notas ?? ''}
-                    onChange={(e) => patchNode(selectedNode.id, { notas: e.target.value || undefined })}
-                  />
-                </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-[#596574]">
+                <span>{countChildren(nodes, selectedNode.id)} hijos</span>
+                <span className="text-[#c5c9d8]">·</span>
+                <span>{labelEstadoNivel(selectedNode.estadoNivel)}</span>
               </div>
-            )}
-
-            {(selectedNode.type === 'planta' || selectedNode.type === 'sector' || selectedNode.type === 'ambiente') && (
-              <div className="mt-4">
-                <label className="text-[10px] font-bold uppercase text-[#596574]">Tipo / etiqueta</label>
-                <input
-                  className={inputClass}
-                  placeholder="Ej. núcleo, frente, contractuales..."
-                  value={selectedNode.tipoLabel ?? ''}
-                  onChange={(e) =>
-                    patchNode(selectedNode.id, { tipoLabel: e.target.value || undefined })
-                  }
-                />
-              </div>
-            )}
-
-            {selectedNode.type === 'planta' && (
-              <div className="mt-4">
-                <label className="text-[10px] font-bold uppercase text-[#596574]">
-                  Superficie aprox. (m²)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  className={inputClass}
-                  value={selectedNode.superficieM2 ?? ''}
-                  placeholder="Opcional"
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v === '') patchNode(selectedNode.id, { superficieM2: undefined });
-                    else patchNode(selectedNode.id, { superficieM2: Math.max(0, parseFloat(v) || 0) });
-                  }}
-                />
-              </div>
-            )}
+              <label className="mt-3 block text-[10px] font-bold uppercase text-[#596574]">Estado</label>
+              <select
+                className={inputClass}
+                value={selectedNode.estadoNivel ?? 'pendiente'}
+                onChange={(e) =>
+                  patchNode(selectedNode.id, {
+                    estadoNivel: e.target.value as CanvasNode['estadoNivel'],
+                  })
+                }
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="en_curso">En curso</option>
+                <option value="completado">Completado</option>
+                <option value="bloqueado">Bloqueado</option>
+              </select>
             </div>
-
-            <div className="rounded-[22px] bg-[#eaeef2] px-4 py-3 text-[13px] text-[#3d445c]">
-              <span className="font-bold text-[#596574]">Tipo sistema · </span>
-              {labelTipoNodo(selectedNode.type)}
-              <span className="mx-2 text-[#c5c9d8]">|</span>
-              <span className="font-bold text-[#596574]">Hijos · </span>
-              {countChildren(nodes, selectedNode.id)}
-              {selectedNode.type !== 'tarea' && (
-                <>
-                  <span className="mx-2 text-[#c5c9d8]">|</span>
-                  <span className="font-bold text-[#596574]">Estado · </span>
-                  {labelEstadoNivel(selectedNode.estadoNivel)}
-                </>
-              )}
-            </div>
-
             {selectedNode.type === 'etapa' && (
               <p className="text-xs text-[#6b728e]">
-                Activá <strong className="text-[#374151]">Conectar orden de fases</strong> encima del timeline y tocá dos
-                etapas para registrar precedencia temporal.
+                Para orden entre etapas usá <strong>Conectar orden de fases</strong> en la barra superior.
               </p>
             )}
-
-            {(selectedNode.type === 'etapa' || selectedNode.type === 'tarea') && (
-              <p className="text-xs text-[#596574]">
-                Precedencias en este nivel · {ioPred(selectedNode.id, siblingEdges).inC} entrantes,{' '}
-                {ioPred(selectedNode.id, siblingEdges).outC} salientes
-              </p>
-            )}
-
-            {selectedNode.type === 'tarea' && (
-              <>
-                <div
-                  className={cn(
-                    'rounded-lg border px-3 py-2 text-[12px]',
-                    critVisual
-                      ? 'border-[#e8aeb8] bg-[#fff9fa] text-[#7a2730]'
-                      : 'border-[#eaeef6] bg-white text-[#596574]',
-                  )}
-                >
-                  <p className="font-bold text-[#0f1e1f]">Camino crítico (CPM)</p>
-                  {taskCpmBundle ? (
-                    selectedCpmRow ? (
-                      <>
-                        <p className="mt-1">
-                          Estado calculado ·{' '}
-                          {selectedCpmRow.isCritical
-                            ? 'tarea crítica (holgura total = 0).'
-                            : `holgura total ${selectedCpmRow.float} d, libre ${selectedCpmRow.float_free} d.`}
-                        </p>
-                        <p className="mt-1 text-[11px]">
-                          ES {selectedCpmRow.es} · EF {selectedCpmRow.ef} · LS {selectedCpmRow.ls} · LF{' '}
-                          {selectedCpmRow.lf}
-                        </p>
-                        <p className="mt-1 text-[11px] text-[#6b7388]">
-                          Duración nodo (input) · {selectedNode.duracionDias ?? 0} d
-                        </p>
-                      </>
-                    ) : (
-                      <p className="mt-1">No hay fila CPM para esta tarea.</p>
-                    )
-                  ) : (
-                    <p className="mt-1">
-                      CPM no disponible (revisá que no haya ciclo entre precedencias).
-                    </p>
-                  )}
-                </div>
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[#c41e3a]"
-                    checked={Boolean(selectedNode.esCritica)}
-                    onChange={(e) => patchNode(selectedNode.id, { esCritica: e.target.checked })}
-                  />
-                  Forzar destacar como crítica (además del cálculo)
-                </label>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Estado operativo</label>
-                  <select
-                    className={inputClass}
-                    value={selectedNode.estadoTarea ?? 'pendiente'}
-                    onChange={(e) =>
-                      patchNode(selectedNode.id, {
-                        estadoTarea: e.target.value as CanvasNode['estadoTarea'],
-                      })
-                    }
-                  >
-                    <option value="pendiente">Pendiente</option>
-                    <option value="en_progreso">En progreso</option>
-                    <option value="para_validar">Próximo / para validar</option>
-                    <option value="validada">Completado (validada)</option>
-                    <option value="rechazada">Bloqueado (rechazada)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Duración (días)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    className={inputClass}
-                    value={selectedNode.duracionDias ?? 0}
-                    onChange={(e) =>
-                      patchNode(selectedNode.id, {
-                        duracionDias: Math.max(0, parseInt(e.target.value, 10) || 0),
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Socio (texto)</label>
-                  <input
-                    className={inputClass}
-                    placeholder="Sin asignar"
-                    value={selectedNode.socioLabel ?? ''}
-                    onChange={(e) =>
-                      patchNode(selectedNode.id, { socioLabel: e.target.value || undefined })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold uppercase text-[#596574]">Observaciones</label>
-                  <textarea
-                    className={`${inputClass} min-h-[56px]`}
-                    value={selectedNode.notas ?? ''}
-                    onChange={(e) => patchNode(selectedNode.id, { notas: e.target.value || undefined })}
-                  />
-                </div>
-                {(taskPredIn.length > 0 || taskPredOut.length > 0) && (
-                  <div className="rounded-lg border border-[#e8ecf4] bg-white px-3 py-2 text-[12px]">
-                    <p className="text-[10px] font-bold uppercase text-[#596574]">Precedencias</p>
-                    {taskPredIn.length > 0 && (
-                      <p className="mt-1">
-                        <span className="text-[#596574]">Desde · </span>
-                        {taskPredIn
-                          .map((e) => nodes.find((x) => x.id === e.sourceId)?.title ?? '—')
-                          .join(' · ')}
-                      </p>
-                    )}
-                    {taskPredOut.length > 0 && (
-                      <p className="mt-1">
-                        <span className="text-[#596574]">Hacia · </span>
-                        {taskPredOut
-                          .map((e) => nodes.find((x) => x.id === e.targetId)?.title ?? '—')
-                          .join(' · ')}
-                      </p>
-                    )}
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase text-[#596574]">Checklist</span>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => addChecklistItem(selectedNode.id)}
-                    >
-                      <Plus className="mr-1 h-3.5 w-3.5" />
-                      Ítem
-                    </Button>
-                  </div>
-                  <div className="mt-2 space-y-2">
-                    {(selectedNode.checklist ?? []).length === 0 ? (
-                      <p className="text-xs text-[#8b92a3]">Sin ítems todavía.</p>
-                    ) : (
-                      (selectedNode.checklist ?? []).map((it) => (
-                        <div
-                          key={it.id}
-                          className="flex items-start gap-2 rounded-lg border border-[#eaeef4] bg-white px-2 py-2"
-                        >
-                          <input
-                            type="checkbox"
-                            className="mt-1 h-4 w-4 accent-[#1f9d6c]"
-                            checked={it.done}
-                            onChange={() => toggleChecklistItem(selectedNode.id, it.id)}
-                          />
-                          <input
-                            className="min-w-0 flex-1 border-b border-transparent text-sm outline-none focus:border-[#0042c8]"
-                            value={it.label}
-                            onChange={(e) =>
-                              updateChecklistLabel(selectedNode.id, it.id, e.target.value)
-                            }
-                          />
-                          <button
-                            type="button"
-                            className="text-[11px] text-red-700 hover:underline"
-                            onClick={() => removeChecklistItem(selectedNode.id, it.id)}
-                          >
-                            Quitar
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className={cn(sectionCardClass, 'space-y-2')}>
-              <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#8a94a5]">
-                Acciones
-              </p>
+            <div className="flex flex-col gap-2">
               {canEnterNode(selectedNode) && (
-                <Button type="button" variant="primary" size="sm" className="w-full rounded-2xl" onClick={() => enterNode(selectedNode.id)}>
+                <Button type="button" variant="primary" size="sm" className="w-full rounded-xl" onClick={() => enterNode(selectedNode.id)}>
                   Entrar
                 </Button>
               )}
@@ -673,31 +370,452 @@ export function CanvasLeftInspector({
                 type="button"
                 variant="secondary"
                 size="sm"
-                className="w-full rounded-2xl"
-                disabled={childTypeForContainer(selectedNode) === null}
+                className="w-full rounded-xl"
+                disabled={childTypeForContainer(selectedNode, projectKind) === null}
                 onClick={() => createChildOf(selectedNode.id)}
               >
                 Crear hijo
               </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="w-full rounded-2xl"
-                onClick={() => duplicateNode(selectedNode.id)}
-              >
+              <Button type="button" variant="secondary" size="sm" className="w-full rounded-xl" onClick={() => duplicateNode(selectedNode.id)}>
                 Duplicar
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="w-full rounded-2xl text-red-700 hover:bg-red-50"
+                className="w-full rounded-xl text-red-700 hover:bg-red-50"
                 onClick={() => deleteNode(selectedNode.id)}
               >
                 Eliminar
               </Button>
             </div>
+          </div>
+        )}
+
+        {!selectedEdge && selectedNode && selectedNode.type === 'tarea' && (
+          <div className="space-y-8">
+            {/* 1 · Identidad de la tarea */}
+            <div className={sectionClass}>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#24a375]">Tarea</p>
+              <input
+                className={cn(inputClass, 'mt-3 font-semibold')}
+                value={selectedNode.title}
+                onChange={(e) => patchNode(selectedNode.id, { title: e.target.value })}
+                aria-label="Nombre de la tarea"
+              />
+
+              <div className="mt-4 space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">Estado actual</p>
+                  <span
+                    className={cn(
+                      'mt-2 inline-flex max-w-full items-center rounded-full px-3 py-1 text-xs font-semibold',
+                      estadoTareaBadgeClass(selectedNode.estadoTarea),
+                    )}
+                  >
+                    {labelEstadoTarea(selectedNode.estadoTarea)}
+                  </span>
+                  <p className="mt-2 text-[11px] leading-snug text-[#6b7280]">
+                    Este estado se actualiza con la ejecución del socio y la validación posterior.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+                      taskCrit
+                        ? 'bg-[#fff4e6] text-[#9a3412] ring-1 ring-[#fed7aa]/90'
+                        : 'bg-[#f1f5f9] text-[#475569] ring-1 ring-slate-200/80',
+                    )}
+                  >
+                    Camino crítico: {taskCrit ? 'Sí' : 'No'}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-end gap-3 border-t border-[#eef2f6] pt-4">
+                  <label className="min-w-0 sm:min-w-[7rem]">
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                      Duración (días)
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      className={cn(inputCompactClass, 'mt-1.5 block w-full max-w-[6.5rem]')}
+                      value={selectedNode.duracionDias ?? 0}
+                      onChange={(e) =>
+                        patchNode(selectedNode.id, {
+                          duracionDias: Math.max(0, parseInt(e.target.value, 10) || 0),
+                        })
+                      }
+                    />
+                  </label>
+                  <p className="pb-1 text-xs text-[#596574]">{diasLabel(selectedNode.duracionDias)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* 2 · Precedencias */}
+            <div className={sectionClass}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Precedencias</p>
+
+              <div className="mt-5 space-y-5">
+                <div>
+                  <p className="text-xs font-semibold text-[#374151]">Viene después de</p>
+                  {taskPredIn.length === 0 ? (
+                    <p className="mt-2 text-xs text-[#94a3b8]">Ninguna</p>
+                  ) : (
+                    <ul className="mt-2.5 flex flex-col gap-2">
+                      {taskPredIn.map((e) => (
+                        <li
+                          key={e.id}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-[#e8edf3] bg-[#fafbfd] px-3 py-2"
+                        >
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                            <span className="truncate text-sm font-medium text-[#001629]">
+                              {nodes.find((x) => x.id === e.sourceId)?.title ?? '—'}
+                            </span>
+                            {aristaCriticaVisual(e, taskCpmBundle) && (
+                              <span className="shrink-0 rounded-md bg-[#fff7ed] px-1.5 py-0.5 text-[10px] font-semibold text-[#c2410c] ring-1 ring-[#ffedd5]">
+                                Crítico
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 text-xs font-medium text-[#64748b] underline-offset-2 transition hover:text-[#0f172a] hover:underline"
+                            onClick={() => removeEdgeIds([e.id])}
+                          >
+                            Quitar conexión
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-[#374151]">Antes de</p>
+                  {taskPredOut.length === 0 ? (
+                    <p className="mt-2 text-xs text-[#94a3b8]">Ninguna</p>
+                  ) : (
+                    <ul className="mt-2.5 flex flex-col gap-2">
+                      {taskPredOut.map((e) => (
+                        <li
+                          key={e.id}
+                          className="flex items-center justify-between gap-2 rounded-xl border border-[#e8edf3] bg-[#fafbfd] px-3 py-2"
+                        >
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                            <span className="truncate text-sm font-medium text-[#001629]">
+                              {nodes.find((x) => x.id === e.targetId)?.title ?? '—'}
+                            </span>
+                            {aristaCriticaVisual(e, taskCpmBundle) && (
+                              <span className="shrink-0 rounded-md bg-[#fff7ed] px-1.5 py-0.5 text-[10px] font-semibold text-[#c2410c] ring-1 ring-[#ffedd5]">
+                                Crítico
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 text-xs font-medium text-[#64748b] underline-offset-2 transition hover:text-[#0f172a] hover:underline"
+                            onClick={() => removeEdgeIds([e.id])}
+                          >
+                            Quitar conexión
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="space-y-3 border-t border-[#eef2f6] pt-4">
+                  {candPred.length > 0 && (
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                        + Agregar predecesora
+                      </label>
+                      <select
+                        className={inputClass}
+                        defaultValue=""
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v && selectedNode) {
+                            tryPrecedenceConnection(conn(v, selectedNode.id));
+                            e.target.value = '';
+                          }
+                        }}
+                      >
+                        <option value="">Elegir tarea…</option>
+                        {candPred.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {candSucc.length > 0 && (
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                        + Agregar sucesora
+                      </label>
+                      <select
+                        className={inputClass}
+                        defaultValue=""
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          if (v && selectedNode) {
+                            tryPrecedenceConnection(conn(selectedNode.id, v));
+                            e.target.value = '';
+                          }
+                        }}
+                      >
+                        <option value="">Elegir tarea…</option>
+                        {candSucc.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {candPred.length === 0 && candSucc.length === 0 && (
+                    <p className="text-[11px] text-[#94a3b8]">
+                      No hay más tareas hermanas disponibles para conectar sin crear un ciclo.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 3 · Checklist de ejecución */}
+            <div className={sectionClass}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">
+                    Checklist de ejecución
+                  </p>
+                  {(() => {
+                    const { done, total } = checklistProgress(selectedNode);
+                    return total > 0 ? (
+                      <p className="mt-1.5 text-xs font-medium text-[#64748b]">
+                        Checklist {done}/{total}
+                      </p>
+                    ) : (
+                      <p className="mt-1.5 text-xs text-[#94a3b8]">Sin ítems todavía.</p>
+                    );
+                  })()}
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0 rounded-lg"
+                  onClick={() => addChecklistItem(selectedNode.id)}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  Ítem
+                </Button>
+              </div>
+              <div className="mt-3 max-h-36 space-y-1.5 overflow-y-auto pr-0.5">
+                {(selectedNode.checklist ?? []).length === 0
+                  ? null
+                  : (selectedNode.checklist ?? []).map((it) => (
+                      <div
+                        key={it.id}
+                        className="flex items-start gap-2 rounded-lg border border-[#e8edf3] bg-[#fcfcfd] px-2.5 py-1.5"
+                      >
+                        <input
+                          type="checkbox"
+                          className="mt-1 h-4 w-4 shrink-0 accent-[#24a375]"
+                          checked={it.done}
+                          onChange={() => toggleChecklistItem(selectedNode.id, it.id)}
+                        />
+                        <input
+                          className="min-w-0 flex-1 border-none bg-transparent py-0.5 text-sm outline-none placeholder:text-[#94a3b8]"
+                          value={it.label}
+                          onChange={(e) => updateChecklistLabel(selectedNode.id, it.id, e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="shrink-0 text-[11px] font-medium text-[#64748b] underline-offset-2 hover:text-[#0f172a] hover:underline"
+                          onClick={() => removeChecklistItem(selectedNode.id, it.id)}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+              </div>
+            </div>
+
+            {/* 4 · Grupo de presupuesto */}
+            <div className={sectionClass}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Grupo de presupuesto</p>
+              <p className="mt-2 text-[11px] leading-snug text-[#7b8494]">
+                Este grupo se usará luego en el módulo de presupuestos.
+              </p>
+              {(() => {
+                const gid = selectedNode.budgetGroupId;
+                const grp = gid ? budgetGroups.find((g) => g.id === gid) : null;
+                const nInGroup = gid
+                  ? nodes.filter((n) => n.type === 'tarea' && n.budgetGroupId === gid).length
+                  : 0;
+                if (!grp) {
+                  return (
+                    <div className="mt-4">
+                      <p className="text-sm text-[#596574]">
+                        Esta tarea todavía no está en ningún grupo de presupuesto.
+                      </p>
+                      <div className="mt-4 space-y-3">
+                        <input
+                          className={inputClass}
+                          placeholder="Nombre del nuevo grupo"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="w-full rounded-xl"
+                          onClick={() => {
+                            const id = createBudgetGroup(newGroupName);
+                            patchNode(selectedNode.id, { budgetGroupId: id });
+                            setNewGroupName('');
+                          }}
+                        >
+                          Crear grupo
+                        </Button>
+                        {budgetGroups.length > 0 && (
+                          <div>
+                            <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                              Asignar a existente
+                            </label>
+                            <select
+                              className={inputClass}
+                              defaultValue=""
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v) {
+                                  patchNode(selectedNode.id, { budgetGroupId: v });
+                                  e.target.value = '';
+                                }
+                              }}
+                            >
+                              <option value="">Elegir grupo…</option>
+                              {budgetGroups.map((g) => (
+                                <option key={g.id} value={g.id}>
+                                  {g.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="mt-4 rounded-xl border border-[#e4e9ef] bg-[#f8fafc] p-3.5">
+                    <p className="text-sm font-semibold text-[#001629]">{grp.name}</p>
+                    <p className="mt-1 text-xs text-[#64748b]">
+                      {nInGroup} {nInGroup === 1 ? 'tarea' : 'tareas'} en el grupo
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2">
+                      {budgetGroups.length > 1 && (
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                            Cambiar grupo
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={gid}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              if (v) patchNode(selectedNode.id, { budgetGroupId: v });
+                            }}
+                          >
+                            {budgetGroups.map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="w-full rounded-xl text-[#475569] hover:bg-white"
+                        onClick={() => patchNode(selectedNode.id, { budgetGroupId: undefined })}
+                      >
+                        Quitar del grupo
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 5 · Más opciones */}
+            <details className="rounded-2xl border border-[#e4e9ef] bg-white/70">
+              <summary className="cursor-pointer select-none px-4 py-3 text-xs font-bold uppercase tracking-[0.14em] text-[#596574]">
+                Más opciones
+              </summary>
+              <div className="space-y-4 border-t border-[#eef2f6] px-4 pb-4 pt-3">
+                <div className="flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="w-full rounded-xl"
+                    onClick={() => duplicateNode(selectedNode.id)}
+                  >
+                    Duplicar tarea
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full rounded-xl text-[#b91c1c] hover:bg-red-50"
+                    onClick={() => deleteNode(selectedNode.id)}
+                  >
+                    Eliminar tarea
+                  </Button>
+                </div>
+                <div className="h-px bg-[#eef2f6]" />
+                <label className="flex cursor-pointer items-start gap-2.5 text-sm text-[#334155]">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[#24a375]"
+                    checked={Boolean(selectedNode.esCritica)}
+                    onChange={(e) => patchNode(selectedNode.id, { esCritica: e.target.checked })}
+                  />
+                  <span>Forzar en camino crítico (manual)</span>
+                </label>
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">Notas</label>
+                  <textarea
+                    className={cn(inputClass, 'mt-1.5 min-h-[52px] resize-y')}
+                    value={selectedNode.notas ?? ''}
+                    onChange={(e) => patchNode(selectedNode.id, { notas: e.target.value || undefined })}
+                  />
+                </div>
+              </div>
+            </details>
+
+            {(selectedNode.importSourceUid != null || selectedNode.importOutlineNumber) && (
+              <details className="rounded-2xl border border-dashed border-[#d1d9e2] bg-[#fafbfc]">
+                <summary className="cursor-pointer select-none px-4 py-3 text-xs font-bold text-[#8a94a5]">
+                  Datos de importación
+                </summary>
+                <ul className="space-y-1 px-4 pb-4 font-mono text-[11px] text-[#596574]">
+                  {selectedNode.importSourceUid != null && <li>UID origen: {selectedNode.importSourceUid}</li>}
+                  {selectedNode.importOutlineNumber && <li>Outline: {selectedNode.importOutlineNumber}</li>}
+                </ul>
+              </details>
+            )}
           </div>
         )}
       </div>

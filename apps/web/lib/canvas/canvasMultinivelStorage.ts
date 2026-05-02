@@ -1,9 +1,11 @@
 import type {
+  CanvasBudgetGroup,
   CanvasMultinivelPersisted,
   CanvasNode,
   CanvasPrecedenceEdge,
 } from '@/lib/types/canvasMultinivel';
 import { CANVAS_MULTINIVEL_STORAGE_VERSION } from '@/lib/types/canvasMultinivel';
+import { normalizeCanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 
 /** Una clave estable por obra: la versión va dentro del JSON (`v`). */
 export const canvasMultinivelStorageKey = (obraId: string) => `grows:canvas-multinivel:${obraId}`;
@@ -23,13 +25,40 @@ function normalizeNode(n: CanvasNode): CanvasNode {
           done: Boolean(c?.done),
         }))
       : [];
-    return { ...n, checklist, esCritica: Boolean(n.esCritica) };
+    const out: CanvasNode = { ...n, checklist, esCritica: Boolean(n.esCritica) };
+    if (n.budgetGroupId) out.budgetGroupId = n.budgetGroupId;
+    if (n.importSourceUid != null) out.importSourceUid = n.importSourceUid;
+    if (n.importOutlineNumber) out.importOutlineNumber = n.importOutlineNumber;
+    return out;
   }
-  const { checklist: _chk, esCritica: _crit, ...rest } = n;
+  const { checklist: _chk, esCritica: _crit, budgetGroupId: _bg, importSourceUid: _iu, importOutlineNumber: _io, ...rest } = n;
   return rest;
 }
 
-/** Lee JSON guardado con `v` 1 o 2 y devuelve siempre estado v2. */
+function sanitizeBudgetGroups(groups: unknown): CanvasBudgetGroup[] {
+  if (!Array.isArray(groups)) return [];
+  const seen = new Set<string>();
+  const out: CanvasBudgetGroup[] = [];
+  for (const g of groups) {
+    if (!g || typeof g !== 'object') continue;
+    const id = typeof (g as { id?: unknown }).id === 'string' ? (g as { id: string }).id : '';
+    const name = typeof (g as { name?: unknown }).name === 'string' ? (g as { name: string }).name : '';
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const description =
+      typeof (g as { description?: unknown }).description === 'string'
+        ? (g as { description: string }).description
+        : undefined;
+    const createdAt =
+      typeof (g as { createdAt?: unknown }).createdAt === 'string'
+        ? (g as { createdAt: string }).createdAt
+        : new Date().toISOString();
+    out.push({ id, name: name.trim() || 'Grupo', description, createdAt });
+  }
+  return out;
+}
+
+/** Lee JSON guardado v1–v4 y devuelve estado v4. */
 export function loadCanvasMultinivel(obraId: string): CanvasMultinivelPersisted | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -41,32 +70,64 @@ export function loadCanvasMultinivel(obraId: string): CanvasMultinivelPersisted 
       nodes?: CanvasNode[];
       pathIds?: string[];
       edges?: CanvasPrecedenceEdge[];
+      budgetGroups?: unknown;
+      projectKind?: string;
     };
     if (!parsed || !Array.isArray(parsed.nodes) || !Array.isArray(parsed.pathIds)) return null;
 
     let next: CanvasMultinivelPersisted;
     if (parsed.v === 1) {
       next = {
-        v: CANVAS_MULTINIVEL_STORAGE_VERSION as 2,
+        v: CANVAS_MULTINIVEL_STORAGE_VERSION,
         obraNombre: parsed.obraNombre ?? 'Obra',
         nodes: parsed.nodes.map((n) => normalizeNode({ ...n, checklist: [], esCritica: false })),
         pathIds: parsed.pathIds,
         edges: [],
+        budgetGroups: [],
+        projectKind: 'edificio_multifamiliar',
       };
-    } else if (parsed.v === CANVAS_MULTINIVEL_STORAGE_VERSION) {
+    } else if (parsed.v === 2) {
       next = {
         v: CANVAS_MULTINIVEL_STORAGE_VERSION,
         obraNombre: parsed.obraNombre ?? 'Obra',
         nodes: parsed.nodes.map(normalizeNode),
         pathIds: parsed.pathIds,
         edges: Array.isArray(parsed.edges) ? sanitizeEdges(parsed.nodes, parsed.edges) : [],
+        budgetGroups: [],
+        projectKind: 'edificio_multifamiliar',
+      };
+    } else if (parsed.v === 3) {
+      const rawGroups =
+        'budgetGroups' in parsed && Array.isArray(parsed.budgetGroups) ? parsed.budgetGroups : [];
+      next = {
+        v: CANVAS_MULTINIVEL_STORAGE_VERSION,
+        obraNombre: parsed.obraNombre ?? 'Obra',
+        nodes: parsed.nodes.map(normalizeNode),
+        pathIds: parsed.pathIds,
+        edges: Array.isArray(parsed.edges) ? sanitizeEdges(parsed.nodes, parsed.edges) : [],
+        budgetGroups: sanitizeBudgetGroups(rawGroups),
+        projectKind: 'edificio_multifamiliar',
+      };
+    } else if (parsed.v === CANVAS_MULTINIVEL_STORAGE_VERSION) {
+      const rawGroups =
+        'budgetGroups' in parsed && Array.isArray((parsed as { budgetGroups?: unknown }).budgetGroups)
+          ? sanitizeBudgetGroups((parsed as { budgetGroups: unknown[] }).budgetGroups)
+          : [];
+      next = {
+        v: CANVAS_MULTINIVEL_STORAGE_VERSION,
+        obraNombre: parsed.obraNombre ?? 'Obra',
+        nodes: parsed.nodes.map(normalizeNode),
+        pathIds: parsed.pathIds,
+        edges: Array.isArray(parsed.edges) ? sanitizeEdges(parsed.nodes, parsed.edges) : [],
+        budgetGroups: rawGroups,
+        projectKind: normalizeCanvasProjectKind(parsed.projectKind),
       };
     } else {
       return null;
     }
 
     const sanitized = sanitizePersisted(next);
-    if (parsed.v === 1) {
+    if (parsed.v === 1 || parsed.v === 2 || parsed.v === 3) {
       queueMicrotask(() => saveCanvasMultinivel(obraId, sanitized));
     }
     return sanitized;
@@ -92,6 +153,8 @@ function tryMigrateLegacyV1Key(obraId: string): CanvasMultinivelPersisted | null
       nodes: parsed.nodes.map((n) => normalizeNode({ ...n, checklist: [], esCritica: false })),
       pathIds: parsed.pathIds,
       edges: [],
+      budgetGroups: [],
+      projectKind: 'edificio_multifamiliar',
     };
     const sanitized = sanitizePersisted(next);
     queueMicrotask(() => {
@@ -107,11 +170,16 @@ function tryMigrateLegacyV1Key(obraId: string): CanvasMultinivelPersisted | null
 export function saveCanvasMultinivel(obraId: string, data: CanvasMultinivelPersisted): void {
   if (typeof window === 'undefined') return;
   try {
+    const nodesNorm = data.nodes.map(normalizeNode);
+    const groups = sanitizeBudgetGroups(data.budgetGroups ?? []);
     const payload: CanvasMultinivelPersisted = {
       ...data,
       v: CANVAS_MULTINIVEL_STORAGE_VERSION,
-      nodes: data.nodes.map(normalizeNode),
-      edges: sanitizeEdges(data.nodes, data.edges ?? []),
+      nodes: nodesNorm,
+      pathIds: data.pathIds,
+      edges: sanitizeEdges(nodesNorm, data.edges ?? []),
+      budgetGroups: groups,
+      projectKind: normalizeCanvasProjectKind(data.projectKind),
     };
     localStorage.setItem(canvasMultinivelStorageKey(obraId), JSON.stringify(payload));
   } catch {
@@ -138,6 +206,26 @@ function sanitizeEdges(nodes: CanvasNode[], edges: CanvasPrecedenceEdge[]): Canv
   return ok;
 }
 
+/** Arma un snapshot v4 saneado listo para persistir (local o API). */
+export function composeCanvasPersisted(partial: {
+  obraNombre: string;
+  nodes: CanvasNode[];
+  pathIds: string[];
+  edges: CanvasPrecedenceEdge[];
+  budgetGroups: CanvasBudgetGroup[];
+  projectKind: string;
+}): CanvasMultinivelPersisted {
+  return sanitizePersisted({
+    v: CANVAS_MULTINIVEL_STORAGE_VERSION,
+    obraNombre: partial.obraNombre,
+    nodes: partial.nodes,
+    pathIds: partial.pathIds,
+    edges: partial.edges ?? [],
+    budgetGroups: partial.budgetGroups ?? [],
+    projectKind: normalizeCanvasProjectKind(partial.projectKind),
+  });
+}
+
 /** Eliminar path inválido o nodos rotos tras borrados */
 function sanitizePersisted(data: CanvasMultinivelPersisted): CanvasMultinivelPersisted {
   const byId = new Map(data.nodes.map((n) => [n.id, n]));
@@ -156,11 +244,16 @@ function sanitizePersisted(data: CanvasMultinivelPersisted): CanvasMultinivelPer
   }
   const nodesFiltered = data.nodes.filter((n) => n.id);
   const edges = sanitizeEdges(nodesFiltered, data.edges ?? []);
+  const nodesNorm = nodesFiltered.map(normalizeNode);
+  const groups = sanitizeBudgetGroups(data.budgetGroups ?? []);
   return {
     ...data,
-    nodes: nodesFiltered.map(normalizeNode),
+    v: CANVAS_MULTINIVEL_STORAGE_VERSION,
+    nodes: nodesNorm,
     pathIds,
     edges,
+    budgetGroups: groups,
+    projectKind: normalizeCanvasProjectKind(data.projectKind),
   };
 }
 

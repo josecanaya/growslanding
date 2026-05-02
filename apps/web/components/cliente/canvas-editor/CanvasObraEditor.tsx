@@ -1,10 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import type { Connection } from '@xyflow/react';
 
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ChevronRight, CloudUpload, FileInput } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
@@ -23,7 +23,12 @@ import { EtapasTimelineView } from './nivel-views/EtapasTimelineView';
 import { HubGridNivelView } from './nivel-views/HubGridNivelView';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { TareasCanvasPanel } from './TareasCanvasPanel';
+import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
 import { useCanvasMultinivel } from './useCanvasMultinivel';
+import type { ProjectImportPreview } from '@/lib/project/importProjectXml';
+import { parseProjectXml } from '@/lib/project/importProjectXml';
+import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
+import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 
 type Props = { obraId: string };
 
@@ -45,11 +50,22 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [pendingEtapasSource, setPendingEtapasSource] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const [projectImportOpen, setProjectImportOpen] = useState(false);
+  const [projectImportPreview, setProjectImportPreview] = useState<ProjectImportPreview | null>(null);
+  const [projectImportError, setProjectImportError] = useState<string | null>(null);
+  const [projectImportBusy, setProjectImportBusy] = useState(false);
+  const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     obraNombre,
     setObraNombre,
+    projectKind,
+    canvasHydrated,
+    saveCanvasSnapshotToCloud,
+    cloudSaveState,
+    cloudSaveMessage,
     nodes,
+    edges,
     siblingEdges,
     containerNode,
     containerId,
@@ -75,12 +91,61 @@ export function CanvasObraEditor({ obraId }: Props) {
     toggleChecklistItem,
     updateChecklistLabel,
     removeChecklistItem,
+    applyImportedCanvas,
+    budgetGroups,
+    createBudgetGroup,
   } = useCanvasMultinivel(obraId);
 
-  const vista = vistaPrincipalPorContenedor(containerNode);
+  const onConfirmProjectImport = useCallback(async () => {
+    if (!projectImportPreview) return;
+    if (nodes.length > 0) {
+      const ok = window.confirm(
+        '¿Reemplazar por completo el canvas actual de esta obra? Se perderá la estructura, tareas y precedencias guardadas localmente en este navegador.',
+      );
+      if (!ok) return;
+    }
+    setProjectImportBusy(true);
+    try {
+      const bundle = buildCanvasImportBundle(projectImportPreview, projectKind);
+      const snapshot = composeCanvasPersisted({
+        obraNombre: bundle.obraNombre,
+        nodes: bundle.nodes,
+        pathIds: [],
+        edges: bundle.edges,
+        budgetGroups: [],
+        projectKind,
+      });
+      applyImportedCanvas(bundle);
+      setProjectImportOpen(false);
+      const saved = await saveCanvasSnapshotToCloud(snapshot);
+      if (!saved.ok) {
+        window.alert(
+          saved.message ??
+            'El canvas se importó en pantalla pero no se pudo guardar en la nube. Usá «Guardar en la nube».',
+        );
+      }
+    } catch (e) {
+      console.error(e);
+      window.alert(
+        e instanceof Error
+          ? `No se pudo importar: ${e.message}`
+          : 'No se pudo importar el proyecto al canvas.',
+      );
+    } finally {
+      setProjectImportBusy(false);
+    }
+  }, [
+    projectImportPreview,
+    nodes.length,
+    applyImportedCanvas,
+    projectKind,
+    saveCanvasSnapshotToCloud,
+  ]);
+
+  const vista = vistaPrincipalPorContenedor(containerNode, projectKind);
   const cabecera = useMemo(
-    () => cabeceraContextoNivel(obraNombre, containerNode),
-    [obraNombre, containerNode],
+    () => cabeceraContextoNivel(obraNombre, containerNode, projectKind),
+    [obraNombre, containerNode, projectKind],
   );
 
   const sortedEtapas = useMemo(
@@ -111,7 +176,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   }, [obraId, setSelectedId]);
 
   const puedeCrear = childTypeToCreate !== null;
-  const labelBotonCrear = labelCrearContextual(childTypeToCreate);
+  const labelBotonCrear = labelCrearContextual(childTypeToCreate, projectKind);
   const selectedEdge =
     selectedEdgeId === null ? null : siblingEdges.find((e) => e.id === selectedEdgeId) ?? null;
 
@@ -125,6 +190,28 @@ export function CanvasObraEditor({ obraId }: Props) {
     edgeCriticoVisible(siblingEdges, visibleNodes, taskCpmBundle?.resultado.critical_count ?? null);
 
   const childCount = useCallback((id: string) => countChildren(nodes, id), [nodes]);
+
+  const openProjectXmlPicker = useCallback(() => {
+    setProjectImportError(null);
+    setProjectImportPreview(null);
+    projectXmlInputRef.current?.click();
+  }, []);
+
+  const onProjectXmlSelected = useCallback(async (fileList: FileList | null) => {
+    const file = fileList?.[0];
+    if (!file) return;
+    setProjectImportError(null);
+    try {
+      const text = await file.text();
+      const preview = parseProjectXml(text);
+      setProjectImportPreview(preview);
+      setProjectImportOpen(true);
+    } catch (e) {
+      setProjectImportPreview(null);
+      setProjectImportError(e instanceof Error ? e.message : 'No se pudo interpretar el XML.');
+      setProjectImportOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedNode || selectedEdge) setInspectorOpen(true);
@@ -209,6 +296,7 @@ export function CanvasObraEditor({ obraId }: Props) {
 
       {vista === 'etapas' && visibleNodes.length > 0 && (
         <EtapasTimelineView
+          projectKind={projectKind}
           ordered={sortedEtapas}
           selectedId={selectedId}
           connectMode={connectEtapas}
@@ -230,6 +318,7 @@ export function CanvasObraEditor({ obraId }: Props) {
 
       {vista === 'plantas' && containerNode && (
         <HubGridNivelView
+          projectKind={projectKind}
           variant="planta"
           hubNode={containerNode}
           items={visibleNodes}
@@ -245,6 +334,7 @@ export function CanvasObraEditor({ obraId }: Props) {
 
       {vista === 'sectores' && containerNode && (
         <HubGridNivelView
+          projectKind={projectKind}
           variant="sector"
           hubNode={containerNode}
           items={visibleNodes}
@@ -260,6 +350,7 @@ export function CanvasObraEditor({ obraId }: Props) {
 
       {vista === 'ambientes' && containerNode && (
         <HubGridNivelView
+          projectKind={projectKind}
           variant="ambiente"
           hubNode={containerNode}
           items={visibleNodes}
@@ -277,6 +368,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         <ReactFlowProvider>
           <div className="flex min-h-0 w-full flex-1 flex-col">
             <TareasCanvasPanel
+              projectKind={projectKind}
               taskCpmBundle={taskCpmBundle}
               visibleNodes={visibleNodes}
               nodes={nodes}
@@ -324,6 +416,41 @@ export function CanvasObraEditor({ obraId }: Props) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="shrink-0 gap-1.5"
+              disabled={!canvasHydrated || cloudSaveState === 'saving'}
+              onClick={() => {
+                void saveCanvasSnapshotToCloud();
+              }}
+            >
+              <CloudUpload className="h-4 w-4" aria-hidden />
+              {cloudSaveState === 'saving' ? 'Guardando…' : 'Guardar en la nube'}
+            </Button>
+            <input
+              ref={projectXmlInputRef}
+              type="file"
+              accept=".xml,application/xml,text/xml"
+              className="hidden"
+              aria-hidden
+              tabIndex={-1}
+              onChange={(e) => {
+                void onProjectXmlSelected(e.target.files);
+                e.target.value = '';
+              }}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 gap-1.5 text-[#596574]"
+              onClick={openProjectXmlPicker}
+            >
+              <FileInput className="h-4 w-4" aria-hidden />
+              Importar Project XML
+            </Button>
             {vista === 'etapas' && (
               <Button
                 type="button"
@@ -351,6 +478,20 @@ export function CanvasObraEditor({ obraId }: Props) {
             </Button>
           </div>
         </div>
+
+        {cloudSaveMessage ? (
+          <div className="mx-auto max-w-[1680px] px-4 pb-2 md:px-5">
+            <p
+              className={cn(
+                'text-xs font-medium',
+                cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
+              )}
+              role="status"
+            >
+              {cloudSaveMessage}
+            </p>
+          </div>
+        ) : null}
 
         <div className="mx-auto max-w-[1680px] px-4 pb-4 md:px-5 xl:hidden">
           <div className="rounded-full bg-[#f0f4f8]/90 px-4 py-2.5 shadow-[0_12px_32px_rgba(23,28,31,0.04)] backdrop-blur-md">
@@ -410,13 +551,27 @@ export function CanvasObraEditor({ obraId }: Props) {
           <div className="flex min-h-[min(68vh,760px)] min-w-0 flex-1 flex-col">{vistaCentral}</div>
         </main>
 
+        <ProjectXmlImportPreviewModal
+          open={projectImportOpen}
+          preview={projectImportPreview}
+          parseError={projectImportError}
+          canvasHasNodes={nodes.length > 0}
+          projectKind={projectKind}
+          onClose={() => setProjectImportOpen(false)}
+          onConfirmImport={onConfirmProjectImport}
+          importing={projectImportBusy}
+        />
+
         <CanvasLeftInspector
           obraId={obraId}
+          projectKind={projectKind}
           taskCpmBundle={taskCpmBundle}
           selectedEdge={selectedEdge}
           selectedNode={selectedNode}
           nodes={nodes}
+          edges={edges}
           siblingEdges={siblingEdges}
+          containerId={containerId}
           patchEdge={patchEdge}
           removeEdgeIds={removeEdgeIds}
           setSelectedEdgeId={setSelectedEdgeId}
@@ -429,6 +584,9 @@ export function CanvasObraEditor({ obraId }: Props) {
           toggleChecklistItem={toggleChecklistItem}
           updateChecklistLabel={updateChecklistLabel}
           removeChecklistItem={removeChecklistItem}
+          tryPrecedenceConnection={tryPrecedenceConnection}
+          budgetGroups={budgetGroups}
+          createBudgetGroup={createBudgetGroup}
           isOpen={inspectorOpen}
           onToggleOpen={() => setInspectorOpen((v) => !v)}
         />

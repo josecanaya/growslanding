@@ -1,10 +1,20 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
-import { CANVAS_MULTINIVEL_STORAGE_VERSION } from '@/lib/types/canvasMultinivel';
 import type { Connection } from '@xyflow/react';
-import { loadCanvasMultinivel, saveCanvasMultinivel } from '@/lib/canvas/canvasMultinivelStorage';
+import type {
+  CanvasBudgetGroup,
+  CanvasMultinivelPersisted,
+  CanvasNode,
+  CanvasPrecedenceEdge,
+} from '@/lib/types/canvasMultinivel';
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+import { peekSessionCanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+import {
+  composeCanvasPersisted,
+  loadCanvasMultinivel,
+  saveCanvasMultinivel,
+} from '@/lib/canvas/canvasMultinivelStorage';
 import {
   canEnterNode,
   canAddPrecedenceEdge,
@@ -23,33 +33,142 @@ export function useCanvasMultinivel(obraId: string) {
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasPrecedenceEdge[]>([]);
   const [pathIds, setPathIds] = useState<string[]>([]);
+  const [budgetGroups, setBudgetGroups] = useState<CanvasBudgetGroup[]>([]);
+  const [projectKind, setProjectKind] = useState<CanvasProjectKind>('edificio_multifamiliar');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [canvasHydrated, setCanvasHydrated] = useState(false);
+  const [cloudSaveState, setCloudSaveState] = useState<'idle' | 'saving' | 'ok' | 'err'>('idle');
+  const [cloudSaveMessage, setCloudSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = loadCanvasMultinivel(obraId);
-    if (stored) {
-      setObraNombre(stored.obraNombre);
-      setNodes(stored.nodes);
-      setEdges(Array.isArray(stored.edges) ? stored.edges : []);
-      setPathIds(stored.pathIds);
-    } else {
-      setObraNombre('Obra');
-      setNodes([]);
-      setEdges([]);
-      setPathIds([]);
-    }
+    let cancelled = false;
+    setCanvasHydrated(false);
     setSelectedId(null);
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/canvas`, {
+          credentials: 'include',
+        });
+        const j = await res.json();
+        if (cancelled) return;
+        if (res.ok && j.success && j.data) {
+          const name = j.data.obraNombre ?? j.data.obra?.name ?? 'Obra';
+          setObraNombre(name);
+          setNodes(Array.isArray(j.data.nodes) ? j.data.nodes : []);
+          setEdges(Array.isArray(j.data.edges) ? j.data.edges : []);
+          setPathIds(Array.isArray(j.data.pathIds) ? j.data.pathIds : []);
+          setBudgetGroups(Array.isArray(j.data.budgetGroups) ? j.data.budgetGroups : []);
+          const k = j.data.projectKind ?? j.data.obra?.canvas_project_kind;
+          if (typeof k === 'string') setProjectKind(k as CanvasProjectKind);
+          saveCanvasMultinivel(
+            obraId,
+            composeCanvasPersisted({
+              obraNombre: name,
+              nodes: Array.isArray(j.data.nodes) ? j.data.nodes : [],
+              pathIds: j.data.pathIds ?? [],
+              edges: j.data.edges ?? [],
+              budgetGroups: j.data.budgetGroups ?? [],
+              projectKind: typeof k === 'string' ? k : 'edificio_multifamiliar',
+            }),
+          );
+        } else {
+          const stored = loadCanvasMultinivel(obraId);
+          if (stored) {
+            setObraNombre(stored.obraNombre);
+            setNodes(stored.nodes);
+            setEdges(Array.isArray(stored.edges) ? stored.edges : []);
+            setPathIds(stored.pathIds);
+            setBudgetGroups(Array.isArray(stored.budgetGroups) ? stored.budgetGroups : []);
+            setProjectKind(stored.projectKind);
+          } else {
+            setObraNombre('Obra');
+            setNodes([]);
+            setEdges([]);
+            setPathIds([]);
+            setBudgetGroups([]);
+            const seeded = peekSessionCanvasProjectKind(obraId);
+            setProjectKind(seeded ?? 'edificio_multifamiliar');
+          }
+        }
+      } catch {
+        if (cancelled) return;
+        const stored = loadCanvasMultinivel(obraId);
+        if (stored) {
+          setObraNombre(stored.obraNombre);
+          setNodes(stored.nodes);
+          setEdges(Array.isArray(stored.edges) ? stored.edges : []);
+          setPathIds(stored.pathIds);
+          setBudgetGroups(Array.isArray(stored.budgetGroups) ? stored.budgetGroups : []);
+          setProjectKind(stored.projectKind);
+        } else {
+          setObraNombre('Obra');
+          setNodes([]);
+          setEdges([]);
+          setPathIds([]);
+          setBudgetGroups([]);
+          const seeded = peekSessionCanvasProjectKind(obraId);
+          setProjectKind(seeded ?? 'edificio_multifamiliar');
+        }
+      } finally {
+        if (!cancelled) setCanvasHydrated(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [obraId]);
 
   useEffect(() => {
-    saveCanvasMultinivel(obraId, {
-      v: CANVAS_MULTINIVEL_STORAGE_VERSION,
-      obraNombre,
-      nodes,
-      pathIds,
-      edges,
-    });
-  }, [obraId, obraNombre, nodes, pathIds, edges]);
+    if (!canvasHydrated) return;
+    saveCanvasMultinivel(
+      obraId,
+      composeCanvasPersisted({ obraNombre, nodes, pathIds, edges, budgetGroups, projectKind }),
+    );
+  }, [canvasHydrated, obraId, obraNombre, nodes, pathIds, edges, budgetGroups, projectKind]);
+
+  const saveCanvasSnapshotToCloud = useCallback(
+    async (snapshot?: CanvasMultinivelPersisted) => {
+      const payload =
+        snapshot ??
+        composeCanvasPersisted({ obraNombre, nodes, pathIds, edges, budgetGroups, projectKind });
+      setCloudSaveState('saving');
+      setCloudSaveMessage(null);
+      try {
+        const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/canvas`, {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            obraNombre: payload.obraNombre,
+            projectKind: payload.projectKind,
+            pathIds: payload.pathIds,
+            nodes: payload.nodes,
+            edges: payload.edges,
+            budgetGroups: payload.budgetGroups,
+          }),
+        });
+        const j = await res.json();
+        if (!res.ok || !j.success) {
+          const msg = typeof j.message === 'string' ? j.message : 'No se pudo guardar en la nube';
+          setCloudSaveState('err');
+          setCloudSaveMessage(msg);
+          return { ok: false as const, message: msg };
+        }
+        setCloudSaveState('ok');
+        setCloudSaveMessage('Guardado en la nube');
+        saveCanvasMultinivel(obraId, payload);
+        return { ok: true as const };
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Error de red';
+        setCloudSaveState('err');
+        setCloudSaveMessage(msg);
+        return { ok: false as const, message: msg };
+      }
+    },
+    [obraId, obraNombre, nodes, pathIds, edges, budgetGroups, projectKind],
+  );
 
   const containerId = useMemo(
     () => (pathIds.length === 0 ? null : pathIds[pathIds.length - 1]!),
@@ -81,7 +200,10 @@ export function useCanvasMultinivel(obraId: string) {
     });
   }, [containerId, nodes]);
 
-  const childTypeToCreate = useMemo(() => childTypeForContainer(containerNode), [containerNode]);
+  const childTypeToCreate = useMemo(
+    () => childTypeForContainer(containerNode, projectKind),
+    [containerNode, projectKind],
+  );
 
   const selectedNode = useMemo(
     () => (selectedId ? nodes.find((n) => n.id === selectedId) ?? null : null),
@@ -122,7 +244,7 @@ export function useCanvasMultinivel(obraId: string) {
   );
 
   const createChildNode = useCallback(() => {
-    const type = childTypeForContainer(containerNode);
+    const type = childTypeForContainer(containerNode, projectKind);
     if (!type) return null;
     const siblings = visibleNodes.length;
     const parentId = containerId;
@@ -133,7 +255,7 @@ export function useCanvasMultinivel(obraId: string) {
       parentId,
       level,
       type,
-      title: defaultTitleFor(type),
+      title: defaultTitleFor(type, projectKind),
       position: staggerPosition(siblings),
       createdAt: new Date().toISOString(),
       ...(type === 'tarea'
@@ -148,7 +270,7 @@ export function useCanvasMultinivel(obraId: string) {
     setNodes((prev) => [...prev, created]);
     setSelectedId(id);
     return created;
-  }, [containerId, containerNode, visibleNodes.length]);
+  }, [containerId, containerNode, visibleNodes.length, projectKind]);
 
   const patchNode = useCallback((id: string, patch: Partial<CanvasNode>) => {
     setNodes((prev) => prev.map((n) => (n.id === id ? { ...n, ...patch } : n)));
@@ -210,40 +332,43 @@ export function useCanvasMultinivel(obraId: string) {
     });
   }, []);
 
-  const createChildOf = useCallback((parentId: string) => {
-    setNodes((prev) => {
-      const parent = prev.find((n) => n.id === parentId);
-      const type = childTypeForContainer(parent ?? null);
-      if (!parent || !type) return prev;
+  const createChildOf = useCallback(
+    (parentId: string) => {
+      setNodes((prev) => {
+        const parent = prev.find((n) => n.id === parentId);
+        const type = childTypeForContainer(parent ?? null, projectKind);
+        if (!parent || !type) return prev;
 
-      const path = pathIdsToShowContainer(prev, parentId);
-      const siblings = prev.filter((n) => n.parentId === parentId).length;
-      const id = newCanvasNodeId();
-      queueMicrotask(() => {
-        setPathIds(path);
-        setSelectedId(id);
+        const path = pathIdsToShowContainer(prev, parentId);
+        const siblings = prev.filter((n) => n.parentId === parentId).length;
+        const id = newCanvasNodeId();
+        queueMicrotask(() => {
+          setPathIds(path);
+          setSelectedId(id);
+        });
+
+        const created: CanvasNode = {
+          id,
+          parentId,
+          level: parent.level + 1,
+          type,
+          title: defaultTitleFor(type, projectKind),
+          position: staggerPosition(siblings),
+          createdAt: new Date().toISOString(),
+          ...(type === 'tarea'
+            ? {
+                estadoTarea: 'pendiente' as const,
+                duracionDias: 1,
+                checklist: [],
+                esCritica: false,
+              }
+            : { estadoNivel: 'pendiente' as const }),
+        };
+        return [...prev, created];
       });
-
-      const created: CanvasNode = {
-        id,
-        parentId,
-        level: parent.level + 1,
-        type,
-        title: defaultTitleFor(type),
-        position: staggerPosition(siblings),
-        createdAt: new Date().toISOString(),
-        ...(type === 'tarea'
-          ? {
-              estadoTarea: 'pendiente' as const,
-              duracionDias: 1,
-              checklist: [],
-              esCritica: false,
-            }
-          : { estadoNivel: 'pendiente' as const }),
-      };
-      return [...prev, created];
-    });
-  }, []);
+    },
+    [projectKind],
+  );
 
   const tryPrecedenceConnection = useCallback(
     (c: Connection) => {
@@ -334,9 +459,48 @@ export function useCanvasMultinivel(obraId: string) {
     );
   }, []);
 
+  const createBudgetGroup = useCallback((name: string) => {
+    const id =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? `bg-${crypto.randomUUID()}`
+        : `bg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const trimmed = name.trim() || 'Nuevo grupo';
+    setBudgetGroups((prev) => [
+      ...prev,
+      { id, name: trimmed, createdAt: new Date().toISOString() },
+    ]);
+    return id;
+  }, []);
+
+  const deleteBudgetGroup = useCallback((groupId: string) => {
+    setBudgetGroups((prev) => prev.filter((g) => g.id !== groupId));
+    setNodes((prev) =>
+      prev.map((n) =>
+        n.type === 'tarea' && n.budgetGroupId === groupId ? { ...n, budgetGroupId: undefined } : n,
+      ),
+    );
+  }, []);
+
+  const applyImportedCanvas = useCallback(
+    (bundle: { obraNombre: string; nodes: CanvasNode[]; edges: CanvasPrecedenceEdge[] }) => {
+      setObraNombre(bundle.obraNombre);
+      setNodes(bundle.nodes);
+      setEdges(bundle.edges);
+      setBudgetGroups([]);
+      setPathIds([]);
+      setSelectedId(null);
+    },
+    [],
+  );
+
   return {
     obraNombre,
     setObraNombre,
+    projectKind,
+    canvasHydrated,
+    saveCanvasSnapshotToCloud,
+    cloudSaveState,
+    cloudSaveMessage,
     nodes,
     edges,
     siblingEdges,
@@ -364,5 +528,9 @@ export function useCanvasMultinivel(obraId: string) {
     toggleChecklistItem,
     updateChecklistLabel,
     removeChecklistItem,
+    applyImportedCanvas,
+    budgetGroups,
+    createBudgetGroup,
+    deleteBudgetGroup,
   };
 }

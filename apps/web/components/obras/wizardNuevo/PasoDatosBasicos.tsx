@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Building2 } from 'lucide-react';
 import { useWizardStore, type TipoObra } from './useWizardStore';
+import { WIZARD_TIPO_OBRA_OPCIONES } from '@/lib/canvas/canvasProjectProfile';
 import DireccionAutocomplete from '../wizard/DireccionAutocomplete';
 import ModalMapa from '../wizard/ModalMapa';
 import {
@@ -12,16 +13,6 @@ import {
   hubPrimaryButton,
   hubSecondaryButton,
 } from './nuevaObraHubStyles';
-
-const TIPO_OBRA_OPCIONES: { key: TipoObra; label: string }[] = [
-  { key: 'Obra nueva / Desde cero', label: 'Obra nueva / Desde cero' },
-  { key: 'Casa familiar', label: 'Casa familiar' },
-  { key: 'Ampliación', label: 'Ampliación' },
-  { key: 'Reforma', label: 'Reforma' },
-  { key: 'Local comercial', label: 'Local comercial' },
-  { key: 'Edificio pequeño', label: 'Edificio pequeño' },
-  { key: 'Otro', label: 'Otro' },
-];
 
 interface PasoDatosBasicosProps {
   onNext: () => void;
@@ -51,14 +42,16 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   }, [ensureId]);
 
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [otroDetalle, setOtroDetalle] = useState('');
 
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
     const prop = (propietario ?? '').trim();
     const fechaValida =
       !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
-    return dir.length > 3 && prop.length > 2 && !!tipoObra && fechaValida;
-  }, [direccion, propietario, tipoObra, fecha_inicio_estimada]);
+    const otroOk = tipoObra !== 'otro' || (otroDetalle?.trim().length ?? 0) >= 2;
+    return dir.length > 3 && prop.length > 2 && !!tipoObra && fechaValida && otroOk;
+  }, [direccion, propietario, tipoObra, fecha_inicio_estimada, otroDetalle]);
 
   const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
     setField('direccion', value.direccion);
@@ -160,13 +153,16 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
           <div className="flex flex-col gap-3">
             <label className={hubLabel()}>Tipo de obra</label>
             <div className="flex flex-wrap gap-2">
-              {TIPO_OBRA_OPCIONES.map((opt) => {
-                const active = tipoObra === opt.key;
+              {WIZARD_TIPO_OBRA_OPCIONES.map((opt) => {
+                const active = tipoObra === opt.kind;
                 return (
                   <button
-                    key={opt.key}
+                    key={opt.kind}
                     type="button"
-                    onClick={() => setTipoObra(opt.key)}
+                    onClick={() => {
+                      setTipoObra(opt.kind as TipoObra);
+                      if (opt.kind !== 'otro') setOtroDetalle('');
+                    }}
                     className={`rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 ${
                       active
                         ? 'bg-[#002b49] text-white shadow-sm'
@@ -179,10 +175,11 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
               })}
             </div>
 
-            {tipoObra === 'Otro' ? (
+            {tipoObra === 'otro' ? (
               <input
                 placeholder="Describí el tipo de obra"
-                onChange={(e) => setField('tipoObra', (e.target.value || 'Otro') as TipoObra)}
+                value={otroDetalle}
+                onChange={(e) => setOtroDetalle(e.target.value)}
                 className={hubInput()}
               />
             ) : null}

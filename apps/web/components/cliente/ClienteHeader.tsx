@@ -5,7 +5,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CLIENTE_NAV_ITEMS } from '@/components/cliente/ClienteSidebar';
+import { CLIENTE_NAV_ITEMS, isClienteNavItemActive } from '@/components/cliente/ClienteSidebar';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 function iniciales(nombre: string | null | undefined, email: string | null | undefined): string {
@@ -58,11 +58,11 @@ export function ClienteHeader() {
     if (obraIdEnPath && nombreObraDesdeLista) return nombreObraDesdeLista;
     if (pathname.startsWith('/cliente/obras')) return 'Obras';
     if (pathname.startsWith('/cliente/tareas/') && pathname.includes('/editor')) return 'Editor de planificación';
-    if (pathname.startsWith('/cliente/tareas/')) return 'Tareas de la obra';
-    if (pathname.startsWith('/cliente/tareas')) return 'Tareas';
+    if (pathname.startsWith('/cliente/tareas/') && !pathname.includes('/editor')) return 'Planificación de obra';
+    if (pathname.startsWith('/cliente/tareas')) return 'Planificación de obra';
     if (pathname.startsWith('/cliente/validar')) return 'Validaciones';
     if (pathname.startsWith('/cliente/presupuesto')) return 'Presupuestos';
-    if (pathname.startsWith('/cliente/agenda-socios')) return 'Agenda de socios';
+    if (pathname.startsWith('/cliente/agenda-socios')) return 'Agenda';
     if (pathname.startsWith('/cliente/cuadrillas')) return 'Cuadrillas y socios';
     if (pathname.startsWith('/cliente/notificaciones')) return 'Notificaciones';
     if (pathname.startsWith('/cliente/cuenta')) return 'Cuenta y plan';
@@ -145,8 +145,7 @@ export function ClienteHeader() {
               Cerrar
             </button>
             {CLIENTE_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-              const active =
-                pathname === href || (href !== '/cliente/dashboard' && pathname.startsWith(href));
+              const active = isClienteNavItemActive(pathname, href);
               return (
                 <Link
                   key={href}

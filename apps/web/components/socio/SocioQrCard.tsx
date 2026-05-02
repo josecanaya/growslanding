@@ -21,11 +21,13 @@ import {
 type SocioQrData = {
   token: string;
   publicCodigo?: string | null;
-  associationUrl: string;
+  qrUrl?: string | null;
+  associationUrl?: string | null;
   socio: {
     id: string;
     nombre: string | null;
     email: string | null;
+    oficio?: string | null;
   };
 };
 
@@ -58,7 +60,7 @@ export function SocioQrCard({
     setErrorHint(null);
 
     try {
-      const response = await fetch('/api/socios/mi-qr', { cache: 'no-store' });
+      const response = await fetch('/api/socios/me/qr', { cache: 'no-store' });
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok || !payload.success) {
@@ -76,7 +78,14 @@ export function SocioQrCard({
       }
 
       const qr = payload.data as SocioQrData;
-      const image = await QRCode.toDataURL(qr.associationUrl, {
+      const targetUrl = (qr.qrUrl || qr.associationUrl || '').trim();
+      if (!targetUrl) {
+        setData(null);
+        setQrDataUrl(null);
+        setErrorHint('No se pudo armar el enlace del QR. Reintentá.');
+        return;
+      }
+      const image = await QRCode.toDataURL(targetUrl, {
         margin: 2,
         width: 280,
       });
@@ -97,14 +106,31 @@ export function SocioQrCard({
   }, []);
 
   const displayName = data?.socio.nombre?.trim() || fallbackDisplayName;
-  const oficio = fallbackOficio;
+  const oficio = data?.socio.oficio?.trim() || fallbackOficio;
+
+  async function copyPublicId() {
+    if (!data?.publicCodigo) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(data.publicCodigo);
+      setCopyMessage('Listo: ID copiado.');
+    } catch {
+      setCopyMessage('No se pudo copiar. Reintentá desde el navegador.');
+    }
+  }
 
   async function copyAssociationUrl() {
     if (!data) {
       return;
     }
+    const link = (data.qrUrl || data.associationUrl || '').trim();
+    if (!link) {
+      await copyPublicId();
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(data.associationUrl);
+      await navigator.clipboard.writeText(link);
       setCopyMessage('Listo: link copiado.');
     } catch {
       try {
@@ -120,13 +146,13 @@ export function SocioQrCard({
     if (!data) {
       return;
     }
-    const text = `Agendame en Grows como contacto de obra: ${data.associationUrl}`;
+    const link = (data.qrUrl || data.associationUrl || '').trim();
     try {
-      if (navigator.share) {
+      if (navigator.share && link) {
         await navigator.share({
           title: 'Mi contacto de obra — Grows',
           text: 'Usá este enlace para agendarme en tu agenda de socios.',
-          url: data.associationUrl,
+          url: link,
         });
         setCopyMessage('Compartido.');
         return;
@@ -146,7 +172,7 @@ export function SocioQrCard({
               Mi QR de socio
             </p>
             <p className="mt-2 text-xs font-medium leading-relaxed text-[#434653]">
-              Mostrá este QR para que te agenden como contacto de obra.
+              Compartilo con un cliente para que te agende.
             </p>
           </div>
 
@@ -208,21 +234,15 @@ export function SocioQrCard({
               </div>
 
               <div className="mt-6 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-[#163274]">
-                  Tu identidad digital
-                </p>
-                <p className="mt-1 text-xs font-medium text-[#434653]">
-                  Escaneá para agendar contacto
+                <p className="text-xs font-medium text-[#434653]">
+                  Mostrá este QR o compartí tu ID para que un cliente te agende.
                 </p>
               </div>
 
               {data.publicCodigo ? (
                 <div className="mt-6 rounded-2xl border border-[#163274]/20 bg-[#d8e2ff]/30 px-4 py-4 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#163274]">
-                    ID si no pueden escanear
-                  </p>
-                  <p className="mt-2 font-mono text-2xl font-bold tracking-widest text-[#191c1e]">
-                    {data.publicCodigo}
+                  <p className="text-[11px] font-bold text-[#163274]">
+                    ID de socio: {data.publicCodigo}
                   </p>
                 </div>
               ) : null}
@@ -231,6 +251,16 @@ export function SocioQrCard({
                 <Button
                   type="button"
                   className="h-12 flex-1 rounded-2xl bg-[#163274] font-bold text-white shadow-lg hover:bg-[#314a8d]"
+                  onClick={() => void copyPublicId()}
+                  disabled={!data.publicCodigo}
+                >
+                  <Copy className="mr-2 h-5 w-5" />
+                  Copiar ID
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 flex-1 rounded-2xl border-[#163274] font-bold text-[#163274]"
                   onClick={() => setQrDialogOpen(true)}
                 >
                   <QrCode className="mr-2 h-5 w-5" />
@@ -254,7 +284,7 @@ export function SocioQrCard({
                 onClick={() => void copyAssociationUrl()}
               >
                 <Copy className="mr-2 h-4 w-4" />
-                Copiar link
+                Copiar link de agendar
               </Button>
 
               {copyMessage ? (
@@ -275,13 +305,13 @@ export function SocioQrCard({
           <Button
             type="button"
             variant="outline"
-            size="icon"
+            size="sm"
             className="rounded-xl border-[#c3c6d5]/40"
             onClick={() => void loadQr()}
             disabled={loading}
-            aria-label="Actualizar QR"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar QR
           </Button>
         </div>
       </section>
@@ -304,7 +334,7 @@ export function SocioQrCard({
             </div>
           ) : null}
           <p className="text-center text-xs text-[#434653]">
-            Mostrá esta pantalla para que te agenden como contacto de obra.
+            Mostrá esta pantalla para que un cliente te agende.
           </p>
         </DialogContent>
       </Dialog>

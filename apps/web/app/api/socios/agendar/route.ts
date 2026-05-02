@@ -78,8 +78,15 @@ export async function POST(request: Request) {
       | Awaited<ReturnType<typeof resolveSourceSocioByTelefono>>;
 
     if (body.metodo === 'qr') {
-      const token = normalizeQrTokenInput(body.token);
-      resolved = await resolveSourceSocioByQrToken(token);
+      const raw = normalizeQrTokenInput(body.token);
+      let r = await resolveSourceSocioByQrToken(raw);
+      if ('error' in r) {
+        const asCode = await resolveSourceSocioByPublicCodigo(raw);
+        if (!('error' in asCode)) {
+          r = asCode;
+        }
+      }
+      resolved = r;
     } else if (body.metodo === 'id_publico') {
       resolved = await resolveSourceSocioByPublicCodigo(body.codigo);
     } else if (body.metodo === 'email') {

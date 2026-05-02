@@ -6,6 +6,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole } from '@/lib/roles';
+import { displayPublicSocioCode } from '@/lib/socios/public-code';
 
 export const runtime = 'nodejs';
 
@@ -18,6 +19,7 @@ type SocioQrRecord = {
   email: string | null;
   telefono: string | null;
   estado: string | null;
+  especialidad: string | null;
 };
 
 type AuthUserForSocio = {
@@ -29,12 +31,21 @@ type AuthUserForSocio = {
 
 const PUBLIC_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+function buildAgendaUrlByPublicCode(request: Request, displayCode: string) {
+  const origin =
+    request.headers.get('origin') ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    new URL(request.url).origin;
+  const url = new URL('/cliente/agenda-socios', origin);
+  url.searchParams.set('code', displayCode);
+  return url.toString();
+}
+
 function buildAssociationUrl(request: Request, token: string) {
   const origin =
     request.headers.get('origin') ||
     process.env.NEXT_PUBLIC_APP_URL ||
     new URL(request.url).origin;
-
   const url = new URL('/cliente/agenda-socios', origin);
   url.searchParams.set('agendar_socio', token);
   return url.toString();
@@ -134,7 +145,7 @@ async function findSocioByUserId(userId: string) {
   const supabase = createServiceSupabaseClient();
   const { data, error } = await (supabase as any)
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -159,7 +170,7 @@ async function findSocioByEmail(email: string | null) {
   const supabase = createServiceSupabaseClient();
   const { data, error } = await supabase
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad')
     .eq('email', email)
     .limit(1)
     .maybeSingle();
@@ -190,7 +201,7 @@ async function createSocioForUser(user: AuthUserForSocio) {
   const { data, error } = await (supabase as any)
     .from('socios')
     .insert(insertPayload)
-    .select('id, org_id, nombre, email, telefono, estado')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad')
     .single();
 
   if (error && isMissingColumnError(error)) {
@@ -202,7 +213,7 @@ async function createSocioForUser(user: AuthUserForSocio) {
         estado: 'activo',
         especialidad: 'constructor',
       })
-      .select('id, org_id, nombre, email, telefono, estado')
+      .select('id, org_id, nombre, email, telefono, estado, especialidad')
       .single();
 
     if (fallbackError) {
@@ -369,17 +380,25 @@ export async function GET(request: Request) {
     }
 
     const publicCodigo = await ensurePublicCodigo(supabase, socio.id);
+    const publicCodeDisplay = displayPublicSocioCode(publicCodigo);
+    const associationUrl = buildAssociationUrl(request, token);
+    const agendaUrlByCode = publicCodeDisplay ? buildAgendaUrlByPublicCode(request, publicCodeDisplay) : null;
+    const qrUrl = agendaUrlByCode ?? associationUrl;
 
     return NextResponse.json({
       success: true,
       data: {
         token,
-        publicCodigo,
-        associationUrl: buildAssociationUrl(request, token),
+        publicCodigo: publicCodeDisplay,
+        publicCodigoDb: publicCodigo,
+        associationUrl,
+        qrUrl,
+        agendaUrlByCode,
         socio: {
           id: socio.id,
           nombre: socio.nombre,
           email: socio.email,
+          oficio: socio.especialidad ?? null,
         },
       },
     });

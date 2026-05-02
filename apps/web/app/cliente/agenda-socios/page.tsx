@@ -38,6 +38,7 @@ type AgendaRow = {
     estado: string | null;
     rol: string | null;
     contacto: string | null;
+    especialidad?: string | null;
   } | null;
 };
 
@@ -65,6 +66,18 @@ type UnifiedContact = {
   createdAt?: string;
 };
 
+type ResolvedSocio = {
+  id: string;
+  publicCode: string | null;
+  name: string | null;
+  oficio: string | null;
+  zona: string | null;
+  rating: number | null;
+  email: string | null;
+  telefono: string | null;
+  estado: string | null;
+};
+
 const METODO_LABEL: Record<string, string> = {
   qr: 'QR',
   id_publico: 'ID de socio',
@@ -75,7 +88,7 @@ const METODO_LABEL: Record<string, string> = {
 function mapEstadoSocio(estado: string | null | undefined, rol: string | null | undefined) {
   const s = (estado || '').toLowerCase();
   if (s === 'activo' || s === 'activa') {
-    return { label: 'Disponible', tone: 'free' as const };
+    return { label: 'Agendado', tone: 'free' as const };
   }
   if (s === 'inactivo' || s === 'pausa') {
     return { label: 'No disponible', tone: 'busy' as const };
@@ -83,10 +96,10 @@ function mapEstadoSocio(estado: string | null | undefined, rol: string | null | 
   if (rol) {
     return { label: 'En obra', tone: 'busy' as const };
   }
-  return { label: 'Disponible', tone: 'free' as const };
+  return { label: 'Agendado', tone: 'free' as const };
 }
 
-type TabKey = 'qr' | 'id_publico' | 'email' | 'telefono';
+type TabKey = 'qr' | 'id' | 'email';
 
 export default function AgendaSociosPage() {
   const [agenda, setAgenda] = useState<AgendaRow[]>([]);
@@ -95,21 +108,23 @@ export default function AgendaSociosPage() {
   const [listErr, setListErr] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [tab, setTab] = useState<TabKey>('qr');
+  const [tab, setTab] = useState<TabKey>('id');
 
   const [qrValue, setQrValue] = useState('');
   const [idValue, setIdValue] = useState('');
   const [emailValue, setEmailValue] = useState('');
-  const [telValue, setTelValue] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [agendarLoading, setAgendarLoading] = useState(false);
+  const [resolved, setResolved] = useState<ResolvedSocio | null>(null);
   const [formMsg, setFormMsg] = useState<string | null>(null);
+  const [resolveErr, setResolveErr] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setLoadingList(true);
     setListErr(null);
     try {
       const [agRes, soRes] = await Promise.all([
-        fetch('/api/socios/agenda', { cache: 'no-store' }),
+        fetch('/api/cliente/socios/agenda', { cache: 'no-store' }),
         fetch('/api/socios', { cache: 'no-store' }),
       ]);
       const agJson = await agRes.json().catch(() => ({}));
@@ -140,11 +155,30 @@ export default function AgendaSociosPage() {
     void loadAll();
   }, [loadAll]);
 
+  const resetAgendarForm = useCallback(() => {
+    setQrValue('');
+    setIdValue('');
+    setEmailValue('');
+    setResolved(null);
+    setFormMsg(null);
+    setResolveErr(null);
+  }, []);
+
+  const openAgendar = () => {
+    resetAgendarForm();
+    setModalOpen(true);
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const code = params.get('code')?.trim();
     const token = params.get('agendar_socio') || params.get('asociar_socio');
-    if (token) {
-      setQrValue(token);
+    if (code) {
+      setIdValue(code);
+      setTab('id');
+      setModalOpen(true);
+    } else if (token) {
+      setQrValue(token.trim());
       setTab('qr');
       setModalOpen(true);
     }
@@ -156,7 +190,10 @@ export default function AgendaSociosPage() {
       const { label, tone } = mapEstadoSocio(s?.estado, s?.rol);
       const nombre = s?.nombre || s?.email || s?.telefono || 'Socio agendado';
       const subtitle =
-        s?.rol || s?.contacto || 'Contacto de obra';
+        (s as { especialidad?: string | null } | null)?.especialidad ||
+        s?.rol ||
+        s?.contacto ||
+        'Contacto de obra';
       return {
         key: `agenda-${row.id}`,
         source: 'agenda' as const,
@@ -209,55 +246,77 @@ export default function AgendaSociosPage() {
     );
   }, [unifiedContacts, search]);
 
-  const openAgendar = () => {
-    setFormMsg(null);
-    setModalOpen(true);
+  const sourceForAgendar = (): 'qr' | 'id' | 'email' => {
+    if (tab === 'qr') return 'qr';
+    if (tab === 'email') return 'email';
+    return 'id';
   };
 
-  const submit = async () => {
-    setSubmitting(true);
+  const buscarSocio = async () => {
+    setSearchLoading(true);
+    setResolveErr(null);
     setFormMsg(null);
-
-    let body: Record<string, unknown> = { metodo: tab };
-    if (tab === 'qr') {
-      const token = qrValue.trim();
-      if (!token) {
-        setFormMsg('Pegá el link del QR o el código escaneado.');
-        setSubmitting(false);
-        return;
-      }
-      body = { metodo: 'qr', token };
-    } else if (tab === 'id_publico') {
-      const codigo = idValue.trim();
-      if (codigo.length < 4) {
-        setFormMsg('Ingresá el ID de socio.');
-        setSubmitting(false);
-        return;
-      }
-      body = { metodo: 'id_publico', codigo };
-    } else if (tab === 'email') {
-      const email = emailValue.trim();
-      if (!email.includes('@')) {
-        setFormMsg('Ingresá un email válido.');
-        setSubmitting(false);
-        return;
-      }
-      body = { metodo: 'email', email };
-    } else {
-      const telefono = telValue.trim();
-      if (telefono.length < 6) {
-        setFormMsg('Ingresá un teléfono con al menos 6 caracteres.');
-        setSubmitting(false);
-        return;
-      }
-      body = { metodo: 'telefono', telefono };
-    }
+    setResolved(null);
 
     try {
-      const res = await fetch('/api/socios/agendar', {
+      let url = '';
+      if (tab === 'id') {
+        const codigo = idValue.trim();
+        if (codigo.length < 4) {
+          setResolveErr('Ingresá el ID del socio.');
+          setSearchLoading(false);
+          return;
+        }
+        url = `/api/socios/resolve?code=${encodeURIComponent(codigo)}`;
+      } else if (tab === 'email') {
+        const email = emailValue.trim();
+        if (!email.includes('@')) {
+          setResolveErr('Ingresá un email válido.');
+          setSearchLoading(false);
+          return;
+        }
+        url = `/api/socios/resolve?email=${encodeURIComponent(email)}`;
+      } else {
+        const raw = qrValue.trim();
+        if (!raw) {
+          setResolveErr('Pegá el código o link del QR.');
+          setSearchLoading(false);
+          return;
+        }
+        url = `/api/socios/resolve?paste=${encodeURIComponent(raw)}`;
+      }
+
+      const res = await fetch(url, { cache: 'no-store' });
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok || !json.success) {
+        setResolveErr(typeof json.error === 'string' ? json.error : 'No se pudo buscar el socio.');
+        return;
+      }
+
+      const d = json.data as ResolvedSocio;
+      setResolved(d);
+    } catch {
+      setResolveErr('Error de red al buscar socio.');
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const confirmarAgendar = async () => {
+    if (!resolved) return;
+    setAgendarLoading(true);
+    setFormMsg(null);
+    setResolveErr(null);
+
+    try {
+      const res = await fetch('/api/cliente/socios/agendar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          socioId: resolved.id,
+          source: sourceForAgendar(),
+        }),
       });
       const json = await res.json().catch(() => ({}));
 
@@ -265,18 +324,81 @@ export default function AgendaSociosPage() {
         throw new Error(json.error || 'No se pudo guardar el contacto de obra.');
       }
 
-      setFormMsg(json.message || 'Socio agendado.');
+      const message =
+        typeof json.message === 'string'
+          ? json.message
+          : 'Socio agendado correctamente.';
+      setResolved(null);
       setQrValue('');
       setIdValue('');
       setEmailValue('');
-      setTelValue('');
+      setResolveErr(null);
+      setFormMsg(message);
       await loadAll();
     } catch (e) {
       setFormMsg(e instanceof Error ? e.message : 'No se pudo guardar el socio.');
     } finally {
-      setSubmitting(false);
+      setAgendarLoading(false);
     }
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code')?.trim();
+    if (!code || !modalOpen || tab !== 'id') {
+      return;
+    }
+    const run = async () => {
+      setSearchLoading(true);
+      setResolveErr(null);
+      setResolved(null);
+      try {
+        const res = await fetch(`/api/socios/resolve?code=${encodeURIComponent(code)}`, {
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success && json.data) {
+          setResolved(json.data as ResolvedSocio);
+        } else if (!res.ok) {
+          setResolveErr(typeof json.error === 'string' ? json.error : null);
+        }
+      } catch {
+        /* el usuario puede tocar Buscar socio */
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    void run();
+  }, [modalOpen, tab]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = (params.get('agendar_socio') || params.get('asociar_socio'))?.trim();
+    if (!token || !modalOpen || tab !== 'qr') {
+      return;
+    }
+    const run = async () => {
+      setSearchLoading(true);
+      setResolveErr(null);
+      setResolved(null);
+      try {
+        const res = await fetch(`/api/socios/resolve?paste=${encodeURIComponent(token)}`, {
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.success && json.data) {
+          setResolved(json.data as ResolvedSocio);
+        } else if (!res.ok) {
+          setResolveErr(typeof json.error === 'string' ? json.error : null);
+        }
+      } catch {
+        /* el usuario puede tocar Buscar socio */
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+    void run();
+  }, [modalOpen, tab]);
 
   return (
     <div className="min-h-screen bg-[#f6fafe] pb-28 font-[family-name:var(--font-inter,Inter,sans-serif)] text-[#171c1f]">
@@ -298,7 +420,7 @@ export default function AgendaSociosPage() {
             type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full text-[#002b49] transition hover:bg-[#dfe3e7]/50"
             onClick={openAgendar}
-            aria-label="Agendar con QR"
+            aria-label="Agendar socio"
           >
             <QrCode className="h-6 w-6" />
           </button>
@@ -375,7 +497,7 @@ export default function AgendaSociosPage() {
                   Todavía no hay socios agendados
                 </p>
                 <p className="mt-2 text-sm text-[#42474d]">
-                  Agendá un socio con QR, ID, email o teléfono para verlo acá como contacto de obra.
+                  Agendá un socio con QR, ID o email para verlo acá como contacto de obra.
                 </p>
                 <Button
                   type="button"
@@ -384,12 +506,6 @@ export default function AgendaSociosPage() {
                 >
                   Agendar socio
                 </Button>
-                {orgSocios.length > 0 && agenda.length === 0 ? (
-                  <p className="mt-4 text-xs text-[#73777e]">
-                    Cuando exista agenda en base de datos, acá verás el historial; mientras tanto
-                    podés gestionar socios en cuadrillas.
-                  </p>
-                ) : null}
               </>
             )}
           </div>
@@ -468,12 +584,14 @@ export default function AgendaSociosPage() {
                       </span>
                     )}
                   </div>
-                  <Link
-                    href="/cliente/tareas"
-                    className="w-full rounded-lg bg-[#e4e9ed] py-3 text-center text-sm font-bold text-[#001629] transition hover:bg-[#001629] hover:text-white"
+                  <button
+                    type="button"
+                    disabled
+                    title="Próximamente"
+                    className="w-full cursor-not-allowed rounded-lg bg-[#e4e9ed] py-3 text-center text-sm font-bold text-[#73777e]"
                   >
                     Asignar tarea
-                  </Link>
+                  </button>
                 </div>
               </article>
             ))}
@@ -488,7 +606,15 @@ export default function AgendaSociosPage() {
         </p>
       </main>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            resetAgendarForm();
+          }
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto rounded-2xl border-none bg-[#f6fafe] p-0 sm:max-w-md">
           <DialogHeader className="border-b border-[#dfe3e7]/50 px-6 pb-4 pt-6 text-left">
             <DialogTitle className="font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-2xl font-bold text-[#002b49]">
@@ -523,11 +649,16 @@ export default function AgendaSociosPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setTab('qr')}
+                onClick={() => {
+                  setTab('qr');
+                  setResolved(null);
+                  setResolveErr(null);
+                  setFormMsg(null);
+                }}
                 className="mt-5 flex items-center gap-2 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-bold text-[#001629] hover:opacity-80"
               >
                 <Camera className="h-5 w-5" />
-                Usar código QR
+                Escanear QR
               </button>
             </section>
 
@@ -542,16 +673,20 @@ export default function AgendaSociosPage() {
             <div className="flex flex-wrap gap-2">
               {(
                 [
-                  ['qr', 'QR', QrCode],
-                  ['id_publico', 'ID', IdCard],
-                  ['email', 'Email', Mail],
-                  ['telefono', 'Teléfono', Phone],
+                  ['id', 'Por ID', IdCard],
+                  ['email', 'Por email', Mail],
+                  ['qr', 'QR / link', QrCode],
                 ] as const
               ).map(([key, label, Icon]) => (
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setTab(key)}
+                  onClick={() => {
+                    setTab(key);
+                    setResolved(null);
+                    setResolveErr(null);
+                    setFormMsg(null);
+                  }}
                   className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                     tab === key
                       ? 'bg-[#002b49] text-white'
@@ -568,13 +703,13 @@ export default function AgendaSociosPage() {
               {tab === 'qr' ? (
                 <div>
                   <label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-[#001629]">
-                    Código o link del QR
+                    Pegá el código o link del QR
                   </label>
                   <textarea
                     value={qrValue}
                     onChange={(e) => setQrValue(e.target.value)}
                     rows={3}
-                    placeholder="Pegá lo que obtuviste al escanear"
+                    placeholder="SOC-123456 o https://…?code=SOC-123456"
                     className="w-full rounded-xl border border-transparent bg-[#f0f4f8] px-4 py-3 text-[#171c1f] outline-none ring-[#24a375] placeholder:text-[#73777e]/60 focus:ring-2"
                   />
                   <p className="mt-2 text-xs text-[#73777e]">
@@ -584,17 +719,17 @@ export default function AgendaSociosPage() {
                 </div>
               ) : null}
 
-              {tab === 'id_publico' ? (
+              {tab === 'id' ? (
                 <div>
                   <label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-[#001629]">
-                    ID de socio
+                    ID del socio
                   </label>
                   <div className="flex items-center rounded-xl bg-[#f0f4f8] px-4 py-3 ring-[#24a375] focus-within:ring-2">
                     <IdCard className="mr-3 h-5 w-5 text-[#73777e]" />
                     <input
                       value={idValue}
-                      onChange={(e) => setIdValue(e.target.value.toUpperCase())}
-                      placeholder="Ej. AB12CD34"
+                      onChange={(e) => setIdValue(e.target.value)}
+                      placeholder="SOC-123456"
                       className="w-full border-none bg-transparent font-mono text-[#171c1f] outline-none placeholder:text-[#73777e]/50"
                     />
                   </div>
@@ -604,7 +739,7 @@ export default function AgendaSociosPage() {
               {tab === 'email' ? (
                 <div>
                   <label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-[#001629]">
-                    Correo electrónico
+                    Email del socio
                   </label>
                   <div className="flex items-center rounded-xl bg-[#f0f4f8] px-4 py-3 focus-within:ring-2 focus-within:ring-[#24a375]">
                     <Mail className="mr-3 h-5 w-5 text-[#73777e]" />
@@ -612,47 +747,86 @@ export default function AgendaSociosPage() {
                       type="email"
                       value={emailValue}
                       onChange={(e) => setEmailValue(e.target.value)}
-                      placeholder="nombre@estudio.com"
+                      placeholder="nombre@constructor.com"
                       className="w-full border-none bg-transparent text-[#171c1f] outline-none placeholder:text-[#73777e]/50"
                     />
                   </div>
-                </div>
-              ) : null}
-
-              {tab === 'telefono' ? (
-                <div>
-                  <label className="mb-2 ml-1 block text-xs font-bold uppercase tracking-widest text-[#001629]">
-                    Teléfono
-                  </label>
-                  <div className="flex items-center rounded-xl bg-[#f0f4f8] px-4 py-3 focus-within:ring-2 focus-within:ring-[#24a375]">
-                    <Phone className="mr-3 h-5 w-5 text-[#73777e]" />
-                    <input
-                      value={telValue}
-                      onChange={(e) => setTelValue(e.target.value)}
-                      placeholder="+54 9 11 …"
-                      className="w-full border-none bg-transparent text-[#171c1f] outline-none placeholder:text-[#73777e]/50"
-                    />
-                  </div>
-                  <p className="mt-2 text-xs text-[#73777e]">
-                    Solo buscamos el número en Grows; no enviamos SMS ni WhatsApp.
-                  </p>
                 </div>
               ) : null}
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void submit()}
-              disabled={submitting}
-              className="flex h-auto w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-5 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-extrabold tracking-wide text-white shadow-xl hover:bg-[#002b49]"
-            >
-              {submitting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <UserPlus className="h-5 w-5" />
-              )}
-              Guardar socio
-            </Button>
+            {resolveErr ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-900">
+                {resolveErr}
+              </p>
+            ) : null}
+
+            {resolved ? (
+              <div className="rounded-xl border border-[#24a375]/30 bg-white p-4 shadow-sm">
+                <p className="text-center text-xs font-bold uppercase tracking-widest text-[#24a375]">
+                  Socio encontrado
+                </p>
+                <p className="mt-3 text-center font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-bold text-[#001629]">
+                  {resolved.name || resolved.email || 'Socio'}
+                </p>
+                {resolved.publicCode ? (
+                  <p className="text-center text-sm font-mono font-semibold text-[#002b49]">
+                    ID de socio: {resolved.publicCode}
+                  </p>
+                ) : null}
+                {resolved.oficio ? (
+                  <p className="text-center text-sm text-[#42474d]">{resolved.oficio}</p>
+                ) : null}
+                {resolved.zona ? (
+                  <p className="text-center text-xs text-[#73777e]">{resolved.zona}</p>
+                ) : null}
+                {resolved.rating != null ? (
+                  <p className="text-center text-xs text-[#73777e]">Rating: {resolved.rating}</p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap justify-center gap-2 text-sm text-[#42474d]">
+                  {resolved.email ? (
+                    <a href={`mailto:${resolved.email}`} className="font-medium text-[#002b49] hover:underline">
+                      {resolved.email}
+                    </a>
+                  ) : null}
+                  {resolved.telefono ? (
+                    <a href={`tel:${resolved.telefono}`} className="font-medium text-[#002b49] hover:underline">
+                      {resolved.telefono}
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {!resolved ? (
+              <Button
+                type="button"
+                onClick={() => void buscarSocio()}
+                disabled={searchLoading}
+                className="flex h-auto w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-5 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-extrabold tracking-wide text-white shadow-xl hover:bg-[#002b49]"
+              >
+                {searchLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Search className="h-5 w-5" />
+                )}
+                Buscar socio
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => void confirmarAgendar()}
+                disabled={agendarLoading}
+                className="flex h-auto w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-5 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-extrabold tracking-wide text-white shadow-xl hover:bg-[#002b49]"
+              >
+                {agendarLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <UserPlus className="h-5 w-5" />
+                )}
+                Agendar socio
+              </Button>
+            )}
 
             {formMsg ? (
               <p className="rounded-xl bg-[#f0f4f8] p-4 text-center text-sm text-[#171c1f]">

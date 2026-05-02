@@ -263,7 +263,7 @@ export function CanvasLeftInspector({
           size="sm"
           className="mb-3 w-full justify-start rounded-xl bg-white/70 text-[#406182] hover:bg-white"
           type="button"
-          onClick={() => router.push(`/cliente/tareas/${obraId}` as Route)}
+          onClick={() => router.push(`/cliente/obras/${obraId}` as Route)}
         >
           ← Volver al listado de tareas
         </Button>

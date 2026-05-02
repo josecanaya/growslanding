@@ -67,7 +67,7 @@ export default function CuadrillasPage() {
     const tokenFromQr = params.get('agendar_socio') || params.get('asociar_socio');
     if (tokenFromQr) {
       router.replace(
-        `/cliente/agenda-socios?agendar_socio=${encodeURIComponent(tokenFromQr)}`,
+        `/cliente/agenda-socios?agendar_socio=${encodeURIComponent(tokenFromQr)}` as any,
       );
     }
   }, [router]);
@@ -85,7 +85,7 @@ export default function CuadrillasPage() {
           asChild
           className="rounded-lg bg-[#002E5D] text-white hover:bg-[#003d7a]"
         >
-          <Link href="/cliente/agenda-socios">
+          <Link href={'/cliente/agenda-socios' as any}>
             <UserPlus className="mr-2 h-4 w-4" />
             Agenda de socios
           </Link>
@@ -98,7 +98,7 @@ export default function CuadrillasPage() {
       ) : socios.length === 0 ? (
         <p className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-600">
           Aún no hay socios en la organización.{' '}
-          <Link href="/cliente/agenda-socios" className="font-medium text-[#002E5D] hover:underline">
+          <Link href={'/cliente/agenda-socios' as any} className="font-medium text-[#002E5D] hover:underline">
             Agendá un socio
           </Link>{' '}
           para sumarlo como contacto de obra.

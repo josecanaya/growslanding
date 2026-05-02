@@ -401,7 +401,7 @@ export function CanvasObraEditor({ obraId }: Props) {
               size="sm"
               type="button"
               className="shrink-0"
-              onClick={() => router.push(`/cliente/tareas/${obraId}` as Route)}
+              onClick={() => router.push(`/cliente/obras/${obraId}` as Route)}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>

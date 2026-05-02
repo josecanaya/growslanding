@@ -1,6 +1,7 @@
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { resolveOrgContext } from '@/lib/orgs';
 import { normalizeRole } from '@/lib/roles';
+import { normalizePublicCodigoForLookup } from '@/lib/socios/public-code';
 
 export const QR_SCOPE_SOCIO = 'socio_asociacion';
 
@@ -14,6 +15,7 @@ export type SocioSourceRecord = {
   telefono: string | null;
   estado: string | null;
   especialidad: string | null;
+  public_codigo?: string | null;
 };
 
 export type OrgRecord = {
@@ -26,6 +28,11 @@ export function normalizeQrTokenInput(raw: string) {
 
   try {
     const url = new URL(trimmed);
+    const codeParam = url.searchParams.get('code');
+    if (codeParam?.trim()) {
+      return codeParam.trim();
+    }
+
     const queryToken =
       url.searchParams.get('agendar_socio') ||
       url.searchParams.get('asociar_socio') ||
@@ -97,7 +104,7 @@ export async function resolveSourceSocioByQrToken(
 
   const { data: sourceSocio, error: socioError } = await supabase
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado, especialidad')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
     .eq('id', qrRecord.ref_id)
     .maybeSingle();
 
@@ -116,7 +123,7 @@ export async function resolveSourceSocioByQrToken(
 export async function resolveSourceSocioByPublicCodigo(
   codigo: string,
 ): Promise<{ sourceSocio: SocioSourceRecord } | { error: string; status: number }> {
-  const normalized = codigo.trim().toUpperCase();
+  const normalized = normalizePublicCodigoForLookup(codigo);
   if (normalized.length < 4) {
     return { error: 'Ingresá un ID de socio válido.', status: 400 };
   }
@@ -124,7 +131,7 @@ export async function resolveSourceSocioByPublicCodigo(
   const supabase = createServiceSupabaseClient();
   const { data: sourceSocio, error } = await (supabase as any)
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado, especialidad')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
     .eq('public_codigo', normalized)
     .maybeSingle();
 
@@ -138,6 +145,29 @@ export async function resolveSourceSocioByPublicCodigo(
   }
 
   return { sourceSocio: socio };
+}
+
+/**
+ * Pega de QR: intenta token legacy en qr_tokens; si no, código público (SOC-… / URL con ?code=).
+ */
+export async function resolveSocioFromQrPaste(
+  raw: string,
+): Promise<{ sourceSocio: SocioSourceRecord } | { error: string; status: number }> {
+  const normalized = normalizeQrTokenInput(raw);
+  if (!normalized) {
+    return { error: 'Pegá el código o link del QR.', status: 400 };
+  }
+
+  const byToken = await resolveSourceSocioByQrToken(normalized);
+  if (!('error' in byToken)) {
+    return byToken;
+  }
+
+  if (byToken.status !== 404) {
+    return byToken;
+  }
+
+  return resolveSourceSocioByPublicCodigo(normalized);
 }
 
 function normalizeEmail(email: string) {
@@ -159,7 +189,7 @@ export async function resolveSourceSocioByEmail(
   const supabase = createServiceSupabaseClient();
   const { data: rows, error } = await supabase
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado, especialidad')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
     .ilike('email', e)
     .order('created_at', { ascending: true })
     .limit(5);
@@ -168,13 +198,12 @@ export async function resolveSourceSocioByEmail(
     throw error;
   }
 
-  const list = (rows ?? []) as SocioSourceRecord[];
+  const list = (rows ?? []) as unknown as SocioSourceRecord[];
   const active = list.filter((s) => (s.estado || '').toLowerCase() !== 'inactivo');
   const socio = active[0] ?? list[0];
   if (!socio) {
     return {
-      error:
-        'No hay un socio registrado con ese email. Más adelante podrás invitarlo desde acá.',
+      error: 'No encontramos un socio con ese email.',
       status: 404,
     };
   }
@@ -193,7 +222,7 @@ export async function resolveSourceSocioByTelefono(
   const supabase = createServiceSupabaseClient();
   const { data: exactRows, error: exactErr } = await supabase
     .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado, especialidad')
+    .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
     .eq('telefono', t)
     .order('created_at', { ascending: true })
     .limit(5);
@@ -208,7 +237,7 @@ export async function resolveSourceSocioByTelefono(
     if (digits.length >= 6) {
       const { data: fuzzyRows, error: fuzzyErr } = await supabase
         .from('socios')
-        .select('id, org_id, nombre, email, telefono, estado, especialidad')
+        .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
         .ilike('telefono', `%${digits}%`)
         .order('created_at', { ascending: true })
         .limit(5);
@@ -220,7 +249,7 @@ export async function resolveSourceSocioByTelefono(
     }
   }
 
-  const list = (rows ?? []) as SocioSourceRecord[];
+  const list = (rows ?? []) as unknown as SocioSourceRecord[];
   const active = list.filter((s) => (s.estado || '').toLowerCase() !== 'inactivo');
   const socio = active[0] ?? list[0];
   if (!socio) {
@@ -257,10 +286,13 @@ export async function agendarSocioEnOrganizacion(params: {
     return { success: false, error: 'El socio está inactivo.', status: 403 };
   }
 
-  if (!socio.email && !socio.telefono) {
+  const hasContacto = Boolean(socio.email?.trim() || socio.telefono?.trim());
+  const hasNombre = Boolean(socio.nombre?.trim());
+  if (!hasContacto && !hasNombre) {
     return {
       success: false,
-      error: 'El socio no tiene email ni teléfono; no podemos guardarlo en tu agenda de forma segura.',
+      error:
+        'El socio no tiene datos suficientes para agendarlo. Pedile que complete nombre o contacto en su perfil.',
       status: 400,
     };
   }
@@ -279,7 +311,7 @@ export async function agendarSocioEnOrganizacion(params: {
     alreadyInAgenda: agendaIns === 'duplicate',
     message:
       agendaIns === 'duplicate'
-        ? 'Este contacto de obra ya estaba en tu agenda.'
+        ? 'Este socio ya estaba en tu agenda.'
         : 'Socio agendado correctamente.',
   };
 }

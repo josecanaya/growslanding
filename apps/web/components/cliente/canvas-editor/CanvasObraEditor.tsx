@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import type { Connection } from '@xyflow/react';
 
-import { ArrowLeft, ChevronRight, CloudUpload, FileInput } from 'lucide-react';
+
+import { ArrowLeft, ChevronRight, CloudUpload, FileInput, Share2 } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
@@ -24,6 +25,8 @@ import { HubGridNivelView } from './nivel-views/HubGridNivelView';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { TareasCanvasPanel } from './TareasCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
+import { PublicarTareasCanvasModal } from './PublicarTareasCanvasModal';
+import { CanvasPresupuestosTab } from './CanvasPresupuestosTab';
 import { useCanvasMultinivel } from './useCanvasMultinivel';
 import type { ProjectImportPreview } from '@/lib/project/importProjectXml';
 import { parseProjectXml } from '@/lib/project/importProjectXml';
@@ -55,6 +58,8 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [projectImportError, setProjectImportError] = useState<string | null>(null);
   const [projectImportBusy, setProjectImportBusy] = useState(false);
   const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
+  const [publicarModalOpen, setPublicarModalOpen] = useState(false);
+  const [editorTab, setEditorTab] = useState<'canvas' | 'presupuestos'>('canvas');
 
   const {
     obraNombre,
@@ -94,6 +99,9 @@ export function CanvasObraEditor({ obraId }: Props) {
     applyImportedCanvas,
     budgetGroups,
     createBudgetGroup,
+    patchBudgetGroup,
+    tareaPublicacionByNodeId,
+    refreshTareaPublicacion,
   } = useCanvasMultinivel(obraId);
 
   const onConfirmProjectImport = useCallback(async () => {
@@ -188,6 +196,8 @@ export function CanvasObraEditor({ obraId }: Props) {
   const muestraLegendCritico =
     vista === 'tareas' &&
     edgeCriticoVisible(siblingEdges, visibleNodes, taskCpmBundle?.resultado.critical_count ?? null);
+
+  const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
   const childCount = useCallback((id: string) => countChildren(nodes, id), [nodes]);
 
@@ -384,6 +394,7 @@ export function CanvasObraEditor({ obraId }: Props) {
               onToggleConnect={() => setConnectTareas((x) => !x)}
               tryPrecedenceConnection={tryPrecedenceConnection}
               removeEdgeIds={removeEdgeIds}
+              tareaPublicacionByNodeId={tareaPublicacionByNodeId}
             />
           </div>
         </ReactFlowProvider>
@@ -416,6 +427,50 @@ export function CanvasObraEditor({ obraId }: Props) {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <div className="mr-1 flex rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-0.5">
+              <button
+                type="button"
+                onClick={() => setEditorTab('canvas')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-bold transition',
+                  editorTab === 'canvas' ? 'bg-white text-[#001629] shadow-sm' : 'text-[#64748b]',
+                )}
+              >
+                Canvas
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorTab('presupuestos')}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-bold transition',
+                  editorTab === 'presupuestos'
+                    ? 'bg-white text-[#001629] shadow-sm'
+                    : 'text-[#64748b]',
+                )}
+              >
+                Presupuestos
+              </button>
+            </div>
+            {editorTab === 'canvas' ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  disabled={!canvasHydrated || !tieneNodosTarea}
+                  title={
+                    !tieneNodosTarea
+                      ? 'Agregá al menos un nodo tipo tarea en el canvas para publicar.'
+                      : 'Crear o actualizar tareas operativas en el sistema desde el canvas'
+                  }
+                  onClick={() => setPublicarModalOpen(true)}
+                >
+                  <Share2 className="h-4 w-4" aria-hidden />
+                  Publicar tareas
+                </Button>
+              </>
+            ) : null}
             <Button
               type="button"
               variant="secondary"
@@ -429,53 +484,63 @@ export function CanvasObraEditor({ obraId }: Props) {
               <CloudUpload className="h-4 w-4" aria-hidden />
               {cloudSaveState === 'saving' ? 'Guardando…' : 'Guardar en la nube'}
             </Button>
-            <input
-              ref={projectXmlInputRef}
-              type="file"
-              accept=".xml,application/xml,text/xml"
-              className="hidden"
-              aria-hidden
-              tabIndex={-1}
-              onChange={(e) => {
-                void onProjectXmlSelected(e.target.files);
-                e.target.value = '';
-              }}
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1.5 text-[#596574]"
-              onClick={openProjectXmlPicker}
-            >
-              <FileInput className="h-4 w-4" aria-hidden />
-              Importar Project XML
-            </Button>
-            {vista === 'etapas' && (
-              <Button
-                type="button"
-                variant={connectEtapas ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => {
-                  setConnectEtapas((v) => !v);
-                  setPendingEtapasSource(null);
-                }}
-              >
-                {connectEtapas ? 'Listo · orden de fases' : 'Conectar orden de fases'}
-              </Button>
-            )}
-            <Button type="button" variant="secondary" size="sm" onClick={() => goUpLevel()} disabled={!containerNode}>
-              ← Subir nivel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              size="sm"
-              disabled={!puedeCrear}
-              onClick={() => createChildNode()}
-            >
-              {labelBotonCrear}
-            </Button>
+            {editorTab === 'canvas' ? (
+              <>
+                <input
+                  ref={projectXmlInputRef}
+                  type="file"
+                  accept=".xml,application/xml,text/xml"
+                  className="hidden"
+                  aria-hidden
+                  tabIndex={-1}
+                  onChange={(e) => {
+                    void onProjectXmlSelected(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 gap-1.5 text-[#596574]"
+                  onClick={openProjectXmlPicker}
+                >
+                  <FileInput className="h-4 w-4" aria-hidden />
+                  Importar Project XML
+                </Button>
+                {vista === 'etapas' && (
+                  <Button
+                    type="button"
+                    variant={connectEtapas ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => {
+                      setConnectEtapas((v) => !v);
+                      setPendingEtapasSource(null);
+                    }}
+                  >
+                    {connectEtapas ? 'Listo · orden de fases' : 'Conectar orden de fases'}
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => goUpLevel()}
+                  disabled={!containerNode}
+                >
+                  ← Subir nivel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={!puedeCrear}
+                  onClick={() => createChildNode()}
+                >
+                  {labelBotonCrear}
+                </Button>
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -483,7 +548,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           <div className="mx-auto max-w-[1680px] px-4 pb-2 md:px-5">
             <p
               className={cn(
-                'text-xs font-medium',
+                'whitespace-pre-line text-xs font-medium',
                 cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
               )}
               role="status"
@@ -533,7 +598,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         {leftContext}
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col p-5">
-          {muestraLegendCritico && (
+          {editorTab === 'canvas' && muestraLegendCritico && (
             <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#f0cdd2] bg-[#fffbfb] px-3 py-2 text-xs text-[#7a2730]">
               <span className="font-extrabold uppercase tracking-wider text-[#b42b3a]">Camino crítico</span>
               <span>
@@ -548,7 +613,23 @@ export function CanvasObraEditor({ obraId }: Props) {
             </div>
           )}
 
-          <div className="flex min-h-[min(68vh,760px)] min-w-0 flex-1 flex-col">{vistaCentral}</div>
+          <div className="flex min-h-[min(68vh,760px)] min-w-0 flex-1 flex-col">
+            {editorTab === 'presupuestos' ? (
+              <CanvasPresupuestosTab
+                obraId={obraId}
+                obraNombre={obraNombre}
+                budgetGroups={budgetGroups}
+                nodes={nodes}
+                tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+                patchBudgetGroup={patchBudgetGroup}
+                createBudgetGroup={createBudgetGroup}
+                saveCanvasSnapshotToCloud={saveCanvasSnapshotToCloud}
+                onOpenCanvasTab={() => setEditorTab('canvas')}
+              />
+            ) : (
+              vistaCentral
+            )}
+          </div>
         </main>
 
         <ProjectXmlImportPreviewModal
@@ -560,6 +641,13 @@ export function CanvasObraEditor({ obraId }: Props) {
           onClose={() => setProjectImportOpen(false)}
           onConfirmImport={onConfirmProjectImport}
           importing={projectImportBusy}
+        />
+
+        <PublicarTareasCanvasModal
+          open={publicarModalOpen}
+          obraId={obraId}
+          onClose={() => setPublicarModalOpen(false)}
+          onAfterPublish={() => void refreshTareaPublicacion()}
         />
 
         <CanvasLeftInspector
@@ -587,6 +675,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           tryPrecedenceConnection={tryPrecedenceConnection}
           budgetGroups={budgetGroups}
           createBudgetGroup={createBudgetGroup}
+          tareaPublicacionByNodeId={tareaPublicacionByNodeId}
           isOpen={inspectorOpen}
           onToggleOpen={() => setInspectorOpen((v) => !v)}
         />

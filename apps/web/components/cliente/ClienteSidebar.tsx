@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   LayoutGrid,
   Building2,
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import type { Database } from '@/lib/types/supabase.gen';
 
 /** Rutas bajo “Obras” (incluye planificación / tareas por obra). */
 export function isClienteNavItemActive(pathname: string, href: string): boolean {
@@ -40,6 +43,106 @@ export function ClienteSidebar({ className }: { className?: string }) {
   const pathname = usePathname() ?? '';
   const user = useCurrentUser();
   const orgLabel = user?.orgName || user?.orgId?.slice(0, 8) || 'Grows';
+  const [notifNoLeidas, setNotifNoLeidas] = useState(0);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClientComponentClient>['channel']> | null>(null);
+  const supabase = useMemo(() => createClientComponentClient<Database>(), []);
+
+  useEffect(() => {
+    if (!user?.orgId || !user?.id) {
+      setNotifNoLeidas(0);
+      return;
+    }
+
+    const headers: Record<string, string> = {
+      'x-organizacion-id': user.orgId,
+      'x-usuario-id': user.id,
+    };
+
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch('/api/notificaciones?soloNoLeidas=1', {
+          headers,
+          cache: 'no-store',
+        });
+        const json = await res.json().catch(() => ({}));
+        if (json.success && Array.isArray(json.data)) {
+          setNotifNoLeidas(json.data.length);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void fetchUnread();
+
+    const onCustom = (e: Event) => {
+      const ce = e as CustomEvent<{ rol?: string; count?: number }>;
+      if (ce.detail?.rol === 'cliente' && typeof ce.detail.count === 'number') {
+        setNotifNoLeidas(ce.detail.count);
+        return;
+      }
+      void fetchUnread();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('grows:notificaciones-unread-count', onCustom);
+      window.addEventListener('grows:presupuesto-respondido', onCustom);
+    }
+    const interval = setInterval(fetchUnread, 60_000);
+
+    return () => {
+      clearInterval(interval);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('grows:notificaciones-unread-count', onCustom);
+        window.removeEventListener('grows:presupuesto-respondido', onCustom);
+      }
+    };
+  }, [user?.orgId, user?.id]);
+
+  useEffect(() => {
+    if (!user?.orgId || !user?.id) return;
+
+    const ch = supabase
+      .channel(`cliente_sidebar_notif_${user.orgId}_${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notificaciones',
+          filter: `destinatario_id=eq.${user.id}`,
+        },
+        () => {
+          void (async () => {
+            try {
+              const res = await fetch('/api/notificaciones?soloNoLeidas=1', {
+                headers: {
+                  'x-organizacion-id': user.orgId!,
+                  'x-usuario-id': user.id,
+                },
+                cache: 'no-store',
+              });
+              const json = await res.json().catch(() => ({}));
+              if (json.success && Array.isArray(json.data)) {
+                setNotifNoLeidas(json.data.length);
+              }
+            } catch {
+              /* ignore */
+            }
+          })();
+        },
+      )
+      .subscribe();
+
+    channelRef.current = ch;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user?.orgId, user?.id, supabase]);
 
   return (
     <aside
@@ -54,6 +157,7 @@ export function ClienteSidebar({ className }: { className?: string }) {
       <nav className="flex flex-1 flex-col items-center gap-6">
         {CLIENTE_NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = isClienteNavItemActive(pathname, href);
+          const showNotifBadge = href === '/cliente/notificaciones' && notifNoLeidas > 0;
           return (
             <Link
               key={href}
@@ -67,6 +171,11 @@ export function ClienteSidebar({ className }: { className?: string }) {
               )}
             >
               <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} />
+              {showNotifBadge ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white shadow">
+                  {notifNoLeidas > 9 ? '9+' : notifNoLeidas}
+                </span>
+              ) : null}
             </Link>
           );
         })}

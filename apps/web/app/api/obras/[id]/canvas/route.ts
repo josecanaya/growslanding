@@ -6,9 +6,16 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import { persistedToSupabaseRows, supabaseRowsToPersisted } from '@/lib/canvas/canvasSupabaseMapper';
+import {
+  isMissingOptionalBudgetGroupSocioColumnsError,
+  stripBudgetGroupSocioOptionalFields,
+} from '@/lib/canvas/budgetGroupColumnCompat';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+/** PostgREST suele limitar filtros `.in()` largos; borrar por lotes evita 23505 por nodos huérfanos. */
+const DELETE_NODES_BY_ID_CHUNK = 120;
 
 async function assertObraInOrgs(
   supabase: ReturnType<typeof createServiceSupabaseClient>,
@@ -185,6 +192,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const orgId = gate.org_id;
     const supabaseAny = supabase as any;
 
+    let prevBgMap = new Map<string, Record<string, unknown>>();
+    try {
+      const { data: prevRows } = await supabaseAny
+        .from('canvas_budget_groups')
+        .select('*')
+        .eq('obra_id', obraId);
+      for (const r of prevRows ?? []) {
+        const id = (r as { id: string }).id;
+        if (id) prevBgMap.set(id, r as Record<string, unknown>);
+      }
+    } catch {
+      prevBgMap = new Map();
+    }
+
     let rows;
     try {
       rows = persistedToSupabaseRows(obraId, orgId, snapshot);
@@ -193,6 +214,63 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         { success: false, message: e instanceof Error ? e.message : 'Payload inválido' },
         { status: 400 },
       );
+    }
+
+    const mergedBudgetGroups = rows.budgetGroups.map((g: Record<string, unknown>) => {
+      const prev = prevBgMap.get(g.id as string);
+      const stClient = typeof g.status === 'string' && g.status ? String(g.status) : '';
+      const stPrev = prev && typeof prev.status === 'string' ? String(prev.status) : '';
+      return {
+        ...g,
+        obra_id: obraId,
+        org_id: orgId,
+        status: stClient || stPrev || 'borrador',
+        scheduled_socio_id:
+          g.scheduled_socio_id !== undefined
+            ? g.scheduled_socio_id
+            : (prev?.scheduled_socio_id as string | null | undefined) ?? null,
+        mensaje_socio_borrador:
+          g.mensaje_socio_borrador !== undefined
+            ? g.mensaje_socio_borrador
+            : (prev?.mensaje_socio_borrador as string | null | undefined) ?? null,
+      };
+    });
+
+    // Borrar hijos primero (FK → canvas_nodes / grupos), luego nodos y grupos.
+    const { error: delEdgesErr } = await supabaseAny.from('canvas_edges').delete().eq('obra_id', obraId);
+    if (delEdgesErr) {
+      console.error('[PUT canvas] delete edges', delEdgesErr);
+      return NextResponse.json({ success: false, message: delEdgesErr.message }, { status: 500 });
+    }
+
+    const { error: delChkErr } = await supabaseAny
+      .from('canvas_task_checklist_items')
+      .delete()
+      .eq('obra_id', obraId);
+    if (delChkErr) {
+      console.error('[PUT canvas] delete checklist', delChkErr);
+      return NextResponse.json({ success: false, message: delChkErr.message }, { status: 500 });
+    }
+
+    const { error: delBgtErr } = await supabaseAny
+      .from('canvas_budget_group_tasks')
+      .delete()
+      .eq('obra_id', obraId);
+    if (delBgtErr) {
+      console.error('[PUT canvas] delete budget_group_tasks', delBgtErr);
+      return NextResponse.json({ success: false, message: delBgtErr.message }, { status: 500 });
+    }
+
+    const incomingNodeIds = rows.nodes.map((n: { id: string }) => n.id).filter(Boolean);
+    if (incomingNodeIds.length > 0) {
+      for (let i = 0; i < incomingNodeIds.length; i += DELETE_NODES_BY_ID_CHUNK) {
+        const chunk = incomingNodeIds.slice(i, i + DELETE_NODES_BY_ID_CHUNK);
+        const { error: delStaleErr } = await supabaseAny.from('canvas_nodes').delete().in('id', chunk);
+        if (delStaleErr) {
+          console.error('[PUT canvas] delete stale nodes by id', delStaleErr);
+          return NextResponse.json({ success: false, message: delStaleErr.message }, { status: 500 });
+        }
+      }
     }
 
     const { error: delNodesErr } = await supabaseAny.from('canvas_nodes').delete().eq('obra_id', obraId);
@@ -210,11 +288,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ success: false, message: delGroupsErr.message }, { status: 500 });
     }
 
-    if (rows.budgetGroups.length > 0) {
-      const { error: insBg } = await supabaseAny.from('canvas_budget_groups').insert(rows.budgetGroups);
-      if (insBg) {
-        console.error('[PUT canvas] insert groups', insBg);
-        return NextResponse.json({ success: false, message: insBg.message }, { status: 500 });
+    if (mergedBudgetGroups.length > 0) {
+      let insBg = await supabaseAny.from('canvas_budget_groups').insert(mergedBudgetGroups);
+      if (insBg.error && isMissingOptionalBudgetGroupSocioColumnsError(insBg.error)) {
+        console.warn('[PUT canvas] insert groups sin columnas socio/mensaje; aplicá la migración canvas_budget_groups_socio_mensaje');
+        const stripped = stripBudgetGroupSocioOptionalFields(
+          mergedBudgetGroups as Record<string, unknown>[],
+        );
+        insBg = await supabaseAny.from('canvas_budget_groups').insert(stripped);
+      }
+      if (insBg.error) {
+        console.error('[PUT canvas] insert groups', insBg.error);
+        return NextResponse.json(
+          { success: false, message: insBg.error.message },
+          { status: 500 },
+        );
       }
     }
 

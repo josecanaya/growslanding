@@ -3,6 +3,8 @@ import initialData from '../data/roadmap.initial.json';
 
 const prisma = new PrismaClient();
 
+type RoadmapTareaProgreso = { done: boolean; estado: string };
+
 async function main() {
   console.log('🌱 Sembrando datos del roadmap...');
 
@@ -101,7 +103,7 @@ async function main() {
     });
 
     const completadas = todasLasTareas.filter(
-      (t) => t.done || t.estado === 'done'
+      (t: RoadmapTareaProgreso) => t.done || t.estado === 'done'
     ).length;
     const progreso =
       todasLasTareas.length > 0

@@ -124,8 +124,8 @@ export default function AgendaSociosPage() {
     setListErr(null);
     try {
       const [agRes, soRes] = await Promise.all([
-        fetch('/api/cliente/socios/agenda', { cache: 'no-store' }),
-        fetch('/api/socios', { cache: 'no-store' }),
+        fetch('/api/cliente/socios/agenda', { cache: 'no-store', credentials: 'include' }),
+        fetch('/api/socios', { cache: 'no-store', credentials: 'include' }),
       ]);
       const agJson = await agRes.json().catch(() => ({}));
       const soJson = await soRes.json().catch(() => ({}));

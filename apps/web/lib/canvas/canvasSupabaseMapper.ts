@@ -71,10 +71,14 @@ type DbEdgeRow = {
 
 type DbBgRow = {
   id: string;
+  obra_id?: string;
+  org_id?: string;
   name: string;
   description: string | null;
   status: string;
   created_at: string;
+  scheduled_socio_id?: string | null;
+  mensaje_socio_borrador?: string | null;
 };
 
 type DbCheckRow = {
@@ -113,10 +117,14 @@ export function persistedToSupabaseRows(
     const id = toDbUuidFromCanvasId(g.id);
     return {
       id,
+      obra_id: obraId,
+      org_id: orgId,
       name: g.name?.trim() || 'Grupo',
       description: g.description ?? null,
-      status: 'borrador',
+      status: (g.status && String(g.status).trim()) || 'borrador',
       created_at: g.createdAt ?? new Date().toISOString(),
+      scheduled_socio_id: g.scheduledSocioId ?? null,
+      mensaje_socio_borrador: g.mensajeSocioBorrador ?? null,
     };
   });
 
@@ -307,12 +315,18 @@ export function supabaseRowsToPersisted(input: {
     critical: row.is_critical,
   }));
 
-  const budgetGroups: CanvasBudgetGroup[] = input.budgetGroups.map((g) => ({
-    id: toClientBudgetGroupId(g.id),
-    name: g.name,
-    description: g.description ?? undefined,
-    createdAt: g.created_at,
-  }));
+  const budgetGroups: CanvasBudgetGroup[] = input.budgetGroups.map((g) => {
+    const row = g as DbBgRow;
+    return {
+      id: toClientBudgetGroupId(g.id),
+      name: g.name,
+      description: g.description ?? undefined,
+      createdAt: g.created_at,
+      status: row.status ?? 'borrador',
+      scheduledSocioId: row.scheduled_socio_id ?? null,
+      mensajeSocioBorrador: row.mensaje_socio_borrador ?? null,
+    };
+  });
 
   const pathIds = pathIdsRaw.filter((id) => {
     try {

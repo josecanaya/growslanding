@@ -63,7 +63,10 @@ function OportunidadesContent() {
           }));
           setSolicitudes(solicitudesFormateadas);
         } else {
-          const response = await fetch('/api/socio/solicitudes');
+          const response = await fetch('/api/socio/solicitudes', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
           if (!response.ok) {
             throw new Error('Error al cargar solicitudes');
           }

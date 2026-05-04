@@ -56,11 +56,18 @@ function buildNodeData(
   handlesEnabled: boolean,
   taskCpmBundle: CanvasTaskCpmBundle | null,
   projectKind: CanvasProjectKind,
+  tareaPublicacionByNodeId: Record<string, { tareaId: string }> | undefined,
 ): MultinivelNodeData {
   const childCount = countChildren(nodes, n.id);
   const { inC, outC } = precedenciasIo(n.id, siblingEdges);
   const cpmSnap =
     n.type === 'tarea' ? taskCpmBundle?.byId.get(n.id) ?? null : null;
+  const taskPublication =
+    n.type === 'tarea'
+      ? tareaPublicacionByNodeId?.[ n.id ]
+        ? 'publicada'
+        : 'sin_publicar'
+      : null;
   return {
     node: n,
     childCount,
@@ -70,6 +77,7 @@ function buildNodeData(
     precedentOutCount: outC,
     cpmSnap,
     projectKind,
+    taskPublication,
   };
 }
 
@@ -165,6 +173,7 @@ type Props = {
   onToggleConnect: () => void;
   tryPrecedenceConnection: (c: Connection) => boolean;
   removeEdgeIds: (ids: string[]) => void;
+  tareaPublicacionByNodeId?: Record<string, { tareaId: string }>;
 };
 
 export function TareasCanvasPanel({
@@ -184,6 +193,7 @@ export function TareasCanvasPanel({
   onToggleConnect,
   tryPrecedenceConnection,
   removeEdgeIds,
+  tareaPublicacionByNodeId,
 }: Props) {
   const { fitView } = useReactFlow();
 
@@ -232,10 +242,11 @@ export function TareasCanvasPanel({
               connectMode,
               taskCpmBundle,
               projectKind,
+              tareaPublicacionByNodeId,
             ),
           }) as Node<MultinivelNodeData>,
       ),
-    [visibleNodes, nodes, siblingEdges, selectedId, connectMode, taskCpmBundle, projectKind],
+    [visibleNodes, nodes, siblingEdges, selectedId, connectMode, taskCpmBundle, projectKind, tareaPublicacionByNodeId],
   );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialRf);
@@ -257,6 +268,7 @@ export function TareasCanvasPanel({
               connectMode,
               taskCpmBundle,
               projectKind,
+              tareaPublicacionByNodeId,
             ),
           }) as Node<MultinivelNodeData>,
       ),
@@ -271,6 +283,7 @@ export function TareasCanvasPanel({
     connectMode,
     taskCpmBundle,
     projectKind,
+    tareaPublicacionByNodeId,
   ]);
 
   useEffect(() => {

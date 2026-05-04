@@ -256,6 +256,44 @@ export function sortSiblingsByPrecedence(
   return [...result, ...rest];
 }
 
+/** Camino jerárquico desde la raíz hasta la tarea (títulos). */
+export function canvasTaskPathTitles(nodes: CanvasNode[], taskId: string): string {
+  const titles: string[] = [];
+  let cur: CanvasNode | undefined = nodes.find((n) => n.id === taskId);
+  const guard = new Set<string>();
+  while (cur) {
+    const node = cur;
+    if (guard.has(node.id)) break;
+    guard.add(node.id);
+    titles.unshift(node.title);
+    cur = node.parentId ? nodes.find((n) => n.id === node.parentId) : undefined;
+  }
+  return titles.join(' › ');
+}
+
+export function labelEstadoTareaFromDb(est: string | undefined | null): string {
+  const e = String(est ?? 'pendiente').toLowerCase().replace(/\s+/g, '_');
+  const map: Record<string, string> = {
+    pendiente: 'Pendiente',
+    en_progreso: 'En progreso',
+    para_validar: 'Para validar',
+    validada: 'Validada',
+    rechazada: 'Rechazada',
+  };
+  return map[e] ?? est ?? '—';
+}
+
+export function budgetGroupStatusLabel(status: string | undefined): string {
+  const s = String(status ?? 'borrador').toLowerCase();
+  const map: Record<string, string> = {
+    borrador: 'Borrador',
+    listo_para_enviar: 'Listo para enviar',
+    enviado: 'Enviado',
+    respondido: 'Respondido',
+  };
+  return map[s] ?? status ?? 'Borrador';
+}
+
 export function labelEstadoNivel(est: CanvasNivelEstadoLocal | undefined): string {
   switch (est ?? 'pendiente') {
     case 'pendiente':

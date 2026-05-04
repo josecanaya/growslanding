@@ -4,13 +4,17 @@ import { useCallback, useEffect, useState } from 'react';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
 import { PresupuestoCard } from '@/components/cliente/PresupuestoCard';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
+import { Button } from '@/components/ui/grows';
 
 type Row = {
   id: string;
   monto: number;
   estado: string | null;
   createdAt: string | null;
+  tareaId: string;
+  socioId: string | null;
   tareaTitulo: string;
+  obraId: string | null;
   obraNombre: string;
   cuadrilla: string;
 };
@@ -23,6 +27,11 @@ function mapEstadoPresupuesto(estado: string | null | undefined): string {
   if (u === 'APROBADO' || u === 'ACEPTADO') return 'Aprobado';
   if (u === 'RECHAZADO') return 'Rechazado';
   return estado;
+}
+
+function puedeResponder(estado: string | null | undefined): boolean {
+  const u = (estado ?? '').toUpperCase();
+  return u === 'ENVIADO' || u === 'PENDIENTE';
 }
 
 function formatEnviado(iso: string | null) {
@@ -39,6 +48,7 @@ export default function ClientePresupuestoPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.orgId) {
@@ -70,6 +80,73 @@ export default function ClientePresupuestoPage() {
     load();
   }, [load]);
 
+  const aprobar = async (p: Row) => {
+    if (!puedeResponder(p.estado) || busyId) return;
+    if (!window.confirm(`¿Aprobá el presupuesto de «${p.tareaTitulo}» por ${p.monto ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p.monto) : 'el monto indicado'}? Se asignará la tarea al socio.`)) {
+      return;
+    }
+    setBusyId(p.id);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/cliente/presupuestos/${encodeURIComponent(p.id)}/aprobar`, {
+        method: 'POST',
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(json.error || 'No se pudo aprobar');
+        return;
+      }
+      await load();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('grows:presupuesto-respondido'));
+      }
+    } catch {
+      setErr('Error de red al aprobar');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const rechazar = async (p: Row) => {
+    if (!puedeResponder(p.estado) || busyId) return;
+    if (!p.socioId) {
+      setErr('Falta identificar al socio para rechazar.');
+      return;
+    }
+    if (!p.obraId) {
+      setErr('Falta la obra asociada para rechazar.');
+      return;
+    }
+    const comentario = window.prompt('Motivo del rechazo (opcional):') ?? '';
+    setBusyId(p.id);
+    setErr(null);
+    try {
+      const res = await fetch('/api/presupuestos/rechazar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          socio_id: p.socioId,
+          obra_id: p.obraId,
+          tarea_ids: [p.tareaId],
+          comentario: comentario.trim() || null,
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(json.error || 'No se pudo rechazar');
+        return;
+      }
+      await load();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('grows:presupuesto-respondido'));
+      }
+    } catch {
+      setErr('Error de red al rechazar');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <SectionHeader
@@ -92,18 +169,37 @@ export default function ClientePresupuestoPage() {
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((p) => (
-            <div key={p.id}>
-              <PresupuestoCard
-                titulo={p.tareaTitulo}
-                cuadrilla={p.cuadrilla}
-                estado={mapEstadoPresupuesto(p.estado)}
-                monto={p.monto}
-                enviado={formatEnviado(p.createdAt)}
-              />
-              <p className="mt-2 text-xs text-slate-500">Obra: {p.obraNombre}</p>
-            </div>
-          ))}
+          {rows.map((p) => {
+            const actions =
+              puedeResponder(p.estado) && p.socioId ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busyId === p.id}
+                    onClick={() => void aprobar(p)}
+                  >
+                    {busyId === p.id ? 'Procesando…' : 'Aprobar'}
+                  </Button>
+                  <Button type="button" size="sm" variant="secondary" disabled={busyId === p.id} onClick={() => void rechazar(p)}>
+                    Rechazar
+                  </Button>
+                </>
+              ) : null;
+            return (
+              <div key={p.id}>
+                <PresupuestoCard
+                  titulo={p.tareaTitulo}
+                  cuadrilla={p.cuadrilla}
+                  estado={mapEstadoPresupuesto(p.estado)}
+                  monto={p.monto}
+                  enviado={formatEnviado(p.createdAt)}
+                  actions={actions}
+                />
+                <p className="mt-2 text-xs text-slate-500">Obra: {p.obraNombre}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

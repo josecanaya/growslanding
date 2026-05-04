@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StatusBadge } from '@/components/cliente/StatusBadge';
 
 const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
@@ -8,12 +9,14 @@ export function PresupuestoCard({
   estado,
   monto,
   enviado,
+  actions,
 }: {
   titulo: string;
   cuadrilla: string;
   estado: string;
   monto: number;
   enviado: string;
+  actions?: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm">
@@ -26,6 +29,7 @@ export function PresupuestoCard({
         <StatusBadge label={estado} />
       </div>
       <p className="mt-4 text-xl font-bold text-slate-900">{monto > 0 ? ars.format(monto) : '—'}</p>
+      {actions ? <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4">{actions}</div> : null}
     </div>
   );
 }

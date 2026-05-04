@@ -28,6 +28,55 @@ import {
   staggerPosition,
 } from './canvasMultinivelHelpers';
 
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function postPublicarTareasWithRetry(
+  obraId: string,
+  maxAttempts = 4,
+): Promise<{ res: Response; pub: Record<string, unknown> }> {
+  let lastRes = new Response(null, { status: 503 });
+  let lastPub: Record<string, unknown> = {};
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/canvas/publicar-tareas`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const pub = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      lastRes = res;
+      lastPub = pub;
+      if (res.ok && pub.ok === true) {
+        return { res, pub };
+      }
+      const errStr = typeof pub.error === 'string' ? pub.error.toLowerCase() : '';
+      const retryable =
+        pub.retryable === true ||
+        res.status === 503 ||
+        res.status === 502 ||
+        res.status === 504 ||
+        (res.status >= 500 &&
+          (errStr.includes('fetch failed') ||
+            errStr.includes('failed to fetch') ||
+            errStr.includes('econnreset') ||
+            errStr.includes('network')));
+      if (!retryable || attempt === maxAttempts - 1) {
+        return { res, pub };
+      }
+    } catch {
+      if (attempt === maxAttempts - 1) {
+        throw new Error(
+          'Fallo de red al publicar tareas. Revisá tu conexión y volvé a pulsar «Guardar en la nube».',
+        );
+      }
+    }
+    await sleep(450 * Math.pow(2, attempt));
+  }
+  return { res: lastRes, pub: lastPub };
+}
+
 export function useCanvasMultinivel(obraId: string) {
   const [obraNombre, setObraNombre] = useState('Obra');
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
@@ -39,6 +88,41 @@ export function useCanvasMultinivel(obraId: string) {
   const [canvasHydrated, setCanvasHydrated] = useState(false);
   const [cloudSaveState, setCloudSaveState] = useState<'idle' | 'saving' | 'ok' | 'err'>('idle');
   const [cloudSaveMessage, setCloudSaveMessage] = useState<string | null>(null);
+  const [tareaPublicacionByNodeId, setTareaPublicacionByNodeId] = useState<
+    Record<string, { tareaId: string; estado: string; publishedAt: string | null }>
+  >({});
+
+  const refreshTareaPublicacion = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/obras/${encodeURIComponent(obraId)}/canvas/tareas-publicacion`,
+        { credentials: 'include', cache: 'no-store' },
+      );
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok || !Array.isArray(j.entries)) {
+        return;
+      }
+      const next: Record<string, { tareaId: string; estado: string; publishedAt: string | null }> =
+        {};
+      for (const row of j.entries as Array<{
+        canvasNodeId: string;
+        tareaId: string;
+        estado: string;
+        publishedAt: string | null;
+      }>) {
+        if (row.canvasNodeId && row.tareaId) {
+          next[row.canvasNodeId] = {
+            tareaId: row.tareaId,
+            estado: row.estado,
+            publishedAt: row.publishedAt ?? null,
+          };
+        }
+      }
+      setTareaPublicacionByNodeId(next);
+    } catch {
+      /* noop */
+    }
+  }, [obraId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +206,11 @@ export function useCanvasMultinivel(obraId: string) {
 
   useEffect(() => {
     if (!canvasHydrated) return;
+    void refreshTareaPublicacion();
+  }, [canvasHydrated, obraId, refreshTareaPublicacion]);
+
+  useEffect(() => {
+    if (!canvasHydrated) return;
     saveCanvasMultinivel(
       obraId,
       composeCanvasPersisted({ obraNombre, nodes, pathIds, edges, budgetGroups, projectKind }),
@@ -156,10 +245,56 @@ export function useCanvasMultinivel(obraId: string) {
           setCloudSaveMessage(msg);
           return { ok: false as const, message: msg };
         }
-        setCloudSaveState('ok');
-        setCloudSaveMessage('Guardado en la nube');
+        const nodeCount =
+          typeof j.data?.nodeCount === 'number' ? j.data.nodeCount : payload.nodes.length;
         saveCanvasMultinivel(obraId, payload);
-        return { ok: true as const };
+
+        const { res: pubRes, pub } = await postPublicarTareasWithRetry(obraId);
+        await refreshTareaPublicacion();
+
+        if (!pubRes.ok || pub.ok !== true) {
+          const pe =
+            typeof pub.error === 'string'
+              ? pub.error
+              : 'No se pudieron publicar o actualizar las tareas operativas.';
+          setCloudSaveState('err');
+          setCloudSaveMessage(
+            `El canvas se guardó en la nube, pero hubo un problema al publicar tareas: ${pe}`,
+          );
+          return {
+            ok: false as const,
+            message: pe,
+            canvasSaved: true as const,
+          };
+        }
+
+        const createdTasks = Number(pub.createdTasks) || 0;
+        const updatedTasks = Number(pub.updatedTasks) || 0;
+        const createdPrecedences = Number(pub.createdPrecedences) || 0;
+        const warnings: string[] = Array.isArray(pub.warnings) ? pub.warnings : [];
+        const detailLines = [
+          `· Nodos guardados: ${nodeCount}`,
+          `· Tareas creadas: ${createdTasks}`,
+          `· Tareas actualizadas: ${updatedTasks}`,
+          `· Precedencias creadas: ${createdPrecedences}`,
+        ];
+        if (warnings.length > 0) {
+          detailLines.push(`· Advertencias: ${warnings.length}`);
+        }
+        setCloudSaveState('ok');
+        setCloudSaveMessage(
+          ['Canvas guardado y tareas operativas actualizadas.', ...detailLines].join('\n'),
+        );
+        return {
+          ok: true as const,
+          summary: {
+            nodeCount,
+            createdTasks,
+            updatedTasks,
+            createdPrecedences,
+            warnings,
+          },
+        };
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error de red';
         setCloudSaveState('err');
@@ -167,7 +302,7 @@ export function useCanvasMultinivel(obraId: string) {
         return { ok: false as const, message: msg };
       }
     },
-    [obraId, obraNombre, nodes, pathIds, edges, budgetGroups, projectKind],
+    [obraId, obraNombre, nodes, pathIds, edges, budgetGroups, projectKind, refreshTareaPublicacion],
   );
 
   const containerId = useMemo(
@@ -467,9 +602,15 @@ export function useCanvasMultinivel(obraId: string) {
     const trimmed = name.trim() || 'Nuevo grupo';
     setBudgetGroups((prev) => [
       ...prev,
-      { id, name: trimmed, createdAt: new Date().toISOString() },
+      { id, name: trimmed, createdAt: new Date().toISOString(), status: 'borrador' },
     ]);
     return id;
+  }, []);
+
+  const patchBudgetGroup = useCallback((groupId: string, patch: Partial<CanvasBudgetGroup>) => {
+    setBudgetGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, ...patch } : g)),
+    );
   }, []);
 
   const deleteBudgetGroup = useCallback((groupId: string) => {
@@ -501,6 +642,8 @@ export function useCanvasMultinivel(obraId: string) {
     saveCanvasSnapshotToCloud,
     cloudSaveState,
     cloudSaveMessage,
+    tareaPublicacionByNodeId,
+    refreshTareaPublicacion,
     nodes,
     edges,
     siblingEdges,
@@ -531,6 +674,7 @@ export function useCanvasMultinivel(obraId: string) {
     applyImportedCanvas,
     budgetGroups,
     createBudgetGroup,
+    patchBudgetGroup,
     deleteBudgetGroup,
   };
 }

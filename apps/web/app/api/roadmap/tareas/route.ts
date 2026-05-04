@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+/** Subconjunto usado al recalcular progreso (tareas directas o de grupo). */
+type RoadmapTareaProgreso = { done: boolean; estado: string };
+
 // POST - Crear nueva tarea
 export async function POST(req: NextRequest) {
   try {
@@ -135,11 +138,11 @@ async function recalcularProgresoObjetivo(objetivoId: string) {
   // Obtener todas las tareas (directas + de grupos)
   const todasLasTareas = [
     ...(objetivo.tareas || []),
-    ...(objetivo.gruposTareas?.flatMap(g => g.tareas) || []),
+    ...(objetivo.gruposTareas?.flatMap((g: { tareas: RoadmapTareaProgreso[] }) => g.tareas) || []),
   ];
 
   const total = todasLasTareas.length;
-  const completadas = todasLasTareas.filter(t => t.done || t.estado === 'done').length;
+  const completadas = todasLasTareas.filter((t: RoadmapTareaProgreso) => t.done || t.estado === 'done').length;
   const progreso = total > 0 ? Math.round((completadas / total) * 100) : 0;
 
   // Determinar estado automáticamente

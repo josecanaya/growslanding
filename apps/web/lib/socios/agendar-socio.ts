@@ -129,17 +129,49 @@ export async function resolveSourceSocioByPublicCodigo(
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data: sourceSocio, error } = await (supabase as any)
-    .from('socios')
-    .select('id, org_id, nombre, email, telefono, estado, especialidad, public_codigo')
-    .eq('public_codigo', normalized)
-    .maybeSingle();
+  const cols = 'id, org_id, nombre, email, telefono, estado, especialidad, public_codigo';
+  const supabaseAny = supabase as any;
 
-  if (error) {
-    throw error;
+  const pickEq = async (value: string) => {
+    const { data, error } = await supabaseAny
+      .from('socios')
+      .select(cols)
+      .eq('public_codigo', value)
+      .maybeSingle();
+    if (error) {
+      throw error;
+    }
+    return data as SocioSourceRecord | null;
+  };
+
+  const pickIlike = async (value: string) => {
+    const { data, error } = await supabaseAny
+      .from('socios')
+      .select(cols)
+      .ilike('public_codigo', value)
+      .maybeSingle();
+    if (error) {
+      throw error;
+    }
+    return data as SocioSourceRecord | null;
+  };
+
+  // 1) Valor estándar en BD: solo el núcleo (sin prefijo SOC-).
+  let socio = await pickEq(normalized);
+
+  // 2) Filas antiguas o copiadas con prefijo completo en la columna.
+  if (!socio) {
+    socio = await pickEq(`SOC-${normalized}`);
   }
 
-  const socio = sourceSocio as SocioSourceRecord | null;
+  // 3) Diferencias de mayúsculas en BD.
+  if (!socio) {
+    socio = await pickIlike(normalized);
+  }
+  if (!socio) {
+    socio = await pickIlike(`SOC-${normalized}`);
+  }
+
   if (!socio) {
     return { error: 'No encontramos un socio con ese ID.', status: 404 };
   }
@@ -171,7 +203,10 @@ export async function resolveSocioFromQrPaste(
 }
 
 function normalizeEmail(email: string) {
-  return email.trim().toLowerCase();
+  return email
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .toLowerCase();
 }
 
 function normalizeTelefono(telefono: string) {

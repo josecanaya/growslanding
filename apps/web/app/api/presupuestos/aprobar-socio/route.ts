@@ -256,7 +256,8 @@ export async function POST(request: NextRequest) {
           .update({
             responsable: socioData.email, // Email del socio
             cuadrilla_id: socio_id,
-            estado: 'ASIGNADA',
+            responsable_socio_id: socio_id,
+            estado: 'pendiente',
           })
           .eq('id', tarea.id)
           .eq('org_id', orgId);

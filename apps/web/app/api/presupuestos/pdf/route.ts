@@ -244,15 +244,22 @@ export async function POST(request: NextRequest) {
     const { path: storedPath } = await uploadActaPdf(pdfBytes, path);
 
     // Registrar en eventos (para que el modal lo encuentre)
-    // Buscar eventos existentes con PDF para estas tareas
-    const { data: existingEvents } = await supabaseAny
-      .from('eventos')
-      .select('id, tarea_id')
-      .in('tarea_id', tarea_ids)
-      .not('pdf_path', 'is', null)
-      .order('created_at', { ascending: false });
-    
-    console.log('[POST /api/presupuestos/pdf] Eventos existentes encontrados:', existingEvents?.length || 0);
+    const EVT_CHUNK = 80;
+    const existingEvents: { id: string; tarea_id: string }[] = [];
+    for (let i = 0; i < tarea_ids.length; i += EVT_CHUNK) {
+      const chunk = tarea_ids.slice(i, i + EVT_CHUNK);
+      const { data: chunkRows } = await supabaseAny
+        .from('eventos')
+        .select('id, tarea_id, created_at')
+        .in('tarea_id', chunk)
+        .not('pdf_path', 'is', null);
+      existingEvents.push(...(chunkRows ?? []));
+    }
+    existingEvents.sort((a: any, b: any) =>
+      String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')),
+    );
+
+    console.log('[POST /api/presupuestos/pdf] Eventos existentes encontrados:', existingEvents.length);
 
     // Crear un evento por cada tarea para que el GET pueda encontrarlos
     // La tabla eventos requiere: tarea_id, org_id (NOT NULL), pdf_path, actor_name, actor_role, actor_method, notas, etc.
@@ -277,18 +284,17 @@ export async function POST(request: NextRequest) {
     console.log('[POST /api/presupuestos/pdf] PDF path:', storedPath);
 
     // Eliminar eventos existentes con PDF para estas tareas y crear nuevos
-    if (existingEvents && existingEvents.length > 0) {
-      const idsToDelete = existingEvents.map((e: any) => e.id);
-      const { error: deleteError } = await supabaseAny
-        .from('eventos')
-        .delete()
-        .in('id', idsToDelete);
+    if (existingEvents.length > 0) {
+      const idsToDelete = [...new Set(existingEvents.map((e: any) => e.id))];
+      for (let i = 0; i < idsToDelete.length; i += EVT_CHUNK) {
+        const chunk = idsToDelete.slice(i, i + EVT_CHUNK);
+        const { error: deleteError } = await supabaseAny.from('eventos').delete().in('id', chunk);
 
-      if (deleteError) {
-        console.warn('[POST /api/presupuestos/pdf] Error eliminando eventos antiguos:', deleteError);
-      } else {
-        console.log('[POST /api/presupuestos/pdf] Eventos antiguos eliminados:', idsToDelete.length);
+        if (deleteError) {
+          console.warn('[POST /api/presupuestos/pdf] Error eliminando eventos antiguos:', deleteError);
+        }
       }
+      console.log('[POST /api/presupuestos/pdf] Eventos antiguos eliminados:', idsToDelete.length);
     }
 
     const { error: insertError } = await supabaseAny

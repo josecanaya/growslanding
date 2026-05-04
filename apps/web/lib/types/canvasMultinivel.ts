@@ -38,6 +38,10 @@ export type CanvasBudgetGroup = {
   name: string;
   description?: string;
   createdAt: string;
+  /** Estado en Supabase: borrador | listo_para_enviar | enviado | respondido */
+  status?: string;
+  scheduledSocioId?: string | null;
+  mensajeSocioBorrador?: string | null;
 };
 
 export type CanvasNode = {

@@ -7,6 +7,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { useEffect, useState } from 'react';
 import { Play } from 'lucide-react';
 import { USE_MOCK_DATA, MOCK_TRABAJOS_HOY } from '@/lib/mocks/socioMockData';
+import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
 
 type TrabajoResumen = {
   id: string;
@@ -46,27 +47,25 @@ export function TrabajosHoySection() {
     }
 
     const cargarTrabajos = async () => {
-      if (!currentUser?.id || !currentUser?.orgId) {
+      if (!currentUser?.id) {
         setTrabajos([]);
         setLoading(false);
         return;
       }
 
       try {
-        const { data: socioData } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('org_id', currentUser.orgId)
-          .or(`email.eq.${currentUser.email || ''},user_id.eq.${currentUser.id || ''}`)
-          .maybeSingle();
+        const socioRow = await fetchSocioContextClient();
 
-        if (!socioData?.id) {
+        if (!socioRow?.id) {
           setTrabajos([]);
           setLoading(false);
           return;
         }
 
-        const { data: tareasData } = await (supabase as any)
+        const orgIdEfectivo =
+          currentUser.orgId ?? socioRow.effective_org_id ?? socioRow.org_id ?? null;
+
+        let q = (supabase as any)
           .from('tareas')
           .select(`
             id,
@@ -80,22 +79,28 @@ export function TrabajosHoySection() {
               estado
             )
           `)
-          .eq('org_id', currentUser.orgId)
-          .eq('responsable_socio_id', socioData.id)
-          .eq('estado', 'en_progreso')
-          .limit(3);
+          .in('estado', ['pendiente', 'en_progreso'])
+          .or(`responsable_socio_id.eq.${socioRow.id},cuadrilla_id.eq.${socioRow.id}`)
+          .order('updated_at', { ascending: false })
+          .limit(5);
+        if (orgIdEfectivo) {
+          q = q.eq('org_id', orgIdEfectivo);
+        }
+        const { data: tareasData } = await q;
 
         if (tareasData && tareasData.length > 0) {
           const trabajosFormateados: TrabajoResumen[] = tareasData.map((tarea: any) => {
             const subtareas = tarea.tareas_subtareas || [];
             const subtareaEnProgreso = subtareas.find((st: any) => st.estado === 'en_progreso');
             const idx = subtareaEnProgreso?.bloque_index ?? subtareaEnProgreso?.orden ?? 1;
+            const totalBloques = Math.max(subtareas.length, 1);
+            const estadoShow = (tarea.estado || '').toLowerCase() === 'pendiente' ? 'pendiente' : tarea.estado;
             return {
               id: tarea.id,
               obra_name: tarea.obras?.name || 'Obra sin nombre',
               tarea_title: tarea.title || 'Tarea sin título',
-              bloque_actual: idx,
-              bloques_totales: Math.max(subtareas.length, 1),
+              bloque_actual: subtareas.length ? idx : estadoShow === 'pendiente' ? 0 : idx,
+              bloques_totales: estadoShow === 'pendiente' && subtareas.length === 0 ? 1 : totalBloques,
               estado: tarea.estado,
             };
           });
@@ -159,7 +164,11 @@ export function TrabajosHoySection() {
             <h2 className="font-stitch-headline text-xl font-extrabold tracking-tight">
               {actual.obra_name}
             </h2>
-            <p className="text-sm font-medium text-stitch-on-primary-container">{actual.tarea_title}</p>
+            <p className="text-sm font-medium text-stitch-on-primary-container">
+              {actual.estado?.toLowerCase() === 'pendiente'
+                ? `${actual.tarea_title} · Pendiente de iniciar`
+                : actual.tarea_title}
+            </p>
           </div>
           <button
             type="button"

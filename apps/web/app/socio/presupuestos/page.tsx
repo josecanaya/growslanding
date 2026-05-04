@@ -30,6 +30,26 @@ interface ObraConPresupuestos {
   stitch_estado?: 'aprobado' | 'visto' | 'enviado' | 'rechazado' | 'pendiente';
 }
 
+type PresupuestoEtapaTab = 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES';
+
+/**
+ * Las tareas creadas desde el canvas (`publicar-tareas`) suelen tener `tareas.etapa` en NULL.
+ * El filtro anterior exigía texto tipo "ESTRUCTURA" y ocultaba todas → pantalla vacía y sin acciones.
+ */
+function bucketEtapaPresupuesto(etapaRaw: string | null | undefined): PresupuestoEtapaTab {
+  const etapa = (etapaRaw ?? '').toUpperCase().trim();
+  if (etapa.includes('GRIS') || etapa.includes('OBRA_GRIS')) {
+    return 'OBRA_GRIS';
+  }
+  if (etapa.includes('TERMINACION')) {
+    return 'TERMINACIONES';
+  }
+  if (etapa.includes('ESTRUCTURA')) {
+    return 'ESTRUCTURA';
+  }
+  return 'ESTRUCTURA';
+}
+
 function PresupuestosContent() {
   const searchParams = useSearchParams();
   const obraId = searchParams.get('obra_id');
@@ -101,18 +121,8 @@ function PresupuestosContent() {
   // Filtrar presupuestos por etapa activa
   const presupuestosFiltrados = useMemo(() => {
     if (!presupuestos) return [];
-    
-    return presupuestos.filter((p) => {
-      const etapa = p.tarea?.etapa?.toUpperCase() || '';
-      if (activeEtapa === 'ESTRUCTURA') {
-        return etapa.includes('ESTRUCTURA');
-      } else if (activeEtapa === 'OBRA_GRIS') {
-        return etapa.includes('GRIS') || etapa.includes('OBRA_GRIS');
-      } else if (activeEtapa === 'TERMINACIONES') {
-        return etapa.includes('TERMINACION');
-      }
-      return false;
-    });
+
+    return presupuestos.filter((p) => bucketEtapaPresupuesto(p.tarea?.etapa) === activeEtapa);
   }, [presupuestos, activeEtapa]);
 
   // Resolver PDF correspondiente a la etapa activa (omitir en demo)
@@ -165,12 +175,12 @@ function PresupuestosContent() {
     let terminaciones = 0;
 
     presupuestos.forEach((p) => {
-      const etapa = p.tarea?.etapa?.toUpperCase() || '';
-      if (etapa.includes('ESTRUCTURA')) {
+      const b = bucketEtapaPresupuesto(p.tarea?.etapa);
+      if (b === 'ESTRUCTURA') {
         estructura++;
-      } else if (etapa.includes('GRIS') || etapa.includes('OBRA_GRIS')) {
+      } else if (b === 'OBRA_GRIS') {
         obraGris++;
-      } else if (etapa.includes('TERMINACION')) {
+      } else {
         terminaciones++;
       }
     });
@@ -313,14 +323,8 @@ function PresupuestosContent() {
     };
 
     presupuestos.forEach((p) => {
-      const etapa = p.tarea?.etapa?.toUpperCase() || '';
-      if (etapa.includes('ESTRUCTURA')) {
-        agrupados.ESTRUCTURA.push(p);
-      } else if (etapa.includes('GRIS') || etapa.includes('OBRA_GRIS')) {
-        agrupados.OBRA_GRIS.push(p);
-      } else if (etapa.includes('TERMINACION')) {
-        agrupados.TERMINACIONES.push(p);
-      }
+      const bucket = bucketEtapaPresupuesto(p.tarea?.etapa);
+      agrupados[bucket].push(p);
     });
 
     return agrupados;

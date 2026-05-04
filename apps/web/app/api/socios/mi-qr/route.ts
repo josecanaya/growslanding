@@ -31,6 +31,45 @@ type AuthUserForSocio = {
 
 const PUBLIC_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+/** Supabase/Postgrest suele devolver `{ message, code }` sin ser instancia de Error. */
+function messageFromCaught(e: unknown): string {
+  if (e instanceof Error) {
+    return e.message;
+  }
+  if (typeof e === 'string' && e.trim()) {
+    return e.trim();
+  }
+  if (e && typeof e === 'object' && 'message' in e) {
+    const m = (e as { message?: unknown }).message;
+    if (typeof m === 'string' && m.trim()) {
+      return m.trim();
+    }
+  }
+  return '';
+}
+
+function friendlyQrFailureDetail(raw: string, code?: string): string {
+  const lower = raw.toLowerCase();
+  const c = (code || '').toUpperCase();
+  if (
+    c === '42P01' ||
+    lower.includes('qr_tokens') ||
+    (lower.includes('relation') && lower.includes('does not exist'))
+  ) {
+    return (
+      'En Supabase falta la tabla qr_tokens (o no está en el schema public). ' +
+      'Ejecutá la migración 20260502190000_qr_tokens_socio_asociacion.sql del repo o creala manualmente según la documentación del proyecto.'
+    );
+  }
+  if (raw.includes('org_id') && (lower.includes('not null') || lower.includes('null value'))) {
+    return (
+      'La tabla socios sigue exigiendo org_id NOT NULL. ' +
+      'Aplicá la migración que permite socios sin organización hasta vincular (ALTER COLUMN org_id DROP NOT NULL).'
+    );
+  }
+  return raw || 'No se pudo generar el QR del socio';
+}
+
 function buildAgendaUrlByPublicCode(request: Request, displayCode: string) {
   const origin =
     request.headers.get('origin') ||
@@ -168,10 +207,12 @@ async function findSocioByEmail(email: string | null) {
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
+  const normalized = email.trim().toLowerCase();
+  const { data, error } = await (supabase as any)
     .from('socios')
     .select('id, org_id, nombre, email, telefono, estado, especialidad')
-    .eq('email', email)
+    .ilike('email', normalized)
+    .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -194,7 +235,11 @@ async function createSocioForUser(user: AuthUserForSocio) {
     nombre: displayName,
     email: user.email ?? null,
     estado: 'activo',
-    especialidad: 'constructor',
+    /**
+     * No usar 'constructor': en Supabase suele existir socios_especialidad_check con oficios
+     * tipo oficio de obra (Albañilería, etc.). NULL cumple CHECK (... IN (...)) en Postgres.
+     */
+    especialidad: null as string | null,
     user_id: user.id,
   };
 
@@ -211,7 +256,7 @@ async function createSocioForUser(user: AuthUserForSocio) {
         nombre: displayName,
         email: user.email ?? null,
         estado: 'activo',
-        especialidad: 'constructor',
+        especialidad: null,
       })
       .select('id, org_id, nombre, email, telefono, estado, especialidad')
       .single();
@@ -404,10 +449,18 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error('[SOCIO_MI_QR_ERROR]', error);
+    const raw = messageFromCaught(error);
+    const code =
+      error && typeof error === 'object' && 'code' in error
+        ? String((error as { code?: string }).code || '')
+        : '';
+    const errorText = friendlyQrFailureDetail(raw, code);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'No se pudo generar el QR del socio',
+        error: errorText,
+        /** Útil para soporte / logs en cliente (no exponer si no querés). */
+        code: code || undefined,
       },
       { status: 500 },
     );

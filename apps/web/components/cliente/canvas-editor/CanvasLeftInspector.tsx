@@ -32,6 +32,7 @@ import {
   childTypeForContainer,
   labelEstadoNivel,
   labelEstadoTarea,
+  labelEstadoTareaFromDb,
   labelTipoNodo,
 } from './canvasMultinivelHelpers';
 import { aristaCriticaVisual, type CanvasTaskCpmBundle } from './canvasMultinivelCpm';
@@ -88,6 +89,10 @@ type Props = {
   tryPrecedenceConnection: (c: Connection) => boolean;
   budgetGroups: CanvasBudgetGroup[];
   createBudgetGroup: (name: string) => string;
+  tareaPublicacionByNodeId: Record<
+    string,
+    { tareaId: string; estado: string; publishedAt: string | null }
+  >;
   isOpen: boolean;
   onToggleOpen: () => void;
 };
@@ -159,6 +164,7 @@ export function CanvasLeftInspector({
   tryPrecedenceConnection,
   budgetGroups,
   createBudgetGroup,
+  tareaPublicacionByNodeId,
   isOpen,
   onToggleOpen,
 }: Props) {
@@ -455,6 +461,50 @@ export function CanvasLeftInspector({
               </div>
             </div>
 
+            {/* Publicación (tarea operativa) */}
+            <div className={sectionClass}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Publicación</p>
+              {(() => {
+                const pub = tareaPublicacionByNodeId[selectedNode.id];
+                if (!pub) {
+                  return (
+                    <p className="mt-2 text-[11px] leading-snug text-[#64748b]">
+                      Todavía no fue creada como tarea operativa.
+                    </p>
+                  );
+                }
+                return (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-[11px] font-semibold text-[#0f172a]">Tarea operativa creada</p>
+                    <p className="text-[11px] text-[#64748b]">
+                      Estado operativo:{' '}
+                      <span className="font-bold text-[#001629]">{labelEstadoTareaFromDb(pub.estado)}</span>
+                    </p>
+                    {pub.publishedAt ? (
+                      <p className="text-[11px] text-[#64748b]">
+                        Fecha de publicación:{' '}
+                        <span className="font-medium text-[#374151]">
+                          {new Date(pub.publishedAt).toLocaleString('es-AR', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })}
+                        </span>
+                      </p>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="mt-1 w-full rounded-xl"
+                      onClick={() => router.push(`/cliente/obras/${obraId}/timeline` as Route)}
+                    >
+                      Ver tarea
+                    </Button>
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* 2 · Precedencias */}
             <div className={sectionClass}>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Precedencias</p>
@@ -652,7 +702,7 @@ export function CanvasLeftInspector({
             <div className={sectionClass}>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Grupo de presupuesto</p>
               <p className="mt-2 text-[11px] leading-snug text-[#7b8494]">
-                Este grupo se usará luego en el módulo de presupuestos.
+                Gestioná y enviá este grupo desde la pestaña Presupuestos.
               </p>
               {(() => {
                 const gid = selectedNode.budgetGroupId;
@@ -689,7 +739,7 @@ export function CanvasLeftInspector({
                         {budgetGroups.length > 0 && (
                           <div>
                             <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
-                              Asignar a existente
+                              Asignar tarea a grupo
                             </label>
                             <select
                               className={inputClass}

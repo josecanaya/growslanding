@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 // No usar resolveOrgContext - obtener org_id directamente de la obra
 import type { Database } from '@/lib/types/supabase.gen';
-import { IS_DEV_MODE } from '@/lib/config';
 import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 export const dynamic = 'force-dynamic';
@@ -53,14 +52,6 @@ export async function POST(
         }, { status: 400 });
       }
       throw e;
-    }
-
-    if (IS_DEV_MODE) {
-      return NextResponse.json({
-        ok: true,
-        created: payload.tareaIds.length,
-        devMode: true,
-      });
     }
 
     // Autenticación

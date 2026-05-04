@@ -30,24 +30,24 @@ function pkceStorageKey(code: string) {
   return `${PKCE_STORAGE_PREFIX}${code}`;
 }
 
-/** Strict Mode monta dos veces: el 2.º intercambio reusa el code y rompe PKCE; esperamos al primero o reusamos sesión. */
+/** Strict Mode puede dejar “running”; no spamear getSession (provoca 429 y loop OAuth). */
 async function waitForPkcePeer(
   supabase: ReturnType<typeof createClientComponentClient<Database>>,
   code: string,
-  maxMs = 10_000,
+  maxMs = 15_000,
 ) {
   const key = pkceStorageKey(code);
   const start = Date.now();
+  const intervalMs = 450;
+
   while (Date.now() - start < maxMs) {
     if (typeof window !== "undefined" && sessionStorage.getItem(key) === "done") {
       return;
     }
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      return;
-    }
-    await new Promise((r) => setTimeout(r, 80));
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
+
+  await supabase.auth.getSession();
 }
 
 function CallbackPageContent() {

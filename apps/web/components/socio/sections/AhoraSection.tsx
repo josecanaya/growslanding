@@ -36,6 +36,7 @@ import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedenci
 import type { ChecklistItem } from '@/data/checklists';
 import { useToast } from '@/components/ui/use-toast';
 import { USE_MOCK_DATA, MOCK_SUBTAREA_JORNADA_HOY, MOCK_CHECKLIST_ITEMS } from '@/lib/mocks/socioMockData';
+import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
 
 type SupabaseTarea = {
   id: string;
@@ -260,33 +261,28 @@ export function AhoraSection() {
     }
   };
 
-  // Resolver org_id si no viene en currentUser
+  // Resolver org_id si no viene en currentUser (socio vinculado por user_id o email)
   useEffect(() => {
     const resolverOrg = async () => {
-      if (orgIdResuelta || !currentUser?.email) return;
+      if (orgIdResuelta || !currentUser?.id) return;
       try {
-        const supabaseAny = supabase as any;
-
-        const { data: socioData } = await supabaseAny
-          .from('socios')
-          .select('org_id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
-
-        if (socioData?.org_id) {
-          setOrgIdResuelta(socioData.org_id);
+        const row = await fetchSocioContextClient();
+        const combined = row?.effective_org_id || row?.org_id;
+        if (combined) {
+          setOrgIdResuelta(combined);
           return;
         }
-
-        const { data: tareaData } = await supabaseAny
-          .from('tareas')
-          .select('org_id')
-          .or(`responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`)
-          .limit(1)
-          .maybeSingle();
-
-        if (tareaData?.org_id) {
-          setOrgIdResuelta(tareaData.org_id);
+        if (currentUser.email) {
+          const supabaseAny = supabase as any;
+          const { data: tareaData } = await supabaseAny
+            .from('tareas')
+            .select('org_id')
+            .or(`responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`)
+            .limit(1)
+            .maybeSingle();
+          if (tareaData?.org_id) {
+            setOrgIdResuelta(tareaData.org_id);
+          }
         }
       } catch (err) {
         // Error silencioso
@@ -294,7 +290,7 @@ export function AhoraSection() {
     };
 
     resolverOrg();
-  }, [currentUser?.email, orgIdResuelta, supabase]);
+  }, [currentUser?.id, currentUser?.email, orgIdResuelta, supabase]);
 
   useEffect(() => {
     const fetchTareas = async () => {
@@ -304,8 +300,15 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser.orgId;
-      if (!orgId) {
+      const socioRow = await fetchSocioContextClient();
+
+      const orgId =
+        orgIdResuelta ||
+        currentUser.orgId ||
+        socioRow?.effective_org_id ||
+        socioRow?.org_id ||
+        null;
+      if (!orgId && !socioRow?.id) {
         setLoading(false);
         setError('No se pudo determinar tu organización.');
         return;
@@ -346,14 +349,30 @@ export function AhoraSection() {
         let query = supabase
           .from('tareas')
           .select(SELECT_FIELDS)
-          .eq('org_id', orgId)
           .order('created_at', { ascending: false });
-
-        if (currentUser.email) {
-          query = query.or(
-            `responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`
-          );
+        if (orgId) {
+          query = query.eq('org_id', orgId);
         }
+
+        const partes: string[] = [];
+        if (currentUser.email) {
+          partes.push(`responsable.eq.${currentUser.email}`);
+          partes.push(`responsable.ilike.%${currentUser.email}%`);
+        }
+        if (socioRow?.nombre?.trim()) {
+          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
+        }
+        if (socioRow?.id) {
+          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
+          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
+        }
+        if (partes.length === 0) {
+          setLoading(false);
+          setError('No se pudo vincular tu perfil con tareas asignadas.');
+          setTareas([]);
+          return;
+        }
+        query = query.or(partes.join(','));
 
         const { data, error: queryError } = await query;
 
@@ -442,18 +461,42 @@ export function AhoraSection() {
         return;
       }
       
-      const orgId = orgIdResuelta || currentUser.orgId;
-      if (!orgId) {
-        setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-        return;
-      }
-
       try {
-        const { data: todasLasTareas } = await supabase
-          .from('tareas')
-          .select('id, estado, avance')
-          .eq('org_id', orgId)
-          .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`);
+        const socioRow = await fetchSocioContextClient();
+        const orgId =
+          orgIdResuelta ||
+          currentUser.orgId ||
+          socioRow?.effective_org_id ||
+          socioRow?.org_id ||
+          null;
+
+        if (!orgId && !socioRow?.id) {
+          setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
+          return;
+        }
+
+        const partes: string[] = [];
+        if (currentUser.email) {
+          partes.push(`responsable.eq.${currentUser.email}`);
+          partes.push(`responsable.ilike.%${currentUser.email}%`);
+        }
+        if (socioRow?.nombre?.trim()) {
+          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
+        }
+        if (socioRow?.id) {
+          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
+          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
+        }
+        if (partes.length === 0) {
+          setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
+          return;
+        }
+        let q = supabase.from('tareas').select('id, estado, avance');
+        if (orgId) {
+          q = q.eq('org_id', orgId);
+        }
+        q = q.or(partes.join(','));
+        const { data: todasLasTareas } = await q;
 
         if (!todasLasTareas || todasLasTareas.length === 0) {
           setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });

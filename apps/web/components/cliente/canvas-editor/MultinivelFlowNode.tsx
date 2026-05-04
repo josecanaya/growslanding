@@ -31,6 +31,8 @@ export type MultinivelNodeData = {
   /** Resultado CPM local (solo tareas del ambiente actual); derivado en memoria. */
   cpmSnap: TareaCPMResultado | null;
   projectKind: CanvasProjectKind;
+  /** Publicación a tareas operativas (no confundir con estado FSM). */
+  taskPublication: 'publicada' | 'sin_publicar' | null;
 };
 
 function iconForType(type: CanvasNode['type']) {
@@ -111,6 +113,7 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
     precedentOutCount,
     cpmSnap,
     projectKind,
+    taskPublication,
   } = data;
   const Ico = iconForType(node.type);
   const wClass = cardWidths(node.type);
@@ -187,9 +190,20 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
 
         {node.type === 'tarea' ? (
           <div className="mt-2 space-y-1.5">
-            <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tareaExtras.pill}`}>
-              {tareaExtras.label}
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tareaExtras.pill}`}>
+                {tareaExtras.label}
+              </span>
+              {taskPublication === 'publicada' ? (
+                <span className="inline-flex rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-900">
+                  Publicada
+                </span>
+              ) : taskPublication === 'sin_publicar' ? (
+                <span className="inline-flex rounded-full border border-slate-300/80 bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-700">
+                  Sin publicar
+                </span>
+              ) : null}
+            </div>
             <p className="text-[11px] font-medium text-[#596574]">
               Checklist{' '}
               <span className="font-bold text-[#0f1e1f]">

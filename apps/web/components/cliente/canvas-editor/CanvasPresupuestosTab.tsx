@@ -1,0 +1,469 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Route } from 'next';
+import { useRouter } from 'next/navigation';
+import { Building2, Layers } from 'lucide-react';
+
+import { Button } from '@/components/ui/grows';
+import { cn } from '@/lib/utils';
+import type { CanvasBudgetGroup, CanvasNode } from '@/lib/types/canvasMultinivel';
+import {
+  budgetGroupStatusLabel,
+  canvasTaskPathTitles,
+  labelEstadoTareaFromDb,
+} from './canvasMultinivelHelpers';
+
+type AgendaRow = {
+  socio_id: string;
+  socio: { nombre?: string | null; email?: string | null } | null;
+};
+
+type Props = {
+  obraId: string;
+  obraNombre: string;
+  budgetGroups: CanvasBudgetGroup[];
+  nodes: CanvasNode[];
+  tareaPublicacionByNodeId: Record<
+    string,
+    { tareaId: string; estado: string; publishedAt: string | null }
+  >;
+  patchBudgetGroup: (groupId: string, patch: Partial<CanvasBudgetGroup>) => void;
+  createBudgetGroup: (name: string) => string;
+  saveCanvasSnapshotToCloud: () => Promise<unknown>;
+  onOpenCanvasTab: () => void;
+};
+
+export function CanvasPresupuestosTab({
+  obraId,
+  obraNombre,
+  budgetGroups,
+  nodes,
+  tareaPublicacionByNodeId,
+  patchBudgetGroup,
+  createBudgetGroup,
+  saveCanvasSnapshotToCloud,
+  onOpenCanvasTab,
+}: Props) {
+  const router = useRouter();
+  const [agenda, setAgenda] = useState<AgendaRow[]>([]);
+  const [agendaLoaded, setAgendaLoaded] = useState(false);
+  const [detailGroupId, setDetailGroupId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch('/api/cliente/socios/agenda', { credentials: 'include' });
+        const j = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (res.ok && j.success && Array.isArray(j.data)) {
+          setAgenda(j.data as AgendaRow[]);
+        }
+      } finally {
+        if (!cancelled) setAgendaLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const tasksByGroup = useMemo(() => {
+    const m = new Map<string, CanvasNode[]>();
+    for (const n of nodes) {
+      if (n.type !== 'tarea' || !n.budgetGroupId) continue;
+      const arr = m.get(n.budgetGroupId) ?? [];
+      arr.push(n);
+      m.set(n.budgetGroupId, arr);
+    }
+    return m;
+  }, [nodes]);
+
+  const socioLabel = useCallback(
+    (id: string | null | undefined) => {
+      if (!id) return null;
+      const row = agenda.find((a) => a.socio_id === id);
+      const s = row?.socio;
+      return s?.nombre?.trim() || s?.email?.trim() || 'Socio';
+    },
+    [agenda],
+  );
+
+  const detailGroup = detailGroupId ? budgetGroups.find((g) => g.id === detailGroupId) ?? null : null;
+  const detailTasks = detailGroupId ? tasksByGroup.get(detailGroupId) ?? [] : [];
+
+  const [detailName, setDetailName] = useState('');
+  const [detailSocioId, setDetailSocioId] = useState<string>('');
+  const [detailMensaje, setDetailMensaje] = useState('');
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [sendBusy, setSendBusy] = useState(false);
+  const [sendNotice, setSendNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!detailGroup) return;
+    setDetailName(detailGroup.name);
+    setDetailSocioId(detailGroup.scheduledSocioId ?? '');
+    setDetailMensaje(detailGroup.mensajeSocioBorrador ?? '');
+    setSendNotice(null);
+  }, [detailGroup]);
+
+  const setEnviarResumen = (
+    j: { requestsCreated?: number; requestsSkipped?: number },
+    warnings: string[],
+  ) => {
+    const c = Number(j.requestsCreated) || 0;
+    const s = Number(j.requestsSkipped) || 0;
+    let msg = 'Solicitud enviada.';
+    if (c + s > 0) {
+      msg = `Solicitud enviada. Creadas: ${c}. Omitidas (ya existían): ${s}.`;
+    }
+    if (warnings.length > 0) {
+      msg += ` · ${warnings.slice(0, 3).join(' ')}`;
+    }
+    setSendNotice(msg);
+  };
+
+  const onGuardarGrupo = async () => {
+    if (!detailGroup) return;
+    setSaveBusy(true);
+    setSendNotice(null);
+    try {
+      const res = await fetch(
+        `/api/obras/${encodeURIComponent(obraId)}/canvas/grupos-presupuesto/${encodeURIComponent(detailGroup.id)}`,
+        {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: detailName,
+            scheduledSocioId: detailSocioId || null,
+            mensajeSocioBorrador: detailMensaje || null,
+          }),
+        },
+      );
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) {
+        setSendNotice(typeof j.error === 'string' ? j.error : 'No se pudo guardar el grupo.');
+        return;
+      }
+      patchBudgetGroup(detailGroup.id, {
+        name: detailName.trim() || detailGroup.name,
+        scheduledSocioId: detailSocioId || null,
+        mensajeSocioBorrador: detailMensaje || null,
+      });
+      setSendNotice('Cambios del grupo guardados.');
+    } finally {
+      setSaveBusy(false);
+    }
+  };
+
+  const onEnviarSolicitud = async () => {
+    if (!detailGroup) return;
+    if (detailTasks.length === 0) {
+      setSendNotice('El grupo no tiene tareas incluidas.');
+      return;
+    }
+    if (!detailSocioId) {
+      setSendNotice('Elegí un socio agendado.');
+      return;
+    }
+    const unpublished = detailTasks.filter((t) => !tareaPublicacionByNodeId[t.id]);
+    if (unpublished.length > 0) {
+      setSendNotice(
+        'Para pedir presupuesto primero necesitamos crear las tareas operativas.',
+      );
+      return;
+    }
+    const ok = window.confirm(
+      '¿Enviar solicitud de presupuesto al socio seleccionado para todas las tareas publicadas de este grupo?',
+    );
+    if (!ok) return;
+
+    setSendBusy(true);
+    setSendNotice(null);
+    try {
+      const res = await fetch(
+        `/api/obras/${encodeURIComponent(obraId)}/canvas/presupuestos/enviar-grupo`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            budgetGroupId: detailGroup.id,
+            socioId: detailSocioId,
+            message: detailMensaje,
+          }),
+        },
+      );
+      const j = await res.json().catch(() => ({}));
+      if (j.code === 'TAREAS_NO_PUBLICADAS') {
+        setSendNotice(
+          'Para pedir presupuesto primero necesitamos crear las tareas operativas.',
+        );
+        return;
+      }
+      if (!res.ok || !j.ok) {
+        setSendNotice(typeof j.error === 'string' ? j.error : 'No se pudo enviar la solicitud.');
+        return;
+      }
+      if ((Number(j.requestsCreated) || 0) > 0) {
+        patchBudgetGroup(detailGroup.id, { status: 'enviado' });
+      }
+      const w = Array.isArray(j.warnings) ? j.warnings : [];
+      setEnviarResumen(j, w);
+    } finally {
+      setSendBusy(false);
+    }
+  };
+
+  if (budgetGroups.length === 0) {
+    return (
+      <div className="flex min-h-[min(68vh,560px)] flex-col items-center justify-center rounded-2xl border border-dashed border-[#bcc3d9] bg-white/80 px-6 py-14 text-center">
+        <Layers className="mb-4 h-12 w-12 text-[#596574]" aria-hidden />
+        <p className="text-lg font-extrabold text-[#0f1e1f]">No hay grupos de presupuesto todavía.</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-[#596574]">
+          Desde el canvas podés seleccionar tareas y agruparlas para pedir presupuesto.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Button type="button" variant="secondary" onClick={onOpenCanvasTab}>
+            Volver al canvas
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={() => {
+              const id = createBudgetGroup('Grupo de presupuesto');
+              patchBudgetGroup(id, { status: 'borrador' });
+              void saveCanvasSnapshotToCloud();
+              onOpenCanvasTab();
+            }}
+          >
+            Crear grupo
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-0 flex-1 flex-col gap-6">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8a94a5]">
+          Grupos de presupuesto
+        </p>
+        <h2 className="mt-1 text-xl font-black text-[#001629]">Presupuestos · {obraNombre}</h2>
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        {budgetGroups.map((g) => {
+          const tasks = tasksByGroup.get(g.id) ?? [];
+          const published = tasks.filter((t) => tareaPublicacionByNodeId[t.id]).length;
+          return (
+            <div
+              key={g.id}
+              className="relative flex flex-col overflow-hidden rounded-[22px] border border-[#d9dce8] bg-white px-5 py-5 shadow-[0_10px_36px_-12px_rgba(15,30,31,0.18)] ring-1 ring-black/[0.03]"
+            >
+              <div className="absolute left-0 right-0 top-0 h-[3px] bg-gradient-to-r from-[#0042c8] to-[#5b8edc]" />
+              <div className="mb-3 flex items-start justify-between gap-2 pt-1">
+                <Building2 className="h-5 w-5 shrink-0 text-[#0042c8]" aria-hidden />
+                <span className="rounded-full bg-[#f0f4f8] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#475569]">
+                  {budgetGroupStatusLabel(g.status)}
+                </span>
+              </div>
+              <p className="text-[17px] font-extrabold leading-snug text-[#0f1e1f]">{g.name}</p>
+              <ul className="mt-4 space-y-2 text-[12px] text-[#596574]">
+                <li>
+                  <strong className="text-[#001629]">Tareas incluidas:</strong> {tasks.length}
+                </li>
+                <li>
+                  <strong className="text-[#001629]">Publicadas:</strong> {published} / {tasks.length || 0}
+                </li>
+                <li>
+                  <strong className="text-[#001629]">Socio agendado:</strong>{' '}
+                  {socioLabel(g.scheduledSocioId) ?? '—'}
+                </li>
+                <li>
+                  <strong className="text-[#001629]">Total estimado:</strong> Sin monto
+                </li>
+              </ul>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                className="mt-5 w-full rounded-xl"
+                onClick={() => setDetailGroupId(g.id)}
+              >
+                Abrir grupo
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      {detailGroup ? (
+        <div
+          className="fixed inset-0 z-50 flex items-stretch justify-end bg-black/35 p-0 sm:p-4"
+          role="dialog"
+          aria-modal
+          aria-label="Grupo de presupuesto"
+        >
+          <div className="flex h-full w-full max-w-lg flex-col border-l border-[#e2e8f0] bg-white shadow-2xl sm:rounded-l-2xl">
+            <div className="flex items-center justify-between border-b border-[#eef2f6] px-5 py-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8a94a5]">
+                Grupo de presupuesto
+              </p>
+              <button
+                type="button"
+                className="text-sm font-semibold text-[#64748b] hover:text-[#0f172a]"
+                onClick={() => setDetailGroupId(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-[#7b8494]">Nombre del grupo</label>
+                <input
+                  className="mt-1.5 w-full rounded-xl border border-[#c3c7ce]/40 px-3 py-2 text-sm font-semibold text-[#001629] outline-none focus:border-[#24a375] focus:ring-2 focus:ring-[#24a375]/15"
+                  value={detailName}
+                  onChange={(e) => setDetailName(e.target.value)}
+                />
+                <p className="mt-2 text-[11px] text-[#64748b]">
+                  Estado: <strong>{budgetGroupStatusLabel(detailGroup.status)}</strong> · Tareas:{' '}
+                  {detailTasks.length}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">
+                  Tareas incluidas
+                </p>
+                <ul className="mt-2 space-y-2">
+                  {detailTasks.length === 0 ? (
+                    <li className="text-sm text-[#94a3b8]">Ninguna tarea en este grupo.</li>
+                  ) : (
+                    detailTasks.map((t) => {
+                      const pub = tareaPublicacionByNodeId[t.id];
+                      return (
+                        <li
+                          key={t.id}
+                          className="rounded-xl border border-[#e8edf3] bg-[#fafbfd] px-3 py-2 text-[13px]"
+                        >
+                          <p className="font-semibold text-[#001629]">{t.title}</p>
+                          <p className="text-[11px] text-[#64748b]">{canvasTaskPathTitles(nodes, t.id)}</p>
+                          <p className="mt-1 text-[11px] text-[#475569]">
+                            Duración: {Math.max(1, Math.round(t.duracionDias ?? 1))} días ·{' '}
+                            {pub ? (
+                              <span className="font-bold text-emerald-800">Publicada</span>
+                            ) : (
+                              <span className="font-bold text-slate-600">Sin publicar</span>
+                            )}
+                            {pub ? (
+                              <span className="text-[#64748b]">
+                                {' '}
+                                · Operativo: {labelEstadoTareaFromDb(pub.estado)}
+                              </span>
+                            ) : null}
+                          </p>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-[#7b8494]">Socio agendado</label>
+                {!agendaLoaded ? (
+                  <p className="mt-2 text-sm text-[#64748b]">Cargando agenda…</p>
+                ) : agenda.length === 0 ? (
+                  <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+                    <p className="font-semibold">Todavía no tenés socios en tu agenda.</p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="mt-3 rounded-lg"
+                      onClick={() => router.push('/cliente/agenda-socios' as Route)}
+                    >
+                      Agendar socio
+                    </Button>
+                  </div>
+                ) : (
+                  <select
+                    className="mt-1.5 w-full rounded-xl border border-[#c3c7ce]/40 px-3 py-2 text-sm font-medium text-[#001629] outline-none focus:border-[#24a375]"
+                    value={detailSocioId}
+                    onChange={(e) => setDetailSocioId(e.target.value)}
+                  >
+                    <option value="">Elegir socio…</option>
+                    {agenda.map((a) => (
+                      <option key={a.socio_id} value={a.socio_id}>
+                        {socioLabel(a.socio_id) ?? a.socio_id}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-[#7b8494]">Mensaje para el socio</label>
+                <textarea
+                  className="mt-1.5 min-h-[88px] w-full rounded-xl border border-[#c3c7ce]/40 px-3 py-2 text-sm text-[#001629] outline-none focus:border-[#24a375]"
+                  placeholder="Hola, necesito que me presupuestes estas tareas…"
+                  value={detailMensaje}
+                  onChange={(e) => setDetailMensaje(e.target.value)}
+                />
+              </div>
+
+              {sendNotice ? (
+                <p
+                  className={cn(
+                    'rounded-lg px-3 py-2 text-sm',
+                    sendNotice.includes('primero')
+                      ? 'border border-amber-200 bg-amber-50 text-amber-950'
+                      : 'border border-[#e2e8f0] bg-[#f8fafc] text-[#334155]',
+                  )}
+                >
+                  {sendNotice}
+                </p>
+              ) : null}
+
+              {sendNotice?.includes('primero') ? (
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full rounded-xl"
+                  onClick={() => void saveCanvasSnapshotToCloud()}
+                >
+                  Guardar y publicar tareas
+                </Button>
+              ) : null}
+
+              <div className="flex flex-col gap-2 border-t border-[#eef2f6] pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full rounded-xl"
+                  disabled={saveBusy}
+                  onClick={() => void onGuardarGrupo()}
+                >
+                  {saveBusy ? 'Guardando…' : 'Guardar grupo'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="w-full rounded-xl"
+                  disabled={sendBusy || detailTasks.length === 0}
+                  onClick={() => void onEnviarSolicitud()}
+                >
+                  {sendBusy ? 'Enviando…' : 'Enviar solicitud de presupuesto'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}

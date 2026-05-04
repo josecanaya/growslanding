@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
+import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
 
 type SupabaseTarea = {
   id: string;
@@ -109,30 +110,25 @@ export function TareasEnCurso() {
   // Resolver org_id si no viene en currentUser (socio sin org asignada en auth)
   useEffect(() => {
     const resolverOrg = async () => {
-      if (orgIdResuelta || !currentUser?.email) return;
+      if (orgIdResuelta || !currentUser?.id) return;
       try {
-        const supabaseAny = supabase as any;
-
-        const { data: socioData } = await supabaseAny
-          .from('socios')
-          .select('org_id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
-
-        if (socioData?.org_id) {
-          setOrgIdResuelta(socioData.org_id);
+        const row = await fetchSocioContextClient();
+        const combined = row?.effective_org_id || row?.org_id;
+        if (combined) {
+          setOrgIdResuelta(combined);
           return;
         }
-
-        const { data: tareaData } = await supabaseAny
-          .from('tareas')
-          .select('org_id')
-          .or(`responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`)
-          .limit(1)
-          .maybeSingle();
-
-        if (tareaData?.org_id) {
-          setOrgIdResuelta(tareaData.org_id);
+        if (currentUser.email) {
+          const supabaseAny = supabase as any;
+          const { data: tareaData } = await supabaseAny
+            .from('tareas')
+            .select('org_id')
+            .or(`responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`)
+            .limit(1)
+            .maybeSingle();
+          if (tareaData?.org_id) {
+            setOrgIdResuelta(tareaData.org_id);
+          }
         }
       } catch (err) {
         console.error('[TAREAS_EN_CURSO] Error resolviendo org_id', err);
@@ -140,7 +136,7 @@ export function TareasEnCurso() {
     };
 
     resolverOrg();
-  }, [currentUser?.email, orgIdResuelta, supabase]);
+  }, [currentUser?.id, currentUser?.email, orgIdResuelta, supabase]);
 
   useEffect(() => {
     const fetchTareas = async () => {
@@ -150,48 +146,48 @@ export function TareasEnCurso() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser.orgId;
-      if (!orgId) {
-        setLoading(false);
-        setError('No se pudo determinar tu organización.');
-        return;
-      }
-
       setLoading(true);
       setError(null);
 
       try {
         const supabaseAny = supabase as any;
 
-        let socioAuthId: string | null = null;
-        if (currentUser.email) {
-          const { data: rowSocio } = await supabaseAny
-            .from('socios')
-            .select('id')
-            .eq('org_id', orgId)
-            .eq('email', currentUser.email)
-            .maybeSingle();
-          socioAuthId = rowSocio?.id ?? null;
-        }
+        const socioRow = await fetchSocioContextClient();
+
+        const orgId =
+          orgIdResuelta ||
+          currentUser.orgId ||
+          socioRow?.effective_org_id ||
+          socioRow?.org_id ||
+          null;
 
         let query = supabase
           .from('tareas')
           .select(SELECT_FIELDS)
-          .eq('org_id', orgId)
           .order('created_at', { ascending: false });
+        if (orgId) {
+          query = query.eq('org_id', orgId);
+        }
 
         const partes: string[] = [];
         if (currentUser.email) {
           partes.push(`responsable.eq.${currentUser.email}`);
           partes.push(`responsable.ilike.%${currentUser.email}%`);
         }
-        if (socioAuthId) {
-          partes.push(`responsable_socio_id.eq.${socioAuthId}`);
-          partes.push(`cuadrilla_id.eq.${socioAuthId}`);
+        if (socioRow?.nombre?.trim()) {
+          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
         }
-        if (partes.length > 0) {
-          query = query.or(partes.join(','));
+        if (socioRow?.id) {
+          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
+          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
         }
+        if (partes.length === 0) {
+          setLoading(false);
+          setError('No se pudo vincular tu perfil con tareas asignadas.');
+          setTareas([]);
+          return;
+        }
+        query = query.or(partes.join(','));
 
         const { data, error } = await query;
 

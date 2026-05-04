@@ -12,6 +12,7 @@ import {
   MOCK_SOLICITUDES,
   MOCK_OBRAS,
 } from '@/lib/mocks/socioMockData';
+import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
 
 interface AccesoRapido {
   id: string;
@@ -187,7 +188,7 @@ export function AccesosRapidosGrid({
     let cancelled = false;
 
     const cargar = async () => {
-      if (!currentUser?.id || !currentUser?.orgId) {
+      if (!currentUser?.id) {
         if (!cancelled) {
           setAccesos([]);
           setSinVinculoSocio(false);
@@ -198,42 +199,45 @@ export function AccesosRapidosGrid({
 
       setLoading(true);
       try {
-        const { data: socioData } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('org_id', currentUser.orgId)
-          .or(`email.eq.${currentUser.email || ''},user_id.eq.${currentUser.id || ''}`)
-          .maybeSingle();
+        const socioRow = await fetchSocioContextClient();
 
-        if (!socioData?.id) {
+        if (!socioRow?.id) {
           if (!cancelled) {
             setSinVinculoSocio(true);
             setAccesos([]);
+            setLoading(false);
           }
           return;
         }
 
         if (!cancelled) setSinVinculoSocio(false);
 
+        const orgIdEfectivo =
+          currentUser.orgId ?? socioRow.effective_org_id ?? socioRow.org_id ?? null;
+
         const hoy = new Date().toISOString().split('T')[0];
 
-        const { count: solicitudesNuevasHoy = 0 } = await (supabase as any)
+        let solicitudesQuery = (supabase as any)
           .from('tareas')
           .select('*', { count: 'exact', head: true })
-          .eq('org_id', currentUser.orgId)
-          .or('estado.eq.ASIGNADA,estado.eq.PENDIENTE')
+          .in('estado', ['pendiente', 'en_progreso'])
+          .or(`responsable_socio_id.eq.${socioRow.id},cuadrilla_id.eq.${socioRow.id}`)
           .gte('created_at', `${hoy}T00:00:00`);
+        if (orgIdEfectivo) {
+          solicitudesQuery = solicitudesQuery.eq('org_id', orgIdEfectivo);
+        }
+        const { count: solicitudesNuevasHoy = 0 } = await solicitudesQuery;
 
         const { count: obrasActivas = 0 } = await (supabase as any)
           .from('tareas_presupuestos')
           .select('obra_id', { count: 'exact', head: true })
-          .eq('socio_id', socioData.id)
+          .eq('socio_id', socioRow.id)
           .eq('estado', 'APROBADO');
 
         const { count: presupuestosPendientes = 0 } = await (supabase as any)
           .from('tareas_presupuestos')
           .select('*', { count: 'exact', head: true })
-          .eq('socio_id', socioData.id)
+          .eq('socio_id', socioRow.id)
           .in('estado', ['PENDIENTE', 'ENVIADO']);
 
         const accesosReales: AccesoRapido[] = [
@@ -291,6 +295,7 @@ export function AccesosRapidosGrid({
         }
       } catch {
         if (!cancelled) {
+          setSinVinculoSocio(false);
           setAccesos(stitchLayout ? toStitchAccesos([]) : []);
         }
       } finally {
@@ -343,8 +348,8 @@ export function AccesosRapidosGrid({
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
         <p className="font-medium">Perfil de socio</p>
         <p className="mt-1 text-amber-800">
-          No encontramos un registro de socio vinculado a tu usuario en esta organización. Pedí a tu
-          administrador que te invite o complete el alta.
+          No encontramos un registro de socio vinculado a tu cuenta. Si ya tenés perfil, comprobá que
+          el email o usuario coincida con el alta del administrador.
         </p>
       </div>
     );

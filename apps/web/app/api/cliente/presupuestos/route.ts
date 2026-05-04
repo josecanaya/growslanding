@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
     const orgIdParam = request.nextUrl.searchParams.get('org_id');
     const orgId = orgIdParam && allowedOrgIds.includes(orgIdParam) ? orgIdParam : allowedOrgIds[0];
 
+    // Sin embed `socios`: en muchas BDs no hay FK tareas_presupuestos.socio_id → socios y PostgREST falla.
     const { data, error } = await supabase
       .from('tareas_presupuestos')
       .select(
@@ -65,8 +66,7 @@ export async function GET(request: NextRequest) {
           title,
           obra_id,
           obras ( id, name )
-        ),
-        socios ( id, nombre, email )
+        )
       `,
       )
       .eq('tareas.org_id', orgId)
@@ -77,18 +77,48 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    const rows = (data ?? []).map((p: any) => {
+    const presupRows = data ?? [];
+    const socioIds = [
+      ...new Set(
+        presupRows
+          .map((p: { socio_id?: string | null }) => p.socio_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+
+    const socioMap = new Map<string, { nombre: string | null; email: string | null }>();
+    const SOCIO_CHUNK = 100;
+    for (let i = 0; i < socioIds.length; i += SOCIO_CHUNK) {
+      const chunk = socioIds.slice(i, i + SOCIO_CHUNK);
+      const { data: sociosRows, error: sociosErr } = await supabase
+        .from('socios')
+        .select('id, nombre, email')
+        .in('id', chunk);
+      if (sociosErr) {
+        console.error('[GET /api/cliente/presupuestos] socios:', sociosErr);
+      } else {
+        for (const s of sociosRows ?? []) {
+          socioMap.set((s as { id: string }).id, {
+            nombre: (s as { nombre?: string | null }).nombre ?? null,
+            email: (s as { email?: string | null }).email ?? null,
+          });
+        }
+      }
+    }
+
+    const rows = presupRows.map((p: any) => {
       const t = p.tareas;
       const obra = t?.obras;
-      const socio = p.socios;
+      const socio = p.socio_id ? socioMap.get(p.socio_id) : undefined;
       return {
         id: p.id,
         monto: p.monto,
         estado: p.estado,
         createdAt: p.created_at,
         tareaId: p.tarea_id,
+        socioId: p.socio_id ?? null,
         tareaTitulo: t?.title ?? 'Tarea',
-        obraId: t?.obra_id,
+  obraId: t?.obra_id ?? null,
         obraNombre: obra?.name ?? 'Obra',
         cuadrilla: socio?.nombre || socio?.email || '—',
       };

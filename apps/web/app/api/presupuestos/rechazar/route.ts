@@ -60,18 +60,40 @@ export async function POST(request: NextRequest) {
 
     const orgId = obraData.org_id;
 
-    // Obtener datos del socio
-    const { data: socioData, error: socioError } = await supabaseAny
+    // Obtener datos del socio (permitir org_id desincronizado; la obra ya fija orgId)
+    let { data: socioData, error: socioError } = await supabaseAny
       .from('socios')
       .select('id, nombre, email, org_id')
       .eq('id', socio_id)
       .eq('org_id', orgId)
       .maybeSingle();
 
-    if (socioError || !socioData) {
+    if (socioError) {
+      return NextResponse.json(
+        { success: false, error: socioError.message ?? 'Error al cargar el socio' },
+        { status: 500 },
+      );
+    }
+
+    if (!socioData) {
+      const fb = await supabaseAny
+        .from('socios')
+        .select('id, nombre, email, org_id')
+        .eq('id', socio_id)
+        .maybeSingle();
+      if (fb.error) {
+        return NextResponse.json(
+          { success: false, error: fb.error.message ?? 'Error al cargar el socio' },
+          { status: 500 },
+        );
+      }
+      socioData = fb.data;
+    }
+
+    if (!socioData) {
       return NextResponse.json(
         { success: false, error: 'Socio no encontrado' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

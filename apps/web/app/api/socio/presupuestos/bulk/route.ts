@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
+import { resolveSocioRecordForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -59,21 +60,19 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabaseAuth.auth.getUser();
 
-    if (!user || !user.email) {
+    if (!user || !user.id) {
       return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
     }
 
     const supabase = createServiceSupabaseClient();
 
-    // Obtener socio_id del usuario autenticado
-    const { data: socio, error: socioError } = await supabase
-      .from('socios')
-      .select('id, org_id, email')
-      .eq('email', user.email)
-      .maybeSingle();
+    const socio = await resolveSocioRecordForAuthUser(supabase, {
+      id: user.id,
+      email: user.email ?? null,
+    });
 
-    if (socioError || !socio) {
-      console.error('[PRESUPUESTOS_BULK] Error obteniendo socio:', socioError);
+    if (!socio) {
+      console.error('[PRESUPUESTOS_BULK] Socio no encontrado');
       return NextResponse.json(
         { message: 'Socio no encontrado' },
         { status: 404 }
@@ -116,22 +115,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar que todas las tareas pertenecen a la obra
-    const tareaIds = payload.presupuestos.map(p => p.tarea_id);
-    const { data: tareas, error: tareasError } = await supabase
-      .from('tareas')
-      .select('id, obra_id')
-      .in('id', tareaIds);
+    // Validar que todas las tareas pertenecen a la obra (por lotes: .in muy grande falla en PostgREST)
+    const tareaIds = [...new Set(payload.presupuestos.map((p) => p.tarea_id))];
+    const tareasById = new Map<string, { id: string; obra_id: string }>();
+    const IN_CHUNK = 80;
+    for (let i = 0; i < tareaIds.length; i += IN_CHUNK) {
+      const chunk = tareaIds.slice(i, i + IN_CHUNK);
+      const { data: tareasChunk, error: tareasError } = await supabase
+        .from('tareas')
+        .select('id, obra_id')
+        .in('id', chunk);
 
-    if (tareasError) {
-      console.error('[PRESUPUESTOS_BULK] Error validando tareas:', tareasError);
-      return NextResponse.json(
-        { message: 'Error al validar tareas' },
-        { status: 500 }
-      );
+      if (tareasError) {
+        console.error('[PRESUPUESTOS_BULK] Error validando tareas:', tareasError);
+        return NextResponse.json(
+          { message: 'Error al validar tareas' },
+          { status: 500 }
+        );
+      }
+      for (const t of tareasChunk ?? []) {
+        tareasById.set(t.id, t);
+      }
     }
 
-    const tareasInvalidas = (tareas || []).filter(t => t.obra_id !== payload.obra_id);
+    const tareasInvalidas = tareaIds.filter((id) => {
+      const t = tareasById.get(id);
+      return !t || t.obra_id !== payload.obra_id;
+    });
     if (tareasInvalidas.length > 0) {
       return NextResponse.json(
         { message: 'Algunas tareas no pertenecen a esta obra' },
@@ -147,16 +157,16 @@ export async function POST(request: NextRequest) {
 
     for (const presupuesto of payload.presupuestos) {
       try {
-        // Preparar notas con dias_reales si existe
-        let notas: string | null = null;
+        let notasMerged: string | undefined = undefined;
         if (presupuesto.dias_reales !== null && presupuesto.dias_reales !== undefined) {
-          notas = JSON.stringify({ dias_reales: presupuesto.dias_reales });
+          const base: Record<string, unknown> = { dias_reales: presupuesto.dias_reales };
+          notasMerged = JSON.stringify(base);
         }
 
         // Buscar si ya existe
         const { data: existente, error: existenteError } = await supabase
           .from('tareas_presupuestos')
-          .select('id')
+          .select('id, notas')
           .eq('tarea_id', presupuesto.tarea_id)
           .eq('socio_id', socioId)
           .maybeSingle();
@@ -166,16 +176,34 @@ export async function POST(request: NextRequest) {
           throw existenteError;
         }
 
+        if (presupuesto.dias_reales !== null && presupuesto.dias_reales !== undefined && existente?.notas) {
+          try {
+            const parsed = JSON.parse(String(existente.notas));
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+              notasMerged = JSON.stringify({
+                ...parsed,
+                dias_reales: presupuesto.dias_reales,
+              });
+            }
+          } catch {
+            /* mantener notasMerged solo con dias_reales */
+          }
+        }
+
         if (existente) {
-          // UPDATE
+          const patch: Record<string, unknown> = {
+            estado: presupuesto.estado,
+            updated_at: new Date().toISOString(),
+          };
+          if (presupuesto.monto !== null && presupuesto.monto !== undefined) {
+            patch.monto = presupuesto.monto;
+          }
+          if (notasMerged !== undefined) {
+            patch.notas = notasMerged;
+          }
           const { error: updateError } = await supabase
             .from('tareas_presupuestos')
-            .update({
-              monto: presupuesto.monto ?? undefined,
-              estado: presupuesto.estado,
-              notas: notas,
-              updated_at: new Date().toISOString(),
-            })
+            .update(patch)
             .eq('id', existente.id);
 
           if (updateError) {
@@ -189,10 +217,10 @@ export async function POST(request: NextRequest) {
             .insert({
               tarea_id: presupuesto.tarea_id,
               socio_id: socioId,
-              monto: presupuesto.monto ?? undefined,
+              monto: presupuesto.monto ?? 0,
               moneda: 'ARS',
               estado: presupuesto.estado,
-              notas: notas,
+              notas: notasMerged ?? null,
             } as any);
 
           if (insertError) {
@@ -231,20 +259,42 @@ export async function POST(request: NextRequest) {
         if (orgError || !ownerUserId) {
           console.warn('[PRESUPUESTOS_BULK] No se encontró user_id para la organización, no se creará notificación', orgError);
         } else {
-          await (supabase as any)
-            .from('notificaciones')
-            .insert({
+          const fullRow = {
+            org_id: orgId,
+            remitente_id: user.id,
+            destinatario_id: ownerUserId,
+            socio_id: socio.id,
+            obra_id: payload.obra_id,
+            tarea_id: null,
+            titulo: 'Nuevo presupuesto recibido',
+            mensaje: `El socio ${socio.email || socio.nombre || 'socio'} envió ${presupuestosEnviados.length} presupuesto(s) para la obra`,
+            tipo: 'presupuesto',
+            leida: false,
+            created_at: new Date().toISOString(),
+          };
+          let { error: insErr } = await (supabase as any).from('notificaciones').insert(fullRow);
+          if (
+            insErr &&
+            (insErr.code === '42703' ||
+              String(insErr.message).includes('destinatario_id') ||
+              String(insErr.message).includes('remitente_id'))
+          ) {
+            const legacyRow = {
               org_id: orgId,
-              remitente_id: socio.id,                       // socio que envía
-              destinatario_id: ownerUserId,       // cliente técnico que recibe
+              socio_id: socio.id,
               obra_id: payload.obra_id,
               tarea_id: null,
               titulo: 'Nuevo presupuesto recibido',
-              mensaje: `El socio ${socio.email || 'socio'} envió ${presupuestosEnviados.length} presupuesto(s) para la obra`,
+              mensaje: `El socio ${socio.email || socio.nombre || 'socio'} envió ${presupuestosEnviados.length} presupuesto(s) para la obra`,
               tipo: 'presupuesto',
               leida: false,
               created_at: new Date().toISOString(),
-            });
+            };
+            insErr = (await (supabase as any).from('notificaciones').insert(legacyRow)).error;
+          }
+          if (insErr) {
+            console.error('[PRESUPUESTOS_BULK] Error insertando notificación:', insErr);
+          }
         }
       } catch (notifError) {
         console.error('[PRESUPUESTOS_BULK] Error creando notificación:', notifError);

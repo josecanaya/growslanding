@@ -17,20 +17,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Falta x-usuario-id' }, { status: 400 });
     }
 
-    // Construir query base
+    const socioIdHeader = request.headers.get('x-socio-id');
+
+    async function runLegacyList(): Promise<{ data: unknown[] | null; error: { message: string; code?: string } | null }> {
+      let legacyQ = supabaseAny.from('notificaciones').select('*').eq('org_id', orgId);
+      if (socioIdHeader) {
+        legacyQ = legacyQ.eq('socio_id', socioIdHeader);
+      } else {
+        const { data: orgRow } = await supabaseAny
+          .from('organizations')
+          .select('user_id')
+          .eq('id', orgId)
+          .maybeSingle();
+        if (orgRow?.user_id === usuarioId) {
+          legacyQ = legacyQ.eq('tipo', 'presupuesto');
+        } else {
+          legacyQ = legacyQ.eq('socio_id', usuarioId);
+        }
+      }
+      if (soloNoLeidas) {
+        legacyQ = legacyQ.eq('leida', false);
+      }
+      return legacyQ.order('created_at', { ascending: false });
+    }
+
     let query = supabaseAny
       .from('notificaciones')
       .select('*')
       .eq('org_id', orgId)
       .eq('destinatario_id', usuarioId);
 
-    // Filtrar solo no leídas si se solicita
     if (soloNoLeidas) {
       query = query.eq('leida', false);
     }
 
-    // Ordenar por fecha descendente (más recientes primero)
-    const { data, error } = await query.order('created_at', { ascending: false });
+    let { data, error } = await query.order('created_at', { ascending: false });
+
+    if (
+      error &&
+      (error.code === '42703' || String(error.message).includes('destinatario_id'))
+    ) {
+      const legacy = await runLegacyList();
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) {
       console.error('[GET /api/notificaciones] Error:', error);

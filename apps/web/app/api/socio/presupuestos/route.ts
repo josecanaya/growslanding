@@ -5,6 +5,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { IS_DEV_MODE } from '@/lib/config';
 import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
+import { resolveSocioRecordForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,23 +46,21 @@ export async function GET(request: NextRequest) {
         data: { user },
       } = await supabaseAuth.auth.getUser();
 
-      if (!user || !user.email) {
+      if (!user?.id) {
         return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
       }
 
       const supabase = createServiceSupabaseClient();
 
-      // Obtener socio_id
-      const { data: socio, error: socioError } = await supabase
-        .from('socios')
-        .select('id, org_id, email')
-        .eq('email', user.email)
-        .maybeSingle();
+      const socio = await resolveSocioRecordForAuthUser(supabase, {
+        id: user.id,
+        email: user.email ?? null,
+      });
 
-      if (socioError || !socio) {
+      if (!socio) {
         return NextResponse.json(
           { message: 'Socio no encontrado' },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -203,32 +202,27 @@ export async function GET(request: NextRequest) {
       data: { user },
     } = await supabaseAuth.auth.getUser();
 
-    if (!user || !user.email) {
+    if (!user?.id) {
       return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
     }
 
     const supabase = createServiceSupabaseClient();
 
-    // Obtener socio_id del usuario autenticado
-    const { data: socio, error: socioError } = await supabase
-      .from('socios')
-      .select('id, org_id, email')
-      .eq('email', user.email)
-      .maybeSingle();
+    const socio = await resolveSocioRecordForAuthUser(supabase, {
+      id: user.id,
+      email: user.email ?? null,
+    });
 
-    if (socioError || !socio) {
-      console.error('[PRESUPUESTOS_GET] Error obteniendo socio:', socioError);
-      return NextResponse.json(
-        { message: 'Socio no encontrado' },
-        { status: 404 }
-      );
+    if (!socio) {
+      console.error('[PRESUPUESTOS_GET] Socio no encontrado para usuario', user.id);
+      return NextResponse.json({ message: 'Socio no encontrado' }, { status: 404 });
     }
 
     const socioId = socio.id;
 
     const { data: obra, error: obraError } = await supabase
       .from('obras')
-      .select('id, org_id')
+      .select('id, org_id, name, address, propietario, plantas, latitud, longitud, created_at, superficies')
       .eq('id', obraId)
       .maybeSingle();
 
@@ -252,50 +246,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Obtener tareas de la obra primero
-    const { data: tareasObra, error: tareasError } = await supabase
-      .from('tareas')
-      .select('id')
-      .eq('obra_id', obraId);
-
-    if (tareasError) {
-      console.error('[PRESUPUESTOS_GET] Error obteniendo tareas:', tareasError);
-      return NextResponse.json({
-        obra: {
-          id: obraTyped.id,
-          name: obraTyped.name || null,
-          direccion_completa: obraTyped.direccion_completa || null,
-          cantidad_plantas: obraTyped.cantidad_plantas || null,
-          superficie_por_planta: obraTyped.superficie_por_planta || null,
-          coordenadas_lat: obraTyped.coordenadas_lat || null,
-          coordenadas_lng: obraTyped.coordenadas_lng || null,
-          cliente: obraTyped.cliente || null,
-          fecha_inicio: obraTyped.fecha_inicio || null,
-        },
-        presupuestos: [],
-      });
-    }
-
-    const tareaIds = (tareasObra || []).map(t => t.id);
-
-    if (tareaIds.length === 0) {
-      return NextResponse.json({
-        obra: {
-          id: obraTyped.id,
-          name: obraTyped.name || null,
-          direccion_completa: obraTyped.direccion_completa || null,
-          cantidad_plantas: obraTyped.cantidad_plantas || null,
-          superficie_por_planta: obraTyped.superficie_por_planta || null,
-          coordenadas_lat: obraTyped.coordenadas_lat || null,
-          coordenadas_lng: obraTyped.coordenadas_lng || null,
-          cliente: obraTyped.cliente || null,
-          fecha_inicio: obraTyped.fecha_inicio || null,
-        },
-        presupuestos: [],
-      });
-    }
-
-    // Obtener presupuestos del socio para estas tareas
+    // Presupuestos del socio: sin .in(tarea_id, miles de ids) — PostgREST falla o devuelve vacío en obras grandes.
     const { data: presupuestosData, error: presupuestosError } = await supabase
       .from('tareas_presupuestos')
       .select(`
@@ -310,6 +261,7 @@ export async function GET(request: NextRequest) {
         updated_at,
         tareas (
           id,
+          obra_id,
           title,
           etapa,
           es,
@@ -319,29 +271,29 @@ export async function GET(request: NextRequest) {
           elemento_id
         )
       `)
-      .eq('socio_id', socioId)
-      .in('tarea_id', tareaIds);
+      .eq('socio_id', socioId);
 
     if (presupuestosError) {
       console.error('[PRESUPUESTOS_GET] Error obteniendo presupuestos:', presupuestosError);
-      // Si no hay presupuestos, devolver lista vacía
       return NextResponse.json({
         obra: {
           id: obraTyped.id,
           name: obraTyped.name || null,
-          direccion_completa: obraTyped.direccion_completa || null,
-          cantidad_plantas: obraTyped.cantidad_plantas || null,
-          superficie_por_planta: obraTyped.superficie_por_planta || null,
-          coordenadas_lat: obraTyped.coordenadas_lat || null,
-          coordenadas_lng: obraTyped.coordenadas_lng || null,
-          cliente: obraTyped.cliente || null,
-          fecha_inicio: obraTyped.fecha_inicio || null,
+          direccion_completa: obraTyped.address || obraTyped.direccion_completa || null,
+          cantidad_plantas: obraTyped.plantas || obraTyped.cantidad_plantas || null,
+          superficie_por_planta: obraTyped.superficies?.superficie_por_planta || obraTyped.superficie_por_planta || null,
+          coordenadas_lat: obraTyped.latitud || obraTyped.coordenadas_lat || null,
+          coordenadas_lng: obraTyped.longitud || obraTyped.coordenadas_lng || null,
+          cliente: obraTyped.propietario || obraTyped.cliente || null,
+          fecha_inicio: obraTyped.created_at || obraTyped.fecha_inicio || null,
         },
         presupuestos: [],
       });
     }
 
-    const presupuestosFiltrados = presupuestosData || [];
+    const presupuestosFiltrados = (presupuestosData || []).filter(
+      (p: { tareas?: { obra_id?: string } | null }) => p.tareas?.obra_id === obraId,
+    );
 
     // Obtener elementos relacionados
     const elementoIds = new Set<string>();

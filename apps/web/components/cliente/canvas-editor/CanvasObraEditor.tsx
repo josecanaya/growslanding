@@ -100,6 +100,7 @@ export function CanvasObraEditor({ obraId }: Props) {
     budgetGroups,
     createBudgetGroup,
     patchBudgetGroup,
+    applyBudgetGroupToNode,
     tareaPublicacionByNodeId,
     refreshTareaPublicacion,
   } = useCanvasMultinivel(obraId);
@@ -675,6 +676,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           tryPrecedenceConnection={tryPrecedenceConnection}
           budgetGroups={budgetGroups}
           createBudgetGroup={createBudgetGroup}
+          applyBudgetGroupToNode={applyBudgetGroupToNode}
           tareaPublicacionByNodeId={tareaPublicacionByNodeId}
           isOpen={inspectorOpen}
           onToggleOpen={() => setInspectorOpen((v) => !v)}

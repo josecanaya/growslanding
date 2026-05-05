@@ -17,7 +17,12 @@ import { useRouter } from 'next/navigation';
 import type { Connection } from '@xyflow/react';
 
 import { Button } from '@/components/ui/grows';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  budgetGroupSummaryLabel,
+  getBudgetGroupStateForNode,
+} from '@/lib/canvas/budgetGroupTree';
 import type {
   CanvasBudgetGroup,
   CanvasNode,
@@ -89,6 +94,13 @@ type Props = {
   tryPrecedenceConnection: (c: Connection) => boolean;
   budgetGroups: CanvasBudgetGroup[];
   createBudgetGroup: (name: string) => string;
+  applyBudgetGroupToNode: (
+    selectedNodeId: string,
+    budgetGroupId: string,
+  ) => Promise<{
+    affected: number;
+    saveResult: { ok?: boolean; message?: string; canvasSaved?: boolean };
+  }>;
   tareaPublicacionByNodeId: Record<
     string,
     { tareaId: string; estado: string; publishedAt: string | null }
@@ -164,15 +176,19 @@ export function CanvasLeftInspector({
   tryPrecedenceConnection,
   budgetGroups,
   createBudgetGroup,
+  applyBudgetGroupToNode,
   tareaPublicacionByNodeId,
   isOpen,
   onToggleOpen,
 }: Props) {
   const router = useRouter();
+  const { toast } = useToast();
   const [newGroupName, setNewGroupName] = useState('');
+  const [pendingContainerGroupId, setPendingContainerGroupId] = useState('');
 
   useEffect(() => {
     setNewGroupName('');
+    setPendingContainerGroupId('');
   }, [selectedNode?.id, selectedEdge?.id]);
 
   const siblingTasks = useMemo(
@@ -361,6 +377,136 @@ export function CanvasLeftInspector({
                 <option value="bloqueado">Bloqueado</option>
               </select>
             </div>
+
+            <div className={sectionClass}>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Grupo de presupuesto</p>
+              <p className="mt-2 text-[11px] leading-snug text-[#7b8494]">
+                El grupo se asigna a las <strong>tareas</strong> hijas del subárbol (fase → piso → … → tarea), no al
+                nodo visual contenedor.
+              </p>
+              {(() => {
+                const agg = getBudgetGroupStateForNode(selectedNode.id, nodes);
+                const summary = budgetGroupSummaryLabel(agg, budgetGroups);
+                return (
+                  <>
+                    <div className="mt-3 space-y-1">
+                      <p className="text-sm font-semibold text-[#001629]">
+                        Consolidado descendientes:{' '}
+                        <span className="font-bold text-[#24a375]">{summary}</span>
+                      </p>
+                      <p className="text-xs text-[#64748b]">
+                        {agg.taskCount}{' '}
+                        {agg.taskCount === 1 ? 'tarea descendiente' : 'tareas descendientes'}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 space-y-3 border-t border-[#eef2f6] pt-4">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                          Crear grupo rápido
+                        </label>
+                        <input
+                          className={inputClass}
+                          placeholder="Nombre del nuevo grupo"
+                          value={newGroupName}
+                          onChange={(e) => setNewGroupName(e.target.value)}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          className="mt-2 w-full rounded-xl"
+                          onClick={() => {
+                            const id = createBudgetGroup(newGroupName);
+                            setPendingContainerGroupId(id);
+                            setNewGroupName('');
+                          }}
+                        >
+                          Crear y seleccionar
+                        </Button>
+                      </div>
+
+                      {budgetGroups.length > 0 && (
+                        <div>
+                          <label className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7b8494]">
+                            Grupo a aplicar
+                          </label>
+                          <select
+                            className={inputClass}
+                            value={pendingContainerGroupId}
+                            onChange={(e) => setPendingContainerGroupId(e.target.value)}
+                          >
+                            <option value="">Elegir grupo…</option>
+                            {budgetGroups.map((g) => (
+                              <option key={g.id} value={g.id}>
+                                {g.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        className="w-full rounded-xl"
+                        disabled={agg.taskCount === 0 || !pendingContainerGroupId}
+                        onClick={async () => {
+                          if (!pendingContainerGroupId) return;
+                          const g = budgetGroups.find((x) => x.id === pendingContainerGroupId);
+                          const name = g?.name ?? 'grupo';
+                          if (
+                            !window.confirm(
+                              `Este nodo contiene ${agg.taskCount} tareas. Se asignarán todas al grupo «${name}». ¿Confirmar?`,
+                            )
+                          ) {
+                            return;
+                          }
+                          const res = await applyBudgetGroupToNode(
+                            selectedNode.id,
+                            pendingContainerGroupId,
+                          );
+                          if (res.saveResult.ok !== true) {
+                            if (res.saveResult.canvasSaved === true) {
+                              toast({
+                                title: `Grupo asignado a ${res.affected} ${
+                                  res.affected === 1 ? 'tarea' : 'tareas'
+                                } (en pantalla y canvas en nube)`,
+                                description:
+                                  typeof res.saveResult.message === 'string'
+                                    ? res.saveResult.message
+                                    : undefined,
+                              });
+                            } else {
+                              toast({
+                                variant: 'destructive',
+                                title: 'No se pudo guardar en la nube',
+                                description:
+                                  typeof res.saveResult.message === 'string'
+                                    ? res.saveResult.message
+                                    : 'Probá de nuevo con «Guardar en la nube» en la barra superior.',
+                              });
+                            }
+                            return;
+                          }
+                          toast({
+                            title: `Grupo asignado a ${res.affected} ${
+                              res.affected === 1 ? 'tarea' : 'tareas'
+                            }.`,
+                          });
+                        }}
+                      >
+                        {agg.taskCount > 0
+                          ? `Aplicar a tareas descendientes (${agg.taskCount})`
+                          : 'Aplicar a tareas descendientes'}
+                      </Button>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
             {selectedNode.type === 'etapa' && (
               <p className="text-xs text-[#6b728e]">
                 Para orden entre etapas usá <strong>Conectar orden de fases</strong> en la barra superior.
@@ -702,18 +848,32 @@ export function CanvasLeftInspector({
             <div className={sectionClass}>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">Grupo de presupuesto</p>
               <p className="mt-2 text-[11px] leading-snug text-[#7b8494]">
-                Gestioná y enviá este grupo desde la pestaña Presupuestos.
+                Gestioná y enviá este grupo desde la pestaña Presupuestos. Al elegir un grupo abajo se aplica{' '}
+                <strong>sólo a esta tarea</strong> (y sus tareas hijas si las hubiera).
               </p>
               {(() => {
+                const aggT = getBudgetGroupStateForNode(selectedNode.id, nodes);
+                const summaryT = budgetGroupSummaryLabel(aggT, budgetGroups);
                 const gid = selectedNode.budgetGroupId;
                 const grp = gid ? budgetGroups.find((g) => g.id === gid) : null;
                 const nInGroup = gid
                   ? nodes.filter((n) => n.type === 'tarea' && n.budgetGroupId === gid).length
                   : 0;
+
+                const resumenSubarbol = (
+                  <div className="mt-3 rounded-lg border border-[#e8edf3] bg-[#fafbfd] px-3 py-2 text-xs text-[#475569]">
+                    <span className="font-semibold text-[#001629]">Subárbol: </span>
+                    {aggT.taskCount}{' '}
+                    {aggT.taskCount === 1 ? 'tarea descendiente' : 'tareas descendientes'} ·{' '}
+                    <span className="font-medium text-[#24a375]">{summaryT}</span>
+                  </div>
+                );
+
                 if (!grp) {
                   return (
                     <div className="mt-4">
-                      <p className="text-sm text-[#596574]">
+                      {resumenSubarbol}
+                      <p className="mt-3 text-sm text-[#596574]">
                         Esta tarea todavía no está en ningún grupo de presupuesto.
                       </p>
                       <div className="mt-4 space-y-3">
@@ -768,8 +928,14 @@ export function CanvasLeftInspector({
                 return (
                   <div className="mt-4 rounded-xl border border-[#e4e9ef] bg-[#f8fafc] p-3.5">
                     <p className="text-sm font-semibold text-[#001629]">{grp.name}</p>
-                    <p className="mt-1 text-xs text-[#64748b]">
-                      {nInGroup} {nInGroup === 1 ? 'tarea' : 'tareas'} en el grupo
+                    <div className="mt-2 rounded-lg border border-[#e8edf3] bg-white px-3 py-2 text-xs text-[#475569]">
+                      <span className="font-semibold text-[#001629]">Subárbol: </span>
+                      {aggT.taskCount}{' '}
+                      {aggT.taskCount === 1 ? 'tarea descendiente' : 'tareas descendientes'} ·{' '}
+                      <span className="font-medium text-[#24a375]">{summaryT}</span>
+                    </div>
+                    <p className="mt-2 text-xs text-[#64748b]">
+                      {nInGroup} {nInGroup === 1 ? 'tarea' : 'tareas'} en este grupo en toda la obra
                     </p>
                     <div className="mt-3 flex flex-col gap-2">
                       {budgetGroups.length > 1 && (

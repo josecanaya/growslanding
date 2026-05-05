@@ -27,6 +27,7 @@ import {
   pathIdsToShowContainer,
   staggerPosition,
 } from './canvasMultinivelHelpers';
+import { getDescendantTaskIds } from '@/lib/canvas/budgetGroupTree';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -622,6 +623,36 @@ export function useCanvasMultinivel(obraId: string) {
     );
   }, []);
 
+  /** Asigna `budgetGroupId` a todas las tareas del subárbol con raíz `selectedNodeId` y guarda el canvas en la nube. */
+  const applyBudgetGroupToNode = useCallback(
+    async (
+      selectedNodeId: string,
+      budgetGroupId: string,
+    ): Promise<{
+      affected: number;
+      saveResult: Awaited<ReturnType<typeof saveCanvasSnapshotToCloud>>;
+    }> => {
+      const taskIdList = getDescendantTaskIds(selectedNodeId, nodes);
+      const idSet = new Set(taskIdList);
+      const nextNodes = nodes.map((n) =>
+        idSet.has(n.id) && n.type === 'tarea' ? { ...n, budgetGroupId } : n,
+      );
+      setNodes(nextNodes);
+
+      const snapshot = composeCanvasPersisted({
+        obraNombre,
+        nodes: nextNodes,
+        pathIds,
+        edges,
+        budgetGroups,
+        projectKind,
+      });
+      const saveResult = await saveCanvasSnapshotToCloud(snapshot);
+      return { affected: taskIdList.length, saveResult };
+    },
+    [nodes, obraNombre, pathIds, edges, budgetGroups, projectKind, saveCanvasSnapshotToCloud],
+  );
+
   const applyImportedCanvas = useCallback(
     (bundle: { obraNombre: string; nodes: CanvasNode[]; edges: CanvasPrecedenceEdge[] }) => {
       setObraNombre(bundle.obraNombre);
@@ -676,5 +707,6 @@ export function useCanvasMultinivel(obraId: string) {
     createBudgetGroup,
     patchBudgetGroup,
     deleteBudgetGroup,
+    applyBudgetGroupToNode,
   };
 }

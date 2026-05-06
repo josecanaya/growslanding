@@ -43,6 +43,12 @@ export async function GET() {
       row.org_id == null || row.org_id === '' ? await inferOrgIdForSocio(supabase, row.id) : null;
     const effective_org_id = row.org_id || inferred;
 
+    const { data: perfilExtra } = await (supabase as any)
+      .from('socios')
+      .select('especialidad, telefono')
+      .eq('id', row.id)
+      .maybeSingle();
+
     return NextResponse.json({
       ok: true,
       socio: {
@@ -51,6 +57,8 @@ export async function GET() {
         effective_org_id: effective_org_id ?? null,
         email: row.email,
         nombre: row.nombre,
+        especialidad: (perfilExtra?.especialidad as string | null) ?? null,
+        telefono: (perfilExtra?.telefono as string | null) ?? null,
       },
     });
   } catch (e) {

@@ -41,7 +41,7 @@ function SocioLayoutInner({ children }: { children: React.ReactNode }) {
       className={
         ahoraSoloVistaStitch
           ? 'flex min-h-screen w-full flex-col bg-[#00174a] text-white'
-          : 'flex min-h-screen w-full flex-col bg-stitch-surface font-stitch-body text-stitch-on-surface'
+          : 'socio-shell flex min-h-screen w-full flex-col bg-[#f7f9fb] font-stitch-body text-stitch-on-surface [--socio-tab-h:calc(3.5rem+max(0px,env(safe-area-inset-bottom)))]'
       }
     >
       {ahoraSoloVistaStitch ? null : <SocioHeader />}
@@ -50,7 +50,7 @@ function SocioLayoutInner({ children }: { children: React.ReactNode }) {
         className={
           hideTabByWorkSession
             ? 'flex-1 overflow-y-auto pb-4 pt-0 sm:pb-6'
-            : 'flex-1 overflow-y-auto pb-28 pt-0 sm:pb-32'
+            : 'flex-1 overflow-y-auto pb-[calc(var(--socio-tab-h)+0.75rem)] pt-0 sm:pb-10'
         }
       >
         {isAhoraPage || isHomePage ? (

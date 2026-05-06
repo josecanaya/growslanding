@@ -35,6 +35,8 @@ type SocioQrCardProps = {
   /** Nombre u oficio por defecto mientras carga el perfil desde API */
   fallbackDisplayName?: string;
   fallbackOficio?: string;
+  /** Vista centrada en QR estilo “identidad digital” (referencia cuenta socio) */
+  identityLayout?: boolean;
 };
 
 function friendlyLoadMessage() {
@@ -44,6 +46,7 @@ function friendlyLoadMessage() {
 export function SocioQrCard({
   fallbackDisplayName = 'Socio',
   fallbackOficio = 'Contacto de obra',
+  identityLayout = false,
 }: SocioQrCardProps) {
   const [data, setData] = useState<SocioQrData | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -163,17 +166,24 @@ export function SocioQrCard({
     await copyAssociationUrl();
   }
 
+  const tituloQr = identityLayout ? 'TU IDENTIDAD DIGITAL' : 'Mi QR de socio';
+  const subtituloQr = identityLayout
+    ? 'Escaneá para agendar contacto'
+    : 'Compartilo con un cliente para que te agende.';
+
   return (
     <>
       <section className="w-full space-y-6">
-        <div className="rounded-[2rem] border border-[#c3c6d5]/15 bg-white p-6 shadow-[0_20px_50px_rgba(22,50,116,0.12)] sm:p-8">
-          <div className="mb-4 text-center">
-            <p className="text-sm font-bold uppercase tracking-widest text-[#163274]">
-              Mi QR de socio
-            </p>
-            <p className="mt-2 text-xs font-medium leading-relaxed text-[#434653]">
-              Compartilo con un cliente para que te agende.
-            </p>
+        <div
+          className={
+            identityLayout
+              ? 'rounded-3xl border border-[#c3c6d5]/15 bg-white p-6 shadow-[0_24px_60px_rgba(22,50,116,0.14)] sm:p-8'
+              : 'rounded-[2rem] border border-[#c3c6d5]/15 bg-white p-6 shadow-[0_20px_50px_rgba(22,50,116,0.12)] sm:p-8'
+          }
+        >
+          <div className="mb-5 text-center">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#163274]">{tituloQr}</p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-[#434653]">{subtituloQr}</p>
           </div>
 
           {loading ? (
@@ -216,104 +226,165 @@ export function SocioQrCard({
             </div>
           ) : (
             <>
-              <div className="mx-auto max-w-[16rem] rounded-3xl bg-[#f2f4f6] p-3">
-                <div className="relative overflow-hidden rounded-2xl bg-[#e0e3e5]">
-                  <div
-                    className="pointer-events-none absolute inset-0 opacity-10"
-                    style={{
-                      backgroundImage: 'radial-gradient(circle, #163274 1px, transparent 1px)',
-                      backgroundSize: '8px 8px',
-                    }}
-                  />
+              <div
+                className={
+                  identityLayout
+                    ? 'mx-auto max-w-[18rem] rounded-2xl bg-[#0f172a] p-4 shadow-inner'
+                    : 'mx-auto max-w-[16rem] rounded-3xl bg-[#f2f4f6] p-3'
+                }
+              >
+                <div
+                  className={
+                    identityLayout
+                      ? 'overflow-hidden rounded-xl bg-white'
+                      : 'relative overflow-hidden rounded-2xl bg-[#e0e3e5]'
+                  }
+                >
+                  {!identityLayout ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-10"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle, #163274 1px, transparent 1px)',
+                        backgroundSize: '8px 8px',
+                      }}
+                    />
+                  ) : null}
                   <img
                     src={qrDataUrl}
                     alt="Código QR para ser agendado"
-                    className="relative z-[1] w-full rounded-2xl p-4"
+                    className={
+                      identityLayout
+                        ? 'relative z-[1] w-full p-3'
+                        : 'relative z-[1] w-full rounded-2xl p-4'
+                    }
                   />
                 </div>
               </div>
 
               <div className="mt-6 text-center">
                 <p className="text-xs font-medium text-[#434653]">
-                  Mostrá este QR o compartí tu ID para que un cliente te agende.
+                  {identityLayout
+                    ? 'Mostrá este código en obra para que te agenden como socio Grows.'
+                    : 'Mostrá este QR o compartí tu ID para que un cliente te agende.'}
                 </p>
               </div>
 
               {data.publicCodigo ? (
                 <div className="mt-6 rounded-2xl border border-[#163274]/20 bg-[#d8e2ff]/30 px-4 py-4 text-center">
-                  <p className="text-[11px] font-bold text-[#163274]">
-                    ID de socio: {data.publicCodigo}
-                  </p>
+                  <p className="text-[11px] font-bold text-[#163274]">ID de socio: {data.publicCodigo}</p>
                 </div>
               ) : null}
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <div
+                className={
+                  identityLayout
+                    ? 'mt-5 flex flex-wrap items-center justify-center gap-2'
+                    : 'mt-6 flex flex-col gap-3 sm:flex-row'
+                }
+              >
                 <Button
                   type="button"
-                  className="h-12 flex-1 rounded-2xl bg-[#163274] font-bold text-white shadow-lg hover:bg-[#314a8d]"
+                  className={
+                    identityLayout
+                      ? 'h-9 rounded-full bg-[#163274] px-4 text-xs font-bold text-white hover:bg-[#314a8d]'
+                      : 'h-12 flex-1 rounded-2xl bg-[#163274] font-bold text-white shadow-lg hover:bg-[#314a8d]'
+                  }
                   onClick={() => void copyPublicId()}
                   disabled={!data.publicCodigo}
                 >
-                  <Copy className="mr-2 h-5 w-5" />
+                  <Copy className={identityLayout ? 'mr-1.5 h-3.5 w-3.5' : 'mr-2 h-5 w-5'} />
                   Copiar ID
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 flex-1 rounded-2xl border-[#163274] font-bold text-[#163274]"
+                  className={
+                    identityLayout
+                      ? 'h-9 rounded-full border-[#163274]/40 px-4 text-xs font-semibold text-[#163274]'
+                      : 'h-12 flex-1 rounded-2xl border-[#163274] font-bold text-[#163274]'
+                  }
                   onClick={() => setQrDialogOpen(true)}
                 >
-                  <QrCode className="mr-2 h-5 w-5" />
-                  Mostrar QR
+                  <QrCode className={identityLayout ? 'mr-1.5 h-3.5 w-3.5' : 'mr-2 h-5 w-5'} />
+                  Ampliar
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 flex-1 rounded-2xl border-[#163274] font-bold text-[#163274]"
+                  className={
+                    identityLayout
+                      ? 'h-9 rounded-full border-[#163274]/40 px-4 text-xs font-semibold text-[#163274]'
+                      : 'h-12 flex-1 rounded-2xl border-[#163274] font-bold text-[#163274] sm:col-span-1'
+                  }
                   onClick={() => void shareContact()}
                 >
-                  <Share2 className="mr-2 h-5 w-5" />
-                  Compartir contacto
+                  <Share2 className={identityLayout ? 'mr-1.5 h-3.5 w-3.5' : 'mr-2 h-5 w-5'} />
+                  Compartir
                 </Button>
               </div>
 
-              <Button
-                type="button"
-                variant="ghost"
-                className="mt-2 w-full text-[#434653]"
-                onClick={() => void copyAssociationUrl()}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copiar link de agendar
-              </Button>
+              {!identityLayout ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="mt-2 w-full text-[#434653]"
+                  onClick={() => void copyAssociationUrl()}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copiar link de agendar
+                </Button>
+              ) : (
+                <button
+                  type="button"
+                  className="mt-3 w-full text-center text-[11px] font-semibold text-[#43617c] underline-offset-2 hover:underline"
+                  onClick={() => void copyAssociationUrl()}
+                >
+                  Copiar link de contacto
+                </button>
+              )}
 
               {copyMessage ? (
-                <p className="mt-2 text-center text-xs text-emerald-700">{copyMessage}</p>
+                <p className="mt-2 text-center text-xs text-[#163274]">{copyMessage}</p>
               ) : null}
 
-              <details className="mt-4 rounded-xl bg-[#f2f4f6] px-3 py-2 text-left">
-                <summary className="cursor-pointer text-xs font-medium text-[#737784]">
-                  Detalle para soporte (opcional)
-                </summary>
-                <p className="mt-2 break-all font-mono text-[10px] text-[#434653]">{data.token}</p>
-              </details>
+              {!identityLayout ? (
+                <details className="mt-4 rounded-xl bg-[#f2f4f6] px-3 py-2 text-left">
+                  <summary className="cursor-pointer text-xs font-medium text-[#737784]">
+                    Detalle para soporte (opcional)
+                  </summary>
+                  <p className="mt-2 break-all font-mono text-[10px] text-[#434653]">{data.token}</p>
+                </details>
+              ) : null}
             </>
           )}
         </div>
 
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="rounded-xl border-[#c3c6d5]/40"
-            onClick={() => void loadQr()}
-            disabled={loading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Actualizar QR
-          </Button>
-        </div>
+        {!identityLayout ? (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-[#c3c6d5]/40"
+              onClick={() => void loadQr()}
+              disabled={loading}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar QR
+            </Button>
+          </div>
+        ) : (
+          <p className="text-center">
+            <button
+              type="button"
+              className="text-[11px] font-medium text-[#737784] underline-offset-2 hover:underline"
+              onClick={() => void loadQr()}
+              disabled={loading}
+            >
+              Actualizar código
+            </button>
+          </p>
+        )}
       </section>
 
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>

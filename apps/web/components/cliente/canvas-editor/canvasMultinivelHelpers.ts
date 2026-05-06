@@ -288,7 +288,8 @@ export function budgetGroupStatusLabel(status: string | undefined): string {
   const map: Record<string, string> = {
     borrador: 'Borrador',
     listo_para_enviar: 'Listo para enviar',
-    enviado: 'Enviado',
+    enviado: 'Enviado completo',
+    enviado_parcial: 'Enviado parcial (hay pendientes)',
     respondido: 'Respondido',
   };
   return map[s] ?? status ?? 'Borrador';

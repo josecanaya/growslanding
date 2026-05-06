@@ -187,6 +187,10 @@ function LoginPageContent() {
 
     async function checkSession() {
       try {
+        if (errorParam === 'rate_limit') {
+          return;
+        }
+
         const { data, error } = await supabase.auth.getSession();
         if (!active) {
           return;
@@ -267,6 +271,7 @@ function LoginPageContent() {
       active = false;
     };
   }, [
+    errorParam,
     redirectTarget,
     router,
     supabase,
@@ -360,10 +365,6 @@ function LoginPageContent() {
         provider: 'google',
         options: {
           redirectTo: redirectToUrl,
-          queryParams: {
-            prompt: 'consent',
-            access_type: 'offline',
-          },
         },
       });
 
@@ -383,11 +384,11 @@ function LoginPageContent() {
       
       if (isRateLimit) {
         if (typeof window !== 'undefined') {
-          const rateLimitUntil = Date.now() + (5 * 60 * 1000);
+          const rateLimitUntil = Date.now() + (60 * 1000);
           localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
         }
         setStatusMessage(
-          'Se alcanzó el límite de velocidad de Supabase (429). Reintentá con Google en unos minutos o usá email y contraseña.'
+          'Se alcanzó el límite de velocidad de Supabase (429). Esperá 1 minuto y reintentá con Google, o usá email y contraseña.'
         );
         setGoogleError(null);
       } else {

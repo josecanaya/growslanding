@@ -16,7 +16,9 @@ const schema = z.object({
       tarea_id: z.string().uuid(),
       dias_reales: z.number().nullable().optional(),
       monto: z.number().nullable().optional(),
-      estado: z.enum(['PENDIENTE', 'ENVIADO']),
+      /** Texto libre guardado en `tareas_presupuestos.notas` (JSON) */
+      observacion: z.string().max(4000).nullable().optional(),
+      estado: z.enum(['PENDIENTE', 'ENVIADO', 'APROBADO']),
     })
   ).min(1),
 });
@@ -157,12 +159,6 @@ export async function POST(request: NextRequest) {
 
     for (const presupuesto of payload.presupuestos) {
       try {
-        let notasMerged: string | undefined = undefined;
-        if (presupuesto.dias_reales !== null && presupuesto.dias_reales !== undefined) {
-          const base: Record<string, unknown> = { dias_reales: presupuesto.dias_reales };
-          notasMerged = JSON.stringify(base);
-        }
-
         // Buscar si ya existe
         const { data: existente, error: existenteError } = await supabase
           .from('tareas_presupuestos')
@@ -176,19 +172,33 @@ export async function POST(request: NextRequest) {
           throw existenteError;
         }
 
-        if (presupuesto.dias_reales !== null && presupuesto.dias_reales !== undefined && existente?.notas) {
+        const baseNotas: Record<string, unknown> = {};
+        if (existente?.notas) {
           try {
             const parsed = JSON.parse(String(existente.notas));
             if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-              notasMerged = JSON.stringify({
-                ...parsed,
-                dias_reales: presupuesto.dias_reales,
-              });
+              Object.assign(baseNotas, parsed);
             }
           } catch {
-            /* mantener notasMerged solo con dias_reales */
+            /* ignorar notas no JSON */
           }
         }
+
+        if (presupuesto.dias_reales !== null && presupuesto.dias_reales !== undefined) {
+          baseNotas.dias_reales = presupuesto.dias_reales;
+        }
+
+        if (presupuesto.observacion !== undefined) {
+          const o = presupuesto.observacion?.trim() ?? '';
+          if (o) {
+            baseNotas.observacion = o;
+          } else {
+            delete baseNotas.observacion;
+          }
+        }
+
+        const notasMerged =
+          Object.keys(baseNotas).length > 0 ? JSON.stringify(baseNotas) : undefined;
 
         if (existente) {
           const patch: Record<string, unknown> = {

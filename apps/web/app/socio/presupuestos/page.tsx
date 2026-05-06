@@ -2,14 +2,14 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Loader2, Save, Send, FileText, Eye, Edit } from 'lucide-react';
+import { Loader2, Save, Send, FileText, Eye, Edit, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
 import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { EtapasButtons } from '@/components/socio/presupuestos/EtapasButtons';
-import { ResumenObra } from '@/components/socio/presupuestos/ResumenObra';
+import { ModalVerPlanos } from '@/components/socio/presupuestos/ModalVerPlanos';
 import { ListaTareas } from '@/components/socio/presupuestos/ListaTareas';
 import { ListaObras } from '@/components/socio/presupuestos/ListaObras';
 import { ListaObrasStitch } from '@/components/socio/presupuestos/ListaObrasStitch';
@@ -18,6 +18,8 @@ import { ResumenAcumulado } from '@/components/socio/presupuestos/ResumenAcumula
 import { usePresupuestos } from '@/components/socio/presupuestos/hooks/usePresupuestos';
 import { USE_MOCK_DATA, FORCE_PRESUPUESTOS_MOCK, MOCK_OBRAS_PARA_PRESUPUESTOS } from '@/lib/mocks/socioMockData';
 import { cn } from '@/lib/utils';
+import { bucketEtapaPresupuesto } from '@/lib/socio/bucketEtapaPresupuesto';
+import { presupuestoLineaEstado } from '@/lib/socio/presupuestoLineaEstado';
 
 interface ObraConPresupuestos {
   obra_id: string;
@@ -30,32 +32,13 @@ interface ObraConPresupuestos {
   stitch_estado?: 'aprobado' | 'visto' | 'enviado' | 'rechazado' | 'pendiente';
 }
 
-type PresupuestoEtapaTab = 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES';
-
-/**
- * Las tareas creadas desde el canvas (`publicar-tareas`) suelen tener `tareas.etapa` en NULL.
- * El filtro anterior exigía texto tipo "ESTRUCTURA" y ocultaba todas → pantalla vacía y sin acciones.
- */
-function bucketEtapaPresupuesto(etapaRaw: string | null | undefined): PresupuestoEtapaTab {
-  const etapa = (etapaRaw ?? '').toUpperCase().trim();
-  if (etapa.includes('GRIS') || etapa.includes('OBRA_GRIS')) {
-    return 'OBRA_GRIS';
-  }
-  if (etapa.includes('TERMINACION')) {
-    return 'TERMINACIONES';
-  }
-  if (etapa.includes('ESTRUCTURA')) {
-    return 'ESTRUCTURA';
-  }
-  return 'ESTRUCTURA';
-}
-
 function PresupuestosContent() {
   const searchParams = useSearchParams();
   const obraId = searchParams.get('obra_id');
   const { toast } = useToast();
   const currentUser = useCurrentUser();
   const presupuestosUsanMock = USE_MOCK_DATA || FORCE_PRESUPUESTOS_MOCK;
+  const stitchPresupuestoUi = presupuestosUsanMock || Boolean(obraId);
 
   const [obras, setObras] = useState<ObraConPresupuestos[]>([]);
   const [loadingObras, setLoadingObras] = useState(false);
@@ -63,10 +46,12 @@ function PresupuestosContent() {
 
   const [activeEtapa, setActiveEtapa] = useState<'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES'>('ESTRUCTURA');
   const [stagePdfPath, setStagePdfPath] = useState<string | null>(null);
+  const [planosOpen, setPlanosOpen] = useState(false);
 
   const {
     obra,
     presupuestos,
+    canvasNodes,
     editing,
     loading,
     saving,
@@ -198,7 +183,7 @@ function PresupuestosContent() {
     let totalMonto = 0;
     
     presupuestosFiltrados.forEach((p) => {
-      const editData = editing.get(p.tarea_id) || { dias_reales: null, monto: null };
+      const editData = editing.get(p.tarea_id) || { dias_reales: null, monto: null, observacion: '' };
       if (editData.dias_reales !== null && !isNaN(editData.dias_reales)) {
         totalDias += editData.dias_reales;
       }
@@ -210,8 +195,52 @@ function PresupuestosContent() {
     return { totalDias: Math.round(totalDias * 10) / 10, totalMonto };
   }, [obraId, presupuestosFiltrados, editing]);
 
+  const progresoPaqueteEtapa = useMemo(() => {
+    if (!presupuestosFiltrados.length) {
+      return { pct: 0, completas: 0, total: 0 };
+    }
+    let completas = 0;
+    presupuestosFiltrados.forEach((p) => {
+      const ed = editing.get(p.tarea_id) || { dias_reales: null, monto: null, observacion: '' };
+      const { key } = presupuestoLineaEstado(p.estado, {
+        monto: ed.monto ?? p.monto,
+        dias_reales: ed.dias_reales ?? p.dias_reales,
+      });
+      if (key === 'lista' || key === 'enviada' || key === 'aprobada') {
+        completas++;
+      }
+    });
+    const total = presupuestosFiltrados.length;
+    return {
+      pct: Math.round((completas / total) * 100),
+      completas,
+      total,
+    };
+  }, [presupuestosFiltrados, editing]);
+
+  const estadoObraPresupuestoLabel = useMemo(() => {
+    if (!presupuestosFiltrados.length) return '—';
+    if (presupuestosFiltrados.every((p) => (p.estado || '').toUpperCase() === 'APROBADO')) {
+      return 'Aprobado';
+    }
+    if (presupuestosFiltrados.every((p) => {
+      const e = (p.estado || '').toUpperCase();
+      return e === 'ENVIADO' || e === 'APROBADO';
+    })) {
+      return 'Enviado';
+    }
+    return 'Borrador';
+  }, [presupuestosFiltrados]);
+
   const hasPresupuestos = presupuestosFiltrados.length > 0;
   const showActions = hasPresupuestos;
+
+  const etapaLabelLarga =
+    activeEtapa === 'ESTRUCTURA'
+      ? 'Estructura'
+      : activeEtapa === 'OBRA_GRIS'
+        ? 'Obra gris'
+        : 'Terminaciones';
 
   // Verificar si los presupuestos ya fueron enviados o aprobados
   // Solo considerar enviados si TODOS están enviados o aprobados
@@ -340,7 +369,7 @@ function PresupuestosContent() {
     let totalMonto = 0;
     
     presupuestos.forEach((p) => {
-      const editData = editing.get(p.tarea_id) || { dias_reales: null, monto: null };
+      const editData = editing.get(p.tarea_id) || { dias_reales: null, monto: null, observacion: '' };
       if (editData.dias_reales !== null && !isNaN(editData.dias_reales)) {
         totalDias += editData.dias_reales;
       }
@@ -582,13 +611,13 @@ function PresupuestosContent() {
       <div
         className={cn(
           'flex min-h-screen items-center justify-center',
-          presupuestosUsanMock && 'bg-stitch-surface font-stitch-body',
+          stitchPresupuestoUi && 'bg-stitch-surface font-stitch-body',
         )}
       >
         <div
           className={cn(
             'flex items-center gap-2',
-            presupuestosUsanMock ? 'text-stitch-primary' : 'text-slate-500',
+            stitchPresupuestoUi ? 'text-stitch-primary' : 'text-slate-500',
           )}
         >
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -603,20 +632,20 @@ function PresupuestosContent() {
       <div
         className={cn(
           'flex min-h-screen items-center justify-center p-4',
-          presupuestosUsanMock && 'bg-stitch-surface font-stitch-body',
+          stitchPresupuestoUi && 'bg-stitch-surface font-stitch-body',
         )}
       >
         <div className="text-center">
           <h2
             className={cn(
               'text-base font-semibold',
-              presupuestosUsanMock ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
+              stitchPresupuestoUi ? 'font-stitch-headline text-stitch-primary' : 'text-slate-900',
             )}
           >
             Obra no encontrada
           </h2>
           <p
-            className={cn('mt-2 text-sm', presupuestosUsanMock ? 'text-stitch-on-surface/70' : 'text-slate-500')}
+            className={cn('mt-2 text-sm', stitchPresupuestoUi ? 'text-stitch-on-surface/70' : 'text-slate-500')}
           >
             La obra especificada no existe o no tenés acceso a ella.
           </p>
@@ -628,47 +657,106 @@ function PresupuestosContent() {
   return (
     <div
       className={cn(
-        'min-h-screen pb-32',
-        presupuestosUsanMock
-          ? 'bg-stitch-surface font-stitch-body text-stitch-on-surface'
+        'min-h-screen',
+        showActions && 'pb-[calc(var(--socio-tab-h,4.25rem)+13.5rem)]',
+        stitchPresupuestoUi
+          ? 'bg-[#f7f9fb] font-stitch-body text-stitch-on-surface'
           : 'bg-slate-50',
       )}
     >
-      {presupuestosUsanMock && (
-        <div className="px-4 pt-2">
+      {obraId && obra && (
+        <section className="border-b border-[#163274]/8 bg-white px-4 py-5">
+          <div className="mx-auto flex max-w-2xl flex-col gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#43617c]">Paquete</p>
+                <h1 className="font-stitch-headline text-xl font-extrabold leading-tight text-[#163274]">
+                  {etapaLabelLarga}
+                </h1>
+                <p className="mt-1 text-sm font-semibold text-[#191c1e]">{obra.name || 'Obra'}</p>
+                {obra.direccion_completa ? (
+                  <p className="mt-1 flex items-start gap-1 text-xs text-slate-500">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="line-clamp-2">{obra.direccion_completa}</span>
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span className="rounded-full bg-[#163274] px-3 py-1 text-center text-[10px] font-bold uppercase tracking-wide text-white">
+                  {estadoObraPresupuestoLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPlanosOpen(true)}
+                  className="text-[11px] font-bold text-[#163274] underline-offset-2 hover:underline"
+                >
+                  Ver planos
+                </button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs text-[#43617c]">
+              <span>
+                <span className="font-bold text-[#163274]">{presupuestosFiltrados.length}</span> partidas
+              </span>
+              {hasPresupuestos ? (
+                <span>
+                  Progreso{' '}
+                  <span className="font-bold tabular-nums text-[#163274]">
+                    {progresoPaqueteEtapa.completas}/{progresoPaqueteEtapa.total}
+                  </span>
+                </span>
+              ) : null}
+            </div>
+            {hasPresupuestos ? (
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full rounded-full bg-[#163274] transition-all duration-500"
+                  style={{ width: `${progresoPaqueteEtapa.pct}%` }}
+                />
+              </div>
+            ) : null}
+          </div>
+        </section>
+      )}
+
+      {hasPresupuestos && (
+        <div className="px-4 pt-4">
           <PresupuestoStitchBento
             titulo={obra.name || 'Obra'}
-            totalMonto={totalesGlobales.totalMonto}
-            totalDias={totalesGlobales.totalDias}
+            totalMonto={totales.totalMonto}
+            totalDias={totales.totalDias}
+            partidasEnEtapa={presupuestosFiltrados.length}
+            partidasCompletas={progresoPaqueteEtapa.completas}
+            estadoPaquete={estadoObraPresupuestoLabel}
+            variant={stitchPresupuestoUi ? 'stitch' : 'slate'}
+            isDemo={presupuestosUsanMock}
           />
         </div>
       )}
-
-      {/* Encabezado compacto */}
-      <ResumenObra obra={obra} stitchMode={presupuestosUsanMock} />
 
       {/* Botones de etapa */}
       <EtapasButtons
         activeEtapa={activeEtapa}
         onEtapaChange={setActiveEtapa}
         counts={etapaCounts}
-        stitchMode={presupuestosUsanMock}
+        stitchMode={stitchPresupuestoUi}
       />
 
       {/* Lista de tareas */}
       {hasPresupuestos ? (
         <ListaTareas
           presupuestos={presupuestosFiltrados}
+          canvasNodesRaw={canvasNodes}
           onFieldChange={onFieldChange}
           editing={editing}
-          stitchMode={presupuestosUsanMock}
+          stitchMode={stitchPresupuestoUi}
         />
       ) : (
         <div className="px-4 py-12 text-center">
           <p
             className={cn(
               'text-sm',
-              presupuestosUsanMock ? 'text-stitch-on-surface/70' : 'text-slate-500',
+              stitchPresupuestoUi ? 'text-stitch-on-surface/70' : 'text-slate-500',
             )}
           >
             No hay tareas para la etapa {activeEtapa.toLowerCase()}.
@@ -676,65 +764,71 @@ function PresupuestosContent() {
         </div>
       )}
 
-      {/* Resumen acumulado y botonera flotante (por encima del TabBar del layout: bottom-[90px]) */}
+      {obra && (
+        <ModalVerPlanos open={planosOpen} onClose={() => setPlanosOpen(false)} obraId={obra.id} />
+      )}
+
+      {/* Barra inferior: anclada encima del TabBar socio (variable --socio-tab-h en layout). */}
       {showActions && (
         <div
           className={cn(
-            'fixed bottom-[90px] left-0 right-0 z-20 mx-auto w-full max-w-[480px] border-t backdrop-blur-sm',
-            presupuestosUsanMock
-              ? 'border-stitch-primary/10 bg-stitch-surface-container-lowest/95 shadow-stitch-nav'
-              : 'border-slate-200 bg-white/95 shadow-[0_-4px_14px_rgba(0,0,0,0.08)]',
+            'fixed left-0 right-0 z-30 mx-auto w-full max-w-lg border-t bg-white/98 backdrop-blur-md',
+            'bottom-[var(--socio-tab-h,4.25rem)] shadow-[0_-6px_24px_rgba(22,50,116,0.08)]',
+            stitchPresupuestoUi ? 'border-[#163274]/10' : 'border-slate-200',
           )}
         >
-          {/* Resumen (días, total, cantidad) */}
           <ResumenAcumulado
             totalDias={totales.totalDias}
             totalMonto={totales.totalMonto}
             cantidadTareas={presupuestosFiltrados.length}
-            stitchMode={presupuestosUsanMock}
+            partidasCompletas={progresoPaqueteEtapa.completas}
+            partidasTotal={progresoPaqueteEtapa.total}
+            stitchMode={stitchPresupuestoUi}
           />
-          {/* Botones: Enviar presupuesto y Generar PDF siempre visibles */}
-          <div className="px-4 py-3 flex flex-col sm:flex-row gap-2 sm:flex-wrap sm:gap-3">
+          <div className="flex flex-col gap-2 px-3 pb-3 pt-0">
             {hayPendientes || !todosEnviadosOAprobados ? (
-              // Si hay pendientes o no todos están enviados/aprobados: mostrar botones de guardar, enviar y generar PDF
               <>
                 <Button
-                  variant="secondary"
-                  onClick={() => handleSaveDraft(presupuestosFiltrados)}
-                  disabled={saving}
-                  loading={saving}
-                  className="flex-1"
-                  size="sm"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Guardar borrador
-                </Button>
-                <Button
                   variant="primary"
-                  onClick={() => handleSendPresupuesto(
-                    presupuestosFiltrados,
-                    presupuestosAgrupadosPorEtapa,
-                    nombreContratista,
-                    activeEtapa // Pasar la etapa activa directamente
-                  )}
+                  onClick={() =>
+                    handleSendPresupuesto(
+                      presupuestosFiltrados,
+                      presupuestosAgrupadosPorEtapa,
+                      nombreContratista,
+                      activeEtapa,
+                    )
+                  }
                   disabled={saving}
                   loading={saving}
-                  className="flex-1"
+                  className="h-12 w-full rounded-2xl text-base font-bold"
                   size="sm"
                 >
-                  <Send className="h-4 w-4 mr-2" />
+                  <Send className="mr-2 h-4 w-4" />
                   Enviar presupuesto
                 </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleGenerarPDF}
-                  disabled={saving}
-                  className="flex-shrink-0"
-                  size="sm"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generar PDF
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleSaveDraft(presupuestosFiltrados)}
+                    disabled={saving}
+                    loading={saving}
+                    className="h-11 flex-1 rounded-xl font-semibold"
+                    size="sm"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Guardar borrador
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handleGenerarPDF}
+                    disabled={saving}
+                    className="h-11 flex-1 rounded-xl font-semibold"
+                    size="sm"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    PDF
+                  </Button>
+                </div>
               </>
             ) : (
               // Si ya se envió: mostrar botones de ver PDF y editar (si no está aprobado)

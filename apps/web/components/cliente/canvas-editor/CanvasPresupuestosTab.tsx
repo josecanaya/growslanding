@@ -8,11 +8,9 @@ import { Building2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/grows';
 import { cn } from '@/lib/utils';
 import type { CanvasBudgetGroup, CanvasNode } from '@/lib/types/canvasMultinivel';
-import {
-  budgetGroupStatusLabel,
-  canvasTaskPathTitles,
-  labelEstadoTareaFromDb,
-} from './canvasMultinivelHelpers';
+import { budgetGroupStatusLabel } from './canvasMultinivelHelpers';
+import { buildBudgetGroupHierarchyBranches } from '@/lib/canvas/budgetGroupHierarchy';
+import { BudgetGroupTaskTree } from './BudgetGroupTaskTree';
 
 type AgendaRow = {
   socio_id: string;
@@ -92,6 +90,10 @@ export function CanvasPresupuestosTab({
 
   const detailGroup = detailGroupId ? budgetGroups.find((g) => g.id === detailGroupId) ?? null : null;
   const detailTasks = detailGroupId ? tasksByGroup.get(detailGroupId) ?? [] : [];
+  const detailHierarchy = useMemo(
+    () => buildBudgetGroupHierarchyBranches(nodes, detailTasks),
+    [nodes, detailTasks],
+  );
 
   const [detailName, setDetailName] = useState('');
   const [detailSocioId, setDetailSocioId] = useState<string>('');
@@ -109,14 +111,23 @@ export function CanvasPresupuestosTab({
   }, [detailGroup]);
 
   const setEnviarResumen = (
-    j: { requestsCreated?: number; requestsSkipped?: number },
+    j: {
+      requestsCreated?: number;
+      requestsSkipped?: number;
+      partial?: boolean;
+      pendingPublish?: Array<{ canvasNodeId: string; title: string | null; motivo: string }>;
+    },
     warnings: string[],
   ) => {
     const c = Number(j.requestsCreated) || 0;
     const s = Number(j.requestsSkipped) || 0;
+    const pend = Array.isArray(j.pendingPublish) ? j.pendingPublish.length : 0;
     let msg = 'Solicitud enviada.';
     if (c + s > 0) {
       msg = `Solicitud enviada. Creadas: ${c}. Omitidas (ya existían): ${s}.`;
+    }
+    if (j.partial && pend > 0) {
+      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} que todavía no se pudieron publicar en el paquete; quedan pendientes en este mismo grupo. Cuando las corrijas y publiques, volvé a enviar para sumarlas.`;
     }
     if (warnings.length > 0) {
       msg += ` · ${warnings.slice(0, 3).join(' ')}`;
@@ -169,15 +180,19 @@ export function CanvasPresupuestosTab({
       return;
     }
     const unpublished = detailTasks.filter((t) => !tareaPublicacionByNodeId[t.id]);
-    if (unpublished.length > 0) {
-      setSendNotice(
-        'Para pedir presupuesto primero necesitamos crear las tareas operativas.',
+    const published = detailTasks.length - unpublished.length;
+    let confirmMsg =
+      '¿Enviar solicitud de presupuesto al socio seleccionado para todas las tareas publicadas de este grupo?';
+    if (unpublished.length > 0 && published > 0) {
+      confirmMsg = `Hay ${unpublished.length} tarea${unpublished.length === 1 ? '' : 's'} que todavía no están publicadas.\n\n¿Enviar ahora las ${published} listas y dejar las ${unpublished.length} restantes pendientes en este mismo grupo? Cuando las publiques, vas a poder sumarlas al paquete.`;
+    } else if (unpublished.length > 0 && published === 0) {
+      const okAll = window.confirm(
+        'Ninguna tarea de este grupo está publicada todavía. ¿Ir a guardar y publicar tareas en el canvas?',
       );
+      if (okAll) void saveCanvasSnapshotToCloud();
       return;
     }
-    const ok = window.confirm(
-      '¿Enviar solicitud de presupuesto al socio seleccionado para todas las tareas publicadas de este grupo?',
-    );
+    const ok = window.confirm(confirmMsg);
     if (!ok) return;
 
     setSendBusy(true);
@@ -197,18 +212,32 @@ export function CanvasPresupuestosTab({
         },
       );
       const j = await res.json().catch(() => ({}));
-      if (j.code === 'TAREAS_NO_PUBLICADAS') {
-        setSendNotice(
-          'Para pedir presupuesto primero necesitamos crear las tareas operativas.',
-        );
-        return;
-      }
       if (!res.ok || !j.ok) {
-        setSendNotice(typeof j.error === 'string' ? j.error : 'No se pudo enviar la solicitud.');
+        const pend = Array.isArray(j.pendingPublish) ? j.pendingPublish : [];
+        if (pend.length > 0) {
+          const lines = pend
+            .slice(0, 8)
+            .map(
+              (p: { title?: string | null; motivo?: string }) =>
+                `• ${p.title?.trim() || 'Tarea'}: ${p.motivo ?? 'Pendiente'}`,
+            )
+            .join('\n');
+          setSendNotice(
+            `${typeof j.error === 'string' ? j.error : 'No se pudo enviar.'}\n\n${lines}${pend.length > 8 ? `\n… y ${pend.length - 8} más` : ''}`,
+          );
+        } else {
+          setSendNotice(typeof j.error === 'string' ? j.error : 'No se pudo enviar la solicitud.');
+        }
         return;
       }
       if ((Number(j.requestsCreated) || 0) > 0) {
-        patchBudgetGroup(detailGroup.id, { status: 'enviado' });
+        const st =
+          typeof j.groupStatus === 'string' && j.groupStatus
+            ? j.groupStatus
+            : j.partial
+              ? 'enviado_parcial'
+              : 'enviado';
+        patchBudgetGroup(detailGroup.id, { status: st });
       }
       const w = Array.isArray(j.warnings) ? j.warnings : [];
       setEnviarResumen(j, w);
@@ -308,7 +337,7 @@ export function CanvasPresupuestosTab({
           aria-modal
           aria-label="Grupo de presupuesto"
         >
-          <div className="flex h-full w-full max-w-lg flex-col border-l border-[#e2e8f0] bg-white shadow-2xl sm:rounded-l-2xl">
+          <div className="flex h-full w-full max-w-xl flex-col border-l border-[#e2e8f0] bg-white shadow-2xl sm:rounded-l-2xl">
             <div className="flex items-center justify-between border-b border-[#eef2f6] px-5 py-4">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8a94a5]">
                 Grupo de presupuesto
@@ -337,40 +366,17 @@ export function CanvasPresupuestosTab({
 
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#001629]">
-                  Tareas incluidas
+                  Paquete · misma jerarquía que el canvas
                 </p>
-                <ul className="mt-2 space-y-2">
-                  {detailTasks.length === 0 ? (
-                    <li className="text-sm text-[#94a3b8]">Ninguna tarea en este grupo.</li>
-                  ) : (
-                    detailTasks.map((t) => {
-                      const pub = tareaPublicacionByNodeId[t.id];
-                      return (
-                        <li
-                          key={t.id}
-                          className="rounded-xl border border-[#e8edf3] bg-[#fafbfd] px-3 py-2 text-[13px]"
-                        >
-                          <p className="font-semibold text-[#001629]">{t.title}</p>
-                          <p className="text-[11px] text-[#64748b]">{canvasTaskPathTitles(nodes, t.id)}</p>
-                          <p className="mt-1 text-[11px] text-[#475569]">
-                            Duración: {Math.max(1, Math.round(t.duracionDias ?? 1))} días ·{' '}
-                            {pub ? (
-                              <span className="font-bold text-emerald-800">Publicada</span>
-                            ) : (
-                              <span className="font-bold text-slate-600">Sin publicar</span>
-                            )}
-                            {pub ? (
-                              <span className="text-[#64748b]">
-                                {' '}
-                                · Operativo: {labelEstadoTareaFromDb(pub.estado)}
-                              </span>
-                            ) : null}
-                          </p>
-                        </li>
-                      );
-                    })
-                  )}
-                </ul>
+                <p className="mt-1 text-[11px] text-[#64748b]">
+                  Fase, piso, departamento y ambiente como en el lienzo; las tareas van debajo de cada rama.
+                </p>
+                <div className="mt-3 max-h-[min(48vh,420px)] overflow-y-auto rounded-xl border border-[#eef2f6] bg-white p-3">
+                  <BudgetGroupTaskTree
+                    branches={detailHierarchy}
+                    tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+                  />
+                </div>
               </div>
 
               <div>
@@ -419,8 +425,8 @@ export function CanvasPresupuestosTab({
               {sendNotice ? (
                 <p
                   className={cn(
-                    'rounded-lg px-3 py-2 text-sm',
-                    sendNotice.includes('primero')
+                    'rounded-lg px-3 py-2 text-sm whitespace-pre-line',
+                    /publicad|publicar|Ninguna tarea|no están publicadas/i.test(sendNotice)
                       ? 'border border-amber-200 bg-amber-50 text-amber-950'
                       : 'border border-[#e2e8f0] bg-[#f8fafc] text-[#334155]',
                   )}
@@ -429,7 +435,7 @@ export function CanvasPresupuestosTab({
                 </p>
               ) : null}
 
-              {sendNotice?.includes('primero') ? (
+              {sendNotice && /publicad|publicar|Ninguna tarea/i.test(sendNotice) ? (
                 <Button
                   type="button"
                   variant="primary"

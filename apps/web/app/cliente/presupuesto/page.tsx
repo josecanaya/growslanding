@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { Route } from 'next';
+import Link from 'next/link';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
 import { PresupuestoCard } from '@/components/cliente/PresupuestoCard';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -43,6 +45,32 @@ function formatEnviado(iso: string | null) {
   }
 }
 
+type ObraBucket = {
+  key: string;
+  obraId: string | null;
+  obraNombre: string;
+  rows: Row[];
+};
+
+function resumenObra(rows: Row[]) {
+  const u = (e: string | null | undefined) => String(e ?? '').toUpperCase();
+  let pendientes = 0;
+  let aprobados = 0;
+  let otros = 0;
+  let montoAprobado = 0;
+  const socios = new Set<string>();
+  for (const r of rows) {
+    const est = u(r.estado);
+    if (est === 'ENVIADO' || est === 'PENDIENTE') pendientes++;
+    else if (est === 'APROBADO' || est === 'ACEPTADO') {
+      aprobados++;
+      if (typeof r.monto === 'number' && r.monto > 0) montoAprobado += r.monto;
+    } else otros++;
+    if (r.cuadrilla && r.cuadrilla !== '—') socios.add(r.cuadrilla);
+  }
+  return { pendientes, aprobados, otros, montoAprobado, sociosCount: socios.size };
+}
+
 export default function ClientePresupuestoPage() {
   const user = useCurrentUser();
   const [rows, setRows] = useState<Row[]>([]);
@@ -79,6 +107,27 @@ export default function ClientePresupuestoPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const buckets = useMemo(() => {
+    const m = new Map<string, ObraBucket>();
+    for (const p of rows) {
+      const key = p.obraId ?? '__sin_obra__';
+      let b = m.get(key);
+      if (!b) {
+        b = {
+          key,
+          obraId: p.obraId,
+          obraNombre: p.obraNombre?.trim() ? p.obraNombre : 'Obra sin nombre',
+          rows: [],
+        };
+        m.set(key, b);
+      }
+      b.rows.push(p);
+    }
+    return [...m.values()].sort((a, b) =>
+      a.obraNombre.localeCompare(b.obraNombre, 'es', { sensitivity: 'base' }),
+    );
+  }, [rows]);
 
   const aprobar = async (p: Row) => {
     if (!puedeResponder(p.estado) || busyId) return;
@@ -168,36 +217,96 @@ export default function ClientePresupuestoPage() {
           No hay presupuestos de tareas todavía.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((p) => {
-            const actions =
-              puedeResponder(p.estado) && p.socioId ? (
-                <>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={busyId === p.id}
-                    onClick={() => void aprobar(p)}
-                  >
-                    {busyId === p.id ? 'Procesando…' : 'Aprobar'}
-                  </Button>
-                  <Button type="button" size="sm" variant="secondary" disabled={busyId === p.id} onClick={() => void rechazar(p)}>
-                    Rechazar
-                  </Button>
-                </>
-              ) : null;
+        <div className="space-y-12">
+          {buckets.map((bucket) => {
+            const res = resumenObra(bucket.rows);
             return (
-              <div key={p.id}>
-                <PresupuestoCard
-                  titulo={p.tareaTitulo}
-                  cuadrilla={p.cuadrilla}
-                  estado={mapEstadoPresupuesto(p.estado)}
-                  monto={p.monto}
-                  enviado={formatEnviado(p.createdAt)}
-                  actions={actions}
-                />
-                <p className="mt-2 text-xs text-slate-500">Obra: {p.obraNombre}</p>
-              </div>
+              <section key={bucket.key} className="space-y-4">
+                <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h2 className="text-xl font-semibold text-slate-900">{bucket.obraNombre}</h2>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {bucket.rows.length} presupuesto{bucket.rows.length === 1 ? '' : 's'} · Pendientes de respuesta:{' '}
+                      <strong>{res.pendientes}</strong> · Aprobados: <strong>{res.aprobados}</strong>
+                      {res.montoAprobado > 0 ? (
+                        <>
+                          {' '}
+                          · Total aprobado:{' '}
+                          <strong>
+                            {new Intl.NumberFormat('es-AR', {
+                              style: 'currency',
+                              currency: 'ARS',
+                              maximumFractionDigits: 0,
+                            }).format(res.montoAprobado)}
+                          </strong>
+                        </>
+                      ) : null}
+                      {res.sociosCount > 0 ? (
+                        <>
+                          {' '}
+                          · Socios (cuadrillas distintas): <strong>{res.sociosCount}</strong>
+                        </>
+                      ) : null}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {bucket.obraId ? (
+                      <>
+                        <Link
+                          href={`/cliente/tareas/${encodeURIComponent(bucket.obraId)}/editor` as Route}
+                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                        >
+                          Abrir canvas
+                        </Link>
+                        <Link
+                          href={`/cliente/obras/${encodeURIComponent(bucket.obraId)}` as Route}
+                          className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                        >
+                          Ver obra
+                        </Link>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {bucket.rows.map((p) => {
+                    const actions =
+                      puedeResponder(p.estado) && p.socioId ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={busyId === p.id}
+                            onClick={() => void aprobar(p)}
+                          >
+                            {busyId === p.id ? 'Procesando…' : 'Aprobar'}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={busyId === p.id}
+                            onClick={() => void rechazar(p)}
+                          >
+                            Rechazar
+                          </Button>
+                        </>
+                      ) : null;
+                    return (
+                      <div key={p.id}>
+                        <PresupuestoCard
+                          titulo={p.tareaTitulo}
+                          cuadrilla={p.cuadrilla}
+                          estado={mapEstadoPresupuesto(p.estado)}
+                          monto={p.monto}
+                          enviado={formatEnviado(p.createdAt)}
+                          actions={actions}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
             );
           })}
         </div>

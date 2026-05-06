@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Award, MapPin, Phone, Mail, Settings, LogOut, Shield, FileText, TrendingUp, Bell } from 'lucide-react';
+import { Award, ChevronDown, ChevronUp, LogOut, Pencil, Settings, Bell, Shield } from 'lucide-react';
 
 import { logout } from '@/lib/auth';
-import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { SocioQrCard } from '@/components/socio/SocioQrCard';
 
 interface CuentaSectionProps {
@@ -17,208 +16,154 @@ interface CuentaSectionProps {
   };
 }
 
+type SocioContextResp = {
+  ok: boolean;
+  socio?: {
+    nombre: string | null;
+    especialidad: string | null;
+    telefono: string | null;
+    email: string | null;
+  } | null;
+};
+
 export function CuentaSection({ user }: CuentaSectionProps) {
   const router = useRouter();
-  const currentUser = useCurrentUser();
-  
-  // Datos del usuario - se cargarán desde Supabase cuando se implemente
-  const [userData, setUserData] = useState({
-    ...user,
-    email: currentUser?.email || '',
-    telefono: '',
-    ubicacion: '',
-    fechaRegistro: '',
-    obrasCompletadas: 0,
-    ingresosTotales: '$0',
-    proximoNivel: '',
-    progresoNivel: 0
-  });
-  
-  // Documentación - se cargará desde Supabase cuando se implemente
-  const [documentos, setDocumentos] = useState<Array<{
-    nombre: string;
-    tipo: 'seguro' | 'certificado' | 'art';
-    estado: 'vigente' | 'vencido' | 'por_vencer';
-    diasVencimiento?: number;
-  }>>([]);
+  const [ctx, setCtx] = useState<SocioContextResp['socio'] | null>(null);
+  const [ctxLoading, setCtxLoading] = useState(true);
+  const [masOpciones, setMasOpciones] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/socio/context', { cache: 'no-store' });
+        const data = (await res.json()) as SocioContextResp;
+        if (!cancelled && data.ok && data.socio) {
+          setCtx(data.socio);
+        }
+      } catch {
+        /* silencioso */
+      } finally {
+        if (!cancelled) setCtxLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayName = (ctx?.nombre?.trim() || user.name || 'Socio').trim();
+  const especialidad =
+    (ctx?.especialidad?.trim() ||
+      (user.level && user.level !== '—' ? user.level : null) ||
+      'Especialista en obra')?.trim() || 'Especialista en obra';
+
+  const avatarLetter = displayName.charAt(0).toUpperCase();
 
   const handleLogout = () => {
     logout({ router });
   };
 
-  const oficioLabel =
-    userData.level && userData.level !== '—' ? userData.level : 'Constructor/a — obra';
+  const irEditarPerfil = () => {
+    const el = document.getElementById('cuenta-datos-extra');
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
-    <div className="space-y-8 bg-[#f7f9fb] pb-8 font-stitch-body text-stitch-on-surface">
-      {/* Perfil compacto (ref. stitch_socio / cuenta / qr) */}
-      <section className="flex flex-col items-center text-center">
+    <div className="min-h-screen bg-[#f7f9fb] pb-[calc(var(--socio-tab-h,4.25rem)+1.25rem)] font-stitch-body text-[#191c1e]">
+      <section className="flex flex-col items-center px-4 pt-10 text-center">
         <div className="relative">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-[#d8e2ff] text-3xl font-bold text-[#163274] shadow-xl">
-            {userData.avatar}
+          <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-[#d8e2ff] text-3xl font-bold text-[#163274] shadow-xl">
+            {ctxLoading ? '…' : avatarLetter}
           </div>
-          <div className="absolute -bottom-1 -right-1 rounded-lg border-2 border-white bg-[#003473] p-1.5 text-white shadow-lg">
-            <Award className="h-3 w-3" />
+          <div className="absolute -bottom-1 -right-1 rounded-xl border-2 border-white bg-[#003473] p-2 text-white shadow-lg">
+            <Award className="h-4 w-4" />
           </div>
         </div>
-        <h2 className="mt-4 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-3xl font-extrabold tracking-tight text-[#163274]">
-          {userData.name}
+        <p className="mt-4 font-stitch-headline text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#43617c]">
+          Socio constructor
+        </p>
+        <h2 className="mt-2 font-stitch-headline text-2xl font-extrabold tracking-tight text-[#163274]">
+          {displayName}
         </h2>
-        <p className="mt-1 text-sm font-medium tracking-wide text-[#43617c]">{oficioLabel}</p>
-        {userData.fechaRegistro ? (
-          <p className="mt-2 text-xs text-[#434653]">
-            Miembro desde {new Date(userData.fechaRegistro).toLocaleDateString()}
-          </p>
-        ) : null}
+        <p className="mt-1 text-sm font-semibold text-[#43617c]">{especialidad}</p>
       </section>
 
-      <SocioQrCard fallbackDisplayName={userData.name} fallbackOficio={oficioLabel} />
-
-      {/* Información de contacto */}
-      <div className="rounded-2xl border border-[#c3c6d5]/20 bg-white p-5 shadow-[0_12px_32px_rgba(22,50,116,0.06)]">
-        <h3 className="mb-1 font-[family-name:var(--font-manrope,Manrope,sans-serif)] text-lg font-bold text-[#191c1e]">
-          Tus datos
-        </h3>
-        <p className="mb-4 text-xs text-[#434653]">
-          Completá teléfono y ubicación cuando configures tu perfil; ayudan a que te encuentren como
-          contacto de obra.
-        </p>
-        <div className="space-y-3">
-          <div className="flex items-center text-sm text-gray-600">
-            <Mail className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
-            {userData.email ? (
-              <span>{userData.email}</span>
-            ) : (
-              <span className="text-amber-800">Falta email — agregalo para recuperar tu cuenta</span>
-            )}
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Phone className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
-            {userData.telefono ? (
-              <span>{userData.telefono}</span>
-            ) : (
-              <span className="text-gray-400">Teléfono no cargado todavía</span>
-            )}
-          </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="mr-3 h-4 w-4 shrink-0 text-[#737784]" />
-            {userData.ubicacion ? (
-              <span>{userData.ubicacion}</span>
-            ) : (
-              <span className="text-gray-400">Ubicación no indicada</span>
-            )}
-          </div>
-        </div>
-        <div className="mt-5 border-t border-[#eceef0] pt-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#163274]">
-            Especialidades
-          </p>
-          <p className="mt-2 text-sm text-[#434653]">
-            Cuando el perfil avance, vas a poder listar oficios y certificaciones acá.
-          </p>
-        </div>
+      <div className="mt-10 px-4">
+        <SocioQrCard
+          fallbackDisplayName={displayName}
+          fallbackOficio={especialidad}
+          identityLayout
+        />
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-lg p-4" style={{ backgroundColor: '#1A202C' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm" style={{ color: '#A0AEC0' }}>Obras completadas</div>
-              <div className="text-2xl font-bold" style={{ color: '#FEEB70' }}>{userData.obrasCompletadas}</div>
-            </div>
-            <TrendingUp className="h-8 w-8" style={{ color: '#FEEB70' }} />
-          </div>
-        </div>
-        <div className="rounded-lg p-4" style={{ backgroundColor: '#008080' }}>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm" style={{ color: '#FFFFFF' }}>Ingresos totales</div>
-              <div className="text-2xl font-bold" style={{ color: '#FFFFFF' }}>{userData.ingresosTotales}</div>
-            </div>
-            <Award className="h-8 w-8" style={{ color: '#FFFFFF' }} />
-          </div>
-        </div>
+      <div className="mt-8 space-y-3 px-4">
+        <button
+          type="button"
+          onClick={irEditarPerfil}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#163274] py-4 text-base font-bold text-white shadow-lg transition active:scale-[0.99]"
+        >
+          <Pencil className="h-5 w-5" />
+          Editar perfil
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 bg-[#fef2f2] py-4 text-base font-bold text-red-600 transition active:scale-[0.99]"
+        >
+          <LogOut className="h-5 w-5" />
+          Cerrar sesión
+        </button>
       </div>
 
-      {/* Documentación y seguridad */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Documentación y seguridad</h3>
-        {documentos.length === 0 ? (
-          <div className="text-center py-6 text-gray-500">
-            <Shield className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-sm">No hay documentos disponibles</p>
-            <p className="text-xs text-gray-400 mt-2">Los documentos se cargarán cuando estén disponibles</p>
+      <div id="cuenta-datos-extra" className="mx-4 mt-10 scroll-mt-24 rounded-2xl border border-[#c3c6d5]/20 bg-white p-5 shadow-[0_12px_32px_rgba(22,50,116,0.06)]">
+        <button
+          type="button"
+          onClick={() => setMasOpciones((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="font-stitch-headline text-base font-bold text-[#191c1e]">Más opciones</span>
+          {masOpciones ? <ChevronUp className="h-5 w-5 text-[#163274]" /> : <ChevronDown className="h-5 w-5 text-[#163274]" />}
+        </button>
+        {masOpciones ? (
+          <div className="mt-4 space-y-4 border-t border-[#eceef0] pt-4">
+            <div className="space-y-2 text-sm text-[#434653]">
+              {ctx?.email ? (
+                <p>
+                  <span className="font-semibold text-[#163274]">Email: </span>
+                  {ctx.email}
+                </p>
+              ) : null}
+              {ctx?.telefono ? (
+                <p>
+                  <span className="font-semibold text-[#163274]">Teléfono: </span>
+                  {ctx.telefono}
+                </p>
+              ) : (
+                <p className="text-slate-500">Podés completar teléfono cuando el equipo habilite la edición en app.</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-2 rounded-xl bg-[#f2f4f6] p-3">
+              <div className="flex items-center gap-2 text-sm text-[#434653]">
+                <Settings className="h-4 w-4 shrink-0 text-[#737784]" />
+                <span>Configuración avanzada (próximamente)</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#434653]">
+                <Bell className="h-4 w-4 shrink-0 text-[#737784]" />
+                <span>Notificaciones</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#434653]">
+                <Shield className="h-4 w-4 shrink-0 text-[#737784]" />
+                <span>Privacidad y documentación</span>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {documentos.map((doc, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  {doc.tipo === 'seguro' ? (
-                    <Shield className="h-5 w-5 text-green-600 mr-3" />
-                  ) : doc.tipo === 'certificado' ? (
-                    <FileText className="h-5 w-5 text-green-600 mr-3" />
-                  ) : (
-                    <Award className="h-5 w-5 text-yellow-600 mr-3" />
-                  )}
-                  <span className="text-sm text-gray-700">{doc.nombre}</span>
-                </div>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                  doc.estado === 'vigente'
-                    ? 'bg-green-100 text-green-800'
-                    : doc.estado === 'por_vencer'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {doc.estado === 'vigente' 
-                    ? 'Vigente' 
-                    : doc.estado === 'por_vencer' && doc.diasVencimiento
-                    ? `Vence en ${doc.diasVencimiento} días`
-                    : 'Vencido'}
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="mt-2 text-xs text-[#434653]">
+            Datos de contacto, preferencias y documentación.
+          </p>
         )}
       </div>
-
-      {/* Configuración */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <h3 className="font-semibold text-gray-900 mb-3">Configuración</h3>
-        <div className="space-y-3">
-          <button className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="flex items-center">
-              <Settings className="h-5 w-5 text-gray-400 mr-3" />
-              <span className="text-sm text-gray-700">Configuración de cuenta</span>
-            </div>
-            <span className="text-gray-400">›</span>
-          </button>
-          <button className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="flex items-center">
-              <Bell className="h-5 w-5 text-gray-400 mr-3" />
-              <span className="text-sm text-gray-700">Notificaciones</span>
-            </div>
-            <span className="text-gray-400">›</span>
-          </button>
-          <button className="w-full flex items-center justify-between p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
-            <div className="flex items-center">
-              <Shield className="h-5 w-5 text-gray-400 mr-3" />
-              <span className="text-sm text-gray-700">Privacidad</span>
-            </div>
-            <span className="text-gray-400">›</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Cerrar sesión */}
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition-colors"
-      >
-        <LogOut className="h-5 w-5" />
-        <span>Cerrar sesión</span>
-      </button>
     </div>
   );
 }

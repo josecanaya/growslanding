@@ -17,16 +17,16 @@ async function selectCanvasNodesByIds(
   supabaseAny: any,
   obraId: string,
   ids: string[],
-): Promise<{ data: Array<{ id: string; type: string }> | null; error: { message: string } | null }> {
+): Promise<{ data: Array<{ id: string; type: string; title?: string | null }> | null; error: { message: string } | null }> {
   if (ids.length === 0) {
     return { data: [], error: null };
   }
-  const merged: Array<{ id: string; type: string }> = [];
+  const merged: Array<{ id: string; type: string; title?: string | null }> = [];
   for (let i = 0; i < ids.length; i += IN_FILTER_CHUNK) {
     const chunk = ids.slice(i, i + IN_FILTER_CHUNK);
     const { data, error } = await supabaseAny
       .from('canvas_nodes')
-      .select('id, type')
+      .select('id, type, title')
       .eq('obra_id', obraId)
       .in('id', chunk);
     if (error) {
@@ -254,22 +254,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (cid) canvasToTarea.set(cid, (t as { id: string }).id);
     }
 
-    const missing: string[] = [];
+    const nodeTitleById = new Map<string, string>();
     for (const nid of tareaNodeIds) {
-      if (!canvasToTarea.has(nid)) missing.push(nid);
+      const row = (nodeRows ?? []).find((n: { id: string }) => n.id === nid) as
+        | { id: string; title?: string | null }
+        | undefined;
+      nodeTitleById.set(nid, row?.title != null ? String(row.title) : '');
     }
-    if (missing.length > 0) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            'Para pedir presupuesto primero necesitamos crear las tareas operativas.',
-          code: 'TAREAS_NO_PUBLICADAS',
-          missingCanvasNodeCount: missing.length,
-        },
-        { status: 409 },
-      );
+
+    const pendingPublish: Array<{ canvasNodeId: string; title: string | null; motivo: string }> = [];
+    for (const nid of tareaNodeIds) {
+      if (!canvasToTarea.has(nid)) {
+        pendingPublish.push({
+          canvasNodeId: nid,
+          title: nodeTitleById.get(nid) || null,
+          motivo: 'Falta publicación: la tarea operativa no está creada o vinculada al nodo del canvas.',
+        });
+      }
     }
+
+    const readyNodeIds = tareaNodeIds.filter((nid) => canvasToTarea.has(nid));
 
     const notasPayload = JSON.stringify({
       canvas_budget_group_id: toClientBudgetGroupId(dbGroupId),
@@ -279,7 +283,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     let requestsCreated = 0;
     let requestsSkipped = 0;
 
-    for (const nodeId of tareaNodeIds) {
+    for (const nodeId of readyNodeIds) {
       const tareaId = canvasToTarea.get(nodeId)!;
 
       const { data: existing, error: exErr } = await supabaseAny
@@ -326,22 +330,44 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           ok: false,
           error:
             warnings[0] ??
-            (requestsSkipped > 0
-              ? 'Ya había solicitudes abiertas para todas las tareas de este grupo.'
-              : 'No se pudo crear ninguna solicitud de presupuesto.'),
+            (pendingPublish.length === tareaNodeIds.length
+              ? 'Ninguna tarea del grupo está publicada todavía. Publicá las tareas operativas y volvé a intentar.'
+              : requestsSkipped > 0
+                ? 'Ya había solicitudes abiertas para todas las tareas listas de este grupo.'
+                : 'No se pudo crear ninguna solicitud de presupuesto.'),
           warnings,
           requestsSkipped,
+          pendingPublish,
+          tasksReadyCount: readyNodeIds.length,
         },
-        { status: requestsSkipped > 0 ? 409 : 400 },
+        { status: requestsSkipped > 0 || pendingPublish.length > 0 ? 409 : 400 },
       );
     }
 
+    const groupStatus =
+      pendingPublish.length > 0 || requestsSkipped > 0 ? 'enviado_parcial' : 'enviado';
+
     if (requestsCreated > 0) {
-      const { error: stErr } = await supabaseAny
-        .from('canvas_budget_groups')
-        .update({ status: 'enviado' })
-        .eq('id', dbGroupId)
-        .eq('obra_id', obraId);
+      let stErr = (
+        await supabaseAny
+          .from('canvas_budget_groups')
+          .update({ status: groupStatus })
+          .eq('id', dbGroupId)
+          .eq('obra_id', obraId)
+      ).error;
+
+      if (stErr && groupStatus === 'enviado_parcial') {
+        warnings.push(
+          `No se pudo guardar estado «enviado_parcial» (${stErr.message}). Se usa «enviado».`,
+        );
+        stErr = (
+          await supabaseAny
+            .from('canvas_budget_groups')
+            .update({ status: 'enviado' })
+            .eq('id', dbGroupId)
+            .eq('obra_id', obraId)
+        ).error;
+      }
 
       if (stErr) {
         warnings.push(`Solicitudes creadas pero no se pudo actualizar estado del grupo: ${stErr.message}`);
@@ -353,8 +379,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       budgetGroupId: toClientBudgetGroupId(dbGroupId),
       socioId,
       tasksIncluded: tareaNodeIds.length,
+      tasksPublishedCount: readyNodeIds.length,
       requestsCreated,
       requestsSkipped,
+      pendingPublish,
+      groupStatus,
+      partial: pendingPublish.length > 0 || requestsSkipped > 0,
       warnings,
     });
   } catch (e) {

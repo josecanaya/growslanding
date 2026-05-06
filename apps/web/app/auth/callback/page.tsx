@@ -47,7 +47,7 @@ async function waitForPkcePeer(
     await new Promise((r) => setTimeout(r, intervalMs));
   }
 
-  await supabase.auth.getSession();
+  return;
 }
 
 function CallbackPageContent() {
@@ -99,68 +99,65 @@ function CallbackPageContent() {
           } else {
             sessionStorage.setItem(pkceKey, "running");
             try {
-              const { data: existingBefore } = await supabase.auth.getSession();
-              if (!existingBefore.session) {
-                const { error: exchangeError } =
-                  await supabase.auth.exchangeCodeForSession(code);
+              const { error: exchangeError } =
+                await supabase.auth.exchangeCodeForSession(code);
 
-                if (exchangeError) {
-                  console.error(
-                    "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
-                    exchangeError,
+              if (exchangeError) {
+                console.error(
+                  "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
+                  exchangeError,
+                );
+
+                const isRateLimit =
+                  exchangeError.message?.toLowerCase().includes("rate limit") ||
+                  exchangeError.message?.toLowerCase().includes("too many requests") ||
+                  exchangeError.status === 429;
+
+                if (isRateLimit) {
+                  console.warn(
+                    "[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login",
                   );
-
-                  const isRateLimit =
-                    exchangeError.message?.toLowerCase().includes("rate limit") ||
-                    exchangeError.message?.toLowerCase().includes("too many requests") ||
-                    exchangeError.status === 429;
-
-                  if (isRateLimit) {
-                    console.warn(
-                      "[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login",
-                    );
-                    sessionStorage.removeItem(pkceKey);
-                    const rateLimitUntil = Date.now() + 20 * 60 * 1000;
-                    localStorage.setItem(
-                      "supabase_rate_limit_until",
-                      rateLimitUntil.toString(),
-                    );
-                    if (active) {
-                      router.replace("/auth/login?error=rate_limit" as Route);
-                    }
-                    return;
-                  }
-
-                  const errMsg = (exchangeError.message ?? "").toLowerCase();
-                  const isPkceError =
-                    errMsg.includes("code verifier") ||
-                    errMsg.includes("code_verifier") ||
-                    errMsg.includes("both auth code and code verifier") ||
-                    errMsg.includes("should be non-empty");
-
                   sessionStorage.removeItem(pkceKey);
-
-                  if (isPkceError) {
-                    const loginPath =
-                      "/auth/login?error=pkce_error" +
-                      (redirectTarget
-                        ? `&redirect=${encodeURIComponent(redirectTarget)}`
-                        : "");
-                    if (active) {
-                      router.replace(loginPath as Route);
-                    }
-                    return;
-                  }
-
-                  console.error(
-                    "[OAUTH_CALLBACK] Error OAuth no manejado:",
-                    exchangeError,
+                  const rateLimitUntil = Date.now() + 60 * 1000;
+                  localStorage.setItem(
+                    "supabase_rate_limit_until",
+                    rateLimitUntil.toString(),
                   );
                   if (active) {
-                    router.replace("/auth/login?error=oauth_failed" as Route);
+                    router.replace("/auth/login?error=rate_limit" as Route);
                   }
                   return;
                 }
+
+                const errMsg = (exchangeError.message ?? "").toLowerCase();
+                const isPkceError =
+                  errMsg.includes("code verifier") ||
+                  errMsg.includes("code_verifier") ||
+                  errMsg.includes("both auth code and code verifier") ||
+                  errMsg.includes("should be non-empty");
+
+                sessionStorage.removeItem(pkceKey);
+
+                if (isPkceError) {
+                  const loginPath =
+                    "/auth/login?error=pkce_error" +
+                    (redirectTarget
+                      ? `&redirect=${encodeURIComponent(redirectTarget)}`
+                      : "");
+                  if (active) {
+                    router.replace(loginPath as Route);
+                  }
+                  return;
+                }
+
+                console.error(
+                  "[OAUTH_CALLBACK] Error OAuth no manejado:",
+                  exchangeError,
+                );
+                if (active) {
+                  router.replace("/auth/login?error=oauth_failed" as Route);
+                }
+                return;
               }
               sessionStorage.setItem(pkceKey, "done");
             } catch (e) {
@@ -185,7 +182,7 @@ function CallbackPageContent() {
             sessionError.status === 429;
           if (isRateLimit) {
             if (typeof window !== 'undefined') {
-              const rateLimitUntil = Date.now() + (20 * 60 * 1000);
+              const rateLimitUntil = Date.now() + (60 * 1000);
               localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
             }
             router.replace("/auth/login?error=rate_limit" as Route);
@@ -239,20 +236,7 @@ function CallbackPageContent() {
 
             if (result.success) {
               console.log('[OAUTH_CALLBACK] CLIENTE_TECNICO configurado correctamente');
-              // Recargar sesión para obtener el rol actualizado
-              const { data: newSession } = await supabase.auth.getSession();
-              if (newSession.session) {
-                const newRole = normalizeRole(
-                  (newSession.session.user.app_metadata as Record<string, unknown> | undefined)?.role ??
-                  (newSession.session.user.user_metadata as Record<string, unknown> | undefined)?.role
-                );
-                if (newRole) {
-                  const target = redirectTarget ?? getDefaultRouteForRole(newRole);
-                  router.replace(target as Route);
-                  return;
-                }
-              }
-              // Si no se pudo obtener el nuevo rol, redirigir de todas formas
+              // Evitar más lecturas de sesión acá para no disparar rate-limit en local.
               const target = redirectTarget ?? '/cliente/dashboard';
               router.replace(target as Route);
               return;

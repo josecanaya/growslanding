@@ -22,10 +22,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { SlideToConfirm } from '@/components/socio/SlideToConfirm';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/grows/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChecklistModal } from '@/components/socio/ChecklistModal';
@@ -90,6 +87,7 @@ export function AhoraSection() {
   const [showModalFinalizarSubtarea, setShowModalFinalizarSubtarea] = useState(false);
   const [tareasActivasCount, setTareasActivasCount] = useState(0);
   const [bloquesActivosCount, setBloquesActivosCount] = useState(0);
+  const [bloquesLista, setBloquesLista] = useState<Array<{ id: string; orden: number; estado: string }>>([]);
 
   // Helper para manejar errores de API y mostrar toasts
   const handleApiError = (error: any, defaultMessage: string) => {
@@ -1845,6 +1843,40 @@ export function AhoraSection() {
   const isTareaEnProgreso = tareaActual?.estado?.toLowerCase() === 'en_ejecucion' || 
                             tareaActual?.estado?.toLowerCase() === 'en_progreso';
 
+  useEffect(() => {
+    if (USE_MOCK_DATA) {
+      setBloquesLista(
+        Array.from({ length: 12 }, (_, i) => ({
+          id: `mock-${i}`,
+          orden: i + 1,
+          estado: i < 2 ? 'finalizada' : i === 2 ? 'en_progreso' : 'pendiente',
+        })),
+      );
+      return;
+    }
+    const tid = subtareaActual?.tarea_id as string | undefined;
+    if (!tid) {
+      setBloquesLista([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select('id, estado, orden')
+        .eq('tarea_id', tid)
+        .order('orden', { ascending: true });
+      if (!cancelled) {
+        setBloquesLista(
+          (data as Array<{ id: string; orden: number; estado: string }> | null) || [],
+        );
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [subtareaActual?.tarea_id, supabase]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -1867,9 +1899,6 @@ export function AhoraSection() {
     );
   }
 
-  // Obtener inicial del nombre
-  const inicialNombre = currentUser?.name?.[0]?.toUpperCase() || currentUser?.email?.[0]?.toUpperCase() || 'S';
-  
   // Determinar texto del CTA principal
   const getCTAText = () => {
     if (subtareaActual) {
@@ -1939,276 +1968,238 @@ export function AhoraSection() {
     return isIniciando || isFinalizando;
   };
 
+  const jornadaEstadoLabel = !jornadaActual
+    ? 'Listo para empezar'
+    : subtareaActual?.estado === 'en_progreso' || isTareaEnProgreso
+      ? 'En progreso'
+      : 'Jornada activa';
+
+  const bloqueCardClass = (estado: string) => {
+    const e = (estado || '').toLowerCase();
+    if (e === 'finalizada' || e === 'validada' || e === 'validado')
+      return 'border-[#163274]/15 bg-[#f2f4f6] text-[#43617c]';
+    if (e === 'en_progreso') return 'border-[#163274]/40 bg-white text-[#163274] ring-1 ring-[#163274]/20';
+    return 'border-slate-100 bg-white text-slate-500';
+  };
 
   return (
     <div
-      className={`ahora-container min-h-screen bg-stitch-surface pb-24 font-stitch-body transition-colors duration-1000 md:pb-8 ${isIniciando ? 'bg-amber-50/80' : isFinalizando ? 'bg-emerald-50/80' : ''}`}
+      className={`ahora-container min-h-screen bg-[#f7f9fb] pb-[calc(var(--socio-tab-h,4.25rem)+1rem)] font-stitch-body md:pb-8 ${isIniciando ? 'bg-amber-50/80' : isFinalizando ? 'bg-[#f2f4f6]' : ''}`}
     >
-      {/* Saludo (ref. jornada activa / continuar trabajos Stitch) */}
-      <div className="px-4 pb-2 pt-4">
-        <h1 className="font-stitch-headline text-2xl font-extrabold tracking-tight text-stitch-on-surface">
+      {/* Hero jornada (referencia _02_ahora: saludo + estado) */}
+      <div className="px-5 pb-2 pt-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#43617c]">Tu jornada de hoy</p>
+        <h1 className="mt-1 font-stitch-headline text-3xl font-extrabold tracking-tight text-[#163274]">
           Hola,{' '}
           {currentUser?.name?.split(' ')[0] ||
             currentUser?.email?.split('@')[0] ||
             'socio'}
         </h1>
-        <p className="mt-1 text-base text-stitch-on-surface/70">Tu jornada de hoy</p>
+        <p className="mt-2 inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#43617c] shadow-sm ring-1 ring-[#163274]/10">
+          {jornadaEstadoLabel}
+        </p>
       </div>
 
-      {/* 2. HERO PRINCIPAL - Card grande estilo mapa Uber */}
+      {/* Card principal tipo stitch: bloque azul + CTA blanco */}
       {subtareaActual ? (
-        <div className="mx-4 mt-4 mb-4">
-          <Card className="overflow-hidden rounded-2xl shadow-lg">
-            <CardContent className="bg-gradient-to-br from-stitch-primary/10 to-stitch-primary-container/15 p-6">
-              {/* Estado */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  subtareaActual.estado === 'en_progreso' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                }`}></div>
-                <Badge variant={subtareaActual.estado === 'en_progreso' ? 'info' : subtareaActual.estado === 'para_validar' ? 'info' : subtareaActual.estado === 'validado' || subtareaActual.estado === 'validada' ? 'success' : 'warning'}>
+        <div className="mx-4 mt-5">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#163274] to-[#0a1f4a] px-5 pb-6 pt-6 text-center text-white shadow-[0_20px_50px_rgba(22,50,116,0.25)]">
+            <div className="relative z-10 flex flex-col items-center gap-5">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    subtareaActual.estado === 'en_progreso' ? 'bg-white animate-pulse' : 'bg-amber-300'
+                  }`}
+                />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">
                   {getEstadoSubtareaLabel(subtareaActual.estado)}
-                </Badge>
+                </span>
               </div>
-
-              {/* Nombre de la tarea/subtarea */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              {subtareaActual.tareas?.obras?.name ? (
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/70">
+                  {subtareaActual.tareas.obras.name}
+                </p>
+              ) : null}
+              <h2 className="font-stitch-headline text-2xl font-extrabold leading-tight">
                 {subtareaActual.tareas?.title || 'Tarea del día'}
               </h2>
-
-              {/* Información principal */}
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                    <FileText className="h-4 w-4 text-[#276EF1]" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Cantidad</p>
-                    <p className="font-semibold text-gray-900">
-                      {subtareaActual.cantidad} {subtareaActual.unidad || 'unidades'}
-                    </p>
-                  </div>
-                </div>
-
-                {subtareaActual.tareas?.obras?.address && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <MapPin className="h-4 w-4 text-[#276EF1]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Ubicación</p>
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {subtareaActual.tareas.obras.address}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {totalSubtareas > 0 && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <CheckCircle className="h-4 w-4 text-[#276EF1]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Avance del día</p>
-                      <p className="font-semibold text-gray-900">
-                        Subtarea {subtareaActual.orden} de {totalSubtareas}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : tareaActual ? (
-        // Modo compatibilidad: mostrar tarea completa si no hay subtareas
-        <div className="mx-4 mt-4 mb-4">
-          <Card className="overflow-hidden rounded-2xl shadow-lg">
-            <CardContent className="bg-gradient-to-br from-stitch-primary/10 to-stitch-primary-container/15 p-6">
-              {/* Estado */}
-              <div className="flex items-center gap-2 mb-3">
-                <div className={`w-2 h-2 rounded-full ${
-                  isTareaEnProgreso ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
-                }`}></div>
-                <Badge variant={isTareaEnProgreso ? 'info' : 'warning'}>
-                  {isTareaEnProgreso ? 'En curso' : 'Pendiente'}
-                </Badge>
-              </div>
-
-              {/* Nombre de la tarea */}
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                {tareaActual.title || 'Tarea del día'}
-              </h2>
-
-              {/* Información principal */}
-              <div className="space-y-3 mb-4">
-                {tareaActual.elemento?.cantidad && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <FileText className="h-4 w-4 text-[#276EF1]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Cantidad</p>
-                      <p className="font-semibold text-gray-900">
-                        {tareaActual.elemento.cantidad} {tareaActual.elemento.unidad || 'unidades'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {tareaActual.obras?.address && (
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <MapPin className="h-4 w-4 text-[#276EF1]" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Ubicación</p>
-                      <p className="font-semibold text-gray-900 text-sm">
-                        {tareaActual.obras.address}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ) : (
-        <div className="mx-4 mt-4 mb-4">
-          <Card className="rounded-2xl shadow-lg">
-            <CardContent className="p-8 text-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">No hay tareas asignadas</h2>
-              <p className="text-gray-600">No tenés tareas asignadas en este momento</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* 3. CTA PRINCIPAL - Botón gigante estilo Uber */}
-      {(subtareaActual || tareaActual) && (
-        <div className="px-4 mb-4">
-          <button
-            onClick={handleCTAClick}
-            disabled={isCTADisabled()}
-            className="w-full bg-[#276EF1] text-white py-5 px-6 rounded-2xl font-bold text-lg shadow-lg hover:bg-[#1e5dd9] transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
-          >
-            {isIniciando ? 'Iniciando...' : isFinalizando ? 'Finalizando...' : getCTAText()}
-          </button>
-        </div>
-      )}
-
-      {/* 4. BLOQUE GUÍA - Estadísticas */}
-      <div className="px-4 mb-4">
-        <div className="bg-gray-50 rounded-xl p-4">
-          {tareasProgramadasHoy > 0 ? (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Tenés {tareasProgramadasHoy} {subtareaActual ? 'subtareas' : 'tareas'} pendientes</p>
-                <p className="text-sm font-semibold text-green-600 mt-1">
-                  Completaste {tareasCompletadasHoy} {subtareaActual ? 'subtareas' : 'tareas'}
+              {subtareaActual.tareas?.obras?.address ? (
+                <p className="flex items-center justify-center gap-1.5 text-sm text-white/75">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span className="line-clamp-2">{subtareaActual.tareas.obras.address}</span>
                 </p>
-              </div>
-              {tareasCompletadasHoy === tareasProgramadasHoy && tareasProgramadasHoy > 0 && (
-                <CheckCircle className="h-8 w-8 text-green-500" />
+              ) : null}
+              {totalSubtareas > 0 ? (
+                <p className="text-sm font-medium text-white/85">
+                  Bloque {subtareaActual.orden} de {totalSubtareas}
+                </p>
+              ) : null}
+              {(subtareaActual || tareaActual) && (
+                <button
+                  type="button"
+                  onClick={handleCTAClick}
+                  disabled={isCTADisabled()}
+                  className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
+                >
+                  {isIniciando ? 'Iniciando…' : isFinalizando ? 'Finalizando…' : getCTAText()}
+                </button>
               )}
             </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <CheckCircle className="h-6 w-6 text-green-500" />
-              <p className="text-sm text-gray-600">No hay tareas pendientes</p>
+          </div>
+        </div>
+      ) : tareaActual ? (
+        <div className="mx-4 mt-5">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#163274] to-[#0a1f4a] px-5 pb-6 pt-6 text-center text-white shadow-[0_20px_50px_rgba(22,50,116,0.25)]">
+            <div className="relative z-10 flex flex-col items-center gap-5">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+                <span
+                  className={`h-2 w-2 rounded-full ${isTareaEnProgreso ? 'bg-white animate-pulse' : 'bg-amber-300'}`}
+                />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-white/90">
+                  {isTareaEnProgreso ? 'En curso' : 'Pendiente'}
+                </span>
+              </div>
+              {tareaActual.obras?.name ? (
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/70">{tareaActual.obras.name}</p>
+              ) : null}
+              <h2 className="font-stitch-headline text-2xl font-extrabold leading-tight">{tareaActual.title || 'Tarea'}</h2>
+              {tareaActual.obras?.address ? (
+                <p className="flex items-center justify-center gap-1.5 text-sm text-white/75">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span className="line-clamp-2">{tareaActual.obras.address}</span>
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleCTAClick}
+                disabled={isCTADisabled()}
+                className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
+              >
+                {isIniciando ? 'Iniciando…' : isFinalizando ? 'Finalizando…' : getCTAText()}
+              </button>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* 5. NOTIFICACIÓN DEL ESTADO - Banner */}
-      {subtareaActual && (subtareaActual.estado === 'finalizada' || subtareaActual.estado === 'validada') && (
-        <div className="mx-4 mb-4">
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-            <p className="text-sm text-green-800 font-medium">
-              Subtarea finalizada. Comenzá la siguiente.
-            </p>
           </div>
         </div>
-      )}
-      
-      {!subtareaActual && tareasProgramadasHoy > 0 && (
-        <div className="mx-4 mb-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
-            <p className="text-sm text-blue-800 font-medium">
-              Tenés tareas pendientes.
-            </p>
-          </div>
+      ) : (
+        <div className="mx-4 mt-5 rounded-3xl border border-[#163274]/10 bg-white p-8 text-center shadow-sm">
+          <CheckCircle className="mx-auto mb-3 h-14 w-14 text-[#163274]/40" />
+          <h2 className="font-stitch-headline text-lg font-bold text-[#163274]">No hay tareas asignadas</h2>
+          <p className="mt-2 text-sm text-[#434653]">Cuando te asignen trabajo, lo vas a ver acá.</p>
         </div>
       )}
 
-      {/* Modales */}
-      <div className="px-4 mb-4">
-        <div className="grid grid-cols-2 gap-3">
-          {/* Checklist */}
+      {/* Acciones secundarias: fila compacta */}
+      {(subtareaActual || tareaActual) && (
+        <div className="mx-4 mt-5 flex flex-wrap gap-2">
           <button
+            type="button"
             onClick={() => setShowChecklist(true)}
             disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
-            className="flex flex-col items-center justify-center w-full h-24 rounded-2xl bg-yellow-50 hover:bg-yellow-100 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#163274]/12 bg-white px-3 py-2.5 text-xs font-bold text-[#163274] shadow-sm disabled:opacity-40"
           >
-            <div className="w-12 h-12 rounded-full bg-yellow-200 flex items-center justify-center mb-2">
-              <CheckSquare className="h-6 w-6 text-yellow-700" />
-            </div>
-            <span className="text-xs font-semibold text-yellow-900">Checklist</span>
+            <CheckSquare className="h-4 w-4" />
+            Checklist
           </button>
-
-          {/* Planos */}
           <button
-            onClick={() => {
-              const obraId = subtareaActual?.tareas?.obra_id || tareaActual?.obra_id;
-              if (obraId) {
-                router.push(`/socio/planos/${obraId}` as any);
-              } else {
-                setShowPlanos(true);
-              }
-            }}
-            disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
-            className="flex flex-col items-center justify-center w-full h-24 rounded-2xl bg-blue-50 hover:bg-blue-100 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-          >
-            <div className="w-12 h-12 rounded-full bg-blue-200 flex items-center justify-center mb-2">
-              <FileText className="h-6 w-6 text-blue-700" />
-            </div>
-            <span className="text-xs font-semibold text-blue-900">Planos</span>
-          </button>
-
-          {/* Chat */}
-          <button
-            onClick={() => setShowChat(true)}
-            disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
-            className="flex flex-col items-center justify-center w-full h-24 rounded-2xl bg-gray-100 hover:bg-gray-200 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
-          >
-            <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center mb-2">
-              <MessageSquare className="h-6 w-6 text-gray-700" />
-            </div>
-            <span className="text-xs font-semibold text-gray-900">Chat</span>
-          </button>
-
-          {/* Evidencias */}
-          <button
+            type="button"
             onClick={() => setShowEvidencias(true)}
             disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
-            className="flex flex-col items-center justify-center w-full h-24 rounded-2xl bg-green-50 hover:bg-green-100 transition-all shadow-sm disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#163274]/12 bg-white px-3 py-2.5 text-xs font-bold text-[#163274] shadow-sm disabled:opacity-40"
           >
-            <div className="w-12 h-12 rounded-full bg-green-200 flex items-center justify-center mb-2">
-              <Camera className="h-6 w-6 text-green-700" />
-            </div>
-            <span className="text-xs font-semibold text-green-900">Evidencias</span>
+            <Camera className="h-4 w-4" />
+            Evidencias
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const obraId = subtareaActual?.tareas?.obra_id || tareaActual?.obra_id;
+              if (obraId) router.push(`/socio/planos/${obraId}` as any);
+              else setShowPlanos(true);
+            }}
+            disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
+            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#163274]/12 bg-white px-3 py-2.5 text-xs font-bold text-[#163274] shadow-sm disabled:opacity-40"
+          >
+            <FileText className="h-4 w-4" />
+            Planos
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowChat(true)}
+            disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
+            className="flex min-h-[44px] flex-1 basis-[100%] items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-[#f2f4f6] px-3 py-2.5 text-xs font-semibold text-[#43617c] disabled:opacity-40 sm:basis-auto"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Chat obra
           </button>
         </div>
+      )}
+
+      {/* Bloques del día — cards limpias */}
+      {subtareaActual && bloquesLista.length > 0 && (
+        <div className="mx-4 mt-6">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#43617c]">Bloques del día</p>
+          <div className="space-y-2">
+            {bloquesLista.map((b) => {
+              const e = (b.estado || '').toLowerCase();
+              const label =
+                e === 'finalizada' || e === 'validada' || e === 'validado'
+                  ? 'Completada'
+                  : e === 'en_progreso'
+                    ? 'En progreso'
+                    : 'Pendiente';
+              return (
+                <div
+                  key={b.id}
+                  className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${bloqueCardClass(b.estado)}`}
+                >
+                  <span className="text-sm font-bold text-[#163274]">Bloque {b.orden}</span>
+                  <span className="text-xs font-semibold text-[#43617c]">{label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Resumen corto */}
+      <div className="mx-4 mt-6 rounded-2xl border border-[#163274]/10 bg-white p-4 shadow-sm">
+        {tareasProgramadasHoy > 0 ? (
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm text-[#434653]">
+                {subtareaActual ? 'Subtareas' : 'Tareas'} pendientes:{' '}
+                <span className="font-bold text-[#163274]">{tareasProgramadasHoy}</span>
+              </p>
+              <p className="mt-1 text-xs text-[#43617c]">
+                Completaste{' '}
+                <span className="font-semibold text-[#163274]">{tareasCompletadasHoy}</span>
+              </p>
+            </div>
+            {avanceDiario > 0 && <Progress value={avanceDiario} className="h-2 w-28" />}
+          </div>
+        ) : (
+          <p className="text-center text-sm text-[#434653]">No hay ítems pendientes en el contador de hoy.</p>
+        )}
       </div>
 
-      {/* Botón Finalizar jornada - Solo si hay jornada activa */}
+      {subtareaActual && (subtareaActual.estado === 'finalizada' || subtareaActual.estado === 'validada') && (
+        <div className="mx-4 mt-4 rounded-2xl border border-[#163274]/15 bg-[#d8e2ff]/30 p-4">
+          <p className="text-center text-sm font-medium text-[#163274]">
+            Bloque listo. Continuá con el siguiente cuando corresponda.
+          </p>
+        </div>
+      )}
+
+      {!subtareaActual && tareasProgramadasHoy > 0 && (
+        <div className="mx-4 mt-4 rounded-2xl border border-[#163274]/10 bg-white p-4 shadow-sm">
+          <p className="text-center text-sm text-[#434653]">Tenés trabajo pendiente en tu lista.</p>
+        </div>
+      )}
+
       {jornadaActual && !jornadaActual.hora_fin && (
-        <div className="px-4 mb-4">
+        <div className="mx-4 mt-6">
           <button
+            type="button"
             onClick={async () => {
               if (!jornadaActual?.id) return;
               try {
@@ -2216,9 +2207,9 @@ export function AhoraSection() {
                   .from('jornadas_socio')
                   .update({ hora_fin: new Date().toISOString() })
                   .eq('id', jornadaActual.id);
-                
+
                 if (error) throw error;
-                
+
                 const hoy = new Date();
                 hoy.setHours(0, 0, 0, 0);
                 const hoyISO = hoy.toISOString().split('T')[0];
@@ -2233,7 +2224,7 @@ export function AhoraSection() {
                 setError('Error al finalizar jornada');
               }
             }}
-            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors"
+            className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 text-sm font-semibold text-[#43617c] transition hover:bg-[#f2f4f6]"
           >
             Finalizar jornada
           </button>

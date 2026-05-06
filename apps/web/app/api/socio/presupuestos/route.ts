@@ -191,6 +191,7 @@ export async function GET(request: NextRequest) {
           fecha_inicio: '2024-01-01',
         },
         presupuestos: [],
+        canvas_nodes: [],
         devMode: true,
       });
     }
@@ -268,7 +269,8 @@ export async function GET(request: NextRequest) {
           ef,
           fecha_inicio_estimada,
           fecha_fin_estimada,
-          elemento_id
+          elemento_id,
+          canvas_node_id
         )
       `)
       .eq('socio_id', socioId);
@@ -288,6 +290,7 @@ export async function GET(request: NextRequest) {
           fecha_inicio: obraTyped.created_at || obraTyped.fecha_inicio || null,
         },
         presupuestos: [],
+        canvas_nodes: [],
       });
     }
 
@@ -315,6 +318,24 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const { data: canvasNodesData, error: canvasNodesError } = await (supabase as unknown as any)
+      .from('canvas_nodes')
+      .select('id, parent_id, type, title, created_at, metadata')
+      .eq('obra_id', obraId);
+
+    if (canvasNodesError) {
+      console.warn('[PRESUPUESTOS_GET] canvas_nodes:', canvasNodesError);
+    }
+
+    const canvas_nodes = (canvasNodesData ?? []) as Array<{
+      id: string;
+      parent_id: string | null;
+      type: string;
+      title: string;
+      created_at: string;
+      metadata?: Record<string, unknown> | null;
+    }>;
+
     // Procesar presupuestos y calcular duración sugerida
     const presupuestos = presupuestosFiltrados.map((p: any) => {
       // Calcular duración sugerida
@@ -330,13 +351,17 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Extraer dias_reales de notas si existe (formato JSON)
+      // Extraer dias_reales y observacion de notas si existe (formato JSON)
       let diasReales: number | null = null;
+      let observacion: string | null = null;
       if (p.notas) {
         try {
           const notasParsed = JSON.parse(p.notas);
           if (typeof notasParsed.dias_reales === 'number') {
             diasReales = notasParsed.dias_reales;
+          }
+          if (typeof notasParsed.observacion === 'string' && notasParsed.observacion.trim()) {
+            observacion = notasParsed.observacion.trim();
           }
         } catch {
           // Si no es JSON, ignorar
@@ -354,6 +379,7 @@ export async function GET(request: NextRequest) {
         tarea_id: p.tarea_id,
         estado: p.estado || 'PENDIENTE',
         dias_reales: diasReales,
+        observacion,
         monto: p.monto,
         created_at: p.created_at || null,
         updated_at: p.updated_at || null,
@@ -364,6 +390,7 @@ export async function GET(request: NextRequest) {
           es: p.tareas.es,
           ef: p.tareas.ef,
           duracion_sugerida: duracionSugerida,
+          canvas_node_id: p.tareas.canvas_node_id ?? null,
         } : null,
         elemento: elemento ? {
           id: elemento.id,
@@ -396,6 +423,7 @@ export async function GET(request: NextRequest) {
           fecha_inicio: obraTyped.created_at || obraTyped.fecha_inicio || null,
         },
         presupuestos,
+        canvas_nodes,
       });
   } catch (error) {
     console.error('[PRESUPUESTOS_GET] Error:', error);

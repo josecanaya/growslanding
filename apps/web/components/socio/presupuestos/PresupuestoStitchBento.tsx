@@ -1,53 +1,94 @@
-'use client';
-
-import { Clock, Wallet } from 'lucide-react';
-import { formatPesos, formatArgentineNumber } from '@/lib/utils/format';
-
-/** Ref. bento superior de `presupuestos_responsive_budget_detail` (totales aproximados) */
-export function PresupuestoStitchBento({
-  titulo,
-  totalMonto,
-  totalDias,
-}: {
-  titulo: string;
-  totalMonto: number;
-  totalDias: number;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div className="flex min-h-[160px] flex-col justify-between rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container p-6 text-stitch-on-primary shadow-xl shadow-stitch-primary/10">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Total estimado</span>
-          <div className="mt-1 font-stitch-headline text-4xl font-black tabular-nums">
-            {formatPesos(totalMonto)}
-          </div>
-        </div>
-        <div className="mt-4 flex items-center gap-2 opacity-90">
-          <Clock className="h-5 w-5" />
-          <span className="text-sm font-bold">Tiempo: {formatArgentineNumber(totalDias)} días</span>
-        </div>
-      </div>
-      <div className="flex flex-col gap-4 rounded-xl bg-stitch-surface-container-lowest p-6">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-stitch-on-surface/70">
-          Alcance (demo)
-        </h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between font-medium text-stitch-on-surface/80">
-            <span>Obra</span>
-            <span className="line-clamp-1 max-w-[55%] text-right font-bold text-stitch-primary">
-              {titulo}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-stitch-on-surface/70">Partidas en etapa</span>
-            <span className="font-bold text-stitch-primary">—</span>
-          </div>
-        </div>
-        <div className="mt-auto flex items-center gap-2 rounded-lg bg-stitch-surface-container-low p-2 text-xs text-stitch-on-surface/70">
-          <Wallet className="h-4 w-4 shrink-0 text-stitch-primary" />
-          Valores editables abajo; envío en demo no guarda.
-        </div>
-      </div>
-    </div>
-  );
-}
+'use client';
+
+import { Clock, Wallet } from 'lucide-react';
+import { formatPesos, formatArgentineNumber } from '@/lib/utils/format';
+import { cn } from '@/lib/utils';
+
+type BentoVariant = 'stitch' | 'slate';
+
+export type PresupuestoStitchBentoProps = {
+  titulo: string;
+  totalMonto: number;
+  totalDias: number;
+  partidasEnEtapa?: number;
+  partidasCompletas?: number;
+  estadoPaquete?: string;
+  variant?: BentoVariant;
+  isDemo?: boolean;
+};
+
+/** Resumen único tipo dashboard (mobile-first, sin rejilla recargada). */
+export function PresupuestoStitchBento({
+  titulo,
+  totalMonto,
+  totalDias,
+  partidasEnEtapa,
+  partidasCompletas,
+  estadoPaquete,
+  variant = 'stitch',
+  isDemo = false,
+}: PresupuestoStitchBentoProps) {
+  const stitch = variant === 'stitch';
+  const total = partidasEnEtapa ?? 0;
+  const ok = partidasCompletas ?? 0;
+
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-3xl border shadow-[0_12px_40px_rgba(22,50,116,0.08)]',
+        stitch ? 'border-[#163274]/12 bg-white' : 'border-slate-200 bg-white',
+      )}
+    >
+      <div
+        className={cn(
+          'px-5 py-4 text-white',
+          stitch ? 'bg-gradient-to-br from-[#163274] to-[#314a8d]' : 'bg-slate-800',
+        )}
+      >
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-85">Total presupuesto (etapa)</p>
+        <p className={cn('mt-1 text-3xl font-black tabular-nums', stitch && 'font-stitch-headline')}>
+          {formatPesos(totalMonto)}
+        </p>
+        <div className="mt-3 flex items-center gap-2 text-sm font-semibold opacity-95">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span>Plazo acumulado: {formatArgentineNumber(totalDias)} días</span>
+        </div>
+      </div>
+      <div className={cn('space-y-3 px-5 py-4 text-sm', stitch ? 'text-[#434653]' : 'text-slate-600')}>
+        <div className="flex justify-between gap-3">
+          <span className="text-xs font-medium text-slate-500">Obra</span>
+          <span className="max-w-[60%] truncate text-right font-bold text-[#163274]">{titulo}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-xs font-medium text-slate-500">Partidas en etapa</span>
+          <span className="font-bold text-[#163274]">{total > 0 ? total : '—'}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-xs font-medium text-slate-500">Cargadas / listas</span>
+          <span className="font-bold tabular-nums text-[#163274]">
+            {total > 0 ? `${ok}/${total}` : '—'}
+          </span>
+        </div>
+        {estadoPaquete ? (
+          <div className="flex justify-between gap-3 border-t border-slate-100 pt-3">
+            <span className="text-xs font-medium text-slate-500">Estado</span>
+            <span className="rounded-full bg-[#f2f4f6] px-3 py-0.5 text-xs font-bold text-[#163274]">
+              {estadoPaquete}
+            </span>
+          </div>
+        ) : null}
+        <div
+          className={cn(
+            'flex items-start gap-2 rounded-2xl p-3 text-xs leading-snug',
+            stitch ? 'bg-[#f2f4f6] text-[#434653]' : 'bg-slate-50 text-slate-600',
+          )}
+        >
+          <Wallet className={cn('mt-0.5 h-4 w-4 shrink-0', stitch ? 'text-[#163274]' : 'text-slate-700')} />
+          {isDemo
+            ? 'Demo: los valores no se guardan en servidor.'
+            : 'Abrí cada partida abajo para cargar monto y plazo. Enviá cuando esté listo.'}
+        </div>
+      </div>
+    </div>
+  );
+}

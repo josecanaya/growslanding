@@ -31,24 +31,30 @@ export function EtapasButtons({
   return (
     <div
       className={cn(
-        'border-b px-4 py-2',
-        stitchMode
-          ? 'border-stitch-primary/10 bg-stitch-surface-container-low'
-          : 'border-slate-200 bg-white',
+        'px-4 py-3',
+        stitchMode ? 'bg-[#f7f9fb]' : 'border-b border-slate-200 bg-white',
       )}
     >
-      <div className="flex gap-2">
+      <p
+        className={cn(
+          'mb-2 text-[10px] font-bold uppercase tracking-widest',
+          stitchMode ? 'text-[#43617c]' : 'text-slate-500',
+        )}
+      >
+        Paquete / etapa
+      </p>
+      <div className="flex gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {etapas.map((etapa) => (
           <button
             key={etapa.id}
+            type="button"
             onClick={() => onEtapaChange(etapa.id)}
             className={cn(
-              'flex-1 py-2.5 px-3 text-sm font-medium rounded-lg transition-colors',
-              'flex items-center justify-center gap-2',
+              'flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors',
               stitchMode
                 ? activeEtapa === etapa.id
-                  ? 'bg-stitch-primary text-white shadow-sm'
-                  : 'bg-stitch-surface-container-lowest text-stitch-on-surface ring-1 ring-stitch-primary/10 hover:bg-stitch-surface-container-high/80'
+                  ? 'bg-[#163274] text-white shadow-sm'
+                  : 'bg-white text-[#434653] shadow-sm ring-1 ring-[#163274]/10 hover:bg-[#eceef0]'
                 : activeEtapa === etapa.id
                   ? 'bg-blue-600 text-white'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
@@ -57,14 +63,14 @@ export function EtapasButtons({
             <span className={stitchMode && activeEtapa === etapa.id ? 'font-stitch-headline' : undefined}>
               {etapa.label}
             </span>
-            {etapa.count > 0 && (
+            {etapa.count > 0 ? (
               <span
                 className={cn(
-                  'px-2 py-0.5 rounded-full text-xs font-semibold min-w-[20px] text-center',
+                  'min-w-[1.25rem] rounded-full px-1.5 py-0 text-[10px] font-bold tabular-nums',
                   stitchMode
                     ? activeEtapa === etapa.id
-                      ? 'bg-white/20 text-white'
-                      : 'bg-stitch-surface-container-high text-stitch-primary'
+                      ? 'bg-white/25 text-white'
+                      : 'bg-[#d8e2ff]/80 text-[#163274]'
                     : activeEtapa === etapa.id
                       ? 'bg-white/20 text-white'
                       : 'bg-slate-200 text-slate-600',
@@ -72,7 +78,7 @@ export function EtapasButtons({
               >
                 {etapa.count}
               </span>
-            )}
+            ) : null}
           </button>
         ))}
       </div>

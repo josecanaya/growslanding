@@ -10,12 +10,20 @@ import {
   MOCK_OBRAS_PARA_PRESUPUESTOS,
   MOCK_PRESUPUESTO_ITEMS,
 } from '@/lib/mocks/socioMockData';
+import type { DbCanvasNodeRow } from '@/lib/canvas/dbCanvasRowsToNodes';
+
+export type PresupuestoEditState = {
+  dias_reales: number | null;
+  monto: number | null;
+  observacion: string;
+};
 
 interface PresupuestoItem {
   id: string;
   tarea_id: string;
   estado: string;
   dias_reales: number | null;
+  observacion?: string | null;
   monto: number | null;
   created_at?: string | null;
   updated_at?: string | null;
@@ -24,6 +32,7 @@ interface PresupuestoItem {
     title: string | null;
     etapa: string | null;
     duracion_sugerida: number | null;
+    canvas_node_id?: string | null;
   } | null;
   elemento: {
     nombre: string | null;
@@ -50,11 +59,17 @@ interface Obra {
 interface UsePresupuestosReturn {
   obra: Obra | null;
   presupuestos: PresupuestoItem[];
-  editing: Map<string, { dias_reales: number | null; monto: number | null }>;
+  /** Nodos del canvas de la obra (jerarquía de presupuestos). */
+  canvasNodes: DbCanvasNodeRow[];
+  editing: Map<string, PresupuestoEditState>;
   loading: boolean;
   saving: boolean;
   pdfPath: string | null; // PDF path guardado en eventos
-  onFieldChange: (tareaId: string, field: 'dias_reales' | 'monto', value: number | null) => void;
+  onFieldChange: (
+    tareaId: string,
+    field: 'dias_reales' | 'monto' | 'observacion',
+    value: number | null | string,
+  ) => void;
   handleSaveDraft: (presupuestosFiltrados: PresupuestoItem[]) => Promise<void>;
   handleSendPresupuesto: (presupuestosFiltrados: PresupuestoItem[], presupuestosAgrupadosPorEtapa: any, nombreContratista: string, etapaActiva?: 'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES') => Promise<void>;
   clearPdfPath: () => void; // Limpiar el pdfPath
@@ -64,9 +79,8 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
   const { toast } = useToast();
   const [obra, setObra] = useState<Obra | null>(null);
   const [presupuestos, setPresupuestos] = useState<PresupuestoItem[]>([]);
-  const [editing, setEditing] = useState<Map<string, { dias_reales: number | null; monto: number | null }>>(
-    new Map()
-  );
+  const [canvasNodes, setCanvasNodes] = useState<DbCanvasNodeRow[]>([]);
+  const [editing, setEditing] = useState<Map<string, PresupuestoEditState>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pdfPath, setPdfPath] = useState<string | null>(null);
@@ -77,7 +91,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
   useEffect(() => {
     if (presupuestos.length === 0) return;
     
-      const newEditing = new Map<string, { dias_reales: number | null; monto: number | null }>();
+      const newEditing = new Map<string, PresupuestoEditState>();
       presupuestos.forEach((p) => {
         const existing = editing.get(p.tarea_id);
         // Solo actualizar si no existe en editing (carga inicial)
@@ -90,6 +104,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           newEditing.set(p.tarea_id, {
             dias_reales: diasIniciales,
             monto: p.monto,
+            observacion: p.observacion ?? '',
           });
         } else {
           newEditing.set(p.tarea_id, existing);
@@ -139,11 +154,13 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
         setObra(obraMock);
         const items = MOCK_PRESUPUESTO_ITEMS as PresupuestoItem[];
         setPresupuestos(items);
-        const editingMap = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        setCanvasNodes([]);
+        const editingMap = new Map<string, PresupuestoEditState>();
         items.forEach((p: PresupuestoItem) => {
           editingMap.set(p.tarea_id, {
             dias_reales: p.dias_reales ?? p.tarea?.duracion_sugerida ?? null,
             monto: p.monto,
+            observacion: p.observacion ?? '',
           });
         });
         setEditing(editingMap);
@@ -169,10 +186,11 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
         
         setObra(data.obra);
         setPresupuestos(data.presupuestos || []);
+        setCanvasNodes((data.canvas_nodes || []) as DbCanvasNodeRow[]);
 
         // Inicializar estado de edición
         // Precargar dias_reales con duracion_sugerida si dias_reales es null
-        const editingMap = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        const editingMap = new Map<string, PresupuestoEditState>();
         (data.presupuestos || []).forEach((p: PresupuestoItem) => {
           // Si dias_reales es null pero hay duracion_sugerida, usar esa como valor inicial
           const diasIniciales = p.dias_reales !== null 
@@ -182,6 +200,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           editingMap.set(p.tarea_id, {
             dias_reales: diasIniciales,
             monto: p.monto,
+            observacion: p.observacion ?? '',
           });
         });
         setEditing(editingMap);
@@ -212,6 +231,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
         });
         setObra(null);
         setPresupuestos([]);
+        setCanvasNodes([]);
       } finally {
         setLoading(false);
         console.log('[usePresupuestos] Loading finalizado');
@@ -221,14 +241,21 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     fetchPresupuestos();
   }, [obraId, toast, presupuestosUsanMock]);
 
-  const onFieldChange = useCallback((tareaId: string, field: 'dias_reales' | 'monto', value: number | null) => {
-    setEditing((prev) => {
-      const next = new Map(prev);
-      const current = next.get(tareaId) || { dias_reales: null, monto: null };
-      next.set(tareaId, { ...current, [field]: value });
-      return next;
-    });
-  }, []);
+  const onFieldChange = useCallback(
+    (tareaId: string, field: 'dias_reales' | 'monto' | 'observacion', value: number | null | string) => {
+      setEditing((prev) => {
+        const next = new Map(prev);
+        const current = next.get(tareaId) || { dias_reales: null, monto: null, observacion: '' };
+        if (field === 'observacion') {
+          next.set(tareaId, { ...current, observacion: typeof value === 'string' ? value : '' });
+        } else {
+          next.set(tareaId, { ...current, [field]: value as number | null });
+        }
+        return next;
+      });
+    },
+    [],
+  );
 
   const handleSaveDraft = useCallback(async (presupuestosFiltrados: PresupuestoItem[]) => {
     if (!obraId) return;
@@ -244,12 +271,23 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
     setSaving(true);
     try {
       const presupuestosToSave = presupuestosFiltrados.map((presupuesto) => {
-        const editData = editing.get(presupuesto.tarea_id) || { dias_reales: null, monto: null };
+        const editData = editing.get(presupuesto.tarea_id) || {
+          dias_reales: null,
+          monto: null,
+          observacion: '',
+        };
+        const estadoGuardado =
+          presupuesto.estado === 'ENVIADO'
+            ? 'ENVIADO'
+            : presupuesto.estado === 'APROBADO'
+              ? 'APROBADO'
+              : 'PENDIENTE';
         return {
           tarea_id: presupuesto.tarea_id,
           dias_reales: editData.dias_reales,
           monto: editData.monto,
-          estado: presupuesto.estado === 'APROBADO' ? 'APROBADO' : 'PENDIENTE' as 'PENDIENTE' | 'ENVIADO',
+          observacion: editData.observacion,
+          estado: estadoGuardado as 'PENDIENTE' | 'ENVIADO' | 'APROBADO',
         };
       });
 
@@ -277,7 +315,8 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
       if (responseReload.ok) {
         const dataReload = await responseReload.json();
         setPresupuestos(dataReload.presupuestos || []);
-        const editingMap = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        setCanvasNodes((dataReload.canvas_nodes || []) as DbCanvasNodeRow[]);
+        const editingMap = new Map<string, PresupuestoEditState>();
         (dataReload.presupuestos || []).forEach((p: PresupuestoItem) => {
           // Precargar dias_reales con duracion_sugerida si dias_reales es null
           const diasIniciales = p.dias_reales !== null 
@@ -287,6 +326,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           editingMap.set(p.tarea_id, {
             dias_reales: diasIniciales,
             monto: p.monto,
+            observacion: p.observacion ?? '',
           });
         });
         setEditing(editingMap);
@@ -325,7 +365,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           OBRA_GRIS: etapaFinal === 'OBRA_GRIS' ? presupuestosFiltrados : [],
           TERMINACIONES: etapaFinal === 'TERMINACIONES' ? presupuestosFiltrados : [],
         };
-        const editingFiltrado = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        const editingFiltrado = new Map<string, PresupuestoEditState>();
         presupuestosFiltrados.forEach((p) => {
           const editData = editing.get(p.tarea_id);
           if (editData) editingFiltrado.set(p.tarea_id, editData);
@@ -419,7 +459,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
       });
       
       // Filtrar el editing map para solo incluir los presupuestos filtrados
-      const editingFiltrado = new Map<string, { dias_reales: number | null; monto: number | null }>();
+      const editingFiltrado = new Map<string, PresupuestoEditState>();
       presupuestosFiltrados.forEach((p) => {
         const editData = editing.get(p.tarea_id);
         if (editData) {
@@ -495,11 +535,16 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
 
       // 3. Enviar presupuestos con estado ENVIADO
       const presupuestosToSend = presupuestosFiltrados.map((presupuesto) => {
-        const editData = editing.get(presupuesto.tarea_id) || { dias_reales: null, monto: null };
+        const editData = editing.get(presupuesto.tarea_id) || {
+          dias_reales: null,
+          monto: null,
+          observacion: '',
+        };
         return {
           tarea_id: presupuesto.tarea_id,
           dias_reales: editData.dias_reales,
           monto: editData.monto,
+          observacion: editData.observacion,
           estado: 'ENVIADO' as 'PENDIENTE' | 'ENVIADO',
         };
       });
@@ -528,7 +573,8 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
       if (responseReload.ok) {
         const dataReload = await responseReload.json();
         setPresupuestos(dataReload.presupuestos || []);
-        const editingMap = new Map<string, { dias_reales: number | null; monto: number | null }>();
+        setCanvasNodes((dataReload.canvas_nodes || []) as DbCanvasNodeRow[]);
+        const editingMap = new Map<string, PresupuestoEditState>();
         (dataReload.presupuestos || []).forEach((p: PresupuestoItem) => {
           // Precargar dias_reales con duracion_sugerida si dias_reales es null
           const diasIniciales = p.dias_reales !== null 
@@ -538,6 +584,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
           editingMap.set(p.tarea_id, {
             dias_reales: diasIniciales,
             monto: p.monto,
+            observacion: p.observacion ?? '',
           });
         });
         setEditing(editingMap);
@@ -582,6 +629,7 @@ export function usePresupuestos(obraId: string | null): UsePresupuestosReturn {
   return {
     obra,
     presupuestos,
+    canvasNodes,
     editing,
     loading,
     saving,

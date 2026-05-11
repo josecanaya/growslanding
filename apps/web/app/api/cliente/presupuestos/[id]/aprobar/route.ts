@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { sincronizarTareaTrasPresupuestoAprobado } from '@/lib/services/sync-tarea-presupuesto-aprobado.service';
 import type { Database } from '@/lib/types/supabase.gen';
 
 export const dynamic = 'force-dynamic';
@@ -142,11 +143,6 @@ export async function POST(
       );
     }
 
-    const responsable =
-      (socioData.email && String(socioData.email).trim()) ||
-      (socioData.nombre && String(socioData.nombre).trim()) ||
-      'Socio';
-
     const { error: updatePresupuestoError } = await supabaseAny
       .from('tareas_presupuestos')
       .update({
@@ -162,20 +158,14 @@ export async function POST(
       );
     }
 
-    const { error: updateTareaError } = await supabaseAny
-      .from('tareas')
-      .update({
-        responsable,
-        cuadrilla_id: socioId,
-        responsable_socio_id: socioId,
-        estado: 'pendiente',
-      })
-      .eq('id', tarea.id)
-      .eq('org_id', orgId);
+    const syncTarea = await sincronizarTareaTrasPresupuestoAprobado(supabaseAny, {
+      tareaId: tarea.id,
+      socioId,
+    });
 
-    if (updateTareaError) {
+    if (!syncTarea.ok) {
       return NextResponse.json(
-        { success: false, error: updateTareaError.message },
+        { success: false, error: syncTarea.error },
         { status: 500 },
       );
     }

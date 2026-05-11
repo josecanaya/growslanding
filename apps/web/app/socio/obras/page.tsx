@@ -14,6 +14,7 @@ import {
   MOCK_OBRAS,
 } from '@/lib/mocks/socioMockData';
 import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 interface ObraConPresupuesto {
   obra_id: string;
@@ -78,9 +79,10 @@ export default function ObrasPage() {
         }
 
         // Obtener presupuestos aprobados del socio
-        const { data: presupuestosAprobados, error: presupuestosError } = await (supabase as any)
+        const { data: presupuestosRows, error: presupuestosError } = await (supabase as any)
           .from('tareas_presupuestos')
           .select(`
+            estado,
             obra_id,
             tareas!inner(
               id,
@@ -94,12 +96,15 @@ export default function ObrasPage() {
             )
           `)
           .eq('socio_id', socioData.id)
-          .eq('estado', 'APROBADO');
+          .limit(800);
 
         if (presupuestosError) {
           throw new Error(presupuestosError.message);
         }
 
+        const presupuestosAprobados = (presupuestosRows ?? []).filter((p: { estado?: string | null }) =>
+          estadoPresupuestoEsAprobado(p.estado),
+        );
         // Agrupar por obra
         const obrasMap = new Map<string, ObraConPresupuesto>();
 

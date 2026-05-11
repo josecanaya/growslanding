@@ -39,6 +39,7 @@ import {
   subtareaEstaCompletadaConLegacy,
   subtareaEstaCompletadaOficial,
 } from '@/lib/domain/estados-core';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 type SupabaseTarea = {
   id: string;
@@ -87,16 +88,33 @@ async function buildOrClauseSocioTareas(
     partes.push(`cuadrilla_id.eq.${opts.socioId}`);
     const { data: presRows } = await supabaseAny
       .from('tareas_presupuestos')
-      .select('tarea_id')
+      .select('tarea_id, estado')
       .eq('socio_id', opts.socioId)
-      .eq('estado', 'APROBADO');
-    const presTareaIds = [
+      .limit(800);
+    const presTareaIdsBrutos = [
       ...new Set(
         (presRows ?? [])
+          .filter((r: { estado?: string | null }) => estadoPresupuestoEsAprobado(r.estado))
           .map((r: { tarea_id?: string | null }) => r.tarea_id)
           .filter((tid: string | null | undefined): tid is string => !!tid),
       ),
     ];
+    /** Sin filtrar: presupuesto aprobado sin fila `tareas` alineada mostraba la tarea pero bloqueaba operar. */
+    let presTareaIds: string[] = [];
+    if (presTareaIdsBrutos.length > 0) {
+      const { data: tAsign } = await supabaseAny
+        .from('tareas')
+        .select('id')
+        .in('id', presTareaIdsBrutos)
+        .or(`responsable_socio_id.eq.${opts.socioId},cuadrilla_id.eq.${opts.socioId}`);
+      presTareaIds = [
+        ...new Set(
+          (tAsign ?? [])
+            .map((r: { id?: string | null }) => r.id)
+            .filter((id: string | null | undefined): id is string => !!id),
+        ),
+      ];
+    }
     if (presTareaIds.length > 0) {
       partes.push(`id.in.(${presTareaIds.join(',')})`);
     }

@@ -36,6 +36,7 @@ import { PresupuestoPDFModal } from './asigna/PresupuestoPDFModal';
 import { PresupuestoListaModal } from './asigna/PresupuestoListaModal';
 import { PresupuestoRechazarModal } from './asigna/PresupuestoRechazarModal';
 import { PresupuestoComentarioModal } from './asigna/PresupuestoComentarioModal';
+import { patchTareaTrasPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 const STAGE_DEFINITIONS = [
   {
@@ -772,6 +773,48 @@ export function AsignarSection({ obraId: obraIdProp }: AsignarSectionProps) {
 
       if (error) throw error;
 
+      const row = data as RawPresupuesto | null;
+
+      /** Bug histórico: sólo actualizaba presupuesto; hay que asignar socio en `tareas`. */
+      if (status === 'APROBADO' && row?.tarea_id && row?.socio_id && currentUser?.orgId) {
+        const { data: tarSt } = await supabase
+          .from('tareas')
+          .select('estado')
+          .eq('id', row.tarea_id)
+          .maybeSingle();
+        const { data: socSt } = await supabase
+          .from('socios')
+          .select('email, nombre')
+          .eq('id', row.socio_id)
+          .maybeSingle();
+
+        const patchT = patchTareaTrasPresupuestoAprobado({
+          socioId: row.socio_id,
+          socioEmail: socSt?.email ?? null,
+          socioNombre: socSt?.nombre ?? null,
+          estadoTareaActual: tarSt?.estado ?? null,
+        });
+
+        const { error: tErr } = await supabase
+          .from('tareas')
+          .update(patchT)
+          .eq('id', row.tarea_id)
+          .eq('org_id', currentUser.orgId);
+
+        if (tErr) {
+          console.error('[AsignarSection] Sync tarea tras aprobar:', tErr);
+        } else {
+          await supabase
+            .from('tareas_presupuestos')
+            .update({
+              estado: 'RECHAZADO',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('tarea_id', row.tarea_id)
+            .neq('socio_id', row.socio_id);
+        }
+      }
+
       setBudgets((prev) =>
         prev.map((budget) =>
           budget.id === budgetId
@@ -873,11 +916,23 @@ export function AsignarSection({ obraId: obraIdProp }: AsignarSectionProps) {
     setAssigningBudgetId(budget.id);
 
     try {
-      // CRÍTICO: Guardar el EMAIL del socio en responsable, no el nombre
-      const tareaUpdates: Record<string, any> = {
-        responsable: socioEmail, // Email del socio para que lo encuentre
-        cuadrilla_id: socioId,
-      };
+      const { data: tarRow } = await supabase
+        .from('tareas')
+        .select('estado')
+        .eq('id', budget.tarea_id)
+        .maybeSingle();
+
+      const tareaUpdates = patchTareaTrasPresupuestoAprobado({
+        socioId,
+        socioEmail,
+        socioNombre,
+        estadoTareaActual: tarRow?.estado ?? null,
+      });
+
+      /** Mantener compat: priorizar email como etiqueta responsable cuando exista */
+      if (socioEmail) {
+        tareaUpdates.responsable = socioEmail;
+      }
 
       const { error: tareaError } = await supabase
         .from('tareas')

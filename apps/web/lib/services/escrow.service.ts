@@ -2,6 +2,7 @@ import { createServiceSupabaseClient } from '../supabase-server';
 import { obtenerConfigPlan, calcularComision } from './plan.service';
 import { WalletService } from './wallet.service';
 import { createTaskEscrowPreference } from '../payments/mercadopago';
+import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 export type EscrowEstado = 'pendiente' | 'retenido' | 'liberado' | 'reembolsado' | 'cancelado';
 
@@ -245,12 +246,14 @@ export class EscrowService {
       }
 
       // 2. Obtener información de la tarea y presupuesto
-      const { data: presupuesto, error: presupuestoError } = await supabaseAny
+      const { data: presRows, error: presupuestoError } = await supabaseAny
         .from('tareas_presupuestos')
-        .select('id, monto, socio_id')
+        .select('id, monto, socio_id, estado')
         .eq('tarea_id', tareaId)
-        .eq('estado', 'APROBADO')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      const presupuesto = primeraFilaPresupuestoAprobado(presRows ?? []);
 
       const socioId = presupuesto?.socio_id || escrowTransaccion.socio_id;
       if (!socioId) {

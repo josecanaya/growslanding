@@ -13,6 +13,7 @@ import {
   MOCK_OBRAS,
 } from '@/lib/mocks/socioMockData';
 import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 interface AccesoRapido {
   id: string;
@@ -231,11 +232,12 @@ export function AccesosRapidosGrid({
         // `tareas_presupuestos` no tiene `obra_id`; obras vía FK `tareas`.
         const { data: presAprobRows } = await (supabase as any)
           .from('tareas_presupuestos')
-          .select('tareas!inner(obra_id)')
+          .select('estado, tareas!inner(obra_id)')
           .eq('socio_id', socioRow.id)
-          .eq('estado', 'APROBADO');
+          .limit(600);
         const obrasActivas = new Set(
           (presAprobRows ?? [])
+            .filter((r: { estado?: string | null }) => estadoPresupuestoEsAprobado(r.estado))
             .map((r: { tareas?: { obra_id?: string } | null }) => r.tareas?.obra_id)
             .filter(Boolean),
         ).size;

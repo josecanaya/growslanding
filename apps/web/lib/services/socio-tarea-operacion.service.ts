@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { PermisoService } from '@/lib/services/permiso.service';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 /** Alineado a reglas producto A/B/C/D (sin filtrar columnas legacy en PostgREST). */
 export type SocioTareaOperacionChecks = {
@@ -145,15 +146,15 @@ export class SocioTareaOperacionService {
     debugBase.checks.A_responsableSocioId = A;
 
     let B = false;
-    const { data: pres } = await supabaseAny
+    const { data: presRows } = await supabaseAny
       .from('tareas_presupuestos')
-      .select('id')
+      .select('id, estado')
       .eq('tarea_id', tarea.id)
       .eq('socio_id', socioIdEfectivo)
-      .eq('estado', 'APROBADO')
-      .limit(1)
-      .maybeSingle();
-    B = !!pres;
+      .limit(12);
+    B = !!(presRows ?? []).some((p: { estado?: string | null }) =>
+      estadoPresupuestoEsAprobado(p.estado),
+    );
     debugBase.checks.B_presupuestoAprobado = B;
 
     let C = false;

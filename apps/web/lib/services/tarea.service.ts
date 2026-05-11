@@ -17,6 +17,7 @@ import {
 import { createServiceSupabaseClient } from '../supabase-server';
 import { WalletService } from './wallet.service';
 import { EscrowService } from './escrow.service';
+import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 type PrismaWithLegacy = PrismaClient & {
   miembroOrganizacion?: {
@@ -211,12 +212,14 @@ export class TareaService {
       return;
     }
 
-    const { data: presupuesto, error: presupuestoError } = await supabase
+    const { data: presupuestoRows, error: presupuestoError } = await supabase
       .from('tareas_presupuestos')
-      .select('id, cantidad, unidad, dias_reales, notas, monto, socio_id')
+      .select('id, cantidad, unidad, dias_reales, notas, monto, socio_id, estado')
       .eq('tarea_id', tareaId)
-      .eq('estado', 'APROBADO')
-      .maybeSingle();
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const presupuesto = primeraFilaPresupuestoAprobado(presupuestoRows ?? []);
 
     if (presupuestoError || !presupuesto) {
       console.warn('[GENERAR_SUBTAREAS] No se encontró presupuesto para tarea ' + tareaId);
@@ -717,12 +720,14 @@ export class TareaService {
       const supabaseAny = supabase as any;
 
       // 1. Obtener presupuesto aprobado de la tarea desde Supabase
-      const { data: presupuesto, error: presupuestoError } = await supabaseAny
+      const { data: presRows, error: presupuestoError } = await supabaseAny
         .from('tareas_presupuestos')
-        .select('id, monto, socio_id')
+        .select('id, monto, socio_id, estado')
         .eq('tarea_id', tareaId)
-        .eq('estado', 'APROBADO')
-        .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      const presupuesto = primeraFilaPresupuestoAprobado(presRows ?? []);
 
       if (presupuestoError || !presupuesto || !presupuesto.monto) {
         console.warn('[WALLET] No se encontró presupuesto aprobado para tarea:', tareaId);

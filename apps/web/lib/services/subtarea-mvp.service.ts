@@ -8,6 +8,7 @@ import {
   ESTADO_TAREA_FINAL,
   type EstadoBloqueCore,
 } from '../domain/estados-core';
+import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 export type EstadoSubtarea = EstadoBloqueCore;
 
@@ -59,14 +60,14 @@ export class SubtareaMvpService {
       throw new Error('Tarea no encontrada para generar bloques');
     }
 
-    const { data: presupuesto } = await supabaseAny
+    const { data: presupuestoRows } = await supabaseAny
       .from('tareas_presupuestos')
-      .select('id, monto, dias_reales')
+      .select('id, monto, dias_reales, estado')
       .eq('tarea_id', tareaId)
-      .eq('estado', 'APROBADO')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(12);
+
+    const presupuesto = primeraFilaPresupuestoAprobado(presupuestoRows ?? []);
 
     const dias = presupuesto?.dias_reales || tarea.dias_presupuesto || tarea.bloques_planificados || 1;
 

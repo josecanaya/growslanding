@@ -5,6 +5,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { EscrowService } from '@/lib/services/escrow.service';
 import { z } from 'zod';
+import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,14 +76,14 @@ export async function POST(
     // (Aquí podrías agregar validaciones más específicas según tus reglas)
     
     // Obtener presupuesto aprobado para obtener socio_id
-    const { data: presupuesto, error: presupuestoError } = await supabaseAny
+    const { data: presRows, error: presupuestoError } = await supabaseAny
       .from('tareas_presupuestos')
-      .select('id, socio_id')
+      .select('id, socio_id, estado')
       .eq('tarea_id', tareaId)
-      .eq('estado', 'APROBADO')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(24);
+
+    const presupuesto = primeraFilaPresupuestoAprobado(presRows ?? []);
 
     if (presupuestoError || !presupuesto || !presupuesto.socio_id) {
       return NextResponse.json(

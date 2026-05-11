@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
+import { sincronizarTareaTrasPresupuestoAprobado } from '@/lib/services/sync-tarea-presupuesto-aprobado.service';
 
 export const runtime = 'nodejs';
 
@@ -226,20 +227,13 @@ export async function POST(
           continue;
         }
 
-        // 2. Actualizar tarea: asignar socio
-        const { error: updateTareaError } = await supabaseAny
-          .from('tareas')
-          .update({
-            responsable: socioData.email, // Email del socio
-            cuadrilla_id: socioId,
-            responsable_socio_id: socioId,
-            estado: 'pendiente',
-          })
-          .eq('id', tarea.id)
-          .eq('org_id', orgId);
+        const syncTar = await sincronizarTareaTrasPresupuestoAprobado(supabaseAny, {
+          tareaId: tarea.id,
+          socioId,
+        });
 
-        if (updateTareaError) {
-          console.error('[POST /api/socios/[id]/aprobar-presupuesto] Error actualizando tarea:', updateTareaError);
+        if (!syncTar.ok) {
+          console.error('[POST /api/socios/[id]/aprobar-presupuesto] Sync tarea:', syncTar.error);
           errores.push(`Error actualizando tarea ${tarea.id}`);
           continue;
         }

@@ -1,12 +1,10 @@
 import { createServiceSupabaseClient } from '../supabase-server';
-import { obtenerConfigPlan, calcularPorcentajePlan } from './plan.service';
 
 type MovimientoOwnerTipo = 'SOCIO' | 'ORG';
 
 type SubtareaPagoRecord = {
   id: string;
   estado: string;
-  monto_estimado: number | null;
   tarea_id: string;
   socio_id: string | null;
   presupuesto_id?: string | null;
@@ -38,7 +36,6 @@ export class WalletMvpService {
       .select(`
         id,
         estado,
-        monto_estimado,
         tarea_id,
         socio_id,
         presupuesto_id,
@@ -55,6 +52,10 @@ export class WalletMvpService {
       throw new Error('Subtarea no encontrada para registrar pago');
     }
 
+    if (subtarea.estado !== 'validado') {
+      throw new Error('Solo se acredita billetera cuando el bloque fue validado por el cliente');
+    }
+
     const tarea = subtarea.tareas;
     if (!tarea) {
       throw new Error('La subtarea no tiene tarea asociada');
@@ -68,62 +69,26 @@ export class WalletMvpService {
     await this.verificarSocioNoSuspendido(socioId);
     await this.assertMovimientoNoDuplicado(subtarea.id);
 
-    const planConfig = await obtenerConfigPlan(tarea.org_id);
-    const montoBruto = subtarea.monto_estimado ?? 0;
+    const montoBruto = await this.obtenerMontoBrutoBloque(subtarea);
     if (montoBruto <= 0) {
-      throw new Error('El bloque no tiene monto estimado para pagar');
+      throw new Error('No se encontró monto de presupuesto aprobado para pagar');
     }
 
-    const porcentaje = calcularPorcentajePlan(planConfig);
-    const montoComision = Number((montoBruto * porcentaje).toFixed(2));
-    const montoNeto = Number((montoBruto - montoComision).toFixed(2));
-
     await this.ensureSaldo('SOCIO', socioId);
-    await this.ensureSaldo('ORG', tarea.org_id);
 
     await this.crearMovimiento({
       owner_tipo: 'SOCIO',
       owner_id: socioId,
       tipo: 'CREDITO',
-      metodo_pago: metodoPago,
       estado: 'completado',
       tarea_id: tarea.id,
-      subtarea_id: subtarea.id,
       presupuesto_id: subtarea.presupuesto_id,
       origen: 'VALIDACION_BLOQUE',
-      descripcion: `Pago bloque ${subtarea.id}`,
-      plan_aplicado: planConfig.plan,
-      porcentaje_comision: porcentaje,
-      reputacion_factor: null,
-      oferta_demanda_factor: null,
-      monto_bruto: montoBruto,
-      monto_comision: montoComision,
-      monto_neto: montoNeto,
+      concepto: `Pago por validación de bloque (${metodoPago})`,
+      monto: montoBruto,
     });
 
-    await this.ajustarSaldo('SOCIO', socioId, montoNeto);
-
-    await this.crearMovimiento({
-      owner_tipo: 'ORG',
-      owner_id: tarea.org_id,
-      tipo: 'CREDITO',
-      metodo_pago: metodoPago,
-      estado: 'completado',
-      tarea_id: tarea.id,
-      subtarea_id: subtarea.id,
-      presupuesto_id: subtarea.presupuesto_id,
-      origen: 'COMISION',
-      descripcion: `Comision bloque ${subtarea.id}`,
-      plan_aplicado: planConfig.plan,
-      porcentaje_comision: porcentaje,
-      reputacion_factor: null,
-      oferta_demanda_factor: null,
-      monto_bruto: montoComision,
-      monto_comision: 0,
-      monto_neto: montoComision,
-    });
-
-    await this.ajustarSaldo('ORG', tarea.org_id, montoComision);
+    await this.ajustarSaldo('SOCIO', socioId, montoBruto);
   }
 
   static async obtenerSaldo(owner_tipo: MovimientoOwnerTipo, owner_id: string) {
@@ -146,6 +111,33 @@ export class WalletMvpService {
         suspendido: false,
       }
     );
+  }
+
+  private static async obtenerMontoBrutoBloque(subtarea: SubtareaPagoRecord): Promise<number> {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    if (subtarea.presupuesto_id) {
+      const { data } = await supabaseAny
+        .from('tareas_presupuestos')
+        .select('monto')
+        .eq('id', subtarea.presupuesto_id)
+        .maybeSingle();
+      const monto = Number(data?.monto ?? 0);
+      return Number.isFinite(monto) ? monto : 0;
+    }
+
+    const { data: rows } = await supabaseAny
+      .from('tareas_presupuestos')
+      .select('monto, estado')
+        .eq('tarea_id', subtarea.tarea_id)
+      .eq('socio_id', subtarea.socio_id || subtarea.tareas?.responsable_socio_id || '')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    const aprobado = (rows ?? []).find((row: any) => String(row.estado ?? '').toUpperCase() === 'APROBADO');
+    const monto = Number(aprobado?.monto ?? 0);
+    return Number.isFinite(monto) ? monto : 0;
   }
 
   static async verificarSocioNoSuspendido(socioId: string) {
@@ -247,13 +239,30 @@ export class WalletMvpService {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
-    const { data } = await supabaseAny
+    const { data: subtarea } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('tarea_id, socio_id, presupuesto_id, tareas:tareas(responsable_socio_id)')
+      .eq('id', subtareaId)
+      .maybeSingle();
+
+    const socioId = subtarea?.socio_id || subtarea?.tareas?.responsable_socio_id || null;
+    if (!subtarea?.tarea_id || !socioId) {
+      return;
+    }
+
+    let query = supabaseAny
       .from('wallet_movimientos')
       .select('id')
-      .eq('subtarea_id', subtareaId)
+      .eq('tarea_id', subtarea.tarea_id)
       .eq('origen', 'VALIDACION_BLOQUE')
       .eq('owner_tipo', 'SOCIO')
-      .limit(1);
+      .eq('owner_id', socioId);
+
+    if (subtarea.presupuesto_id) {
+      query = query.eq('presupuesto_id', subtarea.presupuesto_id);
+    }
+
+    const { data } = await query.limit(1);
 
     if (data && data.length > 0) {
       throw new Error('El bloque ya fue pagado previamente');

@@ -129,12 +129,24 @@ export class TareaFsmService {
       throw new Error('Solo el cliente puede rechazar una tarea');
     }
 
+    const ahora = new Date().toISOString();
+    const updatePayload: Record<string, unknown> = {
+      estado: params.nuevoEstado,
+      updated_at: ahora,
+    };
+
+    if (params.nuevoEstado === 'en_progreso' && params.rol === 'SOCIO') {
+      updatePayload.fecha_inicio_real = ahora;
+    }
+
+    if (params.nuevoEstado === ESTADO_TAREA_FINAL && params.rol === 'CLIENTE') {
+      updatePayload.fecha_validacion = ahora;
+      updatePayload.validado_por = params.actorId;
+    }
+
     const { data: updated, error: updateError } = await supabaseAny
       .from('tareas')
-      .update({
-        estado: params.nuevoEstado,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', params.tareaId)
       .select('id, estado')
       .maybeSingle();

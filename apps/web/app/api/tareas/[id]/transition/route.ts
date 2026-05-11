@@ -107,6 +107,75 @@ const mapOficialToVisitStatus = (estado: EstadoTarea): VisitStatus => {
   return ESTADO_OFICIAL_TO_VISIT[estado];
 };
 
+const bloqueTieneEvidencia = (bloque: {
+  evidencia_cargada?: boolean | null;
+  evidencia_url?: string | null;
+}) => Boolean(bloque.evidencia_cargada || bloque.evidencia_url);
+
+async function validarBloquesListosParaEnviarTarea(
+  supabaseAny: any,
+  tareaId: string,
+): Promise<Response | null> {
+  const { data: bloques, error } = await supabaseAny
+    .from('tareas_subtareas')
+    .select('id, estado, evidencia_obligatoria, evidencia_cargada, evidencia_url')
+    .eq('tarea_id', tareaId)
+    .order('orden', { ascending: true });
+
+  if (error) {
+    return new Response(
+      JSON.stringify({
+        message: 'No se pudieron verificar los bloques de la tarea.',
+        error: 'BLOQUES_VERIFICACION_ERROR',
+        detail: error.message,
+      }),
+      { status: 500 },
+    );
+  }
+
+  if (!bloques || bloques.length === 0) {
+    return new Response(
+      JSON.stringify({
+        message: 'Primero tenés que generar y completar un bloque antes de enviar la tarea a validar.',
+        error: 'BLOQUES_FALTANTES',
+        errorCode: 'BLOQUES_FALTANTES',
+      }),
+      { status: 409 },
+    );
+  }
+
+  const bloqueNoEnviado = bloques.find((bloque: any) => !['para_validar', ESTADO_BLOQUE_FINAL].includes(bloque.estado));
+  if (bloqueNoEnviado) {
+    return new Response(
+      JSON.stringify({
+        message: 'Primero enviá el bloque a validar desde el flujo de evidencia.',
+        error: 'BLOQUE_NO_LISTO',
+        errorCode: 'BLOQUE_NO_LISTO',
+        bloqueId: bloqueNoEnviado.id,
+        estado: bloqueNoEnviado.estado,
+      }),
+      { status: 409 },
+    );
+  }
+
+  const bloqueSinEvidencia = bloques.find(
+    (bloque: any) => bloque.evidencia_obligatoria !== false && !bloqueTieneEvidencia(bloque),
+  );
+  if (bloqueSinEvidencia) {
+    return new Response(
+      JSON.stringify({
+        message: 'Debés cargar una foto de evidencia antes de enviar a validar.',
+        error: 'EVIDENCIA_FALTANTE',
+        errorCode: 'EVIDENCIA_FALTANTE',
+        bloqueId: bloqueSinEvidencia.id,
+      }),
+      { status: 400 },
+    );
+  }
+
+  return null;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -304,19 +373,11 @@ export async function POST(
       );
     }
 
-    if (
-      rolParaTransicion === 'SOCIO' &&
-      nuevoEstadoCanon === 'para_validar' &&
-      (!payload.media || payload.media.length === 0)
-    ) {
-      return new Response(
-        JSON.stringify({
-          message: 'Debés cargar al menos una foto antes de enviar la tarea a validar.',
-          error: 'EVIDENCIA_FALTANTE',
-          errorCode: 'EVIDENCIA_FALTANTE',
-        }),
-        { status: 400 },
-      );
+    if (rolParaTransicion === 'SOCIO' && nuevoEstadoCanon === 'para_validar') {
+      const bloqueoBloques = await validarBloquesListosParaEnviarTarea(supabase as any, tarea.id);
+      if (bloqueoBloques) {
+        return bloqueoBloques;
+      }
     }
 
     if (nuevoEstadoCanon === ESTADO_TAREA_FINAL) {
@@ -628,6 +689,30 @@ export async function POST(
       socioOperadorId: socioOperadorIdParaFsm,
     });
 
+    if (rolParaTransicion === 'SOCIO' && nuevoEstadoCanon === 'en_progreso') {
+      const supabaseAny = supabase as any;
+      const { data: bloqueInicial } = await supabaseAny
+        .from('tareas_subtareas')
+        .select('id, estado')
+        .eq('tarea_id', tarea.id)
+        .or(`socio_id.eq.${socioOperadorIdParaFsm},socio_id.is.null`)
+        .in('estado', ['pendiente', 'rechazado'])
+        .order('orden', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (bloqueInicial?.id) {
+        await supabaseAny
+          .from('tareas_subtareas')
+          .update({
+            estado: 'en_progreso',
+            hora_inicio: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', bloqueInicial.id);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         eventoId: evento.id,
@@ -653,25 +738,6 @@ export async function POST(
         { status: 400 }
       );
     }
-    
-    // Manejar errores de Supabase
-    if (error && typeof error === 'object' && 'message' in error) {
-      const supabaseError = error as { message: string; code?: string; details?: string };
-      console.error('[TRANSITION_ERROR] Supabase error:', {
-        message: supabaseError.message,
-        code: supabaseError.code,
-        details: supabaseError.details,
-      });
-      return new Response(
-        JSON.stringify({ 
-          message: supabaseError.message || 'Error en la base de datos',
-          error: 'DATABASE_ERROR',
-          code: supabaseError.code,
-        }), 
-        { status: 500 }
-      );
-    }
-    
     // Manejar errores genéricos
     const message = error instanceof Error 
       ? error.message 
@@ -681,7 +747,7 @@ export async function POST(
     
     // Mapear errores específicos a códigos
     let errorCode = 'UNKNOWN_ERROR';
-    let statusCode = message.includes('foto') || message.includes('validación') ? 400 : 500;
+    let statusCode = message.includes('foto') || message.includes('validación') || message.includes('validacion') ? 400 : 500;
     
     if (message.includes('dos tareas en progreso') || message.includes('dos tareas activas')) {
       errorCode = 'SOCIO_TIENE_2_TAREAS_EN_PROGRESO';
@@ -695,6 +761,36 @@ export async function POST(
     } else if (message.includes('No se puede validar la tarea: existen bloques pendientes')) {
       errorCode = 'SUBTAREAS_INCOMPLETAS';
       statusCode = 400;
+    }
+
+    if (error instanceof Error || typeof error === 'string') {
+      return new Response(
+        JSON.stringify({
+          message,
+          error: errorCode,
+          errorCode,
+        }),
+        { status: statusCode }
+      );
+    }
+    
+    // Manejar errores de Supabase/PostgREST
+    if (error && typeof error === 'object' && 'message' in error) {
+      const supabaseError = error as { message: string; code?: string; details?: string };
+      console.error('[TRANSITION_ERROR] Supabase error:', {
+        message: supabaseError.message,
+        code: supabaseError.code,
+        details: supabaseError.details,
+      });
+      return new Response(
+        JSON.stringify({ 
+          message: supabaseError.message || 'Error en la base de datos',
+          error: 'DATABASE_ERROR',
+          code: supabaseError.code,
+          detail: supabaseError.details ?? null,
+        }), 
+        { status: 500 }
+      );
     }
     
     return new Response(

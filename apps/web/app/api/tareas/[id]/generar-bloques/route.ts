@@ -104,12 +104,24 @@ export async function POST(
 
     const { data: bloques, error: listErr } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id, orden, bloque_index, estado, socio_id, presupuesto_id, monto_estimado, cantidad, unidad, evidencia_obligatoria, evidencia_cargada')
+      .select('id, orden, bloque_index, estado, socio_id, presupuesto_id, cantidad, unidad, evidencia_obligatoria, evidencia_cargada')
       .eq('tarea_id', tareaId)
       .order('orden', { ascending: true });
 
     if (listErr) {
-      return NextResponse.json({ success: true, bloques: [], warning: listErr.message });
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'GENERAR_BLOQUES_ERROR',
+          message: 'Los bloques se generaron, pero no se pudieron listar',
+          detail: listErr.details ?? null,
+          debug: {
+            tareaId,
+            supabaseError: listErr,
+          },
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ success: true, ...generation, bloques: bloques ?? [] });

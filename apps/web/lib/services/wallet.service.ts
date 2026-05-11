@@ -284,16 +284,13 @@ export class WalletService {
         presupuesto_id: params.presupuestoId,
       });
 
-      // Actualizar campos adicionales en movimientos si existen
-      const metodoPago = params.metodoPago || 'EFECTIVO';
+      // Actualizar campos adicionales que existen en wallet_movimientos real.
       const origen = 'VALIDACION_TAREA';
 
-      // Actualizar método_pago, origen y escrow_id en los movimientos creados
       const updates = [
         supabaseAny
           .from('wallet_movimientos')
           .update({
-            metodo_pago: metodoPago,
             origen: origen,
             escrow_id: params.escrowId || null,
           })
@@ -301,7 +298,6 @@ export class WalletService {
         supabaseAny
           .from('wallet_movimientos')
           .update({
-            metodo_pago: metodoPago,
             origen: origen,
             escrow_id: params.escrowId || null,
           })
@@ -309,7 +305,6 @@ export class WalletService {
         supabaseAny
           .from('wallet_movimientos')
           .update({
-            metodo_pago: metodoPago,
             origen: origen,
             escrow_id: params.escrowId || null,
           })

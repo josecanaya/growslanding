@@ -159,6 +159,8 @@ export function AhoraSection() {
   const [isFinalizando, setIsFinalizando] = useState(false);
   const [isGeneratingBlocks, setIsGeneratingBlocks] = useState(false);
   const [isSendingTransition, setIsSendingTransition] = useState(false);
+  const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
+  const [isSendingToValidation, setIsSendingToValidation] = useState(false);
   const [tareasCompletadasHoy, setTareasCompletadasHoy] = useState(0);
   const [avanceDiario, setAvanceDiario] = useState(0);
   const [evidenciasFinales, setEvidenciasFinales] = useState<string[]>([]);
@@ -1053,7 +1055,7 @@ export function AhoraSection() {
   const handleIniciarSubtarea = async () => {
     if (!subtareaActual || !currentUser) return;
     const requestKey = `iniciar-subtarea:${subtareaActual.id}`;
-    if (isIniciando || requestEnCursoRef.current.has(requestKey)) return;
+    if (isIniciando || isGeneratingBlocks || isSendingTransition || isUploadingEvidence || isSendingToValidation || requestEnCursoRef.current.has(requestKey)) return;
     requestEnCursoRef.current.add(requestKey);
 
     setIsIniciando(true);
@@ -1355,7 +1357,7 @@ export function AhoraSection() {
   const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string): Promise<boolean> => {
     if (!subtareaActual || !currentUser) return false;
     const requestKey = `enviar-validar:${subtareaActual.id}`;
-    if (isFinalizando || requestEnCursoRef.current.has(requestKey)) return false;
+    if (isFinalizando || isSendingTransition || isUploadingEvidence || isSendingToValidation || requestEnCursoRef.current.has(requestKey)) return false;
 
     const tieneEvidencia =
       Boolean(evidenciaUrl) ||
@@ -1371,6 +1373,8 @@ export function AhoraSection() {
 
     requestEnCursoRef.current.add(requestKey);
     setIsFinalizando(true);
+    setIsSendingTransition(true);
+    setIsSendingToValidation(true);
     setError(null);
     
     try {
@@ -1448,6 +1452,8 @@ export function AhoraSection() {
       return false;
     } finally {
       requestEnCursoRef.current.delete(requestKey);
+      setIsSendingTransition(false);
+      setIsSendingToValidation(false);
       setIsFinalizando(false);
     }
   };
@@ -1539,7 +1545,7 @@ export function AhoraSection() {
 
     // El socio no finaliza la tarea completa directo: primero debe existir un bloque con evidencia.
     const requestKey = `preparar-bloque:${tareaActual.id}`;
-    if (requestEnCursoRef.current.has(requestKey) || isGeneratingBlocks) return;
+    if (requestEnCursoRef.current.has(requestKey) || isGeneratingBlocks || isSendingTransition || isUploadingEvidence || isSendingToValidation || isFinalizando) return;
     requestEnCursoRef.current.add(requestKey);
     setIsFinalizando(true);
     try {
@@ -2030,7 +2036,7 @@ export function AhoraSection() {
     ) {
       return true;
     }
-    return isIniciando || isFinalizando || isGeneratingBlocks || isSendingTransition;
+    return isIniciando || isFinalizando || isGeneratingBlocks || isSendingTransition || isUploadingEvidence || isSendingToValidation;
   };
 
   const jornadaEstadoLabel = !jornadaActual
@@ -2388,6 +2394,7 @@ export function AhoraSection() {
           obraId={subtareaActual.tareas?.obra_id || tareaActual?.obra_id}
           onClose={() => setShowModalFinalizarSubtarea(false)}
           onFinalizar={handleFinalizarSubtarea}
+          onUploadingChange={setIsUploadingEvidence}
         />
       )}
 
@@ -2724,12 +2731,14 @@ function ModalFinalizarSubtarea({
   obraId,
   onClose,
   onFinalizar,
+  onUploadingChange,
 }: {
   subtareaId: string;
   tareaId?: string;
   obraId?: string;
   onClose: () => void;
   onFinalizar: (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => Promise<void>;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const [evidenciaUrl, setEvidenciaUrl] = useState<string | undefined>(undefined);
   const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
@@ -2780,6 +2789,7 @@ function ModalFinalizarSubtarea({
 
   const handleFileUpload = async (file: File, kind: 'evidencia_final' | 'video_final') => {
     setUploading(true);
+    onUploadingChange?.(true);
     try {
       if (kind === 'evidencia_final') {
         const dataUrl = file.type.startsWith('image/') ? await comprimirImagen(file, 1200) : null;
@@ -2828,6 +2838,7 @@ function ModalFinalizarSubtarea({
       alert(err instanceof Error ? err.message : 'No se pudo subir la evidencia');
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
     }
   };
 

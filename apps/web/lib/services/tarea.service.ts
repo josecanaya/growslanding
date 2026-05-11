@@ -232,7 +232,7 @@ export class TareaService {
       .eq('id', tareaId)
       .maybeSingle();
 
-    const { cantidad, unidad, dias_reales, notas, monto } = presupuesto;
+    const { cantidad, unidad, dias_reales, notas } = presupuesto;
     let evidenciaObligatoria = true;
 
     let dias = dias_reales;
@@ -269,7 +269,7 @@ export class TareaService {
       )
     );
 
-    if (!cantidad && monto == null && !dias) {
+    if (!cantidad && !dias) {
       console.warn('[GENERAR_SUBTAREAS] No hay datos suficientes para generar subtareas para tarea ' + tareaId);
     }
 
@@ -278,11 +278,8 @@ export class TareaService {
     const subtareas: any[] = [];
 
     const cantidadTotal = typeof cantidad === 'number' ? Number(cantidad) : null;
-    const montoTotal = typeof monto === 'number' ? Number(monto) : null;
     const cantidadBase = cantidadTotal != null ? cantidadTotal / totalBloques : null;
-    const montoBase = montoTotal != null ? montoTotal / totalBloques : null;
     let acumuladoCantidad = 0;
-    let acumuladoMonto = 0;
 
     for (let i = 1; i <= totalBloques; i++) {
       const fechaSubtarea = new Date(hoy);
@@ -290,8 +287,6 @@ export class TareaService {
       const esUltimoBloque = i === totalBloques;
 
       let cantidadBloque: number | null = null;
-      let montoBloque: number | null = null;
-
       if (cantidadBase != null) {
         cantidadBloque =
           esUltimoBloque && cantidadTotal != null
@@ -300,25 +295,20 @@ export class TareaService {
         acumuladoCantidad += cantidadBloque;
       }
 
-      if (montoBase != null) {
-        montoBloque =
-          esUltimoBloque && montoTotal != null
-            ? montoTotal - acumuladoMonto
-            : montoBase;
-        acumuladoMonto += montoBloque;
-      }
-
       subtareas.push({
         tarea_id: tareaId,
         orden: i,
-        orden_pago: i,
-        cantidad: cantidadBloque,
-        unidad: unidad || 'unidades',
+        bloque_index: i,
+        cantidad: cantidadBloque ?? 1,
+        unidad: unidad || 'unidad',
         estado: 'pendiente',
         fecha: fechaSubtarea.toISOString().split('T')[0],
         created_at: new Date().toISOString(),
-        monto_estimado: montoBloque,
+        updated_at: new Date().toISOString(),
         evidencia_obligatoria: evidenciaObligatoria,
+        evidencia_cargada: false,
+        socio_id: presupuesto.socio_id ?? null,
+        presupuesto_id: presupuesto.id,
       });
     }
 

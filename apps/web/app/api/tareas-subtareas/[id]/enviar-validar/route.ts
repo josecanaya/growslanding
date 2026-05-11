@@ -4,8 +4,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
 import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
+import { TareaFsmService } from '@/lib/services/tarea-fsm.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { ESTADO_BLOQUE_FINAL, ESTADO_BLOQUE_PARA_VALIDAR } from '@/lib/domain/estados-core';
 import { resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
 
 function statusFromMessage(msg: string): number {
@@ -80,6 +82,24 @@ export async function POST(
       rol: 'SOCIO',
       socioId,
     });
+
+    const { data: pendientes } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('id')
+      .eq('tarea_id', subtarea.tarea_id)
+      .not('estado', 'in', `(${ESTADO_BLOQUE_PARA_VALIDAR},${ESTADO_BLOQUE_FINAL})`)
+      .limit(1);
+
+    if (!pendientes || pendientes.length === 0) {
+      await TareaFsmService.enforceTransition({
+        tareaId: subtarea.tarea_id,
+        nuevoEstado: 'para_validar',
+        actorId: user.id,
+        rol: 'SOCIO',
+        motivo: 'Bloques enviados a validar',
+        socioOperadorId: socioId,
+      });
+    }
 
     const { data: updated } = await supabaseAny
       .from('tareas_subtareas')

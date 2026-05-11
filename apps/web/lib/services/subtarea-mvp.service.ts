@@ -8,7 +8,7 @@ import {
   ESTADO_TAREA_FINAL,
   type EstadoBloqueCore,
 } from '../domain/estados-core';
-import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
 export type EstadoSubtarea = EstadoBloqueCore;
 
@@ -35,11 +35,10 @@ type SubtareaRecord = {
   tarea_id: string;
   estado: EstadoSubtarea;
   socio_id: string | null;
+  presupuesto_id?: string | null;
   evidencia_obligatoria: boolean;
   evidencia_cargada?: boolean | null;
   evidencia_url?: string | null;
-  monto_estimado: number | null;
-  monto_validado?: number | null;
   tareas?: {
     id: string;
     org_id: string;
@@ -95,7 +94,31 @@ export class SubtareaMvpService {
       }, presupuestoError.details ?? undefined);
     }
 
-    const presupuesto = primeraFilaPresupuestoAprobado(presupuestoRows ?? []);
+    const socioTarea = tarea.responsable_socio_id ?? null;
+    const presupuestosAprobados = (presupuestoRows ?? []).filter((row: any) =>
+      estadoPresupuestoEsAprobado(row.estado),
+    );
+    const presupuesto =
+      presupuestosAprobados.find((row: any) => !socioTarea || row.socio_id === socioTarea) ??
+      null;
+
+    if (!presupuesto) {
+      throw new GenerarBloquesError(
+        'No hay presupuesto aprobado para la tarea y el socio asignado',
+        {
+          tareaId,
+          socioId: socioTarea,
+          presupuestoId: null,
+          bloquesPlanificados: tarea.bloques_planificados ?? tarea.dias_presupuesto ?? 1,
+          motivo: 'PRESUPUESTO_APROBADO_NO_ENCONTRADO',
+          presupuestosEncontrados: (presupuestoRows ?? []).map((row: any) => ({
+            id: row.id,
+            estado: row.estado,
+            socio_id: row.socio_id,
+          })),
+        },
+      );
+    }
 
     let diasNotas: number | null = null;
     if (presupuesto?.notas) {
@@ -116,16 +139,31 @@ export class SubtareaMvpService {
       1,
     );
     const totalBloques = Math.max(1, Number.isFinite(bloquesPlanificados) ? Math.round(bloquesPlanificados) : 1);
-    const socioId = tarea.responsable_socio_id || presupuesto?.socio_id || null;
+    const socioId = tarea.responsable_socio_id || presupuesto.socio_id || null;
     const presupuestoId = presupuesto?.id ?? null;
     const cantidad = Number(presupuesto?.cantidad ?? 1);
     const unidad = String(presupuesto?.unidad || 'unidad');
 
-    const { data: existentes } = await supabaseAny
+    const { data: existentes, error: existentesError } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id')
+      .select('id, orden, bloque_index, estado, socio_id, presupuesto_id, cantidad, unidad, evidencia_obligatoria, evidencia_cargada')
       .eq('tarea_id', tareaId)
-      .limit(1);
+      .order('orden', { ascending: true });
+
+    if (existentesError) {
+      throw new GenerarBloquesError(
+        'No se pudo verificar si la tarea ya tiene bloques',
+        {
+          tareaId,
+          socioId,
+          presupuestoId,
+          bloquesPlanificados: totalBloques,
+          motivo: existentesError.message,
+          supabaseError: existentesError,
+        },
+        existentesError.details ?? undefined,
+      );
+    }
 
     if (existentes && existentes.length > 0) {
       return {
@@ -142,23 +180,20 @@ export class SubtareaMvpService {
       };
     }
 
-    const montoTotal = presupuesto?.monto || 0;
-    const montoPorBloque = totalBloques > 0 ? Number((montoTotal / totalBloques).toFixed(2)) : montoTotal;
-
-    const bloques = Array.from({ length: totalBloques }).map((_, index) => ({
-      tarea_id: tareaId,
-      bloque_index: index + 1,
-      orden: index + 1,
-      estado: 'pendiente',
-      // NOT NULL en DB: si no hay monto en presupuesto, usar 0 para cumplir constraint.
-      monto_estimado: montoTotal > 0 ? montoPorBloque : 0,
-      cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
-      unidad,
-      evidencia_obligatoria: true,
-      evidencia_cargada: false,
-      socio_id: socioId,
-      presupuesto_id: presupuestoId,
-    }));
+    const bloques = Array.from({ length: totalBloques }).map((_, index) => {
+      return {
+        tarea_id: tareaId,
+        bloque_index: index + 1,
+        orden: index + 1,
+        estado: 'pendiente',
+        cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
+        unidad,
+        evidencia_obligatoria: true,
+        evidencia_cargada: false,
+        socio_id: socioId,
+        presupuesto_id: presupuestoId,
+      };
+    });
 
     const { error: insertError } = await supabaseAny.from('tareas_subtareas').insert(bloques);
 
@@ -170,7 +205,8 @@ export class SubtareaMvpService {
           socioId,
           presupuestoId,
           bloquesPlanificados: totalBloques,
-          montoEstimado: montoPorBloque,
+          insertPayload: bloques,
+          supabaseError: insertError,
           cantidad: bloques[0]?.cantidad,
           unidad,
           motivo: insertError.message,
@@ -188,7 +224,7 @@ export class SubtareaMvpService {
         socioId,
         presupuestoId,
         bloquesPlanificados: totalBloques,
-        montoEstimado: montoPorBloque,
+        insertPayload: bloques,
         cantidad: bloques[0]?.cantidad,
         unidad,
         motivo: 'BLOQUES_CREADOS',
@@ -287,25 +323,10 @@ export class SubtareaMvpService {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
+    const select = await this.buildSubtareaSelect(supabaseAny);
     const { data: subtarea, error } = await supabaseAny
       .from('tareas_subtareas')
-      .select(`
-        id,
-        tarea_id,
-        estado,
-        socio_id,
-        evidencia_obligatoria,
-        evidencia_cargada,
-        evidencia_url,
-        monto_estimado,
-        monto_validado,
-        tareas:tareas (
-          id,
-          org_id,
-          responsable_socio_id,
-          estado
-        )
-      `)
+      .select(select)
       .eq('id', subtareaId)
       .maybeSingle();
 
@@ -330,15 +351,14 @@ export class SubtareaMvpService {
     const ahora = new Date().toISOString();
 
     if (accion === 'rechazar') {
+      const rejectPatch: Record<string, unknown> = {
+        estado: 'rechazado',
+        updated_at: ahora,
+      };
+
       const { error: rejectError } = await supabaseAny
         .from('tareas_subtareas')
-        .update({
-          estado: 'rechazado',
-          validado_por: null,
-          monto_validado: null,
-          fecha_validacion: null,
-          updated_at: ahora,
-        })
+        .update(rejectPatch)
         .eq('id', subtareaId);
 
       if (rejectError) {
@@ -348,16 +368,14 @@ export class SubtareaMvpService {
       return { tareaValidada: false };
     }
 
-    const monto = subtarea.monto_estimado ?? 0;
+    const updatePatch: Record<string, unknown> = {
+      estado: 'validado',
+      updated_at: ahora,
+    };
 
     const { error: updateError } = await supabaseAny
       .from('tareas_subtareas')
-      .update({
-        estado: 'validado',
-        monto_validado: monto,
-        fecha_validacion: ahora,
-        validado_por: actor.id,
-      })
+      .update(updatePatch)
       .eq('id', subtareaId);
 
     if (updateError) {
@@ -406,25 +424,10 @@ export class SubtareaMvpService {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
+    const select = await this.buildSubtareaSelect(supabaseAny);
     const { data, error } = await supabaseAny
       .from('tareas_subtareas')
-      .select(`
-        id,
-        tarea_id,
-        estado,
-        socio_id,
-        evidencia_obligatoria,
-        evidencia_cargada,
-        evidencia_url,
-        monto_estimado,
-        monto_validado,
-        tareas:tareas (
-          id,
-          org_id,
-          responsable_socio_id,
-          estado
-        )
-      `)
+      .select(select)
       .eq('id', subtareaId)
       .maybeSingle();
 
@@ -437,6 +440,25 @@ export class SubtareaMvpService {
 
   private static tieneEvidencia(subtarea: SubtareaRecord) {
     return Boolean(subtarea.evidencia_cargada || subtarea.evidencia_url);
+  }
+
+  private static async buildSubtareaSelect(_supabaseAny: any): Promise<string> {
+    return `
+        id,
+        tarea_id,
+        estado,
+        socio_id,
+        presupuesto_id,
+        evidencia_obligatoria,
+        evidencia_cargada,
+        evidencia_url,
+        tareas:tareas (
+          id,
+          org_id,
+          responsable_socio_id,
+          estado
+        )
+      `;
   }
 
   private static async assertMaxBloquesActivos(socioId: string, subtareaId: string) {

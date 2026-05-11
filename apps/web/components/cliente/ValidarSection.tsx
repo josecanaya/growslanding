@@ -186,11 +186,23 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       );
       const tareaIds = todasLasTareas.map((t) => t.id);
       const subtareasPorTarea = new Map<string, ValidarSubtarea[]>();
+      const montoAprobadoPorTarea = new Map<string, number>();
 
       if (tareaIds.length > 0) {
+        const { data: presupuestosData } = await supabase
+          .from('tareas_presupuestos')
+          .select('tarea_id, monto, estado')
+          .in('tarea_id', tareaIds);
+
+        (presupuestosData ?? []).forEach((row: any) => {
+          if (row.tarea_id && String(row.estado ?? '').toUpperCase() === 'APROBADO') {
+            montoAprobadoPorTarea.set(row.tarea_id, Number(row.monto ?? 0));
+          }
+        });
+
         const { data: subtareasData, error: subtareasError } = await supabase
           .from('tareas_subtareas')
-          .select('id, tarea_id, estado, monto_estimado, monto_validado, fecha, orden, orden_pago, bloque_index, evidencia_url, evidencia_cargada')
+          .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada')
           .in('tarea_id', tareaIds);
 
         if (subtareasError) {
@@ -205,10 +217,10 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
             lista.push({
               id: row.id,
               estado: row.estado ?? 'pendiente',
-              montoEstimado: typeof row.monto_estimado === 'number' ? row.monto_estimado : null,
-              montoValidado: typeof row.monto_validado === 'number' ? row.monto_validado : null,
+              montoEstimado: montoAprobadoPorTarea.get(tareaId) ?? null,
+              montoValidado: row.estado === 'validado' ? (montoAprobadoPorTarea.get(tareaId) ?? null) : null,
               fecha: row.fecha ?? null,
-              orden: row.orden ?? row.orden_pago ?? row.bloque_index ?? null,
+              orden: row.orden ?? row.bloque_index ?? null,
               bloque_index: row.bloque_index ?? null,
               evidencia_url: row.evidencia_url ?? null,
               evidencia_cargada: row.evidencia_cargada ?? false,

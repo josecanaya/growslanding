@@ -34,6 +34,11 @@ import type { ChecklistItem } from '@/data/checklists';
 import { useToast } from '@/components/ui/use-toast';
 import { USE_MOCK_DATA, MOCK_SUBTAREA_JORNADA_HOY, MOCK_CHECKLIST_ITEMS } from '@/lib/mocks/socioMockData';
 import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
+import {
+  ESTADO_BLOQUE_FINAL,
+  subtareaEstaCompletadaConLegacy,
+  subtareaEstaCompletadaOficial,
+} from '@/lib/domain/estados-core';
 
 type SupabaseTarea = {
   id: string;
@@ -56,6 +61,60 @@ type SupabaseTarea = {
     unidad: string | null;
   } | null;
 };
+
+/** Alineado con `SocioTareaOperacionService` + listado en pantalla (presupuesto APROBADO, cuadrilla_socios). */
+async function buildOrClauseSocioTareas(
+  supabaseAny: any,
+  opts: {
+    email: string | null | undefined;
+    nombreSocio: string | null | undefined;
+    socioId: string | null | undefined;
+  },
+): Promise<string[]> {
+  const partes: string[] = [];
+  if (opts.email) {
+    partes.push(`responsable.eq.${opts.email}`);
+    partes.push(`responsable.ilike.%${opts.email}%`);
+  }
+  if (opts.nombreSocio?.trim()) {
+    partes.push(`responsable.ilike.%${opts.nombreSocio.trim()}%`);
+  }
+  if (opts.socioId) {
+    partes.push(`responsable_socio_id.eq.${opts.socioId}`);
+    partes.push(`cuadrilla_id.eq.${opts.socioId}`);
+    const { data: presRows } = await supabaseAny
+      .from('tareas_presupuestos')
+      .select('tarea_id')
+      .eq('socio_id', opts.socioId)
+      .eq('estado', 'APROBADO');
+    const presTareaIds = [
+      ...new Set(
+        (presRows ?? [])
+          .map((r: { tarea_id?: string | null }) => r.tarea_id)
+          .filter((tid: string | null | undefined): tid is string => !!tid),
+      ),
+    ];
+    if (presTareaIds.length > 0) {
+      partes.push(`id.in.(${presTareaIds.join(',')})`);
+    }
+    const { data: cuRows } = await supabaseAny
+      .from('cuadrilla_socios')
+      .select('cuadrilla_id')
+      .eq('socio_id', opts.socioId)
+      .or('activo.is.null,activo.eq.true');
+    const cuadrillaIds = [
+      ...new Set(
+        (cuRows ?? [])
+          .map((r: { cuadrilla_id?: string | null }) => r.cuadrilla_id)
+          .filter((cid: string | null | undefined): cid is string => !!cid),
+      ),
+    ];
+    for (const cid of cuadrillaIds) {
+      partes.push(`cuadrilla_id.eq.${cid}`);
+    }
+  }
+  return partes;
+}
 
 export function AhoraSection() {
   const router = useRouter();
@@ -88,6 +147,13 @@ export function AhoraSection() {
   const [tareasActivasCount, setTareasActivasCount] = useState(0);
   const [bloquesActivosCount, setBloquesActivosCount] = useState(0);
   const [bloquesLista, setBloquesLista] = useState<Array<{ id: string; orden: number; estado: string }>>([]);
+  /** FK jornadas_socio / subtareas: socios.id (no auth.users.id). */
+  const [socioIdGrows, setSocioIdGrows] = useState<string | null>(null);
+  const [subtareaRefreshKey, setSubtareaRefreshKey] = useState(0);
+  const generarBloquesIntentados = useRef<Set<string>>(new Set());
+  /** Alineado con GET /api/tareas/[id]/socio-puede-operar (misma regla que transition). */
+  const [tareaOperableBackend, setTareaOperableBackend] = useState<boolean | null>(null);
+  const [tareaOperableMotivo, setTareaOperableMotivo] = useState<string | null>(null);
 
   // Helper para manejar errores de API y mostrar toasts
   const handleApiError = (error: any, defaultMessage: string) => {
@@ -108,6 +174,15 @@ export function AhoraSection() {
     } else if (errorCode === 'SOCIO_SUSPENDIDO' || errorMessage.includes('SOCIO_SUSPENDIDO') || errorMessage.includes('suspendido')) {
       title = 'Cuenta suspendida';
       description = 'Tu cuenta está suspendida por saldo negativo.';
+    } else if (
+      errorCode === 'SOCIO_NO_AUTORIZADO_TAREA' ||
+      errorMessage.includes('SOCIO_NO_AUTORIZADO_TAREA')
+    ) {
+      title = 'No podés operar esta tarea';
+      description =
+        typeof error?.debug === 'object' && error?.debug?.motivo403
+          ? `${error.debug.motivo403}. Revisá la pestaña Red → respuesta JSON (debug).`
+          : 'Revisá la pestaña Red → respuesta JSON (debug).';
     } else if (errorCode === 'TRANSICIÓN_NO_PERMITIDA' || errorMessage.includes('Transicion no permitida') || errorMessage.includes('no permitida') || errorMessage.includes('transición no permitida')) {
       title = 'Acción no permitida';
       description = 'Esta acción no está permitida en este estado.';
@@ -166,17 +241,26 @@ export function AhoraSection() {
         )
       `;
 
+      const socioCtx = await fetchSocioContextClient();
+      const orPartes = await buildOrClauseSocioTareas(supabase as any, {
+        email: currentUser.email,
+        nombreSocio: socioCtx?.nombre,
+        socioId: socioCtx?.id,
+      });
+
+      if (orPartes.length === 0) {
+        setTareas([]);
+        await cargarContadoresTareas();
+        await cargarContadoresBloques();
+        return;
+      }
+
       let query = supabase
         .from('tareas')
         .select(SELECT_FIELDS)
         .eq('org_id', orgId)
-        .order('created_at', { ascending: false });
-
-      if (currentUser.email) {
-        query = query.or(
-          `responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`
-        );
-      }
+        .order('created_at', { ascending: false })
+        .or(orPartes.join(','));
 
       const { data } = await query;
       const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
@@ -211,45 +295,6 @@ export function AhoraSection() {
       );
 
       setTareas(tareasParaIniciar);
-
-      // Recargar subtarea actual
-      const { data: subtareaPendiente } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(`
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `)
-        .eq('estado', 'pendiente')
-        .order('orden', { ascending: true })
-        .limit(1);
-
-      if (subtareaPendiente && subtareaPendiente.length > 0) {
-        setSubtareaActual(subtareaPendiente[0]);
-        
-        const tareaId = subtareaPendiente[0].tarea_id;
-        const { data: todasSubtareas } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select('id, estado')
-          .eq('tarea_id', tareaId);
-
-        if (todasSubtareas) {
-          setTotalSubtareas(todasSubtareas.length);
-          const completadas = todasSubtareas.filter(
-            (s: any) => s.estado === 'validado' || s.estado === 'validada'
-          ).length;
-          setSubtareasCompletadas(completadas);
-        }
-      }
 
       // Recargar contadores
       await cargarContadoresTareas();
@@ -299,6 +344,7 @@ export function AhoraSection() {
       }
 
       const socioRow = await fetchSocioContextClient();
+      setSocioIdGrows(socioRow?.id ?? null);
 
       const orgId =
         orgIdResuelta ||
@@ -352,18 +398,11 @@ export function AhoraSection() {
           query = query.eq('org_id', orgId);
         }
 
-        const partes: string[] = [];
-        if (currentUser.email) {
-          partes.push(`responsable.eq.${currentUser.email}`);
-          partes.push(`responsable.ilike.%${currentUser.email}%`);
-        }
-        if (socioRow?.nombre?.trim()) {
-          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
-        }
-        if (socioRow?.id) {
-          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
-          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
-        }
+        const partes = await buildOrClauseSocioTareas(supabase as any, {
+          email: currentUser.email,
+          nombreSocio: socioRow?.nombre,
+          socioId: socioRow?.id,
+        });
         if (partes.length === 0) {
           setLoading(false);
           setError('No se pudo vincular tu perfil con tareas asignadas.');
@@ -473,18 +512,11 @@ export function AhoraSection() {
           return;
         }
 
-        const partes: string[] = [];
-        if (currentUser.email) {
-          partes.push(`responsable.eq.${currentUser.email}`);
-          partes.push(`responsable.ilike.%${currentUser.email}%`);
-        }
-        if (socioRow?.nombre?.trim()) {
-          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
-        }
-        if (socioRow?.id) {
-          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
-          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
-        }
+        const partes = await buildOrClauseSocioTareas(supabase as any, {
+          email: currentUser.email,
+          nombreSocio: socioRow?.nombre,
+          socioId: socioRow?.id,
+        });
         if (partes.length === 0) {
           setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
           return;
@@ -503,9 +535,10 @@ export function AhoraSection() {
 
         // Calcular progreso basado en tareas (las subtareas se actualizan en otro useEffect)
         const total = todasLasTareas.length;
-        const completadas = todasLasTareas.filter(
-          (t: any) => t.estado === 'finalizado' || t.estado === 'validado' || t.avance === 100
-        ).length;
+        const completadas = todasLasTareas.filter((t: any) => {
+          const e = (t.estado || '').toLowerCase();
+          return e === 'validada' || e === 'rechazada' || t.avance === 100;
+        }).length;
         const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
         
         setProgresoGeneral({ completadas, total, porcentaje });
@@ -529,7 +562,7 @@ export function AhoraSection() {
     }
   }, [totalSubtareas, subtareasCompletadas]);
 
-  // Calcular tareas completadas hoy
+  // Calcular tareas completadas hoy (solo estado oficial validada en eventos; sin legacy finalizado/finalizada)
   useEffect(() => {
     const calcularTareasHoy = async () => {
       if (!currentUser?.id) {
@@ -548,34 +581,51 @@ export function AhoraSection() {
         hoy.setHours(0, 0, 0, 0);
         const hoyISO = hoy.toISOString();
 
-        // Primero obtener las tareas de la organización
-        const { data: tareasOrg } = await supabase
-          .from('tareas')
-          .select('id')
-          .eq('org_id', orgId);
-
-        if (!tareasOrg || tareasOrg.length === 0) {
+        const socioCtx = await fetchSocioContextClient();
+        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
+          email: currentUser.email,
+          nombreSocio: socioCtx?.nombre,
+          socioId: socioCtx?.id,
+        });
+        if (orPartes.length === 0) {
           setTareasCompletadasHoy(0);
           return;
         }
 
-        const tareaIds = tareasOrg.map((t: any) => t.id);
+        const { data: misTareas } = await supabase
+          .from('tareas')
+          .select('id')
+          .eq('org_id', orgId)
+          .or(orPartes.join(','))
+          .limit(80);
 
-        // Luego consultar eventos de esas tareas con nuevo_estado = 'finalizado'
-        const { data: eventosHoy } = await supabase
+        const tareaIds = (misTareas ?? []).map((t: { id: string }) => t.id).filter(Boolean);
+        if (tareaIds.length === 0) {
+          setTareasCompletadasHoy(0);
+          return;
+        }
+
+        const { data: eventosHoy, error: evErr } = await supabase
           .from('eventos')
           .select('tarea_id')
           .in('tarea_id', tareaIds)
-          .eq('nuevo_estado', 'finalizado')
+          .eq('nuevo_estado', 'validada')
           .gte('created_at', hoyISO);
 
+        if (evErr) {
+          console.error('[AhoraSection] eventos completadas hoy:', evErr);
+          setTareasCompletadasHoy(0);
+          return;
+        }
+
         if (eventosHoy) {
-          const tareasUnicas = new Set(eventosHoy.map((e: any) => e.tarea_id));
+          const tareasUnicas = new Set(eventosHoy.map((e: { tarea_id?: string | null }) => e.tarea_id));
           setTareasCompletadasHoy(tareasUnicas.size);
         } else {
           setTareasCompletadasHoy(0);
         }
       } catch (err) {
+        console.error('[AhoraSection] calcularTareasHoy:', err);
         setTareasCompletadasHoy(0);
       }
     };
@@ -588,112 +638,47 @@ export function AhoraSection() {
     return tareas[tareaActualIndex] || null;
   }, [tareas, tareaActualIndex]);
 
-  // Función para generar subtareas automáticamente si faltan
-  const generarSubtareasParaTarea = async (tareaId: string) => {
-    try {
-      // Verificar si ya existen subtareas
-      const { data: subtareasExistentes } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select('id')
-        .eq('tarea_id', tareaId)
-        .limit(1);
+  const tareasIdsFingerprint = useMemo(() => tareas.map((t) => t.id).join(','), [tareas]);
 
-      if (subtareasExistentes && subtareasExistentes.length > 0) {
-        // Ya existen subtareas, no generar
-        return;
-      }
-
-      // Obtener presupuesto de la tarea
-      const { data: presupuesto, error: presupuestoError } = await (supabase as any)
-        .from('tareas_presupuestos')
-        .select('cantidad, unidad, dias_reales, notas')
-        .eq('tarea_id', tareaId)
-        .maybeSingle();
-
-      if (presupuestoError || !presupuesto) {
-        return;
-      }
-
-      const { cantidad, unidad, dias_reales, notas } = presupuesto;
-      
-      // Intentar obtener dias_reales de notas si no viene directamente
-      let dias = dias_reales;
-      if (!dias && notas) {
-        try {
-          const notasParsed = typeof notas === 'string' ? JSON.parse(notas) : notas;
-          dias = notasParsed?.dias_reales || notasParsed?.dias;
-        } catch {
-          // Si no se puede parsear, usar null
+  useEffect(() => {
+    if (USE_MOCK_DATA) {
+      setTareaOperableBackend(true);
+      setTareaOperableMotivo(null);
+      return;
+    }
+    if (subtareaActual) {
+      setTareaOperableBackend(null);
+      setTareaOperableMotivo(null);
+      return;
+    }
+    const tid = tareaActual?.id;
+    if (!tid) {
+      setTareaOperableBackend(null);
+      setTareaOperableMotivo(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setTareaOperableBackend(null);
+      setTareaOperableMotivo(null);
+      try {
+        const res = await fetch(`/api/tareas/${tid}/socio-puede-operar`, { credentials: 'include' });
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        setTareaOperableBackend(!!json.allowed);
+        setTareaOperableMotivo(json.allowed ? null : String(json.code ?? 'SOCIO_NO_AUTORIZADO_TAREA'));
+      } catch (e) {
+        console.error('[AhoraSection] socio-puede-operar:', e);
+        if (!cancelled) {
+          setTareaOperableBackend(null);
+          setTareaOperableMotivo('FETCH_ERROR');
         }
       }
-      
-      if (!cantidad || !dias || dias <= 0) {
-        return;
-      }
-
-      // Obtener fecha_inicio_estimada de la tarea
-      const { data: tareaData } = await (supabase as any)
-        .from('tareas')
-        .select('fecha_inicio_estimada')
-        .eq('id', tareaId)
-        .maybeSingle();
-
-      if (!tareaData?.fecha_inicio_estimada) {
-        return;
-      }
-
-      // Calcular rendimiento diario
-      const rendimientoDiario = cantidad / dias;
-      const subtareas: any[] = [];
-      const fechaInicio = new Date(tareaData.fecha_inicio_estimada);
-      fechaInicio.setHours(0, 0, 0, 0);
-
-      // Generar subtareas para cada día
-      for (let i = 1; i <= dias; i++) {
-        const fechaSubtarea = new Date(fechaInicio);
-        fechaSubtarea.setDate(fechaInicio.getDate() + (i - 1));
-        
-        subtareas.push({
-          tarea_id: tareaId,
-          orden: i,
-          cantidad: rendimientoDiario,
-          unidad: unidad || 'unidades',
-          estado: 'pendiente',
-          fecha: fechaSubtarea.toISOString().split('T')[0],
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      // Verificar si hay leftover
-      const totalGenerado = rendimientoDiario * dias;
-      if (totalGenerado < cantidad) {
-        const leftover = cantidad - totalGenerado;
-        const fechaFinal = new Date(fechaInicio);
-        fechaFinal.setDate(fechaInicio.getDate() + dias);
-        
-        subtareas.push({
-          tarea_id: tareaId,
-          orden: dias + 1,
-          cantidad: leftover,
-          unidad: unidad || 'unidades',
-          estado: 'pendiente',
-          fecha: fechaFinal.toISOString().split('T')[0],
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      // Insertar subtareas masivamente
-      const { error: insertError } = await (supabase as any)
-        .from('tareas_subtareas')
-        .insert(subtareas);
-
-      if (insertError) {
-        return;
-      }
-    } catch (err) {
-      // Error silencioso
-    }
-  };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tareaActual?.id, subtareaActual]);
 
   // Demo: mock "Tu jornada de hoy" como si estuvieras realizando una tarea (jornada activa para poder finalizar)
   useEffect(() => {
@@ -707,10 +692,12 @@ export function AhoraSection() {
     setTareasCompletadasHoy(2);
   }, []);
 
-  // Cargar jornada actual y subtarea activa
+  // Jornada (socios.id) + subtarea acotada a la tarea actual y al socio
   useEffect(() => {
-    const cargarJornadaYSubtarea = async () => {
-      if (USE_MOCK_DATA) return;
+    if (USE_MOCK_DATA) return;
+    let cancelled = false;
+
+    const run = async () => {
       if (!currentUser?.id) {
         setJornadaActual(null);
         setSubtareaActual(null);
@@ -718,10 +705,12 @@ export function AhoraSection() {
       }
 
       const orgId = orgIdResuelta || currentUser.orgId;
-      if (!orgId) return;
+      if (!orgId || !socioIdGrows) {
+        setJornadaActual(null);
+        return;
+      }
 
       try {
-        // Verificar si existe jornada para hoy
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
         const hoyISO = hoy.toISOString().split('T')[0];
@@ -729,170 +718,152 @@ export function AhoraSection() {
         const { data: jornadaData } = await (supabase as any)
           .from('jornadas_socio')
           .select('*')
-          .eq('socio_id', currentUser.id)
+          .eq('socio_id', socioIdGrows)
           .eq('fecha', hoyISO)
           .maybeSingle();
 
+        if (cancelled) return;
         setJornadaActual(jornadaData);
 
-        // Autogenerar subtareas para tareas asignadas que no tienen subtareas
-        if (tareas.length > 0) {
-          for (const tarea of tareas) {
-            if (tarea.estado === 'ASIGNADA' || tarea.estado?.toLowerCase() === 'asignada') {
-              await generarSubtareasParaTarea(tarea.id);
-            }
+        const tareaIds = tareas.map((t) => t.id).filter(Boolean);
+        const tid = tareaActual?.id;
+
+        const contarSubtareasScoped = async () => {
+          if (!socioIdGrows || tareaIds.length === 0) {
+            setTareasProgramadasHoy(0);
+            setTareasCompletadasHoy(0);
+            return;
           }
-        }
-
-        // Buscar la primera subtarea pendiente de todas las tareas del socio (SIN filtrar por fecha)
-        const { data: subtareaPendiente } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select(`
-            *,
-            tareas:tareas (
-              id,
-              title,
-              obra_id,
-              estado,
-              obras:obras (
-                id,
-                name,
-                address
-              )
-            )
-          `)
-          .eq('estado', 'pendiente')
-          .order('orden', { ascending: true })
-          .limit(1);
-
-        if (subtareaPendiente && subtareaPendiente.length > 0) {
-          const subtarea = subtareaPendiente[0];
-          setSubtareaActual(subtarea);
-          
-          // Cargar total de subtareas de esa tarea
-          const { data: todasSubtareas } = await (supabase as any)
+          const supAny = supabase as any;
+          const { count: pendCount } = await supAny
             .from('tareas_subtareas')
-            .select('id, estado')
-            .eq('tarea_id', subtarea.tarea_id);
-
-          if (todasSubtareas) {
-            setTotalSubtareas(todasSubtareas.length);
-            const completadas = todasSubtareas.filter(
-              (s: any) => s.estado === 'finalizada' || s.estado === 'validada'
-            ).length;
-            setSubtareasCompletadas(completadas);
-          }
-
-          // Actualizar tarea actual si es diferente
-          if (subtarea.tareas) {
-            const tareaEncontrada = tareas.find(t => t.id === subtarea.tareas.id);
-            if (!tareaEncontrada && subtarea.tareas) {
-              setTareas([subtarea.tareas as SupabaseTarea]);
-              setTareaActualIndex(0);
-            }
-          }
-
-          // Contar todas las subtareas pendientes (sin filtrar por fecha)
-          const { data: todasSubtareasPendientes } = await (supabase as any)
-            .from('tareas_subtareas')
-            .select('id, estado')
+            .select('*', { count: 'exact', head: true })
+            .in('tarea_id', tareaIds)
+            .eq('socio_id', socioIdGrows)
             .eq('estado', 'pendiente');
 
-          if (todasSubtareasPendientes) {
-            setTareasProgramadasHoy(todasSubtareasPendientes.length);
-            const { data: todasSubtareasFinalizadas } = await (supabase as any)
-              .from('tareas_subtareas')
-              .select('id, estado')
-              .eq('estado', 'finalizada');
-            
-            if (todasSubtareasFinalizadas) {
-              setTareasCompletadasHoy(todasSubtareasFinalizadas.length);
-            }
-          }
-        } else {
-          // No hay subtareas pendientes - buscar tareas asignadas (modo compatibilidad)
+          const { count: valCount } = await supAny
+            .from('tareas_subtareas')
+            .select('*', { count: 'exact', head: true })
+            .in('tarea_id', tareaIds)
+            .eq('socio_id', socioIdGrows)
+            .eq('estado', ESTADO_BLOQUE_FINAL);
+
+          setTareasProgramadasHoy(pendCount ?? 0);
+          setTareasCompletadasHoy(valCount ?? 0);
+        };
+
+        if (!tid) {
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
-          
-          // Buscar tareas con estado ASIGNADA o pendiente
-          const { data: tareasAsignadas } = await (supabase as any)
-            .from('tareas')
-            .select(`
+          await contarSubtareasScoped();
+          return;
+        }
+
+        const supAny = supabase as any;
+        const selectSub = `
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            obras:obras (
               id,
-              title,
-              descripcion,
-              estado,
-              prioridad,
-              avance,
-              fecha_inicio_estimada,
-              fecha_fin_estimada,
-              obra_id,
-              responsable,
-              obras (
-                id,
-                name,
-                address
-              ),
-              elemento_id,
-              elemento:elementos (
-                cantidad,
-                unidad
-              )
-            `)
-            .eq('org_id', orgId)
-            .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`)
-            .in('estado', ['ASIGNADA', 'asignada', 'pendiente', 'PENDIENTE'])
-            .order('created_at', { ascending: false })
-            .limit(1);
+              name,
+              address
+            )
+          )
+        `;
 
-          if (tareasAsignadas && tareasAsignadas.length > 0) {
-            const tareaAsignada = tareasAsignadas[0] as SupabaseTarea;
-            // Buscar si esta tarea está en el array de tareas
-            const index = tareas.findIndex(t => t.id === tareaAsignada.id);
-            if (index >= 0) {
-              setTareaActualIndex(index);
-            } else {
-              // Agregar la tarea al array
-              setTareas([tareaAsignada, ...tareas]);
-              setTareaActualIndex(0);
-            }
-            
-            // Contar tareas asignadas y pendientes
-            const { data: todasTareasAsignadas } = await (supabase as any)
-              .from('tareas')
-              .select('id, estado')
-              .eq('org_id', orgId)
-              .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`)
-              .in('estado', ['ASIGNADA', 'asignada', 'pendiente', 'PENDIENTE']);
+        const { data: hayAlguna } = await supAny
+          .from('tareas_subtareas')
+          .select('id')
+          .eq('tarea_id', tid)
+          .limit(1);
 
-            if (todasTareasAsignadas) {
-              setTareasProgramadasHoy(todasTareasAsignadas.length);
-              const { data: tareasCompletadas } = await (supabase as any)
-                .from('tareas')
-                .select('id, estado')
-                .eq('org_id', orgId)
-                .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`)
-                .in('estado', ['COMPLETADA', 'completada', 'finalizado', 'FINALIZADO']);
-              
-              if (tareasCompletadas) {
-                setTareasCompletadasHoy(tareasCompletadas.length);
-              }
+        // Misma autorización que transition: no spamear generar-bloques si el backend ya deniega operar la tarea.
+        if (!hayAlguna?.length) {
+          if (tareaOperableBackend === false) {
+            if (!generarBloquesIntentados.current.has(tid)) {
+              generarBloquesIntentados.current.add(tid);
             }
-          } else {
-            setTareasProgramadasHoy(0);
-            setTareasCompletadasHoy(0);
+          } else if (tareaOperableBackend === true && !generarBloquesIntentados.current.has(tid)) {
+            generarBloquesIntentados.current.add(tid);
+            const res = await fetch(`/api/tareas/${tid}/generar-bloques`, {
+              method: 'POST',
+              credentials: 'include',
+            }).catch(() => undefined);
+            if (res && !res.ok && res.status === 403) {
+              console.warn('[AhoraSection] generar-bloques 403 (coherente con socio-puede-operar si hay desfase)');
+            }
           }
         }
-      } catch (err) {
-        // Error silencioso
+
+        const { data: lista } = await supAny
+          .from('tareas_subtareas')
+          .select(selectSub)
+          .eq('tarea_id', tid)
+          .or(`socio_id.eq.${socioIdGrows},socio_id.is.null`)
+          .order('orden', { ascending: true });
+
+        if (cancelled) return;
+
+        if (!lista?.length) {
+          setSubtareaActual(null);
+          setTotalSubtareas(0);
+          setSubtareasCompletadas(0);
+          await contarSubtareasScoped();
+          return;
+        }
+
+        const list = (lista as any[]).filter(
+          (s) => !s.socio_id || s.socio_id === socioIdGrows,
+        );
+
+        if (!list.length) {
+          setSubtareaActual(null);
+          setTotalSubtareas(0);
+          setSubtareasCompletadas(0);
+          await contarSubtareasScoped();
+          return;
+        }
+
+        const pick =
+          list.find((s: any) => s.estado === 'en_progreso') ||
+          list.find((s: any) => s.estado === 'para_validar') ||
+          list.find((s: any) => s.estado === 'pendiente') ||
+          list.find((s: any) => s.estado === 'rechazado') ||
+          null;
+
+        setSubtareaActual(pick);
+        setTotalSubtareas(list.length);
+        setSubtareasCompletadas(
+          list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
+        );
+        await contarSubtareasScoped();
+      } catch {
+        // sin maquillar: no romper la pantalla
       }
     };
 
-    cargarJornadaYSubtarea();
-    cargarContadoresTareas();
-    cargarContadoresBloques();
-  }, [currentUser, orgIdResuelta, supabase, tareas]);
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    currentUser?.id,
+    currentUser?.orgId,
+    orgIdResuelta,
+    socioIdGrows,
+    supabase,
+    tareaActual?.id,
+    tareasIdsFingerprint,
+    subtareaRefreshKey,
+    tareaOperableBackend,
+  ]);
 
   // Cargar avance diario y evidencias finales de la tarea actual
   useEffect(() => {
@@ -911,12 +882,11 @@ export function AhoraSection() {
         hoy.setHours(0, 0, 0, 0);
         const hoyISO = hoy.toISOString();
 
-        // Buscar eventos de avance diario de hoy
         const { data: eventosAvance } = await supabase
           .from('eventos')
           .select('id, snapshot_json')
           .eq('tarea_id', tareaActual.id)
-          .eq('nuevo_estado', 'en_ejecucion')
+          .in('nuevo_estado', ['en_progreso', 'en_ejecucion'])
           .gte('created_at', hoyISO)
           .order('created_at', { ascending: false })
           .limit(1) as any;
@@ -928,28 +898,36 @@ export function AhoraSection() {
           }
         }
 
-        // Buscar evidencias finales de la tarea
-        const { data: eventosFinal } = await supabase
+        const { data: candidatosEv, error: evCandErr } = await supabase
           .from('eventos')
-          .select('id')
+          .select('id, nuevo_estado')
           .eq('tarea_id', tareaActual.id)
-          .eq('nuevo_estado', 'finalizado')
           .order('created_at', { ascending: false })
-          .limit(1) as any;
+          .limit(24);
 
-        if (eventosFinal && eventosFinal.length > 0) {
-          const { data: mediaData } = await supabase
-            .from('media')
-            .select('path, kind')
-            .eq('evento_id', eventosFinal[0].id)
-            .eq('kind', 'evidencia_final') as any;
+        if (evCandErr) {
+          console.error('[AhoraSection] eventos evidencias finales:', evCandErr);
+        } else {
+          const oficialOk = new Set(['validada', 'para_validar', 'en_progreso', 'en_ejecucion']);
+          const legacyOk = new Set(['finalizado', 'finalizada']);
+          const pick = (candidatosEv ?? []).find((ev: { nuevo_estado?: string | null }) => {
+            const n = (ev.nuevo_estado || '').toLowerCase();
+            return oficialOk.has(n) || legacyOk.has(n);
+          });
+          if (pick?.id) {
+            const { data: mediaData } = await supabase
+              .from('media')
+              .select('path, kind')
+              .eq('evento_id', pick.id)
+              .eq('kind', 'evidencia_final') as any;
 
-          if (mediaData) {
-            setEvidenciasFinales(mediaData.map((m: any) => m.path));
+            if (mediaData) {
+              setEvidenciasFinales(mediaData.map((m: any) => m.path));
+            }
           }
         }
       } catch (err) {
-        // Error silencioso
+        console.error('[AhoraSection] cargarAvanceYEvidencias:', err);
       }
     };
 
@@ -958,6 +936,14 @@ export function AhoraSection() {
 
   const handleIniciarJornada = async () => {
     if (!currentUser?.id) return;
+    if (!socioIdGrows) {
+      toast({
+        title: 'Perfil incompleto',
+        description: 'No encontramos tu registro de socio. Volvé a iniciar sesión o contactá soporte.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Requiere al menos una tarea o subtarea
     if (!subtareaActual && !tareaActual) {
@@ -988,7 +974,7 @@ export function AhoraSection() {
       const { data: jornadaExistente, error: errorVerificar } = await (supabase as any)
         .from('jornadas_socio')
         .select('*')
-        .eq('socio_id', currentUser.id)
+        .eq('socio_id', socioIdGrows)
         .eq('fecha', hoyISO)
         .maybeSingle();
 
@@ -1009,7 +995,7 @@ export function AhoraSection() {
       const { data: nuevaJornada, error: jornadaError } = await (supabase as any)
         .from('jornadas_socio')
         .insert({
-          socio_id: currentUser.id,
+          socio_id: socioIdGrows,
           obra_id: obraId,
           fecha: hoyISO,
           hora_inicio: horaInicio,
@@ -1023,7 +1009,7 @@ export function AhoraSection() {
           const { data: jornadaData } = await (supabase as any)
             .from('jornadas_socio')
             .select('*')
-            .eq('socio_id', currentUser.id)
+            .eq('socio_id', socioIdGrows)
             .eq('fecha', hoyISO)
             .maybeSingle();
           
@@ -1047,7 +1033,7 @@ export function AhoraSection() {
         const { data: jornadaData } = await (supabase as any)
           .from('jornadas_socio')
           .select('*')
-          .eq('socio_id', currentUser.id)
+          .eq('socio_id', socioIdGrows)
           .eq('fecha', hoyISO)
           .maybeSingle();
 
@@ -1180,7 +1166,13 @@ export function AhoraSection() {
       // Recargar tareas después de iniciar
       const orgId = orgIdResuelta || currentUser.orgId;
       if (orgId) {
-        const { data } = await supabase
+        const socioCtx = await fetchSocioContextClient();
+        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
+          email: currentUser.email,
+          nombreSocio: socioCtx?.nombre,
+          socioId: socioCtx?.id,
+        });
+        let rq = supabase
           .from('tareas')
           .select(`
             id,
@@ -1205,8 +1197,11 @@ export function AhoraSection() {
             )
           `)
           .eq('org_id', orgId)
-          .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`)
           .order('created_at', { ascending: false });
+        if (orPartes.length > 0) {
+          rq = rq.or(orPartes.join(','));
+        }
+        const { data } = await rq;
 
         if (data) {
           const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
@@ -1256,18 +1251,21 @@ export function AhoraSection() {
     if (!orgId) return;
 
     try {
-      const { data: socio } = await (supabase as any)
-        .from('socios')
-        .select('id')
-        .eq('email', currentUser.email)
-        .maybeSingle();
-
-      if (!socio?.id) return;
+      let sid = socioIdGrows;
+      if (!sid && currentUser.email) {
+        const { data: socio } = await (supabase as any)
+          .from('socios')
+          .select('id')
+          .eq('email', currentUser.email)
+          .maybeSingle();
+        sid = socio?.id ?? null;
+      }
+      if (!sid) return;
 
       const { count } = await (supabase as any)
         .from('tareas')
         .select('*', { count: 'exact', head: true })
-        .eq('responsable_socio_id', socio.id)
+        .eq('responsable_socio_id', sid)
         .eq('estado', 'en_progreso');
 
       setTareasActivasCount(count || 0);
@@ -1283,18 +1281,21 @@ export function AhoraSection() {
     if (!orgId) return;
 
     try {
-      const { data: socio } = await (supabase as any)
-        .from('socios')
-        .select('id')
-        .eq('email', currentUser.email)
-        .maybeSingle();
-
-      if (!socio?.id) return;
+      let sid = socioIdGrows;
+      if (!sid && currentUser.email) {
+        const { data: socio } = await (supabase as any)
+          .from('socios')
+          .select('id')
+          .eq('email', currentUser.email)
+          .maybeSingle();
+        sid = socio?.id ?? null;
+      }
+      if (!sid) return;
 
       const { count } = await (supabase as any)
         .from('tareas_subtareas')
         .select('*', { count: 'exact', head: true })
-        .eq('socio_id', socio.id)
+        .eq('socio_id', sid)
         .eq('estado', 'en_progreso');
 
       setBloquesActivosCount(count || 0);
@@ -1302,6 +1303,13 @@ export function AhoraSection() {
       // Error silencioso
     }
   };
+
+  useEffect(() => {
+    if (USE_MOCK_DATA) return;
+    void cargarContadoresTareas();
+    void cargarContadoresBloques();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contadores encapsulados
+  }, [socioIdGrows, orgIdResuelta, currentUser?.id, subtareaRefreshKey]);
 
   const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
     if (!subtareaActual || !currentUser) return;
@@ -1318,7 +1326,7 @@ export function AhoraSection() {
             evidencia_url: evidenciaUrl || null,
             video_url: videoUrl || null,
             problemas: problemas || null,
-            evidencia_cargada: evidenciaUrl ? true : null,
+            evidencia_cargada: Boolean(evidenciaUrl),
           })
           .eq('id', subtareaActual.id);
 
@@ -1372,6 +1380,8 @@ export function AhoraSection() {
         setSubtareaActual(subtareaData);
       }
 
+      setSubtareaRefreshKey((k) => k + 1);
+
       // Recargar contadores y datos
       await cargarContadoresBloques();
       await fetchData();
@@ -1405,56 +1415,7 @@ export function AhoraSection() {
       return; // Si hubo error, no continuar
     }
 
-    // Buscar próxima subtarea pendiente de todas las tareas
-    try {
-      const { data: siguienteSubtarea } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(`
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `)
-        .eq('estado', 'pendiente')
-        .order('orden', { ascending: true })
-        .limit(1);
-
-      if (siguienteSubtarea && siguienteSubtarea.length > 0) {
-        setSubtareaActual(siguienteSubtarea[0]);
-        
-        // Actualizar contadores
-        const tareaIdNueva = siguienteSubtarea[0].tarea_id || siguienteSubtarea[0].tareas?.id;
-        if (tareaIdNueva) {
-          const { data: todasSubtareasNueva } = await (supabase as any)
-            .from('tareas_subtareas')
-            .select('id, estado')
-            .eq('tarea_id', tareaIdNueva);
-
-          if (todasSubtareasNueva) {
-            setTotalSubtareas(todasSubtareasNueva.length);
-            const completadas = todasSubtareasNueva.filter(
-              (s: any) => s.estado === 'validado' || s.estado === 'validada'
-            ).length;
-            setSubtareasCompletadas(completadas);
-          }
-        }
-      } else {
-        // No hay más subtareas pendientes
-        setSubtareaActual(null);
-        setTotalSubtareas(0);
-        setSubtareasCompletadas(0);
-      }
-    } catch (err) {
-      // Error silencioso
-    }
+    setSubtareaRefreshKey((k) => k + 1);
 
     setShowModalFinalizarSubtarea(false);
   };
@@ -1573,21 +1534,29 @@ export function AhoraSection() {
       // Si hay media en el evento, también crear registro en tareas_evidencias
       if (tareaActual.id) {
         try {
-          const { data: eventoData } = await supabase
+          const { data: candidatosPost } = await supabase
             .from('eventos')
-            .select('id')
+            .select('id, nuevo_estado')
             .eq('tarea_id', tareaActual.id)
-            .eq('nuevo_estado', 'finalizado')
             .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle() as any;
+            .limit(12);
 
-          if (eventoData?.id) {
+          const eventoReciente = (candidatosPost ?? []).find((ev: { nuevo_estado?: string | null }) => {
+            const n = (ev.nuevo_estado || '').toLowerCase();
+            return (
+              n === 'para_validar' ||
+              n === 'validada' ||
+              n === 'finalizado' ||
+              n === 'finalizada'
+            );
+          });
+
+          if (eventoReciente?.id) {
             // Obtener media de la tabla media relacionada con el evento
             const { data: mediaData } = await supabase
               .from('media')
               .select('path, kind')
-              .eq('evento_id', eventoData.id)
+              .eq('evento_id', eventoReciente.id)
               .limit(1)
               .maybeSingle() as any;
 
@@ -1610,7 +1579,13 @@ export function AhoraSection() {
       // Recargar tareas
       const orgId = orgIdResuelta || currentUser.orgId;
       if (orgId) {
-        const { data } = await supabase
+        const socioCtx = await fetchSocioContextClient();
+        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
+          email: currentUser.email,
+          nombreSocio: socioCtx?.nombre,
+          socioId: socioCtx?.id,
+        });
+        let rq = supabase
           .from('tareas')
           .select(`
             id,
@@ -1635,8 +1610,11 @@ export function AhoraSection() {
             )
           `)
           .eq('org_id', orgId)
-          .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`)
           .order('created_at', { ascending: false });
+        if (orPartes.length > 0) {
+          rq = rq.or(orPartes.join(','));
+        }
+        const { data } = await rq;
 
         if (data) {
           const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
@@ -1683,32 +1661,43 @@ export function AhoraSection() {
       if (tareasOrg && tareasOrg.length > 0) {
         const tareaIds = tareasOrg.map((t: any) => t.id);
         
-        // Luego consultar eventos de esas tareas con nuevo_estado = 'finalizado'
-        const { data: eventosHoy } = await supabase
+        const { data: eventosHoy, error: evHoyErr } = await supabase
           .from('eventos')
           .select('tarea_id')
           .in('tarea_id', tareaIds)
-          .eq('nuevo_estado', 'finalizado')
+          .eq('nuevo_estado', 'validada')
           .gte('created_at', hoyISO);
-        
-        if (eventosHoy) {
+
+        if (evHoyErr) {
+          console.error('[AhoraSection] eventos post-finalizar:', evHoyErr);
+        } else if (eventosHoy) {
           const tareasUnicas = new Set(eventosHoy.map((e: any) => e.tarea_id));
           setTareasCompletadasHoy(tareasUnicas.size);
         }
       }
 
       // Recalcular progreso general
-      const { data: todasLasTareas } = await supabase
+      const socioCtxProg = await fetchSocioContextClient();
+      const orProg = await buildOrClauseSocioTareas(supabase as any, {
+        email: currentUser.email,
+        nombreSocio: socioCtxProg?.nombre,
+        socioId: socioCtxProg?.id,
+      });
+      let qProg = supabase
         .from('tareas')
         .select('id, estado, avance')
-        .eq('org_id', orgId || '')
-        .or(`responsable.eq.${currentUser.email || ''},responsable.ilike.%${currentUser.email || ''}%`);
+        .eq('org_id', orgId || '');
+      if (orProg.length > 0) {
+        qProg = qProg.or(orProg.join(','));
+      }
+      const { data: todasLasTareas } = await qProg;
 
       if (todasLasTareas && todasLasTareas.length > 0) {
         const total = todasLasTareas.length;
-        const completadas = todasLasTareas.filter(
-          (t: any) => t.estado === 'finalizado' || t.estado === 'validado' || t.avance === 100
-        ).length;
+        const completadas = todasLasTareas.filter((t: any) => {
+          const e = (t.estado || '').toLowerCase();
+          return e === 'validada' || e === 'rechazada' || t.avance === 100;
+        }).length;
         const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
         setProgresoGeneral({ completadas, total, porcentaje });
       }
@@ -1849,12 +1838,12 @@ export function AhoraSection() {
         Array.from({ length: 12 }, (_, i) => ({
           id: `mock-${i}`,
           orden: i + 1,
-          estado: i < 2 ? 'finalizada' : i === 2 ? 'en_progreso' : 'pendiente',
+          estado: i < 2 ? 'validado' : i === 2 ? 'en_progreso' : 'pendiente',
         })),
       );
       return;
     }
-    const tid = subtareaActual?.tarea_id as string | undefined;
+    const tid = (subtareaActual?.tarea_id as string | undefined) || tareaActual?.id;
     if (!tid) {
       setBloquesLista([]);
       return;
@@ -1875,7 +1864,7 @@ export function AhoraSection() {
     return () => {
       cancelled = true;
     };
-  }, [subtareaActual?.tarea_id, supabase]);
+  }, [subtareaActual?.tarea_id, tareaActual?.id, supabase]);
 
   if (loading) {
     return (
@@ -1913,6 +1902,8 @@ export function AhoraSection() {
         return 'Rehacer bloque';
       }
       if (subtareaActual.estado === 'en_progreso') return 'Enviar para validar';
+      if (subtareaActual.estado === 'para_validar') return 'En revisión (cliente)';
+      if (subtareaEstaCompletadaOficial(subtareaActual.estado)) return 'Bloque aprobado';
       return 'Iniciar jornada';
     } else if (tareaActual) {
       // Modo compatibilidad: flujo con tarea completa
@@ -1920,6 +1911,9 @@ export function AhoraSection() {
       if (!isTareaEnProgreso) {
         // Validar límite antes de mostrar botón
         if (tareasActivasCount >= 2) return 'Límite alcanzado (2 tareas activas)';
+        if (tareaOperableBackend === false) {
+          return 'Sin permiso para operar esta tarea';
+        }
         return 'Comenzar tarea';
       }
       return 'Finalizar tarea';
@@ -1943,6 +1937,17 @@ export function AhoraSection() {
         handleIniciarSubtarea();
       } else if (subtareaActual.estado === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
+      } else if (
+        subtareaActual.estado === 'para_validar' ||
+        subtareaEstaCompletadaOficial(subtareaActual.estado)
+      ) {
+        toast({
+          title: 'Bloque cerrado',
+          description:
+            subtareaActual.estado === 'para_validar'
+              ? 'Este bloque ya fue enviado a validación. Esperá la respuesta del cliente.'
+              : 'Este bloque ya fue aprobado.',
+        });
       }
     } else if (tareaActual) {
       // Modo compatibilidad: flujo con tarea completa
@@ -1952,6 +1957,18 @@ export function AhoraSection() {
         // Validar límite antes de permitir acción
         if (tareasActivasCount >= 2) {
           handleApiError({ errorCode: 'SOCIO_TIENE_2_TAREAS_EN_PROGRESO' }, 'Ya tenés 2 tareas en progreso');
+          return;
+        }
+        if (tareaOperableBackend === false) {
+          handleApiError(
+            {
+              errorCode: 'SOCIO_NO_AUTORIZADO_TAREA',
+              message:
+                'Esta tarea no está asignada a tu perfil de socio según el servidor. Código: ' +
+                (tareaOperableMotivo || 'SOCIO_NO_AUTORIZADO_TAREA'),
+            },
+            'No podés iniciar esta tarea',
+          );
           return;
         }
         handleIniciarTarea();
@@ -1965,19 +1982,38 @@ export function AhoraSection() {
   const isCTADisabled = () => {
     // Siempre habilitado si hay tarea o subtarea
     if (!subtareaActual && !tareaActual) return true;
+    if (
+      subtareaActual &&
+      (subtareaActual.estado === 'para_validar' ||
+        subtareaEstaCompletadaOficial(subtareaActual.estado))
+    ) {
+      return true;
+    }
+    if (
+      tareaActual &&
+      !subtareaActual &&
+      jornadaActual &&
+      !isTareaEnProgreso &&
+      tareaOperableBackend === false
+    ) {
+      return true;
+    }
     return isIniciando || isFinalizando;
   };
 
   const jornadaEstadoLabel = !jornadaActual
     ? 'Listo para empezar'
-    : subtareaActual?.estado === 'en_progreso' || isTareaEnProgreso
-      ? 'En progreso'
-      : 'Jornada activa';
+    : subtareaActual?.estado === 'para_validar'
+      ? 'Para validar'
+      : subtareaActual?.estado === 'en_progreso' || isTareaEnProgreso
+        ? 'En progreso'
+        : 'Jornada activa';
 
   const bloqueCardClass = (estado: string) => {
     const e = (estado || '').toLowerCase();
-    if (e === 'finalizada' || e === 'validada' || e === 'validado')
+    if (subtareaEstaCompletadaConLegacy(estado))
       return 'border-[#163274]/15 bg-[#f2f4f6] text-[#43617c]';
+    if (e === 'para_validar') return 'border-amber-200/80 bg-amber-50/50 text-[#43617c]';
     if (e === 'en_progreso') return 'border-[#163274]/40 bg-white text-[#163274] ring-1 ring-[#163274]/20';
     return 'border-slate-100 bg-white text-slate-500';
   };
@@ -2135,18 +2171,22 @@ export function AhoraSection() {
       )}
 
       {/* Bloques del día — cards limpias */}
-      {subtareaActual && bloquesLista.length > 0 && (
+      {(subtareaActual || tareaActual) && bloquesLista.length > 0 && (
         <div className="mx-4 mt-6">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-[#43617c]">Bloques del día</p>
           <div className="space-y-2">
             {bloquesLista.map((b) => {
               const e = (b.estado || '').toLowerCase();
               const label =
-                e === 'finalizada' || e === 'validada' || e === 'validado'
-                  ? 'Completada'
-                  : e === 'en_progreso'
-                    ? 'En progreso'
-                    : 'Pendiente';
+                subtareaEstaCompletadaConLegacy(b.estado)
+                  ? 'Validado'
+                  : e === 'para_validar'
+                    ? 'Para validar'
+                    : e === 'en_progreso'
+                      ? 'En progreso'
+                      : e === 'rechazado' || e === 'rechazada'
+                        ? 'Rechazado'
+                        : 'Pendiente';
               return (
                 <div
                   key={b.id}
@@ -2182,7 +2222,7 @@ export function AhoraSection() {
         )}
       </div>
 
-      {subtareaActual && (subtareaActual.estado === 'finalizada' || subtareaActual.estado === 'validada') && (
+      {subtareaActual && subtareaEstaCompletadaConLegacy(subtareaActual.estado) && (
         <div className="mx-4 mt-4 rounded-2xl border border-[#163274]/15 bg-[#d8e2ff]/30 p-4">
           <p className="text-center text-sm font-medium text-[#163274]">
             Bloque listo. Continuá con el siguiente cuando corresponda.
@@ -2216,7 +2256,7 @@ export function AhoraSection() {
                 const { data: jornadaData } = await (supabase as any)
                   .from('jornadas_socio')
                   .select('*')
-                  .eq('socio_id', currentUser?.id)
+                  .eq('socio_id', socioIdGrows || '')
                   .eq('fecha', hoyISO)
                   .maybeSingle();
                 setJornadaActual(jornadaData);

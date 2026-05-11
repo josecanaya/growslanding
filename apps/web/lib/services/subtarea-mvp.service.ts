@@ -87,7 +87,8 @@ export class SubtareaMvpService {
       tarea_id: tareaId,
       bloque_index: index + 1,
       estado: 'pendiente',
-      monto_estimado: montoTotal ? montoPorDia : null,
+      // NOT NULL en DB: si no hay monto en presupuesto, usar 0 para cumplir constraint.
+      monto_estimado: montoTotal > 0 ? montoPorDia : 0,
       evidencia_obligatoria: true,
       socio_id: tarea.responsable_socio_id,
       presupuesto_id: presupuesto?.id || null,
@@ -106,6 +107,7 @@ export class SubtareaMvpService {
     }
 
     const subtarea = await this.obtenerSubtarea(subtareaId);
+    this.assertSocioOperaBloque(subtarea, actor);
 
     if (!['pendiente', 'rechazado'].includes(subtarea.estado)) {
       throw new Error('Solo se pueden iniciar bloques pendientes o rechazados');
@@ -121,12 +123,14 @@ export class SubtareaMvpService {
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
+    const ahora = new Date().toISOString();
 
     const { error: updateError } = await supabaseAny
       .from('tareas_subtareas')
       .update({
         estado: 'en_progreso',
-        actualizado_por: actor.id,
+        hora_inicio: ahora,
+        updated_at: ahora,
       })
       .eq('id', subtareaId);
 
@@ -141,6 +145,7 @@ export class SubtareaMvpService {
     }
 
     const subtarea = await this.obtenerSubtarea(subtareaId);
+    this.assertSocioOperaBloque(subtarea, actor);
 
     if (subtarea.estado !== 'en_progreso') {
       throw new Error('El bloque debe estar en progreso para ser enviado a validacion');
@@ -157,12 +162,14 @@ export class SubtareaMvpService {
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
+    const ahora = new Date().toISOString();
 
     const { error: updateError } = await supabaseAny
       .from('tareas_subtareas')
       .update({
         estado: 'para_validar',
-        actualizado_por: actor.id,
+        hora_fin: ahora,
+        updated_at: ahora,
       })
       .eq('id', subtareaId);
 
@@ -235,7 +242,7 @@ export class SubtareaMvpService {
           validado_por: null,
           monto_validado: null,
           fecha_validacion: null,
-          actualizado_por: actor.id,
+          updated_at: ahora,
         })
         .eq('id', subtareaId);
 
@@ -285,6 +292,19 @@ export class SubtareaMvpService {
     }
 
     return { tareaValidada };
+  }
+
+  /**
+   * El actor SOCIO debe ser el asignado al bloque/tarea (no confiar solo en IDs del cliente).
+   */
+  private static assertSocioOperaBloque(subtarea: SubtareaRecord, actor: ActorContext) {
+    if (actor.rol !== 'SOCIO' || !actor.socioId) {
+      throw new Error('FORBIDDEN_ACTION');
+    }
+    const socioAsignado = subtarea.socio_id || subtarea.tareas?.responsable_socio_id || null;
+    if (!socioAsignado || socioAsignado !== actor.socioId) {
+      throw new Error('No tenés permiso para operar este bloque');
+    }
   }
 
   private static async obtenerSubtarea(subtareaId: string) {

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import type { Session } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/supabase.gen";
 import { getDefaultRouteForRole, normalizeRole } from "@/lib/roles";
@@ -41,7 +42,9 @@ async function waitForPkcePeer(
   const intervalMs = 450;
 
   while (Date.now() - start < maxMs) {
-    if (typeof window !== "undefined" && sessionStorage.getItem(key) === "done") {
+    if (typeof window === "undefined") break;
+    const v = sessionStorage.getItem(key);
+    if (v === "done" || v === "rate_limited") {
       return;
     }
     await new Promise((r) => setTimeout(r, intervalMs));
@@ -88,18 +91,98 @@ function CallbackPageContent() {
         const rawCode = searchParams?.get("code");
         const code = rawCode?.trim() ? rawCode.trim() : "";
 
+        let resolvedSession: Session | null = null;
+
+        const applySessionFetchError = (
+          sessionError: { message?: string; status?: number } | null,
+        ) => {
+          if (!sessionError) return false;
+          const isRateLimit =
+            sessionError.message?.toLowerCase().includes("rate limit") ||
+            sessionError.message?.toLowerCase().includes("too many requests") ||
+            sessionError.status === 429;
+          if (isRateLimit) {
+            if (typeof window !== "undefined") {
+              const rateLimitUntil = Date.now() + 5 * 60 * 1000;
+              localStorage.setItem(
+                "supabase_rate_limit_until",
+                rateLimitUntil.toString(),
+              );
+            }
+            router.replace("/auth/login?error=rate_limit" as Route);
+            return true;
+          }
+          console.error(
+            "[OAUTH_CALLBACK_ERROR] Error al obtener sesión:",
+            sessionError,
+          );
+          router.replace("/auth/login?error=session_error" as Route);
+          return true;
+        };
+
         if (code && typeof window !== "undefined") {
           const pkceKey = pkceStorageKey(code);
           const peerState = sessionStorage.getItem(pkceKey);
 
+          if (peerState === "rate_limited") {
+            if (active) {
+              router.replace("/auth/login?error=rate_limit" as Route);
+            }
+            return;
+          }
+
           if (peerState === "done") {
-            // Ya intercambiado en este tab (p. ej. segundo montaje de Strict Mode)
+            // Strict Mode / segundo render: no volver a intercambiar el código (gasta cuota Supabase).
+            const result = await supabase.auth.getSession();
+            if (!active) return;
+            if (applySessionFetchError(result.error)) return;
+            resolvedSession = result.data.session ?? null;
           } else if (peerState === "running") {
             await waitForPkcePeer(supabase, code);
+            if (!active) return;
+            const after = sessionStorage.getItem(pkceKey);
+            if (after === "rate_limited") {
+              if (active) {
+                router.replace("/auth/login?error=rate_limit" as Route);
+              }
+              return;
+            }
+            const result = await supabase.auth.getSession();
+            if (!active) return;
+            if (applySessionFetchError(result.error)) return;
+            resolvedSession = result.data.session ?? null;
           } else {
-            sessionStorage.setItem(pkceKey, "running");
-            try {
-              const { error: exchangeError } =
+            /** false = ya redirigimos a login; no seguir con getSession (evita segundo golpe a Auth). */
+            const runExchange = async (): Promise<boolean> => {
+              // Otro contexto bajo el mismo lock pudo terminar antes: no re-intercambiar (rompe PKCE).
+              if (typeof window !== "undefined") {
+                const donePeek = sessionStorage.getItem(pkceKey);
+                if (donePeek === "done") {
+                  const { data: peeked, error: peekErr } =
+                    await supabase.auth.getSession();
+                  if (peekErr) {
+                    console.error(
+                      "[OAUTH_CALLBACK_ERROR] Error al obtener sesión (post-done):",
+                      peekErr,
+                    );
+                    if (active) {
+                      router.replace("/auth/login?error=session_error" as Route);
+                    }
+                    return false;
+                  }
+                  resolvedSession = peeked.session ?? null;
+                  return true;
+                }
+                if (donePeek === "rate_limited") {
+                  if (active) {
+                    router.replace("/auth/login?error=rate_limit" as Route);
+                  }
+                  return false;
+                }
+              }
+
+              sessionStorage.setItem(pkceKey, "running");
+              const { data: exchanged, error: exchangeError } =
                 await supabase.auth.exchangeCodeForSession(code);
 
               if (exchangeError) {
@@ -117,8 +200,8 @@ function CallbackPageContent() {
                   console.warn(
                     "[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login",
                   );
-                  sessionStorage.removeItem(pkceKey);
-                  const rateLimitUntil = Date.now() + 60 * 1000;
+                  sessionStorage.setItem(pkceKey, "rate_limited");
+                  const rateLimitUntil = Date.now() + 5 * 60 * 1000;
                   localStorage.setItem(
                     "supabase_rate_limit_until",
                     rateLimitUntil.toString(),
@@ -126,7 +209,7 @@ function CallbackPageContent() {
                   if (active) {
                     router.replace("/auth/login?error=rate_limit" as Route);
                   }
-                  return;
+                  return false;
                 }
 
                 const errMsg = (exchangeError.message ?? "").toLowerCase();
@@ -147,7 +230,7 @@ function CallbackPageContent() {
                   if (active) {
                     router.replace(loginPath as Route);
                   }
-                  return;
+                  return false;
                 }
 
                 console.error(
@@ -157,51 +240,49 @@ function CallbackPageContent() {
                 if (active) {
                   router.replace("/auth/login?error=oauth_failed" as Route);
                 }
-                return;
+                return false;
               }
+
               sessionStorage.setItem(pkceKey, "done");
+              resolvedSession = exchanged.session ?? null;
+              return true;
+            };
+
+            let exchangeOk = true;
+            try {
+              if (typeof navigator !== "undefined" && navigator.locks) {
+                exchangeOk = await navigator.locks.request(
+                  `grows-oauth-pkce:${code}`,
+                  runExchange,
+                );
+              } else {
+                exchangeOk = await runExchange();
+              }
             } catch (e) {
               sessionStorage.removeItem(pkceKey);
               throw e;
             }
+
+            if (!active) return;
+            if (!exchangeOk) return;
           }
         }
 
-        const result = await supabase.auth.getSession();
-        const sessionData = result.data;
-        const sessionError = result.error;
-
-        if (!active) {
-          return;
-        }
-
-        if (sessionError) {
-          const isRateLimit =
-            sessionError.message?.toLowerCase().includes('rate limit') ||
-            sessionError.message?.toLowerCase().includes('too many requests') ||
-            sessionError.status === 429;
-          if (isRateLimit) {
-            if (typeof window !== 'undefined') {
-              const rateLimitUntil = Date.now() + (60 * 1000);
-              localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
-            }
-            router.replace("/auth/login?error=rate_limit" as Route);
+        if (resolvedSession === null) {
+          const result = await supabase.auth.getSession();
+          if (!active) {
             return;
           }
-          console.error(
-            "[OAUTH_CALLBACK_ERROR] Error al obtener sesión:",
-            sessionError
-          );
-          router.replace("/auth/login?error=session_error" as Route);
-          return;
+          if (applySessionFetchError(result.error)) return;
+          resolvedSession = result.data.session ?? null;
         }
 
-        if (!sessionData?.session) {
+        if (!resolvedSession) {
           router.replace("/auth/login?error=no_session" as Route);
           return;
         }
 
-        const sessionUser = sessionData.session.user;
+        const sessionUser = resolvedSession.user;
         
         // Verificar si viene del registro con Google para CLIENTE_TECNICO
         const roleParam = searchParams?.get('role');

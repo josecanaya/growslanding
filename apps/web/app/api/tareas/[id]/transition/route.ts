@@ -13,9 +13,12 @@ import { uploadActaPdf, uploadPhoto, uploadSignature } from '@/lib/storage';
 import type { Database } from '@/lib/types/supabase.gen';
 import { TareaFsmService, type EstadoTarea } from '@/lib/services/tarea-fsm.service';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
 import { ESTADO_BLOQUE_FINAL, ESTADO_TAREA_FINAL } from '@/lib/domain/estados-core';
 
 export const runtime = 'nodejs';
+
+const IS_DEV = process.env.NODE_ENV === 'development';
 
 const mediaSchema = z.object({
   kind: z.enum(['foto', 'firma']),
@@ -73,6 +76,8 @@ type TareaRecord = {
   descripcion: string | null;
   estado: string | null;
   responsable: string | null;
+  responsable_socio_id: string | null;
+  cuadrilla_id: string | null;
   referente_id: string | null;
   socio_ids: string[] | null;
   obra: {
@@ -207,7 +212,7 @@ export async function POST(
     const { data: tarea, error: tareaError } = await supabase
       .from('tareas')
       .select(
-        `id, obra_id, org_id, title, descripcion, estado, responsable,
+        `id, obra_id, org_id, title, descripcion, estado, responsable, responsable_socio_id, cuadrilla_id,
          obra:obras(id, name, address, org_id)`
       )
       .eq('id', id)
@@ -229,9 +234,37 @@ export async function POST(
     );
 
     if (!rolActor) {
-      return new Response(JSON.stringify({ message: 'No tiene permisos para operar esta tarea' }), {
-        status: 403,
-      });
+      const orgIdRes = tarea.org_id || tarea.obra?.org_id || '';
+      const body403 = {
+        message: 'No tiene permisos para operar esta tarea',
+        error: 'NO_ROL_EN_ORG',
+        code: 'NO_ROL_EN_ORG',
+        ...(IS_DEV
+          ? {
+              debug: SocioTareaOperacionService.toTransition403Debug({
+                role: 'NONE',
+                orgId: orgIdRes,
+                tareaOrgId: tarea.org_id,
+                tareaId: tarea.id,
+                tareaEstado: tarea.estado,
+                userId: user.id,
+                userEmail,
+                socioIdEfectivo: null,
+                responsableSocioId: tarea.responsable_socio_id,
+                cuadrillaId: tarea.cuadrilla_id,
+                tareaResponsable: tarea.responsable,
+                checks: {
+                  A_responsableSocioId: false,
+                  B_presupuestoAprobado: false,
+                  C_socioEnCuadrilla: false,
+                  D_legacyResponsableSinResponsableSocioId: false,
+                },
+                motivo403: 'NO_ROL_EN_ORG',
+              }),
+            }
+          : {}),
+      };
+      return new Response(JSON.stringify(body403), { status: 403 });
     }
 
     if (nuevoEstadoCanon === ESTADO_TAREA_FINAL) {
@@ -254,85 +287,69 @@ export async function POST(
       }
     }
 
-    // ✅ Validar que el usuario sea el responsable de la tarea (si tiene responsable asignado)
-    // Si responsable está vacío/null, permitir la operación
-    // El responsable puede ser un email o un nombre/descripción, así que hacemos validación flexible
-    console.log('[TRANSITION] Validando responsable:', {
-      tareaId: tarea.id,
-      tareaResponsable: tarea.responsable,
-      userEmail,
-      tieneResponsable: !!(tarea.responsable && tarea.responsable.trim() !== ''),
-    });
-    
-    if (tarea.responsable && tarea.responsable.trim() !== '') {
-      const responsableNormalizado = tarea.responsable.trim().toLowerCase();
-      const emailNormalizado = userEmail.toLowerCase();
-      
-      // Buscar el socio por email para obtener su nombre completo
-      const { data: socio, error: socioError } = await supabase
-        .from('socios')
-        .select('id, nombre, email, telefono')
-        .eq('email', userEmail)
-        .maybeSingle();
-      
-      let esResponsable = false;
-      
-      // Comparación directa por email
-      if (responsableNormalizado === emailNormalizado) {
-        esResponsable = true;
-        console.log('[TRANSITION] ✅ Coincidencia por email directo');
-      }
-      // Comparación por email contenido en el responsable
-      else if (responsableNormalizado.includes(emailNormalizado) || emailNormalizado.includes(responsableNormalizado)) {
-        esResponsable = true;
-        console.log('[TRANSITION] ✅ Coincidencia por email contenido');
-      }
-      // Si encontramos el socio, comparar también por nombre
-      else if (socio && socio.nombre) {
-        const nombreNormalizado = socio.nombre.trim().toLowerCase();
-        // Verificar si el responsable contiene el nombre del socio o viceversa
-        if (responsableNormalizado.includes(nombreNormalizado) || nombreNormalizado.includes(responsableNormalizado)) {
-          esResponsable = true;
-          console.log('[TRANSITION] ✅ Coincidencia por nombre:', {
-            responsable: tarea.responsable,
-            nombreSocio: socio.nombre,
-          });
-        }
-        // También verificar por primera palabra del nombre (por si hay formato "NOMBRE - Especialidad")
-        else {
-          const primeraPalabraNombre = nombreNormalizado.split(' ')[0];
-          const primeraPalabraResponsable = responsableNormalizado.split(' ')[0];
-          if (primeraPalabraNombre && primeraPalabraResponsable && 
-              (primeraPalabraResponsable.includes(primeraPalabraNombre) || 
-               primeraPalabraNombre.includes(primeraPalabraResponsable))) {
-            esResponsable = true;
-            console.log('[TRANSITION] ✅ Coincidencia por primera palabra del nombre');
-          }
-        }
-      }
-      
-      if (!esResponsable) {
-        console.warn('[TRANSITION] ❌ Usuario no es responsable:', {
-          tareaResponsable: tarea.responsable,
+    const orgIdParaAuth = tarea.org_id || tarea.obra?.org_id || '';
+    let socioOperadorIdParaFsm: string | null = null;
+
+    if (rolActor === 'SOCIO') {
+      const { allowed, socioIdEfectivo, debug } =
+        await SocioTareaOperacionService.evaluarSocioPuedeOperarTarea(supabase, {
+          userId: user.id,
           userEmail,
-          socioNombre: socio?.nombre,
+          orgId: orgIdParaAuth,
+          tarea: {
+            id: tarea.id,
+            estado: tarea.estado,
+            responsable_socio_id: tarea.responsable_socio_id,
+            responsable: tarea.responsable,
+            cuadrilla_id: tarea.cuadrilla_id,
+          },
+        });
+
+      socioOperadorIdParaFsm = socioIdEfectivo;
+
+      if (IS_DEV) {
+        console.log('[transition auth debug]', {
+          userId: user.id,
+          userEmail,
+          role: rolActor,
+          socioIdEfectivo,
+          tareaId: tarea.id,
+          tareaEstado: tarea.estado,
+          responsableSocioId: tarea.responsable_socio_id,
+          cuadrillaId: tarea.cuadrilla_id,
+          tareaResponsable: tarea.responsable,
+          checks: debug.checks,
+          allowed,
+          motivo403: allowed ? null : debug.motivoDenegacion,
+        });
+      }
+
+      if (!allowed) {
+        const flatDebug = SocioTareaOperacionService.toTransition403Debug({
+          role: rolActor,
+          orgId: orgIdParaAuth,
+          tareaOrgId: tarea.org_id,
+          tareaId: tarea.id,
+          tareaEstado: tarea.estado,
+          userId: user.id,
+          userEmail,
+          socioIdEfectivo,
+          responsableSocioId: tarea.responsable_socio_id,
+          cuadrillaId: tarea.cuadrilla_id,
+          tareaResponsable: tarea.responsable,
+          checks: debug.checks,
+          motivo403: debug.motivoDenegacion ?? 'SOCIO_NO_AUTORIZADO_TAREA',
         });
         return new Response(
-          JSON.stringify({ 
-            message: 'Sólo el socio responsable puede avanzar esta tarea.',
-            error: 'AUTHORIZATION_ERROR',
-            details: {
-              tareaResponsable: tarea.responsable,
-              userEmail,
-              socioNombre: socio?.nombre,
-            }
+          JSON.stringify({
+            message: 'Sólo el socio autorizado puede avanzar esta tarea.',
+            error: 'SOCIO_NO_AUTORIZADO_TAREA',
+            code: 'SOCIO_NO_AUTORIZADO_TAREA',
+            ...(IS_DEV ? { debug: flatDebug } : {}),
           }),
-          { status: 403 }
+          { status: 403 },
         );
       }
-      console.log('[TRANSITION] ✅ Usuario es responsable, continuando...');
-    } else {
-      console.log('[TRANSITION] ⚠️ Tarea sin responsable asignado, permitiendo operación');
     }
     
     // No validamos más cuadrillas, quedan obsoletas.
@@ -556,6 +573,7 @@ export async function POST(
       actorId: user.id,
       rol: rolActor,
       motivo: payload.motivo,
+      socioOperadorId: socioOperadorIdParaFsm,
     });
 
     return new Response(

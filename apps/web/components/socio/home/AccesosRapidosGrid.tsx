@@ -228,11 +228,17 @@ export function AccesosRapidosGrid({
         }
         const { count: solicitudesNuevasHoy = 0 } = await solicitudesQuery;
 
-        const { count: obrasActivas = 0 } = await (supabase as any)
+        // `tareas_presupuestos` no tiene `obra_id`; obras vía FK `tareas`.
+        const { data: presAprobRows } = await (supabase as any)
           .from('tareas_presupuestos')
-          .select('obra_id', { count: 'exact', head: true })
+          .select('tareas!inner(obra_id)')
           .eq('socio_id', socioRow.id)
           .eq('estado', 'APROBADO');
+        const obrasActivas = new Set(
+          (presAprobRows ?? [])
+            .map((r: { tareas?: { obra_id?: string } | null }) => r.tareas?.obra_id)
+            .filter(Boolean),
+        ).size;
 
         const { count: presupuestosPendientes = 0 } = await (supabase as any)
           .from('tareas_presupuestos')

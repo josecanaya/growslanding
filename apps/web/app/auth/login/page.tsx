@@ -148,7 +148,7 @@ function LoginPageContent() {
         localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
       }
       setStatusMessage(
-        'Se alcanzó el límite de velocidad de Supabase (429). Podés volver a probar con Google en unos minutos o usar email y contraseña.'
+        'Supabase bloqueó temporalmente el login (429): suele pasar tras muchos intentos con Google en poco tiempo. Esperá 10–15 minutos, probá email y contraseña, o tocá «Quitar aviso…» y reintentá.',
       );
       return;
     }
@@ -563,6 +563,16 @@ function LoginPageContent() {
                   onClick={() => {
                     if (typeof window !== 'undefined') {
                       localStorage.removeItem('supabase_rate_limit_until');
+                      try {
+                        const toRemove: string[] = [];
+                        for (let i = 0; i < sessionStorage.length; i++) {
+                          const k = sessionStorage.key(i);
+                          if (k?.startsWith('grows_pkce:')) toRemove.push(k);
+                        }
+                        toRemove.forEach((k) => sessionStorage.removeItem(k));
+                      } catch {
+                        // ignore
+                      }
                     }
                     setStatusMessage(null);
                   }}

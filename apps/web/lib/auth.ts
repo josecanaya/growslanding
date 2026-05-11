@@ -5,6 +5,7 @@ import type { AppRouterInstance } from 'next/navigation';
 import type { Route } from 'next';
 
 import { IS_DEV_MODE } from '@/lib/config';
+import { invalidateSocioContextClientCache } from '@/lib/socios/fetchSocioContextClient';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { Database } from '@/lib/types/supabase.gen';
 
@@ -31,6 +32,7 @@ type LogoutOptions = {
 
 export async function logout({ router, redirectTo = '/auth/login' }: LogoutOptions) {
   clearClientSessionArtifacts();
+  invalidateSocioContextClientCache();
   useAuthStore.getState().reset();
 
   if (!IS_DEV_MODE) {

@@ -58,6 +58,8 @@ type EnforceParams = {
   actorId: string;
   rol: RolActor;
   motivo?: string | null;
+  /** `socios.id` del operador; necesario si `tareas.responsable_socio_id` es null y el socio opera por presupuesto/cuadrilla. */
+  socioOperadorId?: string | null;
 };
 
 type RegistrarEventoParams = {
@@ -113,8 +115,14 @@ export class TareaFsmService {
       await this.assertSubtareasValidadas(params.tareaId);
     }
 
-    if (params.nuevoEstado === 'en_progreso') {
-      await this.assertSocioPuedeOperar(tarea.id, tarea.responsable_socio_id);
+    if (params.nuevoEstado === 'en_progreso' && params.rol === 'SOCIO') {
+      const socioOp = params.socioOperadorId ?? tarea.responsable_socio_id ?? null;
+      if (!socioOp) {
+        throw new Error(
+          'No se pudo resolver el socio operador para iniciar la tarea (falta responsable_socio_id y socioOperadorId)',
+        );
+      }
+      await this.assertSocioPuedeOperar(tarea.id, socioOp);
     }
 
     if (params.nuevoEstado === 'rechazada' && params.rol !== 'CLIENTE') {

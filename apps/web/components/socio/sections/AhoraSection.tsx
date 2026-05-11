@@ -62,6 +62,9 @@ type SupabaseTarea = {
   } | null;
 };
 
+/** Fila de `eventos` con `select('id, nuevo_estado')` — tipar evita `never` en `.find()` con tipos genéricos de Supabase. */
+type EventoRowIdEstado = { id: string; nuevo_estado?: string | null };
+
 /** Alineado con `SocioTareaOperacionService` + listado en pantalla (presupuesto APROBADO, cuadrilla_socios). */
 async function buildOrClauseSocioTareas(
   supabaseAny: any,
@@ -910,8 +913,7 @@ export function AhoraSection() {
         } else {
           const oficialOk = new Set(['validada', 'para_validar', 'en_progreso', 'en_ejecucion']);
           const legacyOk = new Set(['finalizado', 'finalizada']);
-          type RowEvCandidato = { id: string; nuevo_estado?: string | null };
-          const lista = (candidatosEv ?? []) as RowEvCandidato[];
+          const lista = (candidatosEv ?? []) as EventoRowIdEstado[];
           const pick = lista.find((ev) => {
             const n = (ev.nuevo_estado || '').toLowerCase();
             return oficialOk.has(n) || legacyOk.has(n);
@@ -1543,7 +1545,8 @@ export function AhoraSection() {
             .order('created_at', { ascending: false })
             .limit(12);
 
-          const eventoReciente = (candidatosPost ?? []).find((ev: { nuevo_estado?: string | null }) => {
+          const listaPostEv = (candidatosPost ?? []) as EventoRowIdEstado[];
+          const eventoReciente = listaPostEv.find((ev) => {
             const n = (ev.nuevo_estado || '').toLowerCase();
             return (
               n === 'para_validar' ||

@@ -910,7 +910,9 @@ export function AhoraSection() {
         } else {
           const oficialOk = new Set(['validada', 'para_validar', 'en_progreso', 'en_ejecucion']);
           const legacyOk = new Set(['finalizado', 'finalizada']);
-          const pick = (candidatosEv ?? []).find((ev: { nuevo_estado?: string | null }) => {
+          type RowEvCandidato = { id: string; nuevo_estado?: string | null };
+          const lista = (candidatosEv ?? []) as RowEvCandidato[];
+          const pick = lista.find((ev) => {
             const n = (ev.nuevo_estado || '').toLowerCase();
             return oficialOk.has(n) || legacyOk.has(n);
           });

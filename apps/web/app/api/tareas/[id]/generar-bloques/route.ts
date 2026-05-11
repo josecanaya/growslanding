@@ -7,6 +7,7 @@ import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
+import { listSocioRecordsForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 
 /**
  * Genera bloques (tareas_subtareas) desde presupuesto aprobado — misma lógica que SubtareaMvpService.
@@ -34,9 +35,6 @@ export async function POST(
     }
 
     const userEmail = user.email ?? '';
-    if (!userEmail) {
-      return NextResponse.json({ success: false, error: 'Usuario sin email' }, { status: 400 });
-    }
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
@@ -51,9 +49,16 @@ export async function POST(
       return NextResponse.json({ success: false, error: 'Tarea no encontrada' }, { status: 404 });
     }
 
-    const orgId = tarea.org_id as string;
+    const orgId = String((tarea as { org_id?: string }).org_id ?? '');
     const rol = await PermisoService.obtenerRolEnOrganizacion(user.id, orgId);
-    if (rol !== 'SOCIO') {
+    const cuentaComoSocio =
+      rol === 'SOCIO' ||
+      (await listSocioRecordsForAuthUser(supabase as any, {
+        id: user.id,
+        email: userEmail || null,
+      })).length > 0;
+
+    if (!cuentaComoSocio) {
       return NextResponse.json({ success: false, error: 'Solo socios pueden generar bloques' }, { status: 403 });
     }
 
@@ -74,7 +79,8 @@ export async function POST(
       console.log('[generar-bloques auth debug]', {
         userId: user.id,
         userEmail,
-        role: rol,
+        rolEnOrg: rol,
+        cuentaComoSocio,
         tareaId,
         allowed,
         checks: debug.checks,

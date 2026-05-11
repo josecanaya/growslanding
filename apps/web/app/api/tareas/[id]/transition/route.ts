@@ -15,6 +15,8 @@ import { TareaFsmService, type EstadoTarea } from '@/lib/services/tarea-fsm.serv
 import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
 import { ESTADO_BLOQUE_FINAL, ESTADO_TAREA_FINAL } from '@/lib/domain/estados-core';
+import type { RolActor } from '@/lib/services/permiso.service';
+import { listSocioRecordsForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 
 export const runtime = 'nodejs';
 
@@ -228,13 +230,24 @@ export async function POST(
       });
     }
 
-    const rolActor = await PermisoService.obtenerRolEnOrganizacion(
+    const orgIdRes = tarea.org_id || tarea.obra?.org_id || '';
+
+    const rolDesdeOrg = await PermisoService.obtenerRolEnOrganizacion(
       user.id,
-      tarea.org_id || tarea.obra?.org_id || '',
+      orgIdRes,
     );
 
-    if (!rolActor) {
-      const orgIdRes = tarea.org_id || tarea.obra?.org_id || '';
+    const filasSesionSocio = await listSocioRecordsForAuthUser(supabase, {
+      id: user.id,
+      email: user.email ?? null,
+    });
+
+    let rolParaTransicion: RolActor | null = rolDesdeOrg;
+    if (!rolParaTransicion && filasSesionSocio.length > 0) {
+      rolParaTransicion = 'SOCIO';
+    }
+
+    if (!rolParaTransicion) {
       const body403 = {
         message: 'No tiene permisos para operar esta tarea',
         error: 'NO_ROL_EN_ORG',
@@ -290,7 +303,7 @@ export async function POST(
     const orgIdParaAuth = tarea.org_id || tarea.obra?.org_id || '';
     let socioOperadorIdParaFsm: string | null = null;
 
-    if (rolActor === 'SOCIO') {
+    if (rolParaTransicion === 'SOCIO') {
       const { allowed, socioIdEfectivo, debug } =
         await SocioTareaOperacionService.evaluarSocioPuedeOperarTarea(supabase, {
           userId: user.id,
@@ -311,7 +324,7 @@ export async function POST(
         console.log('[transition auth debug]', {
           userId: user.id,
           userEmail,
-          role: rolActor,
+          role: rolParaTransicion,
           socioIdEfectivo,
           tareaId: tarea.id,
           tareaEstado: tarea.estado,
@@ -326,7 +339,7 @@ export async function POST(
 
       if (!allowed) {
         const flatDebug = SocioTareaOperacionService.toTransition403Debug({
-          role: rolActor,
+          role: rolParaTransicion,
           orgId: orgIdParaAuth,
           tareaOrgId: tarea.org_id,
           tareaId: tarea.id,
@@ -571,7 +584,7 @@ export async function POST(
       tareaId: tarea.id,
       nuevoEstado: nuevoEstadoCanon,
       actorId: user.id,
-      rol: rolActor,
+      rol: rolParaTransicion,
       motivo: payload.motivo,
       socioOperadorId: socioOperadorIdParaFsm,
     });

@@ -15,8 +15,9 @@ export type ActorContext = {
 
 export class PermisoService {
   /**
-   * Obtiene el rol efectivo del usuario dentro de una organizaciИn.
-   * Retorna null si no pertenece.
+   * Rol según org (cliente = dueño de `organizations` / legacy; socio = fila `socios` con **mismo `org_id`**).
+   * Si el socio tiene `socios.org_id` null, aquí **no** devuelve `SOCIO` aunque `user_id` coincida.
+   * Para operación de tareas usá además `listSocioRecordsForAuthUser` / `evaluarSocioPuedeOperarTarea`.
    */
   static async obtenerRolEnOrganizacion(
     userId: string,
@@ -77,7 +78,22 @@ export class PermisoService {
     }
 
     const { data } = await query.maybeSingle();
-    return data?.id ?? null;
+    if (data?.id) {
+      return data.id;
+    }
+    /** Fila `socios` con `org_id` null: el filtro por org no matchea; permitir resolver solo por `user_id`. */
+    if (orgId) {
+      const { data: lax } = await supabaseAny
+        .from('socios')
+        .select('id')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return lax?.id ?? null;
+    }
+
+    return null;
   }
 
   static async obtenerContextoActor(

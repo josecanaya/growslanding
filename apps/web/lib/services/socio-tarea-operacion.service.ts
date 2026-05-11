@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { PermisoService } from '@/lib/services/permiso.service';
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
+import {
+  listSocioRecordsForAuthUser,
+  elegirSocioPreferenteParaTarea,
+} from '@/lib/socios/resolveSocioForAuthUser';
 
 /** Alineado a reglas producto A/B/C/D (sin filtrar columnas legacy en PostgREST). */
 export type SocioTareaOperacionChecks = {
@@ -88,22 +91,30 @@ export class SocioTareaOperacionService {
     const supabaseAny = supabase as any;
     const { userId, userEmail, orgId, tarea } = input;
 
-    const socioIdPorUserId = await PermisoService.obtenerSocioIdPorUsuario(userId, orgId);
+    const todasFilasSesion = await listSocioRecordsForAuthUser(supabase, {
+      id: userId,
+      email: userEmail,
+    });
 
-    let socioIdPorEmail: string | null = null;
-    let nombreSocio: string | null = null;
-    if (userEmail?.trim()) {
-      const { data: row } = await supabaseAny
-        .from('socios')
-        .select('id, nombre')
-        .eq('org_id', orgId)
-        .eq('email', userEmail.trim())
-        .maybeSingle();
-      socioIdPorEmail = row?.id ?? null;
-      nombreSocio = row?.nombre ?? null;
-    }
+    /** No filtramos por org en `socios`: permite `org_id` null pero `user_id`/email igual a la sesión. */
+    const filaSesionPreferida = elegirSocioPreferenteParaTarea(todasFilasSesion, {
+      responsableSocioId: tarea.responsable_socio_id,
+      orgId,
+    });
 
-    const socioIdEfectivo = socioIdPorUserId ?? socioIdPorEmail;
+    const socioIdEfectivo = filaSesionPreferida?.id ?? null;
+
+    const socioIdPorUserId =
+      todasFilasSesion.find((r) => r.user_id && r.user_id === userId)?.id ?? null;
+
+    const emailNorm = (userEmail ?? '').trim().toLowerCase();
+    const socioIdPorEmail =
+      emailNorm !== ''
+        ? todasFilasSesion.find((r) => String(r.email ?? '').trim().toLowerCase() === emailNorm)?.id ??
+          null
+        : null;
+
+    let nombreSocio: string | null = filaSesionPreferida?.nombre ?? null;
 
     const debugBase: SocioTareaOperacionDebug = {
       tareaId: tarea.id,

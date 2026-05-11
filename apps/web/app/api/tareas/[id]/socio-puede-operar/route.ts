@@ -6,6 +6,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
+import { listSocioRecordsForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 
 export const runtime = 'nodejs';
 
@@ -53,7 +54,15 @@ export async function GET(
       );
     }
     const rol = await PermisoService.obtenerRolEnOrganizacion(user.id, orgId);
-    if (rol !== 'SOCIO') {
+    /** `socios` con la sesión puede tener `org_id` null → `obtenerRolEnOrganizacion` devuelve null aun siendo socio. */
+    const filasSesionSocio = await listSocioRecordsForAuthUser(supabase, {
+      id: user.id,
+      email: user.email,
+    });
+    const cuentaComoSocio =
+      rol === 'SOCIO' || filasSesionSocio.length > 0;
+
+    if (!cuentaComoSocio) {
       return NextResponse.json({
         allowed: false,
         code: 'NOT_SOCIO',

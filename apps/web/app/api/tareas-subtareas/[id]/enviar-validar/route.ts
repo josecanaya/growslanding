@@ -18,11 +18,15 @@ function statusFromMessage(msg: string): number {
 }
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
+    const body = await request.json().catch(() => ({}));
+    const evidenciaUrl = typeof body?.evidenciaUrl === 'string' ? body.evidenciaUrl : null;
+    const videoUrl = typeof body?.videoUrl === 'string' ? body.videoUrl : null;
+    const problemas = typeof body?.problemas === 'string' ? body.problemas : null;
 
     const cookieStore = await cookies();
     const supabaseAuth = createRouteHandlerClient<Database>({
@@ -75,6 +79,39 @@ export async function POST(
     const socioId = socio?.id ?? await PermisoService.obtenerSocioIdPorUsuario(user.id, orgId);
     if (!socioId) {
       return NextResponse.json({ success: false, error: 'No se encontró tu perfil de socio' }, { status: 403 });
+    }
+
+    if (evidenciaUrl || videoUrl || problemas) {
+      const patch: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (evidenciaUrl) {
+        patch.evidencia_url = evidenciaUrl;
+        patch.evidencia_cargada = true;
+      }
+      if (videoUrl) {
+        patch.video_url = videoUrl;
+      }
+      if (problemas) {
+        patch.problemas = problemas;
+      }
+
+      const { error: evidenciaError } = await supabaseAny
+        .from('tareas_subtareas')
+        .update(patch)
+        .eq('id', id);
+
+      if (evidenciaError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'EVIDENCIA_UPDATE_ERROR',
+            message: 'No se pudo guardar la evidencia del bloque',
+            detail: evidenciaError.message,
+          },
+          { status: 500 },
+        );
+      }
     }
 
     await SubtareaMvpService.enviarParaValidar(id, {

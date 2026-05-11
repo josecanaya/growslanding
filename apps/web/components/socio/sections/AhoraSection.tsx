@@ -1378,30 +1378,18 @@ export function AhoraSection() {
     setError(null);
     
     try {
-      // Primero guardar evidencia si se proporciona
-      if (evidenciaUrl || videoUrl || problemas) {
-        const { error: updateError } = await (supabase as any)
-          .from('tareas_subtareas')
-          .update({
-            evidencia_url: evidenciaUrl || null,
-            video_url: videoUrl || null,
-            problemas: problemas || null,
-            evidencia_cargada: Boolean(evidenciaUrl),
-          })
-          .eq('id', subtareaActual.id);
-
-        if (updateError) {
-          handleApiError(updateError, 'No se pudo guardar la evidencia del bloque');
-          return false;
-        }
-      }
-
-      // Usar endpoint FSM para enviar a validar
+      // El endpoint server-side guarda la evidencia y luego avanza la FSM.
       const response = await fetch(`/api/tareas-subtareas/${subtareaActual.id}/enviar-validar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
+        body: JSON.stringify({
+          evidenciaUrl: evidenciaUrl ?? null,
+          videoUrl: videoUrl ?? null,
+          problemas: problemas ?? null,
+        }),
       });
 
       if (!response.ok) {
@@ -2798,7 +2786,8 @@ function ModalFinalizarSubtarea({
         const response = await fetch('/api/upload/photo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dataUrl }),
+          credentials: 'include',
+          body: JSON.stringify({ dataUrl, subtareaId }),
         });
 
         if (!response.ok) {

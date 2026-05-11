@@ -107,10 +107,11 @@ async function buildOrClauseSocioTareas(
         .select('id')
         .in('id', presTareaIdsBrutos)
         .or(`responsable_socio_id.eq.${opts.socioId},cuadrilla_id.eq.${opts.socioId}`);
+      const tareasAsignFilas = (tAsign ?? []) as Array<{ id?: string | null }>;
       presTareaIds = [
         ...new Set(
-          (tAsign ?? [])
-            .map((r: { id?: string | null }) => r.id)
+          tareasAsignFilas
+            .map((r) => r.id)
             .filter((id: string | null | undefined): id is string => !!id),
         ),
       ];

@@ -23,10 +23,27 @@ export function tareaYaInicioEjecucion(estadoTarea: string | null | undefined): 
   return ESTADOS_TAREA_YA_EN_EJECUCION_O_CIERRRE.has(String(estadoTarea ?? '').trim().toLowerCase());
 }
 
+/**
+ * Fila típica de `tareas_presupuestos` al filtrar por estado aprobado.
+ * `Partial` evita exigir columnas no traídas en cada `.select(...)`.
+ */
+export type FilaPresupuestoConEstado = {
+  estado?: string | null | undefined;
+} & Partial<{
+  id: string;
+  socio_id: string | null;
+  monto: number;
+  dias_reales: number | null;
+  cantidad: number | null;
+  unidad: string | null;
+  notas: string | null;
+  tarea_id: string | null;
+}>;
+
 /** Primer elemento de lista cuyo presupuesto figura como aprobado (cualquier capitalización). */
-export function primeraFilaPresupuestoAprobado<T extends { estado?: string | null }>(
-  rows: T[] | null | undefined,
-): T | null {
+export function primeraFilaPresupuestoAprobado(
+  rows: FilaPresupuestoConEstado[] | null | undefined,
+): FilaPresupuestoConEstado | null {
   if (!rows?.length) return null;
   return rows.find((r) => estadoPresupuestoEsAprobado(r.estado)) ?? null;
 }

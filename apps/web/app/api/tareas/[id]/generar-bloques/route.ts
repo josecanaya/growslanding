@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
-import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
+import { GenerarBloquesError, SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
@@ -100,11 +100,11 @@ export async function POST(
       );
     }
 
-    await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId);
+    const generation = await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId);
 
     const { data: bloques, error: listErr } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id, orden, bloque_index, estado')
+      .select('id, orden, bloque_index, estado, socio_id, presupuesto_id, monto_estimado, cantidad, unidad, evidencia_obligatoria, evidencia_cargada')
       .eq('tarea_id', tareaId)
       .order('orden', { ascending: true });
 
@@ -112,10 +112,33 @@ export async function POST(
       return NextResponse.json({ success: true, bloques: [], warning: listErr.message });
     }
 
-    return NextResponse.json({ success: true, bloques: bloques ?? [] });
+    return NextResponse.json({ success: true, ...generation, bloques: bloques ?? [] });
   } catch (error) {
     console.error('[GENERAR_BLOQUES]', error);
+    if (error instanceof GenerarBloquesError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'GENERAR_BLOQUES_ERROR',
+          message: error.message,
+          detail: error.detail ?? null,
+          debug: error.debug,
+        },
+        { status: 500 },
+      );
+    }
     const msg = error instanceof Error ? error.message : 'Error interno';
-    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'GENERAR_BLOQUES_ERROR',
+        message: msg,
+        detail: null,
+        debug: {
+          motivo: 'ERROR_NO_CLASIFICADO',
+        },
+      },
+      { status: 500 },
+    );
   }
 }

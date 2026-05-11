@@ -12,6 +12,24 @@ import { primeraFilaPresupuestoAprobado } from '@/lib/domain/aprobacion-presupue
 
 export type EstadoSubtarea = EstadoBloqueCore;
 
+export class GenerarBloquesError extends Error {
+  constructor(
+    message: string,
+    public readonly debug: Record<string, unknown>,
+    public readonly detail?: string,
+  ) {
+    super(message);
+    this.name = 'GenerarBloquesError';
+  }
+}
+
+type GenerarBloquesResult = {
+  created: boolean;
+  existing: boolean;
+  bloquesCount: number;
+  debug: Record<string, unknown>;
+};
+
 type SubtareaRecord = {
   id: string;
   tarea_id: string;
@@ -46,7 +64,7 @@ export class SubtareaMvpService {
   /**
    * Genera subtareas (bloques) en base al presupuesto aprobado.
    */
-  static async generarBloquesDesdePresupuesto(tareaId: string) {
+  static async generarBloquesDesdePresupuesto(tareaId: string): Promise<GenerarBloquesResult> {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
@@ -57,19 +75,51 @@ export class SubtareaMvpService {
       .maybeSingle();
 
     if (tareaError || !tarea) {
-      throw new Error('Tarea no encontrada para generar bloques');
+      throw new GenerarBloquesError('Tarea no encontrada para generar bloques', {
+        tareaId,
+        motivo: tareaError?.message ?? 'TAREA_NO_ENCONTRADA',
+      });
     }
 
-    const { data: presupuestoRows } = await supabaseAny
+    const { data: presupuestoRows, error: presupuestoError } = await supabaseAny
       .from('tareas_presupuestos')
-      .select('id, monto, dias_reales, estado')
+      .select('id, monto, dias_reales, cantidad, unidad, notas, socio_id, estado')
       .eq('tarea_id', tareaId)
       .order('created_at', { ascending: false })
       .limit(12);
 
+    if (presupuestoError) {
+      throw new GenerarBloquesError('No se pudo leer el presupuesto aprobado', {
+        tareaId,
+        motivo: presupuestoError.message,
+      }, presupuestoError.details ?? undefined);
+    }
+
     const presupuesto = primeraFilaPresupuestoAprobado(presupuestoRows ?? []);
 
-    const dias = presupuesto?.dias_reales || tarea.dias_presupuesto || tarea.bloques_planificados || 1;
+    let diasNotas: number | null = null;
+    if (presupuesto?.notas) {
+      try {
+        const parsed = typeof presupuesto.notas === 'string' ? JSON.parse(presupuesto.notas) : presupuesto.notas;
+        const valor = Number(parsed?.dias_reales ?? parsed?.dias ?? parsed?.bloques_planificados);
+        diasNotas = Number.isFinite(valor) && valor > 0 ? valor : null;
+      } catch {
+        diasNotas = null;
+      }
+    }
+
+    const bloquesPlanificados = Number(
+      tarea.bloques_planificados ||
+      tarea.dias_presupuesto ||
+      presupuesto?.dias_reales ||
+      diasNotas ||
+      1,
+    );
+    const totalBloques = Math.max(1, Number.isFinite(bloquesPlanificados) ? Math.round(bloquesPlanificados) : 1);
+    const socioId = tarea.responsable_socio_id || presupuesto?.socio_id || null;
+    const presupuestoId = presupuesto?.id ?? null;
+    const cantidad = Number(presupuesto?.cantidad ?? 1);
+    const unidad = String(presupuesto?.unidad || 'unidad');
 
     const { data: existentes } = await supabaseAny
       .from('tareas_subtareas')
@@ -78,28 +128,72 @@ export class SubtareaMvpService {
       .limit(1);
 
     if (existentes && existentes.length > 0) {
-      return;
+      return {
+        created: false,
+        existing: true,
+        bloquesCount: existentes.length,
+        debug: {
+          tareaId,
+          socioId,
+          presupuestoId,
+          bloquesPlanificados: totalBloques,
+          motivo: 'YA_EXISTEN_BLOQUES',
+        },
+      };
     }
 
     const montoTotal = presupuesto?.monto || 0;
-    const montoPorDia = dias > 0 ? Number((montoTotal / dias).toFixed(2)) : montoTotal;
+    const montoPorBloque = totalBloques > 0 ? Number((montoTotal / totalBloques).toFixed(2)) : montoTotal;
 
-    const bloques = Array.from({ length: Math.max(1, dias) }).map((_, index) => ({
+    const bloques = Array.from({ length: totalBloques }).map((_, index) => ({
       tarea_id: tareaId,
       bloque_index: index + 1,
+      orden: index + 1,
       estado: 'pendiente',
       // NOT NULL en DB: si no hay monto en presupuesto, usar 0 para cumplir constraint.
-      monto_estimado: montoTotal > 0 ? montoPorDia : 0,
+      monto_estimado: montoTotal > 0 ? montoPorBloque : 0,
+      cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
+      unidad,
       evidencia_obligatoria: true,
-      socio_id: tarea.responsable_socio_id,
-      presupuesto_id: presupuesto?.id || null,
+      evidencia_cargada: false,
+      socio_id: socioId,
+      presupuesto_id: presupuestoId,
     }));
 
     const { error: insertError } = await supabaseAny.from('tareas_subtareas').insert(bloques);
 
     if (insertError) {
-      throw new Error('No se pudieron generar las subtareas automaticamente');
+      throw new GenerarBloquesError(
+        'No se pudieron generar las subtareas automaticamente',
+        {
+          tareaId,
+          socioId,
+          presupuestoId,
+          bloquesPlanificados: totalBloques,
+          montoEstimado: montoPorBloque,
+          cantidad: bloques[0]?.cantidad,
+          unidad,
+          motivo: insertError.message,
+        },
+        insertError.details ?? undefined,
+      );
     }
+
+    return {
+      created: true,
+      existing: false,
+      bloquesCount: bloques.length,
+      debug: {
+        tareaId,
+        socioId,
+        presupuestoId,
+        bloquesPlanificados: totalBloques,
+        montoEstimado: montoPorBloque,
+        cantidad: bloques[0]?.cantidad,
+        unidad,
+        motivo: 'BLOQUES_CREADOS',
+      },
+    };
   }
 
   static async iniciarBloque(subtareaId: string, actor: ActorContext) {

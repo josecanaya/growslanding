@@ -157,6 +157,8 @@ export function AhoraSection() {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [isIniciando, setIsIniciando] = useState(false);
   const [isFinalizando, setIsFinalizando] = useState(false);
+  const [isGeneratingBlocks, setIsGeneratingBlocks] = useState(false);
+  const [isSendingTransition, setIsSendingTransition] = useState(false);
   const [tareasCompletadasHoy, setTareasCompletadasHoy] = useState(0);
   const [avanceDiario, setAvanceDiario] = useState(0);
   const [evidenciasFinales, setEvidenciasFinales] = useState<string[]>([]);
@@ -173,6 +175,7 @@ export function AhoraSection() {
   const [socioIdGrows, setSocioIdGrows] = useState<string | null>(null);
   const [subtareaRefreshKey, setSubtareaRefreshKey] = useState(0);
   const generarBloquesIntentados = useRef<Set<string>>(new Set());
+  const requestEnCursoRef = useRef<Set<string>>(new Set());
   /** Alineado con GET /api/tareas/[id]/socio-puede-operar (misma regla que transition). */
   const [tareaOperableBackend, setTareaOperableBackend] = useState<boolean | null>(null);
   const [tareaOperableMotivo, setTareaOperableMotivo] = useState<string | null>(null);
@@ -235,7 +238,7 @@ export function AhoraSection() {
   const fetchData = async () => {
     if (!currentUser?.id) return;
 
-    const orgId = orgIdResuelta || currentUser.orgId;
+    const orgId = orgIdResuelta || currentUser?.orgId;
     if (!orgId) return;
 
     try {
@@ -265,7 +268,7 @@ export function AhoraSection() {
 
       const socioCtx = await fetchSocioContextClient();
       const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-        email: currentUser.email,
+        email: currentUser?.email,
         nombreSocio: socioCtx?.nombre,
         socioId: socioCtx?.id,
       });
@@ -421,7 +424,7 @@ export function AhoraSection() {
         }
 
         const partes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser.email,
+          email: currentUser?.email,
           nombreSocio: socioRow?.nombre,
           socioId: socioRow?.id,
         });
@@ -535,7 +538,7 @@ export function AhoraSection() {
         }
 
         const partes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser.email,
+          email: currentUser?.email,
           nombreSocio: socioRow?.nombre,
           socioId: socioRow?.id,
         });
@@ -592,7 +595,7 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (!orgId) {
         setTareasCompletadasHoy(0);
         return;
@@ -605,7 +608,7 @@ export function AhoraSection() {
 
         const socioCtx = await fetchSocioContextClient();
         const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser.email,
+          email: currentUser?.email,
           nombreSocio: socioCtx?.nombre,
           socioId: socioCtx?.id,
         });
@@ -617,7 +620,7 @@ export function AhoraSection() {
         const { data: misTareas } = await supabase
           .from('tareas')
           .select('id')
-          .eq('org_id', orgId)
+          .eq('org_id', String(orgId))
           .or(orPartes.join(','))
           .limit(80);
 
@@ -726,7 +729,7 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (!orgId || !socioIdGrows) {
         setJornadaActual(null);
         return;
@@ -799,29 +802,7 @@ export function AhoraSection() {
           )
         `;
 
-        const { data: hayAlguna } = await supAny
-          .from('tareas_subtareas')
-          .select('id')
-          .eq('tarea_id', tid)
-          .limit(1);
-
-        // Misma autorización que transition: no spamear generar-bloques si el backend ya deniega operar la tarea.
-        if (!hayAlguna?.length) {
-          if (tareaOperableBackend === false) {
-            if (!generarBloquesIntentados.current.has(tid)) {
-              generarBloquesIntentados.current.add(tid);
-            }
-          } else if (tareaOperableBackend === true && !generarBloquesIntentados.current.has(tid)) {
-            generarBloquesIntentados.current.add(tid);
-            const res = await fetch(`/api/tareas/${tid}/generar-bloques`, {
-              method: 'POST',
-              credentials: 'include',
-            }).catch(() => undefined);
-            if (res && !res.ok && res.status === 403) {
-              console.warn('[AhoraSection] generar-bloques 403 (coherente con socio-puede-operar si hay desfase)');
-            }
-          }
-        }
+        // La generación de bloques se hace por click en "Comenzar tarea" para evitar POST repetidos desde renders/effects.
 
         const { data: lista } = await supAny
           .from('tareas_subtareas')
@@ -896,7 +877,7 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (!orgId) return;
 
       try {
@@ -1071,6 +1052,9 @@ export function AhoraSection() {
 
   const handleIniciarSubtarea = async () => {
     if (!subtareaActual || !currentUser) return;
+    const requestKey = `iniciar-subtarea:${subtareaActual.id}`;
+    if (isIniciando || requestEnCursoRef.current.has(requestKey)) return;
+    requestEnCursoRef.current.add(requestKey);
 
     setIsIniciando(true);
     setError(null);
@@ -1124,12 +1108,23 @@ export function AhoraSection() {
     } catch (err) {
       handleApiError(err, 'Error al iniciar el bloque. Por favor, intenta nuevamente.');
     } finally {
+      requestEnCursoRef.current.delete(requestKey);
       setIsIniciando(false);
     }
   };
 
   const handleIniciarTarea = async () => {
     if (!tareaActual || !currentUser) return;
+    const requestKey = `iniciar-tarea:${tareaActual.id}`;
+    if (
+      isIniciando ||
+      isGeneratingBlocks ||
+      isSendingTransition ||
+      requestEnCursoRef.current.has(requestKey)
+    ) {
+      return;
+    }
+    requestEnCursoRef.current.add(requestKey);
 
     setIsIniciando(true);
     setError(null);
@@ -1149,7 +1144,25 @@ export function AhoraSection() {
     }, 2000);
 
     try {
+      if (!generarBloquesIntentados.current.has(tareaActual.id)) {
+        generarBloquesIntentados.current.add(tareaActual.id);
+        setIsGeneratingBlocks(true);
+        const bloquesResponse = await fetch(`/api/tareas/${tareaActual.id}/generar-bloques`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        setIsGeneratingBlocks(false);
+
+        if (!bloquesResponse.ok) {
+          const errorData = await bloquesResponse.json().catch(() => ({}));
+          generarBloquesIntentados.current.delete(tareaActual.id);
+          handleApiError(errorData, 'Error al preparar los bloques de la tarea');
+          return;
+        }
+      }
+
       // Usar solo el endpoint FSM - no actualizar directamente
+      setIsSendingTransition(true);
       const response = await fetch(`/api/tareas/${tareaActual.id}/transition`, {
         method: 'POST',
         headers: {
@@ -1172,6 +1185,7 @@ export function AhoraSection() {
           media: [],
         }),
       });
+      setIsSendingTransition(false);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1187,11 +1201,11 @@ export function AhoraSection() {
       });
 
       // Recargar tareas después de iniciar
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (orgId) {
         const socioCtx = await fetchSocioContextClient();
         const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser.email,
+          email: currentUser?.email,
           nombreSocio: socioCtx?.nombre,
           socioId: socioCtx?.id,
         });
@@ -1219,7 +1233,7 @@ export function AhoraSection() {
               unidad
             )
           `)
-          .eq('org_id', orgId)
+          .eq('org_id', String(orgId))
           .order('created_at', { ascending: false });
         if (orPartes.length > 0) {
           rq = rq.or(orPartes.join(','));
@@ -1259,9 +1273,13 @@ export function AhoraSection() {
       // Recargar contadores y datos
       await cargarContadoresTareas();
       await fetchData();
+      setSubtareaRefreshKey((k) => k + 1);
     } catch (err) {
       handleApiError(err, 'Error al iniciar la tarea. Por favor, intenta nuevamente.');
     } finally {
+      requestEnCursoRef.current.delete(requestKey);
+      setIsGeneratingBlocks(false);
+      setIsSendingTransition(false);
       setIsIniciando(false);
     }
   };
@@ -1270,7 +1288,7 @@ export function AhoraSection() {
   const cargarContadoresTareas = async () => {
     if (!currentUser?.id) return;
     
-    const orgId = orgIdResuelta || currentUser.orgId;
+    const orgId = orgIdResuelta || currentUser?.orgId;
     if (!orgId) return;
 
     try {
@@ -1293,14 +1311,14 @@ export function AhoraSection() {
 
       setTareasActivasCount(count || 0);
     } catch (err) {
-      // Error silencioso
+      handleApiError(err, 'Error al subir la evidencia');
     }
   };
 
   const cargarContadoresBloques = async () => {
     if (!currentUser?.id) return;
     
-    const orgId = orgIdResuelta || currentUser.orgId;
+    const orgId = orgIdResuelta || currentUser?.orgId;
     if (!orgId) return;
 
     try {
@@ -1334,9 +1352,24 @@ export function AhoraSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- contadores encapsulados
   }, [socioIdGrows, orgIdResuelta, currentUser?.id, subtareaRefreshKey]);
 
-  const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
-    if (!subtareaActual || !currentUser) return;
+  const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string): Promise<boolean> => {
+    if (!subtareaActual || !currentUser) return false;
+    const requestKey = `enviar-validar:${subtareaActual.id}`;
+    if (isFinalizando || requestEnCursoRef.current.has(requestKey)) return false;
 
+    const tieneEvidencia =
+      Boolean(evidenciaUrl) ||
+      Boolean(subtareaActual.evidencia_cargada) ||
+      Boolean(subtareaActual.evidencia_url);
+    if (subtareaActual.evidencia_obligatoria !== false && !tieneEvidencia) {
+      handleApiError(
+        { errorCode: 'EVIDENCIA_FALTANTE', message: 'Debés subir una foto antes de enviar a validar.' },
+        'Debés subir una foto antes de enviar a validar.',
+      );
+      return false;
+    }
+
+    requestEnCursoRef.current.add(requestKey);
     setIsFinalizando(true);
     setError(null);
     
@@ -1354,7 +1387,8 @@ export function AhoraSection() {
           .eq('id', subtareaActual.id);
 
         if (updateError) {
-          // Error silencioso - evidencia opcional
+          handleApiError(updateError, 'No se pudo guardar la evidencia del bloque');
+          return false;
         }
       }
 
@@ -1370,7 +1404,7 @@ export function AhoraSection() {
         const errorData = await response.json().catch(() => ({}));
         handleApiError(errorData, 'Error al enviar el bloque para validar');
         setIsFinalizando(false);
-        return;
+        return false;
       }
 
       // Solo actualizar UI si la API confirma éxito
@@ -1408,9 +1442,12 @@ export function AhoraSection() {
       // Recargar contadores y datos
       await cargarContadoresBloques();
       await fetchData();
+      return true;
     } catch (err) {
       handleApiError(err, 'Error al enviar el bloque para validar. Por favor, intenta nuevamente.');
+      return false;
     } finally {
+      requestEnCursoRef.current.delete(requestKey);
       setIsFinalizando(false);
     }
   };
@@ -1431,12 +1468,8 @@ export function AhoraSection() {
     }
 
     // Usar enviarParaValidar en lugar de actualizar directamente
-    await handleEnviarParaValidar(evidenciaUrl, videoUrl, problemas);
-    
-    if (error) {
-      setShowModalFinalizarSubtarea(false);
-      return; // Si hubo error, no continuar
-    }
+    const ok = await handleEnviarParaValidar(evidenciaUrl, videoUrl, problemas);
+    if (!ok) return;
 
     setSubtareaRefreshKey((k) => k + 1);
 
@@ -1459,7 +1492,7 @@ export function AhoraSection() {
       }
 
       // Enviar notificación al cliente técnico
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (orgId) {
         // Obtener obra_id de la tarea
         const { data: tareaData } = await (supabase as any)
@@ -1504,6 +1537,33 @@ export function AhoraSection() {
       return;
     }
 
+    // El socio no finaliza la tarea completa directo: primero debe existir un bloque con evidencia.
+    const requestKey = `preparar-bloque:${tareaActual.id}`;
+    if (requestEnCursoRef.current.has(requestKey) || isGeneratingBlocks) return;
+    requestEnCursoRef.current.add(requestKey);
+    setIsFinalizando(true);
+    try {
+      setIsGeneratingBlocks(true);
+      const response = await fetch(`/api/tareas/${tareaActual.id}/generar-bloques`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        handleApiError(errorData, 'Error al preparar el bloque de la tarea');
+        return;
+      }
+      setSubtareaRefreshKey((k) => k + 1);
+      await fetchData();
+    } catch (err) {
+      handleApiError(err, 'Error al preparar el bloque. Por favor, intenta nuevamente.');
+    } finally {
+      requestEnCursoRef.current.delete(requestKey);
+      setIsGeneratingBlocks(false);
+      setIsFinalizando(false);
+    }
+    return;
+
     // Validar que haya al menos una evidencia final
     if (evidenciasFinales.length === 0 && !fotoDataUrl) {
       setError('Para finalizar la tarea es necesario subir al menos una evidencia fotográfica.');
@@ -1523,8 +1583,11 @@ export function AhoraSection() {
         kind: 'evidencia_final' as const,
         dataUrl: fotoDataUrl,
       }] : [];
+      void media;
 
-      const response = await fetch(`/api/tareas/${tareaActual.id}/transition`, {
+      const response = await Promise.resolve(new Response(null, { status: 410 }));
+      /*
+      await fetch(`/api/tareas/${tareaActual.id}/transition-deshabilitado`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1546,6 +1609,7 @@ export function AhoraSection() {
           media,
         }),
       });
+      */
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1580,7 +1644,7 @@ export function AhoraSection() {
             const { data: mediaData } = await supabase
               .from('media')
               .select('path, kind')
-              .eq('evento_id', eventoReciente.id)
+              .eq('evento_id', eventoReciente!.id)
               .limit(1)
               .maybeSingle() as any;
 
@@ -1601,11 +1665,11 @@ export function AhoraSection() {
       }
 
       // Recargar tareas
-      const orgId = orgIdResuelta || currentUser.orgId;
+      const orgId = orgIdResuelta || currentUser?.orgId;
       if (orgId) {
         const socioCtx = await fetchSocioContextClient();
         const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser.email,
+          email: currentUser?.email,
           nombreSocio: socioCtx?.nombre,
           socioId: socioCtx?.id,
         });
@@ -1633,7 +1697,7 @@ export function AhoraSection() {
               unidad
             )
           `)
-          .eq('org_id', orgId)
+          .eq('org_id', String(orgId))
           .order('created_at', { ascending: false });
         if (orPartes.length > 0) {
           rq = rq.or(orPartes.join(','));
@@ -1682,8 +1746,9 @@ export function AhoraSection() {
         .select('id')
         .eq('org_id', orgId || '');
 
-      if (tareasOrg && tareasOrg.length > 0) {
-        const tareaIds = tareasOrg.map((t: any) => t.id);
+      const tareasOrgRows = (tareasOrg ?? []) as Array<{ id: string }>;
+      if (tareasOrgRows.length > 0) {
+        const tareaIds = tareasOrgRows.map((t: any) => t.id);
         
         const { data: eventosHoy, error: evHoyErr } = await supabase
           .from('eventos')
@@ -1694,8 +1759,9 @@ export function AhoraSection() {
 
         if (evHoyErr) {
           console.error('[AhoraSection] eventos post-finalizar:', evHoyErr);
-        } else if (eventosHoy) {
-          const tareasUnicas = new Set(eventosHoy.map((e: any) => e.tarea_id));
+        } else {
+          const eventosHoyRows = (eventosHoy ?? []) as Array<{ tarea_id: string | null }>;
+          const tareasUnicas = new Set(eventosHoyRows.map((e: any) => e.tarea_id));
           setTareasCompletadasHoy(tareasUnicas.size);
         }
       }
@@ -1703,7 +1769,7 @@ export function AhoraSection() {
       // Recalcular progreso general
       const socioCtxProg = await fetchSocioContextClient();
       const orProg = await buildOrClauseSocioTareas(supabase as any, {
-        email: currentUser.email,
+        email: currentUser?.email,
         nombreSocio: socioCtxProg?.nombre,
         socioId: socioCtxProg?.id,
       });
@@ -1716,9 +1782,10 @@ export function AhoraSection() {
       }
       const { data: todasLasTareas } = await qProg;
 
-      if (todasLasTareas && todasLasTareas.length > 0) {
-        const total = todasLasTareas.length;
-        const completadas = todasLasTareas.filter((t: any) => {
+      const todasLasTareasRows = (todasLasTareas ?? []) as Array<{ estado?: string | null; avance?: number | null }>;
+      if (todasLasTareasRows.length > 0) {
+        const total = todasLasTareasRows.length;
+        const completadas = todasLasTareasRows.filter((t: any) => {
           const e = (t.estado || '').toLowerCase();
           return e === 'validada' || e === 'rechazada' || t.avance === 100;
         }).length;
@@ -1749,38 +1816,7 @@ export function AhoraSection() {
     const nuevoAvance = Math.min(100, Math.max(0, (tareaActual.avance || 0) + incremento));
     
     try {
-      // Guardar avance diario como evento
-      const orgId = orgIdResuelta || currentUser.orgId;
-      if (!orgId) return;
-
-      const response = await fetch(`/api/tareas/${tareaActual.id}/transition`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nuevo_estado: tareaActual.estado || 'en_ejecucion',
-          notas: `Avance diario actualizado: ${nuevoAvance}%`,
-          checklist: [],
-          has_nc: false,
-          actor: {
-            name: currentUser.name || currentUser.email || 'Socio',
-            role: 'Socio',
-            method: 'login',
-          },
-          media: [],
-          snapshot_json: {
-            avance_diario: nuevoAvance,
-            fecha_avance: new Date().toISOString(),
-          },
-        }),
-      });
-
-      if (response.ok) {
-        setAvanceDiario(nuevoAvance);
-        // Recargar tareas para actualizar el avance
-        await fetchData();
-      }
+      setAvanceDiario(nuevoAvance);
     } catch (err) {
       // Error silencioso
     }
@@ -1788,35 +1824,7 @@ export function AhoraSection() {
 
   const handleSaveChecklist = async (items: ChecklistItem[]) => {
     setChecklistItems(items);
-    // Guardar en eventos si la tarea está iniciada
-    if (tareaActual && (tareaActual.estado?.toLowerCase() === 'en_ejecucion' || tareaActual.estado?.toLowerCase() === 'en_progreso')) {
-      try {
-        await fetch(`/api/tareas/${tareaActual.id}/transition`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            nuevo_estado: tareaActual.estado,
-            notas: 'Checklist actualizado',
-            checklist: items.map(item => ({
-              id: item.id,
-              label: item.label,
-              checked: item.done,
-            })),
-            has_nc: false,
-            actor: {
-              name: currentUser?.name || currentUser?.email || 'Socio',
-              role: 'Socio',
-              method: 'login',
-            },
-            media: [],
-          }),
-        });
-      } catch (err) {
-        // Error silencioso
-      }
-    }
+    // El checklist local no debe disparar transiciones; el envío real ocurre con evidencia en el bloque.
   };
 
   // Mapear estados visuales según FSM
@@ -1940,7 +1948,7 @@ export function AhoraSection() {
         }
         return 'Comenzar tarea';
       }
-      return 'Finalizar tarea';
+      return 'Preparar bloque';
     }
     return 'Iniciar jornada';
   };
@@ -2022,7 +2030,7 @@ export function AhoraSection() {
     ) {
       return true;
     }
-    return isIniciando || isFinalizando;
+    return isIniciando || isFinalizando || isGeneratingBlocks || isSendingTransition;
   };
 
   const jornadaEstadoLabel = !jornadaActual
@@ -2101,7 +2109,15 @@ export function AhoraSection() {
                   disabled={isCTADisabled()}
                   className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
                 >
-                  {isIniciando ? 'Iniciando…' : isFinalizando ? 'Finalizando…' : getCTAText()}
+                  {isGeneratingBlocks
+                    ? 'Preparando bloque…'
+                    : isSendingTransition
+                      ? 'Actualizando…'
+                      : isIniciando
+                        ? 'Iniciando…'
+                        : isFinalizando
+                          ? 'Enviando…'
+                          : getCTAText()}
                 </button>
               )}
             </div>
@@ -2135,7 +2151,15 @@ export function AhoraSection() {
                 disabled={isCTADisabled()}
                 className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
               >
-                {isIniciando ? 'Iniciando…' : isFinalizando ? 'Finalizando…' : getCTAText()}
+                {isGeneratingBlocks
+                  ? 'Preparando bloque…'
+                  : isSendingTransition
+                    ? 'Actualizando…'
+                    : isIniciando
+                      ? 'Iniciando…'
+                      : isFinalizando
+                        ? 'Enviando…'
+                        : getCTAText()}
               </button>
             </div>
           </div>
@@ -2475,45 +2499,34 @@ function ModalEvidencias({
       // Comprimir imagen antes de subir
       const dataUrl = await comprimirImagen(file, 1200);
       
-      // Subir foto usando el endpoint de transition
-        const response = await fetch(`/api/tareas/${tareaId}/transition`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            nuevo_estado: 'en_ejecucion', // Mantener estado actual
-            notas: `Evidencia ${tipoEvidencia === 'evidencia_final' ? 'final' : 'parcial'} subida`,
-            checklist: [],
-            has_nc: false,
-            actor: {
-              name: 'Socio',
-              role: 'Socio',
-              method: 'login',
-            },
-            media: [{
-              kind: tipoEvidencia,
-              dataUrl,
-            }],
-          }),
-        });
+      const response = await fetch('/api/upload/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl }),
+      });
 
         if (response.ok) {
           const responseData = await response.json();
-          // Obtener URL de la evidencia subida
-          if (responseData.eventoId) {
-            const { data: mediaData } = await (supabase as any)
-              .from('media')
-              .select('path')
-              .eq('evento_id', responseData.eventoId)
-              .limit(1)
-              .maybeSingle();
-            
-            if (mediaData?.path) {
-              const { data: { publicUrl } } = supabase.storage
-                .from('evidencias')
-                .getPublicUrl(mediaData.path);
-              setEvidenciaUrlActual(publicUrl);
+          if (responseData.path) {
+            setEvidenciaUrlActual(responseData.path);
+            if (subtareaId) {
+              await (supabase as any)
+                .from('tareas_subtareas')
+                .update({
+                  evidencia_url: responseData.path,
+                  evidencia_cargada: true,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', subtareaId);
+            } else {
+              await (supabase as any)
+                .from('tareas_evidencias')
+                .insert({
+                  tarea_id: tareaId,
+                  url: responseData.path,
+                  tipo: tipoEvidencia,
+                  descripcion: tipoEvidencia === 'evidencia_final' ? 'Evidencia final' : 'Evidencia parcial',
+                });
             }
           }
           
@@ -2768,16 +2781,29 @@ function ModalFinalizarSubtarea({
   const handleFileUpload = async (file: File, kind: 'evidencia_final' | 'video_final') => {
     setUploading(true);
     try {
-      let fileToUpload: File | Blob = file;
-      
-      // Comprimir imagen si es evidencia final
-      if (kind === 'evidencia_final' && file.type.startsWith('image/')) {
-        const compressedDataUrl = await comprimirImagen(file, 1200);
-        // Convertir dataUrl a Blob
-        const response = await fetch(compressedDataUrl);
-        fileToUpload = await response.blob();
+      if (kind === 'evidencia_final') {
+        const dataUrl = file.type.startsWith('image/') ? await comprimirImagen(file, 1200) : null;
+        if (!dataUrl) throw new Error('La evidencia debe ser una imagen');
+
+        const response = await fetch('/api/upload/photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dataUrl }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || errorData.error || 'Error al subir archivo');
+        }
+
+        const result = await response.json();
+        if (!result.path) throw new Error('La subida no devolvió ruta de evidencia');
+        setEvidenciaUrl(result.path);
+        return;
       }
 
+      let fileToUpload: File | Blob = file;
+      
       const formData = new FormData();
       formData.append('file', fileToUpload);
       formData.append('kind', kind);
@@ -2795,13 +2821,11 @@ function ModalFinalizarSubtarea({
       }
 
       const result = await response.json();
-      if (kind === 'evidencia_final') {
-        setEvidenciaUrl(result.url);
-      } else if (kind === 'video_final') {
+      if (kind === 'video_final') {
         setVideoUrl(result.url);
       }
     } catch (err) {
-      // Error silencioso - se maneja en el componente padre
+      alert(err instanceof Error ? err.message : 'No se pudo subir la evidencia');
     } finally {
       setUploading(false);
     }
@@ -2837,7 +2861,7 @@ function ModalFinalizarSubtarea({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
-            Finalizar subtarea
+            Enviar bloque a validar
           </DialogTitle>
         </DialogHeader>
 
@@ -2958,7 +2982,7 @@ function ModalFinalizarSubtarea({
             disabled={uploading || !controlCalidad || !evidenciaUrl}
             className="bg-[#4A6FA5] hover:bg-[#3a5a8a]"
           >
-            {uploading ? 'Subiendo...' : 'Finalizar subtarea'}
+            {uploading ? 'Subiendo...' : 'Enviar a validar'}
           </Button>
         </DialogFooter>
       </DialogContent>

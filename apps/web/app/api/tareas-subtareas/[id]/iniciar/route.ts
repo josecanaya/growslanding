@@ -6,6 +6,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
 
 function statusFromMessage(msg: string): number {
   if (msg === 'FORBIDDEN_ACTION' || msg.includes('permiso')) return 403;
@@ -40,7 +41,7 @@ export async function POST(
 
     const { data: subtarea } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id, tarea_id, estado, tareas:tareas(org_id, responsable_socio_id)')
+      .select('id, tarea_id, estado, socio_id, tareas:tareas(org_id, responsable_socio_id)')
       .eq('id', id)
       .maybeSingle();
 
@@ -54,11 +55,19 @@ export async function POST(
     }
 
     const rol = await PermisoService.obtenerRolEnOrganizacion(user.id, orgId);
-    if (rol !== 'SOCIO') {
+    const socio = await resolveSocioParaOperacionDeTarea(
+      supabase,
+      { id: user.id, email: user.email ?? null },
+      {
+        responsableSocioId: subtarea.socio_id ?? subtarea.tareas?.responsable_socio_id ?? null,
+        orgId,
+      },
+    );
+    if (rol !== 'SOCIO' && !socio) {
       return NextResponse.json({ success: false, error: 'Solo socios pueden iniciar bloques' }, { status: 403 });
     }
 
-    const socioId = await PermisoService.obtenerSocioIdPorUsuario(user.id, orgId);
+    const socioId = socio?.id ?? await PermisoService.obtenerSocioIdPorUsuario(user.id, orgId);
     if (!socioId) {
       return NextResponse.json({ success: false, error: 'No se encontró tu perfil de socio' }, { status: 403 });
     }

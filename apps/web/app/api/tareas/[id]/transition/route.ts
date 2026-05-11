@@ -280,6 +280,45 @@ export async function POST(
       return new Response(JSON.stringify(body403), { status: 403 });
     }
 
+    if (rolParaTransicion === 'SOCIO' && nuevoEstadoCanon === ESTADO_TAREA_FINAL) {
+      return new Response(
+        JSON.stringify({
+          message: 'El socio solo puede enviar a validar; la validación final la realiza el cliente/profesional.',
+          error: 'SOCIO_NO_PUEDE_VALIDAR',
+          errorCode: 'SOCIO_NO_PUEDE_VALIDAR',
+        }),
+        { status: 403 },
+      );
+    }
+
+    const estadoActualCanon = TareaFsmService.mapLegacyToOficial(tarea.estado);
+    if (estadoActualCanon === nuevoEstadoCanon) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          noOp: true,
+          estado: estadoActualCanon,
+          message: 'La tarea ya se encuentra en ese estado.',
+        }),
+        { status: 200 },
+      );
+    }
+
+    if (
+      rolParaTransicion === 'SOCIO' &&
+      nuevoEstadoCanon === 'para_validar' &&
+      (!payload.media || payload.media.length === 0)
+    ) {
+      return new Response(
+        JSON.stringify({
+          message: 'Debés cargar al menos una foto antes de enviar la tarea a validar.',
+          error: 'EVIDENCIA_FALTANTE',
+          errorCode: 'EVIDENCIA_FALTANTE',
+        }),
+        { status: 400 },
+      );
+    }
+
     if (nuevoEstadoCanon === ESTADO_TAREA_FINAL) {
       const supabaseAny = supabase as any;
       const { data: pendientesSubtareas } = await supabaseAny

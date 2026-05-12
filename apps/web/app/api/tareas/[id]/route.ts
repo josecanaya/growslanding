@@ -94,18 +94,16 @@ export async function GET(
       presupuestos = null;
     }
 
-    // Obtener evidencias (si existe la tabla)
-    let evidencias: unknown[] | null = null;
-    try {
-      const response = await supabase
-        .from('tareas_evidencias' as any)
-        .select('*')
-        .eq('tarea_id', id)
-        .order('created_at', { ascending: false });
-      evidencias = response.data ?? null;
-    } catch {
-      evidencias = null;
-    }
+    // Evidencias de bloque (MVP): filas en tareas_subtareas con evidencia_url / evidencia_cargada
+    const { data: evidenciasSubtareas, error: evidenciasError } = await supabase
+      .from('tareas_subtareas')
+      .select(
+        'id, tarea_id, estado, evidencia_url, evidencia_cargada, bloque_index, orden, fecha'
+      )
+      .eq('tarea_id', id)
+      .order('orden', { ascending: true, nullsFirst: false });
+
+    const evidencias = evidenciasError ? [] : evidenciasSubtareas ?? [];
 
     return NextResponse.json({
       success: true,
@@ -113,7 +111,7 @@ export async function GET(
         ...tarea,
         estados: estados || [],
         presupuestos: presupuestos || [],
-        evidencias: evidencias || [],
+        evidencias,
       },
     });
 

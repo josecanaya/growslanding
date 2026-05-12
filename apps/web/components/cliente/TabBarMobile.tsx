@@ -38,7 +38,7 @@ export function TabBarMobile({ activeSection }: TabBarMobileProps) {
     { id: 'home', label: 'Home', icon: Home, href: '/cliente/dashboard' },
     { id: 'obras', label: 'Obras', icon: Building2, href: '/cliente/dashboard?section=obras' },
     { id: 'tareas', label: 'Tareas', icon: ClipboardList, href: '/cliente/dashboard?section=tareas' },
-    { id: 'billetera', label: 'Billetera', icon: Wallet, href: '/cliente/dashboard?section=billetera' },
+    { id: 'billetera', label: 'Billetera', icon: Wallet, href: '/cliente/billetera' },
     { id: 'notificaciones', label: 'Notif.', icon: Bell, href: '/cliente/dashboard?section=notificaciones' },
   ];
 

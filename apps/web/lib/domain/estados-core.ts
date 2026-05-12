@@ -37,3 +37,20 @@ export function subtareaEstaCompletadaConLegacy(estado: string | null | undefine
   const n = (estado || '').toLowerCase();
   return subtareaEstaCompletadaOficial(n) || SUBTAREA_COMPLETADA_LEGACY.has(n);
 }
+
+/**
+ * Unifica variantes de PostgREST / legacy (espacios, mayúsculas, alias) para lógica de bloques en servicios.
+ */
+export function normalizeEstadoBloqueParaOperacion(estado: string | null | undefined): string {
+  const n = String(estado ?? '').trim().toLowerCase().replace(/\s+/g, '_');
+  if (n === 'en_ejecucion' || n === 'en_curso') {
+    return 'en_progreso';
+  }
+  if (n === 'rechazada') {
+    return 'rechazado';
+  }
+  if (n === 'validada') {
+    return 'validado';
+  }
+  return n;
+}

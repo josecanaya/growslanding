@@ -20,8 +20,6 @@ import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import type { Database } from '@/lib/types/supabase.gen';
 import { useToast } from '@/components/ui/use-toast';
 import { TareaFsmService } from '@/lib/services/tarea-fsm.service';
-import { useCurrentPlan } from '@/lib/subscriptions';
-import { useUpgradeModal } from '@/components/subscriptions/UpgradeModal';
 import {
   Building2,
   CheckCircle,
@@ -56,6 +54,42 @@ function formatCurrency(value: number | null | undefined): string {
     return '—';
   }
   return CURRENCY_FORMATTER.format(value);
+}
+
+/** PostgREST responde 400 Bad Request si la URL supera el límite (p. ej. `.in(...)` con muchos UUID). */
+const SUPABASE_IN_CHUNK = 80;
+
+async function fetchRowsInChunks<T>(
+  ids: string[],
+  queryChunk: (chunk: string[]) => PromiseLike<{ data: T[] | null; error: unknown }>,
+): Promise<T[]> {
+  if (!ids.length) return [];
+  const acc: T[] = [];
+  for (let i = 0; i < ids.length; i += SUPABASE_IN_CHUNK) {
+    const chunk = ids.slice(i, i + SUPABASE_IN_CHUNK);
+    const { data, error } = await queryChunk(chunk);
+    if (error) throw error;
+    if (data?.length) acc.push(...data);
+  }
+  return acc;
+}
+
+/** Usa URL absoluta tal cual, o interpreta `evidencia_url` como path en bucket `evidencias`. */
+function evidenciaSrcParaImagen(
+  raw: string | null | undefined,
+  supabaseClient: {
+    storage: {
+      from: (bucket: string) => {
+        getPublicUrl: (path: string) => { data: { publicUrl: string } };
+      };
+    };
+  },
+): string | null {
+  if (!raw?.trim()) return null;
+  const t = raw.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  const { data } = supabaseClient.storage.from('evidencias').getPublicUrl(t);
+  return data.publicUrl;
 }
 
 type ValidarSectionProps = {
@@ -129,8 +163,6 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     []
   );
   const { toast } = useToast();
-  const subscription = useCurrentPlan();
-  const upgradeModal = useUpgradeModal();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -189,27 +221,24 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       const montoAprobadoPorTarea = new Map<string, number>();
 
       if (tareaIds.length > 0) {
-        const { data: presupuestosData } = await supabase
-          .from('tareas_presupuestos')
-          .select('tarea_id, monto, estado')
-          .in('tarea_id', tareaIds);
+        const presupuestosData = await fetchRowsInChunks(tareaIds, (chunk) =>
+          supabase.from('tareas_presupuestos').select('tarea_id, monto, estado').in('tarea_id', chunk),
+        );
 
-        (presupuestosData ?? []).forEach((row: any) => {
+        presupuestosData.forEach((row: any) => {
           if (row.tarea_id && String(row.estado ?? '').toUpperCase() === 'APROBADO') {
             montoAprobadoPorTarea.set(row.tarea_id, Number(row.monto ?? 0));
           }
         });
 
-        const { data: subtareasData, error: subtareasError } = await supabase
-          .from('tareas_subtareas')
-          .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada')
-          .in('tarea_id', tareaIds);
+        const subtareasData = await fetchRowsInChunks(tareaIds, (chunk) =>
+          supabase
+            .from('tareas_subtareas')
+            .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada')
+            .in('tarea_id', chunk),
+        );
 
-        if (subtareasError) {
-          throw subtareasError;
-        }
-
-        if (subtareasData) {
+        if (subtareasData.length) {
           subtareasData.forEach((row: any) => {
             const tareaId = row.tarea_id;
             if (!tareaId) return;
@@ -230,74 +259,21 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         }
       }
 
-      let evidenciasDirectas: any[] = [];
-      let evidenciasMedia: any[] = [];
-      let eventosConTareas: any[] = [];
-      let obrasData: any[] = [];
-      let cuadrillasData: any[] = [];
-
-      if (tareaIds.length > 0) {
-        const { data: eventosData } = await supabase
-          .from('eventos')
-          .select('id, tarea_id')
-          .in('tarea_id', tareaIds);
-
-        eventosConTareas = eventosData ?? [];
-
-        const queries: Promise<any>[] = [
-          obraIds.length > 0
-            ? supabase.from('obras').select('id, nombre').in('id', obraIds)
-            : Promise.resolve({ data: [] }),
-          cuadrillaIds.length > 0
-            ? supabase.from('cuadrillas').select('id, nombre').in('id', cuadrillaIds)
-            : Promise.resolve({ data: [] }),
-          supabase
-            .from('tareas_evidencias')
-            .select('id, tarea_id, url, path, created_at')
-            .in('tarea_id', tareaIds),
-        ];
-
-        if (eventosConTareas.length > 0) {
-          const eventoIds = eventosConTareas.map((e) => e.id);
-          queries.push(
-            supabase
-              .from('media')
-              .select('id, evento_id, path, kind, created_at')
-              .in('evento_id', eventoIds)
-              .eq('kind', 'foto')
-          );
-        }
-
-        const results = await Promise.all(queries);
-        const [obrasResult, cuadrillasResult, evidenciasResult, mediaResult] = results;
-
-        obrasData = (obrasResult as any).data ?? [];
-        cuadrillasData = (cuadrillasResult as any).data ?? [];
-        evidenciasDirectas = (evidenciasResult as any).data ?? [];
-        if (mediaResult) {
-          evidenciasMedia = (mediaResult as any).data ?? [];
-        }
-      } else {
-        const [obrasResult, cuadrillasResult] = await Promise.all([
-          obraIds.length > 0
-            ? supabase.from('obras').select('id, nombre').in('id', obraIds)
-            : Promise.resolve({ data: [] }),
-          cuadrillaIds.length > 0
-            ? supabase.from('cuadrillas').select('id, nombre').in('id', cuadrillaIds)
-            : Promise.resolve({ data: [] }),
-        ]);
-        obrasData = (obrasResult as any).data ?? [];
-        cuadrillasData = (cuadrillasResult as any).data ?? [];
-      }
+      const [obrasData, cuadrillasData] = await Promise.all([
+        fetchRowsInChunks(obraIds, (chunk) => supabase.from('obras').select('id, name').in('id', chunk)),
+        fetchRowsInChunks(cuadrillaIds, (chunk) =>
+          supabase.from('cuadrillas').select('id, nombre').in('id', chunk),
+        ),
+      ]);
 
       const obraRows = ((obrasData ?? []) as unknown) as Array<{
         id: string | null;
-        nombre?: string | null;
+        name?: string | null;
       }>;
       const obrasMap = new Map<string, string>();
       obraRows.forEach((obra) => {
         if (!obra.id) return;
-        obrasMap.set(obra.id, obra.nombre ?? 'Obra sin nombre');
+        obrasMap.set(obra.id, obra.name?.trim() ? obra.name : 'Obra sin nombre');
       });
 
       const cuadrillaRows = ((cuadrillasData ?? []) as unknown) as Array<{
@@ -315,51 +291,16 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         Array<{ url: string; path: string; created_at?: string }>
       >();
 
-      evidenciasDirectas.forEach((item: any) => {
-        const tareaId = item.tarea_id as string;
-        const url = item.url ?? item.path ?? '';
-        if (!url) return;
-        if (!evidenciasMap.has(tareaId)) {
-          evidenciasMap.set(tareaId, []);
-        }
-        evidenciasMap.get(tareaId)!.push({
-          url,
-          path: item.path ?? url,
-          created_at: item.created_at,
-        });
-      });
-
-      if (evidenciasMedia.length > 0) {
-        const eventoToTareaMap = new Map<string, string>();
-        eventosConTareas.forEach((e: any) => {
-          eventoToTareaMap.set(e.id, e.tarea_id);
-        });
-
-        evidenciasMedia.forEach((item: any) => {
-          const tareaId = eventoToTareaMap.get(item.evento_id);
-          if (!tareaId) return;
-          const path = item.path ?? '';
-          if (!path) return;
-
-          let publicUrl = '';
-          try {
-            const { data: urlData } = supabase.storage
-              .from('evidencias')
-              .getPublicUrl(path);
-            publicUrl = urlData.publicUrl;
-          } catch {
-            publicUrl = path;
-          }
-
+      for (const [tareaId, lista] of subtareasPorTarea) {
+        for (const st of lista) {
+          const raw = st.evidencia_url;
+          if (!raw?.trim()) continue;
+          const u = raw.trim();
           if (!evidenciasMap.has(tareaId)) {
             evidenciasMap.set(tareaId, []);
           }
-          evidenciasMap.get(tareaId)!.push({
-            url: publicUrl,
-            path,
-            created_at: item.created_at,
-          });
-        });
+          evidenciasMap.get(tareaId)!.push({ url: u, path: u });
+        }
       }
 
       const mapped: ValidarTarea[] = todasLasTareas.map((row) => {
@@ -518,7 +459,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       if (accion === 'validar') {
         toast({
           title: 'Bloque validado',
-          description: 'Bloque validado y pago procesado',
+          description: 'El bloque quedó validado correctamente.',
         });
       } else {
         toast({
@@ -540,7 +481,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         if (err.message.includes('fetch') || err.message.includes('network') || err.message.includes('Failed to fetch')) {
           errorMessage = 'Error de conexión. Intente nuevamente.';
         } else if (err.message.includes('403') || err.message.includes('permiso') || err.message.includes('FORBIDDEN')) {
-          errorMessage = 'Tu plan no habilita esta funcionalidad.';
+          errorMessage = 'No tenés permiso para esta acción.';
         } else {
           errorMessage = err.message;
         }
@@ -590,8 +531,6 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     );
   }
 
-  const showUpgradeBanner = subscription.effectivePlanId === 'STARTER' || subscription.effectivePlanId === 'FREE';
-
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <aside className="w-full space-y-2 lg:w-64">
@@ -628,29 +567,6 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       </aside>
 
       <section className="flex-1 space-y-6">
-        {showUpgradeBanner && (
-          <Card className="border border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 shadow-sm">
-            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex-1">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  💼 Desbloqueá más funciones con PRO
-                </h3>
-                <p className="text-xs text-slate-600 mt-1">
-                  Accedé a más obras, automatizaciones avanzadas y funciones premium.
-                </p>
-              </div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => upgradeModal.open({ targetPlanId: 'PRO' })}
-                className="whitespace-nowrap"
-              >
-                Ver planes PRO
-              </Button>
-            </div>
-          </Card>
-        )}
-        
         {tareasFiltradas.pendientes.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -799,6 +715,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                               const esParaValidar = estadoLower === 'para_validar';
                               
                               const bloqueNombre = `Bloque ${sub.orden ?? sub.bloque_index ?? '—'}`;
+                              const evidenciaSrc = evidenciaSrcParaImagen(sub.evidencia_url, supabase);
                               
                               const badgeVariant = esValidado
                                 ? 'success'
@@ -838,18 +755,18 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                                       <p className="text-xs font-semibold uppercase text-slate-500 mb-1">
                                         Evidencia del bloque
                                       </p>
-                                      {sub.evidencia_url && (
+                                      {evidenciaSrc && (
                                         <button
                                           onClick={() =>
                                             setImagenAmpliada({
-                                              url: sub.evidencia_url!,
+                                              url: evidenciaSrc,
                                               titulo: bloqueNombre,
                                             })
                                           }
                                           className="relative w-full h-32 rounded-lg border-2 border-slate-200 bg-slate-100 overflow-hidden group hover:border-blue-400 transition"
                                         >
                                           <img
-                                            src={sub.evidencia_url}
+                                            src={evidenciaSrc}
                                             alt={`Evidencia - ${bloqueNombre}`}
                                             className="h-full w-full object-cover group-hover:scale-105 transition-transform"
                                             onError={(e) => {

@@ -2,10 +2,12 @@ import { createServiceSupabaseClient } from '../supabase-server';
 import { WalletMvpService } from './wallet-mvp.service';
 import { TareaFsmService } from './tarea-fsm.service';
 import { PermisoService, RolActor } from './permiso.service';
+import { ClienteWalletService } from './cliente-wallet.service';
 import {
   ESTADO_BLOQUE_FINAL,
   ESTADO_BLOQUE_PARA_VALIDAR,
   ESTADO_TAREA_FINAL,
+  normalizeEstadoBloqueParaOperacion,
   type EstadoBloqueCore,
 } from '../domain/estados-core';
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
@@ -240,7 +242,8 @@ export class SubtareaMvpService {
     const subtarea = await this.obtenerSubtarea(subtareaId);
     this.assertSocioOperaBloque(subtarea, actor);
 
-    if (!['pendiente', 'rechazado'].includes(subtarea.estado)) {
+    const estadoOp = normalizeEstadoBloqueParaOperacion(subtarea.estado);
+    if (!['pendiente', 'rechazado'].includes(estadoOp)) {
       throw new Error('Solo se pueden iniciar bloques pendientes o rechazados');
     }
 
@@ -278,11 +281,15 @@ export class SubtareaMvpService {
     const subtarea = await this.obtenerSubtarea(subtareaId);
     this.assertSocioOperaBloque(subtarea, actor);
 
-    if (subtarea.estado !== 'en_progreso') {
+    const estadoOp = normalizeEstadoBloqueParaOperacion(subtarea.estado);
+    if (estadoOp === ESTADO_BLOQUE_PARA_VALIDAR || estadoOp === ESTADO_BLOQUE_FINAL) {
+      return;
+    }
+    if (estadoOp !== 'en_progreso') {
       throw new Error('El bloque debe estar en progreso para ser enviado a validacion');
     }
 
-    if (subtarea.evidencia_obligatoria && !this.tieneEvidencia(subtarea)) {
+    if (!this.cumpleRequisitoEvidencia(subtarea)) {
       throw new Error('Debes cargar evidencia antes de enviar el bloque a validacion');
     }
 
@@ -338,13 +345,17 @@ export class SubtareaMvpService {
       throw new Error('El bloque debe estar en estado para_validar para que el cliente opere');
     }
 
-    if (subtarea.evidencia_obligatoria && !this.tieneEvidencia(subtarea)) {
+    if (!this.cumpleRequisitoEvidencia(subtarea)) {
       throw new Error('No se puede validar el bloque sin evidencia cargada');
     }
 
     const socioId = subtarea.socio_id || subtarea.tareas?.responsable_socio_id;
     if (!socioId) {
       throw new Error('La subtarea no tiene socio asociado');
+    }
+    const orgId = subtarea.tareas?.org_id;
+    if (!orgId) {
+      throw new Error('La subtarea no tiene organización asociada');
     }
 
     const accion = actor.accion ?? 'validar';
@@ -383,7 +394,11 @@ export class SubtareaMvpService {
     }
 
     await WalletMvpService.verificarSocioNoSuspendido(socioId);
-    await WalletMvpService.registrarPagoPorBloque(subtareaId, actor.metodoPago ?? 'EFECTIVO');
+    await ClienteWalletService.reconciliarSubtareaValidada({
+      subtareaId,
+      clienteUserId: actor.id,
+      metodoPago: actor.metodoPago ?? 'EFECTIVO',
+    });
 
     const { data: restantes } = await supabaseAny
       .from('tareas_subtareas')
@@ -395,13 +410,17 @@ export class SubtareaMvpService {
     const tareaValidada = !restantes || restantes.length === 0;
 
     if (tareaValidada) {
-      await TareaFsmService.enforceTransition({
-        tareaId: subtarea.tarea_id,
-        nuevoEstado: ESTADO_TAREA_FINAL,
-        actorId: actor.id,
-        rol: 'CLIENTE',
-        motivo: 'Validacion automatica por bloques',
-      });
+      try {
+        await TareaFsmService.enforceTransition({
+          tareaId: subtarea.tarea_id,
+          nuevoEstado: ESTADO_TAREA_FINAL,
+          actorId: actor.id,
+          rol: 'CLIENTE',
+          motivo: 'Validacion automatica por bloques',
+        });
+      } catch (fsmErr) {
+        console.warn('[validarSubtarea] Transición FSM de tarea no aplicada (bloque ya validado):', fsmErr);
+      }
     }
 
     return { tareaValidada };
@@ -438,8 +457,19 @@ export class SubtareaMvpService {
     return data;
   }
 
-  private static tieneEvidencia(subtarea: SubtareaRecord) {
-    return Boolean(subtarea.evidencia_cargada || subtarea.evidencia_url);
+  /**
+   * Si `evidencia_obligatoria`, exige evidencia persistida en subtarea (cargada + URL/path).
+   * Si no es obligatoria, no bloquea por evidencia.
+   */
+  private static cumpleRequisitoEvidencia(subtarea: SubtareaRecord) {
+    if (!subtarea.evidencia_obligatoria) {
+      return true;
+    }
+    return Boolean(
+      subtarea.evidencia_cargada &&
+        subtarea.evidencia_url &&
+        String(subtarea.evidencia_url).trim(),
+    );
   }
 
   private static async buildSubtareaSelect(_supabaseAny: any): Promise<string> {

@@ -216,6 +216,22 @@ export function AhoraSection() {
     } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
       title = 'Evidencia requerida';
       description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
+    } else if (errorCode === 'PRECEDENCE_ERROR' || error?.error === 'PRECEDENCE_ERROR') {
+      title = 'Hay tareas previas sin validar';
+      description =
+        typeof errorMessage === 'string' && errorMessage.trim()
+          ? errorMessage.replace(/\n+/g, ' — ').slice(0, 500)
+          : 'Esta tarea depende de otras: tenés que dejar validadas las anteriores antes de iniciarla.';
+    } else if (errorCode === 'BLOQUES_FALTANTES' || error?.error === 'BLOQUES_FALTANTES') {
+      title = 'Faltan bloques';
+      description =
+        errorMessage ||
+        'Primero generá bloques y completá el flujo de evidencia antes de enviar la tarea a validar.';
+    } else if (errorCode === 'BLOQUE_NO_LISTO' || error?.error === 'BLOQUE_NO_LISTO') {
+      title = 'Bloque no listo';
+      description =
+        errorMessage ||
+        'Primero enviá el bloque a validar desde el flujo de evidencia (foto y enviar a validar).';
     } else if (errorCode === 'BLOQUE_YA_VALIDADO' || errorMessage.includes('ya validado')) {
       title = 'Bloque ya validado';
       description = 'Este bloque ya fue validado.';
@@ -1347,6 +1363,35 @@ export function AhoraSection() {
     }
   };
 
+  const recargarSubtareaPorId = React.useCallback(
+    async (subtareaId: string) => {
+      if (USE_MOCK_DATA) return;
+      const { data: subtareaData } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select(`
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            obras:obras (
+              id,
+              name,
+              address
+            )
+          )
+        `)
+        .eq('id', subtareaId)
+        .maybeSingle();
+      if (subtareaData) {
+        setSubtareaActual(subtareaData);
+      }
+      setSubtareaRefreshKey((k) => k + 1);
+    },
+    [supabase],
+  );
+
   useEffect(() => {
     if (USE_MOCK_DATA) return;
     void cargarContadoresTareas();
@@ -1359,11 +1404,13 @@ export function AhoraSection() {
     const requestKey = `enviar-validar:${subtareaActual.id}`;
     if (isFinalizando || isSendingTransition || isUploadingEvidence || isSendingToValidation || requestEnCursoRef.current.has(requestKey)) return false;
 
+    const evidenciaObligatoria = subtareaActual.evidencia_obligatoria !== false;
+    const evidenciaPersistida =
+      Boolean(subtareaActual.evidencia_cargada) &&
+      Boolean(String(subtareaActual.evidencia_url ?? '').trim());
     const tieneEvidencia =
-      Boolean(evidenciaUrl) ||
-      Boolean(subtareaActual.evidencia_cargada) ||
-      Boolean(subtareaActual.evidencia_url);
-    if (subtareaActual.evidencia_obligatoria !== false && !tieneEvidencia) {
+      evidenciaPersistida || Boolean(String(evidenciaUrl ?? '').trim());
+    if (evidenciaObligatoria && !tieneEvidencia) {
       handleApiError(
         { errorCode: 'EVIDENCIA_FALTANTE', message: 'Debés subir una foto antes de enviar a validar.' },
         'Debés subir una foto antes de enviar a validar.',
@@ -1610,52 +1657,6 @@ export function AhoraSection() {
         handleApiError(errorData, `Error ${response.status}: ${response.statusText}`);
         setIsFinalizando(false);
         return;
-      }
-
-      // Si hay media en el evento, también crear registro en tareas_evidencias
-      if (tareaActual.id) {
-        try {
-          const { data: candidatosPost } = await supabase
-            .from('eventos')
-            .select('id, nuevo_estado')
-            .eq('tarea_id', tareaActual.id)
-            .order('created_at', { ascending: false })
-            .limit(12);
-
-          const listaPostEv = (candidatosPost ?? []) as EventoRowIdEstado[];
-          const eventoReciente = listaPostEv.find((ev) => {
-            const n = (ev.nuevo_estado || '').toLowerCase();
-            return (
-              n === 'para_validar' ||
-              n === 'validada' ||
-              n === 'finalizado' ||
-              n === 'finalizada'
-            );
-          });
-
-          if (eventoReciente?.id) {
-            // Obtener media de la tabla media relacionada con el evento
-            const { data: mediaData } = await supabase
-              .from('media')
-              .select('path, kind')
-              .eq('evento_id', eventoReciente!.id)
-              .limit(1)
-              .maybeSingle() as any;
-
-            if (mediaData?.path) {
-              await supabase
-                .from('tareas_evidencias')
-                .insert({
-                  tarea_id: tareaActual.id,
-                  url: mediaData.path,
-                  tipo: 'foto',
-                  descripcion: 'Evidencia fotográfica de finalización',
-                } as any);
-            }
-          }
-        } catch (evidenciaError) {
-          // No bloquear el flujo si falla la creación de evidencia
-        }
       }
 
       // Recargar tareas
@@ -2371,6 +2372,9 @@ export function AhoraSection() {
             setEvidenciasFinales([...evidenciasFinales, 'nueva']);
           }}
           onFinalizarSubtarea={handleFinalizarSubtarea}
+          onSubtareaEvidenciaRefreshed={
+            subtareaActual?.id ? () => void recargarSubtareaPorId(subtareaActual.id) : undefined
+          }
         />
       )}
 
@@ -2383,6 +2387,9 @@ export function AhoraSection() {
           onClose={() => setShowModalFinalizarSubtarea(false)}
           onFinalizar={handleFinalizarSubtarea}
           onUploadingChange={setIsUploadingEvidence}
+          onEvidenciaUploadOk={
+            subtareaActual?.id ? () => void recargarSubtareaPorId(subtareaActual.id) : undefined
+          }
         />
       )}
 
@@ -2397,7 +2404,8 @@ function ModalEvidencias({
   subtareaId,
   onClose, 
   onEvidenciaFinalSubida,
-  onFinalizarSubtarea
+  onFinalizarSubtarea,
+  onSubtareaEvidenciaRefreshed,
 }: { 
   tareaId: string; 
   obraId: string;
@@ -2405,6 +2413,7 @@ function ModalEvidencias({
   onClose: () => void; 
   onEvidenciaFinalSubida: () => void;
   onFinalizarSubtarea?: (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => void;
+  onSubtareaEvidenciaRefreshed?: () => void | Promise<void>;
 }) {
   const [evidencias, setEvidencias] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -2429,24 +2438,44 @@ function ModalEvidencias({
     });
   };
 
-  useEffect(() => {
-    cargarEvidencias();
-  }, [tareaId]);
-
-  const cargarEvidencias = async () => {
+  const cargarVistaEvidencias = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/tareas/${tareaId}/evidencias`);
-      if (response.ok) {
-        const data = await response.json();
-        setEvidencias(data.data || []);
+      if (subtareaId) {
+        const { data, error } = await (supabase as any)
+          .from('tareas_subtareas')
+          .select('evidencia_url, evidencia_cargada')
+          .eq('id', subtareaId)
+          .maybeSingle();
+        if (error) {
+          setEvidencias([]);
+          return;
+        }
+        const url = data?.evidencia_url as string | null | undefined;
+        if (url?.trim()) {
+          setEvidencias([
+            {
+              id: subtareaId,
+              url: url.trim(),
+              tipo: 'evidencia_bloque',
+              descripcion: 'Evidencia del bloque',
+            },
+          ]);
+        } else {
+          setEvidencias([]);
+        }
+      } else {
+        setEvidencias([]);
       }
-    } catch (err) {
-      // Error silencioso
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    void cargarVistaEvidencias();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recargar al cambiar bloque/tarea
+  }, [tareaId, subtareaId]);
 
   // Helper para comprimir imagen a máximo 1200px
   const comprimirImagen = (file: File, maxWidth: number = 1200): Promise<string> => {
@@ -2489,58 +2518,68 @@ function ModalEvidencias({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!subtareaId?.trim()) {
+      toast({
+        title: 'Sin bloque activo',
+        description: 'No hay bloque activo para asociar esta evidencia.',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
-      // Comprimir imagen antes de subir
       const dataUrl = await comprimirImagen(file, 1200);
-      
+
       const response = await fetch('/api/upload/photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dataUrl }),
+        credentials: 'include',
+        body: JSON.stringify({ dataUrl, subtareaId }),
       });
 
-        if (response.ok) {
-          const responseData = await response.json();
-          if (responseData.path) {
-            setEvidenciaUrlActual(responseData.path);
-            if (subtareaId) {
-              await (supabase as any)
-                .from('tareas_subtareas')
-                .update({
-                  evidencia_url: responseData.path,
-                  evidencia_cargada: true,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', subtareaId);
-            } else {
-              await (supabase as any)
-                .from('tareas_evidencias')
-                .insert({
-                  tarea_id: tareaId,
-                  url: responseData.path,
-                  tipo: tipoEvidencia,
-                  descripcion: tipoEvidencia === 'evidencia_final' ? 'Evidencia final' : 'Evidencia parcial',
-                });
-            }
-          }
-          
-          await cargarEvidencias();
-          if (tipoEvidencia === 'evidencia_final') {
-            onEvidenciaFinalSubida();
-          }
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          handleApiError(errorData, 'Error al subir la evidencia');
-        }
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg =
+          responseData.message ||
+          responseData.error ||
+          'Error al subir la evidencia';
+        handleApiError(responseData, msg);
+        return;
+      }
+
+      const urlUsable =
+        responseData.evidencia_url ?? responseData.publicUrl ?? responseData.path ?? null;
+      if (urlUsable) {
+        setEvidenciaUrlActual(String(urlUsable));
+      }
+
+      await cargarVistaEvidencias();
+      await onSubtareaEvidenciaRefreshed?.();
+
+      if (tipoEvidencia === 'evidencia_final') {
+        onEvidenciaFinalSubida();
+      }
     } catch (err) {
-      // Error silencioso
+      handleApiError(
+        err,
+        err instanceof Error ? err.message : 'Error al subir la evidencia',
+      );
     } finally {
       setUploading(false);
-      // Reset inputs
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (cameraInputRef.current) cameraInputRef.current.value = '';
     }
+  };
+
+  const srcEvidenciaModal = (url: string) => {
+    const u = url.trim();
+    if (!u) return u;
+    if (/^https?:\/\//i.test(u)) return u;
+    return supabase.storage.from('evidencias').getPublicUrl(u).data.publicUrl;
   };
 
   const handleVideoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2567,7 +2606,7 @@ function ModalEvidencias({
           .getPublicUrl(uploadData.path);
 
         setVideoUrlActual(publicUrl);
-        await cargarEvidencias();
+        await cargarVistaEvidencias();
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -2693,13 +2732,17 @@ function ModalEvidencias({
               {evidencias.map((evidencia: any) => (
                 <div key={evidencia.id} className="relative group">
                   <img
-                    src={evidencia.url}
+                    src={srcEvidenciaModal(String(evidencia.url ?? ''))}
                     alt={evidencia.descripcion || 'Evidencia'}
                     className="w-full h-32 object-cover rounded-lg"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity rounded-lg flex items-center justify-center">
                     <span className="text-white text-xs opacity-0 group-hover:opacity-100">
-                      {evidencia.tipo === 'evidencia_final' ? 'Final' : 'Parcial'}
+                      {evidencia.tipo === 'evidencia_final'
+                        ? 'Final'
+                        : evidencia.tipo === 'evidencia_bloque'
+                          ? 'Bloque'
+                          : 'Parcial'}
                     </span>
                   </div>
                 </div>
@@ -2720,6 +2763,7 @@ function ModalFinalizarSubtarea({
   onClose,
   onFinalizar,
   onUploadingChange,
+  onEvidenciaUploadOk,
 }: {
   subtareaId: string;
   tareaId?: string;
@@ -2727,6 +2771,7 @@ function ModalFinalizarSubtarea({
   onClose: () => void;
   onFinalizar: (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => Promise<void>;
   onUploadingChange?: (uploading: boolean) => void;
+  onEvidenciaUploadOk?: () => void | Promise<void>;
 }) {
   const [evidenciaUrl, setEvidenciaUrl] = useState<string | undefined>(undefined);
   const [videoUrl, setVideoUrl] = useState<string | undefined>(undefined);
@@ -2737,6 +2782,7 @@ function ModalFinalizarSubtarea({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const videoGalleryInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // Helper para comprimir imagen a máximo 1200px
   const comprimirImagen = (file: File, maxWidth: number = 1200): Promise<string> => {
@@ -2790,14 +2836,32 @@ function ModalFinalizarSubtarea({
           body: JSON.stringify({ dataUrl, subtareaId }),
         });
 
+        const result = await response.json().catch(() => ({}));
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || errorData.error || 'Error al subir archivo');
+          const msg =
+            (result as any).message ||
+            (result as any).error ||
+            'Error al subir evidencia';
+          toast({
+            title: 'No se pudo subir la evidencia',
+            description: msg,
+            variant: 'destructive',
+          });
+          throw new Error(msg);
         }
 
-        const result = await response.json();
-        if (!result.path) throw new Error('La subida no devolvió ruta de evidencia');
-        setEvidenciaUrl(result.path);
+        const urlUsable =
+          (result as any).evidencia_url ??
+          (result as any).publicUrl ??
+          (result as any).path;
+        if (!urlUsable) {
+          const msg = 'La subida no devolvió una URL de evidencia usable';
+          toast({ title: 'Error de evidencia', description: msg, variant: 'destructive' });
+          throw new Error(msg);
+        }
+        setEvidenciaUrl(String(urlUsable));
+        await onEvidenciaUploadOk?.();
         return;
       }
 
@@ -2824,7 +2888,12 @@ function ModalFinalizarSubtarea({
         setVideoUrl(result.url);
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'No se pudo subir la evidencia');
+      const msg = err instanceof Error ? err.message : 'No se pudo subir la evidencia';
+      toast({
+        title: 'Error al subir',
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
       onUploadingChange?.(false);

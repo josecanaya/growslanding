@@ -165,7 +165,7 @@ export function MobileHome() {
   };
 
   const handleVerPresupuesto = () => {
-    router.push(`/cliente/dashboard?section=billetera&obra=${obraSeleccionada}` as Route);
+    router.push('/cliente/billetera' as Route);
   };
 
   return (

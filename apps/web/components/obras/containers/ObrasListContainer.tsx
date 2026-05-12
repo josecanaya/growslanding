@@ -233,6 +233,7 @@ export function ObrasListContainer() {
         onCrearTareas={handleCreateTasks}
         onEliminarTarea={handleDeleteTask}
         onActualizarObra={handleUpdateObra}
+        onEliminarObra={handleDeleteObraFromDetail}
       />
     );
   }
@@ -384,9 +385,44 @@ export function ObrasListContainer() {
     }
   }
 
-  function handleDeleteObra(obra: ObraConOrg) {
-    if (window.confirm(`¿Estás seguro de que querés eliminar la obra "${obra.nombre}"?`)) {
-      setObras((prev) => prev.filter((item) => item.id !== obra.id));
+  async function handleDeleteObra(obra: ObraConOrg) {
+    if (
+      !window.confirm(
+        `¿Eliminar la obra "${obra.nombre}"? Se borrará en el servidor. Si hay tareas vinculadas, Supabase puede rechazar el borrado.`,
+      )
+    ) {
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/obras/${encodeURIComponent(obra.id)}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          typeof json.error === 'string'
+            ? json.error
+            : typeof json.message === 'string'
+              ? json.message
+              : 'No se pudo eliminar la obra';
+        setError(msg);
+        return;
+      }
+      if (selectedObra?.id === obra.id) {
+        setSelectedObra(null);
+      }
+      await loadObras();
+    } catch {
+      setError('Error de red al eliminar la obra');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleDeleteObraFromDetail(obraId: string) {
+    const obra = obras.find((o) => o.id === obraId);
+    if (obra) {
+      void handleDeleteObra(obra);
     }
   }
 

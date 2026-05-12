@@ -540,6 +540,10 @@ function ObrasSectionContent() {
         return;
       }
 
+      if (selectedObra?.id === obra.id) {
+        setSelectedObra(null);
+      }
+
       // Recargar obras después de eliminar
       await loadObras();
     } catch (err) {
@@ -634,6 +638,10 @@ function ObrasSectionContent() {
         onCrearTarea={() => {}}
         onCrearTareas={() => {}}
         onEliminarTarea={() => {}}
+        onEliminarObra={(obraId) => {
+          const o = obras.find((x) => x.id === obraId);
+          if (o) void handleDeleteObra(o);
+        }}
         onActualizarObra={async (obra) => {
           try {
             setIsLoading(true);

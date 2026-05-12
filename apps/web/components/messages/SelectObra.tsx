@@ -45,16 +45,16 @@ export function SelectObra({ value, onValueChange, role }: SelectObraProps) {
           // Cliente: obras donde es owner o responsable
           const { data, error } = await supabaseAny
             .from('obras')
-            .select('id, nombre, direccion_completa')
+            .select('id, name, address')
             .eq('org_id', currentUser.orgId)
-            .order('nombre', { ascending: true });
+            .order('name', { ascending: true });
 
           if (error) throw error;
 
           const obrasList = (data || []).map((obra: any) => ({
             id: obra.id,
-            nombre: obra.nombre || 'Obra sin nombre',
-            direccion: obra.direccion_completa,
+            nombre: obra.name || 'Obra sin nombre',
+            direccion: obra.address,
           }));
 
           setObras(obrasList);
@@ -97,7 +97,7 @@ export function SelectObra({ value, onValueChange, role }: SelectObraProps) {
           // Obtener obras de esas cuadrillas
           const { data: obrasData, error } = await supabaseAny
             .from('cuadrillas')
-            .select('obra_id, obras:id,nombre,direccion_completa')
+            .select('obra_id, obras:id,name,address')
             .in('id', cuadrillaIds);
 
           if (error) throw error;
@@ -108,8 +108,8 @@ export function SelectObra({ value, onValueChange, role }: SelectObraProps) {
             if (item.obra_id && item.obras) {
               obrasUnicas.set(item.obra_id, {
                 id: item.obra_id,
-                nombre: item.obras.nombre || 'Obra sin nombre',
-                direccion: item.obras.direccion_completa,
+                nombre: item.obras.name || 'Obra sin nombre',
+                direccion: item.obras.address,
               });
             }
           });

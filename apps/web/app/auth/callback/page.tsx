@@ -27,8 +27,40 @@ function sanitizeRedirect(target: string | null): string | null {
 
 const PKCE_STORAGE_PREFIX = "grows_pkce:";
 
+/** Lock distinto al estado del intercambio: evita doble `exchangeCodeForSession` en Strict Mode (429). */
+const PKCE_LOCK_PREFIX = "grows_pkce_lock:";
+
 function pkceStorageKey(code: string) {
   return `${PKCE_STORAGE_PREFIX}${code}`;
+}
+
+function pkceLockKey(code: string) {
+  return `${PKCE_LOCK_PREFIX}${code}`;
+}
+
+/**
+ * Solo una instancia (incl. remount Strict Mode) debe intercambiar el código.
+ * Debe llamarse de forma síncrona antes del primer `await` del flujo PKCE.
+ */
+function tryClaimPkceExchange(code: string): "leader" | "waiter" | "skip_done" {
+  if (typeof window === "undefined") return "leader";
+  const stateKey = pkceStorageKey(code);
+  const lockKey = pkceLockKey(code);
+  const state = sessionStorage.getItem(stateKey);
+  if (state === "done" || state === "rate_limited") {
+    return "skip_done";
+  }
+  const lock = sessionStorage.getItem(lockKey);
+  if (lock === "1") {
+    return "waiter";
+  }
+  sessionStorage.setItem(lockKey, "1");
+  return "leader";
+}
+
+function releasePkceLock(code: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(pkceLockKey(code));
 }
 
 /** Strict Mode puede dejar “running”; no spamear getSession (provoca 429 y loop OAuth). */
@@ -152,8 +184,31 @@ function CallbackPageContent() {
             if (applySessionFetchError(result.error)) return;
             resolvedSession = result.data.session ?? null;
           } else {
-            /** false = ya redirigimos a login; no seguir con getSession (evita segundo golpe a Auth). */
-            const runExchange = async (): Promise<boolean> => {
+            const claim = tryClaimPkceExchange(code);
+
+            if (claim === "skip_done") {
+              const result = await supabase.auth.getSession();
+              if (!active) return;
+              if (applySessionFetchError(result.error)) return;
+              resolvedSession = result.data.session ?? null;
+            } else if (claim === "waiter") {
+              await waitForPkcePeer(supabase, code);
+              if (!active) return;
+              const afterWait = sessionStorage.getItem(pkceKey);
+              if (afterWait === "rate_limited") {
+                if (active) {
+                  router.replace("/auth/login?error=rate_limit" as Route);
+                }
+                return;
+              }
+              const result = await supabase.auth.getSession();
+              if (!active) return;
+              if (applySessionFetchError(result.error)) return;
+              resolvedSession = result.data.session ?? null;
+            } else {
+              /** Leader: un solo intercambio PKCE; el lock en sessionStorage evita doble POST en Strict Mode. */
+              sessionStorage.setItem(pkceKey, "running");
+              const runExchange = async (): Promise<boolean> => {
               // Otro contexto bajo el mismo lock pudo terminar antes: no re-intercambiar (rompe PKCE).
               if (typeof window !== "undefined") {
                 const donePeek = sessionStorage.getItem(pkceKey);
@@ -181,7 +236,6 @@ function CallbackPageContent() {
                 }
               }
 
-              sessionStorage.setItem(pkceKey, "running");
               const { data: exchanged, error: exchangeError } =
                 await supabase.auth.exchangeCodeForSession(code);
 
@@ -248,23 +302,26 @@ function CallbackPageContent() {
               return true;
             };
 
-            let exchangeOk = true;
-            try {
-              if (typeof navigator !== "undefined" && navigator.locks) {
-                exchangeOk = await navigator.locks.request(
-                  `grows-oauth-pkce:${code}`,
-                  runExchange,
-                );
-              } else {
-                exchangeOk = await runExchange();
+              let exchangeOk = true;
+              try {
+                if (typeof navigator !== "undefined" && navigator.locks) {
+                  exchangeOk = await navigator.locks.request(
+                    `grows-oauth-pkce:${code}`,
+                    runExchange,
+                  );
+                } else {
+                  exchangeOk = await runExchange();
+                }
+              } catch (e) {
+                sessionStorage.removeItem(pkceKey);
+                throw e;
+              } finally {
+                releasePkceLock(code);
               }
-            } catch (e) {
-              sessionStorage.removeItem(pkceKey);
-              throw e;
-            }
 
-            if (!active) return;
-            if (!exchangeOk) return;
+              if (!active) return;
+              if (!exchangeOk) return;
+            }
           }
         }
 

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       .from('tareas')
       .select(
         `id, obra_id, tipo, descripcion, estado, referente_id, socio_ids,
-         obra:obras(nombre, cliente, localizacion),
+         obra:obras(name, propietario, address),
          eventos(*),
          precedencias:tarea_precedencias(depende_de)`
       )

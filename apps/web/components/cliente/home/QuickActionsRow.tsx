@@ -32,7 +32,7 @@ export function QuickActionsRow({ obraId, singleRow = false }: QuickActionsRowPr
         }
         break;
       case 'presupuesto':
-        router.push('/cliente/dashboard?section=billetera');
+        router.push('/cliente/billetera');
         break;
       case 'socios':
         router.push('/cliente/dashboard?section=cuadrillas');

@@ -8,6 +8,7 @@ type SubtareaPagoRecord = {
   tarea_id: string;
   socio_id: string | null;
   presupuesto_id?: string | null;
+  monto_estimado?: number | null;
   tareas?: {
     id: string;
     org_id: string;
@@ -39,6 +40,7 @@ export class WalletMvpService {
         tarea_id,
         socio_id,
         presupuesto_id,
+        monto_estimado,
         tareas:tareas (
           id,
           org_id,
@@ -71,7 +73,7 @@ export class WalletMvpService {
 
     const montoBruto = await this.obtenerMontoBrutoBloque(subtarea);
     if (montoBruto <= 0) {
-      throw new Error('No se encontró monto de presupuesto aprobado para pagar');
+      return;
     }
 
     await this.ensureSaldo('SOCIO', socioId);
@@ -82,6 +84,7 @@ export class WalletMvpService {
       tipo: 'CREDITO',
       estado: 'completado',
       tarea_id: tarea.id,
+      subtarea_id: subtarea.id,
       presupuesto_id: subtarea.presupuesto_id,
       origen: 'VALIDACION_BLOQUE',
       concepto: `Pago por validación de bloque (${metodoPago})`,
@@ -117,14 +120,27 @@ export class WalletMvpService {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
+    const montoEstimado = Number(subtarea.monto_estimado ?? 0);
+    if (Number.isFinite(montoEstimado) && montoEstimado > 0) {
+      return montoEstimado;
+    }
+
     if (subtarea.presupuesto_id) {
-      const { data } = await supabaseAny
+      const [{ data }, { count }] = await Promise.all([
+        supabaseAny
         .from('tareas_presupuestos')
         .select('monto')
         .eq('id', subtarea.presupuesto_id)
-        .maybeSingle();
+          .maybeSingle(),
+        supabaseAny
+          .from('tareas_subtareas')
+          .select('id', { count: 'exact', head: true })
+          .eq('tarea_id', subtarea.tarea_id)
+          .eq('presupuesto_id', subtarea.presupuesto_id),
+      ]);
       const monto = Number(data?.monto ?? 0);
-      return Number.isFinite(monto) ? monto : 0;
+      const divisor = Math.max(1, Number(count ?? 0));
+      return Number.isFinite(monto) ? Number((monto / divisor).toFixed(2)) : 0;
     }
 
     const { data: rows } = await supabaseAny
@@ -241,7 +257,7 @@ export class WalletMvpService {
 
     const { data: subtarea } = await supabaseAny
       .from('tareas_subtareas')
-      .select('tarea_id, socio_id, presupuesto_id, tareas:tareas(responsable_socio_id)')
+      .select('id, tarea_id, socio_id, presupuesto_id, tareas:tareas(responsable_socio_id)')
       .eq('id', subtareaId)
       .maybeSingle();
 
@@ -253,14 +269,10 @@ export class WalletMvpService {
     let query = supabaseAny
       .from('wallet_movimientos')
       .select('id')
-      .eq('tarea_id', subtarea.tarea_id)
+      .eq('subtarea_id', subtarea.id)
       .eq('origen', 'VALIDACION_BLOQUE')
       .eq('owner_tipo', 'SOCIO')
       .eq('owner_id', socioId);
-
-    if (subtarea.presupuesto_id) {
-      query = query.eq('presupuesto_id', subtarea.presupuesto_id);
-    }
 
     const { data } = await query.limit(1);
 

@@ -25,7 +25,7 @@ export function QuickActionsGrid({ router }: QuickActionsGridProps) {
     {
       icon: DollarSign,
       label: 'Presupuestos',
-      action: () => router.push('/cliente/dashboard?section=billetera' as Route),
+      action: () => router.push('/cliente/billetera' as Route),
       color: 'bg-amber-600',
     },
     {

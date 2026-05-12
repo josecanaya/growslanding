@@ -4,6 +4,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
 import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
+import { ClienteWalletService } from '@/lib/services/cliente-wallet.service';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { ESTADO_BLOQUE_PARA_VALIDAR } from '@/lib/domain/estados-core';
@@ -64,6 +65,15 @@ export async function POST(
         { success: false, error: 'Solo el cliente puede validar o rechazar bloques' },
         { status: 403 },
       );
+    }
+
+    if (subtarea.estado === 'validado' && accion === 'validar') {
+      const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
+        subtareaId: id,
+        clienteUserId: user.id,
+        metodoPago,
+      });
+      return NextResponse.json({ success: true, tareaValidada: true, reconciliacion });
     }
 
     if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {

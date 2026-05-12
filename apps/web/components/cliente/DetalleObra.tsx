@@ -99,6 +99,8 @@ interface DetalleObraProps {
   onCrearTareas?: (tareas: Omit<Tarea, 'id' | 'estado' | 'evidencias'>[]) => void; // Agregar esta línea
   onEliminarTarea: (tareaId: string) => void;
   onActualizarObra: (obra: Obra) => void;
+  /** Si se define, muestra botón para eliminar la obra vía API (pruebas / gestión). */
+  onEliminarObra?: (obraId: string) => void | Promise<void>;
   tabInicial?: 'resumen' | 'elementos' | 'legajo'; // Tab inicial cuando se abre el detalle
 }
 
@@ -162,6 +164,7 @@ export function DetalleObra({
   onCrearTareas, // Agregar esta línea
   onEliminarTarea, 
   onActualizarObra,
+  onEliminarObra,
   tabInicial = 'resumen'
 }: DetalleObraProps) {
   const router = useRouter();
@@ -830,7 +833,7 @@ export function DetalleObra({
                   <div className="text-xl md:text-2xl lg:text-3xl font-bold" style={{color: '#1B263B'}}>{obra.progreso}%</div>
                   <div className="text-xs md:text-sm" style={{color: '#5b5f6a'}}>Progreso General</div>
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button 
                     onClick={handleAbrirModalEditar}
                     className="flex items-center space-x-1 md:space-x-2 px-2 md:px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out text-xs md:text-sm"
@@ -846,6 +849,17 @@ export function DetalleObra({
                     <span className="hidden md:inline">Editar información</span>
                     <span className="md:hidden">Editar</span>
                   </button>
+                  {onEliminarObra ? (
+                    <button
+                      type="button"
+                      onClick={() => void onEliminarObra(obra.id)}
+                      className="flex items-center space-x-1 md:space-x-2 px-2 md:px-4 py-2 rounded-lg font-medium transition-all duration-300 ease-in-out text-xs md:text-sm border border-rose-300 bg-white text-rose-700 hover:bg-rose-50"
+                    >
+                      <Trash2 className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                      <span className="hidden md:inline">Eliminar obra</span>
+                      <span className="md:hidden">Eliminar</span>
+                    </button>
+                  ) : null}
                   <button className="p-2 rounded-lg transition-all duration-300 ease-in-out" style={{color: '#5b5f6a'}} onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = '#f5f7fa';
                     e.currentTarget.style.color = '#1B263B';

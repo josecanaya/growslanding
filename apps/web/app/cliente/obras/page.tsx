@@ -29,6 +29,7 @@ export default function ObrasPage() {
   const [obras, setObras] = useState<ApiObra[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [eliminandoId, setEliminandoId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +57,38 @@ export default function ObrasPage() {
       active = false;
     };
   }, []);
+
+  const handleEliminarObra = async (id: string) => {
+    const obra = obras.find((o) => o.id === id);
+    const nombre = obra?.name || 'esta obra';
+    if (
+      !window.confirm(
+        `¿Eliminar "${nombre}"? Se borrará en el servidor. Si hay tareas u otros datos vinculados, puede fallar por restricciones de la base.`,
+      )
+    ) {
+      return;
+    }
+    setEliminandoId(id);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/obras/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          typeof json.error === 'string'
+            ? json.error
+            : typeof json.message === 'string'
+              ? json.message
+              : 'No se pudo eliminar la obra';
+        throw new Error(msg);
+      }
+      setObras((prev) => prev.filter((o) => o.id !== id));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Error al eliminar');
+    } finally {
+      setEliminandoId(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -98,6 +131,8 @@ export default function ObrasPage() {
                 estado={estadoLabel(o.estado)}
                 avancePct={avance}
                 href={`/cliente/obras/${o.id}` as Route}
+                onEliminar={handleEliminarObra}
+                eliminando={eliminandoId === o.id}
               />
             );
           })}

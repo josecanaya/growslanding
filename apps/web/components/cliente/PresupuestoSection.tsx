@@ -98,6 +98,7 @@ function normalizeObra(row: Record<string, any>): Obra {
   return {
     id: String(row.id),
     nombre:
+      (row.name as string | null | undefined) ??
       (row.nombre as string | null | undefined) ??
       (row.title as string | null | undefined) ??
       'Obra sin nombre',
@@ -242,7 +243,7 @@ export function PresupuestoSection() {
       try {
         const { data, error: obrasError } = await supabase
           .from('obras')
-          .select('id, nombre')
+          .select('id, name')
           .eq('org_id', currentUser.orgId)
           .order('created_at', { ascending: true });
 

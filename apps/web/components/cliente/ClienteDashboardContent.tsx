@@ -187,7 +187,7 @@ export function ClienteDashboardContent() {
               </BauhausDomainLink>
 
               <BauhausDomainLink
-                href={'/cliente/presupuesto' as Route}
+                href={'/cliente/billetera' as Route}
                 className="col-span-3 col-start-10 row-span-3 row-start-1 text-[#002114] hover:shadow-lg"
                 style={{ backgroundColor: mint }}
               >
@@ -316,7 +316,7 @@ export function ClienteDashboardContent() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <Link
-                href={'/cliente/presupuesto' as Route}
+                href={'/cliente/billetera' as Route}
                 className="relative flex aspect-[4/5] w-full flex-col items-center justify-center bg-[#002b49] text-white active:scale-[0.96]"
               >
                 <div className="absolute -left-1 -top-1 h-12 w-12 rounded-full border-l border-t border-[#24a375] opacity-40" />

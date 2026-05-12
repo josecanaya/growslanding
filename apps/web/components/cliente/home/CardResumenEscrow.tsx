@@ -20,7 +20,7 @@ export function CardResumenEscrow({
   const router = useRouter();
 
   const handleVerPresupuesto = () => {
-    router.push('/cliente/dashboard?section=billetera' as Route);
+    router.push('/cliente/billetera' as Route);
   };
 
   const porcentaje = aprobado > 0 ? Math.round((ejecutado / aprobado) * 100) : 0;

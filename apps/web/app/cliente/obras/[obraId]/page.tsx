@@ -1,11 +1,10 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { useParams } from 'next/navigation';
-import { ClienteCentroOperacionesView } from '@/components/cliente/obra/ClienteCentroOperacionesView';
-
-export default function ClienteObraCentroPage() {
-  const params = useParams<{ obraId: string }>();
-  const obraId = params?.obraId ?? '';
-
-  return <ClienteCentroOperacionesView obraId={obraId} />;
+export default async function ClienteObraCentroRedirectPage({
+  params,
+}: {
+  params: Promise<{ obraId: string }>;
+}) {
+  const { obraId } = await params;
+  redirect(`/cliente/tareas/${obraId}/editor`);
 }

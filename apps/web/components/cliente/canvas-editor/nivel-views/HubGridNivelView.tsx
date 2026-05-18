@@ -11,6 +11,7 @@ import type { CanvasNode } from '@/lib/types/canvasMultinivel';
 import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { nextChildCanvasType } from '@/lib/canvas/canvasProjectProfile';
 import { cn } from '@/lib/utils';
+import type { DescendantTaskRollup } from '../canvasMultinivelHelpers';
 import { labelEstadoNivel, labelTipoNodo } from '../canvasMultinivelHelpers';
 
 type Variant = 'planta' | 'sector' | 'ambiente';
@@ -169,6 +170,8 @@ type Props = {
   onSelect: (id: string) => void;
   onEnter: (id: string) => void;
   childCount: (id: string) => number;
+  /** Tareas/publicación descendientes por nodo (cards más útiles). */
+  getDescendantRollup?: (nodeId: string) => DescendantTaskRollup;
 };
 
 export function HubGridNivelView({
@@ -180,6 +183,7 @@ export function HubGridNivelView({
   onSelect,
   onEnter,
   childCount,
+  getDescendantRollup,
 }: Props) {
   const m = hubMetaForView(variant, projectKind, hubNode);
   const sectorChildMetricLabel =
@@ -221,6 +225,7 @@ export function HubGridNivelView({
             onEnter={onEnter}
             childCount={childCount}
             childMetricLabel={sectorChildMetricLabel}
+            getDescendantRollup={getDescendantRollup}
           />
         ) : (
           <div className={cn('grid gap-7', variant === 'planta' ? 'xl:grid-cols-[380px_1fr]' : 'xl:grid-cols-[300px_1fr]')}>
@@ -261,6 +266,7 @@ export function HubGridNivelView({
               empty={m.empty}
               gridCols={m.gridCols}
               childLabel={m.childLabel}
+              getDescendantRollup={getDescendantRollup}
             />
           </div>
         )}
@@ -280,6 +286,7 @@ function ItemsGrid({
   empty,
   gridCols,
   childLabel,
+  getDescendantRollup,
 }: {
   projectKind: CanvasProjectKind;
   variant: Variant;
@@ -291,6 +298,7 @@ function ItemsGrid({
   empty: string;
   gridCols: string;
   childLabel: string;
+  getDescendantRollup?: (nodeId: string) => DescendantTaskRollup;
 }) {
   if (items.length === 0) {
     return (
@@ -319,6 +327,7 @@ function ItemsGrid({
           childLabel={childLabel}
           onSelect={onSelect}
           onEnter={onEnter}
+          rollup={getDescendantRollup?.(n.id)}
         />
       ))}
     </div>
@@ -334,6 +343,7 @@ function SectorHubMap({
   onEnter,
   childCount,
   childMetricLabel,
+  getDescendantRollup,
 }: {
   projectKind: CanvasProjectKind;
   hubNode: CanvasNode;
@@ -343,6 +353,7 @@ function SectorHubMap({
   onEnter: (id: string) => void;
   childCount: (id: string) => number;
   childMetricLabel: string;
+  getDescendantRollup?: (nodeId: string) => DescendantTaskRollup;
 }) {
   const m = sectorHubMeta(projectKind);
   const positions = [
@@ -393,6 +404,7 @@ function SectorHubMap({
               selected={selectedId === n.id}
               childCount={childCount(n.id)}
               childMetricLabel={childMetricLabel}
+              rollup={getDescendantRollup?.(n.id)}
               onSelect={onSelect}
               onEnter={onEnter}
             />
@@ -408,7 +420,9 @@ function SectorHubMap({
           Mapa interno de planta. Seleccioná una pieza para editarla o doble click para entrar.
         </p>
         <div className="mt-5 space-y-3">
-          {items.map((n) => (
+          {items.map((n) => {
+            const rollup = getDescendantRollup?.(n.id);
+            return (
             <button
               key={n.id}
               type="button"
@@ -421,13 +435,25 @@ function SectorHubMap({
                 'w-full rounded-2xl bg-[#f0f4f8] px-4 py-3 text-left transition hover:bg-[#e4e9ed]',
                 selectedId === n.id ? 'ring-2 ring-[#24a375]' : null,
               )}
+              title={rollup && rollup.taskCount > 0 ? `${n.title} · ${rollup.taskCount} tareas` : n.title}
             >
               <p className="truncate text-sm font-black text-[#001629]">{n.title}</p>
               <p className="mt-1 text-[11px] font-semibold text-[#596574]">
-                {childCount(n.id)} {childMetricLabel} · {progressValue(n)}%
+                {rollup && rollup.taskCount > 0 ? (
+                  <>
+                    {rollup.taskCount} tareas · {rollup.publishedCount} pub. · {rollup.unpublishedCount} sin pub.
+                    {rollup.presupuestadasCount > 0 ? ` · ${rollup.presupuestadasCount} presup.` : ''} · Av.{' '}
+                    {progressValue(n)}%
+                  </>
+                ) : (
+                  <>
+                    {childCount(n.id)} {childMetricLabel} · {progressValue(n)}%
+                  </>
+                )}
               </p>
             </button>
-          ))}
+          );
+          })}
         </div>
       </div>
     </div>
@@ -440,6 +466,7 @@ function SpatialSectorCard({
   selected,
   childCount,
   childMetricLabel,
+  rollup,
   onSelect,
   onEnter,
 }: {
@@ -448,10 +475,15 @@ function SpatialSectorCard({
   selected: boolean;
   childCount: number;
   childMetricLabel: string;
+  rollup?: DescendantTaskRollup;
   onSelect: (id: string) => void;
   onEnter: (id: string) => void;
 }) {
   const st = statusStyle(node);
+  const line2 =
+    rollup && rollup.taskCount > 0
+      ? `${rollup.taskCount} tar. · ${rollup.publishedCount} pub. · ${rollup.unpublishedCount} sin pub.`
+      : `${childCount} ${childMetricLabel}`;
   return (
     <button
       type="button"
@@ -460,6 +492,7 @@ function SpatialSectorCard({
         e.preventDefault();
         onEnter(node.id);
       }}
+      title={`${node.title} · ${line2}`}
       className={cn(
         'absolute z-30 flex h-36 w-40 flex-col items-center justify-center rounded-[24px] bg-white p-4 text-center shadow-[0_12px_32px_rgba(23,28,31,0.09)] transition hover:-translate-y-0.5',
         selected ? 'ring-2 ring-[#24a375] ring-offset-4 ring-offset-[#eaeef2]' : 'ring-1 ring-[#c3c7ce]/20',
@@ -473,9 +506,7 @@ function SpatialSectorCard({
       <span className={cn('mt-2 rounded-full px-2 py-0.5 text-[9px] font-black uppercase', st.chip)}>
         {labelEstadoNivel(node.estadoNivel)}
       </span>
-      <p className="mt-2 text-[10px] font-semibold text-[#596574]">
-        {childCount} {childMetricLabel} · {progressValue(node)}%
-      </p>
+      <p className="mt-2 text-[10px] font-semibold leading-tight text-[#596574]">{line2}</p>
     </button>
   );
 }
@@ -488,6 +519,7 @@ function LevelCard({
   index,
   childCount,
   childLabel,
+  rollup,
   onSelect,
   onEnter,
 }: {
@@ -498,6 +530,7 @@ function LevelCard({
   index: number;
   childCount: number;
   childLabel: string;
+  rollup?: DescendantTaskRollup;
   onSelect: (id: string) => void;
   onEnter: (id: string) => void;
 }) {
@@ -516,11 +549,16 @@ function LevelCard({
       className={cn(
         variant === 'ambiente'
           ? 'group relative min-h-[174px] overflow-hidden rounded-[24px] bg-white p-5 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]'
-          : 'group relative min-h-[220px] overflow-hidden rounded-[28px] bg-white p-6 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]',
+          : 'group relative min-h-[248px] overflow-hidden rounded-[28px] bg-white p-6 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]',
         selected
           ? 'ring-2 ring-[#24a375] ring-offset-4 ring-offset-[#f6fafe]'
           : 'ring-1 ring-[#c3c7ce]/25',
       )}
+      title={
+        rollup && rollup.taskCount > 0
+          ? `${node.title} · ${rollup.taskCount} tareas · ${rollup.publishedCount} publicadas`
+          : node.title
+      }
     >
       <div className={cn('absolute inset-x-0 top-0 h-1', st.bar)} />
       <div className="flex items-start justify-between gap-3">
@@ -548,6 +586,13 @@ function LevelCard({
         <MetricTile label={childLabel} value={String(childCount)} />
         <MetricTile label="Avance" value={`${pct}%`} />
       </div>
+
+      {rollup && rollup.taskCount > 0 ? (
+        <p className="mt-3 text-[10px] font-semibold leading-snug text-[#475569]">
+          {rollup.taskCount} tareas · {rollup.publishedCount} publicadas · {rollup.unpublishedCount} sin publicar
+          {rollup.presupuestadasCount > 0 ? ` · ${rollup.presupuestadasCount} con presupuesto` : ''}
+        </p>
+      ) : null}
 
       <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#e4e9ed]">
         <div className={cn('h-full rounded-full', st.bar)} style={{ width: `${pct}%` }} />

@@ -160,7 +160,7 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => router.push(`/cliente/obras/${o.id}` as Route)}
+                  onClick={() => router.push(`/cliente/tareas/${o.id}/editor` as Route)}
                   className={cn(
                     'rounded-xl p-5 text-left transition',
                     active

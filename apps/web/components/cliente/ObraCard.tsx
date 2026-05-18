@@ -23,16 +23,18 @@ export function ObraCard({
   ubicacion,
   estado,
   avancePct,
-  href = `/cliente/obras/${id}` as Route,
+  href = `/cliente/tareas/${id}/editor` as Route,
   onEliminar,
   eliminando = false,
 }: ObraCardProps) {
   return (
-    <div className="group flex flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:shadow-md">
+    <div className="group relative flex flex-col rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm transition hover:border-sky-300 hover:shadow-md">
       <Link
         href={href}
-        className="flex min-w-0 flex-col outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 rounded-lg"
-      >
+        className="absolute inset-0 z-0 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2"
+        aria-label={`Abrir obra ${nombre}`}
+      />
+      <div className="relative z-10 flex min-w-0 flex-col pointer-events-none">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{tipo}</p>
@@ -56,13 +58,17 @@ export function ObraCard({
             />
           </div>
         </div>
-      </Link>
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4">
+      </div>
+      <div className="relative z-10 mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 pointer-events-auto">
         {onEliminar ? (
           <button
             type="button"
             disabled={eliminando}
-            onClick={() => onEliminar(id)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEliminar(id);
+            }}
             className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-800 disabled:pointer-events-none disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4 shrink-0" />
@@ -71,13 +77,10 @@ export function ObraCard({
         ) : (
           <span />
         )}
-        <Link
-          href={href}
-          className="ml-auto flex items-center text-sm font-semibold text-sky-700 hover:text-sky-900"
-        >
+        <span className="ml-auto flex items-center text-sm font-semibold text-sky-700 group-hover:text-sky-900">
           Ver obra
           <ChevronRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-        </Link>
+        </span>
       </div>
     </div>
   );

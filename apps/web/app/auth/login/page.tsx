@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Database } from '@/lib/types/supabase.gen';
 import { getDefaultRouteForRole, normalizeRole } from '@/lib/roles';
-import { getAppWebUrl } from '@/lib/config';
+import { getAppWebUrl, RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 const AUTH_LOGIN_PATH = '/auth/login';
 const MISSING_ROLE_MESSAGE =
@@ -49,7 +49,10 @@ function StatusMessage({
     return null;
   }
 
-  const isRateLimit = text.toLowerCase().includes('límite') || text.toLowerCase().includes('rate limit');
+  const isRateLimit =
+    text.toLowerCase().includes('límite') ||
+    text.toLowerCase().includes('rate limit') ||
+    text.toLowerCase().includes('429');
 
   return (
     <div className={`rounded-lg border px-4 py-3 text-sm ${
@@ -107,8 +110,14 @@ function LoginPageContent() {
   const errorParam = searchParams?.get('error') ?? null;
 
   /** El bloqueo en localStorage dejaba sin Google OAuth aunque Supabase ya estuviera bien. Solo informamos, no bloqueamos. */
+  /** En desarrollo limpiamos bloqueos locales viejos para poder reintentar OAuth sin esperar minutos. */
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    if (RELAX_CLIENT_AUTH_THROTTLE) {
+      localStorage.removeItem('supabase_rate_limit_until');
+      return;
+    }
 
     const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
     if (!rateLimitUntil) {
@@ -143,12 +152,21 @@ function LoginPageContent() {
     }
 
     if (errorParam === 'rate_limit') {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !RELAX_CLIENT_AUTH_THROTTLE) {
         const rateLimitUntil = Date.now() + (5 * 60 * 1000);
         localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
       }
       setStatusMessage(
-        'Supabase bloqueó temporalmente el login (429): suele pasar tras muchos intentos con Google en poco tiempo. Esperá 10–15 minutos, probá email y contraseña, o tocá «Quitar aviso…» y reintentá.',
+        RELAX_CLIENT_AUTH_THROTTLE
+          ? 'Supabase respondió con 429 al intercambiar el código. Esperá unos segundos y volvé a «Ingresar con Google»; en local no aplicamos bloqueo largo en el navegador.'
+          : 'Supabase bloqueó temporalmente el login (429): suele pasar tras muchos intentos con Google en poco tiempo. Esperá 10–15 minutos, probá email y contraseña, o tocá «Quitar aviso…» y reintentá.',
+      );
+      return;
+    }
+
+    if (errorParam === 'supabase_429') {
+      setStatusMessage(
+        'Muchas peticiones seguidas a Supabase (429). Esperá 15–60 s y reintentá con Google; si persiste, probá otra red o email/contraseña.',
       );
       return;
     }
@@ -187,7 +205,7 @@ function LoginPageContent() {
 
     async function checkSession() {
       try {
-        if (errorParam === 'rate_limit') {
+        if (errorParam === 'rate_limit' && !RELAX_CLIENT_AUTH_THROTTLE) {
           return;
         }
 
@@ -202,12 +220,14 @@ function LoginPageContent() {
           error?.status === 429;
 
         if (isRateLimit) {
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && !RELAX_CLIENT_AUTH_THROTTLE) {
             const rateLimitUntil = Date.now() + (5 * 60 * 1000);
             localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
           }
           setStatusMessage(
-            'Supabase respondió con límite temporal (429). Podés reintentar con Google en unos minutos o usá email y contraseña.'
+            RELAX_CLIENT_AUTH_THROTTLE
+              ? 'Supabase respondió 429 al leer la sesión. Esperá unos segundos y reintentá; en local no guardamos bloqueo largo.'
+              : 'Supabase respondió con límite temporal (429). Podés reintentar con Google en unos minutos o usá email y contraseña.'
           );
           return;
         }
@@ -251,12 +271,14 @@ function LoginPageContent() {
           error?.status === 429;
 
         if (isRateLimit) {
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && !RELAX_CLIENT_AUTH_THROTTLE) {
             const rateLimitUntil = Date.now() + (5 * 60 * 1000);
             localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
           }
           setStatusMessage(
-            'Supabase respondió con límite temporal (429). Podés reintentar con Google en unos minutos o usá email y contraseña.'
+            RELAX_CLIENT_AUTH_THROTTLE
+              ? 'Supabase respondió 429 al leer la sesión. Esperá unos segundos y reintentá; en local no guardamos bloqueo largo.'
+              : 'Supabase respondió con límite temporal (429). Podés reintentar con Google en unos minutos o usá email y contraseña.'
           );
           return;
         }
@@ -383,12 +405,14 @@ function LoginPageContent() {
         (error as any)?.status === 429;
       
       if (isRateLimit) {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && !RELAX_CLIENT_AUTH_THROTTLE) {
           const rateLimitUntil = Date.now() + (60 * 1000);
           localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
         }
         setStatusMessage(
-          'Se alcanzó el límite de velocidad de Supabase (429). Esperá 1 minuto y reintentá con Google, o usá email y contraseña.'
+          RELAX_CLIENT_AUTH_THROTTLE
+            ? 'Supabase respondió 429 al iniciar Google. Esperá unos segundos y reintentá.'
+            : 'Se alcanzó el límite de velocidad de Supabase (429). Esperá 1 minuto y reintentá con Google, o usá email y contraseña.'
         );
         setGoogleError(null);
       } else {

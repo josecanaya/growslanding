@@ -369,6 +369,38 @@ export function useCanvasMultinivel(obraId: string) {
     setSelectedId(null);
   }, []);
 
+  /** Navegación desde el Project Browser: abre el contenedor (o el padre de una tarea) y opcionalmente selecciona la tarea. */
+  const openPathToNode = useCallback(
+    (nodeId: string) => {
+      const n = nodes.find((x) => x.id === nodeId);
+      if (!n) return;
+      if (n.type === 'tarea') {
+        const chain: string[] = [];
+        let cur: CanvasNode | undefined = n.parentId
+          ? nodes.find((x) => x.id === n.parentId)
+          : undefined;
+        while (cur) {
+          chain.unshift(cur.id);
+          const parentKey: string | null = cur.parentId;
+          cur = parentKey ? nodes.find((x) => x.id === parentKey) : undefined;
+        }
+        setPathIds(chain);
+        setSelectedId(n.id);
+        return;
+      }
+      const chain: string[] = [];
+      let walk: CanvasNode | undefined = n;
+      while (walk) {
+        chain.unshift(walk.id);
+        const parentKey: string | null = walk.parentId;
+        walk = parentKey ? nodes.find((x) => x.id === parentKey) : undefined;
+      }
+      setPathIds(chain);
+      setSelectedId(null);
+    },
+    [nodes],
+  );
+
   const enterNode = useCallback(
     (id: string) => {
       const n = nodes.find((x) => x.id === id);
@@ -677,6 +709,7 @@ export function useCanvasMultinivel(obraId: string) {
     refreshTareaPublicacion,
     nodes,
     edges,
+    pathIds,
     siblingEdges,
     containerId,
     containerNode,
@@ -688,6 +721,7 @@ export function useCanvasMultinivel(obraId: string) {
     breadcrumbItems,
     goToBreadcrumbIndex,
     goUpLevel,
+    openPathToNode,
     enterNode,
     createChildNode,
     patchNode,

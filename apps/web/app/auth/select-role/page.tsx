@@ -16,6 +16,7 @@ import {
   normalizeRole,
   type UserRole,
 } from '@/lib/roles';
+import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 const ROLE_CHOICES: Array<{ key: UserRole; title: string; description: string }> =
   [
@@ -58,7 +59,7 @@ function SelectRolePageContent() {
       }
 
       // Verificar rate limit antes de hacer cualquier llamada
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !RELAX_CLIENT_AUTH_THROTTLE) {
         const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
         if (rateLimitUntil) {
           const untilTime = parseInt(rateLimitUntil, 10);

@@ -4,22 +4,23 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import type { Connection } from '@xyflow/react';
 
-
-import { ArrowLeft, ChevronRight, CloudUpload, FileInput, Share2 } from 'lucide-react';
-import type { Route } from 'next';
+import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { Button } from '@/components/ui/grows';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { cn } from '@/lib/utils';
 import type { CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import {
   cabeceraContextoNivel,
+  descendantTaskPublicationRollup,
   labelCrearContextual,
   sortSiblingsByPrecedence,
   vistaPrincipalPorContenedor,
 } from './canvasMultinivelHelpers';
 import { CanvasLeftInspector } from './CanvasLeftInspector';
+import { CanvasProjectBrowser } from './CanvasProjectBrowser';
+import { CanvasEditorProChrome, CanvasEditorStatusBar } from './CanvasEditorProChrome';
 import { EtapasTimelineView } from './nivel-views/EtapasTimelineView';
 import { HubGridNivelView } from './nivel-views/HubGridNivelView';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
@@ -48,6 +49,7 @@ function edgeCriticoVisible(
 
 export function CanvasObraEditor({ obraId }: Props) {
   const router = useRouter();
+  const currentUser = useCurrentUser();
   const [connectTareas, setConnectTareas] = useState(false);
   const [connectEtapas, setConnectEtapas] = useState(false);
   const [pendingEtapasSource, setPendingEtapasSource] = useState<string | null>(null);
@@ -60,6 +62,9 @@ export function CanvasObraEditor({ obraId }: Props) {
   const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
   const [publicarModalOpen, setPublicarModalOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<'canvas' | 'presupuestos'>('canvas');
+  const [publicationReviewMode, setPublicationReviewMode] = useState(false);
+  const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
+  const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
   const {
     obraNombre,
@@ -71,6 +76,7 @@ export function CanvasObraEditor({ obraId }: Props) {
     cloudSaveMessage,
     nodes,
     edges,
+    pathIds,
     siblingEdges,
     containerNode,
     containerId,
@@ -82,6 +88,7 @@ export function CanvasObraEditor({ obraId }: Props) {
     breadcrumbItems,
     goToBreadcrumbIndex,
     goUpLevel,
+    openPathToNode,
     enterNode,
     createChildNode,
     patchNode,
@@ -104,6 +111,35 @@ export function CanvasObraEditor({ obraId }: Props) {
     tareaPublicacionByNodeId,
     refreshTareaPublicacion,
   } = useCanvasMultinivel(obraId);
+
+  const prevCloudSaveRef = useRef<typeof cloudSaveState>(cloudSaveState);
+  useEffect(() => {
+    if (prevCloudSaveRef.current === 'saving' && cloudSaveState === 'ok') {
+      lastCloudSaveOkAtRef.current = Date.now();
+    }
+    prevCloudSaveRef.current = cloudSaveState;
+  }, [cloudSaveState]);
+
+  const [guardadoRelativoTick, setGuardadoRelativoTick] = useState(0);
+  useEffect(() => {
+    if (cloudSaveState !== 'ok' || lastCloudSaveOkAtRef.current == null) return;
+    const id = window.setInterval(() => setGuardadoRelativoTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [cloudSaveState]);
+
+  const guardadoRelativo = useMemo(() => {
+    if (cloudSaveState !== 'ok' || lastCloudSaveOkAtRef.current == null) return null;
+    const sec = Math.max(0, Math.floor((Date.now() - lastCloudSaveOkAtRef.current) / 1000));
+    if (sec < 60) return `Guardado hace ${sec} s`;
+    const min = Math.floor(sec / 60);
+    return `Guardado hace ${min} min`;
+  }, [cloudSaveState, guardadoRelativoTick]);
+
+  const getDescendantRollup = useCallback(
+    (nodeId: string) =>
+      descendantTaskPublicationRollup(nodes, nodeId, tareaPublicacionByNodeId),
+    [nodes, tareaPublicacionByNodeId],
+  );
 
   const onConfirmProjectImport = useCallback(async () => {
     if (!projectImportPreview) return;
@@ -152,6 +188,8 @@ export function CanvasObraEditor({ obraId }: Props) {
   ]);
 
   const vista = vistaPrincipalPorContenedor(containerNode, projectKind);
+  const publicationReviewActive =
+    publicationReviewMode && vista === 'tareas' && editorTab === 'canvas';
   const cabecera = useMemo(
     () => cabeceraContextoNivel(obraNombre, containerNode, projectKind),
     [obraNombre, containerNode, projectKind],
@@ -200,6 +238,18 @@ export function CanvasObraEditor({ obraId }: Props) {
 
   const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
+  const taskCount = useMemo(() => nodes.filter((n) => n.type === 'tarea').length, [nodes]);
+  const publishedTaskCount = useMemo(
+    () =>
+      nodes.filter((n) => n.type === 'tarea' && tareaPublicacionByNodeId[n.id]?.publishedAt).length,
+    [nodes, tareaPublicacionByNodeId],
+  );
+  const userLabel = useMemo(() => {
+    const r = (currentUser?.role as string) || '';
+    const name = currentUser?.email?.split('@')[0] || 'Usuario';
+    return r ? `${name} | ${r}` : name;
+  }, [currentUser?.email, currentUser?.role]);
+
   const childCount = useCallback((id: string) => countChildren(nodes, id), [nodes]);
 
   const openProjectXmlPicker = useCallback(() => {
@@ -242,57 +292,16 @@ export function CanvasObraEditor({ obraId }: Props) {
     [tryPrecedenceConnection],
   );
 
-  const leftContext = (
-    <aside className="hidden w-[286px] shrink-0 flex-col gap-4 p-5 xl:flex">
-      <div className="rounded-[28px] bg-[#001629] p-5 text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#85f8c4]">
-          Obra · canvas
-        </p>
-        <input
-          className="mt-3 w-full border-b border-white/10 bg-transparent text-2xl font-black tracking-[-0.04em] text-white outline-none focus:border-[#85f8c4]"
-          value={obraNombre}
-          aria-label="Nombre de la obra"
-          onChange={(e) => setObraNombre(e.target.value)}
-        />
-        <p className="mt-4 text-sm leading-6 text-white/66">{cabecera.contextoUbicacion}</p>
-      </div>
+  const handleCanvasZoomPercent = useCallback((pct: number) => {
+    setCanvasZoomPct(pct);
+  }, []);
 
-      <div className="rounded-[26px] bg-white/80 p-4 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
-          Ubicación
-        </p>
-        <div className="mt-3 space-y-2">
-          {breadcrumbItems.map((item, idx) => (
-            <button
-              key={item.id ?? 'root'}
-              type="button"
-              onClick={() => goToBreadcrumbIndex(idx)}
-              className={cn(
-                'flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm font-bold transition',
-                idx === breadcrumbItems.length - 1
-                  ? 'bg-[#d7e4f5] text-[#001629]'
-                  : 'text-[#596574] hover:bg-[#f0f4f8]',
-              )}
-            >
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-black text-[#406182]">
-                {idx + 1}
-              </span>
-              <span className="min-w-0 truncate">{item.title}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <ContextCard label="Nivel actual" value={cabecera.nivelActualTitulo} />
-      <ContextCard label="Vista" value={cabecera.vistaActual} />
-      <div className="rounded-[26px] bg-[#f0f4f8]/95 p-4 text-sm leading-6 text-[#545f6e] shadow-[0_12px_32px_rgba(23,28,31,0.04)]">
-        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
-          Acción sugerida
-        </p>
-        {cabecera.accionSugerida}
-      </div>
-    </aside>
-  );
+  const modoStatusBar =
+    editorTab === 'presupuestos'
+      ? 'Presupuestos'
+      : publicationReviewActive
+        ? 'Publicación'
+        : 'Canvas';
 
   const vistaCentral = (
     <>
@@ -335,6 +344,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           items={visibleNodes}
           selectedId={selectedId}
           childCount={childCount}
+          getDescendantRollup={getDescendantRollup}
           onSelect={(id) => {
             setSelectedEdgeId(null);
             setSelectedId(id);
@@ -351,6 +361,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           items={visibleNodes}
           selectedId={selectedId}
           childCount={childCount}
+          getDescendantRollup={getDescendantRollup}
           onSelect={(id) => {
             setSelectedEdgeId(null);
             setSelectedId(id);
@@ -367,6 +378,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           items={visibleNodes}
           selectedId={selectedId}
           childCount={childCount}
+          getDescendantRollup={getDescendantRollup}
           onSelect={(id) => {
             setSelectedEdgeId(null);
             setSelectedId(id);
@@ -396,6 +408,10 @@ export function CanvasObraEditor({ obraId }: Props) {
               tryPrecedenceConnection={tryPrecedenceConnection}
               removeEdgeIds={removeEdgeIds}
               tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+              budgetGroups={budgetGroups}
+              publicationReviewMode={publicationReviewActive}
+              onOpenPublishModal={() => setPublicarModalOpen(true)}
+              onZoomPercentChange={handleCanvasZoomPercent}
             />
           </div>
         </ReactFlowProvider>
@@ -404,164 +420,125 @@ export function CanvasObraEditor({ obraId }: Props) {
   );
 
   return (
-    <div className="flex min-h-[100dvh] min-w-[1024px] flex-col bg-[#f6fafe] text-[#0f1e1f]">
-      <header className="sticky top-0 z-40 bg-white/72 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-5">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              type="button"
-              className="shrink-0"
-              onClick={() => router.push(`/cliente/obras/${obraId}` as Route)}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="min-w-0 xl:hidden">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6b728e]">Obra · canvas</p>
-              <input
-                className="w-full max-w-md truncate border-b border-transparent bg-transparent text-base font-extrabold text-[#01124f] outline-none focus:border-[#0042c8]"
-                value={obraNombre}
-                aria-label="Nombre de la obra"
-                onChange={(e) => setObraNombre(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="mr-1 flex rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-0.5">
-              <button
-                type="button"
-                onClick={() => setEditorTab('canvas')}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-bold transition',
-                  editorTab === 'canvas' ? 'bg-white text-[#001629] shadow-sm' : 'text-[#64748b]',
-                )}
-              >
-                Canvas
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditorTab('presupuestos')}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-xs font-bold transition',
-                  editorTab === 'presupuestos'
-                    ? 'bg-white text-[#001629] shadow-sm'
-                    : 'text-[#64748b]',
-                )}
-              >
-                Presupuestos
-              </button>
-            </div>
-            {editorTab === 'canvas' ? (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="shrink-0 gap-1.5"
-                  disabled={!canvasHydrated || !tieneNodosTarea}
-                  title={
-                    !tieneNodosTarea
-                      ? 'Agregá al menos un nodo tipo tarea en el canvas para publicar.'
-                      : 'Crear o actualizar tareas operativas en el sistema desde el canvas'
-                  }
-                  onClick={() => setPublicarModalOpen(true)}
-                >
-                  <Share2 className="h-4 w-4" aria-hidden />
-                  Publicar tareas
-                </Button>
-              </>
-            ) : null}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="shrink-0 gap-1.5"
-              disabled={!canvasHydrated || cloudSaveState === 'saving'}
-              onClick={() => {
-                void saveCanvasSnapshotToCloud();
-              }}
-            >
-              <CloudUpload className="h-4 w-4" aria-hidden />
-              {cloudSaveState === 'saving' ? 'Guardando…' : 'Guardar en la nube'}
-            </Button>
-            {editorTab === 'canvas' ? (
-              <>
-                <input
-                  ref={projectXmlInputRef}
-                  type="file"
-                  accept=".xml,application/xml,text/xml"
-                  className="hidden"
-                  aria-hidden
-                  tabIndex={-1}
-                  onChange={(e) => {
-                    void onProjectXmlSelected(e.target.files);
-                    e.target.value = '';
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 gap-1.5 text-[#596574]"
-                  onClick={openProjectXmlPicker}
-                >
-                  <FileInput className="h-4 w-4" aria-hidden />
-                  Importar Project XML
-                </Button>
-                {vista === 'etapas' && (
-                  <Button
-                    type="button"
-                    variant={connectEtapas ? 'primary' : 'secondary'}
-                    size="sm"
-                    onClick={() => {
-                      setConnectEtapas((v) => !v);
-                      setPendingEtapasSource(null);
-                    }}
-                  >
-                    {connectEtapas ? 'Listo · orden de fases' : 'Conectar orden de fases'}
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => goUpLevel()}
-                  disabled={!containerNode}
-                >
-                  ← Subir nivel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="sm"
-                  disabled={!puedeCrear}
-                  onClick={() => createChildNode()}
-                >
-                  {labelBotonCrear}
-                </Button>
-              </>
-            ) : null}
-          </div>
+    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#cfd8e6] text-[#0f1e1f]">
+      <input
+        ref={projectXmlInputRef}
+        type="file"
+        accept=".xml,application/xml,text/xml"
+        className="hidden"
+        aria-hidden
+        tabIndex={-1}
+        onChange={(e) => {
+          void onProjectXmlSelected(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <CanvasEditorProChrome
+        obraNombre={obraNombre}
+        onObraNombreChange={setObraNombre}
+        cloudSaveState={cloudSaveState}
+        cloudSaveMessage={cloudSaveMessage}
+        editorTab={editorTab}
+        onEditorTab={setEditorTab}
+        vistaLabel={cabecera.vistaActual}
+        nivelActualLabel={cabecera.nivelActualTitulo}
+        canvasHydrated={canvasHydrated}
+        tieneNodosTarea={tieneNodosTarea}
+        puedeCrear={puedeCrear}
+        labelBotonCrear={labelBotonCrear}
+        childTypeToCreate={childTypeToCreate}
+        connectEtapas={connectEtapas}
+        vistaEtapas={vista === 'etapas'}
+        proyectoBusy={projectImportBusy}
+        userLabel={userLabel}
+        taskCount={taskCount}
+        publishedTaskCount={publishedTaskCount}
+        criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
+        vistaTareas={vista === 'tareas'}
+        onBack={() => router.push('/cliente/obras')}
+        onSaveCloud={() => {
+          void saveCanvasSnapshotToCloud();
+        }}
+        onPublicar={() => setPublicarModalOpen(true)}
+        onImportXml={openProjectXmlPicker}
+        onCreateChild={() => createChildNode()}
+        onGoUp={() => goUpLevel()}
+        upDisabled={!containerNode}
+        onToggleConnectEtapas={() => {
+          setConnectEtapas((v) => !v);
+          setPendingEtapasSource(null);
+        }}
+        onToggleConnectTareas={() => setConnectTareas((x) => !x)}
+        connectTareasActive={connectTareas}
+        onDuplicate={() => {
+          if (selectedId) duplicateNode(selectedId);
+        }}
+        onDelete={() => {
+          if (selectedId) deleteNode(selectedId);
+        }}
+        duplicateDisabled={!selectedId}
+        deleteDisabled={!selectedId}
+        onRibbonMainTabChange={(tab) => {
+          setPublicationReviewMode(tab === 'publicacion');
+        }}
+      />
+
+      {cloudSaveMessage ? (
+        <div className="border-b border-[#cbd5e1] bg-[#f8fafc] px-3 py-1">
+          <p
+            className={cn(
+              'whitespace-pre-line text-xs font-medium',
+              cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
+            )}
+            role="status"
+          >
+            {cloudSaveMessage}
+          </p>
         </div>
+      ) : null}
 
-        {cloudSaveMessage ? (
-          <div className="mx-auto max-w-[1680px] px-4 pb-2 md:px-5">
-            <p
-              className={cn(
-                'whitespace-pre-line text-xs font-medium',
-                cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
-              )}
-              role="status"
-            >
-              {cloudSaveMessage}
-            </p>
+      <div className="border-b border-[#cbd5e1] bg-[#eef2f7] px-3 py-2 xl:hidden">
+        <div className="rounded-lg bg-white/90 px-3 py-2 shadow-sm">
+          <div className="flex flex-wrap gap-x-1 gap-y-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748b]">
+            {breadcrumbItems.map((item, idx) => (
+              <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
+                {idx > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" aria-hidden />}
+                <button
+                  type="button"
+                  onClick={() => goToBreadcrumbIndex(idx)}
+                  className={cn(
+                    'max-w-[220px] truncate rounded px-1.5 py-0.5 transition hover:bg-slate-100',
+                    idx === breadcrumbItems.length - 1 ? 'font-black text-[#0f172a]' : 'text-[#64748b]',
+                  )}
+                >
+                  {item.title}
+                </button>
+              </span>
+            ))}
           </div>
-        ) : null}
+          <p className="mt-1.5 text-[11px] text-[#475569]">
+            <span className="font-bold text-[#0f172a]">Nivel:</span> {cabecera.nivelActualTitulo} ·{' '}
+            <span className="font-bold text-[#0f172a]">Vista:</span> {cabecera.vistaActual}
+          </p>
+        </div>
+      </div>
 
-        <div className="mx-auto max-w-[1680px] px-4 pb-4 md:px-5 xl:hidden">
-          <div className="rounded-full bg-[#f0f4f8]/90 px-4 py-2.5 shadow-[0_12px_32px_rgba(23,28,31,0.04)] backdrop-blur-md">
-            <div className="flex flex-wrap gap-x-1 gap-y-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#7a8492]">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-1 min-h-0">
+        <CanvasProjectBrowser
+          obraNombre={obraNombre}
+          nodes={nodes}
+          projectKind={projectKind}
+          pathIds={pathIds}
+          containerId={containerId}
+          selectedId={selectedId}
+          tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+          onGoRoot={() => goToBreadcrumbIndex(0)}
+          onNavigateToNode={openPathToNode}
+        />
+
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col p-2 md:p-3">
+          <div className="mb-2 hidden rounded-lg bg-white/90 px-3 py-2 shadow-sm xl:block">
+            <div className="flex flex-wrap gap-x-1 gap-y-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748b]">
               {breadcrumbItems.map((item, idx) => (
                 <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
                   {idx > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" aria-hidden />}
@@ -569,52 +546,60 @@ export function CanvasObraEditor({ obraId }: Props) {
                     type="button"
                     onClick={() => goToBreadcrumbIndex(idx)}
                     className={cn(
-                      'max-w-[260px] truncate rounded-full px-2 py-0.5 transition hover:bg-white',
-                      idx === breadcrumbItems.length - 1
-                        ? 'font-black text-[#001629]'
-                        : 'text-[#7a8492]',
+                      'max-w-[220px] truncate rounded px-1.5 py-0.5 transition hover:bg-slate-100',
+                      idx === breadcrumbItems.length - 1 ? 'font-black text-[#0f172a]' : 'text-[#64748b]',
                     )}
+                    title={item.title}
                   >
                     {item.title}
                   </button>
                 </span>
               ))}
             </div>
-            <div className="mt-2 flex flex-wrap gap-2 text-[12px] text-[#4b556b]">
-              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
-                <strong className="text-[#001629]">Nivel actual:</strong> {cabecera.nivelActualTitulo}
-              </span>
-              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
-                <strong className="text-[#001629]">Vista:</strong> {cabecera.vistaActual}
-              </span>
-              <span className="rounded-full bg-white/78 px-3 py-1 shadow-sm">
-                <strong className="text-[#001629]">Acción:</strong> {cabecera.accionSugerida}
-              </span>
-            </div>
+            <p className="mt-1.5 text-[11px] text-[#475569]">
+              <span className="font-bold text-[#0f172a]">Nivel actual:</span> {cabecera.nivelActualTitulo} ·{' '}
+              <span className="font-bold text-[#0f172a]">Vista:</span> {cabecera.vistaActual}
+            </p>
           </div>
-        </div>
-      </header>
 
-      <div className="mx-auto flex w-full max-w-[1680px] flex-1 min-h-0">
-        {leftContext}
+          <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
+            <button
+              type="button"
+              onClick={() => setEditorTab('canvas')}
+              className={cn(
+                'rounded border px-2 py-1 text-[11px] font-bold',
+                editorTab === 'canvas' ? 'border-[#2563eb] bg-white text-[#1e40af]' : 'border-[#cbd5e1] bg-white/70',
+              )}
+            >
+              Canvas
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditorTab('presupuestos')}
+              className={cn(
+                'rounded border px-2 py-1 text-[11px] font-bold',
+                editorTab === 'presupuestos'
+                  ? 'border-[#2563eb] bg-white text-[#1e40af]'
+                  : 'border-[#cbd5e1] bg-white/70',
+              )}
+            >
+              Presupuestos
+            </button>
+          </div>
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col p-5">
           {editorTab === 'canvas' && muestraLegendCritico && (
-            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-[#f0cdd2] bg-[#fffbfb] px-3 py-2 text-xs text-[#7a2730]">
+            <div className="mb-2 flex flex-wrap items-center gap-2 rounded border border-[#e2a3a9] bg-[#fff8f8] px-2 py-1.5 text-[11px] text-[#7a2730]">
               <span className="font-extrabold uppercase tracking-wider text-[#b42b3a]">Camino crítico</span>
               <span>
-                Calculado con CPM (duración y precedencias). Resalte rojo cuando holgura es 0 o marcaste override
-                manual en tarea/arista.
+                CPM sobre duración y precedencias. Resalte rojo con holgura 0 o override manual.
               </span>
               {connectTareas ? (
-                <span className="font-semibold text-[#0042c8]">
-                  Modo conectar: arrastrá entre handles de tareas.
-                </span>
+                <span className="font-semibold text-[#1d4ed8]">Modo conectar activo.</span>
               ) : null}
             </div>
           )}
 
-          <div className="flex min-h-[min(68vh,760px)] min-w-0 flex-1 flex-col">
+          <div className="flex min-h-[min(64vh,720px)] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#b8c4d4] bg-[#f1f5f9] shadow-inner">
             {editorTab === 'presupuestos' ? (
               <CanvasPresupuestosTab
                 obraId={obraId}
@@ -678,21 +663,22 @@ export function CanvasObraEditor({ obraId }: Props) {
           createBudgetGroup={createBudgetGroup}
           applyBudgetGroupToNode={applyBudgetGroupToNode}
           tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+          onOpenPublishModal={() => setPublicarModalOpen(true)}
           isOpen={inspectorOpen}
           onToggleOpen={() => setInspectorOpen((v) => !v)}
         />
       </div>
-    </div>
-  );
-}
-
-function ContextCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-[26px] bg-white/80 p-4 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#8a94a5]">
-        {label}
-      </p>
-      <p className="mt-2 text-sm font-black leading-5 text-[#001629]">{value}</p>
+      <CanvasEditorStatusBar
+        nivelLabel={cabecera.nivelActualTitulo}
+        modo={modoStatusBar}
+        modoDetalle={cabecera.vistaActual}
+        taskCount={taskCount}
+        publishedCount={publishedTaskCount}
+        unpublishedCount={Math.max(0, taskCount - publishedTaskCount)}
+        criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
+        zoomLabel={canvasZoomPct != null ? `Zoom ${canvasZoomPct}%` : undefined}
+        guardadoRelativo={guardadoRelativo}
+      />
     </div>
   );
 }

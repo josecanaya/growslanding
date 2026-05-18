@@ -201,6 +201,58 @@ export function checklistProgress(node: CanvasNode): { done: number; total: numb
   return { done, total };
 }
 
+/** Tareas descendientes bajo un contenedor (browser / cards). */
+export type DescendantTaskRollup = {
+  taskCount: number;
+  publishedCount: number;
+  unpublishedCount: number;
+  presupuestadasCount: number;
+};
+
+export function descendantTaskPublicationRollup(
+  nodes: CanvasNode[],
+  containerNodeId: string,
+  tareaPublicacionByNodeId: Record<string, { publishedAt?: string | null } | undefined>,
+): DescendantTaskRollup {
+  const ids = collectSubtreeIds(nodes, containerNodeId);
+  const tasks = nodes.filter((n) => n.type === 'tarea' && ids.has(n.id));
+  let published = 0;
+  let presupuestadas = 0;
+  for (const t of tasks) {
+    const p = tareaPublicacionByNodeId[t.id];
+    if (p?.publishedAt) published += 1;
+    if (t.budgetGroupId) presupuestadas += 1;
+  }
+  return {
+    taskCount: tasks.length,
+    publishedCount: published,
+    unpublishedCount: Math.max(0, tasks.length - published),
+    presupuestadasCount: presupuestadas,
+  };
+}
+
+export type PublicationReviewCategory = 'published' | 'draft' | 'incomplete' | 'blocked';
+
+/** Resaltado visual en modo revisión de publicación (no altera datos). */
+export function publicationReviewCategory(
+  node: CanvasNode,
+  tareaPublicacionByNodeId: Record<
+    string,
+    { publishedAt?: string | null; estado?: string } | undefined
+  >,
+): PublicationReviewCategory | null {
+  if (node.type !== 'tarea') return null;
+  const pub = tareaPublicacionByNodeId[node.id];
+  if (pub?.publishedAt) return 'published';
+  if (node.estadoTarea === 'rechazada') return 'blocked';
+  const opEst = (pub?.estado ?? '').toLowerCase();
+  if (opEst.includes('bloque')) return 'blocked';
+  const { done, total } = checklistProgress(node);
+  if (total > 0 && done < total) return 'incomplete';
+  if (pub && !pub.publishedAt) return 'incomplete';
+  return 'draft';
+}
+
 export function vistaPrincipalPorContenedor(
   container: CanvasNode | null,
   projectKind: CanvasProjectKind,

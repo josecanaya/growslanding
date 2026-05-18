@@ -10,11 +10,15 @@ import { useAuthStore } from '@/lib/store/authStore';
 import type { Database } from '@/lib/types/supabase.gen';
 import type { SessionUser } from '@/lib/types/auth';
 import { normalizeRole } from '@/lib/roles';
+import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 const AUTH_PREFIX = '/auth';
 
 // Función global para verificar rate limit en localStorage
 function hasActiveRateLimit(): boolean {
+  if (RELAX_CLIENT_AUTH_THROTTLE) {
+    return false;
+  }
   if (typeof window === 'undefined') return false;
   const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
   if (!rateLimitUntil) return false;
@@ -127,11 +131,17 @@ export function useCurrentUser(): SessionUser | null {
             error.status === 429;
 
           if (isRateLimit) {
-            console.warn('[useCurrentUser] Rate limit detectado, evitando más peticiones');
-            hasRateLimitRef.current = true;
-            if (typeof window !== 'undefined') {
-              const rateLimitUntil = Date.now() + 20 * 60 * 1000;
-              localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+            if (!RELAX_CLIENT_AUTH_THROTTLE) {
+              console.warn('[useCurrentUser] Rate limit detectado, evitando más peticiones');
+              hasRateLimitRef.current = true;
+              if (typeof window !== 'undefined') {
+                const rateLimitUntil = Date.now() + 20 * 60 * 1000;
+                localStorage.setItem('supabase_rate_limit_until', rateLimitUntil.toString());
+              }
+            } else {
+              console.warn(
+                '[useCurrentUser] 429 en getSession; modo relajado: sin bloqueo local ni parada de listeners',
+              );
             }
             return;
           }

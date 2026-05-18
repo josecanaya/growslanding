@@ -10,6 +10,7 @@ import {
   Panel,
   MarkerType,
   BackgroundVariant,
+  useStore,
   type Node,
   type Edge,
   type Connection,
@@ -23,15 +24,20 @@ import {
   Minus,
   MousePointer2,
   Network,
+  Share2,
   Unplug,
   ZoomIn,
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import type { CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
+import type {
+  CanvasBudgetGroup,
+  CanvasNode,
+  CanvasPrecedenceEdge,
+} from '@/lib/types/canvasMultinivel';
 import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
-import { canEnterNode } from './canvasMultinivelHelpers';
+import { canEnterNode, publicationReviewCategory } from './canvasMultinivelHelpers';
 import {
   aristaCriticaVisual,
   type CanvasTaskCpmBundle,
@@ -56,17 +62,22 @@ function buildNodeData(
   handlesEnabled: boolean,
   taskCpmBundle: CanvasTaskCpmBundle | null,
   projectKind: CanvasProjectKind,
-  tareaPublicacionByNodeId: Record<string, { tareaId: string }> | undefined,
+  tareaPublicacionByNodeId:
+    | Record<string, { tareaId: string; publishedAt?: string | null; estado?: string }>
+    | undefined,
+  budgetGroups: CanvasBudgetGroup[],
+  publicationReviewMode: boolean,
 ): MultinivelNodeData {
   const childCount = countChildren(nodes, n.id);
   const { inC, outC } = precedenciasIo(n.id, siblingEdges);
   const cpmSnap =
     n.type === 'tarea' ? taskCpmBundle?.byId.get(n.id) ?? null : null;
+  const pub = n.type === 'tarea' ? tareaPublicacionByNodeId?.[n.id] : undefined;
   const taskPublication =
-    n.type === 'tarea'
-      ? tareaPublicacionByNodeId?.[ n.id ]
-        ? 'publicada'
-        : 'sin_publicar'
+    n.type === 'tarea' ? (pub?.publishedAt ? 'publicada' : 'sin_publicar') : null;
+  const budgetGroupLabel =
+    n.type === 'tarea' && n.budgetGroupId
+      ? budgetGroups.find((g) => g.id === n.budgetGroupId)?.name ?? null
       : null;
   return {
     node: n,
@@ -78,6 +89,11 @@ function buildNodeData(
     cpmSnap,
     projectKind,
     taskPublication,
+    budgetGroupLabel,
+    publicationReview: publicationReviewMode,
+    publicationReviewCategory: publicationReviewMode
+      ? publicationReviewCategory(n, tareaPublicacionByNodeId ?? {})
+      : null,
   };
 }
 
@@ -155,6 +171,14 @@ function ToolbarIconButton({
   );
 }
 
+function ZoomReporter({ onZoom }: { onZoom: (pct: number) => void }) {
+  const zoom = useStore((s) => s.transform[2]);
+  useEffect(() => {
+    onZoom(Math.round(zoom * 100));
+  }, [zoom, onZoom]);
+  return null;
+}
+
 type Props = {
   projectKind: CanvasProjectKind;
   /** CPM sobre tareas del ambiente actual (misma función que OrganizaSection). null si ciclo/vacío. */
@@ -173,7 +197,15 @@ type Props = {
   onToggleConnect: () => void;
   tryPrecedenceConnection: (c: Connection) => boolean;
   removeEdgeIds: (ids: string[]) => void;
-  tareaPublicacionByNodeId?: Record<string, { tareaId: string }>;
+  tareaPublicacionByNodeId?: Record<
+    string,
+    { tareaId: string; publishedAt?: string | null; estado?: string }
+  >;
+  budgetGroups: CanvasBudgetGroup[];
+  /** Cinta Publicación: colores de revisión + selección por arrastre. */
+  publicationReviewMode?: boolean;
+  onOpenPublishModal?: () => void;
+  onZoomPercentChange?: (pct: number) => void;
 };
 
 export function TareasCanvasPanel({
@@ -194,8 +226,13 @@ export function TareasCanvasPanel({
   tryPrecedenceConnection,
   removeEdgeIds,
   tareaPublicacionByNodeId,
+  budgetGroups,
+  publicationReviewMode = false,
+  onOpenPublishModal,
+  onZoomPercentChange,
 }: Props) {
   const { fitView } = useReactFlow();
+  const reportZoom = onZoomPercentChange ?? (() => {});
 
   const rfEdges: Edge[] = useMemo(
     () =>
@@ -243,10 +280,23 @@ export function TareasCanvasPanel({
               taskCpmBundle,
               projectKind,
               tareaPublicacionByNodeId,
+              budgetGroups,
+              publicationReviewMode,
             ),
           }) as Node<MultinivelNodeData>,
       ),
-    [visibleNodes, nodes, siblingEdges, selectedId, connectMode, taskCpmBundle, projectKind, tareaPublicacionByNodeId],
+    [
+      visibleNodes,
+      nodes,
+      siblingEdges,
+      selectedId,
+      connectMode,
+      taskCpmBundle,
+      projectKind,
+      tareaPublicacionByNodeId,
+      budgetGroups,
+      publicationReviewMode,
+    ],
   );
 
   const [rfNodes, setRfNodes, onNodesChange] = useNodesState(initialRf);
@@ -269,6 +319,8 @@ export function TareasCanvasPanel({
               taskCpmBundle,
               projectKind,
               tareaPublicacionByNodeId,
+              budgetGroups,
+              publicationReviewMode,
             ),
           }) as Node<MultinivelNodeData>,
       ),
@@ -284,6 +336,8 @@ export function TareasCanvasPanel({
     taskCpmBundle,
     projectKind,
     tareaPublicacionByNodeId,
+    budgetGroups,
+    publicationReviewMode,
   ]);
 
   useEffect(() => {
@@ -357,13 +411,41 @@ export function TareasCanvasPanel({
         minZoom={0.18}
         maxZoom={1.85}
         panOnDrag
-        selectionOnDrag={false}
+        selectionOnDrag={publicationReviewMode}
+        multiSelectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
         elevateEdgesOnSelect
         className="h-full w-full !bg-[linear-gradient(transparent,rgba(255,255,255,0.25))]"
         connectionLineStyle={{ stroke: '#0042c8', strokeWidth: 2 }}
         deleteKeyCode={['Backspace', 'Delete']}
       >
+        <ZoomReporter onZoom={reportZoom} />
+        {publicationReviewMode ? (
+          <Panel
+            position="top-center"
+            className="!z-[25] !m-3 flex max-w-[min(96vw,520px)] flex-col items-stretch gap-2 rounded-xl border border-[#c8ccd9] bg-white/95 px-3 py-2 text-center shadow-md backdrop-blur-sm"
+          >
+            <p className="text-[10px] font-medium leading-snug text-[#475569]">
+              Revisión: <span className="text-emerald-700">publicada</span> ·{' '}
+              <span className="text-slate-500">sin publicar</span> ·{' '}
+              <span className="text-amber-700">incompleta / operativa sin fecha</span> ·{' '}
+              <span className="text-red-700">bloqueada</span>. Podés enmarcar varias tareas arrastrando en vacío
+              (Shift+clic también).
+            </p>
+            <button
+              type="button"
+              onClick={() => onOpenPublishModal?.()}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0f766e] px-3 py-2 text-xs font-bold text-white shadow hover:bg-[#115e59]"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Publicar tareas…
+            </button>
+            <p className="text-[9px] text-slate-500">
+              Mismo flujo que la cinta: abre el modal de publicación actual (todas las pendientes del proceso
+              existente).
+            </p>
+          </Panel>
+        ) : null}
         <Controls
           showZoom
           showFitView

@@ -4,6 +4,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
 import { normalizeRole } from '@/lib/roles';
+import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 export default async function RootPage() {
   const cookieStore = await cookies();
@@ -18,7 +19,11 @@ export default async function RootPage() {
     const msg = (result.error.message ?? '').toLowerCase();
     const is429 = (result.error as { status?: number }).status === 429;
     if (is429 || msg.includes('rate limit') || msg.includes('too many')) {
-      redirect('/auth/login?error=rate_limit');
+      redirect(
+        RELAX_CLIENT_AUTH_THROTTLE
+          ? '/auth/login?error=supabase_429'
+          : '/auth/login?error=rate_limit',
+      );
     }
   }
 

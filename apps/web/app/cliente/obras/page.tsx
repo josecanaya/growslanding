@@ -130,7 +130,7 @@ export default function ObrasPage() {
                 ubicacion={o.address || 'Sin ubicación'}
                 estado={estadoLabel(o.estado)}
                 avancePct={avance}
-                href={`/cliente/obras/${o.id}` as Route}
+                href={`/cliente/tareas/${o.id}/editor` as Route}
                 onEliminar={handleEliminarObra}
                 eliminando={eliminandoId === o.id}
               />

@@ -1,13 +1,27 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
-import type { Session } from "@supabase/supabase-js";
+import type { Session, SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/lib/types/supabase.gen";
+import { RELAX_CLIENT_AUTH_THROTTLE } from "@/lib/config";
 import { getDefaultRouteForRole, normalizeRole } from "@/lib/roles";
+import { createOAuthCallbackSupabaseClient } from "@/lib/supabase/oauth-callback-client";
+
+function isAuthRateLimitError(err: {
+  message?: string;
+  status?: number;
+} | null): boolean {
+  if (!err) return false;
+  const m = err.message?.toLowerCase() ?? "";
+  return (
+    m.includes("rate limit") ||
+    m.includes("too many requests") ||
+    err.status === 429
+  );
+}
 
 function sanitizeRedirect(target: string | null): string | null {
   if (!target) {
@@ -24,6 +38,9 @@ function sanitizeRedirect(target: string | null): string | null {
 
   return target;
 }
+
+/** Supervivencia Strict Mode: primer layout borra `code` de la URL. */
+const OAUTH_CODE_TMP_KEY = "grows_oauth_pending_code";
 
 const PKCE_STORAGE_PREFIX = "grows_pkce:";
 
@@ -47,8 +64,16 @@ function tryClaimPkceExchange(code: string): "leader" | "waiter" | "skip_done" {
   const stateKey = pkceStorageKey(code);
   const lockKey = pkceLockKey(code);
   const state = sessionStorage.getItem(stateKey);
-  if (state === "done" || state === "rate_limited") {
+  if (state === "done") {
     return "skip_done";
+  }
+  if (state === "rate_limited") {
+    if (RELAX_CLIENT_AUTH_THROTTLE) {
+      sessionStorage.removeItem(stateKey);
+      sessionStorage.removeItem(lockKey);
+    } else {
+      return "skip_done";
+    }
   }
   const lock = sessionStorage.getItem(lockKey);
   if (lock === "1") {
@@ -65,7 +90,7 @@ function releasePkceLock(code: string) {
 
 /** Strict Mode puede dejar “running”; no spamear getSession (provoca 429 y loop OAuth). */
 async function waitForPkcePeer(
-  supabase: ReturnType<typeof createClientComponentClient<Database>>,
+  supabase: SupabaseClient<Database>,
   code: string,
   maxMs = 15_000,
 ) {
@@ -87,13 +112,55 @@ async function waitForPkcePeer(
 
 function CallbackPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const supabase = useMemo(() => createClientComponentClient<Database>(), []);
-  const redirectParam = searchParams?.get("redirect") ?? null;
-  const redirectTarget = sanitizeRedirect(redirectParam);
+  const supabase = useMemo(() => createOAuthCallbackSupabaseClient(), []);
+  const oauthCodeRef = useRef<string | null>(null);
+  const callbackRedirectRef = useRef<string | null>(null);
+  const callbackRoleRef = useRef<string | null>(null);
 
   const hasRunRef = useRef(false);
   const isProcessingRef = useRef(false);
+
+  /**
+   * Quitar `code`/`state` de la barra de direcciones **antes** de que otros
+   * `useEffect` (p. ej. SubscriptionProvider) creen el singleton con
+   * `detectSessionInUrl: true` y disparen un segundo intercambio PKCE.
+   */
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const fromUrl = url.searchParams.get("code")?.trim() ?? "";
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(OAUTH_CODE_TMP_KEY, fromUrl);
+      } catch {
+        // ignore
+      }
+    }
+
+    let code = fromUrl;
+    if (!code) {
+      try {
+        code = sessionStorage.getItem(OAUTH_CODE_TMP_KEY)?.trim() ?? "";
+      } catch {
+        code = "";
+      }
+    }
+    oauthCodeRef.current = code || null;
+
+    callbackRoleRef.current = url.searchParams.get("role");
+    callbackRedirectRef.current = sanitizeRedirect(
+      url.searchParams.get("redirect"),
+    );
+
+    url.searchParams.delete("code");
+    url.searchParams.delete("state");
+    const qs = url.searchParams.toString();
+    const nextPath = `${url.pathname}${qs ? `?${qs}` : ""}${url.hash}`;
+    window.history.replaceState(window.history.state ?? {}, "", nextPath);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -103,9 +170,13 @@ function CallbackPageContent() {
       if (hasRunRef.current || isProcessingRef.current) {
         return;
       }
-      // Si ya detectamos rate limit recientemente, no volver a golpear auth.
-      if (typeof window !== 'undefined') {
-        const rateLimitUntil = localStorage.getItem('supabase_rate_limit_until');
+      if (typeof window !== "undefined" && RELAX_CLIENT_AUTH_THROTTLE) {
+        localStorage.removeItem("supabase_rate_limit_until");
+      }
+
+      // Bloqueo local por rate limit (solo producción; en dev no castiga).
+      if (typeof window !== "undefined" && !RELAX_CLIENT_AUTH_THROTTLE) {
+        const rateLimitUntil = localStorage.getItem("supabase_rate_limit_until");
         if (rateLimitUntil) {
           const untilTime = parseInt(rateLimitUntil, 10);
           if (Date.now() < untilTime) {
@@ -114,13 +185,14 @@ function CallbackPageContent() {
             }
             return;
           }
-          localStorage.removeItem('supabase_rate_limit_until');
+          localStorage.removeItem("supabase_rate_limit_until");
         }
       }
       hasRunRef.current = true;
       isProcessingRef.current = true;
       try {
-        const rawCode = searchParams?.get("code");
+        const redirectTarget = callbackRedirectRef.current;
+        const rawCode = oauthCodeRef.current;
         const code = rawCode?.trim() ? rawCode.trim() : "";
 
         let resolvedSession: Session | null = null;
@@ -129,20 +201,22 @@ function CallbackPageContent() {
           sessionError: { message?: string; status?: number } | null,
         ) => {
           if (!sessionError) return false;
-          const isRateLimit =
-            sessionError.message?.toLowerCase().includes("rate limit") ||
-            sessionError.message?.toLowerCase().includes("too many requests") ||
-            sessionError.status === 429;
-          if (isRateLimit) {
-            if (typeof window !== "undefined") {
-              const rateLimitUntil = Date.now() + 5 * 60 * 1000;
-              localStorage.setItem(
-                "supabase_rate_limit_until",
-                rateLimitUntil.toString(),
-              );
+          if (isAuthRateLimitError(sessionError)) {
+            if (!RELAX_CLIENT_AUTH_THROTTLE) {
+              if (typeof window !== "undefined") {
+                const rateLimitUntil = Date.now() + 5 * 60 * 1000;
+                localStorage.setItem(
+                  "supabase_rate_limit_until",
+                  rateLimitUntil.toString(),
+                );
+              }
+              router.replace("/auth/login?error=rate_limit" as Route);
+              return true;
             }
-            router.replace("/auth/login?error=rate_limit" as Route);
-            return true;
+            console.warn(
+              "[OAUTH_CALLBACK] 429 en getSession; modo relajado: no bloqueo local ni redirect",
+            );
+            return false;
           }
           console.error(
             "[OAUTH_CALLBACK_ERROR] Error al obtener sesión:",
@@ -157,8 +231,16 @@ function CallbackPageContent() {
           const peerState = sessionStorage.getItem(pkceKey);
 
           if (peerState === "rate_limited") {
+            if (typeof window !== "undefined" && RELAX_CLIENT_AUTH_THROTTLE) {
+              sessionStorage.removeItem(pkceKey);
+              releasePkceLock(code);
+            }
             if (active) {
-              router.replace("/auth/login?error=rate_limit" as Route);
+              router.replace(
+                (RELAX_CLIENT_AUTH_THROTTLE
+                  ? "/auth/login?error=supabase_429"
+                  : "/auth/login?error=rate_limit") as Route,
+              );
             }
             return;
           }
@@ -174,8 +256,16 @@ function CallbackPageContent() {
             if (!active) return;
             const after = sessionStorage.getItem(pkceKey);
             if (after === "rate_limited") {
+              if (typeof window !== "undefined" && RELAX_CLIENT_AUTH_THROTTLE) {
+                sessionStorage.removeItem(pkceKey);
+                releasePkceLock(code);
+              }
               if (active) {
-                router.replace("/auth/login?error=rate_limit" as Route);
+                router.replace(
+                  (RELAX_CLIENT_AUTH_THROTTLE
+                    ? "/auth/login?error=supabase_429"
+                    : "/auth/login?error=rate_limit") as Route,
+                );
               }
               return;
             }
@@ -196,8 +286,16 @@ function CallbackPageContent() {
               if (!active) return;
               const afterWait = sessionStorage.getItem(pkceKey);
               if (afterWait === "rate_limited") {
+                if (typeof window !== "undefined" && RELAX_CLIENT_AUTH_THROTTLE) {
+                  sessionStorage.removeItem(pkceKey);
+                  releasePkceLock(code);
+                }
                 if (active) {
-                  router.replace("/auth/login?error=rate_limit" as Route);
+                  router.replace(
+                    (RELAX_CLIENT_AUTH_THROTTLE
+                      ? "/auth/login?error=supabase_429"
+                      : "/auth/login?error=rate_limit") as Route,
+                  );
                 }
                 return;
               }
@@ -209,98 +307,124 @@ function CallbackPageContent() {
               /** Leader: un solo intercambio PKCE; el lock en sessionStorage evita doble POST en Strict Mode. */
               sessionStorage.setItem(pkceKey, "running");
               const runExchange = async (): Promise<boolean> => {
-              // Otro contexto bajo el mismo lock pudo terminar antes: no re-intercambiar (rompe PKCE).
-              if (typeof window !== "undefined") {
-                const donePeek = sessionStorage.getItem(pkceKey);
-                if (donePeek === "done") {
-                  const { data: peeked, error: peekErr } =
-                    await supabase.auth.getSession();
-                  if (peekErr) {
+                const maxAttempts = RELAX_CLIENT_AUTH_THROTTLE ? 3 : 1;
+
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                  if (attempt > 0) {
+                    await new Promise((r) => setTimeout(r, 1500 * attempt));
+                  }
+
+                  if (typeof window !== "undefined") {
+                    const donePeek = sessionStorage.getItem(pkceKey);
+                    if (donePeek === "done") {
+                      const { data: peeked, error: peekErr } =
+                        await supabase.auth.getSession();
+                      if (peekErr) {
+                        console.error(
+                          "[OAUTH_CALLBACK_ERROR] Error al obtener sesión (post-done):",
+                          peekErr,
+                        );
+                        if (active) {
+                          router.replace(
+                            "/auth/login?error=session_error" as Route,
+                          );
+                        }
+                        return false;
+                      }
+                      resolvedSession = peeked.session ?? null;
+                      return true;
+                    }
+                    if (donePeek === "rate_limited") {
+                      if (RELAX_CLIENT_AUTH_THROTTLE) {
+                        sessionStorage.removeItem(pkceKey);
+                      } else {
+                        if (active) {
+                          router.replace(
+                            "/auth/login?error=rate_limit" as Route,
+                          );
+                        }
+                        return false;
+                      }
+                    }
+                  }
+
+                  const { data: exchanged, error: exchangeError } =
+                    await supabase.auth.exchangeCodeForSession(code);
+
+                  if (!exchangeError) {
+                    sessionStorage.setItem(pkceKey, "done");
+                    resolvedSession = exchanged.session ?? null;
+                    return true;
+                  }
+
+                  console.error(
+                    "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
+                    exchangeError,
+                  );
+
+                  if (!isAuthRateLimitError(exchangeError)) {
+                    const errMsg = (exchangeError.message ?? "").toLowerCase();
+                    const isPkceError =
+                      errMsg.includes("code verifier") ||
+                      errMsg.includes("code_verifier") ||
+                      errMsg.includes("both auth code and code verifier") ||
+                      errMsg.includes("should be non-empty");
+
+                    sessionStorage.removeItem(pkceKey);
+
+                    if (isPkceError) {
+                      const loginPath =
+                        "/auth/login?error=pkce_error" +
+                        (redirectTarget
+                          ? `&redirect=${encodeURIComponent(redirectTarget)}`
+                          : "");
+                      if (active) {
+                        router.replace(loginPath as Route);
+                      }
+                      return false;
+                    }
+
                     console.error(
-                      "[OAUTH_CALLBACK_ERROR] Error al obtener sesión (post-done):",
-                      peekErr,
+                      "[OAUTH_CALLBACK] Error OAuth no manejado:",
+                      exchangeError,
                     );
                     if (active) {
-                      router.replace("/auth/login?error=session_error" as Route);
+                      router.replace("/auth/login?error=oauth_failed" as Route);
                     }
                     return false;
                   }
-                  resolvedSession = peeked.session ?? null;
-                  return true;
-                }
-                if (donePeek === "rate_limited") {
-                  if (active) {
-                    router.replace("/auth/login?error=rate_limit" as Route);
-                  }
-                  return false;
-                }
-              }
 
-              const { data: exchanged, error: exchangeError } =
-                await supabase.auth.exchangeCodeForSession(code);
-
-              if (exchangeError) {
-                console.error(
-                  "[OAUTH_CALLBACK_ERROR] Error al intercambiar código:",
-                  exchangeError,
-                );
-
-                const isRateLimit =
-                  exchangeError.message?.toLowerCase().includes("rate limit") ||
-                  exchangeError.message?.toLowerCase().includes("too many requests") ||
-                  exchangeError.status === 429;
-
-                if (isRateLimit) {
                   console.warn(
-                    "[OAUTH_CALLBACK] Rate limit alcanzado, redirigiendo a login",
+                    `[OAUTH_CALLBACK] 429 en PKCE (intento ${attempt + 1}/${maxAttempts})`,
                   );
-                  sessionStorage.setItem(pkceKey, "rate_limited");
-                  const rateLimitUntil = Date.now() + 5 * 60 * 1000;
-                  localStorage.setItem(
-                    "supabase_rate_limit_until",
-                    rateLimitUntil.toString(),
-                  );
-                  if (active) {
-                    router.replace("/auth/login?error=rate_limit" as Route);
+
+                  if (RELAX_CLIENT_AUTH_THROTTLE && attempt < maxAttempts - 1) {
+                    continue;
+                  }
+
+                  if (!RELAX_CLIENT_AUTH_THROTTLE) {
+                    sessionStorage.setItem(pkceKey, "rate_limited");
+                    const rateLimitUntil = Date.now() + 5 * 60 * 1000;
+                    localStorage.setItem(
+                      "supabase_rate_limit_until",
+                      rateLimitUntil.toString(),
+                    );
+                    if (active) {
+                      router.replace("/auth/login?error=rate_limit" as Route);
+                    }
+                  } else {
+                    sessionStorage.removeItem(pkceKey);
+                    if (active) {
+                      router.replace(
+                        "/auth/login?error=supabase_429" as Route,
+                      );
+                    }
                   }
                   return false;
                 }
 
-                const errMsg = (exchangeError.message ?? "").toLowerCase();
-                const isPkceError =
-                  errMsg.includes("code verifier") ||
-                  errMsg.includes("code_verifier") ||
-                  errMsg.includes("both auth code and code verifier") ||
-                  errMsg.includes("should be non-empty");
-
-                sessionStorage.removeItem(pkceKey);
-
-                if (isPkceError) {
-                  const loginPath =
-                    "/auth/login?error=pkce_error" +
-                    (redirectTarget
-                      ? `&redirect=${encodeURIComponent(redirectTarget)}`
-                      : "");
-                  if (active) {
-                    router.replace(loginPath as Route);
-                  }
-                  return false;
-                }
-
-                console.error(
-                  "[OAUTH_CALLBACK] Error OAuth no manejado:",
-                  exchangeError,
-                );
-                if (active) {
-                  router.replace("/auth/login?error=oauth_failed" as Route);
-                }
                 return false;
-              }
-
-              sessionStorage.setItem(pkceKey, "done");
-              resolvedSession = exchanged.session ?? null;
-              return true;
-            };
+              };
 
               let exchangeOk = true;
               try {
@@ -342,7 +466,7 @@ function CallbackPageContent() {
         const sessionUser = resolvedSession.user;
         
         // Verificar si viene del registro con Google para CLIENTE_TECNICO
-        const roleParam = searchParams?.get('role');
+        const roleParam = callbackRoleRef.current;
         const isClienteTecnicoRegistration = roleParam === 'CLIENTE_TECNICO';
 
         const role = normalizeRole(
@@ -448,6 +572,11 @@ function CallbackPageContent() {
         }
       } finally {
         isProcessingRef.current = false;
+        try {
+          sessionStorage.removeItem(OAUTH_CODE_TMP_KEY);
+        } catch {
+          // ignore
+        }
       }
     }
 
@@ -457,13 +586,9 @@ function CallbackPageContent() {
       active = false;
       isProcessingRef.current = false;
     };
+    // Solo montaje: code/redirect/role están en refs (useLayoutEffect).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    redirectTarget,
-    // No incluir supabase en dependencias (es estable)
-    // No incluir searchParams completo (solo necesitamos el code una vez)
-    // No incluir router (es estable en Next.js)
-  ]);
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F5F6F7] px-4 text-[#0D3B3B]">
@@ -472,7 +597,9 @@ function CallbackPageContent() {
           Verificando sesión segura…
         </p>
         <p className="mt-2 text-sm text-gray-600">
-          Si ves un error de límite de velocidad, espera 10-15 minutos antes de intentar nuevamente.
+          {RELAX_CLIENT_AUTH_THROTTLE
+            ? "Si Supabase devuelve 429, esperá unos segundos y reintentá desde el login (sin bloqueo largo en este entorno)."
+            : "Si ves un error de límite de velocidad, espera 10-15 minutos antes de intentar nuevamente."}
         </p>
       </div>
     </div>

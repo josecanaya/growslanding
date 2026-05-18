@@ -142,6 +142,9 @@ importers:
       '@supabase/auth-helpers-react':
         specifier: ^0.5.0
         version: 0.5.0(@supabase/supabase-js@2.57.4)
+      '@supabase/auth-helpers-shared':
+        specifier: 0.7.0
+        version: 0.7.0(@supabase/supabase-js@2.57.4)
       '@supabase/supabase-js':
         specifier: ^2.45.2
         version: 2.57.4

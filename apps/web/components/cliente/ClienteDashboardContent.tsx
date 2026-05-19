@@ -4,16 +4,15 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { useEffect, useState } from 'react';
 import {
-  Landmark,
-  Network,
-  Wallet,
+  BadgeCheck,
   Bell,
+  FileText,
+  Landmark,
+  PlusCircle,
+  Receipt,
   UserCircle,
   Users,
-  PlusCircle,
-  FileText,
-  ClipboardList,
-  BadgeCheck,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -59,21 +58,12 @@ function inicialesU(n: string | null | undefined, e: string | null | undefined) 
 
 export function ClienteDashboardContent() {
   const user = useCurrentUser();
-  const [primeraObra, setPrimeraObra] = useState<string | null>(null);
   const [actividad, setActividad] = useState<Actividad[]>([]);
 
   useEffect(() => {
     let a = true;
     (async () => {
       try {
-        const rO = await fetch('/api/obras', { cache: 'no-store' });
-        const jO = await rO.json().catch(() => ({}));
-        if (!a) return;
-        if (rO.ok && Array.isArray(jO.data) && jO.data[0]?.id) {
-          setPrimeraObra(jO.data[0].id);
-        } else {
-          setPrimeraObra(null);
-        }
         const org = user?.orgId;
         if (!org) {
           setActividad([]);
@@ -101,7 +91,6 @@ export function ClienteDashboardContent() {
         setActividad(items);
       } catch {
         if (a) {
-          setPrimeraObra(null);
           setActividad([]);
         }
       }
@@ -128,15 +117,26 @@ export function ClienteDashboardContent() {
               </span>
             </div>
             <div className="flex items-center gap-6">
-              <nav className="hidden gap-6 md:flex">
-                <span className="border-b-2 border-sky-600 pb-1 text-sm font-semibold uppercase tracking-wide text-sky-950">
-                  Dashboard
+              <nav className="hidden gap-6 md:flex" aria-label="Secciones principales">
+                <Link
+                  href={'/cliente/dashboard' as Route}
+                  className="border-b-2 border-sky-600 pb-1 text-sm font-semibold uppercase tracking-wide text-sky-950"
+                >
+                  Inicio
+                </Link>
+                <span
+                  className="cursor-not-allowed border-b-2 border-transparent pb-1 text-sm font-semibold uppercase tracking-wide text-slate-400"
+                  title="Próximamente"
+                  aria-disabled="true"
+                >
+                  Métricas
                 </span>
-                <span className="cursor-not-allowed text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Analytics
-                </span>
-                <span className="cursor-not-allowed text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Project files
+                <span
+                  className="cursor-not-allowed border-b-2 border-transparent pb-1 text-sm font-semibold uppercase tracking-wide text-slate-400"
+                  title="Próximamente"
+                  aria-disabled="true"
+                >
+                  Archivos
                 </span>
               </nav>
               <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-200 text-xs font-bold text-slate-700">
@@ -148,12 +148,12 @@ export function ClienteDashboardContent() {
           <div className="w-full max-w-4xl">
             <div className="mb-12">
               <h2 className="text-4xl font-extralight leading-none tracking-tight text-[#001629] xl:text-5xl">
-                Perspective
+                Panel de
                 <br />
-                <span className="font-bold">Workspace</span>
+                <span className="font-bold">trabajo</span>
               </h2>
-              <p className="mt-4 max-w-sm text-sm text-[#545f6e]">
-                Claridad técnica para la excelencia en obra. Elegí un dominio para continuar.
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-[#545f6e]">
+                Gestioná tus obras, presupuestos, validaciones y equipos desde un solo lugar.
               </p>
             </div>
 
@@ -170,19 +170,19 @@ export function ClienteDashboardContent() {
               >
                 <Landmark className="h-10 w-10 text-[#f6fafe] opacity-95 xl:h-12 xl:w-12" strokeWidth={1.25} />
                 <div>
-                  <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-60">Dominio 01</p>
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-60">Módulo 01</p>
                   <h3 className="text-2xl font-semibold tracking-tight">Obras</h3>
                 </div>
               </BauhausDomainLink>
 
               <BauhausDomainLink
-                href={'/cliente/tareas' as Route}
+                href={'/cliente/presupuesto' as Route}
                 className="col-span-5 col-start-5 row-span-5 row-start-1 bg-[#dfe3e7] text-[#001629] hover:bg-white"
               >
-                <Network className="h-9 w-9 xl:h-10 xl:w-10" strokeWidth={1.25} />
+                <Receipt className="h-9 w-9 xl:h-10 xl:w-10" strokeWidth={1.25} />
                 <div>
-                  <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-60">Dominio 02</p>
-                  <h3 className="text-xl font-semibold tracking-tight">Tareas</h3>
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-60">Módulo 02</p>
+                  <h3 className="text-xl font-semibold tracking-tight">Presupuestos</h3>
                 </div>
               </BauhausDomainLink>
 
@@ -211,19 +211,29 @@ export function ClienteDashboardContent() {
 
               <BauhausDomainLink
                 href={'/cliente/cuenta' as Route}
-                className="relative col-span-4 col-start-1 row-span-4 row-start-9 overflow-hidden bg-[#e4e9ed] hover:shadow-lg"
+                className="relative col-span-6 col-start-1 row-span-4 row-start-9 overflow-hidden hover:shadow-lg"
               >
                 <div
-                  className="absolute inset-0 opacity-25 grayscale transition duration-700 group-hover:grayscale-0"
-                  style={{
-                    backgroundImage:
-                      'url(https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=800&q=80)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
+                  className="absolute inset-0 bg-cover bg-center transition duration-700 [background-image:url(https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1200&q=80)]"
+                  aria-hidden
                 />
-                <div className="relative z-[1] mt-auto flex h-full flex-col justify-end p-8">
-                  <h3 className="text-xl font-semibold text-[#001629]">Cuenta</h3>
+                <div
+                  className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/85 via-[#f8fafc]/45 to-[#e2e8f0]/55"
+                  aria-hidden
+                />
+                <div className="relative z-[1] flex h-full min-h-[8rem] flex-col justify-end p-8">
+                  <h3 className="text-xl font-semibold tracking-tight text-white drop-shadow-md">Cuenta</h3>
+                </div>
+              </BauhausDomainLink>
+
+              <BauhausDomainLink
+                href={'/cliente/validar' as Route}
+                className="col-span-6 col-start-7 row-span-4 row-start-9 bg-[#ecfdf5] text-[#064e3b] ring-1 ring-emerald-200/80 hover:bg-[#d1fae5] hover:shadow-lg"
+              >
+                <BadgeCheck className="h-9 w-9 xl:h-10 xl:w-10" strokeWidth={1.25} />
+                <div>
+                  <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-70">Módulo</p>
+                  <h3 className="text-xl font-semibold tracking-tight">Validaciones</h3>
                 </div>
               </BauhausDomainLink>
             </div>
@@ -232,20 +242,25 @@ export function ClienteDashboardContent() {
 
         <aside className="z-30 flex w-80 shrink-0 flex-col gap-10 border-l border-slate-200/80 bg-slate-50 p-8">
           <div>
-            <h4 className="mb-6 text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</h4>
+            <h4 className="mb-6 text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones</h4>
             <Link
-              href={(primeraObra ? `/cliente/tareas/${primeraObra}` : '/cliente/tareas') as Route}
+              href={'/cliente/obras/nueva' as Route}
               className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-4 px-6 text-sm font-bold tracking-wide text-white shadow-lg transition hover:-translate-x-1 hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="h-5 w-5" />
-              + Nueva tarea
+              + Nueva obra
             </Link>
           </div>
           <div className="min-h-0 flex-1">
-            <h4 className="mb-8 text-xs font-semibold uppercase tracking-wider text-slate-500">Recent activity</h4>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Actividad reciente
+            </h4>
+            <p className="mb-6 text-[11px] leading-snug text-slate-400">
+              Últimos movimientos de tus obras.
+            </p>
             <div className="space-y-10">
               {actividad.length === 0 ? (
-                <p className="text-sm text-slate-500">No hay actividad reciente de tareas.</p>
+                <p className="text-sm text-slate-500">No hay actividad reciente para mostrar.</p>
               ) : (
                 actividad.map((a) => (
                   <div key={a.id} className="relative border-l-2 border-emerald-200/40 pl-6">
@@ -267,11 +282,11 @@ export function ClienteDashboardContent() {
             <div className="rounded-2xl bg-[#eaeef2] p-6">
               <div className="mb-4 flex items-center gap-3">
                 <FileText className="h-5 w-5 text-emerald-700" strokeWidth={1.5} />
-                <h6 className="text-xs font-bold uppercase tracking-widest text-[#001629]">Studio specs</h6>
+                <h6 className="text-xs font-bold uppercase tracking-widest text-[#001629]">Buenas prácticas</h6>
               </div>
               <p className="text-[10px] font-light leading-relaxed text-slate-500">
-                Mantener alineación en grilla de 8px en todos los exports CAD para consistencia en el archivo de
-                estudio.
+                Mantené nomenclatura y versiones alineadas entre obra, presupuesto y validaciones para evitar
+                desfasajes entre el equipo de campo y la oficina técnica.
               </p>
             </div>
           </div>
@@ -281,10 +296,7 @@ export function ClienteDashboardContent() {
       {/* ——— Mobile: grilla Bauhaus (solo bajo ClienteHeader; sin barra inferior) ——— */}
       <div className="flex min-h-0 flex-1 flex-col bg-[#f8f9fb] lg:hidden">
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-4">
-          <div
-            className="grid w-full max-w-[300px] gap-2"
-            style={{ gridTemplateColumns: 'repeat(2, 1fr)', aspectRatio: '2 / 3' }}
-          >
+          <div className="grid w-full max-w-[300px] grid-cols-2 gap-2">
             <div className="flex flex-col items-center gap-2">
               <Link
                 href={'/cliente/obras' as Route}
@@ -296,12 +308,12 @@ export function ClienteDashboardContent() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <Link
-                href={'/cliente/tareas' as Route}
+                href={'/cliente/presupuesto' as Route}
                 className="flex aspect-[4/5] w-full flex-col items-center justify-center rounded-tr-xl bg-[#e9ecef] text-[#001629] shadow-sm transition active:scale-[0.96]"
               >
-                <ClipboardList className="h-9 w-9" strokeWidth={1} />
+                <Receipt className="h-9 w-9" strokeWidth={1} />
               </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Tareas</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Presupuestos</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Link
@@ -312,7 +324,29 @@ export function ClienteDashboardContent() {
                   <Users className="h-8 w-8" strokeWidth={1} />
                 </div>
               </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Partners</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Cuadrillas</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href={'/cliente/validar' as Route}
+                className="flex aspect-[4/5] w-full flex-col items-center justify-center bg-[#ecfdf5] text-[#064e3b] shadow-sm transition active:scale-[0.96]"
+              >
+                <BadgeCheck className="h-9 w-9" strokeWidth={1} />
+              </Link>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Validaciones</span>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <Link
+                href={'/cliente/cuenta' as Route}
+                className="flex aspect-[4/5] w-full flex-col items-center justify-center bg-[#e9ecef] text-[#001629] active:scale-[0.96]"
+              >
+                <UserCircle className="h-8 w-8" strokeWidth={1} />
+                <div className="mt-2 flex w-6 flex-col gap-1">
+                  <div className="h-px w-full bg-[#001629]/20" />
+                  <div className="h-px w-2/3 bg-[#001629]/20" />
+                </div>
+              </Link>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Cuenta</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Link
@@ -322,30 +356,19 @@ export function ClienteDashboardContent() {
                 <div className="absolute -left-1 -top-1 h-12 w-12 rounded-full border-l border-t border-[#24a375] opacity-40" />
                 <Wallet className="relative h-8 w-8" strokeWidth={1} />
               </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Wallet</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Billetera</span>
             </div>
-            <div className="flex flex-col items-center gap-2">
+            <div className="col-span-2 flex flex-col items-center gap-2">
               <Link
                 href={'/cliente/notificaciones' as Route}
-                className="relative flex aspect-[4/5] w-full flex-col items-center justify-center rounded-bl-xl bg-[#001629] text-white active:scale-[0.96]"
+                className="relative flex h-24 w-full flex-col items-center justify-center rounded-b-xl bg-[#001629] text-white active:scale-[0.96]"
               >
                 <Bell className="h-8 w-8" strokeWidth={1} />
                 <span className="absolute right-[22%] top-[28%] h-2 w-2 rounded-full bg-[#24a375] shadow-[0_0_8px_rgba(36,163,117,0.6)]" />
               </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Notifs</span>
-            </div>
-            <div className="flex flex-col items-center gap-2">
-              <Link
-                href={'/cliente/cuenta' as Route}
-                className="flex aspect-[4/5] w-full flex-col items-center justify-center rounded-br-[80px] bg-[#e9ecef] text-[#001629] active:scale-[0.96]"
-              >
-                <UserCircle className="h-8 w-8" strokeWidth={1} />
-                <div className="mt-2 flex w-6 flex-col gap-1">
-                  <div className="h-px w-full bg-[#001629]/20" />
-                  <div className="h-px w-2/3 bg-[#001629]/20" />
-                </div>
-              </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">Perfil</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#73777e]">
+                Notificaciones
+              </span>
             </div>
           </div>
 
@@ -354,7 +377,7 @@ export function ClienteDashboardContent() {
             className="mt-8 flex shrink-0 items-center gap-2 rounded-full border border-[#001629]/10 bg-white px-4 py-2 text-xs font-semibold text-[#001629] shadow-sm"
           >
             <BadgeCheck className="h-4 w-4 text-emerald-600" />
-            Validaciones pendientes
+            Ir a validaciones pendientes
           </Link>
         </main>
       </div>

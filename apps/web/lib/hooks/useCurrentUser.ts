@@ -1,13 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Session } from '@supabase/supabase-js';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { clearClientSessionArtifacts } from '@/lib/auth';
+import { getBrowserSupabaseClient } from '@/lib/supabase/browser-client';
 import { useAuthStore } from '@/lib/store/authStore';
-import type { Database } from '@/lib/types/supabase.gen';
 import type { SessionUser } from '@/lib/types/auth';
 import { normalizeRole } from '@/lib/roles';
 import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
@@ -81,7 +80,7 @@ export function useCurrentUser(): SessionUser | null {
   const sessionCheckRef = useRef(false);
 
   const supabase = useMemo(
-    () => createClientComponentClient<Database>(),
+    () => getBrowserSupabaseClient(),
     []
   );
 

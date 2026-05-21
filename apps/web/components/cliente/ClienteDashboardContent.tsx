@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 const mint = '#85f8c4';
+const dashboardBackgroundImage =
+  'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1600&q=80';
 
 function BauhausDomainLink({
   href,
@@ -104,8 +106,14 @@ export function ClienteDashboardContent() {
     <div className="flex min-h-0 w-full flex-1 flex-col">
       {/* ——— Desktop: Bauhaus central hub (Stitch home_bauhaus_central_hub_desktop) ——— */}
       <div className="hidden min-h-0 flex-1 lg:flex">
-        <section className="flex flex-1 flex-col items-center bg-[#f6fafe] px-6 py-10 xl:px-12">
-          <header className="mb-12 flex w-full max-w-4xl flex-wrap items-center justify-between gap-4">
+        <section className="relative flex flex-1 flex-col items-center overflow-hidden bg-[#f6fafe] px-6 py-10 xl:px-12">
+          <div
+            className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-[0.16] grayscale"
+            style={{ backgroundImage: `url(${dashboardBackgroundImage})` }}
+            aria-hidden
+          />
+          <div className="pointer-events-none absolute inset-0 bg-[#f6fafe]/82" aria-hidden />
+          <header className="relative z-[1] mb-12 flex w-full max-w-4xl flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-xl font-bold tracking-tighter text-sky-950">G.</span>
               <h1 className="text-xl font-extrabold tracking-tighter text-sky-950">Grows Hub</h1>
@@ -145,7 +153,7 @@ export function ClienteDashboardContent() {
             </div>
           </header>
 
-          <div className="w-full max-w-4xl">
+          <div className="relative z-[1] w-full max-w-4xl">
             <div className="mb-12">
               <h2 className="text-4xl font-extralight leading-none tracking-tight text-[#001629] xl:text-5xl">
                 Panel de
@@ -161,7 +169,7 @@ export function ClienteDashboardContent() {
               className="mx-auto grid aspect-square w-full max-w-[min(100%,600px)] gap-8"
               style={{
                 gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
-                gridTemplateRows: 'repeat(12, minmax(0, 1fr))',
+                gridTemplateRows: 'repeat(13, minmax(0, 1fr))',
               }}
             >
               <BauhausDomainLink
@@ -196,14 +204,14 @@ export function ClienteDashboardContent() {
 
               <BauhausDomainLink
                 href={'/cliente/notificaciones' as Route}
-                className="col-span-3 col-start-10 row-span-3 row-start-4 bg-[#f0f4f8] text-[#001629] hover:bg-[#001629] hover:text-white"
+                className="col-span-3 col-start-10 row-span-2 row-start-4 bg-[#f0f4f8] text-[#001629] hover:bg-[#001629] hover:text-white"
               >
                 <Bell className="mx-auto h-8 w-8 xl:h-9 xl:w-9" strokeWidth={1.25} />
               </BauhausDomainLink>
 
               <BauhausDomainLink
                 href={'/cliente/cuadrillas' as Route}
-                className="col-span-8 col-start-5 row-span-4 row-start-6 flex-row items-center justify-between bg-[#d7e4f5] px-10 text-[#001629] hover:shadow-lg"
+                className="col-span-8 col-start-5 row-span-3 row-start-7 flex-row items-center justify-between bg-[#d7e4f5] px-10 text-[#001629] hover:shadow-lg"
               >
                 <h3 className="text-xl font-semibold">Cuadrillas</h3>
                 <Users className="h-8 w-8 xl:h-9 xl:w-9" strokeWidth={1.25} />
@@ -211,24 +219,16 @@ export function ClienteDashboardContent() {
 
               <BauhausDomainLink
                 href={'/cliente/cuenta' as Route}
-                className="relative col-span-6 col-start-1 row-span-4 row-start-9 overflow-hidden hover:shadow-lg"
+                className="relative col-span-6 col-start-1 row-span-4 row-start-10 overflow-hidden bg-white/80 text-[#001629] ring-1 ring-white/70 backdrop-blur-sm hover:shadow-lg"
               >
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition duration-700 [background-image:url(https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1200&q=80)]"
-                  aria-hidden
-                />
-                <div
-                  className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/85 via-[#f8fafc]/45 to-[#e2e8f0]/55"
-                  aria-hidden
-                />
                 <div className="relative z-[1] flex h-full min-h-[8rem] flex-col justify-end p-8">
-                  <h3 className="text-xl font-semibold tracking-tight text-white drop-shadow-md">Cuenta</h3>
+                  <h3 className="text-xl font-semibold tracking-tight">Cuenta</h3>
                 </div>
               </BauhausDomainLink>
 
               <BauhausDomainLink
                 href={'/cliente/validar' as Route}
-                className="col-span-6 col-start-7 row-span-4 row-start-9 bg-[#ecfdf5] text-[#064e3b] ring-1 ring-emerald-200/80 hover:bg-[#d1fae5] hover:shadow-lg"
+                className="col-span-6 col-start-7 row-span-4 row-start-10 bg-[#ecfdf5]/95 text-[#064e3b] ring-1 ring-emerald-200/80 hover:bg-[#d1fae5] hover:shadow-lg"
               >
                 <BadgeCheck className="h-9 w-9 xl:h-10 xl:w-10" strokeWidth={1.25} />
                 <div>

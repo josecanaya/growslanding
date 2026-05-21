@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus, BarChart3, ClipboardList, DollarSign, Users, Bell, Calendar, TrendingUp } from 'lucide-react';
+import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 
 interface QuickActionsRowProps {
@@ -32,7 +33,7 @@ export function QuickActionsRow({ obraId, singleRow = false }: QuickActionsRowPr
         }
         break;
       case 'presupuesto':
-        router.push('/cliente/billetera');
+        router.push('/cliente/billetera' as Route);
         break;
       case 'socios':
         router.push('/cliente/dashboard?section=cuadrillas');

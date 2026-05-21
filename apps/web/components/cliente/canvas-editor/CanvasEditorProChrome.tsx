@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import {
   ArrowLeft,
@@ -32,14 +32,9 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import type { CanvasNivelTipo } from '@/lib/types/canvasMultinivel';
 
-export type RibbonMainTab =
-  | 'archivo'
-  | 'inicio'
-  | 'organizar'
-  | 'tareas'
-  | 'presupuestos'
-  | 'publicacion'
-  | 'vista';
+export type EditorTab = 'archivo' | 'canvas' | 'presupuestos' | 'publicar' | 'cronograma';
+
+export type RibbonMainTab = EditorTab;
 
 type CloudUi = 'idle' | 'saving' | 'dirty';
 
@@ -49,8 +44,8 @@ export type CanvasEditorProChromeProps = {
   /** Derivar etiqueta de guardado sin tocar el hook */
   cloudSaveState: string;
   cloudSaveMessage: string | null;
-  editorTab: 'canvas' | 'presupuestos';
-  onEditorTab: (t: 'canvas' | 'presupuestos') => void;
+  editorTab: EditorTab;
+  onEditorTab: (t: EditorTab) => void;
   vistaLabel: string;
   nivelActualLabel: string;
   canvasHydrated: boolean;
@@ -81,8 +76,7 @@ export type CanvasEditorProChromeProps = {
   deleteDisabled?: boolean;
   /** Modo conectar tareas — el panel lo gestiona; aquí solo feedback visual */
   connectTareasActive?: boolean;
-  /** Notifica pestaña del ribbon (p. ej. modo revisión Publicación). */
-  onRibbonMainTabChange?: (tab: RibbonMainTab) => void;
+  onGoOrganizar?: () => void;
 };
 
 function RibbonButton({
@@ -146,9 +140,9 @@ function cloudUiFromState(cloudSaveState: string, savingBusy: boolean): CloudUi 
 
 export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
   const router = useRouter();
-  const [ribbonTab, setRibbonTab] = useState<RibbonMainTab>('inicio');
   const savingBusy = props.cloudSaveState === 'saving' || props.proyectoBusy;
   const cloudUi = cloudUiFromState(props.cloudSaveState, savingBusy);
+  const ribbonTab = props.editorTab;
 
   const guardadoLabel = useMemo(() => {
     if (cloudUi === 'saving') return 'Guardando…';
@@ -158,6 +152,9 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
   }, [cloudUi, props.cloudSaveMessage, props.cloudSaveState]);
 
   const capaLabel = useMemo(() => {
+    if (props.editorTab === 'archivo') return 'Archivo';
+    if (props.editorTab === 'publicar') return 'Publicar';
+    if (props.editorTab === 'cronograma') return 'Cronograma';
     if (props.editorTab === 'presupuestos') return 'Presupuestos';
     if (props.vistaTareas) return 'Tareas';
     if (props.vistaEtapas) return 'Obra / fases';
@@ -167,22 +164,13 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
     return props.nivelActualLabel;
   }, [props.childTypeToCreate, props.editorTab, props.nivelActualLabel, props.vistaEtapas, props.vistaTareas]);
 
-  const mainTabs: { id: RibbonMainTab; label: string }[] = [
+  const mainTabs: { id: EditorTab; label: string }[] = [
     { id: 'archivo', label: 'Archivo' },
-    { id: 'inicio', label: 'Inicio' },
-    { id: 'organizar', label: 'Organizar' },
-    { id: 'tareas', label: 'Tareas' },
+    { id: 'canvas', label: 'Organizar' },
     { id: 'presupuestos', label: 'Presupuestos' },
-    { id: 'publicacion', label: 'Publicación' },
-    { id: 'vista', label: 'Vista' },
+    { id: 'publicar', label: 'Publicar' },
+    { id: 'cronograma', label: 'Cronograma' },
   ];
-
-  useEffect(() => {
-    if (props.editorTab === 'presupuestos') {
-      setRibbonTab('presupuestos');
-      props.onRibbonMainTabChange?.('presupuestos');
-    }
-  }, [props.editorTab, props.onRibbonMainTabChange]);
 
   return (
     <div className="flex shrink-0 flex-col border-b border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
@@ -256,17 +244,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
             <button
               key={t.id}
               type="button"
-              onClick={() => {
-                setRibbonTab(t.id);
-                props.onRibbonMainTabChange?.(t.id);
-                if (t.id === 'presupuestos') props.onEditorTab('presupuestos');
-                if (t.id === 'inicio' || t.id === 'organizar' || t.id === 'tareas' || t.id === 'vista') {
-                  props.onEditorTab('canvas');
-                }
-                if (t.id === 'publicacion') {
-                  props.onEditorTab('canvas');
-                }
-              }}
+              onClick={() => props.onEditorTab(t.id)}
               className={cn(
                 'relative rounded-t-lg px-3 py-1.5 text-xs font-semibold transition',
                 ribbonTab === t.id ? 'bg-[#f8fafc] text-[#0f172a]' : 'text-[#64748b] hover:bg-[#f8fafc] hover:text-[#0f172a]',
@@ -295,12 +273,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
                   icon={FileInput}
                   label="Importar XML"
                   onClick={props.onImportXml}
-                  disabled={props.editorTab !== 'canvas'}
-                  title={
-                    props.editorTab !== 'canvas'
-                      ? 'Volvé a la pestaña Canvas para importar'
-                      : 'Importar Project XML al canvas'
-                  }
+                  title="Importar Project XML al canvas"
                 />
                 <RibbonButton
                   icon={CloudUpload}
@@ -313,7 +286,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
             </>
           )}
 
-          {(ribbonTab === 'inicio' || ribbonTab === 'organizar' || ribbonTab === 'tareas') && (
+          {ribbonTab === 'canvas' && (
             <>
               <RibbonGroup label="Crear">
                 <RibbonButton
@@ -488,61 +461,82 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
           {ribbonTab === 'presupuestos' && (
             <RibbonGroup label="Presupuestos">
               <RibbonButton
+                icon={FolderPlus}
+                label="Crear grupo"
+                disabled
+                isPlaceholder
+                title="Usá el panel de presupuestos para crear grupos"
+              />
+              <RibbonButton
                 icon={LayoutGrid}
-                label="Abrir pestaña"
-                onClick={() => props.onEditorTab('presupuestos')}
+                label="Abrir grupo"
+                disabled
+                isPlaceholder
+                title="Seleccioná un grupo en el panel lateral"
+              />
+              <RibbonButton
+                icon={CloudUpload}
+                label="Enviar grupo"
+                disabled
+                isPlaceholder
+                title="Enviá desde el detalle del grupo seleccionado"
               />
             </RibbonGroup>
           )}
 
-          {ribbonTab === 'publicacion' && (
-              <RibbonGroup label="Publicación">
-                <RibbonButton
-                  icon={Share2}
-                  label="Publicar tareas"
-                  onClick={props.onPublicar}
-                  disabled={!props.canvasHydrated || !props.tieneNodosTarea}
-                  title={
-                    !props.tieneNodosTarea
-                      ? 'Creá al menos una tarea para publicar'
-                      : 'Abrir publicación de tareas operativas'
-                  }
-                />
-                <RibbonButton
-                  icon={Share2}
-                  label="Revisar en canvas"
-                  onClick={props.onPublicar}
-                  disabled={!props.canvasHydrated || !props.tieneNodosTarea}
-                  title="Abre el mismo flujo; usá la cinta Publicación para colores en nodos"
-                />
-                <RibbonButton
-                  icon={CloudUpload}
-                  label="Enviar paquete"
-                  disabled
-                  isPlaceholder
-                  title="Próximamente"
-                />
-              </RibbonGroup>
-          )}
-
-          {ribbonTab === 'vista' && (
-            <RibbonGroup label="Vista">
+          {ribbonTab === 'publicar' && (
+            <RibbonGroup label="Publicación">
               <RibbonButton
-                icon={LayoutGrid}
-                label="Canvas"
-                onClick={() => props.onEditorTab('canvas')}
+                icon={Share2}
+                label="Publicar tareas"
+                onClick={props.onPublicar}
+                disabled={!props.canvasHydrated || !props.tieneNodosTarea}
+                title={
+                  !props.tieneNodosTarea
+                    ? 'Creá al menos una tarea para publicar'
+                    : 'Abrir publicación de tareas operativas'
+                }
+              />
+              <RibbonButton
+                icon={Filter}
+                label="Ver incompletas"
+                onClick={props.onPublicar}
+                disabled={!props.canvasHydrated || !props.tieneNodosTarea}
+                title="Abrir asistente de publicación"
               />
               <RibbonButton
                 icon={LayoutGrid}
-                label="Presupuestos"
-                onClick={() => props.onEditorTab('presupuestos')}
+                label="Organizar"
+                onClick={props.onGoOrganizar ?? (() => props.onEditorTab('canvas'))}
+                title="Volver al canvas jerárquico"
+              />
+            </RibbonGroup>
+          )}
+
+          {ribbonTab === 'cronograma' && (
+            <RibbonGroup label="Cronograma">
+              <RibbonButton icon={LayoutGrid} label="Semana" disabled isPlaceholder title="Vista activa: semana" />
+              <RibbonButton icon={Filter} label="Solo publicadas" disabled isPlaceholder title="Usá el filtro en la vista" />
+              <RibbonButton
+                icon={GitBranch}
+                label="Críticas"
+                disabled
+                isPlaceholder
+                title="Usá el filtro en la vista"
+              />
+              <RibbonButton
+                icon={LayoutGrid}
+                label="Agrupar"
+                disabled
+                isPlaceholder
+                title="Usá el control de agrupación en la vista"
               />
             </RibbonGroup>
           )}
         </div>
 
         {/* Acciones de contexto que antes estaban siempre visibles (etapas / subir) */}
-        {props.editorTab === 'canvas' && (
+        {props.editorTab === 'canvas' && ribbonTab === 'canvas' && (
           <div className="flex flex-wrap items-center gap-2 border-t border-[#f1f5f9] bg-[#fbfdff] px-3 py-2">
             {props.vistaEtapas ? (
               <button

@@ -20,7 +20,7 @@ import {
 } from './canvasMultinivelHelpers';
 import { CanvasLeftInspector } from './CanvasLeftInspector';
 import { CanvasProjectBrowser } from './CanvasProjectBrowser';
-import { CanvasEditorProChrome, CanvasEditorStatusBar } from './CanvasEditorProChrome';
+import { CanvasEditorProChrome, CanvasEditorStatusBar, type EditorTab } from './CanvasEditorProChrome';
 import { EtapasTimelineView } from './nivel-views/EtapasTimelineView';
 import { HubGridNivelView } from './nivel-views/HubGridNivelView';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
@@ -28,11 +28,15 @@ import { TareasCanvasPanel } from './TareasCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
 import { PublicarTareasCanvasModal } from './PublicarTareasCanvasModal';
 import { CanvasPresupuestosTab } from './CanvasPresupuestosTab';
+import { CanvasArchivoTab } from './CanvasArchivoTab';
+import { CanvasPublicarTab } from './CanvasPublicarTab';
+import { CanvasCronogramaTab } from './CanvasCronogramaTab';
 import { useCanvasMultinivel } from './useCanvasMultinivel';
 import type { ProjectImportPreview } from '@/lib/project/importProjectXml';
 import { parseProjectXml } from '@/lib/project/importProjectXml';
 import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
+import { publicationReviewCategory } from './canvasMultinivelHelpers';
 
 type Props = { obraId: string };
 
@@ -61,8 +65,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [projectImportBusy, setProjectImportBusy] = useState(false);
   const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
   const [publicarModalOpen, setPublicarModalOpen] = useState(false);
-  const [editorTab, setEditorTab] = useState<'canvas' | 'presupuestos'>('canvas');
-  const [publicationReviewMode, setPublicationReviewMode] = useState(false);
+  const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
@@ -188,8 +191,6 @@ export function CanvasObraEditor({ obraId }: Props) {
   ]);
 
   const vista = vistaPrincipalPorContenedor(containerNode, projectKind);
-  const publicationReviewActive =
-    publicationReviewMode && vista === 'tareas' && editorTab === 'canvas';
   const cabecera = useMemo(
     () => cabeceraContextoNivel(obraNombre, containerNode, projectKind),
     [obraNombre, containerNode, projectKind],
@@ -244,6 +245,33 @@ export function CanvasObraEditor({ obraId }: Props) {
       nodes.filter((n) => n.type === 'tarea' && tareaPublicacionByNodeId[n.id]?.publishedAt).length,
     [nodes, tareaPublicacionByNodeId],
   );
+  const publicationStats = useMemo(() => {
+    const tasks = nodes.filter((n) => n.type === 'tarea');
+    let published = 0;
+    let incomplete = 0;
+    let blocked = 0;
+    let draft = 0;
+    for (const t of tasks) {
+      const cat = publicationReviewCategory(t, tareaPublicacionByNodeId);
+      if (cat === 'published') published += 1;
+      else if (cat === 'incomplete') incomplete += 1;
+      else if (cat === 'blocked') blocked += 1;
+      else draft += 1;
+    }
+    return {
+      total: tasks.length,
+      published,
+      unpublished: Math.max(0, tasks.length - published),
+      incomplete,
+      blocked,
+      draft,
+    };
+  }, [nodes, tareaPublicacionByNodeId]);
+
+  const showProjectBrowser = editorTab === 'canvas' || editorTab === 'presupuestos';
+  const showBreadcrumb = editorTab === 'canvas';
+  const showInspector = editorTab === 'canvas' || editorTab === 'cronograma';
+
   const userLabel = useMemo(() => {
     const r = (currentUser?.role as string) || '';
     const name = currentUser?.email?.split('@')[0] || 'Usuario';
@@ -297,11 +325,15 @@ export function CanvasObraEditor({ obraId }: Props) {
   }, []);
 
   const modoStatusBar =
-    editorTab === 'presupuestos'
-      ? 'Presupuestos'
-      : publicationReviewActive
-        ? 'Publicación'
-        : 'Canvas';
+    editorTab === 'archivo'
+      ? 'Archivo'
+      : editorTab === 'publicar'
+        ? 'Publicar'
+        : editorTab === 'cronograma'
+          ? 'Cronograma'
+          : editorTab === 'presupuestos'
+            ? 'Presupuestos'
+            : 'Organizar';
 
   const vistaCentral = (
     <>
@@ -410,7 +442,7 @@ export function CanvasObraEditor({ obraId }: Props) {
               removeEdgeIds={removeEdgeIds}
               tareaPublicacionByNodeId={tareaPublicacionByNodeId}
               budgetGroups={budgetGroups}
-              publicationReviewMode={publicationReviewActive}
+              publicationReviewMode={false}
               onOpenPublishModal={() => setPublicarModalOpen(true)}
               onZoomPercentChange={handleCanvasZoomPercent}
             />
@@ -515,9 +547,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         }}
         duplicateDisabled={!selectedId}
         deleteDisabled={!selectedId}
-        onRibbonMainTabChange={(tab) => {
-          setPublicationReviewMode(tab === 'publicacion');
-        }}
+        onGoOrganizar={() => setEditorTab('canvas')}
       />
 
       {cloudSaveMessage ? (
@@ -534,49 +564,54 @@ export function CanvasObraEditor({ obraId }: Props) {
         </div>
       ) : null}
 
-      <div className="border-b border-[#e5e7eb] bg-[#f6f8fa] px-3 py-2 xl:hidden">
-        {renderBreadcrumb(true)}
-      </div>
+      {showBreadcrumb ? (
+        <div className="border-b border-[#e5e7eb] bg-[#f6f8fa] px-3 py-2 xl:hidden">
+          {renderBreadcrumb(true)}
+        </div>
+      ) : null}
 
       <div className="mx-auto flex w-full max-w-[1920px] flex-1 min-h-0 gap-3 px-3 pb-3">
-        <CanvasProjectBrowser
-          obraNombre={obraNombre}
-          nodes={nodes}
-          projectKind={projectKind}
-          pathIds={pathIds}
-          containerId={containerId}
-          selectedId={selectedId}
-          tareaPublicacionByNodeId={tareaPublicacionByNodeId}
-          onGoRoot={() => goToBreadcrumbIndex(0)}
-          onNavigateToNode={openPathToNode}
-        />
+        {showProjectBrowser ? (
+          <CanvasProjectBrowser
+            obraNombre={obraNombre}
+            nodes={nodes}
+            projectKind={projectKind}
+            pathIds={pathIds}
+            containerId={containerId}
+            selectedId={selectedId}
+            tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+            onGoRoot={() => goToBreadcrumbIndex(0)}
+            onNavigateToNode={openPathToNode}
+          />
+        ) : null}
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col py-3">
-          <div className="mb-3 hidden xl:block">{renderBreadcrumb()}</div>
+          {showBreadcrumb ? <div className="mb-3 hidden xl:block">{renderBreadcrumb()}</div> : null}
 
           <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
-            <button
-              type="button"
-              onClick={() => setEditorTab('canvas')}
-              className={cn(
-                'rounded border px-2 py-1 text-[11px] font-bold',
-                editorTab === 'canvas' ? 'border-[#2563eb] bg-white text-[#1e40af]' : 'border-[#cbd5e1] bg-white/70',
-              )}
-            >
-              Canvas
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditorTab('presupuestos')}
-              className={cn(
-                'rounded border px-2 py-1 text-[11px] font-bold',
-                editorTab === 'presupuestos'
-                  ? 'border-[#2563eb] bg-white text-[#1e40af]'
-                  : 'border-[#cbd5e1] bg-white/70',
-              )}
-            >
-              Presupuestos
-            </button>
+            {(
+              [
+                { id: 'archivo' as const, label: 'Archivo' },
+                { id: 'canvas' as const, label: 'Organizar' },
+                { id: 'presupuestos' as const, label: 'Presupuestos' },
+                { id: 'publicar' as const, label: 'Publicar' },
+                { id: 'cronograma' as const, label: 'Cronograma' },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setEditorTab(tab.id)}
+                className={cn(
+                  'rounded border px-2 py-1 text-[11px] font-bold',
+                  editorTab === tab.id
+                    ? 'border-[#2563eb] bg-white text-[#1e40af]'
+                    : 'border-[#cbd5e1] bg-white/70',
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {editorTab === 'canvas' && muestraLegendCritico && (
@@ -592,7 +627,40 @@ export function CanvasObraEditor({ obraId }: Props) {
           )}
 
           <div className="flex min-h-[min(64vh,720px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-            {editorTab === 'presupuestos' ? (
+            {editorTab === 'archivo' ? (
+              <CanvasArchivoTab
+                obraNombre={obraNombre}
+                cloudSaveState={cloudSaveState}
+                cloudSaveMessage={cloudSaveMessage}
+                canvasHydrated={canvasHydrated}
+                onImportXml={openProjectXmlPicker}
+                onSaveCloud={() => {
+                  void saveCanvasSnapshotToCloud();
+                }}
+                importBusy={projectImportBusy}
+              />
+            ) : editorTab === 'publicar' ? (
+              <CanvasPublicarTab
+                obraNombre={obraNombre}
+                stats={publicationStats}
+                canvasHydrated={canvasHydrated}
+                tieneNodosTarea={tieneNodosTarea}
+                onOpenPublishModal={() => setPublicarModalOpen(true)}
+                onGoOrganizar={() => setEditorTab('canvas')}
+              />
+            ) : editorTab === 'cronograma' ? (
+              <CanvasCronogramaTab
+                obraNombre={obraNombre}
+                nodes={nodes}
+                edges={edges}
+                tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+                selectedId={selectedId}
+                onSelectTask={(id) => {
+                  setSelectedId(id);
+                  setInspectorOpen(true);
+                }}
+              />
+            ) : editorTab === 'presupuestos' ? (
               <CanvasPresupuestosTab
                 obraId={obraId}
                 obraNombre={obraNombre}
@@ -628,37 +696,39 @@ export function CanvasObraEditor({ obraId }: Props) {
           onAfterPublish={() => void refreshTareaPublicacion()}
         />
 
-        <CanvasLeftInspector
-          obraId={obraId}
-          projectKind={projectKind}
-          taskCpmBundle={taskCpmBundle}
-          selectedEdge={selectedEdge}
-          selectedNode={selectedNode}
-          nodes={nodes}
-          edges={edges}
-          siblingEdges={siblingEdges}
-          containerId={containerId}
-          patchEdge={patchEdge}
-          removeEdgeIds={removeEdgeIds}
-          setSelectedEdgeId={setSelectedEdgeId}
-          patchNode={patchNode}
-          enterNode={enterNode}
-          createChildOf={createChildOf}
-          deleteNode={deleteNode}
-          duplicateNode={duplicateNode}
-          addChecklistItem={addChecklistItem}
-          toggleChecklistItem={toggleChecklistItem}
-          updateChecklistLabel={updateChecklistLabel}
-          removeChecklistItem={removeChecklistItem}
-          tryPrecedenceConnection={tryPrecedenceConnection}
-          budgetGroups={budgetGroups}
-          createBudgetGroup={createBudgetGroup}
-          applyBudgetGroupToNode={applyBudgetGroupToNode}
-          tareaPublicacionByNodeId={tareaPublicacionByNodeId}
-          onOpenPublishModal={() => setPublicarModalOpen(true)}
-          isOpen={inspectorOpen}
-          onToggleOpen={() => setInspectorOpen((v) => !v)}
-        />
+        {showInspector ? (
+          <CanvasLeftInspector
+            obraId={obraId}
+            projectKind={projectKind}
+            taskCpmBundle={taskCpmBundle}
+            selectedEdge={selectedEdge}
+            selectedNode={selectedNode}
+            nodes={nodes}
+            edges={edges}
+            siblingEdges={siblingEdges}
+            containerId={containerId}
+            patchEdge={patchEdge}
+            removeEdgeIds={removeEdgeIds}
+            setSelectedEdgeId={setSelectedEdgeId}
+            patchNode={patchNode}
+            enterNode={enterNode}
+            createChildOf={createChildOf}
+            deleteNode={deleteNode}
+            duplicateNode={duplicateNode}
+            addChecklistItem={addChecklistItem}
+            toggleChecklistItem={toggleChecklistItem}
+            updateChecklistLabel={updateChecklistLabel}
+            removeChecklistItem={removeChecklistItem}
+            tryPrecedenceConnection={tryPrecedenceConnection}
+            budgetGroups={budgetGroups}
+            createBudgetGroup={createBudgetGroup}
+            applyBudgetGroupToNode={applyBudgetGroupToNode}
+            tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+            onOpenPublishModal={() => setPublicarModalOpen(true)}
+            isOpen={inspectorOpen}
+            onToggleOpen={() => setInspectorOpen((v) => !v)}
+          />
+        ) : null}
       </div>
       <CanvasEditorStatusBar
         nivelLabel={cabecera.nivelActualTitulo}

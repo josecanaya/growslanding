@@ -205,12 +205,12 @@ export function CanvasProjectBrowser({
       <div key={n.id} className="select-none">
         <div
           className={cn(
-            'flex items-center gap-0.5 rounded py-0.5 pr-1',
+            'flex items-center gap-0.5 rounded-lg py-1 pr-1 transition-colors',
             isActive
-              ? 'bg-[#2563eb]/40 text-white ring-1 ring-[#93c5fd]/50'
+              ? 'bg-[#eff6ff] text-[#1d4ed8] ring-1 ring-[#bfdbfe]'
               : isSelected
-                ? 'bg-[#2d6cdf]/35 text-white'
-                : 'text-[#c5d0dc] hover:bg-white/5',
+                ? 'bg-[#f1f5f9] text-[#0f172a] ring-1 ring-[#e2e8f0]'
+                : 'text-[#334155] hover:bg-[#f8fafc]',
           )}
           style={{ paddingLeft: 4 + depth * 10 }}
           title={titleTip}
@@ -218,7 +218,7 @@ export function CanvasProjectBrowser({
           {hasKids ? (
             <button
               type="button"
-              className="flex h-5 w-5 shrink-0 items-center justify-center text-[#8fa3b8] hover:text-white"
+              className="flex h-5 w-5 shrink-0 items-center justify-center text-[#94a3b8] hover:text-[#0f172a]"
               aria-label={isOpen ? 'Contraer' : 'Expandir'}
               onClick={(e) => {
                 e.stopPropagation();
@@ -236,14 +236,14 @@ export function CanvasProjectBrowser({
             onClick={() => onNavigateToNode(n.id)}
           >
             <div className="flex min-w-0 items-center gap-1.5">
-              <Ico className="h-3 w-3 shrink-0 opacity-80" strokeWidth={2} />
+              <Ico className="h-3 w-3 shrink-0 text-[#64748b]" strokeWidth={2} />
               <span className="min-w-0 truncate text-[11px] font-medium leading-tight">{n.title}</span>
-              <span className="ml-auto shrink-0 text-[9px] uppercase tracking-tight text-[#7a8fa3]">
+              <span className="ml-auto shrink-0 rounded-full bg-[#f1f5f9] px-1.5 py-0.5 text-[9px] uppercase tracking-tight text-[#64748b]">
                 {n.type === 'tarea' ? '' : labelTipoNodo(n.type, projectKind).slice(0, 3)}
               </span>
             </div>
             {subline ? (
-              <span className="truncate pl-[22px] text-[9px] leading-tight text-[#8fa3b8]">{subline}</span>
+              <span className="truncate pl-[22px] text-[9px] leading-tight text-[#64748b]">{subline}</span>
             ) : null}
           </button>
         </div>
@@ -253,19 +253,19 @@ export function CanvasProjectBrowser({
   };
 
   return (
-    <aside className="flex h-full min-h-0 w-[260px] shrink-0 flex-col border-r border-[#1a2330] bg-[#252f3d] text-[#e8eef4] max-xl:hidden">
-      <div className="shrink-0 border-b border-[#1a2330] px-2 py-2">
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#7dd3fc]/90">
+    <aside className="my-3 flex h-[calc(100%-1.5rem)] min-h-0 w-[272px] shrink-0 flex-col rounded-2xl border border-[#e5e7eb] bg-white text-[#0f172a] shadow-[0_1px_3px_rgba(15,23,42,0.05)] max-xl:hidden">
+      <div className="shrink-0 border-b border-[#f1f5f9] px-3 py-3">
+        <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#64748b]">
           Project Browser
         </p>
         <div className="relative mt-2">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#64748b]" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar en obra…"
-            className="w-full rounded-md border border-[#334155] bg-[#1e293b] py-1.5 pl-8 pr-2 text-[11px] text-slate-100 placeholder:text-slate-500 outline-none focus:border-[#2563eb]"
+            className="w-full rounded-xl border border-[#e5e7eb] bg-[#f8fafc] py-2 pl-8 pr-2 text-[11px] text-[#0f172a] placeholder:text-[#94a3b8] outline-none focus:border-[#bfdbfe] focus:bg-white"
             aria-label="Buscar en obra"
           />
         </div>
@@ -276,12 +276,12 @@ export function CanvasProjectBrowser({
             type="button"
             onClick={onGoRoot}
             className={cn(
-              'flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11px] font-semibold',
-              pathIds.length === 0 ? 'bg-[#2d6cdf]/40 text-white' : 'text-[#c5d0dc] hover:bg-white/5',
+              'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-left text-[11px] font-semibold transition-colors',
+              pathIds.length === 0 ? 'bg-[#eff6ff] text-[#1d4ed8] ring-1 ring-[#bfdbfe]' : 'text-[#334155] hover:bg-[#f8fafc]',
             )}
             title={obraNombre || 'Obra'}
           >
-            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[#93c5fd]" />
+            <FolderOpen className="h-3.5 w-3.5 shrink-0 text-[#2563eb]" />
             <span className="min-w-0 truncate">{obraNombre || 'Obra'}</span>
           </button>
         </div>

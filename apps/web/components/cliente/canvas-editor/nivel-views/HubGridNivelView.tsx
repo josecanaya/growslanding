@@ -191,27 +191,25 @@ export function HubGridNivelView({
   const HubIcon = iconForVariant(variant);
 
   return (
-    <div className="relative min-h-[min(68vh,760px)] overflow-hidden rounded-[28px] bg-[#f6fafe] p-7 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#dfe3e7_1px,transparent_1px)] [background-size:28px_28px]" />
-      <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#cfe5ff]/45 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 left-1/3 h-72 w-72 rounded-full bg-[#85f8c4]/18 blur-3xl" />
+    <div className="relative min-h-[min(68vh,760px)] overflow-hidden rounded-2xl bg-[#f8fafc] p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:28px_28px]" />
 
       <div className="relative z-10">
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#24a375]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
               {m.eyebrow}
             </p>
-            <h2 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#001629]">
+            <h2 className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#0f172a]">
               {m.title}
             </h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-[#545f6e]">{m.subtitle}</p>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-[#64748b]">{m.subtitle}</p>
           </div>
-          <div className="rounded-2xl bg-white/80 px-4 py-3 text-right shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#7a8492]">
+          <div className="rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-right shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#94a3b8]">
               Elementos
             </p>
-            <p className="text-2xl font-black text-[#001629]">{items.length}</p>
+            <p className="text-2xl font-bold text-[#0f172a]">{items.length}</p>
           </div>
         </div>
 
@@ -229,27 +227,26 @@ export function HubGridNivelView({
           />
         ) : (
           <div className={cn('grid gap-7', variant === 'planta' ? 'xl:grid-cols-[380px_1fr]' : 'xl:grid-cols-[300px_1fr]')}>
-            <div className="relative overflow-hidden rounded-[32px] bg-[#001629] p-8 text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]">
-              <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-[#cfe5ff]/18 blur-2xl" />
-              <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-[#cfe5ff] ring-1 ring-white/10">
-                <HubIcon className="h-7 w-7" strokeWidth={1.7} />
+            <div className="relative overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eff6ff] text-[#2563eb]">
+                <HubIcon className="h-6 w-6" strokeWidth={1.7} />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#85f8c4]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
                 {m.hubBadge}
               </p>
-              <h3 className="mt-3 line-clamp-3 text-3xl font-black tracking-[-0.04em]">
+              <h3 className="mt-2 line-clamp-3 text-2xl font-bold tracking-[-0.03em] text-[#0f172a]">
                 {hubNode.title}
               </h3>
-              <p className="mt-4 line-clamp-5 text-sm leading-6 text-white/70">
+              <p className="mt-3 line-clamp-5 text-sm leading-6 text-[#64748b]">
                 {hubNode.descripcion?.trim() ||
                   'Agregá una descripción en el inspector para orientar la ejecución del equipo.'}
               </p>
-              <div className="mt-8 grid grid-cols-2 gap-3">
-                <MetricTile label="Estado" value={labelEstadoNivel(hubNode.estadoNivel)} dark />
-                <MetricTile label="Avance" value={`${progressValue(hubNode)}%`} dark />
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <MetricTile label="Estado" value={labelEstadoNivel(hubNode.estadoNivel)} />
+                <MetricTile label="Avance" value={`${progressValue(hubNode)}%`} />
               </div>
               {variant === 'ambiente' ? (
-                <p className="mt-6 rounded-2xl bg-white/10 px-4 py-3 text-sm font-semibold text-white/78">
+                <p className="mt-5 rounded-2xl bg-[#eff6ff] px-4 py-3 text-sm font-semibold text-[#1d4ed8]">
                   Cada ambiente abre el canvas operativo de tareas con precedencias, checklist y camino crítico.
                 </p>
               ) : null}
@@ -366,8 +363,8 @@ function SectorHubMap({
   ];
   return (
     <div className="grid gap-7 xl:grid-cols-[minmax(560px,1fr)_340px]">
-      <div className="relative min-h-[560px] overflow-hidden rounded-[32px] bg-[#eaeef2]/85 p-8 shadow-[0_12px_32px_rgba(23,28,31,0.06)]">
-        <div className="pointer-events-none absolute inset-6 rounded-[28px] border border-white/50" />
+      <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white p-8 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+        <div className="pointer-events-none absolute inset-6 rounded-[28px] border border-[#f1f5f9]" />
         <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-20" aria-hidden>
           <line x1="50%" x2="18%" y1="50%" y2="24%" stroke="#001629" strokeWidth="2" />
           <line x1="50%" x2="82%" y1="50%" y2="24%" stroke="#001629" strokeWidth="2" />
@@ -375,15 +372,15 @@ function SectorHubMap({
           <line x1="50%" x2="84%" y1="50%" y2="76%" stroke="#001629" strokeWidth="2" />
           <line x1="50%" x2="50%" y1="50%" y2="90%" stroke="#001629" strokeWidth="2" />
         </svg>
-        <div className="absolute left-1/2 top-1/2 z-20 flex h-56 w-56 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-[#002b49] text-center text-white shadow-2xl shadow-[#001629]/15 ring-[10px] ring-white">
-          <Layers3 className="mb-3 h-9 w-9 text-[#cfe5ff]" strokeWidth={1.5} />
-          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#85f8c4]">
+        <div className="absolute left-1/2 top-1/2 z-20 flex h-56 w-56 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-[#dbeafe] bg-[#eff6ff] text-center text-[#0f172a] shadow-[0_8px_24px_rgba(15,23,42,0.08)] ring-[10px] ring-white">
+          <Layers3 className="mb-3 h-9 w-9 text-[#2563eb]" strokeWidth={1.5} />
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#1d4ed8]">
             {m.hubBadge}
           </p>
-          <p className="mt-2 line-clamp-2 px-6 text-2xl font-black tracking-[-0.04em]">
+          <p className="mt-2 line-clamp-2 px-6 text-2xl font-bold tracking-[-0.04em]">
             {hubNode.title}
           </p>
-          <p className="mt-2 text-[11px] text-white/60">
+          <p className="mt-2 text-[11px] text-[#64748b]">
             {items.length}{' '}
             {labelTipoNodo('sector', projectKind).toLowerCase()}
             {items.length === 1 ? '' : 's'}
@@ -412,11 +409,11 @@ function SectorHubMap({
         )}
       </div>
 
-      <div className="rounded-[32px] bg-white/82 p-5 shadow-[0_12px_32px_rgba(23,28,31,0.06)] backdrop-blur-md">
-        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#24a375]">
+      <div className="rounded-2xl border border-[#e5e7eb] bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
           Sectores visibles
         </p>
-        <p className="mt-2 text-sm leading-6 text-[#545f6e]">
+        <p className="mt-2 text-sm leading-6 text-[#64748b]">
           Mapa interno de planta. Seleccioná una pieza para editarla o doble click para entrar.
         </p>
         <div className="mt-5 space-y-3">
@@ -432,13 +429,13 @@ function SectorHubMap({
                 onEnter(n.id);
               }}
               className={cn(
-                'w-full rounded-2xl bg-[#f0f4f8] px-4 py-3 text-left transition hover:bg-[#e4e9ed]',
-                selectedId === n.id ? 'ring-2 ring-[#24a375]' : null,
+                'w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 text-left transition hover:bg-[#f8fafc]',
+                selectedId === n.id ? 'ring-2 ring-[#2563eb]' : null,
               )}
               title={rollup && rollup.taskCount > 0 ? `${n.title} · ${rollup.taskCount} tareas` : n.title}
             >
-              <p className="truncate text-sm font-black text-[#001629]">{n.title}</p>
-              <p className="mt-1 text-[11px] font-semibold text-[#596574]">
+              <p className="truncate text-sm font-bold text-[#0f172a]">{n.title}</p>
+              <p className="mt-1 text-[11px] font-semibold text-[#64748b]">
                 {rollup && rollup.taskCount > 0 ? (
                   <>
                     {rollup.taskCount} tareas · {rollup.publishedCount} pub. · {rollup.unpublishedCount} sin pub.
@@ -494,19 +491,19 @@ function SpatialSectorCard({
       }}
       title={`${node.title} · ${line2}`}
       className={cn(
-        'absolute z-30 flex h-36 w-40 flex-col items-center justify-center rounded-[24px] bg-white p-4 text-center shadow-[0_12px_32px_rgba(23,28,31,0.09)] transition hover:-translate-y-0.5',
-        selected ? 'ring-2 ring-[#24a375] ring-offset-4 ring-offset-[#eaeef2]' : 'ring-1 ring-[#c3c7ce]/20',
+        'absolute z-30 flex h-36 w-40 flex-col items-center justify-center rounded-2xl bg-white p-4 text-center shadow-[0_4px_16px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5',
+        selected ? 'ring-2 ring-[#2563eb] ring-offset-4 ring-offset-white' : 'ring-1 ring-[#e5e7eb]',
         className,
       )}
     >
       <div className={cn('mb-2 flex h-10 w-10 items-center justify-center rounded-full', st.soft)}>
         <Layers3 className="h-5 w-5 text-[#001629]" strokeWidth={1.6} />
       </div>
-      <p className="line-clamp-2 text-sm font-black text-[#001629]">{node.title}</p>
+      <p className="line-clamp-2 text-sm font-bold text-[#0f172a]">{node.title}</p>
       <span className={cn('mt-2 rounded-full px-2 py-0.5 text-[9px] font-black uppercase', st.chip)}>
         {labelEstadoNivel(node.estadoNivel)}
       </span>
-      <p className="mt-2 text-[10px] font-semibold leading-tight text-[#596574]">{line2}</p>
+      <p className="mt-2 text-[10px] font-semibold leading-tight text-[#64748b]">{line2}</p>
     </button>
   );
 }
@@ -548,11 +545,11 @@ function LevelCard({
       }}
       className={cn(
         variant === 'ambiente'
-          ? 'group relative min-h-[174px] overflow-hidden rounded-[24px] bg-white p-5 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]'
-          : 'group relative min-h-[248px] overflow-hidden rounded-[28px] bg-white p-6 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]',
+          ? 'group relative min-h-[174px] overflow-hidden rounded-2xl bg-white p-5 text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+          : 'group relative min-h-[232px] overflow-hidden rounded-2xl bg-white p-5 text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]',
         selected
-          ? 'ring-2 ring-[#24a375] ring-offset-4 ring-offset-[#f6fafe]'
-          : 'ring-1 ring-[#c3c7ce]/25',
+          ? 'ring-2 ring-[#2563eb] ring-offset-4 ring-offset-[#f8fafc]'
+          : 'ring-1 ring-[#e5e7eb]',
       )}
       title={
         rollup && rollup.taskCount > 0
@@ -573,7 +570,7 @@ function LevelCard({
       <p className={cn('text-[10px] font-black uppercase tracking-[0.18em] text-[#9aa3b2]', variant === 'ambiente' ? 'mt-4' : 'mt-6')}>
         {labelTipoNodo(node.type, projectKind)} · {String(index + 1).padStart(2, '0')}
       </p>
-      <h3 className={cn('mt-1 line-clamp-2 font-black tracking-[-0.03em] text-[#001629]', variant === 'ambiente' ? 'text-lg' : 'text-2xl')}>
+      <h3 className={cn('mt-1 line-clamp-2 font-bold tracking-[-0.03em] text-[#0f172a]', variant === 'ambiente' ? 'text-lg' : 'text-xl')}>
         {node.title}
       </h3>
       {node.tipoLabel ? (
@@ -588,7 +585,7 @@ function LevelCard({
       </div>
 
       {rollup && rollup.taskCount > 0 ? (
-        <p className="mt-3 text-[10px] font-semibold leading-snug text-[#475569]">
+        <p className="mt-3 text-[11px] font-semibold leading-snug text-[#475569]">
           {rollup.taskCount} tareas · {rollup.publishedCount} publicadas · {rollup.unpublishedCount} sin publicar
           {rollup.presupuestadasCount > 0 ? ` · ${rollup.presupuestadasCount} con presupuesto` : ''}
         </p>

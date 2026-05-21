@@ -370,7 +370,7 @@ export function TareasCanvasPanel({
 
   return (
     <div
-      className="relative isolate h-[min(68vh,760px)] min-h-[420px] w-full overflow-hidden rounded-2xl border border-[#cdd1de] bg-[#eef0f7] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]"
+      className="relative isolate h-[min(68vh,760px)] min-h-[420px] w-full overflow-hidden rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]"
     >
       {visibleNodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8">
@@ -415,7 +415,7 @@ export function TareasCanvasPanel({
         multiSelectionKeyCode="Shift"
         proOptions={{ hideAttribution: true }}
         elevateEdgesOnSelect
-        className="h-full w-full !bg-[linear-gradient(transparent,rgba(255,255,255,0.25))]"
+        className="h-full w-full !bg-[linear-gradient(transparent,rgba(255,255,255,0.35))]"
         connectionLineStyle={{ stroke: '#0042c8', strokeWidth: 2 }}
         deleteKeyCode={['Backspace', 'Delete']}
       >
@@ -451,15 +451,15 @@ export function TareasCanvasPanel({
           showFitView
           showInteractive={false}
           position="top-left"
-          className="!m-3 !overflow-hidden !rounded-xl !border !border-[#c8ccd9] !bg-white/95 !shadow-md"
+          className="!m-3 !overflow-hidden !rounded-xl !border !border-[#e5e7eb] !bg-white/95 !shadow-sm"
         />
         <Background
           id="tareas-grid"
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.15}
-          color="#c4c9d8"
-          className="!bg-[#e8eaf3]"
+          color="#d7dde8"
+          className="!bg-[#f8fafc]"
         />
         <CanvasFloatingToolbar connectMode={connectMode} onToggleConnect={onToggleConnect} />
       </ReactFlow>

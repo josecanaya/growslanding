@@ -4,7 +4,11 @@ import { ArrowUpRight, ChevronRight, Layers3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CanvasNode } from '@/lib/types/canvasMultinivel';
 import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
-import { labelEstadoNivel, labelTipoNodo } from '../canvasMultinivelHelpers';
+import {
+  labelEstadoNivel,
+  labelTipoNodo,
+  type DescendantTaskRollup,
+} from '../canvasMultinivelHelpers';
 
 type Props = {
   projectKind: CanvasProjectKind;
@@ -17,6 +21,7 @@ type Props = {
   onConnectFirst: (id: string) => void;
   onConnectSecond: (sourceId: string, targetId: string) => boolean;
   childCount: (id: string) => number;
+  getDescendantRollup?: (nodeId: string) => DescendantTaskRollup;
 };
 
 function progressValue(n: CanvasNode): number {
@@ -63,25 +68,25 @@ export function EtapasTimelineView({
   onConnectFirst,
   onConnectSecond,
   childCount,
+  getDescendantRollup,
 }: Props) {
   return (
-    <div className="relative flex min-h-[min(68vh,760px)] w-full flex-col overflow-hidden rounded-[30px] bg-[#f6fafe] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#dfe3e7_1px,transparent_1px)] [background-size:30px_30px]" />
-      <div className="pointer-events-none absolute -right-24 top-10 h-72 w-72 rounded-full bg-[#cfe5ff]/45 blur-3xl" />
-      <div className="relative z-10 mb-8 flex flex-wrap items-start justify-between gap-4">
+    <div className="relative flex min-h-[min(68vh,760px)] w-full flex-col overflow-hidden rounded-2xl bg-[#f8fafc] p-6">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:28px_28px]" />
+      <div className="relative z-10 mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-[#24a375]">
-            Macro secuencia
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
+            Obra / Fases
           </p>
-          <h2 className="mt-2 text-4xl font-black tracking-[-0.04em] text-[#001629]">
+          <h2 className="mt-1 text-2xl font-bold tracking-[-0.03em] text-[#0f172a]">
             Etapas de la obra
           </h2>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[#545f6e]">
+          <p className="mt-1 max-w-xl text-sm leading-6 text-[#64748b]">
             Orden macro de ejecución. Doble click para abrir una fase y descomponerla en plantas o sectores.
           </p>
         </div>
         {connectMode ? (
-          <span className="rounded-full bg-[#d7e4f5] px-4 py-2 text-xs font-black text-[#0f3d66] shadow-sm">
+          <span className="rounded-full bg-[#eff6ff] px-4 py-2 text-xs font-bold text-[#1d4ed8] ring-1 ring-[#bfdbfe]">
             {pendingSourceId
               ? 'Elegí la etapa destino (derecha en el tiempo).'
               : 'Elegí la etapa origen (izquierda en el tiempo).'}
@@ -91,19 +96,20 @@ export function EtapasTimelineView({
 
       {ordered.length === 0 ? null : (
         <div className="relative z-10 flex-1 overflow-x-auto pb-3">
-          <div className="flex min-h-[430px] min-w-min items-center gap-0 px-3">
+          <div className="flex min-h-[420px] min-w-min items-center gap-0 px-3">
             {ordered.map((n, idx) => {
               const st = statusStyle(n);
               const pct = progressValue(n);
+              const rollup = getDescendantRollup?.(n.id);
               return (
               <div key={n.id} className="flex shrink-0 items-center">
                 {idx > 0 && (
                   <div className="flex items-center px-2" aria-hidden>
-                    <div className="h-px w-10 bg-[#bbc8d8]" />
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-[0_12px_32px_rgba(23,28,31,0.06)]">
-                      <ChevronRight className="h-5 w-5 text-[#406182]" />
+                    <div className="h-px w-10 bg-[#cbd5e1]" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full border border-[#e5e7eb] bg-white">
+                      <ChevronRight className="h-5 w-5 text-[#64748b]" />
                     </div>
-                    <div className="h-px w-10 bg-[#bbc8d8]" />
+                    <div className="h-px w-10 bg-[#cbd5e1]" />
                   </div>
                 )}
                 <button
@@ -122,46 +128,47 @@ export function EtapasTimelineView({
                     if (!connectMode) onEnter(n.id);
                   }}
                   className={cn(
-                    'group relative w-[min(330px,80vw)] overflow-hidden rounded-[28px] bg-white px-6 py-6 text-left shadow-[0_12px_32px_rgba(23,28,31,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(23,28,31,0.10)]',
+                    'group relative w-[min(320px,80vw)] overflow-hidden rounded-2xl bg-white px-5 py-5 text-left shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]',
                     selectedId === n.id && !connectMode
-                      ? 'ring-2 ring-[#24a375] ring-offset-4 ring-offset-[#f6fafe]'
-                      : 'ring-1 ring-[#c3c7ce]/25',
+                      ? 'ring-2 ring-[#2563eb] ring-offset-4 ring-offset-[#f8fafc]'
+                      : 'ring-1 ring-[#e5e7eb]',
                     connectMode && pendingSourceId === n.id
-                      ? 'ring-2 ring-amber-400 ring-offset-4 ring-offset-[#f6fafe]'
+                      ? 'ring-2 ring-amber-400 ring-offset-4 ring-offset-[#f8fafc]'
                       : null,
                   )}
                 >
                   <div className={cn('absolute inset-x-0 top-0 h-1.5', st.line)} />
                   <div className="flex items-start justify-between gap-4">
-                    <div className={cn('flex h-14 w-14 items-center justify-center rounded-2xl', st.icon)}>
-                      <Layers3 className="h-7 w-7" strokeWidth={1.6} />
+                    <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl', st.icon)}>
+                      <Layers3 className="h-5 w-5" strokeWidth={1.7} />
                     </div>
                     <span className={cn('rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em]', st.chip)}>
                       {labelEstadoNivel(n.estadoNivel)}
                     </span>
                   </div>
-                  <span className="mt-7 block text-[10px] font-black uppercase tracking-[0.18em] text-[#8a94a5]">
+                  <span className="mt-5 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#94a3b8]">
                     {labelTipoNodo(n.type, projectKind)} · {String(idx + 1).padStart(2, '0')}
                   </span>
-                  <p className="mt-2 line-clamp-2 text-2xl font-black leading-tight tracking-[-0.04em] text-[#001629]">
+                  <p className="mt-2 line-clamp-2 text-xl font-bold leading-tight tracking-[-0.03em] text-[#0f172a]">
                     {n.title}
                   </p>
-                  <div className="mt-6 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-[#f0f4f8] px-3 py-3">
-                      <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-[#7f8b9b]">
-                        Hijos
-                      </span>
-                      <span className="mt-1 block text-sm font-black text-[#001629]">
-                        {childCount(n.id)}
-                      </span>
+                  <div className="mt-4 space-y-1.5 text-sm text-[#64748b]">
+                    <p>
+                      <span className="font-semibold text-[#0f172a]">{rollup?.taskCount ?? 0}</span> tareas
+                    </p>
+                    <p>
+                      {rollup?.publishedCount ?? 0} publicadas · {rollup?.unpublishedCount ?? 0} pendientes
+                    </p>
+                    <p>{rollup?.presupuestadasCount ?? 0} grupos de presupuesto</p>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-[#f8fafc] px-3 py-2">
+                      <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">Hijos</span>
+                      <span className="mt-1 block text-sm font-bold text-[#0f172a]">{childCount(n.id)}</span>
                     </div>
-                    <div className="rounded-2xl bg-[#f0f4f8] px-3 py-3">
-                      <span className="block text-[9px] font-black uppercase tracking-[0.16em] text-[#7f8b9b]">
-                        Avance
-                      </span>
-                      <span className="mt-1 block text-sm font-black text-[#001629]">
-                        {pct}%
-                      </span>
+                    <div className="rounded-xl bg-[#f8fafc] px-3 py-2">
+                      <span className="block text-[9px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">Avance</span>
+                      <span className="mt-1 block text-sm font-bold text-[#0f172a]">{pct}%</span>
                     </div>
                   </div>
                   <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[#e4e9ed]">

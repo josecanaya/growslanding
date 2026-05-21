@@ -113,25 +113,25 @@ function RibbonButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-0.5 rounded border border-transparent px-1.5 py-1 text-[10px] font-medium transition',
+        'flex items-center gap-1.5 rounded-lg border border-transparent px-2.5 py-1.5 text-[11px] font-semibold transition',
         isPlaceholder
-          ? 'cursor-not-allowed border-dashed border-[#cbd5e1] bg-[#f1f5f9] text-[#94a3b8] opacity-80 hover:border-[#cbd5e1] hover:bg-[#f1f5f9] disabled:opacity-80'
-          : 'text-[#1e293b] hover:border-[#cbd5e1] hover:bg-[#f1f5f9] disabled:pointer-events-none disabled:opacity-40',
-        !isPlaceholder && accent && !disabled && 'border-[#2563eb]/55 bg-[#eff6ff] shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)]',
-        pressed && 'border-[#2563eb] bg-[#eff6ff]',
+          ? 'cursor-not-allowed border-dashed border-[#e2e8f0] bg-[#f8fafc] text-[#94a3b8] opacity-80 hover:border-[#e2e8f0] hover:bg-[#f8fafc] disabled:opacity-80'
+          : 'text-[#334155] hover:border-[#cbd5e1] hover:bg-[#f8fafc] disabled:pointer-events-none disabled:opacity-40',
+        !isPlaceholder && accent && !disabled && 'border-[#2563eb] bg-[#2563eb] text-white shadow-sm hover:bg-[#1d4ed8]',
+        pressed && 'border-[#2563eb] bg-[#eff6ff] text-[#1d4ed8]',
       )}
     >
-      <Icon className={cn('h-4 w-4', isPlaceholder ? 'text-[#94a3b8]' : 'text-[#334155]')} />
-      <span className="max-w-[72px] text-center leading-tight">{label}</span>
+      <Icon className={cn('h-4 w-4', isPlaceholder ? 'text-[#94a3b8]' : accent && !disabled ? 'text-white' : 'text-[#475569]')} />
+      <span className="max-w-[110px] truncate leading-tight">{label}</span>
     </button>
   );
 }
 
 function RibbonGroup({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex shrink-0 flex-col justify-between border-r border-[#e2e8f0] px-2 last:border-r-0">
-      <div className="flex flex-wrap gap-0.5">{children}</div>
-      <span className="pt-1 text-center text-[9px] font-semibold uppercase tracking-tight text-[#94a3b8]">
+    <div className="flex shrink-0 flex-col justify-between border-r border-[#f1f5f9] px-2 last:border-r-0">
+      <div className="flex flex-wrap gap-1">{children}</div>
+      <span className="pt-1 text-left text-[9px] font-semibold uppercase tracking-tight text-[#94a3b8]">
         {label}
       </span>
     </div>
@@ -157,6 +157,16 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
     return 'Guardado en la nube';
   }, [cloudUi, props.cloudSaveMessage, props.cloudSaveState]);
 
+  const capaLabel = useMemo(() => {
+    if (props.editorTab === 'presupuestos') return 'Presupuestos';
+    if (props.vistaTareas) return 'Tareas';
+    if (props.vistaEtapas) return 'Obra / fases';
+    if (props.childTypeToCreate === 'planta') return 'Fase / pisos';
+    if (props.childTypeToCreate === 'sector') return 'Piso / sectores';
+    if (props.childTypeToCreate === 'ambiente') return 'Departamento / ambientes';
+    return props.nivelActualLabel;
+  }, [props.childTypeToCreate, props.editorTab, props.nivelActualLabel, props.vistaEtapas, props.vistaTareas]);
+
   const mainTabs: { id: RibbonMainTab; label: string }[] = [
     { id: 'archivo', label: 'Archivo' },
     { id: 'inicio', label: 'Inicio' },
@@ -175,41 +185,45 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
   }, [props.editorTab, props.onRibbonMainTabChange]);
 
   return (
-    <div className="flex shrink-0 flex-col border-b border-[#0f172a] shadow-md">
-      {/* Top bar oscura */}
-      <div className="flex h-10 items-center gap-3 bg-[#1e293b] px-2 text-white">
+    <div className="flex shrink-0 flex-col border-b border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex min-h-12 items-center gap-3 px-3 py-2 text-[#0f172a]">
         <button
           type="button"
           onClick={props.onBack}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded border border-white/10 bg-white/5 text-white/90 hover:bg-white/10"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white text-[#475569] hover:bg-[#f8fafc] hover:text-[#0f172a]"
           title="Volver a obras"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <span className="text-xs font-extrabold tracking-tight text-[#7dd3fc]">Grows</span>
+        <span className="text-sm font-extrabold tracking-tight text-[#0f172a]">Grows</span>
         <div className="hidden min-w-0 flex-1 items-center gap-2 sm:flex">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Obra</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[#94a3b8]">Obra</span>
           <input
-            className="min-w-0 max-w-md flex-1 truncate border-b border-transparent bg-transparent text-sm font-semibold text-white outline-none focus:border-[#38bdf8]"
+            className="min-w-0 max-w-md flex-1 truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-[#0f172a] outline-none focus:border-[#bfdbfe] focus:bg-[#f8fafc]"
             value={props.obraNombre}
             aria-label="Nombre de la obra"
             onChange={(e) => props.onObraNombreChange(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-1.5 rounded border border-white/10 bg-black/20 px-2 py-1 text-[10px] text-slate-200">
+        <div className="hidden items-center gap-2 rounded-full border border-[#e5e7eb] bg-[#f8fafc] px-3 py-1 text-[11px] text-[#475569] md:flex">
+          <span className="font-semibold text-[#0f172a]">{capaLabel}</span>
+          <span className="text-[#cbd5e1]">·</span>
+          <span>{props.vistaLabel}</span>
+        </div>
+        <div className="flex items-center gap-1.5 rounded-full border border-[#e5e7eb] bg-white px-3 py-1 text-[11px] text-[#475569]">
           {cloudUi === 'saving' ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-emerald-300" />
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-[#2563eb]" />
           ) : cloudUi === 'dirty' ? (
-            <Cloud className="h-3.5 w-3.5 text-amber-300" />
+            <Cloud className="h-3.5 w-3.5 text-amber-500" />
           ) : (
-            <Cloud className="h-3.5 w-3.5 text-emerald-300" />
+            <Cloud className="h-3.5 w-3.5 text-emerald-600" />
           )}
           <span className="font-medium">{guardadoLabel}</span>
         </div>
         <div className="ml-auto flex items-center gap-1">
           <button
             type="button"
-            className="rounded p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
             title="Notificaciones"
             onClick={() => router.push('/cliente/notificaciones' as Route)}
           >
@@ -217,7 +231,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
           </button>
           <button
             type="button"
-            className="rounded p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
             title="Cuenta y configuración"
             onClick={() => router.push('/cliente/cuenta' as Route)}
           >
@@ -225,20 +239,19 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
           </button>
           <button
             type="button"
-            className="rounded p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-1.5 text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
             title="Ayuda"
           >
             <HelpCircle className="h-4 w-4" />
           </button>
         </div>
-        <div className="hidden max-w-[200px] truncate border-l border-white/15 pl-3 text-[11px] text-slate-300 lg:block">
+        <div className="hidden max-w-[200px] truncate border-l border-[#e5e7eb] pl-3 text-[11px] text-[#64748b] lg:block">
           {props.userLabel}
         </div>
       </div>
 
-      {/* Ribbon */}
-      <div className="bg-[#f8fafc]">
-        <div className="flex border-b border-[#e2e8f0] px-1 pt-1">
+      <div className="bg-white">
+        <div className="flex border-y border-[#f1f5f9] px-2 pt-1">
           {mainTabs.map((t) => (
             <button
               key={t.id}
@@ -255,8 +268,8 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
                 }
               }}
               className={cn(
-                'relative px-3 py-1.5 text-xs font-semibold transition',
-                ribbonTab === t.id ? 'text-[#0f172a]' : 'text-[#64748b] hover:text-[#0f172a]',
+                'relative rounded-t-lg px-3 py-1.5 text-xs font-semibold transition',
+                ribbonTab === t.id ? 'bg-[#f8fafc] text-[#0f172a]' : 'text-[#64748b] hover:bg-[#f8fafc] hover:text-[#0f172a]',
               )}
             >
               {t.label}
@@ -266,7 +279,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
             </button>
           ))}
         </div>
-        <div className="flex min-h-[76px] flex-wrap items-end gap-y-1 overflow-x-auto px-1 py-1.5">
+        <div className="flex min-h-[54px] flex-wrap items-end gap-y-1 overflow-x-auto px-2 py-2">
           {ribbonTab === 'archivo' && (
             <>
               <RibbonGroup label="Obra">
@@ -530,13 +543,13 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
 
         {/* Acciones de contexto que antes estaban siempre visibles (etapas / subir) */}
         {props.editorTab === 'canvas' && (
-          <div className="flex flex-wrap items-center gap-2 border-t border-[#e2e8f0] bg-white px-2 py-1.5">
+          <div className="flex flex-wrap items-center gap-2 border-t border-[#f1f5f9] bg-[#fbfdff] px-3 py-2">
             {props.vistaEtapas ? (
               <button
                 type="button"
                 onClick={props.onToggleConnectEtapas}
                 className={cn(
-                  'rounded border px-2 py-1 text-[11px] font-semibold',
+                  'rounded-lg border px-3 py-1.5 text-[11px] font-semibold',
                   props.connectEtapas
                     ? 'border-[#2563eb] bg-[#eff6ff] text-[#1d4ed8]'
                     : 'border-[#cbd5e1] bg-[#f8fafc] text-[#334155]',
@@ -549,7 +562,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
               type="button"
               onClick={props.onGoUp}
               disabled={props.upDisabled}
-              className="rounded border border-[#cbd5e1] bg-white px-2 py-1 text-[11px] font-semibold text-[#334155] disabled:opacity-40"
+              className="rounded-lg border border-[#e2e8f0] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#334155] hover:bg-[#f8fafc] disabled:opacity-40"
             >
               ← Subir nivel
             </button>
@@ -557,7 +570,7 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
               type="button"
               onClick={props.onCreateChild}
               disabled={!props.puedeCrear}
-              className="rounded bg-[#2563eb] px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-40"
+              className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-[#1d4ed8] disabled:opacity-40"
             >
               {props.labelBotonCrear}
             </button>
@@ -585,31 +598,31 @@ export function CanvasEditorStatusBar(props: {
     : props.modo;
 
   return (
-    <div className="flex h-7 shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-[#1e293b] bg-[#334155] px-2 text-[10px] font-medium text-slate-200">
+    <div className="flex h-7 shrink-0 flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-[#e5e7eb] bg-white px-3 text-[10px] font-medium text-[#64748b]">
       <span className="flex min-w-0 items-center gap-1">
         <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
         <span className="truncate">
-          Grows Build System · <span className="text-slate-100">Ready</span>
+          Grows Canvas · <span className="text-[#0f172a]">Ready</span>
         </span>
       </span>
-      <span className="text-slate-500">|</span>
+      <span className="text-[#cbd5e1]">|</span>
       <span className="hidden sm:inline">
-        Nivel: <span className="font-semibold text-white">{props.nivelLabel}</span>
+        Nivel: <span className="font-semibold text-[#0f172a]">{props.nivelLabel}</span>
       </span>
-      <span className="text-slate-500 hidden sm:inline">|</span>
+      <span className="hidden text-[#cbd5e1] sm:inline">|</span>
       <span className="max-w-[min(42vw,280px)] truncate">
-        Modo: <span className="font-semibold text-white" title={modoFull}>
+        Modo: <span className="font-semibold text-[#0f172a]" title={modoFull}>
           {modoFull}
         </span>
       </span>
-      <span className="text-slate-500">|</span>
+      <span className="text-[#cbd5e1]">|</span>
       <span className="hidden md:inline">Tareas: {props.taskCount}</span>
       <span className="hidden lg:inline">Pub.: {props.publishedCount}</span>
       <span className="hidden lg:inline">Sin pub.: {props.unpublishedCount}</span>
       <span className="hidden xl:inline">Crít.: {props.criticalCount ?? '—'}</span>
       <span className="ml-auto flex shrink-0 items-center gap-2">
         {props.guardadoRelativo ? (
-          <span className="hidden text-slate-300 sm:inline" title={props.guardadoRelativo}>
+          <span className="hidden text-[#64748b] sm:inline" title={props.guardadoRelativo}>
             {props.guardadoRelativo}
           </span>
         ) : null}

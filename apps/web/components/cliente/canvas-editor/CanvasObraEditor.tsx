@@ -333,6 +333,7 @@ export function CanvasObraEditor({ obraId }: Props) {
             setSelectedId(id);
           }}
           onConnectSecond={onTimelineSecond}
+          getDescendantRollup={getDescendantRollup}
         />
       )}
 
@@ -419,8 +420,44 @@ export function CanvasObraEditor({ obraId }: Props) {
     </>
   );
 
+  const renderBreadcrumb = (compact = false) => (
+    <div
+      className={cn(
+        'rounded-2xl border border-[#e5e7eb] bg-white/95 shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
+        compact ? 'px-3 py-2' : 'px-4 py-3',
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[12px] font-semibold text-[#64748b]">
+        {breadcrumbItems.map((item, idx) => (
+          <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
+            {idx > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#cbd5e1]" aria-hidden />}
+            <button
+              type="button"
+              onClick={() => goToBreadcrumbIndex(idx)}
+              className={cn(
+                'max-w-[260px] truncate rounded-lg px-1.5 py-0.5 transition hover:bg-[#f1f5f9] hover:text-[#0f172a]',
+                idx === breadcrumbItems.length - 1 ? 'font-bold text-[#0f172a]' : 'text-[#64748b]',
+              )}
+              title={item.title}
+            >
+              {item.title}
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#64748b]">
+        <span className="rounded-full bg-[#eff6ff] px-2 py-0.5 font-semibold text-[#1d4ed8]">
+          Nivel actual: {cabecera.nivelActualTitulo}
+        </span>
+        <span className="rounded-full bg-[#f8fafc] px-2 py-0.5 font-semibold text-[#475569]">
+          Vista: {cabecera.vistaActual}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#cfd8e6] text-[#0f1e1f]">
+    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#f6f8fa] text-[#0f172a]">
       <input
         ref={projectXmlInputRef}
         type="file"
@@ -497,33 +534,11 @@ export function CanvasObraEditor({ obraId }: Props) {
         </div>
       ) : null}
 
-      <div className="border-b border-[#cbd5e1] bg-[#eef2f7] px-3 py-2 xl:hidden">
-        <div className="rounded-lg bg-white/90 px-3 py-2 shadow-sm">
-          <div className="flex flex-wrap gap-x-1 gap-y-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748b]">
-            {breadcrumbItems.map((item, idx) => (
-              <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
-                {idx > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" aria-hidden />}
-                <button
-                  type="button"
-                  onClick={() => goToBreadcrumbIndex(idx)}
-                  className={cn(
-                    'max-w-[220px] truncate rounded px-1.5 py-0.5 transition hover:bg-slate-100',
-                    idx === breadcrumbItems.length - 1 ? 'font-black text-[#0f172a]' : 'text-[#64748b]',
-                  )}
-                >
-                  {item.title}
-                </button>
-              </span>
-            ))}
-          </div>
-          <p className="mt-1.5 text-[11px] text-[#475569]">
-            <span className="font-bold text-[#0f172a]">Nivel:</span> {cabecera.nivelActualTitulo} ·{' '}
-            <span className="font-bold text-[#0f172a]">Vista:</span> {cabecera.vistaActual}
-          </p>
-        </div>
+      <div className="border-b border-[#e5e7eb] bg-[#f6f8fa] px-3 py-2 xl:hidden">
+        {renderBreadcrumb(true)}
       </div>
 
-      <div className="mx-auto flex w-full max-w-[1920px] flex-1 min-h-0">
+      <div className="mx-auto flex w-full max-w-[1920px] flex-1 min-h-0 gap-3 px-3 pb-3">
         <CanvasProjectBrowser
           obraNombre={obraNombre}
           nodes={nodes}
@@ -536,31 +551,8 @@ export function CanvasObraEditor({ obraId }: Props) {
           onNavigateToNode={openPathToNode}
         />
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col p-2 md:p-3">
-          <div className="mb-2 hidden rounded-lg bg-white/90 px-3 py-2 shadow-sm xl:block">
-            <div className="flex flex-wrap gap-x-1 gap-y-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#64748b]">
-              {breadcrumbItems.map((item, idx) => (
-                <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
-                  {idx > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" aria-hidden />}
-                  <button
-                    type="button"
-                    onClick={() => goToBreadcrumbIndex(idx)}
-                    className={cn(
-                      'max-w-[220px] truncate rounded px-1.5 py-0.5 transition hover:bg-slate-100',
-                      idx === breadcrumbItems.length - 1 ? 'font-black text-[#0f172a]' : 'text-[#64748b]',
-                    )}
-                    title={item.title}
-                  >
-                    {item.title}
-                  </button>
-                </span>
-              ))}
-            </div>
-            <p className="mt-1.5 text-[11px] text-[#475569]">
-              <span className="font-bold text-[#0f172a]">Nivel actual:</span> {cabecera.nivelActualTitulo} ·{' '}
-              <span className="font-bold text-[#0f172a]">Vista:</span> {cabecera.vistaActual}
-            </p>
-          </div>
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col py-3">
+          <div className="mb-3 hidden xl:block">{renderBreadcrumb()}</div>
 
           <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
             <button
@@ -599,7 +591,7 @@ export function CanvasObraEditor({ obraId }: Props) {
             </div>
           )}
 
-          <div className="flex min-h-[min(64vh,720px)] min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-[#b8c4d4] bg-[#f1f5f9] shadow-inner">
+          <div className="flex min-h-[min(64vh,720px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
             {editorTab === 'presupuestos' ? (
               <CanvasPresupuestosTab
                 obraId={obraId}

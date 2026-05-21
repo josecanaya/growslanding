@@ -177,11 +177,11 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
 
       <div
         className={cn(
-          'relative flex flex-col overflow-hidden rounded border border-[#c5cdd8] bg-[#f8fafc] px-2 py-1.5 shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color]',
+          'relative flex flex-col overflow-hidden rounded-xl border border-[#e5e7eb] bg-white px-2.5 py-2 shadow-[0_1px_3px_rgba(15,23,42,0.08)] transition-[box-shadow,border-color]',
           reviewRing,
           !reviewRing &&
             (selected
-              ? 'border-[#2563eb] shadow-[0_0_0_1px_rgba(37,99,235,0.35)]'
+              ? 'border-[#2563eb] bg-[#eff6ff] shadow-[0_0_0_1px_rgba(37,99,235,0.25)]'
               : ringCritico
                 ? 'border-[#c41e3a]'
                 : 'border-[#c5cdd8]'),
@@ -255,9 +255,13 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
               )}
               {budgetGroupLabel ? (
                 <span className="truncate font-medium text-[#475569]" title={budgetGroupLabel}>
-                  $ {budgetGroupLabel}
+                  Presupuesto: {budgetGroupLabel}
                 </span>
-              ) : null}
+              ) : (
+                <span className="truncate text-[#94a3b8]" title="Sin grupo de presupuesto">
+                  Presupuesto: sin grupo
+                </span>
+              )}
             </div>
             <div className="h-1 overflow-hidden rounded-full bg-[#e2e8f0]">
               <div

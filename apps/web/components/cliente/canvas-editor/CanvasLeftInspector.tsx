@@ -39,6 +39,7 @@ import {
   labelEstadoTarea,
   labelEstadoTareaFromDb,
   labelTipoNodo,
+  descendantTaskPublicationRollup,
 } from './canvasMultinivelHelpers';
 import { aristaCriticaVisual, type CanvasTaskCpmBundle } from './canvasMultinivelCpm';
 
@@ -118,7 +119,7 @@ const inputCompactClass =
   'rounded-md border border-slate-300/80 bg-white px-2 py-1 text-xs font-medium text-slate-900 outline-none transition focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]/20';
 
 const sectionClass =
-  'rounded-md border border-slate-200 bg-white p-3 shadow-sm';
+  'rounded-2xl border border-[#e5e7eb] bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]';
 
 function estadoTareaBadgeClass(est: CanvasNode['estadoTarea'] | undefined): string {
   switch (est) {
@@ -238,21 +239,28 @@ export function CanvasLeftInspector({
       : [];
 
   const SelectedIcon = selectedNode ? iconForType(selectedNode.type) : Boxes;
+  const selectedContainerRollup = useMemo(
+    () =>
+      selectedNode && selectedNode.type !== 'tarea'
+        ? descendantTaskPublicationRollup(nodes, selectedNode.id, tareaPublicacionByNodeId)
+        : null,
+    [nodes, selectedNode, tareaPublicacionByNodeId],
+  );
 
   if (!isOpen) {
     return (
-      <aside className="flex w-[64px] shrink-0 flex-col items-center bg-[#f0f4f8]/90 px-2 py-4 shadow-[-12px_0_32px_rgba(23,28,31,0.04)] backdrop-blur-xl">
+      <aside className="my-3 flex w-[64px] shrink-0 flex-col items-center rounded-2xl border border-[#e5e7eb] bg-white px-2 py-4 shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
         <button
           type="button"
           onClick={onToggleOpen}
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#001629] text-white shadow-[0_12px_32px_rgba(23,28,31,0.10)]"
+          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#2563eb] text-white shadow-sm"
           title="Abrir inspector"
           aria-label="Abrir inspector"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <div className="mt-4 h-px w-8 bg-[#dfe3e7]" />
-        <p className="mt-4 [writing-mode:vertical-rl] text-[10px] font-black uppercase tracking-[0.22em] text-[#596574]">
+        <div className="mt-4 h-px w-8 bg-[#e5e7eb]" />
+        <p className="mt-4 [writing-mode:vertical-rl] text-[10px] font-bold uppercase tracking-[0.22em] text-[#64748b]">
           Inspector
         </p>
       </aside>
@@ -260,17 +268,17 @@ export function CanvasLeftInspector({
   }
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-l border-[#cbd5e1] bg-[#f1f5f9]">
-      <div className="shrink-0 border-b border-[#cbd5e1] bg-[#334155] px-3 py-2">
+    <aside className="my-3 flex w-[330px] shrink-0 flex-col rounded-2xl border border-[#e5e7eb] bg-[#f8fafc] shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+      <div className="shrink-0 border-b border-[#e5e7eb] bg-white px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#93c5fd]">Inspector</p>
-            <p className="mt-0.5 text-[10px] leading-snug text-slate-200">Propiedades · Checklist · Presupuesto</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-[#64748b]">Inspector</p>
+            <p className="mt-0.5 text-[10px] leading-snug text-[#64748b]">Contexto · Publicación · Presupuesto</p>
           </div>
           <button
             type="button"
             onClick={onToggleOpen}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-white/20 text-white/90 transition hover:bg-white/10"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e5e7eb] bg-white text-[#64748b] transition hover:bg-[#f8fafc] hover:text-[#0f172a]"
             title="Colapsar inspector"
             aria-label="Colapsar inspector"
           >
@@ -279,11 +287,11 @@ export function CanvasLeftInspector({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-2">
+      <div className="flex-1 overflow-y-auto px-3 py-3">
         <Button
           variant="ghost"
           size="sm"
-          className="mb-2 w-full justify-start rounded-md border border-[#e2e8f0] bg-white text-xs text-[#334155] hover:bg-slate-50"
+          className="mb-3 w-full justify-start rounded-xl border border-[#e5e7eb] bg-white text-xs text-[#334155] hover:bg-slate-50"
           type="button"
           onClick={() => router.push('/cliente/obras' as Route)}
         >
@@ -329,7 +337,7 @@ export function CanvasLeftInspector({
 
         {!selectedEdge && !selectedNode && (
           <div className={sectionClass}>
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#d7e4f5] text-[#001629]">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
               <Boxes className="h-5 w-5" strokeWidth={1.6} />
             </div>
             <p className="text-base font-black text-[#001629]">Sin selección</p>
@@ -344,7 +352,7 @@ export function CanvasLeftInspector({
           <div className="space-y-4">
             <div className={sectionClass}>
               <div className="flex items-center gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#001629] text-[#cfe5ff]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
                   <SelectedIcon className="h-5 w-5" strokeWidth={1.6} />
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-[0.18em] text-[#8a94a5]">
@@ -362,6 +370,18 @@ export function CanvasLeftInspector({
                 <span className="text-[#c5c9d8]">·</span>
                 <span>{labelEstadoNivel(selectedNode.estadoNivel)}</span>
               </div>
+              {selectedContainerRollup ? (
+                <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-[#f8fafc] p-2 text-xs text-[#64748b]">
+                  <span>
+                    <strong className="text-[#0f172a]">{selectedContainerRollup.taskCount}</strong> tareas
+                  </span>
+                  <span>
+                    <strong className="text-[#0f172a]">{selectedContainerRollup.publishedCount}</strong> publicadas
+                  </span>
+                  <span>{selectedContainerRollup.unpublishedCount} sin publicar</span>
+                  <span>{selectedContainerRollup.presupuestadasCount} presup.</span>
+                </div>
+              ) : null}
               <label className="mt-3 block text-[10px] font-bold uppercase text-[#596574]">Estado</label>
               <select
                 className={inputClass}

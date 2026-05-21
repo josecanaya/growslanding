@@ -31,6 +31,8 @@ import { CanvasPresupuestosTab } from './CanvasPresupuestosTab';
 import { CanvasArchivoTab } from './CanvasArchivoTab';
 import { CanvasPublicarTab } from './CanvasPublicarTab';
 import { CanvasCronogramaTab } from './CanvasCronogramaTab';
+import { CanvasCronogramaInspector } from './CanvasCronogramaInspector';
+import { buildCronogramaItems } from './buildCronogramaItems';
 import { useCanvasMultinivel } from './useCanvasMultinivel';
 import type { ProjectImportPreview } from '@/lib/project/importProjectXml';
 import { parseProjectXml } from '@/lib/project/importProjectXml';
@@ -270,7 +272,24 @@ export function CanvasObraEditor({ obraId }: Props) {
 
   const showProjectBrowser = editorTab === 'canvas' || editorTab === 'presupuestos';
   const showBreadcrumb = editorTab === 'canvas';
-  const showInspector = editorTab === 'canvas' || editorTab === 'cronograma';
+  const showCanvasInspector = editorTab === 'canvas';
+  const showCronogramaInspector = editorTab === 'cronograma';
+
+  const cronogramaProjectStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [obraId]);
+
+  const cronogramaItems = useMemo(
+    () => buildCronogramaItems(nodes, edges, tareaPublicacionByNodeId),
+    [nodes, edges, tareaPublicacionByNodeId],
+  );
+
+  const selectedCronogramaItem = useMemo(
+    () => (selectedId ? cronogramaItems.find((i) => i.id === selectedId) ?? null : null),
+    [cronogramaItems, selectedId],
+  );
 
   const userLabel = useMemo(() => {
     const r = (currentUser?.role as string) || '';
@@ -655,6 +674,7 @@ export function CanvasObraEditor({ obraId }: Props) {
                 edges={edges}
                 tareaPublicacionByNodeId={tareaPublicacionByNodeId}
                 selectedId={selectedId}
+                projectStart={cronogramaProjectStart}
                 onSelectTask={(id) => {
                   setSelectedId(id);
                   setInspectorOpen(true);
@@ -696,7 +716,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           onAfterPublish={() => void refreshTareaPublicacion()}
         />
 
-        {showInspector ? (
+        {showCanvasInspector ? (
           <CanvasLeftInspector
             obraId={obraId}
             projectKind={projectKind}
@@ -725,6 +745,18 @@ export function CanvasObraEditor({ obraId }: Props) {
             applyBudgetGroupToNode={applyBudgetGroupToNode}
             tareaPublicacionByNodeId={tareaPublicacionByNodeId}
             onOpenPublishModal={() => setPublicarModalOpen(true)}
+            isOpen={inspectorOpen}
+            onToggleOpen={() => setInspectorOpen((v) => !v)}
+          />
+        ) : null}
+
+        {showCronogramaInspector ? (
+          <CanvasCronogramaInspector
+            obraId={obraId}
+            selectedNode={selectedNode?.type === 'tarea' ? selectedNode : null}
+            selectedItem={selectedCronogramaItem}
+            projectStart={cronogramaProjectStart}
+            tareaPublicacionByNodeId={tareaPublicacionByNodeId}
             isOpen={inspectorOpen}
             onToggleOpen={() => setInspectorOpen((v) => !v)}
           />

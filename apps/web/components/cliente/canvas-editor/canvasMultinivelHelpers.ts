@@ -146,6 +146,93 @@ export function canAddPrecedenceEdge(
   return true;
 }
 
+/**
+ * Misma política anti-ciclo que canAddPrecedenceEdge, pero entre tareas dentro del subárbol de un ancestro común (p. ej. fase con grupos MSP).
+ */
+export function canAddPrecedenceEdgeInAncestorSubtree(
+  ancestorId: string,
+  nodes: CanvasNode[],
+  edges: CanvasPrecedenceEdge[],
+  sourceId: string,
+  targetId: string,
+): boolean {
+  if (sourceId === targetId) return false;
+  const s = nodes.find((n) => n.id === sourceId);
+  const t = nodes.find((n) => n.id === targetId);
+  if (!s || !t || s.type !== 'tarea' || t.type !== 'tarea') return false;
+
+  const subtree = collectSubtreeIds(nodes, ancestorId);
+  if (!subtree.has(s.id) || !subtree.has(t.id)) return false;
+
+  const taskIds = descendantTaskNodesUnderAncestor(nodes, ancestorId).map((n) => n.id);
+  const idSet = new Set(taskIds);
+  if (!idSet.has(sourceId) || !idSet.has(targetId)) return false;
+  if (edges.some((e) => e.sourceId === sourceId && e.targetId === targetId)) return false;
+
+  const locally = precedentEdgesAmongTaskIds(edges, idSet);
+  const adj = new Map<string, string[]>();
+  const addAdj = (a: string, b: string) => {
+    if (!adj.has(a)) adj.set(a, []);
+    adj.get(a)!.push(b);
+  };
+  for (const e of locally) addAdj(e.sourceId, e.targetId);
+  addAdj(sourceId, targetId);
+
+  const stack: string[] = [targetId];
+  const seen = new Set<string>();
+  while (stack.length) {
+    const u = stack.pop()!;
+    if (u === sourceId) return false;
+    if (seen.has(u)) continue;
+    seen.add(u);
+    for (const v of adj.get(u) ?? []) stack.push(v);
+  }
+  return true;
+}
+
+export function descendantTaskNodesUnderAncestor(
+  nodes: CanvasNode[],
+  ancestorId: string,
+): CanvasNode[] {
+  const subtree = collectSubtreeIds(nodes, ancestorId);
+  return nodes.filter((n) => n.type === 'tarea' && subtree.has(n.id));
+}
+
+export function precedentEdgesAmongTaskIds(
+  edges: CanvasPrecedenceEdge[],
+  taskIds: Set<string>,
+): CanvasPrecedenceEdge[] {
+  return edges.filter((e) => taskIds.has(e.sourceId) && taskIds.has(e.targetId));
+}
+
+/**
+ * Cada línea bajo la fase es sólo «un escalón MSP de agrupo» antes de llegar a tareas (p. ej. Fundaciones → rubros → trabajos).
+ * Si hay dos o más niveles no-tarea consecutivos (p. ej. planta → ambiente → tareas) se usa el hub / jerarquía profunda como Mampostería.
+ */
+export function etapaPrefersSubtreeTaskCanvas(
+  nodes: CanvasNode[],
+  etapa: Pick<CanvasNode, 'id' | 'type'>,
+): boolean {
+  if (etapa.type !== 'etapa') return false;
+
+  const direct = nodes.filter((n) => n.parentId === etapa.id);
+  if (!direct.length) return false;
+
+  /** Máximo un contenedor MSP entre etapa y la hoja tarea por rama directa */
+  for (const d of direct) {
+    if (d.type === 'tarea') continue;
+    const bridgeKids = nodes.filter((k) => k.parentId === d.id);
+    if (!bridgeKids.length) return false;
+    const allLeavesAreTasks =
+      bridgeKids.every((k) => k.type === 'tarea') &&
+      bridgeKids.some((k) => k.type === 'tarea');
+    if (!allLeavesAreTasks) return false;
+  }
+
+  const subtree = collectSubtreeIds(nodes, etapa.id);
+  return nodes.some((n) => n.type === 'tarea' && subtree.has(n.id));
+}
+
 export type GuiaContextualRow = {
   nivelLabel: string;
   dentroLabel: string;
@@ -256,7 +343,11 @@ export function publicationReviewCategory(
 export function vistaPrincipalPorContenedor(
   container: CanvasNode | null,
   projectKind: CanvasProjectKind,
+  nodes?: CanvasNode[],
 ): VistaNivelPrincipal {
+  if (container?.type === 'etapa' && nodes && etapaPrefersSubtreeTaskCanvas(nodes, container)) {
+    return 'tareas';
+  }
   return vistaPrincipalPorContenedorForKind(container, projectKind);
 }
 
@@ -264,8 +355,11 @@ export function cabeceraContextoNivel(
   obraNombre: string,
   container: CanvasNode | null,
   projectKind: CanvasProjectKind,
+  nodes?: CanvasNode[],
 ): CabeceraNivelVista {
-  return cabeceraContextoNivelForKind(obraNombre, container, projectKind);
+  const preferEtapaSubtreeTasks =
+    container?.type === 'etapa' && !!nodes && etapaPrefersSubtreeTaskCanvas(nodes, container);
+  return cabeceraContextoNivelForKind(obraNombre, container, projectKind, preferEtapaSubtreeTasks);
 }
 
 /** Orden Kahn sobre precedencias con desempate horizontal por `position.x`. Ciclo residual: el resto al final por x. */

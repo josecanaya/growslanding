@@ -18,10 +18,12 @@ import {
 import {
   canEnterNode,
   canAddPrecedenceEdge,
+  canAddPrecedenceEdgeInAncestorSubtree,
   childTypeForContainer,
   collectSubtreeIds,
   defaultTitleFor,
   edgesForSiblingLevel,
+  etapaPrefersSubtreeTaskCanvas,
   newCanvasEdgeId,
   newCanvasNodeId,
   pathIdsToShowContainer,
@@ -316,6 +318,12 @@ export function useCanvasMultinivel(obraId: string) {
     [nodes, containerId],
   );
 
+  const flattenEtapaSubtreePrecedence = useMemo(
+    () =>
+      !!(containerNode?.type === 'etapa' && etapaPrefersSubtreeTaskCanvas(nodes, containerNode)),
+    [containerNode, nodes],
+  );
+
   const visibleNodes = useMemo(
     () => nodes.filter((n) => n.parentId === containerId),
     [nodes, containerId],
@@ -541,11 +549,22 @@ export function useCanvasMultinivel(obraId: string) {
   const tryPrecedenceConnection = useCallback(
     (c: Connection) => {
       if (!c.source || !c.target) return false;
-      if (
-        !canAddPrecedenceEdge(containerId, nodes, edges, c.source, c.target)
-      ) {
-        return false;
+
+      const useFlattenEtapaSubtree =
+        flattenEtapaSubtreePrecedence && !!containerId && containerNode?.type === 'etapa';
+
+      if (useFlattenEtapaSubtree) {
+        if (
+          !canAddPrecedenceEdgeInAncestorSubtree(containerId!, nodes, edges, c.source, c.target)
+        ) {
+          return false;
+        }
+      } else {
+        if (!canAddPrecedenceEdge(containerId, nodes, edges, c.source, c.target)) {
+          return false;
+        }
       }
+
       const id = newCanvasEdgeId();
       setEdges((prev) => [
         ...prev,
@@ -553,7 +572,7 @@ export function useCanvasMultinivel(obraId: string) {
       ]);
       return true;
     },
-    [containerId, nodes, edges],
+    [flattenEtapaSubtreePrecedence, containerId, containerNode?.type, nodes, edges],
   );
 
   const removeEdgeIds = useCallback((ids: string[]) => {

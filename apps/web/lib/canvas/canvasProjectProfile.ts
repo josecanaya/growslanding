@@ -245,6 +245,7 @@ export function cabeceraContextoNivelForKind(
   obraNombre: string,
   container: { type: CanvasNivelTipo; title: string } | null,
   kind: CanvasProjectKind,
+  preferEtapaSubtreeTasksCanvas?: boolean,
 ): CabeceraNivelVista {
   const pres = (t: CanvasNivelTipo) => canvasLevelPresentation(t, kind);
 
@@ -262,6 +263,15 @@ export function cabeceraContextoNivelForKind(
 
   switch (container.type) {
     case 'etapa':
+      if (preferEtapaSubtreeTasksCanvas) {
+        return {
+          nivelActualTitulo: 'Tareas operativas',
+          contextoUbicacion: `Fase · ${container.title}`,
+          vistaActual: 'Canvas de precedencias',
+          accionSugerida:
+            'Todas las tareas de esta fase están en este lienzo. Conectalas por precedencias como cuando trabajás un rubro entero desde el MSP.',
+        };
+      }
       return {
         nivelActualTitulo: pres('planta').tipoNodoLabel,
         contextoUbicacion: `Etapa · ${container.title}`,

@@ -13,8 +13,11 @@ import type { CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import {
   cabeceraContextoNivel,
+  descendantTaskNodesUnderAncestor,
   descendantTaskPublicationRollup,
+  etapaPrefersSubtreeTaskCanvas,
   labelCrearContextual,
+  precedentEdgesAmongTaskIds,
   sortSiblingsByPrecedence,
   vistaPrincipalPorContenedor,
 } from './canvasMultinivelHelpers';
@@ -191,11 +194,38 @@ export function CanvasObraEditor({ obraId }: Props) {
     saveCanvasSnapshotToCloud,
   ]);
 
-  const vista = vistaPrincipalPorContenedor(containerNode, projectKind);
-  const cabecera = useMemo(
-    () => cabeceraContextoNivel(obraNombre, containerNode, projectKind),
-    [obraNombre, containerNode, projectKind],
+  const vista = vistaPrincipalPorContenedor(containerNode, projectKind, nodes);
+
+  /** Fase MSP con sólo agrupadores + tareas: ver canvas de precedencias sin pasar obligatoriamente por el hub «planta». */
+  const flattenEtapaSubtree = useMemo(
+    () =>
+      !!(
+        containerNode?.type === 'etapa' &&
+        nodes.length > 0 &&
+        etapaPrefersSubtreeTaskCanvas(nodes, containerNode)
+      ),
+    [containerNode, nodes],
   );
+
+  const cabecera = useMemo(
+    () => cabeceraContextoNivel(obraNombre, containerNode, projectKind, nodes),
+    [obraNombre, containerNode, projectKind, nodes],
+  );
+
+  const taskPanelNodes = useMemo(() => {
+    if (vista === 'tareas' && flattenEtapaSubtree && containerNode) {
+      return descendantTaskNodesUnderAncestor(nodes, containerNode.id);
+    }
+    return visibleNodes;
+  }, [vista, flattenEtapaSubtree, containerNode, nodes, visibleNodes]);
+
+  const taskPanelEdges = useMemo(() => {
+    if (vista === 'tareas' && flattenEtapaSubtree && containerNode) {
+      const ids = new Set(descendantTaskNodesUnderAncestor(nodes, containerNode.id).map((n) => n.id));
+      return precedentEdgesAmongTaskIds(edges, ids);
+    }
+    return siblingEdges;
+  }, [vista, flattenEtapaSubtree, containerNode, nodes, edges, siblingEdges]);
 
   const sortedEtapas = useMemo(
     () => sortSiblingsByPrecedence(visibleNodes, siblingEdges),
@@ -212,9 +242,9 @@ export function CanvasObraEditor({ obraId }: Props) {
   useEffect(() => {
     setSelectedEdgeId((eid) => {
       if (eid == null) return null;
-      return siblingEdges.some((e) => e.id === eid) ? eid : null;
+      return taskPanelEdges.some((e) => e.id === eid) ? eid : null;
     });
-  }, [siblingEdges]);
+  }, [taskPanelEdges]);
 
   useEffect(() => {
     setSelectedEdgeId(null);
@@ -227,16 +257,16 @@ export function CanvasObraEditor({ obraId }: Props) {
   const puedeCrear = childTypeToCreate !== null;
   const labelBotonCrear = labelCrearContextual(childTypeToCreate, projectKind);
   const selectedEdge =
-    selectedEdgeId === null ? null : siblingEdges.find((e) => e.id === selectedEdgeId) ?? null;
+    selectedEdgeId === null ? null : taskPanelEdges.find((e) => e.id === selectedEdgeId) ?? null;
 
   const taskCpmBundle = useMemo(() => {
     if (vista !== 'tareas') return null;
-    return computeCanvasTaskCpm(visibleNodes, siblingEdges);
-  }, [vista, visibleNodes, siblingEdges]);
+    return computeCanvasTaskCpm(taskPanelNodes, taskPanelEdges);
+  }, [vista, taskPanelNodes, taskPanelEdges]);
 
   const muestraLegendCritico =
     vista === 'tareas' &&
-    edgeCriticoVisible(siblingEdges, visibleNodes, taskCpmBundle?.resultado.critical_count ?? null);
+    edgeCriticoVisible(taskPanelEdges, taskPanelNodes, taskCpmBundle?.resultado.critical_count ?? null);
 
   const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
@@ -444,9 +474,9 @@ export function CanvasObraEditor({ obraId }: Props) {
             <TareasCanvasPanel
               projectKind={projectKind}
               taskCpmBundle={taskCpmBundle}
-              visibleNodes={visibleNodes}
+              visibleNodes={taskPanelNodes}
               nodes={nodes}
-              siblingEdges={siblingEdges}
+              siblingEdges={taskPanelEdges}
               selectedId={selectedId}
               setSelectedId={setSelectedId}
               selectedEdgeId={selectedEdgeId}
@@ -724,7 +754,7 @@ export function CanvasObraEditor({ obraId }: Props) {
             selectedNode={selectedNode}
             nodes={nodes}
             edges={edges}
-            siblingEdges={siblingEdges}
+            siblingEdges={taskPanelEdges}
             containerId={containerId}
             patchEdge={patchEdge}
             removeEdgeIds={removeEdgeIds}

@@ -77,8 +77,12 @@ export function ProjectXmlImportPreviewModal({
 
         {projectKind ? (
           <div className="rounded-lg border border-[#dbeafe] bg-[#f0f9ff] px-3 py-2 text-[13px] text-[#1e3a5f]">
-            Tipo de obra en el lienzo: <strong>{CANVAS_PROJECT_KIND_LABEL[projectKind]}</strong>. Los niveles
-            intermedios del XML se adaptan a esta profundidad (sin forzar departamento si el perfil no lo usa).
+            Obra configurada como <strong>{CANVAS_PROJECT_KIND_LABEL[projectKind]}</strong>. Al confirmar la
+            importación, el perfil Canvas se{' '}
+            <strong className="text-[#0042c8]">
+              adapta solo al MSP leído
+            </strong>{' '}
+            (según niveles OutlineNumber con hijos), para mantener niveles válidos sin rellenos artificiales.
           </div>
         ) : null}
 
@@ -120,10 +124,24 @@ export function ProjectXmlImportPreviewModal({
                 </li>
                 {preview.collapsedRootUid != null && (
                   <li className="text-[12px] text-grows-text-secondary">
-                    Raíz única de proyecto detectada (UID {preview.collapsedRootUid}): se usa para compactar
-                    niveles y nombre de obra si hace falta.
+                    Raíz única de proyecto detectada (UID {preview.collapsedRootUid}): los hijos pasan como
+                    raíz única sobre la obra si hace falta.
                   </li>
                 )}
+                <li className="text-[13px]">
+                  <strong>MSP · Perfil adaptable:</strong>{' '}
+                  {CANVAS_PROJECT_KIND_LABEL[preview.adaptiveImportKind]} (
+                  <span className="text-grows-text-secondary">
+                    {preview.groupingTierCount} nivel
+                    {preview.groupingTierCount === 1 ? '' : 'es'} de Outline con hijos antes de las hojas
+                  </span>
+                  ){'. '}Profundidad máxima de Outline observada: {preview.maxOutlineDepthDetected}.
+                </li>
+                {preview.structureTierLabels.length > 0 ? (
+                  <li className="text-[12px] text-grows-text-secondary">
+                    Segmentación sugerida: {preview.structureTierLabels.join(' · ')}
+                  </li>
+                ) : null}
               </ul>
             </section>
 
@@ -139,9 +157,10 @@ export function ProjectXmlImportPreviewModal({
                 <li>Tareas operativas: {preview.mappingSummary.tareas}</li>
               </ul>
               <p className="mt-2 text-[12px] leading-snug text-grows-text-secondary">
-                Regla aplicada: nivel relativo bajo el contenedor detectado → etapa, planta, sector, ambiente;
-                hojas siempre como tarea. Profundidad extra en contenedores se mantiene como «ambiente» hasta
-                llegar a la hoja.
+                Cada nivel con hijos del MSP encaja contra la cadena Grows más cercana (<code>etapa → planta → … →
+                tarea</code>) dentro del mismo perfil adaptable.{' '}
+                <strong>Hojas = tareas ejecutables;</strong> no se inventan pisos/deptos cuando el Outline no los
+                trae.
               </p>
             </section>
 

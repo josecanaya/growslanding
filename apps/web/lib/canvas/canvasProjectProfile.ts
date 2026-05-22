@@ -79,6 +79,22 @@ export function normalizeCanvasProjectKind(
   return 'edificio_multifamiliar';
 }
 
+/**
+ * Perfil Canvas sugerido según cuántos niveles de OutlineNumber hay con hijos en el MSP
+ * (contenedores reales antes de las hojas). No debe forzar el XML ni pisar el tipo de obra
+ * guardado salvo donde el import lo use solo para crear nodos válidos.
+ */
+export function inferAdaptiveImportKind(groupingTierCount: number): CanvasProjectKind {
+  const tc = Math.max(0, groupingTierCount);
+  if (tc <= 1) return 'simple';
+  /** 2 niveles agrupadores (p. ej. fase/rubro) → cadena corta típica de reformas */
+  if (tc === 2) return 'reforma';
+  /** 3 niveles → plantas y ambientes / sectores típicos de vivienda o galpón */
+  if (tc === 3) return 'vivienda_unifamiliar';
+  /** 4+ → profundidad tipo edificación con departamentos/interior */
+  return 'edificio_multifamiliar';
+}
+
 function orderOf(t: CanvasNivelTipo): number {
   return FULL_ORDER.indexOf(t);
 }

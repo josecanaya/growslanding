@@ -1,5 +1,11 @@
 /** Parser Project XML → preview de importación al canvas multinivel Grows (solo cliente, sin backend). */
 
+import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+import {
+  CANVAS_TYPE_CHAIN_BY_KIND,
+  CANVAS_PROJECT_KIND_LABEL,
+  inferAdaptiveImportKind,
+} from '@/lib/canvas/canvasProjectProfile';
 import type { CanvasTareaEstadoLocal } from '@/lib/types/canvasMultinivel';
 
 export const PROJECT_DAY_HOURS = 8;
@@ -58,6 +64,10 @@ export type GrowsImportNodePreview = {
   isSummary: boolean;
   isLeaf: boolean;
   growsType: GrowsImportNodeKind;
+  /** Índice 0-based entre capas OutlineNumber con hijos (contenedores) */
+  groupingTierIdx: number;
+  /** Pista opcional derivada del nombre para tipoLabel del canvas */
+  semanticHint?: string;
   parentSourceUid: number | null;
   durationDays: number | null;
   percentComplete: number | null;
@@ -95,6 +105,14 @@ export type ProjectImportPreview = {
   /** UID ignorado como contenedor único de nivel mínimo (nombre de obra) */
   collapsedRootUid: number | null;
   treeLines: string[];
+  /** Inferido sólo desde la profundidad real del Outline (no desde el tipo de obra en pantalla). */
+  adaptiveImportKind: CanvasProjectKind;
+  /** Cantidad de profundidades de OutlineNumber que son contenedores (tienen hijos en MSP). */
+  groupingTierCount: number;
+  /** Máximo outlineParts.length en el proyecto (todas las tareas MSP). */
+  maxOutlineDepthDetected: number;
+  /** Leyenda legible nivel a nivel sobre la cadena adaptable (UI). */
+  structureTierLabels: string[];
   mappingSummary: {
     etapas: number;
     plantas: number;
@@ -196,18 +214,84 @@ function taskIsStructural(task: ProjectXmlTask, hasChildren: boolean): boolean {
   return false;
 }
 
-function growsTypeForTask(args: {
-  isLeaf: boolean;
-  relativeLevel: number;
-}): GrowsImportNodeKind {
-  if (args.isLeaf) return 'tarea';
-  const r = Math.max(0, args.relativeLevel);
-  if (r === 0) return 'etapa';
-  if (r === 1) return 'planta';
-  if (r === 2) return 'sector';
-  return 'ambiente';
+function canvasSlotsForImportKind(kind: CanvasProjectKind) {
+  return CANVAS_TYPE_CHAIN_BY_KIND[kind].filter((t) => t !== 'tarea') as GrowsImportNodeKind[];
 }
 
+/**
+ * Reparte cada capa de OutlineNumber con hijos entre los tipos de contenedor disponibles según perfil adaptable.
+ * OutlineNumber define el árbol; no se fuerza piso/depto fuera del XML.
+ */
+export function mapGroupingTierIdxToGrowType(
+  tierIdx: number,
+  groupingTierTotal: number,
+  kind: CanvasProjectKind,
+): GrowsImportNodeKind {
+  const slots = canvasSlotsForImportKind(kind);
+  const safeSlots = (slots.length > 0 ? slots : ['etapa']) as GrowsImportNodeKind[];
+  if (groupingTierTotal <= 1) return safeSlots[0]!;
+  const ti = Math.max(0, tierIdx);
+  const slotIdx = Math.min(ti, safeSlots.length - 1);
+  return safeSlots[slotIdx]!;
+}
+
+const STRUCTURE_KIND_LABEL: Record<GrowsImportNodeKind, string> = {
+  root: 'Raíz',
+  etapa: 'Etapa o fase',
+  planta: 'Planta o nivel',
+  sector: 'Sector',
+  ambiente: 'Área de trabajo',
+  tarea: 'Tarea ejecutable',
+};
+
+/** Una línea por capa OutlineNumber que agrupa trabajo (tiene hijos en MSP); encaja contra el perfil adaptable. */
+function buildStructureTierLabels(groupingTierCount: number, adaptiveKind: CanvasProjectKind): string[] {
+  if (groupingTierCount <= 0) return [];
+  const total = groupingTierCount;
+  const lines: string[] = [];
+  for (let ix = 0; ix < total; ix++) {
+    const gt = mapGroupingTierIdxToGrowType(ix, total, adaptiveKind);
+    lines.push(`Capa ${ix + 1} → ${STRUCTURE_KIND_LABEL[gt]} (perfil Canvas: ${CANVAS_PROJECT_KIND_LABEL[adaptiveKind]})`);
+  }
+  return lines;
+}
+
+function semanticHintFromName(name: string, grows: GrowsImportNodeKind, tierIdx: number): string | undefined {
+  const n = name.normalize('NFD').replace(/\u0300-\u036f/g, '').trim().toLowerCase();
+  if (/(instalaci|electric|sanitari(a|os)|gas|revoque|pintura|carpinteri|hidraul|soldadur|rubro|terminacion)/i.test(n)) {
+    return 'Rubro / instalaciones';
+  }
+  if (
+    /(\b(pb|pa)\b|planta baja|planta alta|piso\b|primer piso|segundo piso\s|nivel)/i.test(n)
+  ) {
+    return 'Planta / piso';
+  }
+  if (/(departamento|depto|unidad\b|dto\b)/i.test(n)) {
+    return 'Unidad';
+  }
+  if (/(ba[nñ]o|cocina|living|dormitorio|lavadero|comedor|pasillo|hall|patio|cubiert)/i.test(n)) {
+    return 'Espacio interior';
+  }
+  if (tierIdx === 0 && grows !== 'tarea') {
+    return 'Fase';
+  }
+  return undefined;
+}
+
+export function sortedGroupingOutlineLengths(
+  tasks: ProjectXmlTask[],
+  childCount: Map<number, number>,
+  collapsedRootUid: number | null,
+): number[] {
+  const lenSet = new Set<number>();
+  for (const t of tasks) {
+    if (t.uid === 0) continue;
+    if (collapsedRootUid !== null && t.uid === collapsedRootUid) continue;
+    if ((childCount.get(t.uid) ?? 0) === 0) continue;
+    if (t.outlineParts.length > 0) lenSet.add(t.outlineParts.length);
+  }
+  return [...lenSet].sort((a, b) => a - b);
+}
 function detectCollapsedRoot(tasks: ProjectXmlTask[], childCounts: Map<number, number>): number | null {
   if (tasks.length === 0) return null;
   const minL = Math.min(...tasks.map((t) => t.outlineLevel));
@@ -327,35 +411,30 @@ export function mapProjectToGrowsPreview(
     childCount: Map<number, number>;
     collapsedRootUid: number | null;
   },
+  sortedGroupLengths: number[],
+  adaptiveKind: CanvasProjectKind,
 ): { nodes: GrowsImportNodePreview[]; warnings: ProjectImportWarning[] } {
   const warnings: ProjectImportWarning[] = [];
   const filtered = tasks.filter((t) => t.uid !== 0);
-
-  const baseLevel = meta.collapsedRootUid != null
-    ? (meta.byUid.get(meta.collapsedRootUid)?.outlineLevel ?? 1) + 1
-    : Math.min(...filtered.map((t) => t.outlineLevel));
+  const groupingTierTotal = sortedGroupLengths.length;
 
   const nodes: GrowsImportNodePreview[] = [];
 
   const nameCount = new Map<string, number>();
   const warnedDupes = new Set<string>();
+  /** Nombres de hojas (tareas ejecutables) para alertar duplicados */
   for (const t of filtered) {
     if (meta.collapsedRootUid === t.uid) continue;
     const cc = meta.childCount.get(t.uid) ?? 0;
-    const hasChildren = cc > 0;
-    const isLeaf = !hasChildren;
-    const relative = t.outlineLevel - baseLevel;
-    const grows = growsTypeForTask({ isLeaf, relativeLevel: relative });
-    if (grows === 'tarea' && isLeaf) {
-      nameCount.set(t.name, (nameCount.get(t.name) ?? 0) + 1);
-    }
+    if (cc > 0) continue;
+    nameCount.set(t.name, (nameCount.get(t.name) ?? 0) + 1);
   }
 
-  const maxLevel = Math.max(0, ...filtered.map((t) => t.outlineLevel));
-  if (maxLevel > 10) {
+  const maxSeg = Math.max(0, ...filtered.map((t) => t.outlineParts.length));
+  if (maxSeg > 10) {
     warnings.push({
       kind: 'deep_outline',
-      message: `Jerarquía muy profunda (nivel máximo ${maxLevel}). Revisá el mapeo antes de importar.`,
+      message: `Jerarquía muy profunda (OutlineNumber máximo ${maxSeg}). Revisá el mapeo antes de importar.`,
     });
   }
 
@@ -365,11 +444,21 @@ export function mapProjectToGrowsPreview(
     const cc = meta.childCount.get(t.uid) ?? 0;
     const hasChildren = cc > 0;
     const isLeaf = !hasChildren;
-    const relative = t.outlineLevel - baseLevel;
-    let growsType = growsTypeForTask({ isLeaf, relativeLevel: relative });
+    const tierIx = sortedGroupLengths.indexOf(t.outlineParts.length);
 
-    if (!isLeaf && growsType === 'tarea') {
-      growsType = 'ambiente';
+    let growsType: GrowsImportNodeKind;
+    let groupingTierIdx = 0;
+    if (isLeaf) {
+      growsType = 'tarea';
+      groupingTierIdx = Math.max(0, sortedGroupLengths.length);
+    } else {
+      groupingTierIdx = tierIx < 0 ? 0 : tierIx;
+      growsType = mapGroupingTierIdxToGrowType(
+        groupingTierIdx,
+        Math.max(groupingTierTotal, 1),
+        adaptiveKind,
+      );
+      if (growsType === 'tarea') growsType = 'ambiente';
     }
 
     const norm = normalizeProjectDuration(t.durationRaw, PROJECT_DAY_HOURS);
@@ -401,6 +490,10 @@ export function mapProjectToGrowsPreview(
     }
 
     const isSummary = hasChildren || t.isSummaryFlag;
+    const semanticHint =
+      growsType === 'tarea'
+        ? semanticHintFromName(t.name, 'tarea', 0)
+        : semanticHintFromName(t.name, growsType, groupingTierIdx);
 
     nodes.push({
       sourceUid: t.uid,
@@ -411,6 +504,8 @@ export function mapProjectToGrowsPreview(
       isSummary,
       isLeaf,
       growsType,
+      groupingTierIdx,
+      semanticHint,
       parentSourceUid: parent,
       durationDays: growsType === 'tarea' ? norm.days : null,
       percentComplete: t.percentComplete,
@@ -422,7 +517,6 @@ export function mapProjectToGrowsPreview(
 
   return { nodes, warnings };
 }
-
 function collectLeafDescendants(
   rootUid: number,
   meta: { byUid: Map<number, ProjectXmlTask>; parentUid: Map<number, number | null> },
@@ -702,10 +796,30 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
         ? collapsedRootTask.name
         : meta0.name;
 
-  const { nodes: rawNodes, warnings: mapWarnings } = mapProjectToGrowsPreview(xmlTasks, {
-    ...fullHierarchy,
+  const sortedGroupLengths = sortedGroupingOutlineLengths(
+    xmlTasks,
+    fullHierarchy.childCount,
     collapsedRootUid,
-  });
+  );
+  const groupingTierCount = sortedGroupLengths.length;
+  const adaptiveImportKind = inferAdaptiveImportKind(groupingTierCount);
+  const maxOutlineDepthDetected = Math.max(
+    0,
+    ...xmlTasks
+      .filter((t) => t.uid !== 0 && (collapsedRootUid == null || t.uid !== collapsedRootUid))
+      .map((t) => t.outlineParts.length),
+  );
+  const structureTierLabels = buildStructureTierLabels(groupingTierCount, adaptiveImportKind);
+
+  const { nodes: rawNodes, warnings: mapWarnings } = mapProjectToGrowsPreview(
+    xmlTasks,
+    {
+      ...fullHierarchy,
+      collapsedRootUid,
+    },
+    sortedGroupLengths,
+    adaptiveImportKind,
+  );
 
   const durWarns = mapWarnings.filter((w) => w.kind === 'duration_unparsed');
   const otherMapWarns = mapWarnings.filter((w) => w.kind !== 'duration_unparsed');
@@ -750,7 +864,7 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
     plantas: nodesPreview.filter((n) => n.growsType === 'planta').length,
     sectores: nodesPreview.filter((n) => n.growsType === 'sector').length,
     ambientes: nodesPreview.filter((n) => n.growsType === 'ambiente').length,
-    tareas: nodesPreview.filter((n) => n.growsType === 'tarea' && !n.isSummary).length,
+    tareas: nodesPreview.filter((n) => n.growsType === 'tarea' && n.isLeaf).length,
   };
 
   const treeLines = buildPreviewTree(nodesPreview, projectName);
@@ -774,6 +888,10 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
     statsByLevel,
     collapsedRootUid,
     treeLines,
+    adaptiveImportKind,
+    groupingTierCount,
+    maxOutlineDepthDetected,
+    structureTierLabels,
     mappingSummary,
   };
 }

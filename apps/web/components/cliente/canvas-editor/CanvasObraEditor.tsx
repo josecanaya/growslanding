@@ -156,14 +156,14 @@ export function CanvasObraEditor({ obraId }: Props) {
     }
     setProjectImportBusy(true);
     try {
-      const bundle = buildCanvasImportBundle(projectImportPreview, projectKind);
+      const bundle = buildCanvasImportBundle(projectImportPreview);
       const snapshot = composeCanvasPersisted({
         obraNombre: bundle.obraNombre,
         nodes: bundle.nodes,
         pathIds: [],
         edges: bundle.edges,
         budgetGroups: [],
-        projectKind,
+        projectKind: bundle.projectKind,
       });
       applyImportedCanvas(bundle);
       setProjectImportOpen(false);
@@ -188,7 +188,6 @@ export function CanvasObraEditor({ obraId }: Props) {
     projectImportPreview,
     nodes.length,
     applyImportedCanvas,
-    projectKind,
     saveCanvasSnapshotToCloud,
   ]);
 

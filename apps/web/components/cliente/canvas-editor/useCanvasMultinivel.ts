@@ -686,13 +686,23 @@ export function useCanvasMultinivel(obraId: string) {
   );
 
   const applyImportedCanvas = useCallback(
-    (bundle: { obraNombre: string; nodes: CanvasNode[]; edges: CanvasPrecedenceEdge[] }) => {
+    (
+      bundle: {
+        obraNombre: string;
+        nodes: CanvasNode[];
+        edges: CanvasPrecedenceEdge[];
+        projectKind?: CanvasProjectKind;
+      },
+    ) => {
       setObraNombre(bundle.obraNombre);
       setNodes(bundle.nodes);
       setEdges(bundle.edges);
       setBudgetGroups([]);
       setPathIds([]);
       setSelectedId(null);
+      if (bundle.projectKind != null) {
+        setProjectKind(bundle.projectKind);
+      }
     },
     [],
   );

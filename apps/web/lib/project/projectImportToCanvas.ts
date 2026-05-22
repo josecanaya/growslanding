@@ -6,7 +6,6 @@ import type {
 } from '@/lib/types/canvasMultinivel';
 import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import {
-  childTypeForContainer,
   newCanvasEdgeId,
   newCanvasNodeId,
   staggerPosition,
@@ -17,13 +16,9 @@ export type ProjectCanvasImportBundle = {
   obraNombre: string;
   nodes: CanvasNode[];
   edges: CanvasPrecedenceEdge[];
+  /** Perfil de canvas inferido desde la jerarquía OutlineNumber del MSP (chain consistente). */
+  projectKind: CanvasProjectKind;
 };
-
-const TYPE_ORDER: CanvasNivelTipo[] = ['etapa', 'planta', 'sector', 'ambiente', 'tarea'];
-
-function orderOf(t: CanvasNivelTipo): number {
-  return TYPE_ORDER.indexOf(t);
-}
 
 function previewToCanvasType(n: GrowsImportNodePreview): CanvasNivelTipo {
   if (n.growsType === 'root') return 'etapa';
@@ -49,22 +44,6 @@ function parseParts(n: GrowsImportNodePreview): number[] {
         .filter((x) => Number.isFinite(x));
 }
 
-/** Todas las hojas tarea bajo un UID de preview (incluye nietos) */
-function collectLeavesUnder(
-  rootUid: number,
-  children: Map<number | null, GrowsImportNodePreview[]>,
-): GrowsImportNodePreview[] {
-  const out: GrowsImportNodePreview[] = [];
-  const stack = [...(children.get(rootUid) ?? [])];
-  while (stack.length) {
-    const x = stack.pop()!;
-    const ch = children.get(x.sourceUid) ?? [];
-    if (ch.length === 0 && previewToCanvasType(x) === 'tarea') out.push(x);
-    else stack.push(...ch);
-  }
-  return out;
-}
-
 function importPreviewMeta(p: GrowsImportNodePreview): {
   importSourceUid: number;
   importOutlineNumber: string;
@@ -72,186 +51,35 @@ function importPreviewMeta(p: GrowsImportNodePreview): {
   return { importSourceUid: p.sourceUid, importOutlineNumber: p.outlineNumber };
 }
 
-function compoundTitle(ancestor: GrowsImportNodePreview, leaf: GrowsImportNodePreview): string {
-  if (leaf.sourceUid === ancestor.sourceUid) return leaf.name;
-  return `${ancestor.name} · ${leaf.name}`;
-}
-
-/** Rellena planta→sector→ambiente hasta que el padre pueda colgar targetType */
-function resolveCanvasParentForTarget(
-  initialParentId: string | null,
-  initialParentNode: CanvasNode | null,
-  targetType: CanvasNivelTipo,
-  fillerLabel: string,
-  nodes: CanvasNode[],
-  projectKind: CanvasProjectKind,
-): { parentId: string | null; parentNode: CanvasNode | null } {
-  let pid = initialParentId;
-  let pnode = initialParentNode;
-
-  let need = childTypeForContainer(pnode, projectKind);
-  while (need != null && need !== targetType) {
-    if (orderOf(need) >= orderOf(targetType)) break;
-    const sib = nodes.filter((n) => n.parentId === pid).length;
-    const id = newCanvasNodeId();
-    const level = pnode ? pnode.level + 1 : 1;
-    const filler: CanvasNode = {
-      id,
-      parentId: pid,
-      level,
-      type: need,
-      title: `${fillerLabel} (${need})`,
-      position: staggerPosition(sib),
-      createdAt: new Date().toISOString(),
-      estadoNivel: 'pendiente' as CanvasNivelEstadoLocal,
-    };
-    nodes.push(filler);
-    pid = id;
-    pnode = filler;
-    need = childTypeForContainer(pnode, projectKind);
-  }
-
-  return { parentId: pid, parentNode: pnode };
-}
-
-export function buildCanvasImportBundle(
-  preview: ProjectImportPreview,
-  projectKind: CanvasProjectKind = 'edificio_multifamiliar',
-): ProjectCanvasImportBundle {
+/**
+ * Crea nodos de canvas desde el preview sin rellenos: el padre en MSP debe existir antes (orden OutlineNumber).
+ */
+export function buildCanvasImportBundle(preview: ProjectImportPreview): ProjectCanvasImportBundle {
   const sorted = [...preview.nodesPreview].sort((a, b) => compareOutline(parseParts(a), parseParts(b)));
-  const byUid = new Map(sorted.map((n) => [n.sourceUid, n]));
-  const children = new Map<number | null, GrowsImportNodePreview[]>();
-  for (const n of sorted) {
-    const k = n.parentSourceUid ?? null;
-    if (!children.has(k)) children.set(k, []);
-    children.get(k)!.push(n);
-  }
-  for (const [, arr] of children) {
-    arr.sort((a, b) => compareOutline(parseParts(a), parseParts(b)));
-  }
-
-  const nodes: CanvasNode[] = [];
   const uidToCanvasId = new Map<number, string>();
-
-  const getNode = (id: string | null): CanvasNode | null =>
-    id ? (nodes.find((x) => x.id === id) ?? null) : null;
+  const nodes: CanvasNode[] = [];
 
   for (const n of sorted) {
     if (uidToCanvasId.has(n.sourceUid)) continue;
 
-    const targetType = previewToCanvasType(n);
     const pPrevUid = n.parentSourceUid;
+    let canvasParentId: string | null =
+      pPrevUid != null ? (uidToCanvasId.get(pPrevUid) ?? null) : null;
 
-    let canvasParentId: string | null = pPrevUid != null ? (uidToCanvasId.get(pPrevUid) ?? null) : null;
-    let canvasParentNode = getNode(canvasParentId);
-
-    if (pPrevUid != null && !canvasParentId) {
+    /** Padre aún no importado: saltar hasta que llegue una fila válida precedente (MSP inconsistente). */
+    if (pPrevUid != null && canvasParentId == null) {
       continue;
     }
 
-    /** Raíz del árbol preview (sin padre MSP) */
-    if (pPrevUid == null) {
-      if (targetType === 'etapa') {
-        const sib = nodes.filter((x) => x.parentId === null).length;
-        const id = newCanvasNodeId();
-        nodes.push({
-          id,
-          parentId: null,
-          level: 1,
-          type: 'etapa',
-          title: n.name,
-          position: staggerPosition(sib),
-          createdAt: new Date().toISOString(),
-          estadoNivel: 'pendiente',
-          avancePct: n.percentComplete ?? undefined,
-        });
-        uidToCanvasId.set(n.sourceUid, id);
-        continue;
-      }
-      const r = resolveCanvasParentForTarget(null, null, targetType, n.name, nodes, projectKind);
-      canvasParentId = r.parentId;
-      canvasParentNode = r.parentNode;
-    }
+    let parentNode = canvasParentId ? (nodes.find((x) => x.id === canvasParentId) ?? null) : null;
+    const targetType = previewToCanvasType(n);
 
-    if (canvasParentId != null && !canvasParentNode) continue;
-
-    /** Project coloca contenedor bajo ambiente Grows: aplanar a tareas */
-    if (canvasParentNode?.type === 'ambiente' && targetType !== 'tarea') {
-      const leaves = collectLeavesUnder(n.sourceUid, children);
-      const ambId = canvasParentNode.id;
-      const list = leaves.length > 0 ? leaves : [];
-      for (const leaf of list) {
-        if (previewToCanvasType(leaf) !== 'tarea') continue;
-        if (uidToCanvasId.has(leaf.sourceUid)) continue;
-        const sib = nodes.filter((x) => x.parentId === ambId).length;
-        const id = newCanvasNodeId();
-        nodes.push({
-          id,
-          parentId: ambId,
-          level: canvasParentNode.level + 1,
-          type: 'tarea',
-          title: compoundTitle(n, leaf),
-          position: staggerPosition(sib),
-          createdAt: new Date().toISOString(),
-          estadoTarea: leaf.status,
-          duracionDias: leaf.durationDays ?? 1,
-          checklist: [],
-          esCritica: false,
-          ...importPreviewMeta(leaf),
-        });
-        uidToCanvasId.set(leaf.sourceUid, id);
-      }
-      continue;
-    }
-
-    let need = childTypeForContainer(canvasParentNode, projectKind);
-    if (need == null) continue;
-
-    if (orderOf(targetType) < orderOf(need)) {
-      if (need === 'tarea' && !n.isLeaf && canvasParentNode?.type === 'ambiente') {
-        const leaves = collectLeavesUnder(n.sourceUid, children);
-        const ambId = canvasParentNode.id;
-        for (const leaf of leaves) {
-          if (uidToCanvasId.has(leaf.sourceUid)) continue;
-          const sib = nodes.filter((x) => x.parentId === ambId).length;
-          const id = newCanvasNodeId();
-          nodes.push({
-            id,
-            parentId: ambId,
-            level: canvasParentNode.level + 1,
-            type: 'tarea',
-            title: compoundTitle(n, leaf),
-            position: staggerPosition(sib),
-            createdAt: new Date().toISOString(),
-            estadoTarea: leaf.status,
-            duracionDias: leaf.durationDays ?? 1,
-            checklist: [],
-            esCritica: false,
-            ...importPreviewMeta(leaf),
-          });
-          uidToCanvasId.set(leaf.sourceUid, id);
-        }
-      }
-      continue;
-    }
-
-    const resolved = resolveCanvasParentForTarget(
-      canvasParentId,
-      canvasParentNode,
-      targetType,
-      n.name,
-      nodes,
-      projectKind,
-    );
-    canvasParentId = resolved.parentId;
-    canvasParentNode = resolved.parentNode;
-
-    need = childTypeForContainer(canvasParentNode, projectKind);
-    if (need !== targetType) continue;
-
+    /** Profundidad: raíz obra = nivel 1. */
+    const level = canvasParentId == null ? 1 : (parentNode?.level ?? 0) + 1;
     const sib = nodes.filter((x) => x.parentId === canvasParentId).length;
     const id = newCanvasNodeId();
-    const level = canvasParentNode ? canvasParentNode.level + 1 : 1;
+
+    const tipoOpt = n.semanticHint ? { tipoLabel: n.semanticHint } : {};
 
     if (targetType === 'tarea') {
       nodes.push({
@@ -266,6 +94,7 @@ export function buildCanvasImportBundle(
         duracionDias: n.durationDays ?? 1,
         checklist: [],
         esCritica: false,
+        ...tipoOpt,
         ...importPreviewMeta(n),
       });
     } else {
@@ -277,10 +106,13 @@ export function buildCanvasImportBundle(
         title: n.name,
         position: staggerPosition(sib),
         createdAt: new Date().toISOString(),
-        estadoNivel: 'pendiente',
+        estadoNivel: 'pendiente' as CanvasNivelEstadoLocal,
         avancePct: n.percentComplete ?? undefined,
+        ...tipoOpt,
+        ...importPreviewMeta(n),
       });
     }
+
     uidToCanvasId.set(n.sourceUid, id);
   }
 
@@ -306,5 +138,6 @@ export function buildCanvasImportBundle(
     obraNombre: preview.projectName,
     nodes,
     edges,
+    projectKind: preview.adaptiveImportKind,
   };
 }

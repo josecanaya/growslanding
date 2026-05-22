@@ -16,6 +16,7 @@ import {
   descendantTaskNodesUnderAncestor,
   descendantTaskPublicationRollup,
   etapaPrefersSubtreeTaskCanvas,
+  plantaPrefersSubtreeTaskCanvas,
   labelCrearContextual,
   precedentEdgesAmongTaskIds,
   sortSiblingsByPrecedence,
@@ -197,15 +198,14 @@ export function CanvasObraEditor({ obraId }: Props) {
   const vista = vistaPrincipalPorContenedor(containerNode, projectKind, nodes);
 
   /** Fase MSP con sólo agrupadores + tareas: ver canvas de precedencias sin pasar obligatoriamente por el hub «planta». */
-  const flattenEtapaSubtree = useMemo(
-    () =>
-      !!(
-        containerNode?.type === 'etapa' &&
-        nodes.length > 0 &&
-        etapaPrefersSubtreeTaskCanvas(nodes, containerNode)
-      ),
-    [containerNode, nodes],
-  );
+  const flattenAncestorSubtreeForTasks = useMemo(() => {
+    if (!containerNode || nodes.length === 0) return false;
+    if (containerNode.type === 'etapa')
+      return etapaPrefersSubtreeTaskCanvas(nodes, containerNode);
+    if (containerNode.type === 'planta')
+      return plantaPrefersSubtreeTaskCanvas(nodes, containerNode);
+    return false;
+  }, [containerNode, nodes]);
 
   const cabecera = useMemo(
     () => cabeceraContextoNivel(obraNombre, containerNode, projectKind, nodes),
@@ -213,19 +213,19 @@ export function CanvasObraEditor({ obraId }: Props) {
   );
 
   const taskPanelNodes = useMemo(() => {
-    if (vista === 'tareas' && flattenEtapaSubtree && containerNode) {
+    if (vista === 'tareas' && flattenAncestorSubtreeForTasks && containerNode) {
       return descendantTaskNodesUnderAncestor(nodes, containerNode.id);
     }
     return visibleNodes;
-  }, [vista, flattenEtapaSubtree, containerNode, nodes, visibleNodes]);
+  }, [vista, flattenAncestorSubtreeForTasks, containerNode, nodes, visibleNodes]);
 
   const taskPanelEdges = useMemo(() => {
-    if (vista === 'tareas' && flattenEtapaSubtree && containerNode) {
+    if (vista === 'tareas' && flattenAncestorSubtreeForTasks && containerNode) {
       const ids = new Set(descendantTaskNodesUnderAncestor(nodes, containerNode.id).map((n) => n.id));
       return precedentEdgesAmongTaskIds(edges, ids);
     }
     return siblingEdges;
-  }, [vista, flattenEtapaSubtree, containerNode, nodes, edges, siblingEdges]);
+  }, [vista, flattenAncestorSubtreeForTasks, containerNode, nodes, edges, siblingEdges]);
 
   const sortedEtapas = useMemo(
     () => sortSiblingsByPrecedence(visibleNodes, siblingEdges),

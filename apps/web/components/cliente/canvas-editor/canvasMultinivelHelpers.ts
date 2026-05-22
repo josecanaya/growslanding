@@ -233,6 +233,35 @@ export function etapaPrefersSubtreeTaskCanvas(
   return nodes.some((n) => n.type === 'tarea' && subtree.has(n.id));
 }
 
+/**
+ * Bajo un piso: si las ramas llegan al trabajo sin pasar por un nivel espacial típico (ambiente/depto…),
+ * se usa lienzo de tareas como en MSP aunque el perfil suele hacer Piso→Ambientes primero.
+ * Si hay algún hijo directo `ambiente` o `sector` (jerarquía profunda tipo Mampostería / edificio), no aplanamos.
+ */
+export function plantaPrefersSubtreeTaskCanvas(
+  nodes: CanvasNode[],
+  planta: Pick<CanvasNode, 'id' | 'type'>,
+): boolean {
+  if (planta.type !== 'planta') return false;
+
+  const direct = nodes.filter((n) => n.parentId === planta.id);
+  if (!direct.length) return false;
+
+  if (direct.some((d) => d.type === 'ambiente' || d.type === 'sector')) return false;
+
+  for (const d of direct) {
+    if (d.type === 'tarea') continue;
+    const bridgeKids = nodes.filter((k) => k.parentId === d.id);
+    if (!bridgeKids.length) return false;
+    const allLeavesAreTasks =
+      bridgeKids.every((k) => k.type === 'tarea') && bridgeKids.some((k) => k.type === 'tarea');
+    if (!allLeavesAreTasks) return false;
+  }
+
+  const subtree = collectSubtreeIds(nodes, planta.id);
+  return nodes.some((n) => n.type === 'tarea' && subtree.has(n.id));
+}
+
 export type GuiaContextualRow = {
   nivelLabel: string;
   dentroLabel: string;
@@ -348,6 +377,9 @@ export function vistaPrincipalPorContenedor(
   if (container?.type === 'etapa' && nodes && etapaPrefersSubtreeTaskCanvas(nodes, container)) {
     return 'tareas';
   }
+  if (container?.type === 'planta' && nodes && plantaPrefersSubtreeTaskCanvas(nodes, container)) {
+    return 'tareas';
+  }
   return vistaPrincipalPorContenedorForKind(container, projectKind);
 }
 
@@ -359,7 +391,15 @@ export function cabeceraContextoNivel(
 ): CabeceraNivelVista {
   const preferEtapaSubtreeTasks =
     container?.type === 'etapa' && !!nodes && etapaPrefersSubtreeTaskCanvas(nodes, container);
-  return cabeceraContextoNivelForKind(obraNombre, container, projectKind, preferEtapaSubtreeTasks);
+  const preferPlantaSubtreeTasks =
+    container?.type === 'planta' && !!nodes && plantaPrefersSubtreeTaskCanvas(nodes, container);
+  return cabeceraContextoNivelForKind(
+    obraNombre,
+    container,
+    projectKind,
+    preferEtapaSubtreeTasks,
+    preferPlantaSubtreeTasks,
+  );
 }
 
 /** Orden Kahn sobre precedencias con desempate horizontal por `position.x`. Ciclo residual: el resto al final por x. */

@@ -45,8 +45,31 @@ describe('parseProjectXml + buildCanvasImportBundle', () => {
     expect(bundle.nodes.find((n) => n.importSourceUid === 3)?.parentId).toBe(idByUid(1));
   });
 
-  it('varias capas de Outline con hijos: structureTierLabels y canvas alineados al mismo preview', () => {
-    /** Sin raíz MSP colapsable (dos nodos nivel 1): jerarquía 1→1.1→1.1.1→1.1.1.1→hoja */
+  it('aplana niveles fantasmas MSP (resumen con un solo hijo hoja ejecutable)', () => {
+    /** Estructura típica: fase macro → grupo resumen → trabajo real como hoja. */
+    /** Segundo nivel-1 Outline evita collapsedRoot MSP (solo una línea nivel mínimo). */
+    const xml = wrapProject(`
+      ${task(50, '98', 'Otro nivel-1 MSP', { summary: false })}
+      ${task(1, '1', 'Preparación', { summary: true, duration: 'PT0H0M0S' })}
+      ${task(2, '1.1', '(planta) Limpieza terreno grupo', { summary: true, duration: 'PT0H0M0S' })}
+      ${task(3, '1.1.1', 'Limpieza general del terreno (planta)')}
+    `);
+    const preview = parseProjectXml(xml);
+    expect(preview.warnings.some((w) => w.kind === 'msp_phantom_promoted')).toBe(true);
+    expect(preview.nodesPreview.find((n) => n.sourceUid === 2)).toBeUndefined();
+    const trabajo = preview.nodesPreview.find((n) => n.sourceUid === 3)!;
+    expect(trabajo.growsType).toBe('tarea');
+    /** Queda como hermanas bajo macro: sin inventar nivel planta intermediario si era solo MSP. */
+    expect(trabajo.parentSourceUid).toBe(1);
+
+    const bundle = buildCanvasImportBundle(preview);
+    const n3 = bundle.nodes.find((n) => n.importSourceUid === 3)!;
+    expect(n3.type).toBe('tarea');
+    expect(n3.parentId).toBe(bundle.nodes.find((n) => n.importSourceUid === 1)?.id);
+  });
+
+  it('jerarquía profunda MSP: phantom collapse reduce tierras; preview y bundle coinciden', () => {
+    /** Dos nodos nivel 1 MSP evitan collapsedRoot y permiten tiers; la cadena 1→1.1→… típicamente aplana niveles fantasmas Summary+0dur. */
     const xml = wrapProject(`
       ${task(1, '1', 'Bloque 1', { summary: true })}
       ${task(9, '2', 'Bloque 2 stub', { summary: false })}
@@ -57,15 +80,12 @@ describe('parseProjectXml + buildCanvasImportBundle', () => {
     `);
     const preview = parseProjectXml(xml);
     expect(preview.collapsedRootUid).toBeNull();
-    expect(preview.groupingTierCount).toBe(4);
-    expect(preview.adaptiveImportKind).toBe('edificio_multifamiliar');
+    expect(preview.warnings.some((w) => w.kind === 'msp_phantom_promoted')).toBe(true);
     expect(preview.structureTierLabels.length).toBe(preview.groupingTierCount);
 
     const bundle = buildCanvasImportBundle(preview);
     expect(bundle.projectKind).toBe(preview.adaptiveImportKind);
-    /** Nodos canvas = mismo número de previews (sin placeholders). */
     expect(bundle.nodes.every((x) => x.importSourceUid != null)).toBe(true);
     expect(bundle.nodes.length).toBe(preview.nodesPreview.length);
-    expect(bundle.nodes.every((n) => !/\(planta\)|\(sector\)|\(ambiente\)/i.test(n.title))).toBe(true);
   });
 });

@@ -38,6 +38,7 @@ export type ProjectImportWarningKind =
   | 'duration_unparsed'
   | 'duplicate_name'
   | 'deep_outline'
+  | 'msp_phantom_promoted'
   | 'missing_outline'
   | 'orphan_task'
   | 'dependence_summary_target'
@@ -258,11 +259,11 @@ function buildStructureTierLabels(groupingTierCount: number, adaptiveKind: Canva
 
 function semanticHintFromName(name: string, grows: GrowsImportNodeKind, tierIdx: number): string | undefined {
   const n = name.normalize('NFD').replace(/\u0300-\u036f/g, '').trim().toLowerCase();
-  if (/(instalaci|electric|sanitari(a|os)|gas|revoque|pintura|carpinteri|hidraul|soldadur|rubro|terminacion)/i.test(n)) {
+  if (/(\binstalaci\b|electric|sanitari(a|os)|gas|revoque|pintura|carpinteri|hidraul|soldadur|rubro|terminacion)/i.test(n)) {
     return 'Rubro / instalaciones';
   }
   if (
-    /(\b(pb|pa)\b|planta baja|planta alta|piso\b|primer piso|segundo piso\s|nivel)/i.test(n)
+    /\b(pa|pb)\b|\bplanta\s+baja\b|\bplanta\s+alta\b|\bpiso\b|\bprimer\s+piso\b|\bsegundo\s+piso\b|\bpisos\b|\bnivel(es)?\b/i.test(n)
   ) {
     return 'Planta / piso';
   }
@@ -282,11 +283,13 @@ export function sortedGroupingOutlineLengths(
   tasks: ProjectXmlTask[],
   childCount: Map<number, number>,
   collapsedRootUid: number | null,
+  suppressedPreviewUids: Set<number> = new Set(),
 ): number[] {
   const lenSet = new Set<number>();
   for (const t of tasks) {
     if (t.uid === 0) continue;
     if (collapsedRootUid !== null && t.uid === collapsedRootUid) continue;
+    if (suppressedPreviewUids.has(t.uid)) continue;
     if ((childCount.get(t.uid) ?? 0) === 0) continue;
     if (t.outlineParts.length > 0) lenSet.add(t.outlineParts.length);
   }
@@ -302,6 +305,125 @@ function detectCollapsedRoot(tasks: ProjectXmlTask[], childCounts: Map<number, n
   const structural = kids > 0 || cand.isSummaryFlag;
   if (!structural) return null;
   return cand.uid;
+}
+
+/** Hijos MSP directos (UID → hijos donde parentUid conocido). */
+function mspChildrenByParent(parentUid: Map<number, number | null>): Map<number, number[]> {
+  const ch = new Map<number, number[]>();
+  for (const [childId, pid] of parentUid) {
+    if (pid == null) continue;
+    if (!ch.has(pid)) ch.set(pid, []);
+    ch.get(pid)!.push(childId);
+  }
+  return ch;
+}
+
+/** Hijos efectivos después de omitir intermedios fantasmas marcados como suprimidos. */
+function mspEffectiveDirectChildren(
+  u: number,
+  mspChildren: Map<number, number[]>,
+  suppressedPreviewUids: Set<number>,
+): number[] {
+  const raw = mspChildren.get(u) ?? [];
+  const out: number[] = [];
+  for (const c of raw) {
+    if (suppressedPreviewUids.has(c)) out.push(...mspEffectiveDirectChildren(c, mspChildren, suppressedPreviewUids));
+    else out.push(c);
+  }
+  return out;
+}
+
+/** Padre efectivo tras quitar niveles fantasmas MSP (resumen único‑hijo con hoja final). */
+function resolveEffectivePreviewParentUid(
+  uid: number,
+  meta: { parentUid: Map<number, number | null> },
+  suppressedPreviewUids: Set<number>,
+  collapsedRootUid: number | null,
+): number | null {
+  let p = meta.parentUid.get(uid) ?? null;
+  while (p != null) {
+    if (collapsedRootUid !== null && p === collapsedRootUid) return null;
+    if (!suppressedPreviewUids.has(p)) return p;
+    p = meta.parentUid.get(p) ?? null;
+  }
+  return null;
+}
+
+/** Reconstruye hijosMSP para capas Outline y clasificación tipo (sin niveles fantasmas típicos de Project). */
+function computePhantomSingleLeafPromotion(
+  filtered: ProjectXmlTask[],
+  meta: { parentUid: Map<number, number | null>; childCount: Map<number, number>; byUid: Map<number, ProjectXmlTask> },
+  collapsedRootUid: number | null,
+): { suppressedPreviewUids: Set<number>; phantomWarning?: ProjectImportWarning } {
+  const outlineDepth = (t: ProjectXmlTask) => t.outlineParts.length;
+  const candidates = [...filtered]
+    .filter((t) => t.uid !== 0 && t.uid !== collapsedRootUid)
+    .sort((a, b) => outlineDepth(b) - outlineDepth(a));
+
+  const mspChildren = mspChildrenByParent(meta.parentUid);
+  const suppressedPreviewUids = new Set<number>();
+
+  let bumped = true;
+  while (bumped) {
+    bumped = false;
+    for (const t of candidates) {
+      const u = t.uid;
+      if (suppressedPreviewUids.has(u)) continue;
+
+      const chEff = mspEffectiveDirectChildren(u, mspChildren, suppressedPreviewUids);
+      if (chEff.length !== 1) continue;
+      const sole = chEff[0]!;
+      const soleMspKids = mspChildren.get(sole)?.length ?? 0;
+      if (soleMspKids > 0) continue;
+
+      const tu = meta.byUid.get(u);
+      if (!tu || tu.uid === collapsedRootUid) continue;
+      /** Raíces Outline MSP (padre ausente): nunca aplastar — pueden ser macros con un solo trabajo real pero deben mantener nivel fase */
+      if (meta.parentUid.get(u) == null) continue;
+      /** Sólo niveles marcados Summary o sin trabajo explícito típico (evita tragarse rubros multinivel reales por error). */
+      const zeroish =
+        tu.durationRaw == null ||
+        tu.durationRaw.trim() === '' ||
+        /^0(\.0+)?/i.test(tu.durationRaw.trim().split(/\s/)[0] ?? '');
+      if (!(tu.isSummaryFlag || zeroish)) continue;
+
+      suppressedPreviewUids.add(u);
+      bumped = true;
+    }
+  }
+
+  let phantomWarning: ProjectImportWarning | undefined;
+  if (suppressedPreviewUids.size > 0) {
+    phantomWarning = {
+      kind: 'msp_phantom_promoted',
+      message:
+        suppressedPreviewUids.size === 1
+          ? 'Se omitió 1 nivel resumen MSP con un único hijo ejecutable (no cuenta como planta/ambiente).'
+          : `Se omitieron ${suppressedPreviewUids.size} niveles resumen MSP con un único hijo ejecutable (no inventan pisos/espacios).`,
+    };
+  }
+
+  return { suppressedPreviewUids, phantomWarning };
+}
+
+function recomputedEffectiveChildCount(
+  filtered: ProjectXmlTask[],
+  meta: { parentUid: Map<number, number | null> },
+  suppressedPreviewUids: Set<number>,
+  collapsedRootUid: number | null,
+): Map<number, number> {
+  const cc = new Map<number, number>();
+  for (const t of filtered) {
+    cc.set(t.uid, 0);
+  }
+  for (const t of filtered) {
+    if (suppressedPreviewUids.has(t.uid)) continue;
+    const p = resolveEffectivePreviewParentUid(t.uid, meta, suppressedPreviewUids, collapsedRootUid);
+    if (p != null && !suppressedPreviewUids.has(p)) {
+      cc.set(p, (cc.get(p) ?? 0) + 1);
+    }
+  }
+  return cc;
 }
 
 function parentOutlineKey(parts: number[]): string | null {
@@ -410,11 +532,13 @@ export function mapProjectToGrowsPreview(
     parentUid: Map<number, number | null>;
     childCount: Map<number, number>;
     collapsedRootUid: number | null;
+    suppressedPreviewUids?: Set<number>;
   },
   sortedGroupLengths: number[],
   adaptiveKind: CanvasProjectKind,
 ): { nodes: GrowsImportNodePreview[]; warnings: ProjectImportWarning[] } {
   const warnings: ProjectImportWarning[] = [];
+  const suppressed = meta.suppressedPreviewUids ?? new Set<number>();
   const filtered = tasks.filter((t) => t.uid !== 0);
   const groupingTierTotal = sortedGroupLengths.length;
 
@@ -425,6 +549,7 @@ export function mapProjectToGrowsPreview(
   /** Nombres de hojas (tareas ejecutables) para alertar duplicados */
   for (const t of filtered) {
     if (meta.collapsedRootUid === t.uid) continue;
+    if (suppressed.has(t.uid)) continue;
     const cc = meta.childCount.get(t.uid) ?? 0;
     if (cc > 0) continue;
     nameCount.set(t.name, (nameCount.get(t.name) ?? 0) + 1);
@@ -440,6 +565,7 @@ export function mapProjectToGrowsPreview(
 
   for (const t of filtered) {
     if (meta.collapsedRootUid === t.uid) continue;
+    if (suppressed.has(t.uid)) continue;
 
     const cc = meta.childCount.get(t.uid) ?? 0;
     const hasChildren = cc > 0;
@@ -788,6 +914,34 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
   const fullHierarchy = detectProjectHierarchy(xmlTasks);
   const collapsedRootUid = detectCollapsedRoot(xmlTasks, fullHierarchy.childCount);
 
+  const filteredTasksNoZero = xmlTasks.filter((t) => t.uid !== 0);
+  const { suppressedPreviewUids, phantomWarning } = computePhantomSingleLeafPromotion(
+    filteredTasksNoZero,
+    fullHierarchy,
+    collapsedRootUid,
+  );
+  const effChildCount = recomputedEffectiveChildCount(
+    filteredTasksNoZero,
+    fullHierarchy,
+    suppressedPreviewUids,
+    collapsedRootUid,
+  );
+  const effParentUid = new Map<number, number | null>();
+  for (const t of filteredTasksNoZero) {
+    if (suppressedPreviewUids.has(t.uid)) continue;
+    effParentUid.set(
+      t.uid,
+      resolveEffectivePreviewParentUid(t.uid, fullHierarchy, suppressedPreviewUids, collapsedRootUid),
+    );
+  }
+  const hierarchyEff = {
+    ...fullHierarchy,
+    parentUid: effParentUid,
+    childCount: effChildCount,
+    collapsedRootUid,
+    suppressedPreviewUids,
+  };
+
   const collapsedRootTask = collapsedRootUid != null ? fullHierarchy.byUid.get(collapsedRootUid) : null;
   const projectName =
     meta0.name && meta0.name !== 'Proyecto'
@@ -798,25 +952,24 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
 
   const sortedGroupLengths = sortedGroupingOutlineLengths(
     xmlTasks,
-    fullHierarchy.childCount,
+    effChildCount,
     collapsedRootUid,
+    suppressedPreviewUids,
   );
   const groupingTierCount = sortedGroupLengths.length;
   const adaptiveImportKind = inferAdaptiveImportKind(groupingTierCount);
   const maxOutlineDepthDetected = Math.max(
     0,
     ...xmlTasks
-      .filter((t) => t.uid !== 0 && (collapsedRootUid == null || t.uid !== collapsedRootUid))
+      .filter((t) => t.uid !== 0 && !suppressedPreviewUids.has(t.uid))
+      .filter((t) => collapsedRootUid == null || t.uid !== collapsedRootUid)
       .map((t) => t.outlineParts.length),
   );
   const structureTierLabels = buildStructureTierLabels(groupingTierCount, adaptiveImportKind);
 
   const { nodes: rawNodes, warnings: mapWarnings } = mapProjectToGrowsPreview(
     xmlTasks,
-    {
-      ...fullHierarchy,
-      collapsedRootUid,
-    },
+    hierarchyEff,
     sortedGroupLengths,
     adaptiveImportKind,
   );
@@ -869,7 +1022,7 @@ export function parseProjectXml(xmlText: string): ProjectImportPreview {
 
   const treeLines = buildPreviewTree(nodesPreview, projectName);
 
-  const warnings = [...otherMapWarns, ...durCapped, ...predWarnings];
+  const warnings = [...(phantomWarning ? [phantomWarning] : []), ...otherMapWarns, ...durCapped, ...predWarnings];
 
   return {
     projectName,

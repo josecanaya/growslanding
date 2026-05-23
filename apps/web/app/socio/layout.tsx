@@ -16,8 +16,11 @@ function SocioLayoutInner({ children }: { children: React.ReactNode }) {
   const currentUser = useCurrentUser();
   const ahoraNav = useAhoraWorkNavOptional();
   const isAhoraPage = pathname?.startsWith('/socio/ahora');
-  /** Demo Stitch en `/socio/ahora/demo`: pantalla completa como el mock, sin header de shell */
-  const ahoraSoloVistaStitch = isAhoraPage && pathname?.startsWith('/socio/ahora/demo');
+  const esRutaPrincipalAhora = pathname === '/socio/ahora' || pathname === '/socio/ahora/';
+  /** Demo Stitch en `/socio/ahora/demo`, o trabajo en curso en `/socio/ahora` (pantalla inmersiva, sin header de shell) */
+  const ahoraSoloVistaStitch =
+    (isAhoraPage && pathname?.startsWith('/socio/ahora/demo')) ||
+    (isAhoraPage && esRutaPrincipalAhora && Boolean(ahoraNav?.hideBottomTabBar));
   const hideTabByWorkSession = Boolean(ahoraSoloVistaStitch && ahoraNav?.hideBottomTabBar);
   const isHomePage =
     pathname === '/socio' ||

@@ -41,6 +41,73 @@ import {
 } from '@/lib/domain/estados-core';
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
+import type { AhoraStitchChecklistItem, AhoraStitchItemState } from '@/lib/mocks/socioMockData';
+import { AhoraJornadaActivaStitch } from '@/components/socio/ahora/AhoraJornadaActivaStitch';
+
+async function comprimirImagenSocio(file: File, maxWidth = 1200): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('No se pudo obtener contexto del canvas'));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function bloqueElapsedSeconds(sub: { hora_inicio?: string | null }): number {
+  const hi = sub?.hora_inicio;
+  if (hi && typeof hi === 'string') {
+    const t = Date.parse(hi);
+    if (Number.isFinite(t)) {
+      return Math.max(0, Math.floor((Date.now() - t) / 1000));
+    }
+  }
+  return 0;
+}
+
+function bloquesToRunningChecklist(
+  bloques: Array<{ id: string; orden: number; estado: string }>,
+  activeSubId: string,
+): AhoraStitchChecklistItem[] {
+  const sorted = [...bloques].sort((a, b) => a.orden - b.orden);
+  return sorted.map((b) => {
+    const est = String(b.estado || '').toLowerCase();
+    const done =
+      subtareaEstaCompletadaConLegacy(b.estado) || est === 'para_validar' || est === 'validado';
+    const active = Boolean(!done && est === 'en_progreso' && b.id === activeSubId);
+    let state: AhoraStitchItemState;
+    if (done) state = 'done';
+    else if (active) state = 'active';
+    else state = 'pending';
+
+    return { id: b.id, title: `Bloque ${b.orden}`, state };
+  });
+}
 
 type SupabaseTarea = {
   id: string;
@@ -53,6 +120,7 @@ type SupabaseTarea = {
   fecha_fin_estimada: string | null;
   obra_id: string | null;
   responsable: string | null;
+  canvas_node_id?: string | null;
   obras?: {
     id: string;
     name: string | null;
@@ -188,12 +256,16 @@ export function AhoraSection() {
   const [tareaOperableMotivo, setTareaOperableMotivo] = useState<string | null>(null);
 
   // Helper para manejar errores de API y mostrar toasts
-  const handleApiError = (error: any, defaultMessage: string) => {
+  const handleApiError = (
+    error: any,
+    defaultMessage: string,
+    options?: { skipToast?: boolean },
+  ): { title: string; description: string } => {
     const errorMessage = error?.message || error?.error || defaultMessage;
     const errorCode = error?.errorCode || error?.error;
     
     let title = 'Error';
-    let description = errorMessage;
+    let description = typeof errorMessage === 'string' ? errorMessage : String(errorMessage ?? defaultMessage);
     let variant: 'default' | 'destructive' = 'destructive';
     
     // Mapear todos los códigos de error según reglas
@@ -243,18 +315,33 @@ export function AhoraSection() {
     } else if (errorCode === 'BLOQUE_YA_ENVIADO' || errorMessage.includes('ya enviado')) {
       title = 'Bloque ya enviado';
       description = 'Este bloque ya fue enviado para validar.';
+    } else if (
+      errorCode === 'DATABASE_ERROR' ||
+      error?.error === 'DATABASE_ERROR'
+    ) {
+      title = 'Error en base de datos';
+      const detail =
+        typeof error?.detail === 'string' ? error.detail.trim() : '';
+      const code = error?.code != null ? String(error.code).trim() : '';
+      description = [typeof error?.message === 'string' ? error.message : null, detail || null, code ? `(${code})` : null]
+        .filter(Boolean)
+        .join(' — ')
+        || defaultMessage;
     } else if (errorMessage.includes('sin saldo') || errorMessage.includes('saldo negativo')) {
       title = 'Saldo insuficiente';
       description = 'Tu cuenta está suspendida por saldo negativo.';
     }
     
-    toast({
-      title,
-      description,
-      variant,
-    });
+    if (!options?.skipToast) {
+      toast({
+        title,
+        description,
+        variant,
+      });
+    }
     
     setError(description);
+    return { title, description };
   };
 
   // Función centralizada para refrescar todos los datos
@@ -277,6 +364,7 @@ export function AhoraSection() {
         fecha_fin_estimada,
         obra_id,
         responsable,
+        canvas_node_id,
         obras (
           id,
           name,
@@ -426,6 +514,7 @@ export function AhoraSection() {
           fecha_fin_estimada,
           obra_id,
           responsable,
+          canvas_node_id,
           obras (
             id,
             name,
@@ -1499,6 +1588,52 @@ export function AhoraSection() {
     }
   };
 
+  const handleStitchLiveSend = async ({
+    mainPhotoFile,
+    problemas,
+    qcConfirmed,
+  }: {
+    mainPhotoFile: File;
+    problemas?: string;
+    qcConfirmed: boolean;
+  }) => {
+      if (!qcConfirmed) {
+        throw new Error('Confirmá el control de calidad antes de enviar.');
+      }
+      const sid = subtareaActual?.id;
+      if (!sid) {
+        throw new Error('No encontramos el bloque activo.');
+      }
+      if (!fileLooksLikeImage(mainPhotoFile)) {
+        throw new Error('El archivo no es una imagen válida.');
+      }
+
+      const dataUrl = await comprimirImagenSocio(mainPhotoFile, 1200);
+      const response = await fetch('/api/upload/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ dataUrl, subtareaId: sid }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg = (result as any).message || (result as any).error || 'Error al subir evidencia';
+        throw new Error(msg);
+      }
+
+      const urlUsable =
+        (result as any).evidencia_url ?? (result as any).publicUrl ?? (result as any).path;
+      if (!urlUsable) {
+        throw new Error('La subida no devolvió una URL de evidencia usable');
+      }
+
+      const ok = await handleEnviarParaValidar(String(urlUsable), undefined, problemas);
+      if (!ok) {
+        throw new Error('No se pudo enviar el bloque a validación.');
+      }
+    };
+
   const handleFinalizarSubtarea = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
     if (!subtareaActual || !currentUser) return;
 
@@ -1918,6 +2053,49 @@ export function AhoraSection() {
           <p className="text-gray-600">{error}</p>
         </div>
       </div>
+    );
+  }
+
+  /** Pantalla inmersiva igual a `/socio/ahora/demo`, con datos de la tarea/bloque desde Supabase/API */
+  const muestraStitchEnVivo =
+    !USE_MOCK_DATA &&
+    Boolean(jornadaActual) &&
+    Boolean(subtareaActual) &&
+    String(subtareaActual.estado || '').toLowerCase() === 'en_progreso';
+
+  if (muestraStitchEnVivo && subtareaActual) {
+    const runningChecklist: AhoraStitchChecklistItem[] =
+      bloquesLista.length > 0
+        ? bloquesToRunningChecklist(bloquesLista, subtareaActual.id)
+        : [
+            {
+              id: String(subtareaActual.id),
+              title: `Bloque ${subtareaActual.orden ?? 1}`,
+              state: 'active',
+            },
+          ];
+
+    const obraLine = [subtareaActual.tareas?.obras?.name, subtareaActual.tareas?.obras?.address]
+      .filter(Boolean)
+      .join(' — ');
+
+    const microStepTitles =
+      checklistItems.length > 0
+        ? checklistItems.map((it) => (it.label?.trim() ? it.label : 'Ítem'))
+        : [`Ejecución del bloque ${subtareaActual.orden ?? 1}`];
+
+    return (
+      <AhoraJornadaActivaStitch
+        mode="live"
+        taskTitle={subtareaActual.tareas?.title || tareaActual?.title || 'Tarea en curso'}
+        obraLine={obraLine || null}
+        runningChecklist={runningChecklist}
+        microStepTitles={microStepTitles}
+        progresoHecho={Math.min(subtareasCompletadas, Math.max(totalSubtareas, 1))}
+        progresoTotal={Math.max(totalSubtareas || 1, 1)}
+        initialElapsedSeconds={bloqueElapsedSeconds(subtareaActual)}
+        onSendValidationLive={handleStitchLiveSend}
+      />
     );
   }
 

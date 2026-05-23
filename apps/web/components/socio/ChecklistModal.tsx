@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, CheckCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { checklistPlantillas, type ChecklistItem } from '@/data/checklists';
 
@@ -20,7 +21,10 @@ interface ChecklistModalProps {
    */
   preStartGate?: boolean;
   startWorkButtonLabel?: string;
-  onStartWork?: (items: ChecklistItem[]) => void | Promise<void>;
+  /** UUID en DB del nodo de tarea (`tareas.canvas_node_id`) para cargar checklist publicado desde el canvas */
+  canvasDbTaskNodeId?: string | null;
+  /** Tras checklist (preStartGate): ejecutar iniciar bloque/tarea */
+  onStartWork?: (items: ChecklistItem[]) => Promise<void>;
 }
 
 // Checklist genérico por defecto
@@ -40,7 +44,9 @@ export function ChecklistModal({
   preStartGate = false,
   startWorkButtonLabel = 'Comenzar trabajo',
   onStartWork,
+  canvasDbTaskNodeId,
 }: ChecklistModalProps) {
+  const { toast } = useToast();
   const [items, setItems] = useState<ChecklistItem[]>(initialItems ?? []);
   const [loading, setLoading] = useState(!(initialItems && initialItems.length > 0));
   const [saving, setSaving] = useState(false);
@@ -52,11 +58,36 @@ export function ChecklistModal({
       setLoading(false);
       return;
     }
+    let cancelled = false;
+
     const cargarChecklist = async () => {
       try {
         setLoading(true);
 
-        // 1. Intentar obtener checklist desde eventos previos
+        // 0. Checklist definido en el canvas y publicado (fuente principal para socio)
+        if (canvasDbTaskNodeId?.trim()) {
+          const { data: chkRows, error: chkErr } = await (supabase as any)
+            .from('canvas_task_checklist_items')
+            .select('id, title, done, sort_order')
+            .eq('task_node_id', canvasDbTaskNodeId.trim())
+            .order('sort_order', { ascending: true });
+
+          if (cancelled) return;
+
+          if (!chkErr && Array.isArray(chkRows)) {
+            const mapped = (chkRows as any[]).map((row) => ({
+              id: String(row.id),
+              label: String(row.title || '').trim() || 'Ítem',
+              done: Boolean(row.done),
+            }));
+            setItems(mapped);
+            setLoading(false);
+            return;
+          }
+          console.warn('[CHECKLIST_MODAL] No se pudo cargar checklist de canvas:', chkErr?.message);
+        }
+
+        // 1. Eventos previos con checklist
         const { data: eventosData, error: eventosError } = await supabase
           .from('eventos')
           .select('checklist, created_at')
@@ -65,11 +96,11 @@ export function ChecklistModal({
           .order('created_at', { ascending: false })
           .limit(1);
 
+        if (cancelled) return;
+
         if (!eventosError && eventosData && eventosData.length > 0) {
           const checklistEvento = eventosData[0].checklist;
           if (Array.isArray(checklistEvento) && checklistEvento.length > 0) {
-            // Convertir formato del evento a formato del componente
-            // El evento puede tener { id, label, checked } o { id, label, done }
             const itemsConvertidos = checklistEvento.map((item: any) => ({
               id: item.id || `item-${Math.random()}`,
               label: item.label || '',
@@ -81,41 +112,47 @@ export function ChecklistModal({
           }
         }
 
-        // 2. Si no hay checklist previo, buscar en plantillas
+        // 2–3. Plantillas / genérico (solo fallback)
         const nombreTarea = tarea.title || tarea.nombre || '';
-        
-        // Buscar plantilla exacta
+
         let plantilla = checklistPlantillas[nombreTarea];
-        
-        // Si no existe, buscar por coincidencia parcial
+
         if (!plantilla) {
           const nombreLower = nombreTarea.toLowerCase();
           const claveEncontrada = Object.keys(checklistPlantillas).find(
-            clave => nombreLower.includes(clave.toLowerCase()) || clave.toLowerCase().includes(nombreLower)
+            (clave) =>
+              nombreLower.includes(clave.toLowerCase()) || clave.toLowerCase().includes(nombreLower),
           );
           if (claveEncontrada) {
             plantilla = checklistPlantillas[claveEncontrada];
           }
         }
 
-        // 3. Si no se encuentra plantilla, usar checklist genérico
         if (!plantilla) {
           plantilla = checklistDefault;
         }
 
-        // Clonar items para evitar mutación
-        setItems(plantilla.map(item => ({ ...item })));
+        setItems(plantilla.map((item) => ({ ...item })));
       } catch (error) {
         console.error('[CHECKLIST_MODAL] Error al cargar checklist:', error);
-        // En caso de error, usar checklist genérico
-        setItems(checklistDefault.map(item => ({ ...item })));
+        setItems(checklistDefault.map((item) => ({ ...item })));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    cargarChecklist();
-  }, [tarea.id, tarea.title, tarea.nombre, supabase, initialItems]);
+    void cargarChecklist();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    tarea.id,
+    tarea.title,
+    tarea.nombre,
+    supabase,
+    initialItems,
+    canvasDbTaskNodeId,
+  ]);
 
   const handleToggleItem = async (itemId: string) => {
     const nuevosItems = items.map(item =>
@@ -154,7 +191,12 @@ export function ChecklistModal({
       onClose();
     } catch (error) {
       console.error('[CHECKLIST_MODAL] Error al comenzar trabajo:', error);
-      alert('No se pudo iniciar. Revisá la conexión e intentá de nuevo.');
+      const msg = error instanceof Error ? error.message : 'Revisá la conexión e intentá de nuevo.';
+      toast({
+        title: 'No se pudo iniciar',
+        description: msg,
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }

@@ -40,6 +40,7 @@ import {
   subtareaEstaCompletadaOficial,
 } from '@/lib/domain/estados-core';
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
+import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
 
 type SupabaseTarea = {
   id: string;
@@ -151,6 +152,10 @@ export function AhoraSection() {
   const [orgIdResuelta, setOrgIdResuelta] = useState<string | null>(currentUser?.orgId ?? null);
   const [tareaActualIndex, setTareaActualIndex] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
+  /** Tras «Comenzar bloque/tarea»: primero checklist; null = sólo vista manual del checklist */
+  const [gateIntentInicioChecklist, setGateIntentInicioChecklist] = useState<
+    'subtarea' | 'tarea' | null
+  >(null);
   const [showChat, setShowChat] = useState(false);
   const [showPlanos, setShowPlanos] = useState(false);
   const [showEvidencias, setShowEvidencias] = useState(false);
@@ -1131,8 +1136,9 @@ export function AhoraSection() {
     }
   };
 
-  const handleIniciarTarea = async () => {
+  const handleIniciarTarea = async (checklistFsmOverride?: ChecklistItem[]) => {
     if (!tareaActual || !currentUser) return;
+    const checklistParaFsm = checklistFsmOverride ?? checklistItems;
     const requestKey = `iniciar-tarea:${tareaActual.id}`;
     if (
       isIniciando ||
@@ -1189,7 +1195,7 @@ export function AhoraSection() {
         body: JSON.stringify({
           nuevo_estado: 'en_progreso',
           notas: 'Tarea iniciada desde la sección Ahora',
-          checklist: checklistItems.map(item => ({
+          checklist: checklistParaFsm.map((item) => ({
             id: item.id,
             label: item.label,
             checked: item.done,
@@ -1960,8 +1966,10 @@ export function AhoraSection() {
           handleApiError({ errorCode: 'SOCIO_TIENE_2_BLOQUES_EN_PROGRESO' }, 'Ya tenés 2 bloques en progreso');
           return;
         }
-        // Rehacer bloque rechazado o iniciar bloque pendiente
-        handleIniciarSubtarea();
+        // Rehacer bloque rechazado o iniciar bloque pendiente (checklist antes)
+        setGateIntentInicioChecklist('subtarea');
+        setShowChecklist(true);
+        return;
       } else if (subtareaActual.estado === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
       } else if (
@@ -1998,7 +2006,9 @@ export function AhoraSection() {
           );
           return;
         }
-        handleIniciarTarea();
+        setGateIntentInicioChecklist('tarea');
+        setShowChecklist(true);
+        return;
       } else {
         handleFinalizarTarea();
       }
@@ -2172,7 +2182,10 @@ export function AhoraSection() {
         <div className="mx-4 mt-5 flex flex-wrap gap-2">
           <button
             type="button"
-            onClick={() => setShowChecklist(true)}
+            onClick={() => {
+              setGateIntentInicioChecklist(null);
+              setShowChecklist(true);
+            }}
             disabled={!(subtareaActual?.estado === 'en_progreso' || (tareaActual && isTareaEnProgreso))}
             className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border border-[#163274]/12 bg-white px-3 py-2.5 text-xs font-bold text-[#163274] shadow-sm disabled:opacity-40"
           >
@@ -2327,9 +2340,32 @@ export function AhoraSection() {
                   title: subtareaActual?.tareas?.title || 'Revoque exterior',
                 }
           }
-          onClose={() => setShowChecklist(false)}
+          onClose={() => {
+            setShowChecklist(false);
+            setGateIntentInicioChecklist(null);
+          }}
           onSave={handleSaveChecklist}
           initialItems={USE_MOCK_DATA ? MOCK_CHECKLIST_ITEMS : undefined}
+          preStartGate={gateIntentInicioChecklist !== null}
+          startWorkButtonLabel={
+            gateIntentInicioChecklist === 'subtarea'
+              ? subtareaActual?.estado === 'rechazado' ||
+                  subtareaActual?.estado === 'rechazada'
+                ? 'Rehacer bloque'
+                : 'Comenzar bloque'
+              : 'Comenzar tarea'
+          }
+          onStartWork={
+            gateIntentInicioChecklist !== null
+              ? async (items) => {
+                  if (gateIntentInicioChecklist === 'subtarea') {
+                    await handleIniciarSubtarea();
+                    return;
+                  }
+                  await handleIniciarTarea(items);
+                }
+              : undefined
+          }
         />
       )}
 
@@ -2514,9 +2550,21 @@ function ModalEvidencias({
     });
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, isCamera: boolean) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (!fileLooksLikeImage(file)) {
+      toast({
+        title: 'No pudimos usar esta imagen',
+        description:
+          'Algunos móviles no envían el tipo de archivo al sacar foto. Probá de nuevo o elegí la misma foto desde «Galería».',
+        variant: 'destructive',
+      });
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (cameraInputRef.current) cameraInputRef.current.value = '';
+      return;
+    }
 
     if (!subtareaId?.trim()) {
       toast({
@@ -2655,8 +2703,8 @@ function ModalEvidencias({
                 ref={cameraInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
-                onChange={(e) => handleFileSelect(e, true)}
+                capture
+                onChange={(e) => handleFileSelect(e)}
                 className="hidden"
                 disabled={uploading}
               />
@@ -2668,7 +2716,7 @@ function ModalEvidencias({
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                onChange={(e) => handleFileSelect(e, false)}
+                onChange={(e) => handleFileSelect(e)}
                 className="hidden"
                 disabled={uploading}
               />
@@ -2680,7 +2728,7 @@ function ModalEvidencias({
                 ref={videoInputRef}
                 type="file"
                 accept="video/*"
-                capture="environment"
+                capture
                 onChange={handleVideoSelect}
                 className="hidden"
                 disabled={uploading}
@@ -2826,8 +2874,16 @@ function ModalFinalizarSubtarea({
     onUploadingChange?.(true);
     try {
       if (kind === 'evidencia_final') {
-        const dataUrl = file.type.startsWith('image/') ? await comprimirImagen(file, 1200) : null;
-        if (!dataUrl) throw new Error('La evidencia debe ser una imagen');
+        if (!fileLooksLikeImage(file)) {
+          toast({
+            title: 'No pudimos usar esta imagen',
+            description:
+              'Si falló al tomar foto, probá «Elegir de galería» o repetí la foto.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        const dataUrl = await comprimirImagen(file, 1200);
 
         const response = await fetch('/api/upload/photo', {
           method: 'POST',
@@ -2948,7 +3004,7 @@ function ModalFinalizarSubtarea({
                   ref={cameraInputRef}
                   type="file"
                   accept="image/*"
-                  capture="environment"
+                  capture
                   onChange={handleFileSelect}
                   className="hidden"
                   disabled={uploading}
@@ -2987,7 +3043,7 @@ function ModalFinalizarSubtarea({
                   ref={videoInputRef}
                   type="file"
                   accept="video/*"
-                  capture="environment"
+                  capture
                   onChange={handleVideoSelect}
                   className="hidden"
                   disabled={uploading}

@@ -15,6 +15,12 @@ interface ChecklistModalProps {
   onSave: (items: ChecklistItem[]) => Promise<void>;
   /** Si se pasa (ej. demo), se usa en lugar de cargar desde API */
   initialItems?: ChecklistItem[];
+  /**
+   * Flujo antes de «Comenzar bloque/tarea»: checklist + botón principal
+   */
+  preStartGate?: boolean;
+  startWorkButtonLabel?: string;
+  onStartWork?: (items: ChecklistItem[]) => void | Promise<void>;
 }
 
 // Checklist genérico por defecto
@@ -26,7 +32,15 @@ const checklistDefault: ChecklistItem[] = [
   { id: "gen5", label: "Control de calidad", done: false },
 ];
 
-export function ChecklistModal({ tarea, onClose, onSave, initialItems }: ChecklistModalProps) {
+export function ChecklistModal({
+  tarea,
+  onClose,
+  onSave,
+  initialItems,
+  preStartGate = false,
+  startWorkButtonLabel = 'Comenzar trabajo',
+  onStartWork,
+}: ChecklistModalProps) {
   const [items, setItems] = useState<ChecklistItem[]>(initialItems ?? []);
   const [loading, setLoading] = useState(!(initialItems && initialItems.length > 0));
   const [saving, setSaving] = useState(false);
@@ -131,6 +145,21 @@ export function ChecklistModal({ tarea, onClose, onSave, initialItems }: Checkli
     }
   };
 
+  const handleStartWork = async () => {
+    if (!onStartWork) return;
+    try {
+      setSaving(true);
+      await onSave(items);
+      await onStartWork(items);
+      onClose();
+    } catch (error) {
+      console.error('[CHECKLIST_MODAL] Error al comenzar trabajo:', error);
+      alert('No se pudo iniciar. Revisá la conexión e intentá de nuevo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Guardar al cerrar si hay cambios
   const handleClose = async () => {
     try {
@@ -152,7 +181,9 @@ export function ChecklistModal({ tarea, onClose, onSave, initialItems }: Checkli
       <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Checklist</h2>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {preStartGate ? 'Antes de comenzar' : 'Checklist'}
+          </h2>
           <button
             onClick={handleClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -164,6 +195,12 @@ export function ChecklistModal({ tarea, onClose, onSave, initialItems }: Checkli
 
         {/* Título de la tarea */}
         <div className="px-6 pt-4">
+          {preStartGate && (
+            <p className="text-sm text-[#43617c] mb-2 rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+              Revisá el checklist y tocá <strong>{startWorkButtonLabel}</strong> cuando estés listo para
+              pasar a ejecución. La evidencia con foto la cargás al finalizar el bloque o la tarea.
+            </p>
+          )}
           <p className="text-sm text-gray-600 mb-1">Tarea:</p>
           <p className="text-lg font-semibold text-gray-900">{nombreTarea}</p>
         </div>
@@ -215,21 +252,47 @@ export function ChecklistModal({ tarea, onClose, onSave, initialItems }: Checkli
 
         {/* Footer con botones */}
         <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-          <button
-            onClick={handleClose}
-            disabled={saving}
-            className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cerrar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || loading}
-            className="px-6 py-2 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#0A4D68' }}
-          >
-            {saving ? 'Guardando...' : 'Guardar'}
-          </button>
+          {preStartGate ? (
+            <>
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={saving}
+                className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleStartWork}
+                disabled={saving || loading || !onStartWork}
+                className="px-6 py-2.5 text-white rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                style={{ backgroundColor: '#4A6FA5' }}
+              >
+                {saving ? 'Iniciando…' : startWorkButtonLabel}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleClose}
+                disabled={saving}
+                className="px-6 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving || loading}
+                className="px-6 py-2 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: '#0A4D68' }}
+              >
+                {saving ? 'Guardando...' : 'Guardar'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

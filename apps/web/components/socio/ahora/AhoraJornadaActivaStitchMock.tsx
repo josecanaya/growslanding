@@ -59,7 +59,8 @@ export function AhoraJornadaActivaStitchMock() {
   const [microIndex, setMicroIndex] = useState(0);
   const [evidence, setEvidence] = useState<EvidenceSlot[]>([]);
   const [desc, setDesc] = useState('');
-  const fileRef = useRef<HTMLInputElement | null>(null);
+  const fileRefGallery = useRef<HTMLInputElement | null>(null);
+  const fileRefCamera = useRef<HTMLInputElement | null>(null);
 
   const microTareas = MOCK_AHORA_STITCH.checklist.map((c) => c.title);
   const totalMicro = microTareas.length;
@@ -296,7 +297,21 @@ export function AhoraJornadaActivaStitchMock() {
   if (phase === 'evidence') {
     return (
       <div className="min-h-screen bg-stitch-surface pb-32 font-stitch-body text-stitch-on-surface">
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={addPhoto} />
+        <input
+          ref={fileRefCamera}
+          type="file"
+          accept="image/*"
+          capture
+          className="hidden"
+          onChange={addPhoto}
+        />
+        <input
+          ref={fileRefGallery}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={addPhoto}
+        />
         <header className="sticky top-0 z-40 w-full border-b border-stitch-surface-container bg-slate-50/95 backdrop-blur">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
@@ -351,7 +366,7 @@ export function AhoraJornadaActivaStitchMock() {
                   <div className="pointer-events-auto flex justify-center pb-2">
                     <button
                       type="button"
-                      onClick={() => fileRef.current?.click()}
+                      onClick={() => fileRefCamera.current?.click()}
                       className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-stitch-primary to-stitch-primary-container shadow-lg transition-transform active:scale-95"
                       aria-label="Capturar"
                     >
@@ -375,7 +390,7 @@ export function AhoraJornadaActivaStitchMock() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => fileRef.current?.click()}
+                  onClick={() => fileRefCamera.current?.click()}
                   className="flex h-[52px] shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container px-8 font-bold text-white shadow-lg"
                 >
                   Sacar foto
@@ -408,7 +423,7 @@ export function AhoraJornadaActivaStitchMock() {
                   {evidence.length < MAX_EVIDENCE && (
                     <button
                       type="button"
-                      onClick={() => fileRef.current?.click()}
+                      onClick={() => fileRefGallery.current?.click()}
                       className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-stitch-outline-variant bg-stitch-surface-container-highest text-stitch-outline transition-colors hover:border-stitch-primary hover:text-stitch-primary"
                     >
                       <ImageIcon className="h-8 w-8" />

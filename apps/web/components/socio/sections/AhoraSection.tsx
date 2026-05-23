@@ -2329,15 +2329,20 @@ export function AhoraSection() {
 
 
       {/* Modales */}
-      {showChecklist && (tareaActual || (USE_MOCK_DATA && subtareaActual)) && (
+      {showChecklist && (tareaActual || subtareaActual) && (
         <ChecklistModal
           tarea={
             tareaActual
               ? { id: tareaActual.id, nombre: tareaActual.title || '', title: tareaActual.title || '' }
               : {
-                  id: subtareaActual?.tareas?.id || 'mock-tarea-1',
-                  nombre: subtareaActual?.tareas?.title || 'Revoque exterior',
-                  title: subtareaActual?.tareas?.title || 'Revoque exterior',
+                  id:
+                    subtareaActual?.tareas?.id ??
+                    subtareaActual?.tarea_id ??
+                    'fallback-tarea',
+                  nombre:
+                    subtareaActual?.tareas?.title ?? subtareaActual?.title ?? 'Tarea del bloque',
+                  title:
+                    subtareaActual?.tareas?.title ?? subtareaActual?.title ?? 'Tarea del bloque',
                 }
           }
           onClose={() => {

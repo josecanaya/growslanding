@@ -4,6 +4,7 @@
  */
 export const USE_MOCK_DATA = process.env.NEXT_PUBLIC_SOCIO_USE_MOCK === 'true';
 
+/** @deprecated Ya no controla `/socio/ahora`; usar ruta `/socio/ahora/demo` para el mock visual. */
 export const USE_AHORA_STITCH_MOCK =
   process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK === 'true';
 

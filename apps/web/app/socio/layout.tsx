@@ -9,7 +9,6 @@ import { SocioTabBar } from '@/components/socio/SocioTabBar';
 import { AhoraWorkNavProvider, useAhoraWorkNavOptional } from '@/components/socio/ahora/AhoraWorkNavContext';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
-import { USE_AHORA_STITCH_MOCK } from '@/lib/mocks/socioMockData';
 
 function SocioLayoutInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,7 +16,8 @@ function SocioLayoutInner({ children }: { children: React.ReactNode }) {
   const currentUser = useCurrentUser();
   const ahoraNav = useAhoraWorkNavOptional();
   const isAhoraPage = pathname?.startsWith('/socio/ahora');
-  const ahoraSoloVistaStitch = isAhoraPage && USE_AHORA_STITCH_MOCK;
+  /** Demo Stitch en `/socio/ahora/demo`: pantalla completa como el mock, sin header de shell */
+  const ahoraSoloVistaStitch = isAhoraPage && pathname?.startsWith('/socio/ahora/demo');
   const hideTabByWorkSession = Boolean(ahoraSoloVistaStitch && ahoraNav?.hideBottomTabBar);
   const isHomePage =
     pathname === '/socio' ||

@@ -278,8 +278,6 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
       setDesc('');
       setLiveQc(false);
       toast({ title: 'Bloque enviado', description: 'Quedó en revisión ante el cliente.' });
-      router.refresh();
-      router.replace('/socio/ahora');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'No se pudo enviar a validación.';
       toast({

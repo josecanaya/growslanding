@@ -1571,7 +1571,10 @@ export function AhoraSection() {
         setSubtareaActual(subtareaData);
       }
 
-      setSubtareaRefreshKey((k) => k + 1);
+      /** Evita pisar `para_validar` con una lista recién leída que aún viene `en_progreso` */
+      window.setTimeout(() => {
+        setSubtareaRefreshKey((k) => k + 1);
+      }, 850);
 
       // Recargar contadores y datos
       await cargarContadoresBloques();
@@ -2144,9 +2147,7 @@ export function AhoraSection() {
           handleApiError({ errorCode: 'SOCIO_TIENE_2_BLOQUES_EN_PROGRESO' }, 'Ya tenés 2 bloques en progreso');
           return;
         }
-        // Rehacer bloque rechazado o iniciar bloque pendiente (checklist antes)
-        setGateIntentInicioChecklist('subtarea');
-        setShowChecklist(true);
+        void handleIniciarSubtarea();
         return;
       } else if (subtareaActual.estado === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
@@ -2184,8 +2185,7 @@ export function AhoraSection() {
           );
           return;
         }
-        setGateIntentInicioChecklist('tarea');
-        setShowChecklist(true);
+        void handleIniciarTarea([]);
         return;
       } else {
         handleFinalizarTarea();

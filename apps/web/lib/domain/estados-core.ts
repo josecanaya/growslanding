@@ -52,5 +52,9 @@ export function normalizeEstadoBloqueParaOperacion(estado: string | null | undef
   if (n === 'validada') {
     return 'validado';
   }
+  /** Algún contenido viejo/UI copia estado de la tarea (en_revision → para_validar a nivel obra) sobre el bloque. */
+  if (n === 'en_revision' || n === 'revision' || n === 'pendiente_de_validacion' || n === 'pendiente_de_validación') {
+    return ESTADO_BLOQUE_PARA_VALIDAR;
+  }
   return n;
 }

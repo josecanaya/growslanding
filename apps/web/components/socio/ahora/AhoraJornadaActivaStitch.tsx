@@ -426,6 +426,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           ref={fileRefCamera}
           type="file"
           accept="image/*"
+          capture="environment"
           className="hidden"
           onChange={addPhoto}
         />

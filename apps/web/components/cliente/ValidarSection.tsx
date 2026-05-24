@@ -183,6 +183,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
   });
   const [motivoRechazo, setMotivoRechazo] = useState('');
 
+  /** Mantiene selección de obra alineada al layout padre (`TareasSection`). */
+  useEffect(() => {
+    const trimmed = obraId?.trim?.() ?? '';
+    if (!trimmed) return;
+    setObraSeleccionada(trimmed);
+  }, [obraId]);
+
   const loadData = useCallback(async () => {
     if (!currentUser?.orgId) {
       setError('No se pudo identificar tu organización.');
@@ -194,36 +201,94 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     setError(null);
 
     try {
+      const obraFiltro = obraId?.trim?.() ?? '';
+
       let tareasQuery = supabase
         .from('tareas')
         .select(
-          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id'
+          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id',
         )
         .eq('org_id', currentUser.orgId);
 
-      if (obraId) {
-        tareasQuery = tareasQuery.eq('obra_id', obraId);
+      if (obraFiltro) {
+        tareasQuery = tareasQuery.eq('obra_id', obraFiltro);
       }
 
-      const { data: rawTareas, error: tareasError } = await tareasQuery;
+      /** Bloques en revisión por join (`tareas!inner`): no dependemos solo del `.in(tarea_id, …)`. */
+      let pendingSubsQuery = supabase
+        .from('tareas_subtareas')
+        .select(
+          `
+        id,
+        tarea_id,
+        estado,
+        fecha,
+        orden,
+        bloque_index,
+        evidencia_url,
+        evidencia_cargada,
+        tareas!inner(org_id, obra_id)
+      `,
+        )
+        .eq('estado', 'para_validar')
+        .eq('tareas.org_id', currentUser.orgId);
+
+      if (obraFiltro) {
+        pendingSubsQuery = pendingSubsQuery.eq('tareas.obra_id', obraFiltro);
+      }
+
+      const [
+        { data: rawTareas, error: tareasError },
+        { data: pendientesSubs, error: pendErr },
+      ] = await Promise.all([tareasQuery, pendingSubsQuery]);
+
+      if (pendErr && String((pendErr as { message?: string }).message || '').trim()) {
+        console.warn('[ValidarSection] Bloques pendientes (join):', (pendErr as { message?: string }).message);
+      }
+
+      let todasLasTareas = (rawTareas ?? []) as RawTarea[];
 
       if (tareasError) {
         throw tareasError;
       }
 
-      const todasLasTareas = (rawTareas ?? []) as RawTarea[];
+      const idsConocidos = new Set(todasLasTareas.map((t) => t.id));
+      const extraIds: string[] = Array.from(
+        new Set<string>(
+          (pendientesSubs ?? [])
+            .map((r: { tarea_id?: string | null }) => r.tarea_id)
+            .filter((tid: string | null | undefined): tid is string => {
+              if (!tid || typeof tid !== 'string') return false;
+              return !idsConocidos.has(tid);
+            }),
+        ),
+      );
+
+      if (extraIds.length > 0) {
+        const faltantes = await fetchRowsInChunks(extraIds, (chunk) =>
+          supabase
+            .from('tareas')
+            .select(
+              'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id',
+            )
+            .in('id', chunk)
+            .eq('org_id', currentUser.orgId),
+        );
+
+        todasLasTareas = [...todasLasTareas, ...(faltantes as RawTarea[])];
+      }
 
       const obraIds = Array.from(new Set(todasLasTareas.map((t) => t.obra_id)));
       const cuadrillaIds = Array.from(
         new Set(
           todasLasTareas
             .map((t) => t.cuadrilla_id)
-            .filter((value): value is string => Boolean(value))
-        )
+            .filter((value): value is string => Boolean(value)),
+        ),
       );
       const tareaIds = todasLasTareas.map((t) => t.id);
       const subtareasPorTarea = new Map<string, ValidarSubtarea[]>();
-      const montoAprobadoPorTarea = new Map<string, number>();
+      const montoMap = new Map<string, number>();
 
       if (tareaIds.length > 0) {
         const presupuestosData = await fetchRowsInChunks(tareaIds, (chunk) =>
@@ -232,10 +297,50 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
 
         presupuestosData.forEach((row: any) => {
           if (row.tarea_id && String(row.estado ?? '').toUpperCase() === 'APROBADO') {
-            montoAprobadoPorTarea.set(row.tarea_id, Number(row.monto ?? 0));
+            montoMap.set(row.tarea_id, Number(row.monto ?? 0));
           }
         });
+      }
 
+      const mergeSubtareaRow = (
+        mapBucket: Map<string, ValidarSubtarea[]>,
+        row: {
+          id: string;
+          tarea_id: string | null | undefined;
+          estado?: string | null;
+          fecha?: string | null;
+          orden?: number | null;
+          bloque_index?: number | null;
+          evidencia_url?: string | null;
+          evidencia_cargada?: boolean | null;
+        },
+      ) => {
+        const tareaIdRow = row.tarea_id ?? undefined;
+        if (!row.id || !tareaIdRow) return;
+        const estadoNorm =
+          normalizeEstadoBloqueParaOperacion(row.estado ?? 'pendiente') || 'pendiente';
+        const listaPrev = mapBucket.get(tareaIdRow) ?? [];
+        const item: ValidarSubtarea = {
+          id: row.id,
+          estado: estadoNorm,
+          montoEstimado: montoMap.get(tareaIdRow) ?? null,
+          montoValidado:
+            estadoNorm === ESTADO_BLOQUE_FINAL ? (montoMap.get(tareaIdRow) ?? null) : null,
+          fecha: row.fecha ?? null,
+          orden: row.orden ?? row.bloque_index ?? null,
+          bloque_index: row.bloque_index ?? null,
+          evidencia_url: row.evidencia_url ?? null,
+          evidencia_cargada: row.evidencia_cargada ?? false,
+        };
+        const ix = listaPrev.findIndex((x) => x.id === row.id);
+        const lista =
+          ix >= 0
+            ? listaPrev.map((x, j) => (j === ix ? item : x))
+            : [...listaPrev, item];
+        mapBucket.set(tareaIdRow, lista);
+      };
+
+      if (tareaIds.length > 0) {
         const subtareasData = await fetchRowsInChunks(tareaIds, (chunk) =>
           supabase
             .from('tareas_subtareas')
@@ -244,27 +349,12 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         );
 
         if (subtareasData.length) {
-          subtareasData.forEach((row: any) => {
-            const tareaId = row.tarea_id;
-            if (!tareaId) return;
-            const estadoNorm =
-              normalizeEstadoBloqueParaOperacion(row.estado ?? 'pendiente') || 'pendiente';
-            const lista = subtareasPorTarea.get(tareaId) ?? [];
-            lista.push({
-              id: row.id,
-              estado: estadoNorm,
-              montoEstimado: montoAprobadoPorTarea.get(tareaId) ?? null,
-              montoValidado:
-                estadoNorm === ESTADO_BLOQUE_FINAL ? (montoAprobadoPorTarea.get(tareaId) ?? null) : null,
-              fecha: row.fecha ?? null,
-              orden: row.orden ?? row.bloque_index ?? null,
-              bloque_index: row.bloque_index ?? null,
-              evidencia_url: row.evidencia_url ?? null,
-              evidencia_cargada: row.evidencia_cargada ?? false,
-            });
-            subtareasPorTarea.set(tareaId, lista);
-          });
+          subtareasData.forEach((row: any) => mergeSubtareaRow(subtareasPorTarea, row));
         }
+      }
+
+      if (pendientesSubs?.length) {
+        pendientesSubs.forEach((row: any) => mergeSubtareaRow(subtareasPorTarea, row));
       }
 
       const [obrasData, cuadrillasData] = await Promise.all([
@@ -344,7 +434,15 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       });
 
       setTareas(mapped);
+      const obraLayout = obraId?.trim?.() ?? '';
       setObraSeleccionada((prev) => {
+        if (obraLayout && mapped.some((t) => t.obraId === obraLayout)) {
+          return obraLayout;
+        }
+        /** El layout (`TareasSection`) fija la obra aunque esta vuelta no haya devuelto filas aún. */
+        if (obraLayout) {
+          return obraLayout;
+        }
         if (prev && mapped.some((t) => t.obraId === prev)) {
           return prev;
         }

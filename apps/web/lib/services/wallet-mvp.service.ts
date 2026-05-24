@@ -143,13 +143,20 @@ export class WalletMvpService {
       return Number.isFinite(monto) ? Number((monto / divisor).toFixed(2)) : 0;
     }
 
-    const { data: rows } = await supabaseAny
+    const socioFiltro = subtarea.socio_id || subtarea.tareas?.responsable_socio_id || null;
+
+    let q = supabaseAny
       .from('tareas_presupuestos')
       .select('monto, estado')
-        .eq('tarea_id', subtarea.tarea_id)
-      .eq('socio_id', subtarea.socio_id || subtarea.tareas?.responsable_socio_id || '')
+      .eq('tarea_id', subtarea.tarea_id)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    if (socioFiltro) {
+      q = q.eq('socio_id', socioFiltro);
+    }
+
+    const { data: rows } = await q;
 
     const aprobado = (rows ?? []).find((row: any) => String(row.estado ?? '').toUpperCase() === 'APROBADO');
     const monto = Number(aprobado?.monto ?? 0);

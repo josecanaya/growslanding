@@ -203,14 +203,22 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
   const addPhoto = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0];
+      const input = e.target;
+      const f = input.files?.[0];
+      const reset = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            input.value = '';
+          });
+        });
+      };
       if (!f || evidence.length >= MAX_EVIDENCE) {
-        e.target.value = '';
+        reset();
         return;
       }
       const id = `ev-${Date.now()}`;
       setEvidence((prev) => [...prev, { id, preview: URL.createObjectURL(f), file: f }]);
-      e.target.value = '';
+      reset();
     },
     [evidence.length],
   );
@@ -418,7 +426,6 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           ref={fileRefCamera}
           type="file"
           accept="image/*"
-          capture
           className="hidden"
           onChange={addPhoto}
         />

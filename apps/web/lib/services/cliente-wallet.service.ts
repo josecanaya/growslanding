@@ -194,6 +194,8 @@ export class ClienteWalletService {
 
   static async descontarPagoDeSubtareaValidada(params: {
     orgId: string;
+    /** ID de la fila `tareas`; los RPC de reserva/liberación operan por tarea completa */
+    tareaId: string;
     subtareaId: string;
     clienteUserId: string | null;
     socioId?: string | null;
@@ -208,7 +210,7 @@ export class ClienteWalletService {
     await supabaseAny.rpc('cliente_wallet_reservar_tarea', {
       p_org_id: params.orgId,
       p_cliente_user_id: params.clienteUserId,
-      p_tarea_id: params.subtareaId,
+      p_tarea_id: params.tareaId,
       p_monto: montoTotal,
       p_descripcion: montoBloque.presupuestoId
         ? `Reserva por bloque validado ${params.subtareaId} / presupuesto ${montoBloque.presupuestoId}`
@@ -219,7 +221,7 @@ export class ClienteWalletService {
 
     const { data, error } = await supabaseAny.rpc('cliente_wallet_liberar_tarea', {
       p_org_id: params.orgId,
-      p_tarea_id: params.subtareaId,
+      p_tarea_id: params.tareaId,
       p_socio_id: montoBloque.socioId,
       p_monto_total: montoTotal,
       p_monto_pago: montoTotal,
@@ -260,6 +262,7 @@ export class ClienteWalletService {
     try {
       await this.descontarPagoDeSubtareaValidada({
         orgId: contexto.orgId,
+        tareaId: contexto.tareaId,
         subtareaId: params.subtareaId,
         clienteUserId: params.clienteUserId,
         socioId: contexto.socioId,
@@ -495,6 +498,7 @@ export class ClienteWalletService {
 
   private static async obtenerContextoSubtareaValidada(subtareaId: string): Promise<{
     orgId: string;
+    tareaId: string;
     socioId: string;
   }> {
     const supabase = createServiceSupabaseClient();
@@ -504,6 +508,7 @@ export class ClienteWalletService {
       .select(
         `
         id,
+        tarea_id,
         estado,
         socio_id,
         tareas:tareas (
@@ -523,15 +528,19 @@ export class ClienteWalletService {
     }
 
     const orgId = subtarea.tareas?.org_id;
+    const tareaId = subtarea.tarea_id as string | undefined;
     const socioId = subtarea.socio_id ?? subtarea.tareas?.responsable_socio_id ?? null;
     if (!orgId) {
       throw new Error('ORG_NO_ENCONTRADA');
+    }
+    if (!tareaId) {
+      throw new Error('TAREA_NO_ENCONTRADA');
     }
     if (!socioId) {
       throw new Error('SOCIO_REQUERIDO');
     }
 
-    return { orgId, socioId };
+    return { orgId, tareaId, socioId };
   }
 
   private static async calcularMontoPresupuestoPorBloque(

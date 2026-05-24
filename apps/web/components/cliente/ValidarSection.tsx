@@ -21,6 +21,11 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { useToast } from '@/components/ui/use-toast';
 import { TareaFsmService } from '@/lib/services/tarea-fsm.service';
 import {
+  ESTADO_BLOQUE_FINAL,
+  ESTADO_BLOQUE_PARA_VALIDAR,
+  normalizeEstadoBloqueParaOperacion,
+} from '@/lib/domain/estados-core';
+import {
   Building2,
   CheckCircle,
   Clock,
@@ -242,12 +247,15 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           subtareasData.forEach((row: any) => {
             const tareaId = row.tarea_id;
             if (!tareaId) return;
+            const estadoNorm =
+              normalizeEstadoBloqueParaOperacion(row.estado ?? 'pendiente') || 'pendiente';
             const lista = subtareasPorTarea.get(tareaId) ?? [];
             lista.push({
               id: row.id,
-              estado: row.estado ?? 'pendiente',
+              estado: estadoNorm,
               montoEstimado: montoAprobadoPorTarea.get(tareaId) ?? null,
-              montoValidado: row.estado === 'validado' ? (montoAprobadoPorTarea.get(tareaId) ?? null) : null,
+              montoValidado:
+                estadoNorm === ESTADO_BLOQUE_FINAL ? (montoAprobadoPorTarea.get(tareaId) ?? null) : null,
               fecha: row.fecha ?? null,
               orden: row.orden ?? row.bloque_index ?? null,
               bloque_index: row.bloque_index ?? null,
@@ -378,7 +386,8 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     // Solo mostrar tareas que tienen bloques en estado 'para_validar' (que el cliente puede validar)
     const pendientes = filtradas.filter((t) => {
       const tieneBloquesParaValidar = t.subtareas.some(
-        (s) => s.estado === 'para_validar'
+        (s) =>
+          normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_PARA_VALIDAR,
       );
       return tieneBloquesParaValidar;
     });
@@ -388,7 +397,9 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       (t) =>
         t.estadoOficial === 'validada' ||
         (t.subtareas.length > 0 &&
-          t.subtareas.every((s) => s.estado === 'validado'))
+          t.subtareas.every(
+            (s) => normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_FINAL,
+          ))
     );
 
     return { pendientes, validadas };

@@ -21,6 +21,20 @@ function statusFromMessage(msg: string): number {
   return 500;
 }
 
+async function obtenerUserIdClienteOrganizacion(
+  orgId: string,
+  supabaseAny: { from: (t: string) => any },
+): Promise<string | null> {
+  const { data: row } = await supabaseAny
+    .from('organizations')
+    .select('user_id')
+    .eq('id', orgId)
+    .maybeSingle();
+  if (row?.user_id) return String(row.user_id);
+  const { data: leg } = await supabaseAny.from('organizaciones').select('owner_user_id').eq('id', orgId).maybeSingle();
+  return leg?.owner_user_id ? String(leg.owner_user_id) : null;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -262,6 +276,32 @@ export async function POST(
       )
       .eq('id', id)
       .maybeSingle();
+
+    try {
+      const destinatarioCliente = await obtenerUserIdClienteOrganizacion(orgId, supabaseAny);
+      if (destinatarioCliente) {
+        const t = updated?.tareas as { title?: string | null; obra_id?: string | null } | undefined;
+        const tareaTitulo = (typeof t?.title === 'string' && t.title.trim()) ? t.title.trim() : 'la tarea';
+        const obraIdNotif = t?.obra_id ?? null;
+        const { error: notifError } = await supabaseAny.from('notificaciones').insert({
+          org_id: orgId,
+          obra_id: obraIdNotif,
+          tarea_id: subtarea.tarea_id,
+          remitente_id: user.id,
+          destinatario_id: destinatarioCliente,
+          tipo: 'bloque_para_validar',
+          titulo: 'Bloque listo para validar',
+          mensaje: `El socio envió evidencia de un bloque de «${tareaTitulo}» para tu revisión en Validaciones.`,
+          leida: false,
+          created_at: new Date().toISOString(),
+        });
+        if (notifError) {
+          console.warn('[ENVIAR_VALIDAR_SUBTAREA] Notificación cliente:', notifError);
+        }
+      }
+    } catch (notifEx) {
+      console.warn('[ENVIAR_VALIDAR_SUBTAREA] Notificación cliente (ex):', notifEx);
+    }
 
     return NextResponse.json({ success: true, subtarea: updated });
   } catch (error) {

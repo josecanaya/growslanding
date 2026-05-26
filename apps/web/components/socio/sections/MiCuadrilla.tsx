@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Phone, Mail, MapPin, Calendar, Award, Shield, FileText, CheckCircle, AlertTriangle, Loader2, Camera, UserPlus, Upload } from 'lucide-react';
+import { Users, Phone, Calendar, FileText, CheckCircle, AlertTriangle, Loader2, Camera, UserPlus, Upload } from 'lucide-react';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import type { Database } from '@/lib/types/supabase.gen';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { ColaboradoresSection } from '@/components/socio/cuadrilla/ColaboradoresSection';
 
 interface Integrante {
   id: string;
@@ -58,15 +59,15 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAgregarIntegrante, setShowAgregarIntegrante] = useState(false);
   const [showSubirDocumento, setShowSubirDocumento] = useState(false);
-  
+
   const currentUser = useCurrentUser();
   const supabase = createClientComponentClient<Database>();
   const { toast } = useToast();
-  
+
   // Refs para scroll
   const integrantesRef = useRef<HTMLDivElement>(null);
+  const colaboradoresRef = useRef<HTMLDivElement>(null);
   const documentosRef = useRef<HTMLDivElement>(null);
 
   // Cargar datos de la cuadrilla del socio desde Supabase
@@ -191,6 +192,10 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
     integrantesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const scrollToColaboradores = () => {
+    colaboradoresRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const scrollToDocumentos = () => {
     documentosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -245,6 +250,18 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
         </button>
 
         <button
+          onClick={scrollToColaboradores}
+          className="flex flex-col items-center gap-2 group"
+        >
+          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center shadow-sm group-hover:shadow-lg group-hover:bg-blue-100 group-hover:scale-105 transition-all duration-200 group-active:scale-95">
+            <UserPlus className="h-7 w-7 text-blue-600 group-hover:text-blue-700 transition-colors" strokeWidth={2} />
+          </div>
+          <p className="text-xs font-medium text-gray-700 group-hover:text-blue-600 text-center leading-tight transition-colors">
+            Colaboradores
+          </p>
+        </button>
+
+        <button
           onClick={scrollToIntegrantes}
           className="flex flex-col items-center gap-2 group"
         >
@@ -267,31 +284,20 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
             Documentos
           </p>
         </button>
-
-        <button
-          onClick={scrollToIntegrantes}
-          className="flex flex-col items-center gap-2 group"
-        >
-          <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center shadow-sm group-hover:shadow-lg group-hover:bg-blue-100 group-hover:scale-105 transition-all duration-200 group-active:scale-95">
-            <Shield className="h-7 w-7 text-blue-600 group-hover:text-blue-700 transition-colors" strokeWidth={2} />
-          </div>
-          <p className="text-xs font-medium text-gray-700 group-hover:text-blue-600 text-center leading-tight transition-colors">
-            Seguros
-          </p>
-        </button>
       </div>
 
-      {/* Sección Integrantes */}
-      <div ref={integrantesRef} className="w-full">
+      {/* Sección de Colaboradores (CRUD completo) */}
+      <div ref={colaboradoresRef} className="w-full scroll-mt-24">
+        <ColaboradoresSection />
+      </div>
+
+      {/* Sección Integrantes (cuadrilla asignada por la organización) */}
+      <div ref={integrantesRef} className="w-full scroll-mt-24">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">Integrantes</h3>
-          <button 
-            onClick={() => setShowAgregarIntegrante(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-all duration-200 hover:shadow-sm group"
-          >
-            <UserPlus className="h-4 w-4 group-hover:scale-110 transition-transform" strokeWidth={2} />
-            <span className="text-xs font-medium">Agregar</span>
-          </button>
+          <h3 className="text-lg font-semibold text-gray-900">Cuadrilla asignada</h3>
+          <span className="text-[10px] uppercase tracking-wider text-gray-400">
+            Vista de la organización
+          </span>
         </div>
         {integrantes.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -300,7 +306,7 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
               No hay integrantes asignados a tu cuadrilla
             </p>
             <p className="text-xs text-gray-500">
-              Los integrantes se cargarán cuando estén disponibles
+              Los integrantes se cargarán cuando la organización los habilite.
             </p>
           </div>
         ) : (
@@ -402,55 +408,6 @@ export function MiCuadrilla({ user }: MiCuadrillaProps) {
           </div>
         )}
       </div>
-
-      {/* Modal Agregar Integrante */}
-      <Dialog open={showAgregarIntegrante} onOpenChange={setShowAgregarIntegrante}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Agregar integrante</DialogTitle>
-            <DialogDescription>
-              Agrega un nuevo integrante a tu cuadrilla. Completa los datos requeridos.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="nombre">Nombre completo</Label>
-              <Input id="nombre" placeholder="Ej: Juan Pérez" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="ejemplo@email.com" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="telefono">Teléfono</Label>
-              <Input id="telefono" type="tel" placeholder="+54 9 11 1234-5678" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="rol">Rol en la cuadrilla</Label>
-              <Input id="rol" placeholder="Ej: Albañil, Capataz, etc." />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowAgregarIntegrante(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => {
-                toast({
-                  title: 'Funcionalidad en desarrollo',
-                  description: 'La funcionalidad de agregar integrantes estará disponible próximamente.',
-                });
-                setShowAgregarIntegrante(false);
-              }}
-            >
-              Agregar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Modal Subir Documento */}
       <Dialog open={showSubirDocumento} onOpenChange={setShowSubirDocumento}>

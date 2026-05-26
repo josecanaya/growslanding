@@ -1,8 +1,8 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect, useMemo, Suspense } from 'react';
-import { Loader2, Save, Send, FileText, Eye, Edit, MapPin } from 'lucide-react';
+import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
+import { Loader2, Save, Send, FileText, Eye, Edit, MapPin, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
 import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
@@ -14,6 +14,7 @@ import { ListaTareas } from '@/components/socio/presupuestos/ListaTareas';
 import { ListaObras } from '@/components/socio/presupuestos/ListaObras';
 import { ListaObrasStitch } from '@/components/socio/presupuestos/ListaObrasStitch';
 import { PresupuestoStitchBento } from '@/components/socio/presupuestos/PresupuestoStitchBento';
+import { PresupuestoPrintView } from '@/components/socio/presupuestos/PresupuestoPrintView';
 import { ResumenAcumulado } from '@/components/socio/presupuestos/ResumenAcumulado';
 import { usePresupuestos } from '@/components/socio/presupuestos/hooks/usePresupuestos';
 import { USE_MOCK_DATA, FORCE_PRESUPUESTOS_MOCK, MOCK_OBRAS_PARA_PRESUPUESTOS } from '@/lib/mocks/socioMockData';
@@ -416,6 +417,33 @@ function PresupuestosContent() {
     return btoa(binary);
   };
 
+  // Imprimir (usa window.print + estilos @media print sobre PresupuestoPrintView)
+  const handlePrintPresupuesto = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (!obra || presupuestosFiltrados.length === 0) {
+      toast({
+        title: 'Sin presupuestos',
+        description: 'Cargá al menos una tarea con monto en esta etapa para imprimir.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    document.body.classList.add('printing-presupuesto');
+    const cleanup = () => {
+      document.body.classList.remove('printing-presupuesto');
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    setTimeout(() => {
+      try {
+        window.print();
+      } finally {
+        // Safari/iOS no siempre dispara afterprint
+        setTimeout(cleanup, 1500);
+      }
+    }, 60);
+  }, [obra, presupuestosFiltrados.length, toast]);
+
   // Función para generar PDF
   const handleGenerarPDF = async () => {
     if (!obra) return;
@@ -768,6 +796,42 @@ function PresupuestosContent() {
         <ModalVerPlanos open={planosOpen} onClose={() => setPlanosOpen(false)} obraId={obra.id} />
       )}
 
+      {/* Vista de impresión (oculta en pantalla, visible en @media print) */}
+      {obra && (
+        <div className="print-only-presupuesto" aria-hidden="true">
+          <PresupuestoPrintView
+            obra={{
+              id: obra.id,
+              name: obra.name,
+              direccion_completa: obra.direccion_completa ?? null,
+              cliente: obra.cliente ?? null,
+              fecha_inicio: obra.fecha_inicio ?? null,
+            }}
+            presupuestos={presupuestosFiltrados.map((p) => ({
+              id: p.id,
+              tarea_id: p.tarea_id,
+              estado: p.estado,
+              dias_reales: p.dias_reales,
+              monto: p.monto,
+              observacion: p.observacion ?? null,
+              tarea: p.tarea
+                ? { title: p.tarea.title, etapa: p.tarea.etapa }
+                : null,
+              elemento: p.elemento
+                ? {
+                    nombre: p.elemento.nombre,
+                    cantidad: p.elemento.cantidad,
+                    unidad: p.elemento.unidad,
+                  }
+                : null,
+            }))}
+            nombreContratista={nombreContratista}
+            etapaLabel={etapaLabelLarga}
+            editing={editing}
+          />
+        </div>
+      )}
+
       {/* Barra inferior: anclada encima del TabBar socio (variable --socio-tab-h en layout). */}
       {showActions && (
         <div
@@ -828,10 +892,20 @@ function PresupuestosContent() {
                     <FileText className="mr-2 h-4 w-4" />
                     PDF
                   </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={handlePrintPresupuesto}
+                    disabled={saving}
+                    className="h-11 flex-1 rounded-xl font-semibold"
+                    size="sm"
+                  >
+                    <Printer className="mr-2 h-4 w-4" />
+                    Imprimir
+                  </Button>
                 </div>
               </>
             ) : (
-              // Si ya se envió: mostrar botones de ver PDF y editar (si no está aprobado)
+              // Si ya se envió: mostrar botones de ver PDF / imprimir / editar (si no está aprobado)
               <>
                 {(stagePdfPath || pdfPath) && (
                   <Button
@@ -845,6 +919,16 @@ function PresupuestosContent() {
                     Ver PDF enviado
                   </Button>
                 )}
+                <Button
+                  variant="secondary"
+                  onClick={handlePrintPresupuesto}
+                  disabled={saving}
+                  className="flex-1"
+                  size="sm"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir
+                </Button>
                 {puedeEditar && (
                   <Button
                     variant="secondary"

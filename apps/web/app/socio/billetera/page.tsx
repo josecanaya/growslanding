@@ -4,8 +4,8 @@ import { useRouter } from 'next/navigation';
 import { useWallet } from '@/lib/hooks/useWallet';
 import { SaldoCard } from '@/components/socio/billetera/SaldoCard';
 import { MovimientosList } from '@/components/socio/billetera/MovimientosList';
-import { Loader2, TrendingUp, History } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { MetodosRetiroSection } from '@/components/socio/billetera/MetodosRetiroSection';
+import { Loader2, TrendingUp, History, ArrowDownToLine } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { USE_MOCK_DATA } from '@/lib/mocks/socioMockData';
 import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
@@ -22,9 +22,14 @@ export default function BilleteraPage() {
       });
       return;
     }
+    const el = document.getElementById('metodos-retiro-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     toast({
-      title: 'Próximamente',
-      description: 'La función de retiro estará disponible pronto.',
+      title: 'Configurá un método de retiro',
+      description:
+        'Cargá tu CVU/CBU/Alias en "Métodos de retiro". La transferencia se procesará en breve.',
     });
   };
 
@@ -67,14 +72,14 @@ export default function BilleteraPage() {
           />
 
           {saldo.saldo_actual > 0 && (
-            <Button
+            <button
               type="button"
               onClick={handleRetirarGanancias}
-              className="h-12 w-full rounded-lg bg-stitch-surface/15 font-stitch-body text-sm font-bold uppercase tracking-wide text-white backdrop-blur-md transition hover:bg-stitch-surface/25"
-              variant="ghost"
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 font-stitch-body text-sm font-extrabold uppercase tracking-wide text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
             >
+              <ArrowDownToLine className="h-4 w-4" />
               Retirar fondos
-            </Button>
+            </button>
           )}
 
           <div className="grid grid-cols-2 gap-4">
@@ -106,6 +111,10 @@ export default function BilleteraPage() {
           </div>
         </>
       )}
+
+      <div id="metodos-retiro-section" className="scroll-mt-24">
+        <MetodosRetiroSection />
+      </div>
 
       <div id="movimientos-billetera">
         <MovimientosList

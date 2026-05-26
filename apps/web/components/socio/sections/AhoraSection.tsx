@@ -249,6 +249,22 @@ export function AhoraSection() {
   /** FK jornadas_socio / subtareas: socios.id (no auth.users.id). */
   const [socioIdGrows, setSocioIdGrows] = useState<string | null>(null);
   const [subtareaRefreshKey, setSubtareaRefreshKey] = useState(0);
+  /**
+   * Mantener la UI inmersiva `AhoraJornadaActivaStitch` visible después de un envío exitoso de evidencia.
+   * Se setea desde el callback `onSendSuccess` del componente hijo y se libera cuando el usuario presiona
+   * “Ir a mis tareas” en la pantalla de confirmación (`onSentDismiss`).
+   * Sin esto, al cambiar la subtarea a `para_validar` se desmonta el Stitch y se percibe que la app "vuelve al inicio".
+   */
+  const [stitchLockedAfterSent, setStitchLockedAfterSent] = useState(false);
+  const lastStitchPropsRef = useRef<{
+    taskTitle: string;
+    obraLine: string | null;
+    runningChecklist: AhoraStitchChecklistItem[];
+    microStepTitles: string[];
+    progresoHecho: number;
+    progresoTotal: number;
+    initialElapsedSeconds: number;
+  } | null>(null);
   const generarBloquesIntentados = useRef<Set<string>>(new Set());
   const requestEnCursoRef = useRef<Set<string>>(new Set());
   /** Alineado con GET /api/tareas/[id]/socio-puede-operar (misma regla que transition). */
@@ -2066,38 +2082,66 @@ export function AhoraSection() {
     Boolean(subtareaActual) &&
     String(subtareaActual.estado || '').toLowerCase() === 'en_progreso';
 
-  if (muestraStitchEnVivo && subtareaActual) {
-    const runningChecklist: AhoraStitchChecklistItem[] =
-      bloquesLista.length > 0
-        ? bloquesToRunningChecklist(bloquesLista, subtareaActual.id)
-        : [
-            {
-              id: String(subtareaActual.id),
-              title: `Bloque ${subtareaActual.orden ?? 1}`,
-              state: 'active',
-            },
-          ];
+  const shouldRenderStitch =
+    (muestraStitchEnVivo && subtareaActual) || (stitchLockedAfterSent && lastStitchPropsRef.current);
 
-    const obraLine = [subtareaActual.tareas?.obras?.name, subtareaActual.tareas?.obras?.address]
-      .filter(Boolean)
-      .join(' — ');
+  if (shouldRenderStitch) {
+    let stitchProps = lastStitchPropsRef.current;
+    if (muestraStitchEnVivo && subtareaActual) {
+      const runningChecklist: AhoraStitchChecklistItem[] =
+        bloquesLista.length > 0
+          ? bloquesToRunningChecklist(bloquesLista, subtareaActual.id)
+          : [
+              {
+                id: String(subtareaActual.id),
+                title: `Bloque ${subtareaActual.orden ?? 1}`,
+                state: 'active',
+              },
+            ];
 
-    const microStepTitles =
-      checklistItems.length > 0
-        ? checklistItems.map((it) => (it.label?.trim() ? it.label : 'Ítem'))
-        : [`Ejecución del bloque ${subtareaActual.orden ?? 1}`];
+      const obraLine = [subtareaActual.tareas?.obras?.name, subtareaActual.tareas?.obras?.address]
+        .filter(Boolean)
+        .join(' — ');
+
+      const microStepTitles =
+        checklistItems.length > 0
+          ? checklistItems.map((it) => (it.label?.trim() ? it.label : 'Ítem'))
+          : [`Ejecución del bloque ${subtareaActual.orden ?? 1}`];
+
+      stitchProps = {
+        taskTitle: subtareaActual.tareas?.title || tareaActual?.title || 'Tarea en curso',
+        obraLine: obraLine || null,
+        runningChecklist,
+        microStepTitles,
+        progresoHecho: Math.min(subtareasCompletadas, Math.max(totalSubtareas, 1)),
+        progresoTotal: Math.max(totalSubtareas || 1, 1),
+        initialElapsedSeconds: bloqueElapsedSeconds(subtareaActual),
+      };
+      lastStitchPropsRef.current = stitchProps;
+    }
+
+    if (!stitchProps) {
+      // fallback de seguridad: si por alguna razón no hay snapshot, limpiar el lock y dejar pasar.
+      setStitchLockedAfterSent(false);
+      return null;
+    }
 
     return (
       <AhoraJornadaActivaStitch
         mode="live"
-        taskTitle={subtareaActual.tareas?.title || tareaActual?.title || 'Tarea en curso'}
-        obraLine={obraLine || null}
-        runningChecklist={runningChecklist}
-        microStepTitles={microStepTitles}
-        progresoHecho={Math.min(subtareasCompletadas, Math.max(totalSubtareas, 1))}
-        progresoTotal={Math.max(totalSubtareas || 1, 1)}
-        initialElapsedSeconds={bloqueElapsedSeconds(subtareaActual)}
+        taskTitle={stitchProps.taskTitle}
+        obraLine={stitchProps.obraLine}
+        runningChecklist={stitchProps.runningChecklist}
+        microStepTitles={stitchProps.microStepTitles}
+        progresoHecho={stitchProps.progresoHecho}
+        progresoTotal={stitchProps.progresoTotal}
+        initialElapsedSeconds={stitchProps.initialElapsedSeconds}
         onSendValidationLive={handleStitchLiveSend}
+        onSendSuccess={() => setStitchLockedAfterSent(true)}
+        onSentDismiss={() => {
+          setStitchLockedAfterSent(false);
+          lastStitchPropsRef.current = null;
+        }}
       />
     );
   }

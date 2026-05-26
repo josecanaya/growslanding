@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Award, ChevronDown, ChevronUp, LogOut, Pencil, Settings, Bell, Shield } from 'lucide-react';
 
 import { logout } from '@/lib/auth';
 import { SocioQrCard } from '@/components/socio/SocioQrCard';
+import { EditarPerfilModal, type SocioPerfilCompleto } from '@/components/socio/cuenta/EditarPerfilModal';
 
 interface CuentaSectionProps {
   user: {
@@ -16,43 +17,60 @@ interface CuentaSectionProps {
   };
 }
 
-type SocioContextResp = {
-  ok: boolean;
-  socio?: {
-    nombre: string | null;
-    especialidad: string | null;
-    telefono: string | null;
-    email: string | null;
-  } | null;
+type SocioPerfilFull = {
+  nombre: string | null;
+  apellido?: string | null;
+  especialidad: string | null;
+  telefono: string | null;
+  email: string | null;
+  localidad?: string | null;
+  experiencia?: string | null;
+  descripcion?: string | null;
+  avatar_url?: string | null;
+  especialidades_secundarias?: string[];
 };
 
 export function CuentaSection({ user }: CuentaSectionProps) {
   const router = useRouter();
-  const [ctx, setCtx] = useState<SocioContextResp['socio'] | null>(null);
+  const [ctx, setCtx] = useState<SocioPerfilFull | null>(null);
   const [ctxLoading, setCtxLoading] = useState(true);
   const [masOpciones, setMasOpciones] = useState(false);
+  const [editarOpen, setEditarOpen] = useState(false);
+
+  const cargarPerfil = useCallback(async () => {
+    try {
+      const res = await fetch('/api/socio/perfil', { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data?.ok && data.socio) {
+        setCtx(data.socio as SocioPerfilFull);
+      } else {
+        // fallback al context legacy si el endpoint extendido no responde
+        const res2 = await fetch('/api/socio/context', { cache: 'no-store' });
+        const data2 = await res2.json();
+        if (res2.ok && data2?.ok && data2.socio) {
+          setCtx(data2.socio as SocioPerfilFull);
+        }
+      }
+    } catch {
+      /* silencioso */
+    } finally {
+      setCtxLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const res = await fetch('/api/socio/context', { cache: 'no-store' });
-        const data = (await res.json()) as SocioContextResp;
-        if (!cancelled && data.ok && data.socio) {
-          setCtx(data.socio);
-        }
-      } catch {
-        /* silencioso */
-      } finally {
-        if (!cancelled) setCtxLoading(false);
-      }
+      await cargarPerfil();
+      if (cancelled) return;
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cargarPerfil]);
 
-  const displayName = (ctx?.nombre?.trim() || user.name || 'Socio').trim();
+  const displayName = ((ctx?.nombre?.trim() || user.name || 'Socio') +
+    (ctx?.apellido?.trim() ? ` ${ctx.apellido!.trim()}` : '')).trim();
   const especialidad =
     (ctx?.especialidad?.trim() ||
       (user.level && user.level !== '—' ? user.level : null) ||
@@ -64,9 +82,23 @@ export function CuentaSection({ user }: CuentaSectionProps) {
     logout({ router });
   };
 
-  const irEditarPerfil = () => {
-    const el = document.getElementById('cuenta-datos-extra');
-    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleEditarPerfil = () => {
+    setEditarOpen(true);
+  };
+
+  const handlePerfilGuardado = (perfil: SocioPerfilCompleto) => {
+    setCtx({
+      nombre: perfil.nombre,
+      apellido: perfil.apellido,
+      especialidad: perfil.especialidad,
+      telefono: perfil.telefono,
+      email: perfil.email,
+      localidad: perfil.localidad,
+      experiencia: perfil.experiencia,
+      descripcion: perfil.descripcion,
+      avatar_url: perfil.avatar_url,
+      especialidades_secundarias: perfil.especialidades_secundarias,
+    });
   };
 
   return (
@@ -74,7 +106,14 @@ export function CuentaSection({ user }: CuentaSectionProps) {
       <section className="flex flex-col items-center px-4 pt-10 text-center">
         <div className="relative">
           <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-3xl border-4 border-white bg-[#d8e2ff] text-3xl font-bold text-[#163274] shadow-xl">
-            {ctxLoading ? '…' : avatarLetter}
+            {ctxLoading ? (
+              '…'
+            ) : ctx?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={ctx.avatar_url} alt={displayName} className="h-full w-full object-cover" />
+            ) : (
+              avatarLetter
+            )}
           </div>
           <div className="absolute -bottom-1 -right-1 rounded-xl border-2 border-white bg-[#003473] p-2 text-white shadow-lg">
             <Award className="h-4 w-4" />
@@ -87,6 +126,9 @@ export function CuentaSection({ user }: CuentaSectionProps) {
           {displayName}
         </h2>
         <p className="mt-1 text-sm font-semibold text-[#43617c]">{especialidad}</p>
+        {ctx?.localidad ? (
+          <p className="mt-0.5 text-xs text-[#43617c]/80">{ctx.localidad}</p>
+        ) : null}
       </section>
 
       <div className="mt-10 px-4">
@@ -100,7 +142,7 @@ export function CuentaSection({ user }: CuentaSectionProps) {
       <div className="mt-8 space-y-3 px-4">
         <button
           type="button"
-          onClick={irEditarPerfil}
+          onClick={handleEditarPerfil}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#163274] py-4 text-base font-bold text-white shadow-lg transition active:scale-[0.99]"
         >
           <Pencil className="h-5 w-5" />
@@ -139,9 +181,34 @@ export function CuentaSection({ user }: CuentaSectionProps) {
                   <span className="font-semibold text-[#163274]">Teléfono: </span>
                   {ctx.telefono}
                 </p>
-              ) : (
-                <p className="text-slate-500">Podés completar teléfono cuando el equipo habilite la edición en app.</p>
-              )}
+              ) : null}
+              {ctx?.experiencia ? (
+                <p>
+                  <span className="font-semibold text-[#163274]">Experiencia: </span>
+                  {ctx.experiencia}
+                </p>
+              ) : null}
+              {ctx?.descripcion ? (
+                <p>
+                  <span className="font-semibold text-[#163274]">Sobre mí: </span>
+                  {ctx.descripcion}
+                </p>
+              ) : null}
+              {Array.isArray(ctx?.especialidades_secundarias) && ctx?.especialidades_secundarias.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {ctx!.especialidades_secundarias.map((es) => (
+                    <span
+                      key={es}
+                      className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-[#163274]"
+                    >
+                      {es}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {!ctx?.email && !ctx?.telefono && !ctx?.experiencia && !ctx?.descripcion ? (
+                <p className="text-slate-500">Completá tu perfil para mejorar tu visibilidad.</p>
+              ) : null}
             </div>
             <div className="flex flex-col gap-2 rounded-xl bg-[#f2f4f6] p-3">
               <div className="flex items-center gap-2 text-sm text-[#434653]">
@@ -164,6 +231,12 @@ export function CuentaSection({ user }: CuentaSectionProps) {
           </p>
         )}
       </div>
+
+      <EditarPerfilModal
+        open={editarOpen}
+        onClose={() => setEditarOpen(false)}
+        onSaved={handlePerfilGuardado}
+      />
     </div>
   );
 }

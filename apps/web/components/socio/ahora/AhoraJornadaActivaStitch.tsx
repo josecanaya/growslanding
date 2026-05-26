@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Circle,
   ListTodo,
+  Loader2,
   Pause,
   Radio,
   Camera,
@@ -30,7 +31,46 @@ const NAVY = '#00174a';
 
 const MICRO_ICONS = [Scissors, Sprout, Ruler, Trash2] as const;
 
-export type StitchPhase = 'running' | 'micro' | 'evidence' | 'cierre' | 'paused';
+export type StitchPhase = 'running' | 'micro' | 'evidence' | 'cierre' | 'sent' | 'paused';
+
+/** Clave para persistir fase + datos no bloqueantes en sessionStorage entre suspensión/reanudación del navegador (cámara nativa móvil). */
+const PERSIST_KEY = 'grows.socio.ahora.evidence.v1';
+
+type PersistedState = {
+  phase: StitchPhase;
+  microIndex: number;
+  desc: string;
+  liveQc: boolean;
+};
+
+function loadPersisted(): PersistedState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(PERSIST_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(state: PersistedState) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(PERSIST_KEY, JSON.stringify(state));
+  } catch {
+    /* sin acceso a storage */
+  }
+}
+
+function clearPersisted() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(PERSIST_KEY);
+  } catch {
+    /* noop */
+  }
+}
 
 function formatHMS(totalSec: number) {
   const h = Math.floor(totalSec / 3600);
@@ -71,6 +111,10 @@ export type LiveStitchProps = {
     problemas?: string;
     qcConfirmed: boolean;
   }) => Promise<void>;
+  /** Llamado por el componente al confirmar el envío con éxito (para que el padre fije lock visual). */
+  onSendSuccess?: () => void;
+  /** Llamado cuando el usuario presiona “Volver” desde la pantalla de éxito (limpiar lock). */
+  onSentDismiss?: () => void;
 };
 
 export type AhoraJornadaActivaStitchProps = DemoProps | LiveStitchProps;
@@ -91,6 +135,8 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   const isDemo = isDemoMode(props);
 
   const [phase, setPhase] = useState<StitchPhase>('running');
+  // Marca para no sobrescribir al usuario con un estado persistido si ya interactuó manualmente.
+  const restoredOnceRef = useRef(false);
 
   const liveInitialElapsed = !isDemo ? Math.max(0, (props as LiveStitchProps).initialElapsedSeconds) : 0;
 
@@ -123,13 +169,33 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   const progresoHecho = isDemo ? MOCK_AHORA_STITCH.progresoHecho : (props as LiveStitchProps).progresoHecho;
   const progresoTotal = isDemo ? MOCK_AHORA_STITCH.progresoTotal : (props as LiveStitchProps).progresoTotal;
 
-  const [microIndex, setMicroIndex] = useState(0);
+  const [microIndex, setMicroIndex] = useState<number>(0);
   const [evidence, setEvidence] = useState<EvidenceSlot[]>([]);
-  const [desc, setDesc] = useState('');
-  const [liveQc, setLiveQc] = useState(false);
+  const [desc, setDesc] = useState<string>('');
+  const [liveQc, setLiveQc] = useState<boolean>(false);
   const [liveSending, setLiveSending] = useState(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
   const fileRefGallery = useRef<HTMLInputElement | null>(null);
   const fileRefCamera = useRef<HTMLInputElement | null>(null);
+
+  // Restaurar estado persistido tras hidratación (sobrevivir suspensión móvil por cámara nativa).
+  useEffect(() => {
+    if (isDemo) return;
+    if (restoredOnceRef.current) return;
+    restoredOnceRef.current = true;
+    const r = loadPersisted();
+    if (!r) return;
+    const valid: StitchPhase[] = ['running', 'micro', 'evidence', 'cierre', 'sent', 'paused'];
+    if (valid.includes(r.phase) && r.phase !== 'sent') {
+      // 'sent' no se restaura: el padre ya cambió el estado y el dismiss debe ser explícito.
+      setPhase(r.phase);
+      setMicroIndex(typeof r.microIndex === 'number' ? r.microIndex : 0);
+      setDesc(typeof r.desc === 'string' ? r.desc : '');
+      setLiveQc(Boolean(r.liveQc));
+    } else {
+      clearPersisted();
+    }
+  }, [isDemo]);
 
   const microTareas = microTitlesLive;
   const totalMicro = Math.max(microTareas.length, 1);
@@ -157,6 +223,38 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   useEffect(() => {
     return () => setHideBottomTabBar(false);
   }, [setHideBottomTabBar]);
+
+  // Persistir fase y datos no bloqueantes (no se persiste evidence porque son File/URL.createObjectURL).
+  useEffect(() => {
+    if (isDemo) return;
+    if (phase === 'sent') {
+      clearPersisted();
+      return;
+    }
+    if (phase === 'running' && microIndex === 0 && !desc && !liveQc) {
+      // Estado por defecto: no hace falta persistir basura.
+      clearPersisted();
+      return;
+    }
+    savePersisted({ phase, microIndex, desc, liveQc });
+  }, [phase, microIndex, desc, liveQc, isDemo]);
+
+  // Si el navegador se suspende (cambio de pestaña/cámara nativa), reforzamos persistencia inmediata.
+  useEffect(() => {
+    if (isDemo) return;
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        savePersisted({ phase, microIndex, desc, liveQc });
+      }
+    };
+    const onPageHide = () => savePersisted({ phase, microIndex, desc, liveQc });
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', onPageHide);
+    };
+  }, [phase, microIndex, desc, liveQc, isDemo]);
 
   const onFinalizarSlide = useCallback(() => {
     setMicroIndex(0);
@@ -212,15 +310,47 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           });
         });
       };
-      if (!f || evidence.length >= MAX_EVIDENCE) {
+      if (!f) {
+        // El usuario canceló el selector / la cámara → no es error. Volvemos a fase 'evidence' para que
+        // todo el flujo siga visible (sin saltar al inicio).
+        reset();
+        return;
+      }
+      if (evidence.length >= MAX_EVIDENCE) {
+        toast({
+          title: 'Máximo alcanzado',
+          description: `Sólo podés subir hasta ${MAX_EVIDENCE} fotos por bloque.`,
+          variant: 'destructive',
+        });
+        reset();
+        return;
+      }
+      if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)) {
+        toast({
+          title: 'Archivo no válido',
+          description: 'Subí una imagen JPG, PNG o WEBP.',
+          variant: 'destructive',
+        });
         reset();
         return;
       }
       const id = `ev-${Date.now()}`;
-      setEvidence((prev) => [...prev, { id, preview: URL.createObjectURL(f), file: f }]);
+      try {
+        setEvidence((prev) => [...prev, { id, preview: URL.createObjectURL(f), file: f }]);
+        toast({
+          title: 'Foto agregada',
+          description: 'Quedará lista para enviar como evidencia oficial.',
+        });
+      } catch (err) {
+        toast({
+          title: 'No pudimos previsualizar la foto',
+          description: err instanceof Error ? err.message : 'Reintentá la captura.',
+          variant: 'destructive',
+        });
+      }
       reset();
     },
-    [evidence.length],
+    [evidence.length, toast],
   );
 
   const removePhoto = useCallback((id: string) => {
@@ -247,56 +377,80 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
   const onEnviarValidacion = useCallback(async () => {
     if (isDemo) {
-      evidence.forEach((e) => URL.revokeObjectURL(e.preview));
-      setEvidence([]);
-      setDesc('');
       toast({ title: 'Enviado (demo)', description: 'No hay backend en modo mock.' });
-      router.push('/socio');
+      setPhase('sent');
       return;
     }
 
     const liveProps = props as LiveStitchProps;
     const first = evidence.find((e) => e.file);
     if (!first?.file) {
+      const msg = 'Volvé atrás y volvé a tomar una foto desde la pantalla anterior.';
+      setLiveError(msg);
       toast({
         title: 'Foto no válida',
-        description: 'Volvé atrás y volvé a tomar una foto desde la pantalla anterior.',
+        description: msg,
         variant: 'destructive',
       });
       return;
     }
     if (!liveQc) {
+      const msg = 'Marcá que confirmás el estándar de trabajo antes de enviar.';
+      setLiveError(msg);
       toast({
         title: 'Control de calidad',
-        description: 'Marcá que confirmás el estándar de trabajo antes de enviar.',
+        description: msg,
         variant: 'destructive',
       });
       return;
     }
     const mainPhotoFile = first.file;
     try {
+      setLiveError(null);
       setLiveSending(true);
       await liveProps.onSendValidationLive({
         mainPhotoFile,
         problemas: desc.trim() ? desc.trim() : undefined,
         qcConfirmed: liveQc,
       });
-      evidence.forEach((e) => URL.revokeObjectURL(e.preview));
-      setEvidence([]);
-      setDesc('');
-      setLiveQc(false);
-      toast({ title: 'Bloque enviado', description: 'Quedó en revisión ante el cliente.' });
+      // Éxito: avisamos al padre para que mantenga este componente montado,
+      // y pasamos a la pantalla de confirmación. NO redirigimos.
+      liveProps.onSendSuccess?.();
+      setPhase('sent');
+      toast({ title: '¡Evidencia enviada!', description: 'El bloque quedó en revisión ante el cliente.' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo enviar a validación.';
+      const msg = err instanceof Error && err.message ? err.message : 'No se pudo enviar a validación.';
+      setLiveError(msg);
       toast({
         title: 'Error al enviar',
-        description: msg,
+        description: `${msg} Podés reintentar.`,
         variant: 'destructive',
       });
     } finally {
       setLiveSending(false);
     }
-  }, [evidence, isDemo, toast, router, props, liveQc, desc]);
+  }, [evidence, isDemo, toast, props, liveQc, desc]);
+
+  const handleSentDismiss = useCallback(() => {
+    // Limpieza completa antes de salir.
+    evidence.forEach((e) => {
+      try {
+        URL.revokeObjectURL(e.preview);
+      } catch {
+        /* noop */
+      }
+    });
+    setEvidence([]);
+    setDesc('');
+    setLiveQc(false);
+    setLiveError(null);
+    clearPersisted();
+    if (!isDemo) {
+      const liveProps = props as LiveStitchProps;
+      liveProps.onSentDismiss?.();
+    }
+    router.push('/socio');
+  }, [evidence, isDemo, props, router]);
 
   /* ——— Pausa ——— */
   if (phase === 'paused') {
@@ -626,16 +780,98 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
             </div>
           )}
 
+          {liveError ? (
+            <div
+              role="alert"
+              className="flex flex-col gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              <span className="font-semibold">No se pudo enviar la evidencia.</span>
+              <span className="text-red-700/90">{liveError}</span>
+              <button
+                type="button"
+                onClick={() => setLiveError(null)}
+                className="self-start text-xs font-bold uppercase tracking-wider text-red-700 underline"
+              >
+                Descartar mensaje
+              </button>
+            </div>
+          ) : null}
+
           <Button
             type="button"
             disabled={liveSending || (!isDemo && !liveQc)}
             onClick={() => void onEnviarValidacion()}
             className="flex w-full items-center justify-center gap-3 rounded-xl border-0 bg-stitch-primary py-4 font-stitch-headline text-sm font-bold uppercase tracking-widest text-white shadow-lg disabled:opacity-50"
           >
-            <span>{liveSending ? 'Enviando…' : 'Enviar a validación'}</span>
-            <Send className="h-5 w-5" />
+            {liveSending ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Enviando evidencia…</span>
+              </>
+            ) : (
+              <>
+                <span>{liveError ? 'Reintentar envío' : 'Enviar a validación'}</span>
+                <Send className="h-5 w-5" />
+              </>
+            )}
           </Button>
         </main>
+
+        {/* Overlay bloqueante mientras se está subiendo evidencia: evita re-tap y muestra estado claro. */}
+        {liveSending ? (
+          <div
+            className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-3 bg-stitch-primary/80 px-6 text-center text-white backdrop-blur-sm"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2 className="h-12 w-12 animate-spin" />
+            <p className="font-stitch-headline text-lg font-bold">Subiendo evidencia…</p>
+            <p className="max-w-xs text-sm text-white/80">
+              No cierres la app ni bloquees la pantalla. Esto puede tardar unos segundos según tu conexión.
+            </p>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  /* ——— Enviado (confirmación post-envío exitoso) ——— */
+  if (phase === 'sent') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-stitch-surface px-6 pb-24 pt-10 text-center font-stitch-body">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-inner">
+          <CheckCircle className="h-12 w-12 text-emerald-600" strokeWidth={1.75} />
+        </div>
+        <h2 className="mt-6 font-stitch-headline text-2xl font-extrabold tracking-tight text-stitch-primary">
+          ¡Evidencia enviada!
+        </h2>
+        <p className="mt-2 max-w-sm text-sm text-stitch-on-surface/80">
+          Tu bloque <strong>{taskTitle}</strong> quedó en revisión ante el cliente. Te avisaremos cuando sea
+          aprobado o si necesita ajustes.
+        </p>
+
+        {evidence[0]?.preview ? (
+          <div className="mt-6 w-full max-w-xs">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-stitch-on-surface/60">
+              Evidencia enviada
+            </p>
+            <div className="overflow-hidden rounded-2xl border border-stitch-outline-variant/40 shadow-sm">
+              <img src={evidence[0].preview} alt="Evidencia enviada" className="h-44 w-full object-cover" />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-10 flex w-full max-w-sm flex-col gap-3">
+          <Button
+            type="button"
+            variant="primary"
+            className="h-12 w-full rounded-xl bg-stitch-primary text-white"
+            onClick={handleSentDismiss}
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Ir a mis tareas
+          </Button>
+        </div>
       </div>
     );
   }

@@ -17,8 +17,30 @@ export function CardActividadPreview({
 }: CardActividadPreviewProps) {
   const { tareasCompletadasPorSemana } = actividad;
   const totalSemanas = tareasCompletadasPorSemana.length;
-  const inicioSlice = periodRange >= totalSemanas ? 0 : totalSemanas - periodRange;
+  const inicioSlice = periodRange >= totalSemanas ? 0 : Math.max(0, totalSemanas - periodRange);
   const datosFiltrados = tareasCompletadasPorSemana.slice(inicioSlice);
+
+  if (totalSemanas === 0) {
+    return (
+      <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-semibold text-gray-900">Actividad</h3>
+          <button
+            onClick={onVerActividad}
+            className="text-[10px] font-medium text-blue-600 hover:text-blue-700"
+          >
+            Ver actividad →
+          </button>
+        </div>
+        <div className="h-10 flex items-center justify-center bg-gray-50 rounded mb-2 text-[10px] text-gray-500">
+          Sin datos de actividad
+        </div>
+        <div className="pt-2 border-t border-gray-100">
+          <span className="text-[9px] text-gray-500">Mostrando período seleccionado</span>
+        </div>
+      </div>
+    );
+  }
 
   // Calcular estado y desvío
   const ultimaReal = tareasCompletadasPorSemana[tareasCompletadasPorSemana.length - 1]?.completadas || 0;
@@ -53,10 +75,13 @@ export function CardActividadPreview({
     return { x, y };
   });
 
-  const pathData = puntos.reduce((acc, punto, index) => {
-    if (index === 0) return `M ${punto.x} ${punto.y}`;
-    return `${acc} L ${punto.x} ${punto.y}`;
-  }, '');
+  const pathData =
+    puntos.length > 0
+      ? puntos.reduce((acc, punto, index) => {
+          if (index === 0) return `M ${punto.x} ${punto.y}`;
+          return `${acc} L ${punto.x} ${punto.y}`;
+        }, '')
+      : 'M 0 15 L 120 15';
 
   return (
     <div className="bg-white rounded-xl p-3 border border-gray-200 shadow-sm">

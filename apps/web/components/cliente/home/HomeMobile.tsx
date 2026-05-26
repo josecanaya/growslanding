@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Route } from 'next';
 import { useDeviceType } from '@/lib/hooks/useDeviceType';
@@ -10,56 +10,60 @@ import { BottomSheetObras } from './BottomSheetObras';
 import { PeriodSelectorGlobal } from './PeriodSelectorGlobal';
 import { CardResumenTareas } from './CardResumenTareas';
 import { CardResumenEscrow } from './CardResumenEscrow';
+import { useClienteObras, type ClienteObraListaItem } from '@/lib/hooks/useClienteObras';
+import { useClienteObraTareasResumen } from '@/lib/hooks/useClienteObraTareasResumen';
 
-interface Obra {
+interface ObraCardModel {
   id: string;
   name: string;
   estado: string;
 }
 
-// Mocks fijos (desconectado de la base de datos) — mismo criterio que /cliente y dashboard
-const OBRAS_MOCK: Obra[] = [
-  { id: 'demo-obra-1-casa-familiar', name: 'Casa familiar – Juan Pérez', estado: 'En ejecución' },
-  { id: 'demo-obra-2-reforma-bano', name: 'Reforma Baño – María González', estado: 'Pendiente' },
-  { id: 'demo-obra-3-ampliacion-cocina', name: 'Ampliación Cocina – Carlos López', estado: 'Creada' },
-];
-
-// Datos realistas para Casa Familiar (demo)
-const MOCK_CASA_FAMILIAR = {
-  tareasEstaSemana: 8,
-  presupuestoEstaSemana: 32000,
-  avance: 85,
-  tareasPendientes: 8,
-  tareasVencidas: 3,
-  tareasProximas7d: 9,
-  presupuestoEjecutado: 350000,
-  presupuestoAprobado: 600000,
-  semanasSinEjecucion: 0,
-  completadasUltimos7d: [1, 2, 2, 3, 2, 2, 2] as number[],
-};
+function toObraCardModel(o: ClienteObraListaItem): ObraCardModel {
+  return {
+    id: o.id,
+    name: o.name?.trim() ? o.name : 'Sin nombre',
+    estado: (o.estado || 'PENDIENTE').trim(),
+  };
+}
 
 export function HomeMobile() {
   const deviceType = useDeviceType();
   const router = useRouter();
-  const [obras, setObras] = useState<Obra[]>(OBRAS_MOCK);
-  const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(OBRAS_MOCK[0].id);
+  const { obras, loading: obrasLoading, error: obrasError } = useClienteObras();
+  const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
   const [isObraSheetOpen, setIsObraSheetOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [periodRange, setPeriodRange] = useState(8);
 
-  // Solo mostrar en mobile
+  useEffect(() => {
+    if (obrasLoading) return;
+    if (obras.length === 0) {
+      setObraSeleccionada(null);
+      return;
+    }
+    setObraSeleccionada((prev) => {
+      if (prev && obras.some((o) => o.id === prev)) return prev;
+      return obras[0].id;
+    });
+  }, [obras, obrasLoading]);
+
+  const obraRow = useMemo(
+    () => (obraSeleccionada ? obras.find((o) => o.id === obraSeleccionada) : undefined),
+    [obras, obraSeleccionada],
+  );
+
+  const { loading: tareasLoading, error: tareasError, kpis } = useClienteObraTareasResumen(
+    obraRow?.id ?? null,
+    obraRow?.orgId ?? null,
+  );
+
+  const obrasCards = useMemo(() => obras.map(toObraCardModel), [obras]);
+
   if (deviceType !== 'mobile') {
     return null;
   }
 
-  useEffect(() => {
-    setLoading(false);
-  }, []);
-
-  const obraActual = useMemo(
-    () => obras.find((o) => o.id === obraSeleccionada) || obras[0] || null,
-    [obras, obraSeleccionada]
-  );
+  const obraActual = obraRow ? toObraCardModel(obraRow) : null;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', {
@@ -77,28 +81,40 @@ export function HomeMobile() {
   };
 
   const totalSemanas = 26;
-  const isCasaFamiliar = obraSeleccionada === OBRAS_MOCK[0].id;
-  const tareasPendientes = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasPendientes : 0;
-  const tareasVencidas = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasVencidas : 0;
-  const tareasProximas7d = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasProximas7d : 0;
-  const presupuestoEjecutado = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoEjecutado : 0;
-  const presupuestoAprobado = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoAprobado : 0;
-  const semanasSinEjecucion = isCasaFamiliar ? MOCK_CASA_FAMILIAR.semanasSinEjecucion : 0;
-  const completadasUltimos7d = isCasaFamiliar ? MOCK_CASA_FAMILIAR.completadasUltimos7d : [0, 0, 0, 0, 0, 0, 0];
-  const tareasEstaSemana = isCasaFamiliar ? MOCK_CASA_FAMILIAR.tareasEstaSemana : 0;
-  const presupuestoEstaSemana = isCasaFamiliar ? MOCK_CASA_FAMILIAR.presupuestoEstaSemana : 0;
-  const avance = isCasaFamiliar ? MOCK_CASA_FAMILIAR.avance : 0;
+  const loading = obrasLoading;
+
+  const tareasPendientes = kpis.desktop.tareasPendientes;
+  const tareasVencidas = kpis.desktop.tareasVencidas;
+  const tareasProximas7d = kpis.desktop.tareasProximas7d;
+  const presupuestoEjecutado = 0;
+  const presupuestoAprobado = 0;
+  const semanasSinEjecucion = 0;
+  const completadasUltimos7d = kpis.desktop.completadasUltimos7d;
+  const tareasEstaSemana = kpis.tareasEstaSemana;
+  const presupuestoEstaSemana = 0;
+  const avance = kpis.avancePct;
 
   return (
     <div className="space-y-3 pb-4 bg-gray-50 min-h-screen pt-4">
+      {obrasError && (
+        <p className="mx-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          {obrasError}
+        </p>
+      )}
+      {tareasError && obraActual && (
+        <p className="mx-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          {tareasError}
+        </p>
+      )}
+
       {/* Obra Activa */}
       {!loading && obraActual && (
         <div onClick={handleObraClick} className="cursor-pointer">
           <ObraActivaCard
             obra={obraActual}
-            tareasEstaSemana={tareasEstaSemana}
+            tareasEstaSemana={tareasLoading ? 0 : tareasEstaSemana}
             presupuestoEstaSemana={presupuestoEstaSemana}
-            avance={avance}
+            avance={tareasLoading ? 0 : avance}
             formatCurrency={formatCurrency}
             onCambiarObra={() => {
               setIsObraSheetOpen(true);
@@ -114,10 +130,8 @@ export function HomeMobile() {
         </div>
       )}
 
-      {/* Quick Actions Row */}
       <QuickActionsRow obraId={obraSeleccionada} />
 
-      {/* Selector de período global */}
       {!loading && obraActual && (
         <PeriodSelectorGlobal
           periodRange={periodRange}
@@ -126,15 +140,14 @@ export function HomeMobile() {
         />
       )}
 
-      {/* Resumen operativo */}
       {!loading && obraActual && (
         <div className="grid grid-cols-2 gap-3">
           <CardResumenTareas
             obraId={obraSeleccionada}
-            tareasPendientes={tareasPendientes}
-            tareasVencidas={tareasVencidas}
-            tareasProximas7d={tareasProximas7d}
-            completadasUltimos7d={completadasUltimos7d}
+            tareasPendientes={tareasLoading ? 0 : tareasPendientes}
+            tareasVencidas={tareasLoading ? 0 : tareasVencidas}
+            tareasProximas7d={tareasLoading ? 0 : tareasProximas7d}
+            completadasUltimos7d={tareasLoading ? [] : completadasUltimos7d}
           />
           <CardResumenEscrow
             ejecutado={presupuestoEjecutado}
@@ -145,8 +158,7 @@ export function HomeMobile() {
         </div>
       )}
 
-      {/* Empty state: Sin obra activa */}
-      {!loading && !obraActual && obras.length === 0 && (
+      {!loading && !obraActual && obras.length === 0 && !obrasError && (
         <div className="bg-white rounded-2xl p-6 border border-gray-200/70 shadow-sm text-center">
           <h3 className="text-base font-semibold text-gray-900 mb-2">
             Crear tu primera obra
@@ -163,15 +175,13 @@ export function HomeMobile() {
         </div>
       )}
 
-      {/* Bottom Sheet Obras */}
       <BottomSheetObras
         isOpen={isObraSheetOpen}
         onClose={() => setIsObraSheetOpen(false)}
-        obras={obras}
+        obras={obrasCards}
         obraSeleccionada={obraSeleccionada || ''}
         onSelectObra={setObraSeleccionada}
       />
     </div>
   );
 }
-

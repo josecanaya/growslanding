@@ -10,12 +10,15 @@ export type ApiTareaRow = {
   prioridad: string | null;
   fecha_inicio_estimada: string | null;
   fecha_fin_estimada: string | null;
+  fecha_inicio_real: string | null;
+  fecha_fin_real: string | null;
   avance: number | null;
   etapa: string | null;
   dias_presupuesto?: number;
   is_critical?: boolean | null;
   costo_presupuestado?: number | null;
   created_at: string | null;
+  updated_at?: string | null;
   elemento?: { nombre?: string | null; categoria?: string | null } | null;
   obra?: { id?: string; name?: string; address?: string | null } | null;
 };

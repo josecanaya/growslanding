@@ -90,6 +90,10 @@ function uuidFromSeed(seed: string): string {
 const DEMO_STORAGE_KEY = 'grows-demo-video';
 
 export function isDemoVideoEnabled(): boolean {
+  /** En producción nunca se inyectan datos demo por URL, storage o env público. */
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
   if (typeof window === 'undefined') {
     return (process.env.NEXT_PUBLIC_DEMO_VIDEO ?? '') === 'true';
   }

@@ -24,11 +24,12 @@ export function CardTareasCompact({
   periodRange,
   onVerTareas,
 }: CardTareasCompactProps) {
-  // Calcular porcentajes para el donut
-  const porcentajeCompletadas = (tareas.completadas / tareas.total) * 100;
-  const porcentajeEnCurso = (tareas.enCurso / tareas.total) * 100;
-  const porcentajeParaValidar = (tareas.paraValidar / tareas.total) * 100;
-  const porcentajeBloqueadas = (tareas.bloqueadas / tareas.total) * 100;
+  // Calcular porcentajes para el donut (sin NaN cuando total === 0)
+  const totalSeguro = Math.max(tareas.total, 1);
+  const porcentajeCompletadas = (tareas.completadas / totalSeguro) * 100;
+  const porcentajeEnCurso = (tareas.enCurso / totalSeguro) * 100;
+  const porcentajeParaValidar = (tareas.paraValidar / totalSeguro) * 100;
+  const porcentajeBloqueadas = (tareas.bloqueadas / totalSeguro) * 100;
 
   // Donut mini SVG
   const size = 60;

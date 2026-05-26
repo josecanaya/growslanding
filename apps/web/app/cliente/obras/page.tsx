@@ -1,20 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { Route } from 'next';
 import { Plus, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
 import { ObraCard } from '@/components/cliente/ObraCard';
 import { Button } from '@/components/ui/grows';
-
-type ApiObra = {
-  id: string;
-  name: string;
-  address: string | null;
-  estado: string | null;
-  _count?: { tareas: number };
-};
+import { useClienteObras, type ClienteObraListaItem } from '@/lib/hooks/useClienteObras';
 
 function estadoLabel(e: string | null | undefined): string {
   if (!e) return '—';
@@ -26,40 +19,12 @@ function estadoLabel(e: string | null | undefined): string {
 }
 
 export default function ObrasPage() {
-  const [obras, setObras] = useState<ApiObra[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const { obras, loading, error, refresh } = useClienteObras();
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      setLoading(true);
-      setErr(null);
-      try {
-        const res = await fetch('/api/obras', { cache: 'no-store' });
-        const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(json.message || json.error || 'Error al cargar obras');
-        }
-        if (active) {
-          setObras(Array.isArray(json.data) ? json.data : []);
-        }
-      } catch (e) {
-        if (active) {
-          setErr(e instanceof Error ? e.message : 'Error');
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleEliminarObra = async (id: string) => {
-    const obra = obras.find((o) => o.id === id);
+    const obra = obras.find((o: ClienteObraListaItem) => o.id === id);
     const nombre = obra?.name || 'esta obra';
     if (
       !window.confirm(
@@ -69,7 +34,7 @@ export default function ObrasPage() {
       return;
     }
     setEliminandoId(id);
-    setErr(null);
+    setDeleteError(null);
     try {
       const res = await fetch(`/api/obras/${encodeURIComponent(id)}`, { method: 'DELETE' });
       const json = await res.json().catch(() => ({}));
@@ -82,9 +47,9 @@ export default function ObrasPage() {
               : 'No se pudo eliminar la obra';
         throw new Error(msg);
       }
-      setObras((prev) => prev.filter((o) => o.id !== id));
+      await refresh();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : 'Error al eliminar');
+      setDeleteError(e instanceof Error ? e.message : 'Error al eliminar');
     } finally {
       setEliminandoId(null);
     }
@@ -104,8 +69,11 @@ export default function ObrasPage() {
           </Link>
         }
       />
-      {err && (
-        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{err}</p>
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>
+      )}
+      {deleteError && (
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{deleteError}</p>
       )}
       {loading ? (
         <div className="flex items-center justify-center gap-2 py-16 text-slate-600">
@@ -118,7 +86,7 @@ export default function ObrasPage() {
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {obras.map((o) => {
+          {obras.map((o: ClienteObraListaItem) => {
             const tareas = o._count?.tareas ?? 0;
             const avance = Math.min(100, tareas > 0 ? 15 : 0);
             return (

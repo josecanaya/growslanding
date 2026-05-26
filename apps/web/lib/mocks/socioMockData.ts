@@ -1,15 +1,18 @@
 /**
- * Mocks del socio: desactivados por defecto. Datos reales vía Supabase/API.
- * Activar solo para demo local: `NEXT_PUBLIC_SOCIO_USE_MOCK=true` (y análogos).
+ * Mocks del socio: desactivados en producción. Datos reales vía Supabase/API.
+ * En desarrollo: `NEXT_PUBLIC_SOCIO_USE_MOCK=true` (y análogos).
  */
-export const USE_MOCK_DATA = process.env.NEXT_PUBLIC_SOCIO_USE_MOCK === 'true';
+const allowDevMocks = process.env.NODE_ENV !== 'production';
+
+export const USE_MOCK_DATA =
+  allowDevMocks && process.env.NEXT_PUBLIC_SOCIO_USE_MOCK === 'true';
 
 /** @deprecated Ya no controla `/socio/ahora`; usar ruta `/socio/ahora/demo` para el mock visual. */
 export const USE_AHORA_STITCH_MOCK =
-  process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK === 'true';
+  allowDevMocks && process.env.NEXT_PUBLIC_SOCIO_AHORA_MOCK === 'true';
 
 export const FORCE_PRESUPUESTOS_MOCK =
-  process.env.NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK === 'true';
+  allowDevMocks && process.env.NEXT_PUBLIC_SOCIO_PRESUPUESTOS_MOCK === 'true';
 
 export type AhoraStitchItemState = 'done' | 'active' | 'pending';
 

@@ -217,7 +217,60 @@ export async function fetchEvidenciasPorSocioYObraCliente(
       })
       .filter((e: any): e is Evidencia => e !== null);
 
-    console.log('[FETCH_EVIDENCIAS] Evidencias mapeadas:', evidencias.length);
+    console.log('[FETCH_EVIDENCIAS] Evidencias mapeadas (eventos+media):', evidencias.length);
+
+    // Complementar con evidencias persistidas en bloques (tareas_subtareas.evidencia_url)
+    const { data: subtareasEv, error: subtErr } = await supabaseClient
+      .from('tareas_subtareas')
+      .select(
+        `
+        id,
+        evidencia_url,
+        updated_at,
+        tarea_id,
+        tareas:tareas!inner (
+          id,
+          title,
+          obra_id
+        )
+      `,
+      )
+      .eq('tareas.obra_id', obraId)
+      .eq('evidencia_cargada', true)
+      .not('evidencia_url', 'is', null)
+      .order('updated_at', { ascending: false });
+
+    if (subtErr) {
+      console.warn('[FETCH_EVIDENCIAS] subtareas fallback:', subtErr.message);
+    } else if (subtareasEv?.length) {
+      const idsExistentes = new Set(evidencias.map((e) => `${e.tarea_id}:${e.path}`));
+      for (const row of subtareasEv as Array<{
+        id: string;
+        evidencia_url: string;
+        updated_at: string;
+        tarea_id: string;
+        tareas: { id: string; title: string | null; obra_id: string | null } | null;
+      }>) {
+        const url = String(row.evidencia_url || '').trim();
+        if (!url) continue;
+        const dedupeKey = `${row.tarea_id}:${url}`;
+        if (idsExistentes.has(dedupeKey)) continue;
+        idsExistentes.add(dedupeKey);
+        evidencias.push({
+          id: `subtarea-${row.id}`,
+          path: url,
+          kind: 'foto',
+          created_at: row.updated_at || new Date().toISOString(),
+          tarea_id: row.tarea_id,
+          tarea_nombre: row.tareas?.title ?? null,
+          obra_id: obraId,
+          subido_por: null,
+          subido_por_email: socioEmail,
+        });
+      }
+      console.log('[FETCH_EVIDENCIAS] Total con subtareas:', evidencias.length);
+    }
+
     return evidencias;
   } catch (error) {
     console.error('[FETCH_EVIDENCIAS] Error general:', error);

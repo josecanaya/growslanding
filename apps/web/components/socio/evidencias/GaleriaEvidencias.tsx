@@ -26,9 +26,10 @@ export function GaleriaEvidencias({ evidencias, loading }: GaleriaEvidenciasProp
     });
   };
 
-  // Obtener URL de la imagen desde Supabase Storage
+  // Obtener URL de la imagen desde Supabase Storage o URL pública directa
   const getImageUrl = (path: string) => {
-    const bucket = 'evidencias'; // Según el contexto del proyecto
+    if (/^https?:\/\//i.test(path)) return path;
+    const bucket = 'evidencias';
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
   };

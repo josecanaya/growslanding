@@ -150,59 +150,146 @@
 }
 
 /* =====================================================================
-   Impresión (presupuestos socio) — formato A4 profesional
-   Marcador `body.printing-presupuesto` activado por handlePrintPresupuesto
+   Impresión (presupuestos socio) — planilla A4 blanco y negro para completar a mano
+   Activar con body.printing-presupuesto (handlePrintPresupuesto)
    ===================================================================== */
 @media screen {
   .print-only-presupuesto {
-    position: fixed;
+    position: absolute;
     left: -10000px;
     top: 0;
+    width: 210mm;
     visibility: hidden;
     pointer-events: none;
+    overflow: visible;
   }
+}
+
+/* Estilos base de la planilla (también aplican al imprimir) */
+.presupuesto-planilla {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 0;
+  color: #000000;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11pt;
+  line-height: 1.35;
+}
+
+.presupuesto-planilla-encabezado {
+  margin-bottom: 14pt;
+}
+
+.presupuesto-planilla-meta {
+  margin: 0 0 6pt;
+}
+
+.presupuesto-planilla-label {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.presupuesto-planilla-blank-line {
+  display: inline-block;
+  min-width: 220pt;
+  border-bottom: 1pt solid #000000;
+  vertical-align: bottom;
+}
+
+.presupuesto-planilla-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.presupuesto-planilla-th,
+.presupuesto-planilla-td {
+  border: 1pt solid #444444;
+  padding: 6pt 7pt;
+  vertical-align: top;
+  text-align: left;
+  color: #000000;
+  background: #ffffff;
+}
+
+.presupuesto-planilla-th {
+  font-weight: 700;
+  font-size: 10pt;
+}
+
+.presupuesto-planilla-col-num {
+  width: 28pt;
+  text-align: center;
+}
+
+.presupuesto-planilla-col-campo {
+  width: 72pt;
+}
+
+.presupuesto-planilla-col-tarea {
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.presupuesto-planilla-vacio {
+  min-height: 22pt;
 }
 
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 12mm;
   }
 
-  html, body {
+  html,
+  body {
     background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    color: #000000 !important;
   }
 
+  /* Ocultar toda la UI de la app; imprimir solo la planilla */
   body.printing-presupuesto > *:not(.print-only-presupuesto) {
     display: none !important;
   }
 
   body.printing-presupuesto .print-only-presupuesto {
     position: static !important;
-    left: 0 !important;
+    left: auto !important;
+    top: auto !important;
     visibility: visible !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
     display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+    transform: none !important;
   }
 
-  body.printing-presupuesto #presupuesto-print-root {
-    color: #0f172a !important;
+  body.printing-presupuesto #presupuesto-print-root,
+  body.printing-presupuesto .presupuesto-planilla {
+    color: #000000 !important;
     background: #ffffff !important;
+    box-shadow: none !important;
   }
 
-  body.printing-presupuesto a {
-    color: inherit !important;
-    text-decoration: none !important;
+  body.printing-presupuesto .presupuesto-planilla-tabla thead {
+    display: table-header-group;
   }
 
-  body.printing-presupuesto table,
-  body.printing-presupuesto tr,
-  body.printing-presupuesto td,
-  body.printing-presupuesto th {
+  body.printing-presupuesto .presupuesto-planilla-fila {
     page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  body.printing-presupuesto .presupuesto-planilla-th,
+  body.printing-presupuesto .presupuesto-planilla-td {
+    -webkit-print-color-adjust: economy;
+    print-color-adjust: economy;
   }
 }

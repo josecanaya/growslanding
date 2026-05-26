@@ -20,6 +20,7 @@ export interface SocioPerfilCompleto {
   id?: string;
   nombre: string | null;
   apellido: string | null;
+  nombre_comercial: string | null;
   email: string | null;
   telefono: string | null;
   especialidad: string | null;
@@ -39,6 +40,7 @@ interface EditarPerfilModalProps {
 const EMPTY: SocioPerfilCompleto = {
   nombre: '',
   apellido: '',
+  nombre_comercial: '',
   email: '',
   telefono: '',
   especialidad: '',
@@ -75,6 +77,7 @@ export function EditarPerfilModal({ open, onClose, onSaved }: EditarPerfilModalP
         setForm({
           nombre: s.nombre ?? '',
           apellido: s.apellido ?? '',
+          nombre_comercial: s.nombre_comercial ?? '',
           email: s.email ?? '',
           telefono: s.telefono ?? '',
           especialidad: s.especialidad ?? '',
@@ -215,6 +218,7 @@ export function EditarPerfilModal({ open, onClose, onSaved }: EditarPerfilModalP
         body: JSON.stringify({
           nombre: form.nombre,
           apellido: form.apellido,
+          nombre_comercial: form.nombre_comercial,
           email: form.email,
           telefono: form.telefono,
           especialidad: form.especialidad,
@@ -290,6 +294,15 @@ export function EditarPerfilModal({ open, onClose, onSaved }: EditarPerfilModalP
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-1.5 sm:col-span-2">
+                <Label htmlFor="perfil-nombre-comercial">Nombre comercial</Label>
+                <Input
+                  id="perfil-nombre-comercial"
+                  value={form.nombre_comercial ?? ''}
+                  onChange={(e) => updateField('nombre_comercial', e.target.value)}
+                  placeholder="Ej: Pérez Construcciones"
+                />
+              </div>
               <div className="grid gap-1.5">
                 <Label htmlFor="perfil-nombre">Nombre</Label>
                 <Input

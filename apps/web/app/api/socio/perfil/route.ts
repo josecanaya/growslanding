@@ -13,6 +13,7 @@ type PerfilExtraRow = {
   socio_id: string;
   apellido: string | null;
   especialidades_secundarias: string[] | null;
+  nombre_comercial: string | null;
   descripcion: string | null;
   localidad: string | null;
   experiencia: string | null;
@@ -78,7 +79,7 @@ async function buildPayload(supabase: ReturnType<typeof createServiceSupabaseCli
 
   const { data: extraRow } = await sb
     .from('socio_perfil_extra')
-    .select('socio_id, apellido, especialidades_secundarias, descripcion, localidad, experiencia, avatar_url')
+    .select('socio_id, apellido, nombre_comercial, especialidades_secundarias, descripcion, localidad, experiencia, avatar_url')
     .eq('socio_id', socio.id)
     .maybeSingle();
 
@@ -100,6 +101,7 @@ async function buildPayload(supabase: ReturnType<typeof createServiceSupabaseCli
       especialidad: socioRow?.especialidad ?? null,
       estado: socioRow?.estado ?? null,
       apellido: extra.apellido ?? null,
+      nombre_comercial: extra.nombre_comercial ?? null,
       especialidades_secundarias: extra.especialidades_secundarias ?? [],
       descripcion: extra.descripcion ?? null,
       localidad: extra.localidad ?? null,
@@ -132,6 +134,7 @@ export async function PATCH(request: Request) {
 
     const nombre = clean(body.nombre, 120);
     const apellido = clean(body.apellido, 120);
+    const nombre_comercial = clean(body.nombre_comercial, 200);
     const telefono = clean(body.telefono, 40);
     const email = clean(body.email, 200);
     const especialidad = clean(body.especialidad, 120);
@@ -166,6 +169,7 @@ export async function PATCH(request: Request) {
       socio_id: ctx.socio.id,
     };
     if (apellido !== null) extraPatch.apellido = apellido;
+    if (nombre_comercial !== null) extraPatch.nombre_comercial = nombre_comercial;
     if (descripcion !== null) extraPatch.descripcion = descripcion;
     if (localidad !== null) extraPatch.localidad = localidad;
     if (experiencia !== null) extraPatch.experiencia = experiencia;

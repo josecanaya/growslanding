@@ -37,6 +37,8 @@ export interface Colaborador {
   dni: string | null;
   telefono: string | null;
   especialidad: string | null;
+  categoria: string | null;
+  foto_url: string | null;
   observaciones: string | null;
   activo: boolean;
   created_at?: string | null;
@@ -49,6 +51,7 @@ interface DraftColaborador {
   dni: string;
   telefono: string;
   especialidad: string;
+  categoria: string;
   observaciones: string;
 }
 
@@ -58,6 +61,7 @@ const EMPTY_DRAFT: DraftColaborador = {
   dni: '',
   telefono: '',
   especialidad: '',
+  categoria: '',
   observaciones: '',
 };
 
@@ -113,6 +117,7 @@ export function ColaboradoresSection() {
       dni: c.dni || '',
       telefono: c.telefono || '',
       especialidad: c.especialidad || '',
+      categoria: c.categoria || '',
       observaciones: c.observaciones || '',
     });
     setMostrarFormulario(true);
@@ -142,6 +147,7 @@ export function ColaboradoresSection() {
         dni: draft.dni.trim() || null,
         telefono: draft.telefono.trim() || null,
         especialidad: draft.especialidad.trim() || null,
+        categoria: draft.categoria.trim() || null,
         observaciones: draft.observaciones.trim() || null,
       };
       const url = editando ? `/api/socio/colaboradores/${editando.id}` : '/api/socio/colaboradores';
@@ -237,12 +243,26 @@ export function ColaboradoresSection() {
       }`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className="flex min-w-0 gap-3">
+          {c.foto_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={c.foto_url} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-sm font-bold text-blue-700">
+              {(c.nombre?.charAt(0) || 'C').toUpperCase()}
+            </div>
+          )}
+          <div className="min-w-0">
           <h4 className="text-sm font-semibold text-gray-900">
             {c.nombre}
             {c.apellido ? ` ${c.apellido}` : ''}
           </h4>
           <p className="text-xs text-gray-600">{c.especialidad || 'Sin especialidad'}</p>
+          {c.categoria ? (
+            <span className="mt-1 inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+              {c.categoria}
+            </span>
+          ) : null}
           <div className="mt-2 space-y-1 text-xs text-gray-600">
             {c.telefono && (
               <div className="flex items-center gap-2">
@@ -257,6 +277,7 @@ export function ColaboradoresSection() {
               </p>
             )}
             {c.observaciones && <p className="italic text-gray-500">{c.observaciones}</p>}
+          </div>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -427,6 +448,16 @@ export function ColaboradoresSection() {
                 maxLength={120}
                 onChange={(e) => setDraft((d) => ({ ...d, especialidad: e.target.value }))}
                 placeholder="Ej: Albañil"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="col-categoria">Categoría</Label>
+              <Input
+                id="col-categoria"
+                value={draft.categoria}
+                maxLength={80}
+                onChange={(e) => setDraft((d) => ({ ...d, categoria: e.target.value }))}
+                placeholder="Ej: Oficial, Ayudante, Electricista"
               />
             </div>
             <div className="grid gap-1.5">

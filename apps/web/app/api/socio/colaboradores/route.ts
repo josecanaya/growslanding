@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     let q = sb
       .from('socio_colaboradores')
       .select(
-        'id, socio_id, org_id, nombre, apellido, dni, telefono, especialidad, observaciones, activo, created_at, updated_at',
+        'id, socio_id, org_id, nombre, apellido, dni, telefono, especialidad, categoria, foto_url, observaciones, activo, created_at, updated_at',
       )
       .eq('socio_id', ctx.socio.id)
       .order('activo', { ascending: false })
@@ -101,6 +101,8 @@ export async function POST(request: Request) {
     const dni = cleanStr(body.dni, 30);
     const telefono = cleanStr(body.telefono, 40);
     const especialidad = cleanStr(body.especialidad, 120);
+    const categoria = cleanStr(body.categoria, 80);
+    const foto_url = cleanStr(body.foto_url, 1000);
     const observaciones = cleanStr(body.observaciones, 500);
 
     let orgId = ctx.socio.org_id;
@@ -119,6 +121,8 @@ export async function POST(request: Request) {
         dni,
         telefono,
         especialidad,
+        categoria,
+        foto_url,
         observaciones,
         activo: true,
       })

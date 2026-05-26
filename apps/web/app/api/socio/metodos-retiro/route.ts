@@ -14,8 +14,13 @@ type MetodoInput = {
   cvu?: unknown;
   cbu?: unknown;
   alias?: unknown;
+  tipo?: unknown;
+  mercado_pago_cvu?: unknown;
+  mercado_pago_alias?: unknown;
   es_principal?: unknown;
 };
+
+const TIPOS_VALIDOS = new Set(['transferencia', 'mercado_pago', 'cvu', 'cbu', 'alias']);
 
 const ALIAS_RE = /^[a-zA-Z0-9._-]{6,40}$/;
 const NUM22_RE = /^[0-9]{22}$/;
@@ -35,15 +40,27 @@ function validar(payload: MetodoInput): { ok: true; data: Record<string, unknown
   const cvuRaw = cleanStr(payload.cvu, 22);
   const cbuRaw = cleanStr(payload.cbu, 22);
   const aliasRaw = cleanStr(payload.alias, 40);
+  const mpCvuRaw = cleanStr(payload.mercado_pago_cvu, 22);
+  const mpAliasRaw = cleanStr(payload.mercado_pago_alias, 40);
+  const tipoRaw = cleanStr(payload.tipo, 40) ?? 'transferencia';
+  const tipo = TIPOS_VALIDOS.has(tipoRaw) ? tipoRaw : 'transferencia';
 
-  if (!cvuRaw && !cbuRaw && !aliasRaw) {
-    return { ok: false, message: 'Tenés que cargar CVU, CBU o Alias.' };
+  if (tipo === 'mercado_pago') {
+    if (!mpCvuRaw && !mpAliasRaw && !aliasRaw && !cvuRaw) {
+      return { ok: false, message: 'Para Mercado Pago cargá CVU o alias de tu cuenta.' };
+    }
+  } else if (!cvuRaw && !cbuRaw && !aliasRaw && !mpCvuRaw && !mpAliasRaw) {
+    return { ok: false, message: 'Tenés que cargar CVU, CBU, Alias o datos de Mercado Pago.' };
   }
 
   const cvu = cvuRaw && !NUM22_RE.test(cvuRaw) ? null : cvuRaw;
   const cbu = cbuRaw && !NUM22_RE.test(cbuRaw) ? null : cbuRaw;
   if (cvuRaw && !cvu) return { ok: false, message: 'El CVU debe tener 22 dígitos.' };
   if (cbuRaw && !cbu) return { ok: false, message: 'El CBU debe tener 22 dígitos.' };
+
+  if (mpCvuRaw && !NUM22_RE.test(mpCvuRaw)) {
+    return { ok: false, message: 'El CVU de Mercado Pago debe tener 22 dígitos.' };
+  }
 
   const alias = aliasRaw;
   if (alias && !ALIAS_RE.test(alias)) {
@@ -58,6 +75,9 @@ function validar(payload: MetodoInput): { ok: true; data: Record<string, unknown
       cvu,
       cbu,
       alias,
+      tipo,
+      mercado_pago_cvu: mpCvuRaw && !NUM22_RE.test(mpCvuRaw) ? null : mpCvuRaw,
+      mercado_pago_alias: mpAliasRaw,
       es_principal: Boolean(payload.es_principal),
     },
   };
@@ -103,7 +123,7 @@ export async function GET() {
     const sb = ctx.supabase as any;
     const { data, error } = await sb
       .from('socio_metodos_retiro')
-      .select('id, socio_id, titular, banco, cvu, cbu, alias, es_principal, activo, created_at, updated_at')
+      .select('id, socio_id, titular, banco, cvu, cbu, alias, tipo, mercado_pago_cvu, mercado_pago_alias, es_principal, activo, created_at, updated_at')
       .eq('socio_id', ctx.socio.id)
       .eq('activo', true)
       .order('es_principal', { ascending: false })

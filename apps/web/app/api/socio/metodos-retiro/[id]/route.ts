@@ -102,6 +102,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       }
       patch.alias = alias;
     }
+    const tipo = cleanStr(body.tipo, 40);
+    if (tipo !== undefined) patch.tipo = tipo;
+    const mpCvu = cleanStr(body.mercado_pago_cvu, 22);
+    if (mpCvu !== undefined) {
+      if (mpCvu && !NUM22_RE.test(mpCvu)) {
+        return NextResponse.json({ ok: false, message: 'El CVU de Mercado Pago debe tener 22 dígitos.' }, { status: 400 });
+      }
+      patch.mercado_pago_cvu = mpCvu;
+    }
+    const mpAlias = cleanStr(body.mercado_pago_alias, 40);
+    if (mpAlias !== undefined) patch.mercado_pago_alias = mpAlias;
 
     let setPrincipal = false;
     if (body.es_principal !== undefined) {

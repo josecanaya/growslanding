@@ -13,6 +13,7 @@ import {
   normalizeEstadoBloqueParaOperacion,
 } from '@/lib/domain/estados-core';
 import { resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
+import { registrarEvidenciaSubtarea } from '@/lib/services/registrar-evidencia-subtarea';
 
 function statusFromMessage(msg: string): number {
   if (msg === 'FORBIDDEN_ACTION' || msg.includes('permiso')) return 403;
@@ -139,6 +140,38 @@ export async function POST(
         },
         { status: 409 },
       );
+    }
+
+    // Fallback: asegurar registro en eventos+media si el upload no lo hizo.
+    if (urlTrim) {
+      try {
+        const storagePath = urlTrim.includes('/evidencias/')
+          ? urlTrim.split('/evidencias/').pop()?.split('?')[0] ?? urlTrim
+          : urlTrim.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/public\/evidencias\//, '').split('?')[0];
+        const registro = await registrarEvidenciaSubtarea(supabase, {
+          subtareaId: id,
+          storagePath,
+          publicUrl: urlTrim,
+          actorName: user.email ?? user.id,
+          actorRole: 'Socio',
+          actorMethod: 'login',
+          notas: problemas,
+        });
+        console.info('[ENVIAR_VALIDAR_EVIDENCIA_OK]', {
+          subtareaId: id,
+          tareaId: registro.tareaId,
+          eventoId: registro.eventoId,
+          mediaId: registro.mediaId,
+          evidenciaUrl: urlTrim,
+        });
+      } catch (histErr) {
+        console.warn('[ENVIAR_VALIDAR_EVIDENCIA_HISTORIAL]', {
+          subtareaId: id,
+          tareaId: subtarea.tarea_id,
+          evidenciaUrl: urlTrim,
+          error: histErr instanceof Error ? histErr.message : histErr,
+        });
+      }
     }
 
     if (evidenciaUrl || videoUrl || problemas) {

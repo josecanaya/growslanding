@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
-import { Loader2, Save, Send, FileText, Eye, Edit, MapPin, Printer } from 'lucide-react';
+import { Loader2, Save, Send, FileText, Eye, Edit, MapPin, Printer, Download, Share2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
 import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
@@ -21,6 +21,12 @@ import { USE_MOCK_DATA, FORCE_PRESUPUESTOS_MOCK, MOCK_OBRAS_PARA_PRESUPUESTOS } 
 import { cn } from '@/lib/utils';
 import { bucketEtapaPresupuesto } from '@/lib/socio/bucketEtapaPresupuesto';
 import { presupuestoLineaEstado } from '@/lib/socio/presupuestoLineaEstado';
+import {
+  buildPresupuestoPdfBlob,
+  downloadPresupuestoPdf,
+  openWhatsAppPresupuesto,
+  sharePresupuestoPdf,
+} from '@/lib/socio/presupuestoPdfShare';
 
 interface ObraConPresupuestos {
   obra_id: string;
@@ -444,6 +450,104 @@ function PresupuestosContent() {
     }, 60);
   }, [obra, presupuestosFiltrados.length, toast]);
 
+  const buildPdfParams = useCallback(() => {
+    if (!obra || presupuestosFiltrados.length === 0) return null;
+    return {
+      obra: {
+        id: obra.id,
+        name: obra.name || 'Sin nombre',
+        direccion_completa: obra.direccion_completa,
+        cantidad_plantas: obra.cantidad_plantas,
+        fecha_inicio: obra.fecha_inicio,
+        cliente: obra.cliente || null,
+      },
+      presupuestosAgrupadosPorEtapa,
+      nombreContratista,
+      etapaActiva: activeEtapa,
+      editing,
+    };
+  }, [obra, presupuestosFiltrados.length, presupuestosAgrupadosPorEtapa, nombreContratista, activeEtapa, editing]);
+
+  const pdfFilename = useMemo(() => {
+    const slug = (obra?.name || 'presupuesto').replace(/\s+/g, '-').slice(0, 40);
+    return `presupuesto-${slug}-${activeEtapa.toLowerCase()}.pdf`;
+  }, [obra?.name, activeEtapa]);
+
+  const handleDescargarPDF = useCallback(() => {
+    const params = buildPdfParams();
+    if (!params) {
+      toast({ title: 'Sin presupuestos', description: 'No hay tareas para exportar.', variant: 'destructive' });
+      return;
+    }
+    const blob = buildPresupuestoPdfBlob(params);
+    if (!blob) {
+      toast({ title: 'Error', description: 'No se pudo generar el PDF.', variant: 'destructive' });
+      return;
+    }
+    downloadPresupuestoPdf(blob, pdfFilename);
+    toast({ title: 'PDF descargado', description: pdfFilename });
+  }, [buildPdfParams, pdfFilename, toast]);
+
+  const handleCompartirPDF = useCallback(async () => {
+    const params = buildPdfParams();
+    if (!params) {
+      toast({ title: 'Sin presupuestos', description: 'No hay tareas para compartir.', variant: 'destructive' });
+      return;
+    }
+    const blob = buildPresupuestoPdfBlob(params);
+    if (!blob) {
+      toast({ title: 'Error', description: 'No se pudo generar el PDF.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const result = await sharePresupuestoPdf(blob, pdfFilename, `Presupuesto — ${obra?.name ?? 'Obra'}`);
+      toast({
+        title: result === 'shared' ? 'PDF compartido' : 'PDF descargado',
+        description: result === 'shared' ? 'Elegí la app donde enviarlo.' : 'Tu navegador no permite compartir archivos; se descargó localmente.',
+      });
+    } catch {
+      toast({ title: 'No se pudo compartir', variant: 'destructive' });
+    }
+  }, [buildPdfParams, pdfFilename, obra?.name, toast]);
+
+  const handleWhatsAppPDF = useCallback(async () => {
+    const params = buildPdfParams();
+    if (!params) {
+      toast({ title: 'Sin presupuestos', description: 'No hay tareas para enviar.', variant: 'destructive' });
+      return;
+    }
+    const blob = buildPresupuestoPdfBlob(params);
+    if (!blob) {
+      toast({ title: 'Error', description: 'No se pudo generar el PDF.', variant: 'destructive' });
+      return;
+    }
+    const total = presupuestosFiltrados.reduce((acc, p) => {
+      const ed = editing.get(p.tarea_id);
+      return acc + (ed?.monto ?? p.monto ?? 0);
+    }, 0);
+    const msg = [
+      `Presupuesto — ${obra?.name ?? 'Obra'}`,
+      `Etapa: ${etapaLabelLarga}`,
+      `Contratista: ${nombreContratista}`,
+      `Total etapa: $${total.toLocaleString('es-AR')}`,
+      '',
+      'Te comparto el PDF del presupuesto. Si no se adjunta automáticamente, pedime que te lo reenvíe.',
+    ].join('\n');
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
+        const file = new File([blob], pdfFilename, { type: 'application/pdf' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: 'Presupuesto Grows', text: msg, files: [file] });
+          return;
+        }
+      }
+    } catch {
+      /* fallback WhatsApp texto */
+    }
+    downloadPresupuestoPdf(blob, pdfFilename);
+    openWhatsAppPresupuesto(`${msg}\n\n(PDF descargado: ${pdfFilename})`);
+  }, [buildPdfParams, presupuestosFiltrados, editing, obra?.name, etapaLabelLarga, nombreContratista, pdfFilename, toast]);
+
   // Función para generar PDF
   const handleGenerarPDF = async () => {
     if (!obra) return;
@@ -800,34 +904,13 @@ function PresupuestosContent() {
       {obra && (
         <div className="print-only-presupuesto" aria-hidden="true">
           <PresupuestoPrintView
-            obra={{
-              id: obra.id,
-              name: obra.name,
-              direccion_completa: obra.direccion_completa ?? null,
-              cliente: obra.cliente ?? null,
-              fecha_inicio: obra.fecha_inicio ?? null,
-            }}
+            obra={{ name: obra.name }}
             presupuestos={presupuestosFiltrados.map((p) => ({
-              id: p.id,
               tarea_id: p.tarea_id,
-              estado: p.estado,
-              dias_reales: p.dias_reales,
-              monto: p.monto,
-              observacion: p.observacion ?? null,
-              tarea: p.tarea
-                ? { title: p.tarea.title, etapa: p.tarea.etapa }
-                : null,
-              elemento: p.elemento
-                ? {
-                    nombre: p.elemento.nombre,
-                    cantidad: p.elemento.cantidad,
-                    unidad: p.elemento.unidad,
-                  }
-                : null,
+              tarea: p.tarea ? { title: p.tarea.title } : null,
+              elemento: p.elemento ? { nombre: p.elemento.nombre } : null,
             }))}
-            nombreContratista={nombreContratista}
             etapaLabel={etapaLabelLarga}
-            editing={editing}
           />
         </div>
       )}
@@ -901,6 +984,38 @@ function PresupuestosContent() {
                   >
                     <Printer className="mr-2 h-4 w-4" />
                     Imprimir
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={handleDescargarPDF}
+                    disabled={saving}
+                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
+                    size="sm"
+                  >
+                    <Download className="mr-1.5 h-4 w-4" />
+                    Descargar
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void handleCompartirPDF()}
+                    disabled={saving}
+                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
+                    size="sm"
+                  >
+                    <Share2 className="mr-1.5 h-4 w-4" />
+                    Compartir
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => void handleWhatsAppPDF()}
+                    disabled={saving}
+                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
+                    size="sm"
+                  >
+                    <MessageCircle className="mr-1.5 h-4 w-4" />
+                    WhatsApp
                   </Button>
                 </div>
               </>

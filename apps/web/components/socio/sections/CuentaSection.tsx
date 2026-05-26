@@ -7,6 +7,8 @@ import { Award, ChevronDown, ChevronUp, LogOut, Pencil, Settings, Bell, Shield }
 import { logout } from '@/lib/auth';
 import { SocioQrCard } from '@/components/socio/SocioQrCard';
 import { EditarPerfilModal, type SocioPerfilCompleto } from '@/components/socio/cuenta/EditarPerfilModal';
+import { DatosBancariosSection } from '@/components/socio/cuenta/DatosBancariosSection';
+import { PerfilPublicoPreview } from '@/components/socio/cuenta/PerfilPublicoPreview';
 
 interface CuentaSectionProps {
   user: {
@@ -20,6 +22,7 @@ interface CuentaSectionProps {
 type SocioPerfilFull = {
   nombre: string | null;
   apellido?: string | null;
+  nombre_comercial?: string | null;
   especialidad: string | null;
   telefono: string | null;
   email: string | null;
@@ -90,6 +93,7 @@ export function CuentaSection({ user }: CuentaSectionProps) {
     setCtx({
       nombre: perfil.nombre,
       apellido: perfil.apellido,
+      nombre_comercial: perfil.nombre_comercial,
       especialidad: perfil.especialidad,
       telefono: perfil.telefono,
       email: perfil.email,
@@ -156,6 +160,25 @@ export function CuentaSection({ user }: CuentaSectionProps) {
           <LogOut className="h-5 w-5" />
           Cerrar sesión
         </button>
+      </div>
+
+      <div className="mt-8 px-4">
+        <PerfilPublicoPreview
+          perfil={{
+            nombre: ctx?.nombre ?? null,
+            apellido: ctx?.apellido ?? null,
+            nombre_comercial: ctx?.nombre_comercial ?? null,
+            especialidad: ctx?.especialidad ?? especialidad,
+            localidad: ctx?.localidad ?? null,
+            descripcion: ctx?.descripcion ?? null,
+            avatar_url: ctx?.avatar_url ?? null,
+            especialidades_secundarias: ctx?.especialidades_secundarias ?? [],
+          }}
+        />
+      </div>
+
+      <div className="mt-8 px-4">
+        <DatosBancariosSection />
       </div>
 
       <div id="cuenta-datos-extra" className="mx-4 mt-10 scroll-mt-24 rounded-2xl border border-[#c3c6d5]/20 bg-white p-5 shadow-[0_12px_32px_rgba(22,50,116,0.06)]">

@@ -1628,6 +1628,8 @@ export function AhoraSection() {
       }
 
       const dataUrl = await comprimirImagenSocio(mainPhotoFile, 1200);
+      console.info('[EVIDENCIA_TRACE] 1/3 — Iniciando upload', { subtareaId: sid, tareaId: subtareaActual?.tarea_id });
+
       const response = await fetch('/api/upload/photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1636,9 +1638,23 @@ export function AhoraSection() {
       });
       const result = await response.json().catch(() => ({}));
 
+      console.info('[EVIDENCIA_TRACE] 2/3 — Respuesta upload', {
+        ok: response.ok,
+        status: response.status,
+        subtareaId: sid,
+        trace: (result as { trace?: unknown }).trace ?? null,
+        evidencia_url: (result as { evidencia_url?: string }).evidencia_url ?? null,
+        error: (result as { message?: string; error?: string }).message ?? (result as { error?: string }).error ?? null,
+      });
+
       if (!response.ok) {
         const msg = (result as any).message || (result as any).error || 'Error al subir evidencia';
         throw new Error(msg);
+      }
+
+      const trace = (result as { trace?: { historial?: { eventoId?: string; mediaId?: string; tareaId?: string }; historialError?: string | null } }).trace;
+      if (trace?.historialError) {
+        console.warn('[EVIDENCIA_TRACE] Historial parcial — reintentará en enviar-validar', trace.historialError);
       }
 
       const urlUsable =
@@ -1647,10 +1663,24 @@ export function AhoraSection() {
         throw new Error('La subida no devolvió una URL de evidencia usable');
       }
 
+      console.info('[EVIDENCIA_TRACE] 3/3 — Enviando a validar', {
+        subtareaId: sid,
+        evidenciaUrl: urlUsable,
+        eventoId: trace?.historial?.eventoId ?? null,
+        mediaId: trace?.historial?.mediaId ?? null,
+        tareaId: trace?.historial?.tareaId ?? subtareaActual?.tarea_id ?? null,
+      });
+
       const ok = await handleEnviarParaValidar(String(urlUsable), undefined, problemas);
       if (!ok) {
         throw new Error('No se pudo enviar el bloque a validación.');
       }
+
+      console.info('[EVIDENCIA_TRACE] COMPLETADO', {
+        subtareaId: sid,
+        evidenciaUrl: urlUsable,
+        tareaId: subtareaActual?.tarea_id ?? null,
+      });
     };
 
   const handleFinalizarSubtarea = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
@@ -2121,9 +2151,11 @@ export function AhoraSection() {
     }
 
     if (!stitchProps) {
-      // fallback de seguridad: si por alguna razón no hay snapshot, limpiar el lock y dejar pasar.
-      setStitchLockedAfterSent(false);
-      return null;
+      return (
+        <div className="flex min-h-[40vh] items-center justify-center p-6 text-sm text-gray-600">
+          Cargando confirmación…
+        </div>
+      );
     }
 
     return (

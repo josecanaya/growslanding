@@ -32,6 +32,9 @@ export interface MetodoRetiro {
   cvu: string | null;
   cbu: string | null;
   alias: string | null;
+  tipo?: string | null;
+  mercado_pago_cvu?: string | null;
+  mercado_pago_alias?: string | null;
   es_principal: boolean;
   activo: boolean;
   created_at?: string | null;
@@ -41,18 +44,24 @@ export interface MetodoRetiro {
 interface Draft {
   titular: string;
   banco: string;
+  tipo: string;
   cvu: string;
   cbu: string;
   alias: string;
+  mercado_pago_cvu: string;
+  mercado_pago_alias: string;
   es_principal: boolean;
 }
 
 const EMPTY_DRAFT: Draft = {
   titular: '',
   banco: '',
+  tipo: 'transferencia',
   cvu: '',
   cbu: '',
   alias: '',
+  mercado_pago_cvu: '',
+  mercado_pago_alias: '',
   es_principal: false,
 };
 
@@ -64,12 +73,34 @@ function validarDraft(draft: Draft): string | null {
   const cvu = draft.cvu.trim();
   const cbu = draft.cbu.trim();
   const alias = draft.alias.trim();
-  if (!cvu && !cbu && !alias) return 'Cargá al menos un CVU, CBU o Alias.';
+  const mpCvu = draft.mercado_pago_cvu.trim();
+  const mpAlias = draft.mercado_pago_alias.trim();
+  if (draft.tipo === 'mercado_pago') {
+    if (!mpCvu && !mpAlias && !alias && !cvu) return 'Para Mercado Pago cargá CVU o alias.';
+  } else if (!cvu && !cbu && !alias && !mpCvu && !mpAlias) {
+    return 'Cargá al menos un CVU, CBU, Alias o datos de Mercado Pago.';
+  }
   if (cvu && !NUM22_RE.test(cvu)) return 'El CVU debe tener 22 dígitos.';
   if (cbu && !NUM22_RE.test(cbu)) return 'El CBU debe tener 22 dígitos.';
+  if (mpCvu && !NUM22_RE.test(mpCvu)) return 'El CVU de Mercado Pago debe tener 22 dígitos.';
   if (alias && !ALIAS_RE.test(alias))
     return 'El alias debe tener entre 6 y 40 caracteres (letras, números, punto o guion).';
   return null;
+}
+
+function labelTipo(tipo?: string | null) {
+  switch (tipo) {
+    case 'mercado_pago':
+      return 'Mercado Pago';
+    case 'cvu':
+      return 'CVU';
+    case 'cbu':
+      return 'CBU';
+    case 'alias':
+      return 'Alias';
+    default:
+      return 'Transferencia';
+  }
 }
 
 export function MetodosRetiroSection() {
@@ -116,9 +147,12 @@ export function MetodosRetiroSection() {
     setDraft({
       titular: m.titular || '',
       banco: m.banco || '',
+      tipo: m.tipo || 'transferencia',
       cvu: m.cvu || '',
       cbu: m.cbu || '',
       alias: m.alias || '',
+      mercado_pago_cvu: m.mercado_pago_cvu || '',
+      mercado_pago_alias: m.mercado_pago_alias || '',
       es_principal: m.es_principal,
     });
     setFormOpen(true);
@@ -142,9 +176,12 @@ export function MetodosRetiroSection() {
       const payload = {
         titular: draft.titular.trim(),
         banco: draft.banco.trim() || null,
+        tipo: draft.tipo,
         cvu: draft.cvu.trim() || null,
         cbu: draft.cbu.trim() || null,
         alias: draft.alias.trim() || null,
+        mercado_pago_cvu: draft.mercado_pago_cvu.trim() || null,
+        mercado_pago_alias: draft.mercado_pago_alias.trim() || null,
         es_principal: draft.es_principal,
       };
       const url = editando ? `/api/socio/metodos-retiro/${editando.id}` : '/api/socio/metodos-retiro';
@@ -293,6 +330,9 @@ export function MetodosRetiroSection() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-semibold text-stitch-on-surface">{m.titular}</p>
+                    <span className="rounded-full bg-stitch-surface-container px-2 py-0.5 text-[10px] font-bold text-stitch-on-surface/70">
+                      {labelTipo(m.tipo)}
+                    </span>
                     {m.es_principal && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">
                         <Star className="h-3 w-3" /> Principal
@@ -304,6 +344,18 @@ export function MetodosRetiroSection() {
                       <p>
                         <span className="font-medium text-stitch-on-surface">Banco: </span>
                         {m.banco}
+                      </p>
+                    )}
+                    {m.mercado_pago_alias && (
+                      <p>
+                        <span className="font-medium text-stitch-on-surface">MP Alias: </span>
+                        {m.mercado_pago_alias}
+                      </p>
+                    )}
+                    {m.mercado_pago_cvu && (
+                      <p>
+                        <span className="font-medium text-stitch-on-surface">MP CVU: </span>
+                        {m.mercado_pago_cvu}
                       </p>
                     )}
                     {m.alias && (
@@ -375,6 +427,21 @@ export function MetodosRetiroSection() {
           </DialogHeader>
           <div className="grid gap-3 py-2">
             <div className="grid gap-1.5">
+              <Label htmlFor="m-tipo">Tipo de método</Label>
+              <select
+                id="m-tipo"
+                value={draft.tipo}
+                onChange={(e) => setDraft((d) => ({ ...d, tipo: e.target.value }))}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="transferencia">Transferencia bancaria</option>
+                <option value="mercado_pago">Mercado Pago</option>
+                <option value="cvu">CVU</option>
+                <option value="cbu">CBU</option>
+                <option value="alias">Alias</option>
+              </select>
+            </div>
+            <div className="grid gap-1.5">
               <Label htmlFor="m-titular">Titular*</Label>
               <Input
                 id="m-titular"
@@ -394,6 +461,34 @@ export function MetodosRetiroSection() {
                 placeholder="Ej: Banco Galicia"
               />
             </div>
+            {draft.tipo === 'mercado_pago' ? (
+              <>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="m-mp-cvu">CVU Mercado Pago (22 dígitos)</Label>
+                  <Input
+                    id="m-mp-cvu"
+                    value={draft.mercado_pago_cvu}
+                    maxLength={22}
+                    inputMode="numeric"
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        mercado_pago_cvu: e.target.value.replace(/[^0-9]/g, ''),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="m-mp-alias">Alias Mercado Pago</Label>
+                  <Input
+                    id="m-mp-alias"
+                    value={draft.mercado_pago_alias}
+                    maxLength={40}
+                    onChange={(e) => setDraft((d) => ({ ...d, mercado_pago_alias: e.target.value }))}
+                  />
+                </div>
+              </>
+            ) : null}
             <div className="grid gap-1.5">
               <Label htmlFor="m-cvu">CVU (22 dígitos)</Label>
               <Input

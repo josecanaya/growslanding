@@ -7,6 +7,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
+import { registrarEvidenciaSubtarea } from '@/lib/services/registrar-evidencia-subtarea';
 
 export const runtime = 'nodejs';
 
@@ -166,6 +167,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Registrar en historial oficial (eventos + media) para galería y trazabilidad.
+    let registroHistorial: Awaited<ReturnType<typeof registrarEvidenciaSubtarea>> | null = null;
+    let historialError: string | null = null;
+    try {
+      registroHistorial = await registrarEvidenciaSubtarea(supabase, {
+        subtareaId,
+        storagePath: path,
+        publicUrl,
+        actorName: user.email ?? user.id,
+        actorRole: 'Socio',
+        actorMethod: 'login',
+      });
+      console.info('[UPLOAD_PHOTO_OK]', {
+        subtareaId,
+        tareaId: registroHistorial.tareaId,
+        eventoId: registroHistorial.eventoId,
+        mediaId: registroHistorial.mediaId,
+        storagePath: path,
+        publicUrl,
+      });
+    } catch (histErr) {
+      historialError = histErr instanceof Error ? histErr.message : 'Error al registrar historial';
+      console.error('[UPLOAD_PHOTO_HISTORIAL_ERROR]', {
+        subtareaId,
+        tareaId: debugBase.tareaId,
+        storagePath: path,
+        publicUrl,
+        error: historialError,
+      });
+    }
+
     const { data: subtarea } = await supabaseAny
       .from('tareas_subtareas')
       .select('*')
@@ -179,6 +211,18 @@ export async function POST(request: NextRequest) {
       publicUrl,
       evidencia_url: publicUrl,
       subtarea,
+      trace: {
+        storage: { bucket: BUCKET_EVIDENCIAS, path, publicUrl },
+        subtarea: { id: subtareaId, tarea_id: debugBase.tareaId, socio_id: debugBase.socioId },
+        historial: registroHistorial
+          ? {
+              eventoId: registroHistorial.eventoId,
+              mediaId: registroHistorial.mediaId,
+              tareaId: registroHistorial.tareaId,
+            }
+          : null,
+        historialError,
+      },
     });
   } catch (error) {
     console.error('[UPLOAD_PHOTO_ERROR]', error);

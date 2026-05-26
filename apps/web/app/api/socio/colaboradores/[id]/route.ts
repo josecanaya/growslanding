@@ -83,6 +83,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (telefono !== undefined) patch.telefono = telefono;
     const especialidad = cleanStr(body.especialidad, 120);
     if (especialidad !== undefined) patch.especialidad = especialidad;
+    const categoria = cleanStr(body.categoria, 80);
+    if (categoria !== undefined) patch.categoria = categoria;
+    const foto_url = cleanStr(body.foto_url, 1000);
+    if (foto_url !== undefined) patch.foto_url = foto_url;
     const observaciones = cleanStr(body.observaciones, 500);
     if (observaciones !== undefined) patch.observaciones = observaciones;
     if (body.activo !== undefined) patch.activo = Boolean(body.activo);

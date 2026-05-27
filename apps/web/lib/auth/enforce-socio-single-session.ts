@@ -1,13 +1,22 @@
-import type { Session, SupabaseClient } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 
 import { normalizeRole } from '@/lib/roles';
+
+/** Mínimo necesario para evitar incompatibilidad de genéricos entre clientes Supabase. */
+type SupabaseAuthSignOutClient = {
+  auth: {
+    signOut: (options?: { scope?: 'global' | 'local' | 'others' }) => Promise<{
+      error: Error | null;
+    }>;
+  };
+};
 
 /**
  * Cierra sesiones Supabase del mismo usuario en otros dispositivos/pestañas.
  * Solo aplica al rol SOCIO.
  */
 export async function enforceSocioSingleSession(
-  supabase: SupabaseClient,
+  supabase: SupabaseAuthSignOutClient,
   session: Session | null | undefined,
 ): Promise<void> {
   if (!session?.user) return;

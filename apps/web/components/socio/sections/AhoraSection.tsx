@@ -330,11 +330,11 @@ export function AhoraSection() {
         ? `Ningún bloque está pendiente de iniciar. Estados actuales: ${resumen}.`
         : 'No hay bloques pendientes. Verificá con el cliente que el presupuesto esté aprobado.';
     } else if (errorCode === 'PRECEDENCE_ERROR' || error?.error === 'PRECEDENCE_ERROR') {
-      title = 'Hay tareas previas sin validar';
+      title = 'Hay tareas previas pendientes';
       description =
         typeof errorMessage === 'string' && errorMessage.trim()
           ? errorMessage.replace(/\n+/g, ' — ').slice(0, 500)
-          : 'Esta tarea depende de otras: tenés que dejar validadas las anteriores antes de iniciarla.';
+          : 'Esta tarea depende de otras que todavía tienen bloques sin enviar a validación.';
     } else if (errorCode === 'BLOQUES_FALTANTES' || error?.error === 'BLOQUES_FALTANTES') {
       title = 'Faltan bloques';
       description =

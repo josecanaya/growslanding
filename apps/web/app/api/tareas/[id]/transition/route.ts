@@ -17,6 +17,10 @@ import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion
 import { ESTADO_BLOQUE_FINAL, ESTADO_TAREA_FINAL } from '@/lib/domain/estados-core';
 import type { RolActor } from '@/lib/services/permiso.service';
 import { listSocioRecordsForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
+import {
+  buildBloquesPorTareaMap,
+  predecesorasQueBloqueanAvance,
+} from '@/lib/socio/tareas-operativas-socio';
 
 export const runtime = 'nodejs';
 
@@ -504,30 +508,36 @@ export async function POST(
           }))
         );
 
-        const { data: bloqueo, error: bloqueoError } = await supabase
-          .from('tareas')
-          .select('id, title, estado')
-          .in('id', dependeIds)
-          .neq('estado', 'validada');
+        if (predecesorasError) {
+          console.error('[TRANSITION] Error cargando predecesoras:', predecesorasError);
+        }
 
-        console.log('[TRANSITION] Tareas predecesoras no validadas:', {
-          bloqueoCount: bloqueo?.length || 0,
-          bloqueo: bloqueo,
-          error: bloqueoError,
+        const { data: bloquesPredecesoras, error: bloquesPrecError } = await supabase
+          .from('tareas_subtareas')
+          .select('tarea_id, estado')
+          .in('tarea_id', dependeIds);
+
+        if (bloquesPrecError) {
+          console.error('[TRANSITION] Error cargando bloques de predecesoras:', bloquesPrecError);
+        }
+
+        const bloquesPorTarea = buildBloquesPorTareaMap(bloquesPredecesoras ?? []);
+        const tareasBloqueantes = predecesorasQueBloqueanAvance(
+          tareasPredecesoras ?? [],
+          bloquesPorTarea,
+        );
+
+        console.log('[TRANSITION] Predecesoras que bloquean avance:', {
+          bloqueoCount: tareasBloqueantes.length,
+          bloqueo: tareasBloqueantes,
         });
 
-        if (bloqueo && bloqueo.length > 0) {
-          // Obtener información de las tareas bloqueantes para mostrar mejor mensaje
-          const { data: tareasBloqueantes } = await supabase
-            .from('tareas')
-            .select('id, title, estado')
-            .in('id', bloqueo.map((b) => b.id));
-          
+        if (tareasBloqueantes.length > 0) {
           console.log('[TRANSITION] ❌ Bloqueando transición por tareas precedentes:', tareasBloqueantes);
           
           // Mostrar información detallada para eliminar manualmente
           console.log('[TRANSITION] 🔧 Para eliminar esta precedencia manualmente en Supabase, ejecutá:');
-          tareasBloqueantes?.forEach(tb => {
+          tareasBloqueantes.forEach(tb => {
             const prec = precedencias.find(p => p.depende_de === tb.id);
             if (prec) {
               console.log(`DELETE FROM tarea_precedencias WHERE tarea_id = '${prec.tarea_id}' AND depende_de = '${prec.depende_de}'; -- Elimina precedencia de "${tb.title}" (${tb.id}) hacia "${tarea.title}" (${tarea.id})`);
@@ -535,15 +545,15 @@ export async function POST(
           });
           
           // Crear mensaje detallado con IDs y nombres
-          const mensajeDetallado = tareasBloqueantes?.map(tb => {
+          const mensajeDetallado = tareasBloqueantes.map(tb => {
             const prec = precedencias.find(p => p.depende_de === tb.id);
             return `- "${tb.title}" (ID: ${tb.id}, Estado: ${tb.estado})${prec ? ` - Precedencia: tarea_id=${prec.tarea_id}, depende_de=${prec.depende_de}` : ''}`;
-          }).join('\n') || 'Tareas precedentes sin validar';
+          }).join('\n') || 'Tareas precedentes aún no listas';
 
           return new Response(
             JSON.stringify({
-              message: `No se puede avanzar: tareas precedentes sin validar:\n${mensajeDetallado}`,
-              bloqueos: tareasBloqueantes || bloqueo,
+              message: `No se puede avanzar: tareas precedentes aún no listas:\n${mensajeDetallado}`,
+              bloqueos: tareasBloqueantes,
               precedencias: precedencias.map(p => ({ tarea_id: p.tarea_id, depende_de: p.depende_de })),
               error: 'PRECEDENCE_ERROR',
             }),

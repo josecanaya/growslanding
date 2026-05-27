@@ -63,6 +63,18 @@ export function tareaEstaListaComoPredecesora(
   return bloques.every((b) => bloqueEstaCerradoParaSocio(b.estado));
 }
 
+/** Predecesoras que aún bloquean iniciar/operar la sucesora (misma regla que listado Ahora). */
+export function predecesorasQueBloqueanAvance<
+  T extends { id: string; estado?: string | null },
+>(
+  predecesoras: T[],
+  bloquesPorTarea: Map<string, Array<{ estado?: string | null }>>,
+): T[] {
+  return predecesoras.filter(
+    (t) => !tareaEstaListaComoPredecesora(t.estado, bloquesPorTarea.get(t.id)),
+  );
+}
+
 export function filtrarTareasOperativasSocio<
   T extends { id: string; estado?: string | null },
 >(

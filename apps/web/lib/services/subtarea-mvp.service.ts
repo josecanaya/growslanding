@@ -55,6 +55,43 @@ type ActorContext = {
   socioId?: string | null;
 };
 
+export const SUBTAREA_UI_SELECT = `
+  *,
+  tareas:tareas (
+    id,
+    title,
+    obra_id,
+    estado,
+    responsable_socio_id,
+    obras:obras (
+      id,
+      name,
+      address
+    )
+  )
+`;
+
+type BloqueListItem = {
+  id: string;
+  estado?: string | null;
+  orden?: number | null;
+  bloque_index?: number | null;
+  socio_id?: string | null;
+};
+
+export function pickSubtareaOperativaDeLista<T extends { estado?: string | null }>(
+  lista: T[],
+): T | null {
+  const norm = (s: string | null | undefined) => normalizeEstadoBloqueParaOperacion(s);
+  return (
+    lista.find((s) => norm(s.estado) === 'en_progreso') ||
+    lista.find((s) => norm(s.estado) === ESTADO_BLOQUE_PARA_VALIDAR) ||
+    lista.find((s) => norm(s.estado) === 'pendiente') ||
+    lista.find((s) => norm(s.estado) === 'rechazado') ||
+    null
+  );
+}
+
 type ValidarParams = ActorContext & {
   metodoPago?: 'EFECTIVO' | 'ONLINE';
   accion?: 'validar' | 'rechazar';
@@ -264,7 +301,7 @@ export class SubtareaMvpService {
       hora_inicio: ahora,
       updated_at: ahora,
     };
-    if (!subtarea.socio_id && socioId) {
+    if (socioId) {
       updatePayload.socio_id = socioId;
     }
 
@@ -539,5 +576,99 @@ export class SubtareaMvpService {
     }
 
     return PermisoService.obtenerSocioIdPorUsuario(actor.id, orgId);
+  }
+
+  static async syncSocioEnBloquesTarea(tareaId: string, socioId: string) {
+    const supabaseAny = createServiceSupabaseClient() as any;
+    const ahora = new Date().toISOString();
+    await supabaseAny
+      .from('tareas_subtareas')
+      .update({ socio_id: socioId, updated_at: ahora })
+      .eq('tarea_id', tareaId)
+      .is('socio_id', null);
+    await supabaseAny
+      .from('tareas_subtareas')
+      .update({ socio_id: socioId, updated_at: ahora })
+      .eq('tarea_id', tareaId)
+      .neq('socio_id', socioId);
+  }
+
+  static async listarBloquesResumenTarea(tareaId: string): Promise<BloqueListItem[]> {
+    const supabaseAny = createServiceSupabaseClient() as any;
+    const { data, error } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('id, orden, bloque_index, estado, socio_id')
+      .eq('tarea_id', tareaId)
+      .order('orden', { ascending: true });
+    if (error) {
+      throw new Error(error.message);
+    }
+    return (data ?? []) as BloqueListItem[];
+  }
+
+  static async fetchSubtareaUi(subtareaId: string) {
+    const supabaseAny = createServiceSupabaseClient() as any;
+    const { data, error } = await supabaseAny
+      .from('tareas_subtareas')
+      .select(SUBTAREA_UI_SELECT)
+      .eq('id', subtareaId)
+      .maybeSingle();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return data;
+  }
+
+  /**
+   * Flujo atómico socio: generar bloques (idempotente) → vincular → iniciar si está pendiente.
+   */
+  static async comenzarBloqueOperativoDeTarea(
+    tareaId: string,
+    actor: ActorContext,
+    opts?: { subtareaIdPreferida?: string | null },
+  ) {
+    if (actor.rol !== 'SOCIO' || !actor.socioId) {
+      throw new Error('FORBIDDEN_ACTION');
+    }
+
+    await this.generarBloquesDesdePresupuesto(tareaId);
+    await this.syncSocioEnBloquesTarea(tareaId, actor.socioId);
+
+    const bloques = await this.listarBloquesResumenTarea(tareaId);
+    if (!bloques.length) {
+      throw new GenerarBloquesError('No hay bloques para esta tarea', {
+        tareaId,
+        motivo: 'SIN_BLOQUES',
+      });
+    }
+
+    const preferida = opts?.subtareaIdPreferida?.trim() || null;
+    let pick =
+      (preferida ? bloques.find((b) => b.id === preferida) : null) ??
+      pickSubtareaOperativaDeLista(bloques);
+
+    if (!pick?.id) {
+      throw new Error('NO_BLOQUE_OPERATIVO');
+    }
+
+    const estadoOp = normalizeEstadoBloqueParaOperacion(pick.estado);
+
+    if (estadoOp === ESTADO_BLOQUE_PARA_VALIDAR || estadoOp === ESTADO_BLOQUE_FINAL) {
+      const subtarea = await this.fetchSubtareaUi(pick.id);
+      return { accion: 'para_validar' as const, subtarea, bloques };
+    }
+
+    if (estadoOp === 'en_progreso') {
+      const subtarea = await this.fetchSubtareaUi(pick.id);
+      return { accion: 'reanudado' as const, subtarea, bloques };
+    }
+
+    if (estadoOp === 'pendiente' || estadoOp === 'rechazado') {
+      await this.iniciarBloque(pick.id, actor);
+      const subtarea = await this.fetchSubtareaUi(pick.id);
+      return { accion: 'iniciado' as const, subtarea, bloques };
+    }
+
+    throw new Error(`Estado de bloque no operativo: ${pick.estado ?? 'desconocido'}`);
   }
 }

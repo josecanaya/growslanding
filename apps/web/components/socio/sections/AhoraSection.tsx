@@ -157,6 +157,18 @@ function buildSubtareaFromBloqueYTarea(
   };
 }
 
+function normEstadoSub(estado: string | null | undefined): string {
+  return String(estado ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+}
+
+function subtareaPerteneceATarea(sub: { tarea_id?: string | null; tareas?: { id?: string | null } | null } | null, tareaId: string): boolean {
+  if (!sub || !tareaId) return false;
+  return String(sub.tarea_id ?? sub.tareas?.id ?? '') === tareaId;
+}
+
 type GenerarBloquesUiResult = {
   ok: boolean;
   subtareaId?: string | null;
@@ -340,6 +352,8 @@ export function AhoraSection() {
   } | null>(null);
   const generarBloquesIntentados = useRef<Set<string>>(new Set());
   const requestEnCursoRef = useRef<Set<string>>(new Set());
+  /** Evita que el effect de jornada/subtarea pise el estado recién confirmado por la API. */
+  const subtareaFijadaRef = useRef<{ id: string; until: number } | null>(null);
   /** Alineado con GET /api/tareas/[id]/socio-puede-operar (misma regla que transition). */
   const [tareaOperableBackend, setTareaOperableBackend] = useState<boolean | null>(null);
   const [tareaOperableMotivo, setTareaOperableMotivo] = useState<string | null>(null);
@@ -949,7 +963,9 @@ export function AhoraSection() {
           .maybeSingle();
 
         if (cancelled) return;
-        setJornadaActual(jornadaData);
+        if (jornadaData) {
+          setJornadaActual(jornadaData);
+        }
 
         const tareaIds = tareas.map((t) => t.id).filter(Boolean);
         const tid = tareaActual?.id;
@@ -987,6 +1003,12 @@ export function AhoraSection() {
           return;
         }
 
+        const fijada = subtareaFijadaRef.current;
+        if (fijada && Date.now() < fijada.until) {
+          await contarSubtareasScoped();
+          return;
+        }
+
         const supAny = supabase as any;
 
         // La generación de bloques se hace por click en "Comenzar tarea" para evitar POST repetidos desde renders/effects.
@@ -999,7 +1021,17 @@ export function AhoraSection() {
 
         if (cancelled) return;
 
+        const subtareaLocal = subtareaActual;
+        const preservarSubtareaApi =
+          subtareaLocal &&
+          subtareaPerteneceATarea(subtareaLocal, tid) &&
+          ['en_progreso', 'para_validar'].includes(normEstadoSub(subtareaLocal.estado));
+
         if (!lista?.length) {
+          if (preservarSubtareaApi) {
+            await contarSubtareasScoped();
+            return;
+          }
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
@@ -1010,6 +1042,10 @@ export function AhoraSection() {
         const list = filtrarSubtareasVisiblesSocio(lista as BloqueResumen[], socioIdGrows);
 
         if (!list.length) {
+          if (preservarSubtareaApi) {
+            await contarSubtareasScoped();
+            return;
+          }
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
@@ -1018,6 +1054,22 @@ export function AhoraSection() {
         }
 
         const pick = pickSubtareaOperativa(list);
+
+        if (preservarSubtareaApi && pick?.id && pick.id !== subtareaLocal?.id) {
+          await contarSubtareasScoped();
+          return;
+        }
+
+        if (
+          preservarSubtareaApi &&
+          pick &&
+          pick.id === subtareaLocal?.id &&
+          normEstadoSub(pick.estado) === 'pendiente' &&
+          normEstadoSub(subtareaLocal.estado) === 'en_progreso'
+        ) {
+          await contarSubtareasScoped();
+          return;
+        }
 
         setSubtareaActual(pick);
         setTotalSubtareas(list.length);
@@ -1356,94 +1408,130 @@ export function AhoraSection() {
     [supabase, vincularSubtareaDesdeBloques],
   );
 
-  const handlePrepararYComenzarBloque = async () => {
-    if (!tareaActual || !currentUser) return;
-
-    if (!jornadaActual) {
-      await handleIniciarJornada();
-      if (!socioIdGrows) return;
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const hoyISO = hoy.toISOString().split('T')[0];
-      const { data: jornadaData } = await (supabase as any)
-        .from('jornadas_socio')
-        .select('*')
-        .eq('socio_id', socioIdGrows)
-        .eq('fecha', hoyISO)
-        .maybeSingle();
-      if (jornadaData) {
-        setJornadaActual(jornadaData);
-      }
+  const handleComenzarBloqueOperativo = async (subtareaIdPreferida?: string) => {
+    const tareaId =
+      subtareaActual?.tarea_id ??
+      subtareaActual?.tareas?.id ??
+      tareaActual?.id;
+    if (!tareaId || !currentUser) {
+      toast({
+        title: 'Sin tarea activa',
+        description: 'No encontramos una tarea para comenzar el bloque.',
+        variant: 'destructive',
+      });
+      return;
     }
 
-    const requestKey = `preparar-bloque:${tareaActual.id}`;
+    const requestKey = `comenzar-bloque:${tareaId}`;
+    if (requestEnCursoRef.current.has(requestKey)) {
+      toast({
+        title: 'Procesando',
+        description: 'Ya estamos iniciando el bloque. Aguardá unos segundos.',
+      });
+      return;
+    }
     if (
-      requestEnCursoRef.current.has(requestKey) ||
       isGeneratingBlocks ||
       isSendingTransition ||
       isUploadingEvidence ||
-      isSendingToValidation ||
-      isIniciando
+      isSendingToValidation
     ) {
+      toast({
+        title: 'Operación en curso',
+        description: 'Esperá a que termine la acción anterior.',
+      });
       return;
     }
+
     requestEnCursoRef.current.add(requestKey);
     setIsIniciando(true);
-    try {
-      const result = await generarBloquesParaTarea(tareaActual.id, {
-        tareaFallback: tareaActual,
-      });
-      if (!result.ok) return;
+    console.info('[COMENZAR_BLOQUE] click', { tareaId, subtareaIdPreferida });
 
-      if (!result.subtareaId) {
+    try {
+      if (!jornadaActual && socioIdGrows) {
+        await handleIniciarJornada();
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const hoyISO = hoy.toISOString().split('T')[0];
+        const { data: jornadaData } = await (supabase as any)
+          .from('jornadas_socio')
+          .select('*')
+          .eq('socio_id', socioIdGrows)
+          .eq('fecha', hoyISO)
+          .maybeSingle();
+        if (jornadaData) {
+          setJornadaActual(jornadaData);
+        }
+      }
+
+      const response = await fetch(`/api/tareas/${tareaId}/comenzar-bloque`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subtareaId: subtareaIdPreferida ?? subtareaActual?.id ?? null,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      console.info('[COMENZAR_BLOQUE] respuesta', {
+        ok: response.ok,
+        status: response.status,
+        accion: data?.accion,
+        subtareaId: data?.subtarea?.id,
+        error: data?.message ?? data?.error,
+      });
+
+      if (!response.ok) {
         handleApiError(
-          {
-            message:
-              'No hay bloques pendientes. Verificá que la tarea tenga presupuesto aprobado.',
-          },
-          'No se pudo vincular un bloque operativo',
+          data,
+          data?.message || data?.error || 'No se pudo comenzar el bloque',
         );
         return;
       }
 
-      const estadoActual = String(result.subtarea?.estado ?? '').toLowerCase();
-      if (
-        estadoActual === 'pendiente' ||
-        estadoActual === 'rechazado' ||
-        estadoActual === 'rechazada'
-      ) {
-        const response = await fetch(`/api/tareas-subtareas/${result.subtareaId}/iniciar`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-        const json = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          handleApiError(json, 'Error al iniciar el bloque');
-          if (result.subtarea) setSubtareaActual(result.subtarea);
-          return;
+      if (data?.accion === 'para_validar') {
+        handleApiError(
+          {
+            message: 'El bloque operativo ya está en revisión del cliente.',
+          },
+          'Bloque en validación',
+        );
+        if (data.subtarea) {
+          subtareaFijadaRef.current = {
+            id: String(data.subtarea.id),
+            until: Date.now() + 8000,
+          };
+          setSubtareaActual(data.subtarea);
         }
-
-        if (json.subtarea) {
-          setSubtareaActual(json.subtarea);
-        } else if (result.subtarea) {
-          setSubtareaActual({ ...result.subtarea, estado: 'en_progreso' });
-        }
-
-        toast({
-          title: 'Bloque iniciado',
-          description: 'Ya podés cargar evidencias y avanzar con la tarea.',
-        });
-      } else if (result.subtarea) {
-        setSubtareaActual(result.subtarea);
-        toast({
-          title: 'Bloque vinculado',
-          description: 'Continuá con el bloque en curso.',
-        });
+        return;
       }
 
-      setSubtareaRefreshKey((k) => k + 1);
+      if (data?.subtarea) {
+        subtareaFijadaRef.current = {
+          id: String(data.subtarea.id),
+          until: Date.now() + 8000,
+        };
+        setSubtareaActual(data.subtarea);
+      }
+
+      if (Array.isArray(data?.bloques)) {
+        setTotalSubtareas(data.bloques.length);
+        setSubtareasCompletadas(
+          data.bloques.filter((b: { estado?: string | null }) =>
+            subtareaEstaCompletadaOficial(String(b.estado ?? '')),
+          ).length,
+        );
+      }
+
+      toast({
+        title: data?.accion === 'reanudado' ? 'Bloque reanudado' : 'Bloque iniciado',
+        description: 'Ya podés cargar evidencias y avanzar con la tarea.',
+      });
+
       await cargarContadoresBloques();
-      await fetchData();
+    } catch (err) {
+      console.error('[COMENZAR_BLOQUE] error', err);
+      handleApiError(err, 'Error inesperado al comenzar el bloque');
     } finally {
       requestEnCursoRef.current.delete(requestKey);
       setIsIniciando(false);
@@ -1452,52 +1540,7 @@ export function AhoraSection() {
 
   const handleIniciarSubtarea = async () => {
     if (!subtareaActual || !currentUser) return;
-    const requestKey = `iniciar-subtarea:${subtareaActual.id}`;
-    if (isIniciando || isGeneratingBlocks || isSendingTransition || isUploadingEvidence || isSendingToValidation || requestEnCursoRef.current.has(requestKey)) return;
-    requestEnCursoRef.current.add(requestKey);
-
-    setIsIniciando(true);
-    setError(null);
-    
-    try {
-      const response = await fetch(`/api/tareas-subtareas/${subtareaActual.id}/iniciar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        handleApiError(errorData, 'Error al iniciar el bloque');
-        setIsIniciando(false);
-        return;
-      }
-
-      // Solo actualizar UI si la API confirma éxito
-      const { data: subtareaData } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(SELECT_SUBTAREA_REL)
-        .eq('id', subtareaActual.id)
-        .maybeSingle();
-
-      if (subtareaData) {
-        setSubtareaActual(subtareaData);
-        toast({
-          title: 'Bloque iniciado',
-          description: 'El bloque está ahora en progreso.',
-        });
-      }
-
-      // Recargar contadores y datos
-      await cargarContadoresBloques();
-      await fetchData();
-    } catch (err) {
-      handleApiError(err, 'Error al iniciar el bloque. Por favor, intenta nuevamente.');
-    } finally {
-      requestEnCursoRef.current.delete(requestKey);
-      setIsIniciando(false);
-    }
+    await handleComenzarBloqueOperativo(String(subtareaActual.id));
   };
 
   const handleIniciarTarea = async (checklistFsmOverride?: ChecklistItem[]) => {
@@ -1977,7 +2020,7 @@ export function AhoraSection() {
     }
 
     // Tarea en progreso sin bloque visible: generar + vincular subtarea operativa.
-    await handlePrepararYComenzarBloque();
+    await handleComenzarBloqueOperativo();
     return;
 
     // Validar que haya al menos una evidencia final
@@ -2366,18 +2409,19 @@ export function AhoraSection() {
   // Determinar texto del CTA principal
   const getCTAText = () => {
     if (subtareaActual) {
+      const estadoSub = normEstadoSub(subtareaActual.estado);
       // Flujo con subtareas
       if (!jornadaActual) return 'Iniciar jornada';
-      if (subtareaActual.estado === 'pendiente') {
+      if (estadoSub === 'pendiente') {
         // Validar límite antes de mostrar botón
         if (bloquesActivosCount >= 2) return 'Límite alcanzado (2 bloques activos)';
         return 'Comenzar bloque';
       }
-      if (subtareaActual.estado === 'rechazado' || subtareaActual.estado === 'rechazada') {
+      if (estadoSub === 'rechazado' || estadoSub === 'rechazada') {
         return 'Rehacer bloque';
       }
-      if (subtareaActual.estado === 'en_progreso') return 'Enviar para validar';
-      if (subtareaActual.estado === 'para_validar') return 'En revisión (cliente)';
+      if (estadoSub === 'en_progreso') return 'Enviar para validar';
+      if (estadoSub === 'para_validar') return 'En revisión (cliente)';
       if (subtareaEstaCompletadaOficial(subtareaActual.estado)) return 'Bloque aprobado';
       return 'Iniciar jornada';
     } else if (tareaActual) {
@@ -2399,29 +2443,36 @@ export function AhoraSection() {
   // Determinar función del CTA
   const handleCTAClick = () => {
     if (subtareaActual) {
+      const estadoSub = normEstadoSub(subtareaActual.estado);
       // Flujo con subtareas
       if (!jornadaActual) {
         handleIniciarJornada();
-      } else       if (subtareaActual.estado === 'pendiente' || subtareaActual.estado === 'rechazado' || subtareaActual.estado === 'rechazada') {
+      } else if (estadoSub === 'pendiente' || estadoSub === 'rechazado' || estadoSub === 'rechazada') {
         // Validar límite antes de permitir acción
-        if (bloquesActivosCount >= 2 && subtareaActual.estado !== 'rechazado' && subtareaActual.estado !== 'rechazada') {
+        if (bloquesActivosCount >= 2 && estadoSub !== 'rechazado' && estadoSub !== 'rechazada') {
           handleApiError({ errorCode: 'SOCIO_TIENE_2_BLOQUES_EN_PROGRESO' }, 'Ya tenés 2 bloques en progreso');
           return;
         }
-        void handleIniciarSubtarea();
+        void handleComenzarBloqueOperativo(String(subtareaActual.id));
         return;
-      } else if (subtareaActual.estado === 'en_progreso') {
+      } else if (estadoSub === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
       } else if (
-        subtareaActual.estado === 'para_validar' ||
+        estadoSub === 'para_validar' ||
         subtareaEstaCompletadaOficial(subtareaActual.estado)
       ) {
         toast({
           title: 'Bloque cerrado',
           description:
-            subtareaActual.estado === 'para_validar'
+            estadoSub === 'para_validar'
               ? 'Este bloque ya fue enviado a validación. Esperá la respuesta del cliente.'
               : 'Este bloque ya fue aprobado.',
+        });
+      } else {
+        toast({
+          title: 'Estado no reconocido',
+          description: `El bloque está en estado «${subtareaActual.estado ?? 'desconocido'}». Contactá soporte si persiste.`,
+          variant: 'destructive',
         });
       }
     } else if (tareaActual) {
@@ -2449,7 +2500,7 @@ export function AhoraSection() {
         void handleIniciarTarea([]);
         return;
       } else {
-        void handlePrepararYComenzarBloque();
+        void handleComenzarBloqueOperativo();
       }
     }
   };

@@ -41,42 +41,17 @@ import {
 } from '@/lib/domain/estados-core';
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
+import { fileToEvidenceDataUrl } from '@/lib/socio/evidenceImage';
+import {
+  buildBloquesPorTareaMap,
+  filtrarTareasOperativasSocio,
+  tareaEstaCerradaParaSocio,
+} from '@/lib/socio/tareas-operativas-socio';
 import type { AhoraStitchChecklistItem, AhoraStitchItemState } from '@/lib/mocks/socioMockData';
 import { AhoraJornadaActivaStitch } from '@/components/socio/ahora/AhoraJornadaActivaStitch';
 
 async function comprimirImagenSocio(file: File, maxWidth = 1200): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = document.createElement('img');
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          reject(new Error('No se pudo obtener contexto del canvas'));
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.85));
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  return fileToEvidenceDataUrl(file, maxWidth);
 }
 
 function bloqueElapsedSeconds(sub: { hora_inicio?: string | null }): number {
@@ -117,7 +92,6 @@ function pickSubtareaOperativa(list: BloqueResumen[]): BloqueResumen | null {
   const norm = (s: string | null | undefined) => String(s || '').toLowerCase();
   return (
     list.find((s) => norm(s.estado) === 'en_progreso') ||
-    list.find((s) => norm(s.estado) === 'para_validar') ||
     list.find((s) => norm(s.estado) === 'pendiente') ||
     list.find((s) => norm(s.estado) === 'rechazado') ||
     list.find((s) => norm(s.estado) === 'rechazada') ||
@@ -135,20 +109,6 @@ function filtrarSubtareasVisiblesSocio(
     (s) => !s.socio_id || !socioId || s.socio_id === socioId,
   );
   return filtradas.length > 0 ? filtradas : lista;
-}
-
-/** Excluye tareas cuyos bloques ya están todos validados (tarea huérfana en progreso). */
-function filtrarTareasConBloquesOperativos<
-  T extends { id: string },
->(
-  tareas: T[],
-  bloquesPorTarea: Map<string, Array<{ estado?: string | null }>>,
-): T[] {
-  return tareas.filter((t) => {
-    const bloques = bloquesPorTarea.get(t.id);
-    if (!bloques || bloques.length === 0) return true;
-    return bloques.some((b) => !subtareaEstaCompletadaOficial(String(b.estado ?? '')));
-  });
 }
 
 function resolveTareaIdFromSearchParams(
@@ -737,37 +697,27 @@ export function AhoraSection() {
         // Ordenar tareas por precedencias (CPM)
         const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
 
-          // Filtrar solo tareas pendientes o asignadas (para iniciar)
-          // Incluir: ASIGNADA, pendiente, en_progreso, en_ejecucion
-          let tareasParaIniciar = tareasOrdenadas.filter(
-            (t) => {
-              const estadoLower = (t.estado || '').toLowerCase();
-              return estadoLower === 'asignada' || 
-                     estadoLower === 'pendiente' ||
-                     estadoLower === 'en_ejecucion' ||
-                     estadoLower === 'en_progreso' ||
-                     t.estado === 'ASIGNADA' ||
-                     t.estado === 'PENDIENTE' ||
-                     !t.estado;
-            }
+          // Candidatas iniciales: excluir estados cerrados a nivel tarea
+          const candidatasIniciales = tareasOrdenadas.filter(
+            (t) => !tareaEstaCerradaParaSocio(t.estado),
           );
 
-          if (tareasParaIniciar.length > 0) {
-            const idsOperativos = tareasParaIniciar.map((t) => t.id);
+          let tareasParaIniciar = candidatasIniciales;
+          let bloquesPorTarea = new Map<string, Array<{ estado?: string | null }>>();
+
+          if (tareasBase.length > 0) {
+            const idsTodas = tareasBase.map((t) => t.id);
             const { data: bloquesRows } = await supabase
               .from('tareas_subtareas')
               .select('tarea_id, estado')
-              .in('tarea_id', idsOperativos);
+              .in('tarea_id', idsTodas);
 
-            const bloquesPorTarea = new Map<string, Array<{ estado?: string | null }>>();
-            for (const row of bloquesRows ?? []) {
-              const tid = String((row as { tarea_id?: string }).tarea_id ?? '');
-              if (!tid) continue;
-              const list = bloquesPorTarea.get(tid) ?? [];
-              list.push({ estado: (row as { estado?: string | null }).estado });
-              bloquesPorTarea.set(tid, list);
-            }
-            tareasParaIniciar = filtrarTareasConBloquesOperativos(tareasParaIniciar, bloquesPorTarea);
+            bloquesPorTarea = buildBloquesPorTareaMap(bloquesRows ?? []);
+            tareasParaIniciar = filtrarTareasOperativasSocio(candidatasIniciales, {
+              todasLasTareas: tareasBase,
+              bloquesPorTarea,
+              precedencias,
+            });
           }
 
         setTareas(tareasParaIniciar);
@@ -780,18 +730,8 @@ export function AhoraSection() {
             setTareaActualIndex(index);
           }
         } else if (tareasParaIniciar.length > 0 && !tareaIdParam) {
-          // Selección automática: tarea con fecha más cercana o mayor prioridad
-          const tareaSeleccionada = tareasParaIniciar.reduce((prev, current) => {
-            const prevFecha = prev.fecha_inicio_estimada ? new Date(prev.fecha_inicio_estimada).getTime() : Infinity;
-            const currentFecha = current.fecha_inicio_estimada ? new Date(current.fecha_inicio_estimada).getTime() : Infinity;
-            if (currentFecha < prevFecha) return current;
-            if (currentFecha === prevFecha && (current.prioridad === 'alta' || current.prioridad === 'ALTA')) return current;
-            return prev;
-          });
-          const index = tareasParaIniciar.findIndex(t => t.id === tareaSeleccionada.id);
-          if (index >= 0) {
-            setTareaActualIndex(index);
-          }
+          // Primera tarea operativa según precedencias (ya ordenada por CPM)
+          setTareaActualIndex(0);
         }
       } catch (err) {
         setError('Error al cargar las tareas.');
@@ -1890,7 +1830,16 @@ export function AhoraSection() {
   const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string): Promise<boolean> => {
     if (!subtareaActual || !currentUser) return false;
     const requestKey = `enviar-validar:${subtareaActual.id}`;
-    if (isFinalizando || isSendingTransition || isUploadingEvidence || isSendingToValidation || requestEnCursoRef.current.has(requestKey)) return false;
+    if (requestEnCursoRef.current.has(requestKey)) {
+      toast({
+        title: 'Procesando',
+        description: 'Ya estamos enviando este bloque a validación.',
+      });
+      return false;
+    }
+    if (isFinalizando || isSendingTransition || isSendingToValidation) {
+      return false;
+    }
 
     const evidenciaObligatoria = subtareaActual.evidencia_obligatoria !== false;
     const evidenciaPersistida =
@@ -1987,11 +1936,15 @@ export function AhoraSection() {
       if (!sid) {
         throw new Error('No encontramos el bloque activo.');
       }
-      if (!fileLooksLikeImage(mainPhotoFile)) {
-        throw new Error('El archivo no es una imagen válida.');
+
+      setIsUploadingEvidence(true);
+      let dataUrl: string;
+      try {
+        dataUrl = await fileToEvidenceDataUrl(mainPhotoFile, 1200);
+      } finally {
+        setIsUploadingEvidence(false);
       }
 
-      const dataUrl = await comprimirImagenSocio(mainPhotoFile, 1200);
       console.info('[EVIDENCIA_TRACE] 1/3 — Iniciando upload', { subtareaId: sid, tareaId: subtareaActual?.tarea_id });
 
       const response = await fetch('/api/upload/photo', {

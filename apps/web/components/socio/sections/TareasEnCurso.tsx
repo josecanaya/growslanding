@@ -23,6 +23,11 @@ import { Progress } from '@/components/ui/progress';
 import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
 import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
+import {
+  buildBloquesPorTareaMap,
+  filtrarTareasOperativasSocio,
+  tareaEstaCerradaParaSocio,
+} from '@/lib/socio/tareas-operativas-socio';
 
 type SupabaseTarea = {
   id: string;
@@ -224,8 +229,28 @@ export function TareasEnCurso() {
           precedencias.map((p) => ({ tarea_id: p.tarea_id, depende_de: p.depende_de || undefined }))
         );
 
+        const candidatas = tareasOrdenadas.filter((t) => !tareaEstaCerradaParaSocio(t.estado));
+        let tareasOperativas = candidatas;
+
+        if (tareasBase.length > 0) {
+          const { data: bloquesRows } = await supabase
+            .from('tareas_subtareas')
+            .select('tarea_id, estado')
+            .in('tarea_id', tareasBase.map((t) => t.id));
+
+          const bloquesPorTarea = buildBloquesPorTareaMap(bloquesRows ?? []);
+          tareasOperativas = filtrarTareasOperativasSocio(candidatas, {
+            todasLasTareas: tareasBase,
+            bloquesPorTarea,
+            precedencias: precedencias.map((p) => ({
+              tarea_id: p.tarea_id,
+              depende_de: p.depende_de,
+            })),
+          });
+        }
+
         setError(null);
-        setTareas(tareasOrdenadas);
+        setTareas(tareasOperativas);
       } catch (err) {
         console.error('[TAREAS_EN_CURSO] Error al cargar tareas', err);
         setError('No se pudieron cargar tus tareas.');

@@ -304,41 +304,46 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const input = e.target;
       const f = input.files?.[0];
-      const reset = () => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            input.value = '';
-          });
-        });
+      const resetInput = () => {
+        window.setTimeout(() => {
+          input.value = '';
+        }, 300);
       };
+
       if (!f) {
-        // El usuario canceló el selector / la cámara → no es error. Volvemos a fase 'evidence' para que
-        // todo el flujo siga visible (sin saltar al inicio).
-        reset();
+        resetInput();
         return;
       }
+
       if (evidence.length >= MAX_EVIDENCE) {
         toast({
           title: 'Máximo alcanzado',
           description: `Sólo podés subir hasta ${MAX_EVIDENCE} fotos por bloque.`,
           variant: 'destructive',
         });
-        reset();
+        resetInput();
         return;
       }
-      if (!fileLooksLikeImage(f)) {
+
+      const looksLikeImage =
+        fileLooksLikeImage(f) ||
+        (typeof f.size === 'number' && f.size > 0 && (!f.type || f.type === ''));
+
+      if (!looksLikeImage) {
         toast({
           title: 'Archivo no válido',
           description:
-            'Algunos móviles no envían el tipo al sacar foto. Probá de nuevo o elegí la misma imagen desde «Galería».',
+            'No reconocimos la imagen. Probá de nuevo o elegila desde «Galería».',
           variant: 'destructive',
         });
-        reset();
+        resetInput();
         return;
       }
+
       const id = `ev-${Date.now()}`;
       try {
-        setEvidence((prev) => [...prev, { id, preview: URL.createObjectURL(f), file: f }]);
+        const preview = URL.createObjectURL(f);
+        setEvidence((prev) => [...prev, { id, preview, file: f }]);
         toast({
           title: 'Foto agregada',
           description: 'Quedará lista para enviar como evidencia oficial.',
@@ -350,7 +355,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           variant: 'destructive',
         });
       }
-      reset();
+      resetInput();
     },
     [evidence.length, toast],
   );

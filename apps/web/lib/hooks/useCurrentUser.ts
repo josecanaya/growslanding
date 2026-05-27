@@ -5,6 +5,7 @@ import type { Session } from '@supabase/supabase-js';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { clearClientSessionArtifacts } from '@/lib/auth';
+import { enforceSocioSingleSession } from '@/lib/auth/enforce-socio-single-session';
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser-client';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { SessionUser } from '@/lib/types/auth';
@@ -175,7 +176,7 @@ export function useCurrentUser(): SessionUser | null {
     if (!hasActiveRateLimit() && !hasRateLimitRef.current) {
       const {
         data: { subscription: authSubscription },
-      } = supabase.auth.onAuthStateChange((_event, session) => {
+      } = supabase.auth.onAuthStateChange((event, session) => {
         if (!active) return;
         if (hasActiveRateLimit()) {
           hasRateLimitRef.current = true;
@@ -199,6 +200,9 @@ export function useCurrentUser(): SessionUser | null {
         const mapped = mapSessionToUser(session);
         setStoreUser(mapped);
         setUser(mapped);
+        if (mapped.role === 'SOCIO' && event === 'SIGNED_IN') {
+          void enforceSocioSingleSession(supabase, session);
+        }
       });
       subscription = authSubscription;
     }

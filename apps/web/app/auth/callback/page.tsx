@@ -8,6 +8,7 @@ import type { Session, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types/supabase.gen";
 import { RELAX_CLIENT_AUTH_THROTTLE } from "@/lib/config";
 import { getDefaultRouteForRole, normalizeRole } from "@/lib/roles";
+import { enforceSocioSingleSession } from "@/lib/auth/enforce-socio-single-session";
 import { createOAuthCallbackSupabaseClient } from "@/lib/supabase/oauth-callback-client";
 
 function isAuthRateLimitError(err: {
@@ -564,6 +565,9 @@ function CallbackPageContent() {
         }
 
         const target = redirectTarget ?? getDefaultRouteForRole(role);
+        if (role === 'SOCIO') {
+          await enforceSocioSingleSession(supabase, resolvedSession);
+        }
         router.replace(target as Route);
       } catch (error) {
         console.error("[OAUTH_CALLBACK_ERROR] Error inesperado:", error);

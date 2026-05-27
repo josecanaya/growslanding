@@ -6,6 +6,7 @@ import type { Route } from 'next';
 
 import { SocioHeader } from '@/components/socio/SocioHeader';
 import { SocioTabBar } from '@/components/socio/SocioTabBar';
+import { SocioSingleSessionGuard } from '@/components/socio/SocioSingleSessionGuard';
 import { AhoraWorkNavProvider, useAhoraWorkNavOptional } from '@/components/socio/ahora/AhoraWorkNavContext';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { normalizeRole } from '@/lib/roles';
@@ -47,6 +48,7 @@ function SocioLayoutInner({ children }: { children: React.ReactNode }) {
           : 'socio-shell flex min-h-screen w-full flex-col bg-[#f7f9fb] font-stitch-body text-stitch-on-surface [--socio-tab-h:calc(3.5rem+max(0px,env(safe-area-inset-bottom)))]'
       }
     >
+      <SocioSingleSessionGuard />
       {ahoraSoloVistaStitch ? null : <SocioHeader />}
 
       <main

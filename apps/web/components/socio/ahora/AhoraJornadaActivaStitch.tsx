@@ -25,6 +25,7 @@ import { useAhoraWorkNav } from '@/components/socio/ahora/AhoraWorkNavContext';
 import type { AhoraStitchChecklistItem } from '@/lib/mocks/socioMockData';
 import { MOCK_AHORA_STITCH } from '@/lib/mocks/socioMockData';
 import { cn } from '@/lib/utils';
+import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
 import { Button } from '@/components/ui/grows/Button';
 
 const NAVY = '#00174a';
@@ -325,10 +326,11 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
         reset();
         return;
       }
-      if (!/^image\//.test(f.type) && !/\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)) {
+      if (!fileLooksLikeImage(f)) {
         toast({
           title: 'Archivo no válido',
-          description: 'Subí una imagen JPG, PNG o WEBP.',
+          description:
+            'Algunos móviles no envían el tipo al sacar foto. Probá de nuevo o elegí la misma imagen desde «Galería».',
           variant: 'destructive',
         });
         reset();

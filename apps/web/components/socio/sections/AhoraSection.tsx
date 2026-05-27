@@ -90,6 +90,53 @@ function bloqueElapsedSeconds(sub: { hora_inicio?: string | null }): number {
   return 0;
 }
 
+const SELECT_SUBTAREA_REL = `
+  *,
+  tareas:tareas (
+    id,
+    title,
+    obra_id,
+    estado,
+    responsable_socio_id,
+    obras:obras (
+      id,
+      name,
+      address
+    )
+  )
+`;
+
+type BloqueResumen = {
+  id: string;
+  estado?: string | null;
+  orden?: number | null;
+  socio_id?: string | null;
+};
+
+function pickSubtareaOperativa(list: BloqueResumen[]): BloqueResumen | null {
+  const norm = (s: string | null | undefined) => String(s || '').toLowerCase();
+  return (
+    list.find((s) => norm(s.estado) === 'en_progreso') ||
+    list.find((s) => norm(s.estado) === 'para_validar') ||
+    list.find((s) => norm(s.estado) === 'pendiente') ||
+    list.find((s) => norm(s.estado) === 'rechazado') ||
+    list.find((s) => norm(s.estado) === 'rechazada') ||
+    null
+  );
+}
+
+/** Evita pantalla rota si el bloque quedó con socio_id desalineado respecto a la sesión. */
+function filtrarSubtareasVisiblesSocio(
+  lista: BloqueResumen[],
+  socioId: string | null,
+): BloqueResumen[] {
+  if (!lista?.length) return [];
+  const filtradas = lista.filter(
+    (s) => !s.socio_id || !socioId || s.socio_id === socioId,
+  );
+  return filtradas.length > 0 ? filtradas : lista;
+}
+
 function bloquesToRunningChecklist(
   bloques: Array<{ id: string; orden: number; estado: string }>,
   activeSubId: string,
@@ -915,28 +962,13 @@ export function AhoraSection() {
         }
 
         const supAny = supabase as any;
-        const selectSub = `
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `;
 
         // La generación de bloques se hace por click en "Comenzar tarea" para evitar POST repetidos desde renders/effects.
 
         const { data: lista } = await supAny
           .from('tareas_subtareas')
-          .select(selectSub)
+          .select(SELECT_SUBTAREA_REL)
           .eq('tarea_id', tid)
-          .or(`socio_id.eq.${socioIdGrows},socio_id.is.null`)
           .order('orden', { ascending: true });
 
         if (cancelled) return;
@@ -949,9 +981,7 @@ export function AhoraSection() {
           return;
         }
 
-        const list = (lista as any[]).filter(
-          (s) => !s.socio_id || s.socio_id === socioIdGrows,
-        );
+        const list = filtrarSubtareasVisiblesSocio(lista as BloqueResumen[], socioIdGrows);
 
         if (!list.length) {
           setSubtareaActual(null);
@@ -961,12 +991,7 @@ export function AhoraSection() {
           return;
         }
 
-        const pick =
-          list.find((s: any) => s.estado === 'en_progreso') ||
-          list.find((s: any) => s.estado === 'para_validar') ||
-          list.find((s: any) => s.estado === 'pendiente') ||
-          list.find((s: any) => s.estado === 'rechazado') ||
-          null;
+        const pick = pickSubtareaOperativa(list);
 
         setSubtareaActual(pick);
         setTotalSubtareas(list.length);
@@ -1178,6 +1203,132 @@ export function AhoraSection() {
     }
   };
 
+  const recargarSubtareaPorId = React.useCallback(
+    async (subtareaId: string) => {
+      if (USE_MOCK_DATA) return;
+      const { data: subtareaData } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select(SELECT_SUBTAREA_REL)
+        .eq('id', subtareaId)
+        .maybeSingle();
+      if (subtareaData) {
+        setSubtareaActual(subtareaData);
+      }
+      setSubtareaRefreshKey((k) => k + 1);
+    },
+    [supabase],
+  );
+
+  const vincularSubtareaDesdeBloques = React.useCallback(
+    async (bloques: BloqueResumen[]) => {
+      const visibles = filtrarSubtareasVisiblesSocio(bloques, socioIdGrows);
+      const pick = pickSubtareaOperativa(visibles);
+      setTotalSubtareas(visibles.length);
+      setSubtareasCompletadas(
+        visibles.filter((s) => subtareaEstaCompletadaOficial(String(s.estado ?? ''))).length,
+      );
+      if (!pick?.id) {
+        setSubtareaActual(null);
+        return null;
+      }
+      await recargarSubtareaPorId(pick.id);
+      return pick.id;
+    },
+    [socioIdGrows, recargarSubtareaPorId],
+  );
+
+  const generarBloquesParaTarea = React.useCallback(
+    async (tareaId: string, opts?: { forzarRegeneracion?: boolean }) => {
+      if (!opts?.forzarRegeneracion && generarBloquesIntentados.current.has(tareaId)) {
+        const { data: lista } = await (supabase as any)
+          .from('tareas_subtareas')
+          .select('id, estado, orden, socio_id')
+          .eq('tarea_id', tareaId)
+          .order('orden', { ascending: true });
+        if (lista?.length) {
+          await vincularSubtareaDesdeBloques(lista as BloqueResumen[]);
+          return true;
+        }
+      }
+
+      if (!generarBloquesIntentados.current.has(tareaId)) {
+        generarBloquesIntentados.current.add(tareaId);
+      }
+
+      setIsGeneratingBlocks(true);
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 90000);
+      try {
+        const response = await fetch(`/api/tareas/${tareaId}/generar-bloques`, {
+          method: 'POST',
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          generarBloquesIntentados.current.delete(tareaId);
+          handleApiError(data, 'Error al preparar los bloques de la tarea');
+          return false;
+        }
+
+        const bloques = (data?.bloques ?? []) as BloqueResumen[];
+        if (bloques.length > 0) {
+          await vincularSubtareaDesdeBloques(bloques);
+        } else {
+          const { data: lista } = await (supabase as any)
+            .from('tareas_subtareas')
+            .select('id, estado, orden, socio_id')
+            .eq('tarea_id', tareaId)
+            .order('orden', { ascending: true });
+          await vincularSubtareaDesdeBloques((lista ?? []) as BloqueResumen[]);
+        }
+        setSubtareaRefreshKey((k) => k + 1);
+        return true;
+      } catch (err) {
+        generarBloquesIntentados.current.delete(tareaId);
+        const isAbort = err instanceof Error && err.name === 'AbortError';
+        handleApiError(
+          err,
+          isAbort
+            ? 'La preparación del bloque tardó demasiado. Revisá tu conexión e intentá de nuevo.'
+            : 'Error al preparar bloques. Por favor, intentá nuevamente.',
+        );
+        return false;
+      } finally {
+        window.clearTimeout(timeoutId);
+        setIsGeneratingBlocks(false);
+      }
+    },
+    [supabase, vincularSubtareaDesdeBloques],
+  );
+
+  const handlePrepararBloque = async () => {
+    if (!tareaActual || !currentUser) return;
+    const requestKey = `preparar-bloque:${tareaActual.id}`;
+    if (
+      requestEnCursoRef.current.has(requestKey) ||
+      isGeneratingBlocks ||
+      isSendingTransition ||
+      isUploadingEvidence ||
+      isSendingToValidation
+    ) {
+      return;
+    }
+    requestEnCursoRef.current.add(requestKey);
+    try {
+      const ok = await generarBloquesParaTarea(tareaActual.id, { forzarRegeneracion: true });
+      if (ok) {
+        toast({
+          title: 'Bloque vinculado',
+          description: 'Tocá «Comenzar bloque» para iniciar la ejecución.',
+        });
+        await fetchData();
+      }
+    } finally {
+      requestEnCursoRef.current.delete(requestKey);
+    }
+  };
+
   const handleIniciarSubtarea = async () => {
     if (!subtareaActual || !currentUser) return;
     const requestKey = `iniciar-subtarea:${subtareaActual.id}`;
@@ -1205,20 +1356,7 @@ export function AhoraSection() {
       // Solo actualizar UI si la API confirma éxito
       const { data: subtareaData } = await (supabase as any)
         .from('tareas_subtareas')
-        .select(`
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `)
+        .select(SELECT_SUBTAREA_REL)
         .eq('id', subtareaActual.id)
         .maybeSingle();
 
@@ -1273,21 +1411,10 @@ export function AhoraSection() {
     }, 2000);
 
     try {
-      if (!generarBloquesIntentados.current.has(tareaActual.id)) {
-        generarBloquesIntentados.current.add(tareaActual.id);
-        setIsGeneratingBlocks(true);
-        const bloquesResponse = await fetch(`/api/tareas/${tareaActual.id}/generar-bloques`, {
-          method: 'POST',
-          credentials: 'include',
-        });
-        setIsGeneratingBlocks(false);
-
-        if (!bloquesResponse.ok) {
-          const errorData = await bloquesResponse.json().catch(() => ({}));
-          generarBloquesIntentados.current.delete(tareaActual.id);
-          handleApiError(errorData, 'Error al preparar los bloques de la tarea');
-          return;
-        }
+      const bloquesOk = await generarBloquesParaTarea(tareaActual.id);
+      if (!bloquesOk) {
+        setIsIniciando(false);
+        return;
       }
 
       // Usar solo el endpoint FSM - no actualizar directamente
@@ -1474,35 +1601,6 @@ export function AhoraSection() {
     }
   };
 
-  const recargarSubtareaPorId = React.useCallback(
-    async (subtareaId: string) => {
-      if (USE_MOCK_DATA) return;
-      const { data: subtareaData } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(`
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `)
-        .eq('id', subtareaId)
-        .maybeSingle();
-      if (subtareaData) {
-        setSubtareaActual(subtareaData);
-      }
-      setSubtareaRefreshKey((k) => k + 1);
-    },
-    [supabase],
-  );
-
   useEffect(() => {
     if (USE_MOCK_DATA) return;
     void cargarContadoresTareas();
@@ -1566,20 +1664,7 @@ export function AhoraSection() {
       // Recargar subtarea
       const { data: subtareaData } = await (supabase as any)
         .from('tareas_subtareas')
-        .select(`
-          *,
-          tareas:tareas (
-            id,
-            title,
-            obra_id,
-            estado,
-            obras:obras (
-              id,
-              name,
-              address
-            )
-          )
-        `)
+        .select(SELECT_SUBTAREA_REL)
         .eq('id', subtareaActual.id)
         .maybeSingle();
 
@@ -1768,31 +1853,8 @@ export function AhoraSection() {
       return;
     }
 
-    // El socio no finaliza la tarea completa directo: primero debe existir un bloque con evidencia.
-    const requestKey = `preparar-bloque:${tareaActual.id}`;
-    if (requestEnCursoRef.current.has(requestKey) || isGeneratingBlocks || isSendingTransition || isUploadingEvidence || isSendingToValidation || isFinalizando) return;
-    requestEnCursoRef.current.add(requestKey);
-    setIsFinalizando(true);
-    try {
-      setIsGeneratingBlocks(true);
-      const response = await fetch(`/api/tareas/${tareaActual.id}/generar-bloques`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        handleApiError(errorData, 'Error al preparar el bloque de la tarea');
-        return;
-      }
-      setSubtareaRefreshKey((k) => k + 1);
-      await fetchData();
-    } catch (err) {
-      handleApiError(err, 'Error al preparar el bloque. Por favor, intenta nuevamente.');
-    } finally {
-      requestEnCursoRef.current.delete(requestKey);
-      setIsGeneratingBlocks(false);
-      setIsFinalizando(false);
-    }
+    // Tarea en progreso sin bloque visible: generar + vincular subtarea operativa.
+    await handlePrepararBloque();
     return;
 
     // Validar que haya al menos una evidencia final
@@ -2206,7 +2268,7 @@ export function AhoraSection() {
         }
         return 'Comenzar tarea';
       }
-      return 'Preparar bloque';
+        return 'Vincular bloque';
     }
     return 'Iniciar jornada';
   };
@@ -2264,7 +2326,7 @@ export function AhoraSection() {
         void handleIniciarTarea([]);
         return;
       } else {
-        handleFinalizarTarea();
+        void handlePrepararBloque();
       }
     }
   };

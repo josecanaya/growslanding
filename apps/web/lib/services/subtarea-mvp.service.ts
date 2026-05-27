@@ -259,13 +259,18 @@ export class SubtareaMvpService {
     const supabaseAny = supabase as any;
     const ahora = new Date().toISOString();
 
+    const updatePayload: Record<string, unknown> = {
+      estado: 'en_progreso',
+      hora_inicio: ahora,
+      updated_at: ahora,
+    };
+    if (!subtarea.socio_id && socioId) {
+      updatePayload.socio_id = socioId;
+    }
+
     const { error: updateError } = await supabaseAny
       .from('tareas_subtareas')
-      .update({
-        estado: 'en_progreso',
-        hora_inicio: ahora,
-        updated_at: ahora,
-      })
+      .update(updatePayload)
       .eq('id', subtareaId);
 
     if (updateError) {
@@ -433,8 +438,16 @@ export class SubtareaMvpService {
     if (actor.rol !== 'SOCIO' || !actor.socioId) {
       throw new Error('FORBIDDEN_ACTION');
     }
-    const socioAsignado = subtarea.socio_id || subtarea.tareas?.responsable_socio_id || null;
-    if (!socioAsignado || socioAsignado !== actor.socioId) {
+    const actorId = actor.socioId;
+    const socioBloque = subtarea.socio_id;
+    const responsableTarea = subtarea.tareas?.responsable_socio_id ?? null;
+
+    const puedeOperar =
+      actorId === socioBloque ||
+      actorId === responsableTarea ||
+      (!socioBloque && !responsableTarea);
+
+    if (!puedeOperar) {
       throw new Error('No tenés permiso para operar este bloque');
     }
   }

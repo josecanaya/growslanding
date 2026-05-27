@@ -7,7 +7,7 @@ import { GenerarBloquesError, SubtareaMvpService } from '@/lib/services/subtarea
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
-import { listSocioRecordsForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
+import { listSocioRecordsForAuthUser, resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
 
 /**
  * Genera bloques (tareas_subtareas) desde presupuesto aprobado — misma lógica que SubtareaMvpService.
@@ -100,7 +100,24 @@ export async function POST(
       );
     }
 
+    const socioResuelto = await resolveSocioParaOperacionDeTarea(supabase as any, {
+      id: user.id,
+      email: userEmail || null,
+    }, {
+      responsableSocioId: tarea.responsable_socio_id,
+      orgId,
+    });
+    const socioIdSesion = socioResuelto?.id ?? debug.socioIdEfectivo ?? null;
+
     const generation = await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId);
+
+    if (socioIdSesion) {
+      await supabaseAny
+        .from('tareas_subtareas')
+        .update({ socio_id: socioIdSesion, updated_at: new Date().toISOString() })
+        .eq('tarea_id', tareaId)
+        .or(`socio_id.is.null,socio_id.neq.${socioIdSesion}`);
+    }
 
     const { data: bloques, error: listErr } = await supabaseAny
       .from('tareas_subtareas')

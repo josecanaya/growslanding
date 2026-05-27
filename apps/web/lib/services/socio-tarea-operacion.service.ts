@@ -200,7 +200,7 @@ export class SocioTareaOperacionService {
     }
     debugBase.checks.D_legacyResponsableSinResponsableSocioId = D;
 
-    const allowed = A || B || C || D;
+    const allowed = A || B;
     return {
       allowed,
       socioIdEfectivo,

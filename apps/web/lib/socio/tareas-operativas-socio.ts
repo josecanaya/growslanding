@@ -41,11 +41,17 @@ export function bloqueEstaCerradoParaSocio(estado: string | null | undefined): b
   );
 }
 
+/** Bloque que el socio puede iniciar o reanudar. */
+export function bloqueEstaOperableParaSocio(estado: string | null | undefined): boolean {
+  const n = normalizeEstadoBloqueParaOperacion(estado);
+  return n === 'pendiente' || n === 'en_progreso' || n === 'rechazado';
+}
+
 export function tareaTieneBloquesOperables(
   bloques: Array<{ estado?: string | null }> | undefined,
 ): boolean {
   if (!bloques || bloques.length === 0) return true;
-  return bloques.some((b) => !bloqueEstaCerradoParaSocio(b.estado));
+  return bloques.some((b) => bloqueEstaOperableParaSocio(b.estado));
 }
 
 export function tareaEstaListaComoPredecesora(

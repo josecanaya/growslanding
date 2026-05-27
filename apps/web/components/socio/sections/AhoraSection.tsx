@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
   MapPin,
@@ -29,7 +29,6 @@ import { ChecklistModal } from '@/components/socio/ChecklistModal';
 import { MensajeriaSocio } from '@/components/socio/MensajeriaSocio';
 import { ModalVerPlanos } from '@/components/socio/presupuestos/ModalVerPlanos';
 import type { Database } from '@/lib/types/supabase.gen';
-import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import type { ChecklistItem } from '@/data/checklists';
 import { useToast } from '@/components/ui/use-toast';
 import { USE_MOCK_DATA, MOCK_SUBTAREA_JORNADA_HOY, MOCK_CHECKLIST_ITEMS } from '@/lib/mocks/socioMockData';
@@ -39,14 +38,12 @@ import {
   subtareaEstaCompletadaConLegacy,
   subtareaEstaCompletadaOficial,
 } from '@/lib/domain/estados-core';
-import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
 import { fileToEvidenceDataUrl } from '@/lib/socio/evidenceImage';
 import {
-  buildBloquesPorTareaMap,
-  filtrarTareasOperativasSocio,
-  tareaEstaCerradaParaSocio,
-} from '@/lib/socio/tareas-operativas-socio';
+  buildOrClauseAsignacionSocio,
+  cargarTareaOperativaAhora,
+} from '@/lib/socio/cargar-tarea-ahora';
 import type { AhoraStitchChecklistItem, AhoraStitchItemState } from '@/lib/mocks/socioMockData';
 import { AhoraJornadaActivaStitch } from '@/components/socio/ahora/AhoraJornadaActivaStitch';
 
@@ -109,14 +106,6 @@ function filtrarSubtareasVisiblesSocio(
     (s) => !s.socio_id || !socioId || s.socio_id === socioId,
   );
   return filtradas.length > 0 ? filtradas : lista;
-}
-
-function resolveTareaIdFromSearchParams(
-  searchParams: { get: (key: string) => string | null } | null,
-): string | null {
-  const raw = searchParams?.get('tareaId') ?? searchParams?.get('tarea_id');
-  const trimmed = raw?.trim();
-  return trimmed || null;
 }
 
 function buildSubtareaFromBloqueYTarea(
@@ -202,81 +191,8 @@ type SupabaseTarea = {
 /** Fila de `eventos` con `select('id, nuevo_estado')` — tipar evita `never` en `.find()` con tipos genéricos de Supabase. */
 type EventoRowIdEstado = { id: string; nuevo_estado?: string | null };
 
-/** Alineado con `SocioTareaOperacionService` + listado en pantalla (presupuesto APROBADO, cuadrilla_socios). */
-async function buildOrClauseSocioTareas(
-  supabaseAny: any,
-  opts: {
-    email: string | null | undefined;
-    nombreSocio: string | null | undefined;
-    socioId: string | null | undefined;
-  },
-): Promise<string[]> {
-  const partes: string[] = [];
-  if (opts.email) {
-    partes.push(`responsable.eq.${opts.email}`);
-    partes.push(`responsable.ilike.%${opts.email}%`);
-  }
-  if (opts.nombreSocio?.trim()) {
-    partes.push(`responsable.ilike.%${opts.nombreSocio.trim()}%`);
-  }
-  if (opts.socioId) {
-    partes.push(`responsable_socio_id.eq.${opts.socioId}`);
-    partes.push(`cuadrilla_id.eq.${opts.socioId}`);
-    const { data: presRows } = await supabaseAny
-      .from('tareas_presupuestos')
-      .select('tarea_id, estado')
-      .eq('socio_id', opts.socioId)
-      .limit(800);
-    const presTareaIdsBrutos = [
-      ...new Set(
-        (presRows ?? [])
-          .filter((r: { estado?: string | null }) => estadoPresupuestoEsAprobado(r.estado))
-          .map((r: { tarea_id?: string | null }) => r.tarea_id)
-          .filter((tid: string | null | undefined): tid is string => !!tid),
-      ),
-    ];
-    /** Sin filtrar: presupuesto aprobado sin fila `tareas` alineada mostraba la tarea pero bloqueaba operar. */
-    let presTareaIds: string[] = [];
-    if (presTareaIdsBrutos.length > 0) {
-      const { data: tAsign } = await supabaseAny
-        .from('tareas')
-        .select('id')
-        .in('id', presTareaIdsBrutos)
-        .or(`responsable_socio_id.eq.${opts.socioId},cuadrilla_id.eq.${opts.socioId}`);
-      const tareasAsignFilas = (tAsign ?? []) as Array<{ id?: string | null }>;
-      presTareaIds = [
-        ...new Set(
-          tareasAsignFilas
-            .map((r) => r.id)
-            .filter((id: string | null | undefined): id is string => !!id),
-        ),
-      ];
-    }
-    if (presTareaIds.length > 0) {
-      partes.push(`id.in.(${presTareaIds.join(',')})`);
-    }
-    const { data: cuRows } = await supabaseAny
-      .from('cuadrilla_socios')
-      .select('cuadrilla_id')
-      .eq('socio_id', opts.socioId)
-      .or('activo.is.null,activo.eq.true');
-    const cuadrillaIds = [
-      ...new Set(
-        (cuRows ?? [])
-          .map((r: { cuadrilla_id?: string | null }) => r.cuadrilla_id)
-          .filter((cid: string | null | undefined): cid is string => !!cid),
-      ),
-    ];
-    for (const cid of cuadrillaIds) {
-      partes.push(`cuadrilla_id.eq.${cid}`);
-    }
-  }
-  return partes;
-}
-
 export function AhoraSection() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const currentUser = useCurrentUser();
   const supabase = createClientComponentClient<Database>();
   const { toast } = useToast();
@@ -285,7 +201,6 @@ export function AhoraSection() {
   const [error, setError] = useState<string | null>(null);
   const [tareas, setTareas] = useState<SupabaseTarea[]>([]);
   const [orgIdResuelta, setOrgIdResuelta] = useState<string | null>(currentUser?.orgId ?? null);
-  const [tareaActualIndex, setTareaActualIndex] = useState(0);
   const [showChecklist, setShowChecklist] = useState(false);
   /** Tras «Comenzar bloque/tarea»: primero checklist; null = sólo vista manual del checklist */
   const [gateIntentInicioChecklist, setGateIntentInicioChecklist] = useState<
@@ -465,100 +380,52 @@ export function AhoraSection() {
     return { title, description };
   };
 
-  // Función centralizada para refrescar todos los datos
-  const fetchData = async () => {
-    if (!currentUser?.id) return;
+  // Una sola tarea operativa (CPM + precedencias + bloques); misma regla en carga y refrescos.
+  const recargarTareaAhora = useCallback(
+    async (opts?: { showLoading?: boolean }) => {
+      if (!currentUser?.id) return;
 
-    const orgId = orgIdResuelta || currentUser?.orgId;
-    if (!orgId) return;
+      const orgId = orgIdResuelta || currentUser?.orgId;
+      if (!orgId) return;
 
-    try {
-      // Recargar tareas
-      const SELECT_FIELDS = `
-        id,
-        title,
-        descripcion,
-        estado,
-        prioridad,
-        avance,
-        fecha_inicio_estimada,
-        fecha_fin_estimada,
-        obra_id,
-        responsable,
-        canvas_node_id,
-        obras (
-          id,
-          name,
-          address
-        ),
-        elemento_id,
-        elemento:elementos (
-          cantidad,
-          unidad
-        )
-      `;
-
-      const socioCtx = await fetchSocioContextClient();
-      const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-        email: currentUser?.email,
-        nombreSocio: socioCtx?.nombre,
-        socioId: socioCtx?.id,
-      });
-
-      if (orPartes.length === 0) {
-        setTareas([]);
-        await cargarContadoresTareas();
-        await cargarContadoresBloques();
-        return;
+      if (opts?.showLoading) {
+        setLoading(true);
+        setError(null);
       }
 
-      let query = supabase
-        .from('tareas')
-        .select(SELECT_FIELDS)
-        .eq('org_id', orgId)
-        .order('created_at', { ascending: false })
-        .or(orPartes.join(','));
-
-      const { data } = await query;
-      const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
-
-      // Obtener precedencias para ordenar
-      let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
-      if (tareasBase.length > 0) {
-        const ids = tareasBase.map((t) => t.id);
-        const { data: precData } = await supabase
-          .from('tarea_precedencias')
-          .select('tarea_id, depende_de')
-          .in('tarea_id', ids);
-
-        precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
-          tarea_id: p.tarea_id,
-          depende_de: p.depende_de ?? undefined,
-        }));
-      }
-
-      const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
-      const tareasParaIniciar = tareasOrdenadas.filter(
-        (t) => {
-          const estadoLower = (t.estado || '').toLowerCase();
-          return estadoLower === 'asignada' || 
-                 estadoLower === 'pendiente' ||
-                 estadoLower === 'en_ejecucion' ||
-                 estadoLower === 'en_progreso' ||
-                 t.estado === 'ASIGNADA' ||
-                 t.estado === 'PENDIENTE' ||
-                 !t.estado;
+      try {
+        const socioRow = await fetchSocioContextClient();
+        const socioId = socioIdGrows ?? socioRow?.id ?? null;
+        if (socioRow?.id && !socioIdGrows) {
+          setSocioIdGrows(socioRow.id);
         }
-      );
 
-      setTareas(tareasParaIniciar);
+        const { tarea, error: loadError } = await cargarTareaOperativaAhora(supabase as any, {
+          orgId,
+          socioId,
+        });
 
-      // Recargar contadores
-      await cargarContadoresTareas();
-      await cargarContadoresBloques();
-    } catch (err) {
-      // Error silencioso - solo actualizar UI si hay datos previos
-    }
+        if (loadError) {
+          setError(loadError);
+          setTareas([]);
+        } else {
+          setError(null);
+          setTareas(tarea ? [tarea as SupabaseTarea] : []);
+        }
+      } catch {
+        setError('Error al cargar las tareas.');
+        setTareas([]);
+      } finally {
+        if (opts?.showLoading) {
+          setLoading(false);
+        }
+      }
+    },
+    [currentUser, orgIdResuelta, supabase, socioIdGrows],
+  );
+
+  const fetchData = async () => {
+    await recargarTareaAhora();
   };
 
   // Resolver org_id si no viene en currentUser (socio vinculado por user_id o email)
@@ -593,156 +460,20 @@ export function AhoraSection() {
   }, [currentUser?.id, currentUser?.email, orgIdResuelta, supabase]);
 
   useEffect(() => {
-    const fetchTareas = async () => {
-      if (!currentUser?.id) {
-        setLoading(false);
-        setError('No hay usuario activo.');
-        return;
-      }
-
-      const socioRow = await fetchSocioContextClient();
-      setSocioIdGrows(socioRow?.id ?? null);
-
-      const orgId =
-        orgIdResuelta ||
-        currentUser.orgId ||
-        socioRow?.effective_org_id ||
-        socioRow?.org_id ||
-        null;
-      if (!orgId && !socioRow?.id) {
-        setLoading(false);
-        setError('No se pudo determinar tu organización.');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      if (USE_MOCK_DATA) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const SELECT_FIELDS = `
-          id,
-          title,
-          descripcion,
-          estado,
-          prioridad,
-          avance,
-          fecha_inicio_estimada,
-          fecha_fin_estimada,
-          obra_id,
-          responsable,
-          canvas_node_id,
-          obras (
-            id,
-            name,
-            address
-          ),
-          elemento_id,
-          elemento:elementos (
-            cantidad,
-            unidad
-          )
-        `;
-
-        let query = supabase
-          .from('tareas')
-          .select(SELECT_FIELDS)
-          .order('created_at', { ascending: false });
-        if (orgId) {
-          query = query.eq('org_id', orgId);
-        }
-
-        const partes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser?.email,
-          nombreSocio: socioRow?.nombre,
-          socioId: socioRow?.id,
-        });
-        if (partes.length === 0) {
-          setLoading(false);
-          setError('No se pudo vincular tu perfil con tareas asignadas.');
-          setTareas([]);
-          return;
-        }
-        query = query.or(partes.join(','));
-
-        const { data, error: queryError } = await query;
-
-        if (queryError) {
-          setError('No se pudieron cargar tus tareas.');
-          setTareas([]);
-          return;
-        }
-
-        const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
-
-        // Obtener precedencias para ordenar por CPM
-        let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
-        if (tareasBase.length > 0) {
-          const ids = tareasBase.map((t) => t.id);
-          const { data: precData } = await supabase
-            .from('tarea_precedencias')
-            .select('tarea_id, depende_de')
-            .in('tarea_id', ids);
-
-          precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
-            tarea_id: p.tarea_id,
-            depende_de: p.depende_de ?? undefined,
-          }));
-        }
-
-        // Ordenar tareas por precedencias (CPM)
-        const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
-
-          // Candidatas iniciales: excluir estados cerrados a nivel tarea
-          const candidatasIniciales = tareasOrdenadas.filter(
-            (t) => !tareaEstaCerradaParaSocio(t.estado),
-          );
-
-          let tareasParaIniciar = candidatasIniciales;
-          let bloquesPorTarea = new Map<string, Array<{ estado?: string | null }>>();
-
-          if (tareasBase.length > 0) {
-            const idsTodas = tareasBase.map((t) => t.id);
-            const { data: bloquesRows } = await supabase
-              .from('tareas_subtareas')
-              .select('tarea_id, estado')
-              .in('tarea_id', idsTodas);
-
-            bloquesPorTarea = buildBloquesPorTareaMap(bloquesRows ?? []);
-            tareasParaIniciar = filtrarTareasOperativasSocio(candidatasIniciales, {
-              todasLasTareas: tareasBase,
-              bloquesPorTarea,
-              precedencias,
-            });
-          }
-
-        setTareas(tareasParaIniciar);
-
-        // Detectar tareaId en query params o seleccionar automáticamente
-        const tareaIdParam = resolveTareaIdFromSearchParams(searchParams);
-        if (tareaIdParam && tareasParaIniciar.length > 0) {
-          const index = tareasParaIniciar.findIndex(t => t.id === tareaIdParam);
-          if (index >= 0) {
-            setTareaActualIndex(index);
-          }
-        } else if (tareasParaIniciar.length > 0 && !tareaIdParam) {
-          // Primera tarea operativa según precedencias (ya ordenada por CPM)
-          setTareaActualIndex(0);
-        }
-      } catch (err) {
-        setError('Error al cargar las tareas.');
-        setTareas([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTareas();
-  }, [currentUser, orgIdResuelta, supabase, searchParams]);
+    if (USE_MOCK_DATA) {
+      setLoading(false);
+      return;
+    }
+    if (!currentUser?.id) {
+      setLoading(false);
+      setError('No hay usuario activo.');
+      return;
+    }
+    if (!orgIdResuelta && !currentUser.orgId) {
+      return;
+    }
+    void recargarTareaAhora({ showLoading: true });
+  }, [currentUser, orgIdResuelta, recargarTareaAhora]);
 
   // Calcular progreso general (de TODAS las tareas, no solo las pendientes)
   const [progresoGeneral, setProgresoGeneral] = useState({ completadas: 0, total: 0, porcentaje: 0 });
@@ -768,11 +499,7 @@ export function AhoraSection() {
           return;
         }
 
-        const partes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser?.email,
-          nombreSocio: socioRow?.nombre,
-          socioId: socioRow?.id,
-        });
+        const partes = await buildOrClauseAsignacionSocio(supabase as any, socioRow?.id);
         if (partes.length === 0) {
           setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
           return;
@@ -838,11 +565,7 @@ export function AhoraSection() {
         const hoyISO = hoy.toISOString();
 
         const socioCtx = await fetchSocioContextClient();
-        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser?.email,
-          nombreSocio: socioCtx?.nombre,
-          socioId: socioCtx?.id,
-        });
+        const orPartes = await buildOrClauseAsignacionSocio(supabase as any, socioCtx?.id);
         if (orPartes.length === 0) {
           setTareasCompletadasHoy(0);
           return;
@@ -891,8 +614,8 @@ export function AhoraSection() {
 
   // Tarea actual (una a la vez, ordenada por CPM)
   const tareaActual = useMemo(() => {
-    return tareas[tareaActualIndex] || null;
-  }, [tareas, tareaActualIndex]);
+    return tareas[0] || null;
+  }, [tareas]);
 
   const tareasIdsFingerprint = useMemo(() => tareas.map((t) => t.id).join(','), [tareas]);
 
@@ -1424,14 +1147,10 @@ export function AhoraSection() {
     [supabase, vincularSubtareaDesdeBloques],
   );
 
-  const avanzarTrasTareaCompletada = (tareaIdCompletada: string) => {
+  const avanzarTrasTareaCompletada = async (_tareaIdCompletada?: string) => {
     subtareaFijadaRef.current = null;
     setSubtareaActual(null);
-    setTareas((prev) => {
-      const filtered = prev.filter((t) => t.id !== tareaIdCompletada);
-      setTareaActualIndex(filtered.length > 0 ? 0 : 0);
-      return filtered;
-    });
+    await recargarTareaAhora();
   };
 
   const handleComenzarBloqueOperativo = async (subtareaIdPreferida?: string) => {
@@ -1520,7 +1239,7 @@ export function AhoraSection() {
             },
             data?.message || data?.error || 'Todos los bloques de esta tarea ya están completados',
           );
-          avanzarTrasTareaCompletada(tareaId);
+          await avanzarTrasTareaCompletada(tareaId);
           return;
         }
         handleApiError(
@@ -1538,7 +1257,7 @@ export function AhoraSection() {
           title: 'Tarea completada',
           description: 'Todos los bloques ya están validados. Pasamos a la siguiente tarea disponible.',
         });
-        avanzarTrasTareaCompletada(tareaId);
+        await avanzarTrasTareaCompletada(tareaId);
         return;
       }
 
@@ -1675,79 +1394,8 @@ export function AhoraSection() {
         description: 'La tarea está ahora en progreso.',
       });
 
-      // Recargar tareas después de iniciar
-      const orgId = orgIdResuelta || currentUser?.orgId;
-      if (orgId) {
-        const socioCtx = await fetchSocioContextClient();
-        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser?.email,
-          nombreSocio: socioCtx?.nombre,
-          socioId: socioCtx?.id,
-        });
-        let rq = supabase
-          .from('tareas')
-          .select(`
-            id,
-            title,
-            descripcion,
-            estado,
-            prioridad,
-            avance,
-            fecha_inicio_estimada,
-            fecha_fin_estimada,
-            obra_id,
-            responsable,
-            obras (
-              id,
-              name,
-              address
-            ),
-            elemento_id,
-            elemento:elementos (
-              cantidad,
-              unidad
-            )
-          `)
-          .eq('org_id', String(orgId))
-          .order('created_at', { ascending: false });
-        if (orPartes.length > 0) {
-          rq = rq.or(orPartes.join(','));
-        }
-        const { data } = await rq;
-
-        if (data) {
-          const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
-          
-          let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
-          if (tareasBase.length > 0) {
-            const ids = tareasBase.map((t) => t.id);
-            const { data: precData } = await supabase
-              .from('tarea_precedencias')
-              .select('tarea_id, depende_de')
-              .in('tarea_id', ids);
-            precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
-              tarea_id: p.tarea_id,
-              depende_de: p.depende_de ?? undefined,
-            }));
-          }
-
-          const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
-          const tareasParaIniciar = tareasOrdenadas.filter(
-            (t) => 
-              t.estado === 'pendiente' || 
-              t.estado === 'ASIGNADA' || 
-              t.estado?.toLowerCase() === 'asignada' ||
-              t.estado?.toLowerCase() === 'en_ejecucion' ||
-              t.estado?.toLowerCase() === 'en_progreso' ||
-              !t.estado
-          );
-          setTareas(tareasParaIniciar);
-        }
-      }
-
-      // Recargar contadores y datos
+      await recargarTareaAhora();
       await cargarContadoresTareas();
-      await fetchData();
       setSubtareaRefreshKey((k) => k + 1);
     } catch (err) {
       handleApiError(err, 'Error al iniciar la tarea. Por favor, intenta nuevamente.');
@@ -2143,76 +1791,7 @@ export function AhoraSection() {
         return;
       }
 
-      // Recargar tareas
       const orgId = orgIdResuelta || currentUser?.orgId;
-      if (orgId) {
-        const socioCtx = await fetchSocioContextClient();
-        const orPartes = await buildOrClauseSocioTareas(supabase as any, {
-          email: currentUser?.email,
-          nombreSocio: socioCtx?.nombre,
-          socioId: socioCtx?.id,
-        });
-        let rq = supabase
-          .from('tareas')
-          .select(`
-            id,
-            title,
-            descripcion,
-            estado,
-            prioridad,
-            avance,
-            fecha_inicio_estimada,
-            fecha_fin_estimada,
-            obra_id,
-            responsable,
-            obras (
-              id,
-              name,
-              address
-            ),
-            elemento_id,
-            elemento:elementos (
-              cantidad,
-              unidad
-            )
-          `)
-          .eq('org_id', String(orgId))
-          .order('created_at', { ascending: false });
-        if (orPartes.length > 0) {
-          rq = rq.or(orPartes.join(','));
-        }
-        const { data } = await rq;
-
-        if (data) {
-          const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
-          
-          let precedencias: Array<{ tarea_id: string; depende_de?: string }> = [];
-          if (tareasBase.length > 0) {
-            const ids = tareasBase.map((t) => t.id);
-            const { data: precData } = await supabase
-              .from('tarea_precedencias')
-              .select('tarea_id, depende_de')
-              .in('tarea_id', ids);
-            precedencias = (precData || []).map((p: { tarea_id: string; depende_de: string | null }) => ({
-              tarea_id: p.tarea_id,
-              depende_de: p.depende_de ?? undefined,
-            }));
-          }
-
-          const tareasOrdenadas = ordenarTareasPorPrecedencias(tareasBase, precedencias);
-          const tareasParaIniciar = tareasOrdenadas.filter(
-            (t) => 
-              t.estado === 'pendiente' || 
-              t.estado === 'ASIGNADA' || 
-              t.estado?.toLowerCase() === 'asignada' ||
-              t.estado?.toLowerCase() === 'en_ejecucion' ||
-              t.estado?.toLowerCase() === 'en_progreso' ||
-              !t.estado
-          );
-          setTareas(tareasParaIniciar);
-          setTareaActualIndex(0); // Volver a la primera tarea
-        }
-      }
 
       // Recalcular tareas completadas hoy
       const hoy = new Date();
@@ -2247,11 +1826,7 @@ export function AhoraSection() {
 
       // Recalcular progreso general
       const socioCtxProg = await fetchSocioContextClient();
-      const orProg = await buildOrClauseSocioTareas(supabase as any, {
-        email: currentUser?.email,
-        nombreSocio: socioCtxProg?.nombre,
-        socioId: socioCtxProg?.id,
-      });
+      const orProg = await buildOrClauseAsignacionSocio(supabase as any, socioCtxProg?.id);
       let qProg = supabase
         .from('tareas')
         .select('id, estado, avance')

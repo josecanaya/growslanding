@@ -20,14 +20,9 @@ import { Button } from '@/components/ui/grows/Button';
 import { Badge } from '@/components/ui/grows/Badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ordenarTareasPorPrecedencias } from '@/utils/ordenarTareasPorPrecedencias';
 import { STITCH_INNER, StitchH2Page } from '@/components/socio/stitch/socioStitchUi';
 import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
-import {
-  buildBloquesPorTareaMap,
-  filtrarTareasOperativasSocio,
-  tareaEstaCerradaParaSocio,
-} from '@/lib/socio/tareas-operativas-socio';
+import { cargarTareaOperativaAhora } from '@/lib/socio/cargar-tarea-ahora';
 
 type SupabaseTarea = {
   id: string;
@@ -48,8 +43,6 @@ type SupabaseTarea = {
     address: string | null;
   } | null;
 };
-type PrecedenciaRow = { id: string; tarea_id: string; depende_de: string | null };
-
 type ObraGroup = {
   obraId: string;
   nombre: string;
@@ -86,26 +79,6 @@ export function TareasEnCurso() {
     if (val === 'finalizado' || val === 'validado') return 'bg-green-100 text-green-700';
     return 'bg-slate-100 text-slate-700';
   };
-
-  const SELECT_FIELDS = `
-    id,
-    title,
-    descripcion,
-    estado,
-    prioridad,
-    avance,
-    fecha_inicio_estimada,
-    fecha_fin_estimada,
-    obra_id,
-    responsable,
-    costo_presupuestado,
-    dias_presupuesto,
-    obras (
-      id,
-      name,
-      address
-    )
-  `;
 
   useEffect(() => {
     const obraIdQuery = searchParams.get('obra_id');
@@ -155,8 +128,6 @@ export function TareasEnCurso() {
       setError(null);
 
       try {
-        const supabaseAny = supabase as any;
-
         const socioRow = await fetchSocioContextClient();
 
         const orgId =
@@ -166,91 +137,26 @@ export function TareasEnCurso() {
           socioRow?.org_id ||
           null;
 
-        let query = supabase
-          .from('tareas')
-          .select(SELECT_FIELDS)
-          .order('created_at', { ascending: false });
-        if (orgId) {
-          query = query.eq('org_id', orgId);
-        }
-
-        const partes: string[] = [];
-        if (currentUser.email) {
-          partes.push(`responsable.eq.${currentUser.email}`);
-          partes.push(`responsable.ilike.%${currentUser.email}%`);
-        }
-        if (socioRow?.nombre?.trim()) {
-          partes.push(`responsable.ilike.%${socioRow.nombre.trim()}%`);
-        }
-        if (socioRow?.id) {
-          partes.push(`responsable_socio_id.eq.${socioRow.id}`);
-          partes.push(`cuadrilla_id.eq.${socioRow.id}`);
-        }
-        if (partes.length === 0) {
+        if (!orgId) {
           setLoading(false);
-          setError('No se pudo vincular tu perfil con tareas asignadas.');
-          setTareas([]);
-          return;
-        }
-        query = query.or(partes.join(','));
-
-        const { data, error } = await query;
-
-        if (error) {
-          console.error('[TAREAS_EN_CURSO] Error consultando tareas', error?.message || error);
-          setError('No se pudieron cargar tus tareas.');
+          setError('No se pudo determinar tu organización.');
           setTareas([]);
           return;
         }
 
-        const tareasBase = (data as unknown as SupabaseTarea[]) ?? [];
+        const { operativas, error: loadError } = await cargarTareaOperativaAhora(supabase as any, {
+          orgId,
+          socioId: socioRow?.id ?? null,
+        });
 
-        // Obtener precedencias para ordenar por CPM/topológico
-        let precedencias: PrecedenciaRow[] = [];
-        if (tareasBase.length > 0) {
-          const ids = tareasBase.map((t) => t.id);
-          const { data: precData, error: precError } = await supabase
-            .from('tarea_precedencias')
-            .select('id, tarea_id, depende_de')
-            .in('tarea_id', ids);
-
-          if (precError) {
-            console.error(
-              '[TAREAS_EN_CURSO] Error cargando precedencias',
-              precError?.message || precError
-            );
-          } else {
-            precedencias = (precData as PrecedenciaRow[]) ?? [];
-          }
-        }
-
-        const tareasOrdenadas = ordenarTareasPorPrecedencias(
-          tareasBase,
-          precedencias.map((p) => ({ tarea_id: p.tarea_id, depende_de: p.depende_de || undefined }))
-        );
-
-        const candidatas = tareasOrdenadas.filter((t) => !tareaEstaCerradaParaSocio(t.estado));
-        let tareasOperativas = candidatas;
-
-        if (tareasBase.length > 0) {
-          const { data: bloquesRows } = await supabase
-            .from('tareas_subtareas')
-            .select('tarea_id, estado')
-            .in('tarea_id', tareasBase.map((t) => t.id));
-
-          const bloquesPorTarea = buildBloquesPorTareaMap(bloquesRows ?? []);
-          tareasOperativas = filtrarTareasOperativasSocio(candidatas, {
-            todasLasTareas: tareasBase,
-            bloquesPorTarea,
-            precedencias: precedencias.map((p) => ({
-              tarea_id: p.tarea_id,
-              depende_de: p.depende_de,
-            })),
-          });
+        if (loadError) {
+          setError(loadError);
+          setTareas([]);
+          return;
         }
 
         setError(null);
-        setTareas(tareasOperativas);
+        setTareas(operativas as SupabaseTarea[]);
       } catch (err) {
         console.error('[TAREAS_EN_CURSO] Error al cargar tareas', err);
         setError('No se pudieron cargar tus tareas.');

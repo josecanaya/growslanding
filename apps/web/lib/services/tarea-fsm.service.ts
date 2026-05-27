@@ -297,34 +297,30 @@ export class TareaFsmService {
       motivo: params.motivo ?? null,
     };
 
-    await supabaseAny
-      .from('tareas_eventos')
-      .insert({
-        tarea_id: params.tareaId,
-        actor_id: params.actorId,
-        actor_tipo: params.actorRol,
-        estado_anterior: params.estadoAnterior,
-        estado_nuevo: params.estadoNuevo,
-        metadata,
-      })
-      .catch((err: unknown) => {
-        console.error('[TareaFsmService] Error registrando evento', err);
-      });
+    const { error: eventoErr } = await supabaseAny.from('tareas_eventos').insert({
+      tarea_id: params.tareaId,
+      actor_id: params.actorId,
+      actor_tipo: params.actorRol,
+      estado_anterior: params.estadoAnterior,
+      estado_nuevo: params.estadoNuevo,
+      metadata,
+    });
+    if (eventoErr) {
+      console.error('[TareaFsmService] Error registrando evento', eventoErr);
+    }
 
-    await supabaseAny
-      .from('tareas_estados')
-      .insert({
-        tarea_id: params.tareaId,
-        estado_anterior: params.estadoAnterior,
-        estado_nuevo: params.estadoNuevo,
-        actor_id: params.actorId,
-        actor_tipo: params.actorRol,
-        motivo: params.motivo || null,
-        created_at: new Date().toISOString(),
-      })
-      .catch((err: unknown) => {
-        console.error('[TareaFsmService] Error registrando estado legacy', err);
-      });
+    const { error: estadoLegacyErr } = await supabaseAny.from('tareas_estados').insert({
+      tarea_id: params.tareaId,
+      estado_anterior: params.estadoAnterior,
+      estado_nuevo: params.estadoNuevo,
+      actor_id: params.actorId,
+      actor_tipo: params.actorRol,
+      motivo: params.motivo || null,
+      created_at: new Date().toISOString(),
+    });
+    if (estadoLegacyErr) {
+      console.error('[TareaFsmService] Error registrando estado legacy', estadoLegacyErr);
+    }
   }
 
   static mapLegacyToOficial(estado: string | null | undefined): EstadoTarea {

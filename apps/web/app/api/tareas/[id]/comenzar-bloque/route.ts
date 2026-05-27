@@ -18,7 +18,15 @@ import {
 function statusFromMessage(msg: string): number {
   if (msg === 'FORBIDDEN_ACTION' || msg.includes('permiso')) return 403;
   if (msg.includes('suspendido') || msg.includes('dos bloques')) return 409;
-  if (msg.includes('NO_BLOQUE_OPERATIVO') || msg.includes('SIN_BLOQUES')) return 409;
+  if (
+    msg.includes('NO_BLOQUE_OPERATIVO') ||
+    msg.includes('SIN_BLOQUES') ||
+    msg.includes('TODOS_BLOQUES_COMPLETADOS') ||
+    msg.includes('No hay bloque operativo') ||
+    msg.includes('Todos los bloques')
+  ) {
+    return 409;
+  }
   if (msg.includes('Solo se pueden iniciar')) return 409;
   return 500;
 }
@@ -138,15 +146,23 @@ export async function POST(
   } catch (error) {
     console.error('[COMENZAR_BLOQUE]', error);
     if (error instanceof GenerarBloquesError) {
+      const motivo = String((error.debug as { motivo?: string })?.motivo ?? '');
+      const status =
+        motivo === 'NO_BLOQUE_OPERATIVO' ||
+        motivo === 'TODOS_BLOQUES_COMPLETADOS' ||
+        motivo === 'SIN_BLOQUES'
+          ? 409
+          : 500;
       return NextResponse.json(
         {
           success: false,
-          error: 'GENERAR_BLOQUES_ERROR',
+          error: motivo || 'GENERAR_BLOQUES_ERROR',
+          errorCode: motivo || 'GENERAR_BLOQUES_ERROR',
           message: error.message,
           detail: error.detail ?? null,
           debug: error.debug,
         },
-        { status: 500 },
+        { status },
       );
     }
     const msg = error instanceof Error ? error.message : 'Error interno';

@@ -182,6 +182,25 @@ export class SubtareaMvpService {
     const presupuestoId = presupuesto?.id ?? null;
     const cantidad = Number(presupuesto?.cantidad ?? 1);
     const unidad = String(presupuesto?.unidad || 'unidad');
+    const montoTotal = Number(presupuesto?.monto ?? 0);
+    const montoPorBloque =
+      totalBloques > 0 && Number.isFinite(montoTotal) && montoTotal > 0
+        ? Math.round((montoTotal / totalBloques) * 100) / 100
+        : 1;
+
+    const buildBloqueInsert = (index: number) => ({
+      tarea_id: tareaId,
+      bloque_index: index,
+      orden: index,
+      estado: 'pendiente',
+      cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
+      unidad,
+      evidencia_obligatoria: true,
+      evidencia_cargada: false,
+      socio_id: socioId,
+      presupuesto_id: presupuestoId,
+      monto_estimado: montoPorBloque,
+    });
 
     const { data: existentes, error: existentesError } = await supabaseAny
       .from('tareas_subtareas')
@@ -205,6 +224,54 @@ export class SubtareaMvpService {
     }
 
     if (existentes && existentes.length > 0) {
+      const indicesExistentes = new Set(
+        existentes
+          .map((row: { bloque_index?: number | null; orden?: number | null }) =>
+            Number(row.bloque_index ?? row.orden ?? 0),
+          )
+          .filter((n: number) => Number.isFinite(n) && n > 0),
+      );
+      const faltantes = Array.from({ length: totalBloques }, (_, i) => i + 1)
+        .filter((index) => !indicesExistentes.has(index))
+        .map((index) => buildBloqueInsert(index));
+
+      if (faltantes.length > 0) {
+        const { error: insertFaltantesError } = await supabaseAny
+          .from('tareas_subtareas')
+          .insert(faltantes);
+
+        if (insertFaltantesError) {
+          throw new GenerarBloquesError(
+            'No se pudieron crear los bloques faltantes de la tarea',
+            {
+              tareaId,
+              socioId,
+              presupuestoId,
+              bloquesPlanificados: totalBloques,
+              bloquesExistentes: existentes.length,
+              bloquesFaltantes: faltantes.length,
+              supabaseError: insertFaltantesError,
+              motivo: insertFaltantesError.message,
+            },
+            insertFaltantesError.details ?? undefined,
+          );
+        }
+
+        return {
+          created: true,
+          existing: false,
+          bloquesCount: existentes.length + faltantes.length,
+          debug: {
+            tareaId,
+            socioId,
+            presupuestoId,
+            bloquesPlanificados: totalBloques,
+            motivo: 'BLOQUES_FALTANTES_CREADOS',
+            insertados: faltantes.length,
+          },
+        };
+      }
+
       return {
         created: false,
         existing: true,
@@ -219,20 +286,9 @@ export class SubtareaMvpService {
       };
     }
 
-    const bloques = Array.from({ length: totalBloques }).map((_, index) => {
-      return {
-        tarea_id: tareaId,
-        bloque_index: index + 1,
-        orden: index + 1,
-        estado: 'pendiente',
-        cantidad: Number.isFinite(cantidad) && cantidad > 0 ? cantidad : 1,
-        unidad,
-        evidencia_obligatoria: true,
-        evidencia_cargada: false,
-        socio_id: socioId,
-        presupuesto_id: presupuestoId,
-      };
-    });
+    const bloques = Array.from({ length: totalBloques }).map((_, index) =>
+      buildBloqueInsert(index + 1),
+    );
 
     const { error: insertError } = await supabaseAny.from('tareas_subtareas').insert(bloques);
 
@@ -648,7 +704,31 @@ export class SubtareaMvpService {
       pickSubtareaOperativaDeLista(bloques);
 
     if (!pick?.id) {
-      throw new Error('NO_BLOQUE_OPERATIVO');
+      const resumen = bloques.map((b) => ({
+        id: b.id,
+        orden: b.orden ?? b.bloque_index,
+        estado: b.estado,
+      }));
+      const todosValidados = bloques.every(
+        (b) => normalizeEstadoBloqueParaOperacion(b.estado) === ESTADO_BLOQUE_FINAL,
+      );
+
+      if (todosValidados) {
+        throw new GenerarBloquesError(
+          'Todos los bloques de esta tarea ya están completados',
+          {
+            tareaId,
+            motivo: 'TODOS_BLOQUES_COMPLETADOS',
+            bloques: resumen,
+          },
+        );
+      }
+
+      throw new GenerarBloquesError('No hay bloque operativo para comenzar', {
+        tareaId,
+        motivo: 'NO_BLOQUE_OPERATIVO',
+        bloques: resumen,
+      });
     }
 
     const estadoOp = normalizeEstadoBloqueParaOperacion(pick.estado);

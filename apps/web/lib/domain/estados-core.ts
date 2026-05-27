@@ -56,5 +56,8 @@ export function normalizeEstadoBloqueParaOperacion(estado: string | null | undef
   if (n === 'en_revision' || n === 'revision' || n === 'pendiente_de_validacion' || n === 'pendiente_de_validación') {
     return ESTADO_BLOQUE_PARA_VALIDAR;
   }
+  if (!n || n === 'asignada' || n === 'asignado' || n === 'nuevo') {
+    return 'pendiente';
+  }
   return n;
 }

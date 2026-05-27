@@ -396,6 +396,25 @@ export function AhoraSection() {
     } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
       title = 'Evidencia requerida';
       description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
+    } else if (
+      errorCode === 'TODOS_BLOQUES_COMPLETADOS' ||
+      errorMessage.includes('Todos los bloques de esta tarea')
+    ) {
+      title = 'Tarea completada';
+      description =
+        'Todos los bloques de esta tarea ya están completados. No queda trabajo pendiente por comenzar.';
+    } else if (errorCode === 'NO_BLOQUE_OPERATIVO') {
+      title = 'Sin bloque para comenzar';
+      const bloquesDbg = Array.isArray(error?.debug?.bloques) ? error.debug.bloques : [];
+      const resumen = bloquesDbg
+        .slice(0, 6)
+        .map((b: { orden?: number | null; estado?: string | null }) =>
+          `#${b.orden ?? '?'}=${b.estado ?? '?'}`,
+        )
+        .join(', ');
+      description = resumen
+        ? `Ningún bloque está pendiente de iniciar. Estados actuales: ${resumen}.`
+        : 'No hay bloques pendientes. Verificá con el cliente que el presupuesto esté aprobado.';
     } else if (errorCode === 'PRECEDENCE_ERROR' || error?.error === 'PRECEDENCE_ERROR') {
       title = 'Hay tareas previas sin validar';
       description =
@@ -1483,7 +1502,10 @@ export function AhoraSection() {
 
       if (!response.ok) {
         handleApiError(
-          data,
+          {
+            ...data,
+            errorCode: data?.errorCode ?? data?.error,
+          },
           data?.message || data?.error || 'No se pudo comenzar el bloque',
         );
         return;

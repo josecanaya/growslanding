@@ -9,6 +9,19 @@ import { PermisoService } from '@/lib/services/permiso.service';
 import { SocioTareaOperacionService } from '@/lib/services/socio-tarea-operacion.service';
 import { listSocioRecordsForAuthUser, resolveSocioParaOperacionDeTarea } from '@/lib/socios/resolveSocioForAuthUser';
 
+function statusFromGenerarBloquesError(debug: Record<string, unknown> | undefined): number {
+  const motivo = String(debug?.motivo ?? '');
+  if (motivo === 'PRESUPUESTO_APROBADO_NO_ENCONTRADO') return 422;
+  if (motivo === 'YA_EXISTEN_BLOQUES') return 200;
+  if (
+    motivo.includes('No se pueden crear más de') ||
+    motivo === 'SYNC_BLOQUES_PLANIFICADOS_ERROR'
+  ) {
+    return 409;
+  }
+  return 500;
+}
+
 /**
  * Genera bloques (tareas_subtareas) desde presupuesto aprobado — misma lógica que SubtareaMvpService.
  * No inserta filas incompletas desde el cliente.
@@ -109,7 +122,9 @@ export async function POST(
     });
     const socioIdSesion = socioResuelto?.id ?? debug.socioIdEfectivo ?? null;
 
-    const generation = await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId);
+    const generation = await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId, {
+      socioIdOperador: socioIdSesion,
+    });
 
     if (socioIdSesion) {
       const ahora = new Date().toISOString();
@@ -192,15 +207,18 @@ export async function POST(
   } catch (error) {
     console.error('[GENERAR_BLOQUES]', error);
     if (error instanceof GenerarBloquesError) {
+      const motivo = String((error.debug as { motivo?: string })?.motivo ?? '');
+      const status = statusFromGenerarBloquesError(error.debug);
       return NextResponse.json(
         {
           success: false,
-          error: 'GENERAR_BLOQUES_ERROR',
+          error: motivo || 'GENERAR_BLOQUES_ERROR',
+          errorCode: motivo || 'GENERAR_BLOQUES_ERROR',
           message: error.message,
           detail: error.detail ?? null,
           debug: error.debug,
         },
-        { status: 500 },
+        { status },
       );
     }
     const msg = error instanceof Error ? error.message : 'Error interno';

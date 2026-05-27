@@ -419,6 +419,23 @@ export function AhoraSection() {
       title = 'Evidencia requerida';
       description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
     } else if (
+      errorCode === 'PRESUPUESTO_APROBADO_NO_ENCONTRADO' ||
+      errorMessage.includes('No hay presupuesto aprobado')
+    ) {
+      title = 'Presupuesto no aprobado';
+      description =
+        'Esta tarea no tiene un presupuesto aprobado para tu perfil. Pedile al cliente que apruebe el presupuesto antes de comenzar.';
+    } else if (
+      errorCode === 'GENERAR_BLOQUES_ERROR' ||
+      errorMessage.includes('No se pudieron generar') ||
+      errorMessage.includes('No se pudieron crear los bloques')
+    ) {
+      title = 'No se pudieron preparar los bloques';
+      description =
+        typeof error?.message === 'string' && error.message.trim()
+          ? error.message
+          : 'Verificá con el cliente que el presupuesto esté aprobado y que la tarea tenga días/bloques configurados.';
+    } else if (
       errorCode === 'TODOS_BLOQUES_COMPLETADOS' ||
       errorMessage.includes('Todos los bloques de esta tarea')
     ) {

@@ -48,6 +48,50 @@ export function primeraFilaPresupuestoAprobado(
   return rows.find((r) => estadoPresupuestoEsAprobado(r.estado)) ?? null;
 }
 
+/** Presupuesto aprobado preferido para operación del socio (responsable → operador → cualquier aprobado). */
+export function resolverPresupuestoAprobadoParaOperacion(
+  rows: FilaPresupuestoConEstado[] | null | undefined,
+  opts?: { responsableSocioId?: string | null; socioOperadorId?: string | null },
+): FilaPresupuestoConEstado | null {
+  const aprobados = (rows ?? []).filter((r) => estadoPresupuestoEsAprobado(r.estado));
+  if (aprobados.length === 0) return null;
+
+  const candidatos = [
+    opts?.responsableSocioId,
+    opts?.socioOperadorId,
+  ].filter((id): id is string => Boolean(id?.trim()));
+
+  for (const socioId of candidatos) {
+    const match = aprobados.find((r) => r.socio_id === socioId);
+    if (match) return match;
+  }
+
+  return aprobados[0] ?? null;
+}
+
+export function diasEfectivosDesdePresupuesto(
+  presupuesto: FilaPresupuestoConEstado,
+): number {
+  let diasNotas: number | null = null;
+  if (presupuesto.notas) {
+    try {
+      const parsed =
+        typeof presupuesto.notas === 'string'
+          ? JSON.parse(presupuesto.notas)
+          : presupuesto.notas;
+      const valor = Number(
+        parsed?.dias_reales ?? parsed?.dias ?? parsed?.bloques_planificados ?? parsed?.bloques,
+      );
+      diasNotas = Number.isFinite(valor) && valor > 0 ? Math.round(valor) : null;
+    } catch {
+      diasNotas = null;
+    }
+  }
+
+  const dias = Number(presupuesto.dias_reales ?? diasNotas ?? 1);
+  return Math.max(1, Number.isFinite(dias) ? Math.round(dias) : 1);
+}
+
 /**
  * Patch consistente para tareas cuando se aprueba un presupuesto a un socio:
  * FK + texto responsable + (opcional) estado pendiente si la tarea todavía no arrancó.

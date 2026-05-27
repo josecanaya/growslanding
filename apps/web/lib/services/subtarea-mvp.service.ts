@@ -6,7 +6,6 @@ import { ClienteWalletService } from './cliente-wallet.service';
 import {
   ESTADO_BLOQUE_FINAL,
   ESTADO_BLOQUE_PARA_VALIDAR,
-  ESTADO_TAREA_FINAL,
   normalizeEstadoBloqueParaOperacion,
   type EstadoBloqueCore,
 } from '../domain/estados-core';
@@ -509,15 +508,12 @@ export class SubtareaMvpService {
 
     if (tareaValidada) {
       try {
-        await TareaFsmService.enforceTransition({
-          tareaId: subtarea.tarea_id,
-          nuevoEstado: ESTADO_TAREA_FINAL,
+        await TareaFsmService.reconciliarTareaSiTodosBloquesValidados(subtarea.tarea_id, {
           actorId: actor.id,
-          rol: 'CLIENTE',
           motivo: 'Validacion automatica por bloques',
         });
       } catch (fsmErr) {
-        console.warn('[validarSubtarea] Transición FSM de tarea no aplicada (bloque ya validado):', fsmErr);
+        console.warn('[validarSubtarea] Cierre automatico de tarea no aplicado:', fsmErr);
       }
     }
 
@@ -714,14 +710,18 @@ export class SubtareaMvpService {
       );
 
       if (todosValidados) {
-        throw new GenerarBloquesError(
-          'Todos los bloques de esta tarea ya están completados',
-          {
-            tareaId,
-            motivo: 'TODOS_BLOQUES_COMPLETADOS',
-            bloques: resumen,
-          },
-        );
+        await TareaFsmService.reconciliarTareaSiTodosBloquesValidados(tareaId, {
+          actorId: actor.id,
+          motivo: 'Todos los bloques validados — cierre automatico al intentar comenzar',
+        });
+        const ultimoBloque = bloques[bloques.length - 1];
+        const subtarea = ultimoBloque ? await this.fetchSubtareaUi(ultimoBloque.id) : null;
+        return {
+          accion: 'tarea_completada' as const,
+          subtarea,
+          bloques,
+          tareaValidada: true,
+        };
       }
 
       throw new GenerarBloquesError('No hay bloque operativo para comenzar', {

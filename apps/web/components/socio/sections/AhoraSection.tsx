@@ -137,6 +137,28 @@ function filtrarSubtareasVisiblesSocio(
   return filtradas.length > 0 ? filtradas : lista;
 }
 
+/** Excluye tareas cuyos bloques ya están todos validados (tarea huérfana en progreso). */
+function filtrarTareasConBloquesOperativos<
+  T extends { id: string },
+>(
+  tareas: T[],
+  bloquesPorTarea: Map<string, Array<{ estado?: string | null }>>,
+): T[] {
+  return tareas.filter((t) => {
+    const bloques = bloquesPorTarea.get(t.id);
+    if (!bloques || bloques.length === 0) return true;
+    return bloques.some((b) => !subtareaEstaCompletadaOficial(String(b.estado ?? '')));
+  });
+}
+
+function resolveTareaIdFromSearchParams(
+  searchParams: { get: (key: string) => string | null } | null,
+): string | null {
+  const raw = searchParams?.get('tareaId') ?? searchParams?.get('tarea_id');
+  const trimmed = raw?.trim();
+  return trimmed || null;
+}
+
 function buildSubtareaFromBloqueYTarea(
   bloque: BloqueResumen,
   tarea: SupabaseTarea,
@@ -700,7 +722,7 @@ export function AhoraSection() {
 
           // Filtrar solo tareas pendientes o asignadas (para iniciar)
           // Incluir: ASIGNADA, pendiente, en_progreso, en_ejecucion
-          const tareasParaIniciar = tareasOrdenadas.filter(
+          let tareasParaIniciar = tareasOrdenadas.filter(
             (t) => {
               const estadoLower = (t.estado || '').toLowerCase();
               return estadoLower === 'asignada' || 
@@ -713,16 +735,34 @@ export function AhoraSection() {
             }
           );
 
+          if (tareasParaIniciar.length > 0) {
+            const idsOperativos = tareasParaIniciar.map((t) => t.id);
+            const { data: bloquesRows } = await supabase
+              .from('tareas_subtareas')
+              .select('tarea_id, estado')
+              .in('tarea_id', idsOperativos);
+
+            const bloquesPorTarea = new Map<string, Array<{ estado?: string | null }>>();
+            for (const row of bloquesRows ?? []) {
+              const tid = String((row as { tarea_id?: string }).tarea_id ?? '');
+              if (!tid) continue;
+              const list = bloquesPorTarea.get(tid) ?? [];
+              list.push({ estado: (row as { estado?: string | null }).estado });
+              bloquesPorTarea.set(tid, list);
+            }
+            tareasParaIniciar = filtrarTareasConBloquesOperativos(tareasParaIniciar, bloquesPorTarea);
+          }
+
         setTareas(tareasParaIniciar);
 
         // Detectar tareaId en query params o seleccionar automáticamente
-        const tareaIdParam = searchParams?.get('tareaId');
+        const tareaIdParam = resolveTareaIdFromSearchParams(searchParams);
         if (tareaIdParam && tareasParaIniciar.length > 0) {
           const index = tareasParaIniciar.findIndex(t => t.id === tareaIdParam);
           if (index >= 0) {
             setTareaActualIndex(index);
           }
-        } else if (tareasParaIniciar.length > 0 && tareaActualIndex === 0) {
+        } else if (tareasParaIniciar.length > 0 && !tareaIdParam) {
           // Selección automática: tarea con fecha más cercana o mayor prioridad
           const tareaSeleccionada = tareasParaIniciar.reduce((prev, current) => {
             const prevFecha = prev.fecha_inicio_estimada ? new Date(prev.fecha_inicio_estimada).getTime() : Infinity;
@@ -745,7 +785,7 @@ export function AhoraSection() {
     };
 
     fetchTareas();
-  }, [currentUser, orgIdResuelta, supabase]);
+  }, [currentUser, orgIdResuelta, supabase, searchParams]);
 
   // Calcular progreso general (de TODAS las tareas, no solo las pendientes)
   const [progresoGeneral, setProgresoGeneral] = useState({ completadas: 0, total: 0, porcentaje: 0 });
@@ -1427,6 +1467,16 @@ export function AhoraSection() {
     [supabase, vincularSubtareaDesdeBloques],
   );
 
+  const avanzarTrasTareaCompletada = (tareaIdCompletada: string) => {
+    subtareaFijadaRef.current = null;
+    setSubtareaActual(null);
+    setTareas((prev) => {
+      const filtered = prev.filter((t) => t.id !== tareaIdCompletada);
+      setTareaActualIndex(filtered.length > 0 ? 0 : 0);
+      return filtered;
+    });
+  };
+
   const handleComenzarBloqueOperativo = async (subtareaIdPreferida?: string) => {
     const tareaId =
       subtareaActual?.tarea_id ??
@@ -1501,6 +1551,21 @@ export function AhoraSection() {
       });
 
       if (!response.ok) {
+        const errorCode = data?.errorCode ?? data?.error;
+        if (
+          errorCode === 'TODOS_BLOQUES_COMPLETADOS' ||
+          String(data?.message ?? data?.error ?? '').includes('Todos los bloques')
+        ) {
+          handleApiError(
+            {
+              ...data,
+              errorCode: 'TODOS_BLOQUES_COMPLETADOS',
+            },
+            data?.message || data?.error || 'Todos los bloques de esta tarea ya están completados',
+          );
+          avanzarTrasTareaCompletada(tareaId);
+          return;
+        }
         handleApiError(
           {
             ...data,
@@ -1508,6 +1573,15 @@ export function AhoraSection() {
           },
           data?.message || data?.error || 'No se pudo comenzar el bloque',
         );
+        return;
+      }
+
+      if (data?.accion === 'tarea_completada') {
+        toast({
+          title: 'Tarea completada',
+          description: 'Todos los bloques ya están validados. Pasamos a la siguiente tarea disponible.',
+        });
+        avanzarTrasTareaCompletada(tareaId);
         return;
       }
 

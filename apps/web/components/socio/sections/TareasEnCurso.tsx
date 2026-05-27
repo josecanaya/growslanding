@@ -461,7 +461,7 @@ export function TareasEnCurso() {
                       size="sm"
                       className="flex-1"
                       onClick={() =>
-                        router.push(`/socio/ahora?obra_id=${tarea.obra_id || ''}&tarea_id=${tarea.id}`)
+                        router.push(`/socio/ahora?obra_id=${tarea.obra_id || ''}&tareaId=${tarea.id}`)
                       }
                       disabled={tarea.estado?.toLowerCase() === 'validado'}
                     >

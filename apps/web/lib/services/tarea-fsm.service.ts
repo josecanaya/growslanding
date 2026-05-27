@@ -167,6 +167,79 @@ export class TareaFsmService {
     return updated;
   }
 
+  /**
+   * Cierra la tarea cuando todos sus bloques ya están validados.
+   * Evita tareas «en_progreso» huérfanas que bloquean la operación del socio.
+   */
+  static async reconciliarTareaSiTodosBloquesValidados(
+    tareaId: string,
+    opts?: { actorId?: string; motivo?: string | null },
+  ): Promise<{ reconciliada: boolean; estadoAnterior?: EstadoTarea }> {
+    const supabase = createServiceSupabaseClient();
+    const supabaseAny = supabase as any;
+
+    const { count: totalBloques, error: countErr } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('*', { count: 'exact', head: true })
+      .eq('tarea_id', tareaId);
+
+    if (countErr) {
+      throw new Error('No se pudo verificar bloques de la tarea');
+    }
+    if (!totalBloques || totalBloques === 0) {
+      return { reconciliada: false };
+    }
+
+    await this.assertSubtareasValidadas(tareaId);
+
+    const { data: tarea, error } = await supabaseAny
+      .from('tareas')
+      .select('id, estado')
+      .eq('id', tareaId)
+      .maybeSingle();
+
+    if (error || !tarea) {
+      throw new Error('Tarea no encontrada');
+    }
+
+    const estadoActual = this.mapLegacyToOficial(tarea.estado);
+    if (estadoActual === ESTADO_TAREA_FINAL) {
+      return { reconciliada: false, estadoAnterior: estadoActual };
+    }
+
+    const ahora = new Date().toISOString();
+    const updatePayload: Record<string, unknown> = {
+      estado: ESTADO_TAREA_FINAL,
+      updated_at: ahora,
+      fecha_validacion: ahora,
+    };
+    if (opts?.actorId) {
+      updatePayload.validado_por = opts.actorId;
+    }
+
+    const { data: updated, error: updateError } = await supabaseAny
+      .from('tareas')
+      .update(updatePayload)
+      .eq('id', tareaId)
+      .select('id, estado')
+      .maybeSingle();
+
+    if (updateError || !updated) {
+      throw new Error(updateError?.message || 'No se pudo cerrar la tarea');
+    }
+
+    await this.registerEvento({
+      tareaId,
+      actorId: opts?.actorId ?? 'system',
+      actorRol: 'CLIENTE',
+      estadoAnterior: estadoActual,
+      estadoNuevo: ESTADO_TAREA_FINAL,
+      motivo: opts?.motivo ?? 'Reconciliacion automatica: todos los bloques validados',
+    });
+
+    return { reconciliada: true, estadoAnterior: estadoActual };
+  }
+
   private static async assertSubtareasValidadas(tareaId: string) {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;

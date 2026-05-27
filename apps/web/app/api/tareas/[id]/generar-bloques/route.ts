@@ -112,11 +112,17 @@ export async function POST(
     const generation = await SubtareaMvpService.generarBloquesDesdePresupuesto(tareaId);
 
     if (socioIdSesion) {
+      const ahora = new Date().toISOString();
       await supabaseAny
         .from('tareas_subtareas')
-        .update({ socio_id: socioIdSesion, updated_at: new Date().toISOString() })
+        .update({ socio_id: socioIdSesion, updated_at: ahora })
         .eq('tarea_id', tareaId)
-        .or(`socio_id.is.null,socio_id.neq.${socioIdSesion}`);
+        .is('socio_id', null);
+      await supabaseAny
+        .from('tareas_subtareas')
+        .update({ socio_id: socioIdSesion, updated_at: ahora })
+        .eq('tarea_id', tareaId)
+        .neq('socio_id', socioIdSesion);
     }
 
     const { data: bloques, error: listErr } = await supabaseAny
@@ -141,7 +147,48 @@ export async function POST(
       );
     }
 
-    return NextResponse.json({ success: true, ...generation, bloques: bloques ?? [] });
+    const listaBloques = bloques ?? [];
+    const normEstado = (s: string | null | undefined) => String(s ?? '').toLowerCase();
+    const pick =
+      listaBloques.find((s: { estado?: string | null }) => normEstado(s.estado) === 'en_progreso') ||
+      listaBloques.find((s: { estado?: string | null }) => normEstado(s.estado) === 'para_validar') ||
+      listaBloques.find((s: { estado?: string | null }) => normEstado(s.estado) === 'pendiente') ||
+      listaBloques.find((s: { estado?: string | null }) => normEstado(s.estado) === 'rechazado') ||
+      listaBloques.find((s: { estado?: string | null }) => normEstado(s.estado) === 'rechazada') ||
+      null;
+
+    let subtareaOperativa = null;
+    if (pick?.id) {
+      const { data: subtareaFull } = await supabaseAny
+        .from('tareas_subtareas')
+        .select(
+          `
+          *,
+          tareas:tareas (
+            id,
+            title,
+            obra_id,
+            estado,
+            responsable_socio_id,
+            obras:obras (
+              id,
+              name,
+              address
+            )
+          )
+        `,
+        )
+        .eq('id', pick.id)
+        .maybeSingle();
+      subtareaOperativa = subtareaFull ?? null;
+    }
+
+    return NextResponse.json({
+      success: true,
+      ...generation,
+      bloques: listaBloques,
+      subtareaOperativa,
+    });
   } catch (error) {
     console.error('[GENERAR_BLOQUES]', error);
     if (error instanceof GenerarBloquesError) {

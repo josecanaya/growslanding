@@ -137,6 +137,32 @@ function filtrarSubtareasVisiblesSocio(
   return filtradas.length > 0 ? filtradas : lista;
 }
 
+function buildSubtareaFromBloqueYTarea(
+  bloque: BloqueResumen,
+  tarea: SupabaseTarea,
+): Record<string, unknown> {
+  return {
+    id: bloque.id,
+    estado: bloque.estado ?? 'pendiente',
+    orden: bloque.orden ?? 1,
+    socio_id: bloque.socio_id ?? null,
+    tarea_id: tarea.id,
+    tareas: {
+      id: tarea.id,
+      title: tarea.title,
+      obra_id: tarea.obra_id,
+      estado: tarea.estado,
+      obras: tarea.obras ?? null,
+    },
+  };
+}
+
+type GenerarBloquesUiResult = {
+  ok: boolean;
+  subtareaId?: string | null;
+  subtarea?: Record<string, unknown> | null;
+};
+
 function bloquesToRunningChecklist(
   bloques: Array<{ id: string; orden: number; estado: string }>,
   activeSubId: string,
@@ -1220,7 +1246,26 @@ export function AhoraSection() {
   );
 
   const vincularSubtareaDesdeBloques = React.useCallback(
-    async (bloques: BloqueResumen[]) => {
+    async (
+      bloques: BloqueResumen[],
+      tareaFallback?: SupabaseTarea | null,
+      subtareaOperativaApi?: Record<string, unknown> | null,
+    ): Promise<GenerarBloquesUiResult> => {
+      if (subtareaOperativaApi?.id) {
+        setSubtareaActual(subtareaOperativaApi);
+        const visibles = filtrarSubtareasVisiblesSocio(bloques, socioIdGrows);
+        setTotalSubtareas(visibles.length);
+        setSubtareasCompletadas(
+          visibles.filter((s) => subtareaEstaCompletadaOficial(String(s.estado ?? ''))).length,
+        );
+        setSubtareaRefreshKey((k) => k + 1);
+        return {
+          ok: true,
+          subtareaId: String(subtareaOperativaApi.id),
+          subtarea: subtareaOperativaApi,
+        };
+      }
+
       const visibles = filtrarSubtareasVisiblesSocio(bloques, socioIdGrows);
       const pick = pickSubtareaOperativa(visibles);
       setTotalSubtareas(visibles.length);
@@ -1229,25 +1274,44 @@ export function AhoraSection() {
       );
       if (!pick?.id) {
         setSubtareaActual(null);
-        return null;
+        return { ok: true, subtareaId: null, subtarea: null };
       }
+
+      const subtareaLocal = tareaFallback
+        ? buildSubtareaFromBloqueYTarea(pick, tareaFallback)
+        : null;
+
+      if (subtareaLocal) {
+        setSubtareaActual(subtareaLocal);
+        setSubtareaRefreshKey((k) => k + 1);
+        return { ok: true, subtareaId: pick.id, subtarea: subtareaLocal };
+      }
+
       await recargarSubtareaPorId(pick.id);
-      return pick.id;
+      return { ok: true, subtareaId: pick.id, subtarea: null };
     },
     [socioIdGrows, recargarSubtareaPorId],
   );
 
   const generarBloquesParaTarea = React.useCallback(
-    async (tareaId: string, opts?: { forzarRegeneracion?: boolean }) => {
-      if (!opts?.forzarRegeneracion && generarBloquesIntentados.current.has(tareaId)) {
-        const { data: lista } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select('id, estado, orden, socio_id')
-          .eq('tarea_id', tareaId)
-          .order('orden', { ascending: true });
-        if (lista?.length) {
-          await vincularSubtareaDesdeBloques(lista as BloqueResumen[]);
-          return true;
+    async (
+      tareaId: string,
+      opts?: { tareaFallback?: SupabaseTarea | null; intentarSoloLectura?: boolean },
+    ): Promise<GenerarBloquesUiResult> => {
+      const tareaFb = opts?.tareaFallback ?? null;
+
+      if (opts?.intentarSoloLectura !== false && tareaFb) {
+        try {
+          const { data: lista } = await (supabase as any)
+            .from('tareas_subtareas')
+            .select('id, estado, orden, socio_id')
+            .eq('tarea_id', tareaId)
+            .order('orden', { ascending: true });
+          if (lista?.length) {
+            return vincularSubtareaDesdeBloques(lista as BloqueResumen[], tareaFb);
+          }
+        } catch {
+          // Continuar con API server-side (service role).
         }
       }
 
@@ -1257,7 +1321,7 @@ export function AhoraSection() {
 
       setIsGeneratingBlocks(true);
       const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 90000);
+      const timeoutId = window.setTimeout(() => controller.abort(), 45000);
       try {
         const response = await fetch(`/api/tareas/${tareaId}/generar-bloques`, {
           method: 'POST',
@@ -1268,22 +1332,12 @@ export function AhoraSection() {
         if (!response.ok) {
           generarBloquesIntentados.current.delete(tareaId);
           handleApiError(data, 'Error al preparar los bloques de la tarea');
-          return false;
+          return { ok: false };
         }
 
         const bloques = (data?.bloques ?? []) as BloqueResumen[];
-        if (bloques.length > 0) {
-          await vincularSubtareaDesdeBloques(bloques);
-        } else {
-          const { data: lista } = await (supabase as any)
-            .from('tareas_subtareas')
-            .select('id, estado, orden, socio_id')
-            .eq('tarea_id', tareaId)
-            .order('orden', { ascending: true });
-          await vincularSubtareaDesdeBloques((lista ?? []) as BloqueResumen[]);
-        }
-        setSubtareaRefreshKey((k) => k + 1);
-        return true;
+        const subtareaOperativaApi = (data?.subtareaOperativa ?? null) as Record<string, unknown> | null;
+        return vincularSubtareaDesdeBloques(bloques, tareaFb, subtareaOperativaApi);
       } catch (err) {
         generarBloquesIntentados.current.delete(tareaId);
         const isAbort = err instanceof Error && err.name === 'AbortError';
@@ -1293,7 +1347,7 @@ export function AhoraSection() {
             ? 'La preparación del bloque tardó demasiado. Revisá tu conexión e intentá de nuevo.'
             : 'Error al preparar bloques. Por favor, intentá nuevamente.',
         );
-        return false;
+        return { ok: false };
       } finally {
         window.clearTimeout(timeoutId);
         setIsGeneratingBlocks(false);
@@ -1302,30 +1356,97 @@ export function AhoraSection() {
     [supabase, vincularSubtareaDesdeBloques],
   );
 
-  const handlePrepararBloque = async () => {
+  const handlePrepararYComenzarBloque = async () => {
     if (!tareaActual || !currentUser) return;
+
+    if (!jornadaActual) {
+      await handleIniciarJornada();
+      if (!socioIdGrows) return;
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const hoyISO = hoy.toISOString().split('T')[0];
+      const { data: jornadaData } = await (supabase as any)
+        .from('jornadas_socio')
+        .select('*')
+        .eq('socio_id', socioIdGrows)
+        .eq('fecha', hoyISO)
+        .maybeSingle();
+      if (jornadaData) {
+        setJornadaActual(jornadaData);
+      }
+    }
+
     const requestKey = `preparar-bloque:${tareaActual.id}`;
     if (
       requestEnCursoRef.current.has(requestKey) ||
       isGeneratingBlocks ||
       isSendingTransition ||
       isUploadingEvidence ||
-      isSendingToValidation
+      isSendingToValidation ||
+      isIniciando
     ) {
       return;
     }
     requestEnCursoRef.current.add(requestKey);
+    setIsIniciando(true);
     try {
-      const ok = await generarBloquesParaTarea(tareaActual.id, { forzarRegeneracion: true });
-      if (ok) {
+      const result = await generarBloquesParaTarea(tareaActual.id, {
+        tareaFallback: tareaActual,
+      });
+      if (!result.ok) return;
+
+      if (!result.subtareaId) {
+        handleApiError(
+          {
+            message:
+              'No hay bloques pendientes. Verificá que la tarea tenga presupuesto aprobado.',
+          },
+          'No se pudo vincular un bloque operativo',
+        );
+        return;
+      }
+
+      const estadoActual = String(result.subtarea?.estado ?? '').toLowerCase();
+      if (
+        estadoActual === 'pendiente' ||
+        estadoActual === 'rechazado' ||
+        estadoActual === 'rechazada'
+      ) {
+        const response = await fetch(`/api/tareas-subtareas/${result.subtareaId}/iniciar`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        const json = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          handleApiError(json, 'Error al iniciar el bloque');
+          if (result.subtarea) setSubtareaActual(result.subtarea);
+          return;
+        }
+
+        if (json.subtarea) {
+          setSubtareaActual(json.subtarea);
+        } else if (result.subtarea) {
+          setSubtareaActual({ ...result.subtarea, estado: 'en_progreso' });
+        }
+
+        toast({
+          title: 'Bloque iniciado',
+          description: 'Ya podés cargar evidencias y avanzar con la tarea.',
+        });
+      } else if (result.subtarea) {
+        setSubtareaActual(result.subtarea);
         toast({
           title: 'Bloque vinculado',
-          description: 'Tocá «Comenzar bloque» para iniciar la ejecución.',
+          description: 'Continuá con el bloque en curso.',
         });
-        await fetchData();
       }
+
+      setSubtareaRefreshKey((k) => k + 1);
+      await cargarContadoresBloques();
+      await fetchData();
     } finally {
       requestEnCursoRef.current.delete(requestKey);
+      setIsIniciando(false);
     }
   };
 
@@ -1411,8 +1532,10 @@ export function AhoraSection() {
     }, 2000);
 
     try {
-      const bloquesOk = await generarBloquesParaTarea(tareaActual.id);
-      if (!bloquesOk) {
+      const result = await generarBloquesParaTarea(tareaActual.id, {
+        tareaFallback: tareaActual,
+      });
+      if (!result.ok) {
         setIsIniciando(false);
         return;
       }
@@ -1854,7 +1977,7 @@ export function AhoraSection() {
     }
 
     // Tarea en progreso sin bloque visible: generar + vincular subtarea operativa.
-    await handlePrepararBloque();
+    await handlePrepararYComenzarBloque();
     return;
 
     // Validar que haya al menos una evidencia final
@@ -2268,7 +2391,7 @@ export function AhoraSection() {
         }
         return 'Comenzar tarea';
       }
-        return 'Vincular bloque';
+        return 'Comenzar bloque';
     }
     return 'Iniciar jornada';
   };
@@ -2326,7 +2449,7 @@ export function AhoraSection() {
         void handleIniciarTarea([]);
         return;
       } else {
-        void handlePrepararBloque();
+        void handlePrepararYComenzarBloque();
       }
     }
   };
@@ -2431,7 +2554,7 @@ export function AhoraSection() {
                   className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
                 >
                   {isGeneratingBlocks
-                    ? 'Preparando bloque…'
+                    ? 'Vinculando bloque…'
                     : isSendingTransition
                       ? 'Actualizando…'
                       : isIniciando
@@ -2473,7 +2596,7 @@ export function AhoraSection() {
                 className="w-full max-w-sm rounded-2xl bg-white py-4 text-base font-extrabold uppercase tracking-wide text-[#163274] shadow-xl transition hover:bg-[#f2f4f6] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.99]"
               >
                 {isGeneratingBlocks
-                  ? 'Preparando bloque…'
+                  ? 'Vinculando bloque…'
                   : isSendingTransition
                     ? 'Actualizando…'
                     : isIniciando

@@ -100,6 +100,39 @@ type ValidarParams = ActorContext & {
   motivo?: string | null;
 };
 
+type BloqueInsertPayload = Record<string, unknown>;
+
+function supabaseErrorFaltaColumnaMontoEstimado(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  const msg = String(error.message ?? '');
+  return (
+    error.code === 'PGRST204' &&
+    (msg.includes('monto_estimado') || msg.includes("'monto_estimado'"))
+  );
+}
+
+function omitirMontoEstimadoEnPayload(rows: BloqueInsertPayload[]): BloqueInsertPayload[] {
+  return rows.map((row) => {
+    const { monto_estimado: _omit, ...rest } = row;
+    return rest;
+  });
+}
+
+async function insertarBloquesTarea(
+  supabaseAny: any,
+  rows: BloqueInsertPayload[],
+): Promise<{ error: { code?: string; message?: string; details?: string } | null; omitioMontoEstimado: boolean }> {
+  let { error } = await supabaseAny.from('tareas_subtareas').insert(rows);
+  if (error && supabaseErrorFaltaColumnaMontoEstimado(error)) {
+    console.warn(
+      '[generarBloques] Columna monto_estimado ausente en BD — insert sin monto. Ejecutá la migración 20260527120000.',
+    );
+    ({ error } = await supabaseAny.from('tareas_subtareas').insert(omitirMontoEstimadoEnPayload(rows)));
+    return { error, omitioMontoEstimado: !error };
+  }
+  return { error, omitioMontoEstimado: false };
+}
+
 export class SubtareaMvpService {
   /**
    * Alinea `bloques_planificados` / `dias_presupuesto` con el presupuesto aprobado
@@ -290,9 +323,10 @@ export class SubtareaMvpService {
         .map((index) => buildBloqueInsert(index));
 
       if (faltantes.length > 0) {
-        const { error: insertFaltantesError } = await supabaseAny
-          .from('tareas_subtareas')
-          .insert(faltantes);
+        const { error: insertFaltantesError, omitioMontoEstimado } = await insertarBloquesTarea(
+          supabaseAny,
+          faltantes,
+        );
 
         if (insertFaltantesError) {
           throw new GenerarBloquesError(
@@ -320,7 +354,9 @@ export class SubtareaMvpService {
             socioId,
             presupuestoId,
             bloquesPlanificados: totalBloques,
-            motivo: 'BLOQUES_FALTANTES_CREADOS',
+            motivo: omitioMontoEstimado
+              ? 'BLOQUES_FALTANTES_CREADOS_SIN_MONTO_ESTIMADO'
+              : 'BLOQUES_FALTANTES_CREADOS',
             insertados: faltantes.length,
           },
         };
@@ -344,7 +380,7 @@ export class SubtareaMvpService {
       buildBloqueInsert(index + 1),
     );
 
-    const { error: insertError } = await supabaseAny.from('tareas_subtareas').insert(bloques);
+    const { error: insertError, omitioMontoEstimado } = await insertarBloquesTarea(supabaseAny, bloques);
 
     if (insertError) {
       throw new GenerarBloquesError(
@@ -376,7 +412,7 @@ export class SubtareaMvpService {
         insertPayload: bloques,
         cantidad: bloques[0]?.cantidad,
         unidad,
-        motivo: 'BLOQUES_CREADOS',
+        motivo: omitioMontoEstimado ? 'BLOQUES_CREADOS_SIN_MONTO_ESTIMADO' : 'BLOQUES_CREADOS',
       },
     };
   }

@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, User } from 'lucide-react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, CheckCircle, Loader2, User, XCircle } from 'lucide-react';
 
+import { Button } from '@/components/ui/grows';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { evidenciaPublicUrl } from '@/lib/cliente/evidencia-display';
+import { normalizeEstadoBloqueParaOperacion, ESTADO_BLOQUE_PARA_VALIDAR } from '@/lib/domain/estados-core';
 import type { CanvasNode } from '@/lib/types/canvasMultinivel';
 import { labelEstadoTarea, labelEstadoTareaFromDb } from './canvasMultinivelHelpers';
 import type { CronogramaItem } from './buildCronogramaItems';
@@ -26,21 +29,23 @@ type Props = {
   onToggleOpen: () => void;
 };
 
+type EvidenciaBloque = {
+  id: string;
+  estado?: string | null;
+  evidencia_url?: string | null;
+  evidencia_cargada?: boolean | null;
+  bloque_index?: number | null;
+  orden?: number | null;
+};
+
 type TareaDetalle = {
   responsable: string | null;
   estado: string;
-  evidencias: Array<{ evidencia_url?: string | null; evidencia_cargada?: boolean | null; estado?: string | null }>;
+  evidencias: EvidenciaBloque[];
 };
 
-function evidenciaSrc(
-  raw: string | null | undefined,
-  supabase: ReturnType<typeof createClientComponentClient>,
-): string | null {
-  if (!raw?.trim()) return null;
-  const t = raw.trim();
-  if (/^https?:\/\//i.test(t)) return t;
-  const { data } = supabase.storage.from('evidencias').getPublicUrl(t);
-  return data.publicUrl;
+function evidenciaSrc(raw: string | null | undefined): string | null {
+  return evidenciaPublicUrl(raw);
 }
 
 function estadoHechoLabel(estado: string | undefined, local?: string): { label: string; tone: 'ok' | 'pending' | 'warn' | 'neutral' } {
@@ -71,65 +76,91 @@ export function CanvasCronogramaInspector({
   isOpen,
   onToggleOpen,
 }: Props) {
-  const supabase = useMemo(() => createClientComponentClient(), []);
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [detalle, setDetalle] = useState<TareaDetalle | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const pub = selectedNode ? tareaPublicacionByNodeId[selectedNode.id] : undefined;
   const tareaId = pub?.tareaId;
 
-  useEffect(() => {
+  const cargarDetalle = useCallback(async () => {
     if (!tareaId) {
       setDetalle(null);
       return;
     }
-    let cancelled = false;
     setLoading(true);
-    void (async () => {
-      try {
-        const res = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}`, {
-          credentials: 'include',
-          cache: 'no-store',
+    try {
+      const res = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok && j.success && j.data) {
+        setDetalle({
+          responsable: j.data.responsable ?? null,
+          estado: j.data.estado ?? pub?.estado ?? 'pendiente',
+          evidencias: Array.isArray(j.data.evidencias) ? j.data.evidencias : [],
         });
-        const j = await res.json().catch(() => ({}));
-        if (cancelled) return;
-        if (res.ok && j.success && j.data) {
-          setDetalle({
-            responsable: j.data.responsable ?? null,
-            estado: j.data.estado ?? pub?.estado ?? 'pendiente',
-            evidencias: Array.isArray(j.data.evidencias) ? j.data.evidencias : [],
-          });
-        } else {
-          setDetalle({
-            responsable: selectedNode?.socioLabel ?? null,
-            estado: pub?.estado ?? selectedNode?.estadoTarea ?? 'pendiente',
-            evidencias: [],
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setDetalle({
-            responsable: selectedNode?.socioLabel ?? null,
-            estado: pub?.estado ?? selectedNode?.estadoTarea ?? 'pendiente',
-            evidencias: [],
-          });
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+      } else {
+        setDetalle({
+          responsable: selectedNode?.socioLabel ?? null,
+          estado: pub?.estado ?? selectedNode?.estadoTarea ?? 'pendiente',
+          evidencias: [],
+        });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch {
+      setDetalle({
+        responsable: selectedNode?.socioLabel ?? null,
+        estado: pub?.estado ?? selectedNode?.estadoTarea ?? 'pendiente',
+        evidencias: [],
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [tareaId, pub?.estado, selectedNode?.socioLabel, selectedNode?.estadoTarea]);
 
+  useEffect(() => {
+    void cargarDetalle();
+  }, [cargarDetalle]);
+
+  const validarBloque = async (subtareaId: string, accion: 'validar' | 'rechazar') => {
+    setProcessingId(subtareaId);
+    try {
+      const res = await fetch(`/api/tareas-subtareas/${subtareaId}/validar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ accion }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(j?.error ?? 'No se pudo completar la acción');
+      }
+      toast({
+        title: accion === 'validar' ? 'Bloque validado' : 'Bloque rechazado',
+        description: 'Actualizamos el estado en la obra.',
+      });
+      await cargarDetalle();
+    } catch (e) {
+      toast({
+        title: 'Error',
+        description: e instanceof Error ? e.message : 'No se pudo validar',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   const hecho = estadoHechoLabel(detalle?.estado ?? pub?.estado, selectedNode?.estadoTarea);
-  const fotos = useMemo(() => {
+
+  const bloquesConEvidencia = useMemo(() => {
     if (!detalle?.evidencias.length) return [];
-    return detalle.evidencias
-      .map((ev) => evidenciaSrc(ev.evidencia_url, supabase))
-      .filter((u): u is string => Boolean(u));
-  }, [detalle?.evidencias, supabase]);
+    return detalle.evidencias.filter(
+      (ev) => ev.evidencia_url?.trim() || ev.evidencia_cargada,
+    );
+  }, [detalle?.evidencias]);
 
   const fechaFin =
     selectedItem != null
@@ -230,32 +261,74 @@ export function CanvasCronogramaInspector({
 
             <section className="rounded-xl border border-[#e5e7eb] bg-white p-3">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">
-                Evidencias / fotos
+                Evidencias / validar en obra
               </p>
               {loading ? (
                 <Loader2 className="mt-3 h-4 w-4 animate-spin text-[#64748b]" />
-              ) : fotos.length === 0 ? (
+              ) : bloquesConEvidencia.length === 0 ? (
                 <p className="mt-2 text-xs text-[#64748b]">Sin fotos enviadas todavía.</p>
               ) : (
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {fotos.map((src) => (
-                    <a
-                      key={src}
-                      href={src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f8fafc]"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={src} alt="Evidencia de tarea" className="aspect-square w-full object-cover" />
-                    </a>
-                  ))}
+                <div className="mt-3 space-y-3">
+                  {bloquesConEvidencia.map((ev) => {
+                    const src = evidenciaSrc(ev.evidencia_url);
+                    const estadoNorm = normalizeEstadoBloqueParaOperacion(ev.estado);
+                    const esParaValidar = estadoNorm === ESTADO_BLOQUE_PARA_VALIDAR;
+                    const bloqueLabel = `Bloque ${ev.orden ?? ev.bloque_index ?? '—'}`;
+                    return (
+                      <div
+                        key={ev.id}
+                        className="overflow-hidden rounded-lg border border-[#e5e7eb] bg-[#f8fafc]"
+                      >
+                        {src ? (
+                          <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={src}
+                              alt={`Evidencia ${bloqueLabel}`}
+                              className="aspect-video w-full object-cover"
+                            />
+                          </a>
+                        ) : null}
+                        <div className="space-y-2 p-2">
+                          <p className="text-[11px] font-semibold text-[#0f172a]">{bloqueLabel}</p>
+                          {esParaValidar ? (
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="primary"
+                                size="sm"
+                                className="h-8 flex-1 text-[11px]"
+                                disabled={processingId === ev.id}
+                                onClick={() => void validarBloque(ev.id, 'validar')}
+                              >
+                                <CheckCircle className="mr-1 h-3.5 w-3.5" />
+                                Validar en obra
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                className="h-8 px-2"
+                                disabled={processingId === ev.id}
+                                onClick={() => void validarBloque(ev.id, 'rechazar')}
+                                title="Rechazar"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <p className="text-[10px] text-[#64748b] capitalize">{estadoNorm.replace(/_/g, ' ')}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
 
             <p className="text-[10px] leading-relaxed text-[#94a3b8]">
-              Vista de solo lectura. Editá duración, dependencias y checklist en Organizar.
+              Validá bloques con evidencia desde acá. Para editar el plan, usá Organizar.
             </p>
           </div>
         )}

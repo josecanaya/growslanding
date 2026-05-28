@@ -79,6 +79,9 @@ type DbBgRow = {
   created_at: string;
   scheduled_socio_id?: string | null;
   mensaje_socio_borrador?: string | null;
+  change_window_status?: string | null;
+  change_window_notes?: string | null;
+  approved_at?: string | null;
 };
 
 type DbCheckRow = {
@@ -325,6 +328,8 @@ export function supabaseRowsToPersisted(input: {
       status: row.status ?? 'borrador',
       scheduledSocioId: row.scheduled_socio_id ?? null,
       mensajeSocioBorrador: row.mensaje_socio_borrador ?? null,
+      changeWindowStatus: row.change_window_status ?? 'cerrada',
+      changeWindowNotes: row.change_window_notes ?? null,
     };
   });
 

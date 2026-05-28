@@ -38,10 +38,13 @@ export type CanvasBudgetGroup = {
   name: string;
   description?: string;
   createdAt: string;
-  /** Estado en Supabase: borrador | listo_para_enviar | enviado | respondido */
+  /** Estado en Supabase: borrador | listo_para_enviar | aprobado | aprobado_parcial | enviado (legacy) */
   status?: string;
   scheduledSocioId?: string | null;
   mensajeSocioBorrador?: string | null;
+  /** Ventana de cambio post-aprobación: cerrada | abierta_cliente | confirmada_socio */
+  changeWindowStatus?: string | null;
+  changeWindowNotes?: string | null;
 };
 
 export type CanvasNode = {

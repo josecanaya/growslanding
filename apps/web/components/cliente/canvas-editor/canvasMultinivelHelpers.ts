@@ -474,11 +474,23 @@ export function budgetGroupStatusLabel(status: string | undefined): string {
   const map: Record<string, string> = {
     borrador: 'Borrador',
     listo_para_enviar: 'Listo para enviar',
-    enviado: 'Enviado completo',
-    enviado_parcial: 'Enviado parcial (hay pendientes)',
-    respondido: 'Respondido',
+    enviado: 'Enviado (legacy)',
+    enviado_parcial: 'Enviado parcial (legacy)',
+    respondido: 'Respondido (legacy)',
+    aprobado: 'Aprobado — socio puede operar',
+    aprobado_parcial: 'Aprobado parcial (faltan tareas publicadas)',
   };
   return map[s] ?? status ?? 'Borrador';
+}
+
+export function changeWindowStatusLabel(status: string | undefined | null): string | null {
+  const s = String(status ?? 'cerrada').toLowerCase();
+  const map: Record<string, string> = {
+    cerrada: 'Sin cambios pendientes',
+    abierta_cliente: 'Cambio solicitado — esperando socio',
+    confirmada_socio: 'Socio confirmó — podés re-enviar paquete',
+  };
+  return map[s] ?? null;
 }
 
 export function labelEstadoNivel(est: CanvasNivelEstadoLocal | undefined): string {

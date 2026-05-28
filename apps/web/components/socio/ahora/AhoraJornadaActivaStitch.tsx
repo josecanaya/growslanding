@@ -986,20 +986,23 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
             type="button"
             variant="primary"
             className="h-12 w-full rounded-xl bg-stitch-primary text-white"
+            onClick={() => void handleSentDismiss('siguiente-tarea')}
+          >
+            Continuar — siguiente bloque
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-12 w-full rounded-xl border-stitch-outline-variant"
             onClick={() => void handleSentDismiss('mis-tareas')}
           >
             <Home className="mr-2 h-4 w-4" />
             Ir a mis tareas
           </Button>
           {showNextTask ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-12 w-full rounded-xl border-stitch-outline-variant"
-              onClick={() => void handleSentDismiss('siguiente-tarea')}
-            >
-              Ver siguiente tarea
-            </Button>
+            <p className="text-[11px] text-stitch-on-surface/55">
+              También podés pasar a otra tarea desde el listado de mis tareas.
+            </p>
           ) : null}
         </div>
       </div>

@@ -131,6 +131,7 @@ type ValidarSubtarea = {
   bloque_index?: number | null;
   evidencia_url?: string | null;
   evidencia_cargada?: boolean | null;
+  evidenciaPublicUrl?: string | null;
 };
 
 type ValidarTarea = {
@@ -202,261 +203,43 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
 
     try {
       const obraFiltro = obraId?.trim?.() ?? '';
-
-      let tareasQuery = supabase
-        .from('tareas')
-        .select(
-          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id',
-        )
-        .eq('org_id', currentUser.orgId);
-
-      if (obraFiltro) {
-        tareasQuery = tareasQuery.eq('obra_id', obraFiltro);
-      }
-
-      /** Bloques en revisión por join (`tareas!inner`): no dependemos solo del `.in(tarea_id, …)`. */
-      let pendingSubsQuery = supabase
-        .from('tareas_subtareas')
-        .select(
-          `
-        id,
-        tarea_id,
-        estado,
-        fecha,
-        orden,
-        bloque_index,
-        evidencia_url,
-        evidencia_cargada,
-        tareas!inner(org_id, obra_id)
-      `,
-        )
-        .eq('estado', 'para_validar')
-        .eq('tareas.org_id', currentUser.orgId);
-
-      if (obraFiltro) {
-        pendingSubsQuery = pendingSubsQuery.eq('tareas.obra_id', obraFiltro);
-      }
-
-      const [
-        { data: rawTareas, error: tareasError },
-        { data: pendientesSubs, error: pendErr },
-      ] = await Promise.all([tareasQuery, pendingSubsQuery]);
-
-      if (pendErr && String((pendErr as { message?: string }).message || '').trim()) {
-        console.warn('[ValidarSection] Bloques pendientes (join):', (pendErr as { message?: string }).message);
-      }
-
-      let todasLasTareas = (rawTareas ?? []) as RawTarea[];
-
-      if (tareasError) {
-        throw tareasError;
-      }
-
-      const idsConocidos = new Set(todasLasTareas.map((t) => t.id));
-      const extraIds: string[] = Array.from(
-        new Set<string>(
-          (pendientesSubs ?? [])
-            .map((r: { tarea_id?: string | null }) => r.tarea_id)
-            .filter((tid: string | null | undefined): tid is string => {
-              if (!tid || typeof tid !== 'string') return false;
-              return !idsConocidos.has(tid);
-            }),
-        ),
-      );
-
-      if (extraIds.length > 0) {
-        const faltantes = await fetchRowsInChunks(extraIds, (chunk) =>
-          supabase
-            .from('tareas')
-            .select(
-              'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id',
-            )
-            .in('id', chunk)
-            .eq('org_id', currentUser.orgId),
-        );
-
-        todasLasTareas = [...todasLasTareas, ...(faltantes as RawTarea[])];
-      }
-
-      const obraIds = Array.from(new Set(todasLasTareas.map((t) => t.obra_id)));
-      const cuadrillaIds = Array.from(
-        new Set(
-          todasLasTareas
-            .map((t) => t.cuadrilla_id)
-            .filter((value): value is string => Boolean(value)),
-        ),
-      );
-      const tareaIds = todasLasTareas.map((t) => t.id);
-      const subtareasPorTarea = new Map<string, ValidarSubtarea[]>();
-      const montoMap = new Map<string, number>();
-
-      if (tareaIds.length > 0) {
-        const presupuestosData = await fetchRowsInChunks(tareaIds, (chunk) =>
-          supabase.from('tareas_presupuestos').select('tarea_id, monto, estado').in('tarea_id', chunk),
-        );
-
-        presupuestosData.forEach((row: any) => {
-          if (row.tarea_id && String(row.estado ?? '').toUpperCase() === 'APROBADO') {
-            montoMap.set(row.tarea_id, Number(row.monto ?? 0));
-          }
-        });
-      }
-
-      const mergeSubtareaRow = (
-        mapBucket: Map<string, ValidarSubtarea[]>,
-        row: {
-          id: string;
-          tarea_id: string | null | undefined;
-          estado?: string | null;
-          fecha?: string | null;
-          orden?: number | null;
-          bloque_index?: number | null;
-          evidencia_url?: string | null;
-          evidencia_cargada?: boolean | null;
-        },
-      ) => {
-        const tareaIdRow = row.tarea_id ?? undefined;
-        if (!row.id || !tareaIdRow) return;
-        const estadoNorm =
-          normalizeEstadoBloqueParaOperacion(row.estado ?? 'pendiente') || 'pendiente';
-        const listaPrev = mapBucket.get(tareaIdRow) ?? [];
-        const item: ValidarSubtarea = {
-          id: row.id,
-          estado: estadoNorm,
-          montoEstimado: montoMap.get(tareaIdRow) ?? null,
-          montoValidado:
-            estadoNorm === ESTADO_BLOQUE_FINAL ? (montoMap.get(tareaIdRow) ?? null) : null,
-          fecha: row.fecha ?? null,
-          orden: row.orden ?? row.bloque_index ?? null,
-          bloque_index: row.bloque_index ?? null,
-          evidencia_url: row.evidencia_url ?? null,
-          evidencia_cargada: row.evidencia_cargada ?? false,
-        };
-        const ix = listaPrev.findIndex((x) => x.id === row.id);
-        const lista =
-          ix >= 0
-            ? listaPrev.map((x, j) => (j === ix ? item : x))
-            : [...listaPrev, item];
-        mapBucket.set(tareaIdRow, lista);
-      };
-
-      if (tareaIds.length > 0) {
-        const subtareasData = await fetchRowsInChunks(tareaIds, (chunk) =>
-          supabase
-            .from('tareas_subtareas')
-            .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada')
-            .in('tarea_id', chunk),
-        );
-
-        if (subtareasData.length) {
-          subtareasData.forEach((row: any) => mergeSubtareaRow(subtareasPorTarea, row));
-        }
-      }
-
-      if (pendientesSubs?.length) {
-        pendientesSubs.forEach((row: any) => mergeSubtareaRow(subtareasPorTarea, row));
-      }
-
-      const [obrasData, cuadrillasData] = await Promise.all([
-        fetchRowsInChunks(obraIds, (chunk) => supabase.from('obras').select('id, name').in('id', chunk)),
-        fetchRowsInChunks(cuadrillaIds, (chunk) =>
-          supabase.from('cuadrillas').select('id, nombre').in('id', chunk),
-        ),
-      ]);
-
-      const obraRows = ((obrasData ?? []) as unknown) as Array<{
-        id: string | null;
-        name?: string | null;
-      }>;
-      const obrasMap = new Map<string, string>();
-      obraRows.forEach((obra) => {
-        if (!obra.id) return;
-        obrasMap.set(obra.id, obra.name?.trim() ? obra.name : 'Obra sin nombre');
+      const qs = obraFiltro ? `?obra_id=${encodeURIComponent(obraFiltro)}` : '';
+      const res = await fetch(`/api/cliente/validaciones-pendientes${qs}`, {
+        credentials: 'include',
+        cache: 'no-store',
       });
-
-      const cuadrillaRows = ((cuadrillasData ?? []) as unknown) as Array<{
-        id: string | null;
-        nombre?: string | null;
-      }>;
-      const cuadrillaMap = new Map<string, string>();
-      cuadrillaRows.forEach((c) => {
-        if (!c.id) return;
-        cuadrillaMap.set(c.id, c.nombre ?? 'Cuadrilla sin nombre');
-      });
-
-      const evidenciasMap = new Map<
-        string,
-        Array<{ url: string; path: string; created_at?: string }>
-      >();
-
-      for (const [tareaId, lista] of subtareasPorTarea) {
-        for (const st of lista) {
-          const raw = st.evidencia_url;
-          if (!raw?.trim()) continue;
-          const u = raw.trim();
-          if (!evidenciasMap.has(tareaId)) {
-            evidenciasMap.set(tareaId, []);
-          }
-          evidenciasMap.get(tareaId)!.push({ url: u, path: u });
-        }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? 'No se pudieron cargar las validaciones');
       }
 
-      const mapped: ValidarTarea[] = todasLasTareas.map((row) => {
-        const titulo =
-          (row.title as string | null | undefined) ??
-          (row.descripcion as string | null | undefined) ??
-          'Tarea sin título';
-
-        const estadoOficial = TareaFsmService.mapLegacyToOficial(row.estado);
-
-        return {
-          id: row.id,
-          titulo,
-          descripcion: (row.descripcion as string | null) ?? null,
-          obraId: row.obra_id,
-          obraNombre: obrasMap.get(row.obra_id) ?? 'Obra sin nombre',
-          responsable: (row.responsable as string | null) ?? null,
-          cuadrillaNombre: row.cuadrilla_id
-            ? cuadrillaMap.get(row.cuadrilla_id) ?? null
-            : null,
-          fechaInicio:
-            (row.fecha_inicio_real as string | null) ??
-            (row.fecha_inicio as string | null) ??
-            null,
-          fechaFin:
-            (row.fecha_fin_real as string | null) ??
-            (row.fecha_fin as string | null) ??
-            null,
-          evidencias: evidenciasMap.get(row.id) ?? [],
-          estadoOficial,
-          subtareas: subtareasPorTarea.get(row.id) ?? [],
-        };
-      });
-
+      const mapped = (json.data?.tareas ?? []) as ValidarTarea[];
       setTareas(mapped);
-      const obraLayout = obraId?.trim?.() ?? '';
       setObraSeleccionada((prev) => {
-        if (obraLayout && mapped.some((t) => t.obraId === obraLayout)) {
-          return obraLayout;
+        if (obraFiltro && mapped.some((t) => t.obraId === obraFiltro)) {
+          return obraFiltro;
         }
-        /** El layout (`TareasSection`) fija la obra aunque esta vuelta no haya devuelto filas aún. */
-        if (obraLayout) {
-          return obraLayout;
-        }
-        if (prev && mapped.some((t) => t.obraId === prev)) {
-          return prev;
-        }
+        if (obraFiltro) return obraFiltro;
+        if (prev && mapped.some((t) => t.obraId === prev)) return prev;
         return mapped.length > 0 ? mapped[0].obraId : null;
       });
-    } catch (err) {
+    } catch {
       setError('No se pudieron obtener las tareas pendientes de validación.');
     } finally {
       setLoading(false);
     }
-  }, [currentUser?.orgId, obraId, supabase]);
+  }, [currentUser?.orgId, obraId]);
 
   useEffect(() => {
     void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') void loadData();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
   }, [loadData]);
 
   const obrasAgrupadas: ObraItem[] = useMemo(() => {
@@ -817,14 +600,15 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                           </p>
                           <div className="space-y-3">
                             {tarea.subtareas.map((sub) => {
-                              const estadoSub = sub.estado;
-                              const estadoLower = estadoSub.toLowerCase();
-                              const esValidado = estadoLower === 'validado';
-                              const esRechazado = estadoLower === 'rechazado';
-                              const esParaValidar = estadoLower === 'para_validar';
+                              const estadoSub = normalizeEstadoBloqueParaOperacion(sub.estado);
+                              const esValidado = estadoSub === ESTADO_BLOQUE_FINAL;
+                              const esRechazado = estadoSub === 'rechazado';
+                              const esParaValidar = estadoSub === ESTADO_BLOQUE_PARA_VALIDAR;
                               
                               const bloqueNombre = `Bloque ${sub.orden ?? sub.bloque_index ?? '—'}`;
-                              const evidenciaSrc = evidenciaSrcParaImagen(sub.evidencia_url, supabase);
+                              const evidenciaSrc =
+                                sub.evidenciaPublicUrl ??
+                                evidenciaSrcParaImagen(sub.evidencia_url, supabase);
                               
                               const badgeVariant = esValidado
                                 ? 'success'

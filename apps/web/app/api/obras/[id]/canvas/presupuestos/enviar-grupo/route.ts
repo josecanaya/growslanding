@@ -6,11 +6,12 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { toDbUuidFromCanvasId, toClientBudgetGroupId } from '@/lib/canvas/canvasSupabaseMapper';
+import { aprobarPresupuestoTareaEnPaquete } from '@/lib/services/aprobar-presupuesto-paquete.service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const OPEN_PRESUP_ESTADOS = new Set(['PENDIENTE', 'ENVIADO']);
+const CHANGE_WINDOW_OPEN = new Set(['abierta_cliente', 'confirmada_socio']);
 const IN_FILTER_CHUNK = 100;
 
 async function selectCanvasNodesByIds(
@@ -42,18 +43,28 @@ async function selectTareasByCanvasNodeIds(
   obraId: string,
   canvasNodeIds: string[],
 ): Promise<{
-  data: Array<{ id: string; canvas_node_id: string | null }> | null;
+  data: Array<{
+    id: string;
+    canvas_node_id: string | null;
+    dias_presupuesto?: number | null;
+    title?: string | null;
+  }> | null;
   error: { message: string } | null;
 }> {
   if (canvasNodeIds.length === 0) {
     return { data: [], error: null };
   }
-  const merged: Array<{ id: string; canvas_node_id: string | null }> = [];
+  const merged: Array<{
+    id: string;
+    canvas_node_id: string | null;
+    dias_presupuesto?: number | null;
+    title?: string | null;
+  }> = [];
   for (let i = 0; i < canvasNodeIds.length; i += IN_FILTER_CHUNK) {
     const chunk = canvasNodeIds.slice(i, i + IN_FILTER_CHUNK);
     const { data, error } = await supabaseAny
       .from('tareas')
-      .select('id, canvas_node_id')
+      .select('id, canvas_node_id, dias_presupuesto, title')
       .eq('obra_id', obraId)
       .in('canvas_node_id', chunk);
     if (error) {
@@ -164,13 +175,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { data: groupRow, error: gErr } = await supabaseAny
       .from('canvas_budget_groups')
-      .select('id, obra_id')
+      .select('id, obra_id, status, change_window_status, approved_at')
       .eq('id', dbGroupId)
       .eq('obra_id', obraId)
       .maybeSingle();
 
     if (gErr || !groupRow) {
       return NextResponse.json({ ok: false, error: 'Grupo no encontrado' }, { status: 404 });
+    }
+
+    const groupStatus = String((groupRow as { status?: string }).status ?? '').toLowerCase();
+    const changeWindow = String(
+      (groupRow as { change_window_status?: string }).change_window_status ?? 'cerrada',
+    ).toLowerCase();
+
+    if (
+      (groupStatus === 'aprobado' || groupStatus === 'aprobado_parcial') &&
+      !CHANGE_WINDOW_OPEN.has(changeWindow)
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            'Este paquete ya está aprobado. Para modificarlo, abrí una ventana de cambio (doble verificación) desde la pestaña Presupuestos.',
+          errorCode: 'PAQUETE_YA_APROBADO',
+        },
+        { status: 409 },
+      );
     }
 
     const { data: bgtRows, error: bgtErr } = await supabaseAny
@@ -248,10 +279,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ ok: false, error: tErr.message }, { status: 500 });
     }
 
-    const canvasToTarea = new Map<string, string>();
+    const canvasToTarea = new Map<
+      string,
+      { id: string; dias_presupuesto: number; title: string | null }
+    >();
     for (const t of tareasRows ?? []) {
       const cid = (t as { canvas_node_id: string | null }).canvas_node_id;
-      if (cid) canvasToTarea.set(cid, (t as { id: string }).id);
+      if (cid) {
+        canvasToTarea.set(cid, {
+          id: (t as { id: string }).id,
+          dias_presupuesto: Math.max(
+            1,
+            Math.floor(Number((t as { dias_presupuesto?: number | null }).dias_presupuesto) || 1),
+          ),
+          title: (t as { title?: string | null }).title ?? null,
+        });
+      }
     }
 
     const nodeTitleById = new Map<string, string>();
@@ -280,51 +323,58 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       mensaje: message || undefined,
     });
 
-    let requestsCreated = 0;
-    let requestsSkipped = 0;
+    let presupuestosAprobados = 0;
+    let presupuestosYaAprobados = 0;
+    let presupuestosFallidos = 0;
 
     for (const nodeId of readyNodeIds) {
-      const tareaId = canvasToTarea.get(nodeId)!;
+      const tareaMeta = canvasToTarea.get(nodeId);
+      if (!tareaMeta) continue;
+      const tareaId = tareaMeta.id;
 
-      const { data: existing, error: exErr } = await supabaseAny
-        .from('tareas_presupuestos')
-        .select('id, estado')
-        .eq('tarea_id', tareaId)
-        .eq('socio_id', socioId);
-
-      if (exErr) {
-        warnings.push(`No se pudo comprobar duplicados para tarea ${tareaId}: ${exErr.message}`);
-        continue;
-      }
-
-      const blocked = (existing ?? []).some((row: { estado: string | null }) => {
-        const e = String(row.estado ?? 'PENDIENTE').toUpperCase();
-        return OPEN_PRESUP_ESTADOS.has(e);
+      const result = await aprobarPresupuestoTareaEnPaquete(supabaseAny, {
+        tareaId,
+        socioId,
+        diasPresupuesto: tareaMeta.dias_presupuesto,
+        notasPayload: notasPayload,
       });
 
-      if (blocked) {
-        requestsSkipped += 1;
-        warnings.push('Ya existía una solicitud para esta tarea.');
+      if (!result.ok) {
+        presupuestosFallidos += 1;
+        warnings.push(
+          `No se pudo aprobar presupuesto para «${tareaMeta.title ?? tareaId}»: ${result.error}`,
+        );
         continue;
       }
 
-      const { error: insErr } = await supabaseAny.from('tareas_presupuestos').insert({
+      if (result.result.accion === 'ya_aprobado') {
+        presupuestosYaAprobados += 1;
+      } else {
+        presupuestosAprobados += 1;
+      }
+
+      const { error: eventoError } = await supabaseAny.from('eventos').insert({
         tarea_id: tareaId,
-        socio_id: socioId,
-        monto: 0,
-        moneda: 'ARS',
-        estado: 'PENDIENTE',
-        notas: notasPayload,
+        org_id: orgId,
+        obra_id: obraId,
+        actor_name: user.email ?? 'Cliente',
+        actor_role: 'Cliente',
+        actor_method: 'login',
+        notas: `Paquete aprobado y tarea asignada al socio (grupo ${toClientBudgetGroupId(dbGroupId)})`,
+        checklist: null,
+        has_nc: false,
+        nuevo_estado: 'pendiente' as const,
+        snapshot_json: null,
+        created_at: new Date().toISOString(),
       });
-
-      if (insErr) {
-        warnings.push(`No se pudo crear solicitud para tarea ${tareaId}: ${insErr.message}`);
-        continue;
+      if (eventoError) {
+        warnings.push(`Evento no registrado para tarea ${tareaId}: ${eventoError.message}`);
       }
-      requestsCreated += 1;
     }
 
-    if (requestsCreated === 0) {
+    const totalOk = presupuestosAprobados + presupuestosYaAprobados;
+
+    if (totalOk === 0) {
       return NextResponse.json(
         {
           ok: false,
@@ -332,46 +382,66 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             warnings[0] ??
             (pendingPublish.length === tareaNodeIds.length
               ? 'Ninguna tarea del grupo está publicada todavía. Publicá las tareas operativas y volvé a intentar.'
-              : requestsSkipped > 0
-                ? 'Ya había solicitudes abiertas para todas las tareas listas de este grupo.'
-                : 'No se pudo crear ninguna solicitud de presupuesto.'),
+              : 'No se pudo aprobar ningún presupuesto del paquete.'),
           warnings,
-          requestsSkipped,
+          presupuestosFallidos,
           pendingPublish,
           tasksReadyCount: readyNodeIds.length,
         },
-        { status: requestsSkipped > 0 || pendingPublish.length > 0 ? 409 : 400 },
+        { status: presupuestosFallidos > 0 || pendingPublish.length > 0 ? 409 : 400 },
       );
     }
 
-    const groupStatus =
-      pendingPublish.length > 0 || requestsSkipped > 0 ? 'enviado_parcial' : 'enviado';
+    const nowIso = new Date().toISOString();
+    const finalGroupStatus =
+      pendingPublish.length > 0 ? 'aprobado_parcial' : 'aprobado';
 
-    if (requestsCreated > 0) {
-      let stErr = (
+    const groupPatch: Record<string, unknown> = {
+      status: finalGroupStatus,
+      approved_at: nowIso,
+      change_window_status: 'cerrada',
+      change_window_opened_at: null,
+      change_window_notes: null,
+    };
+
+    let stErr = (
+      await supabaseAny
+        .from('canvas_budget_groups')
+        .update(groupPatch)
+        .eq('id', dbGroupId)
+        .eq('obra_id', obraId)
+    ).error;
+
+    if (stErr && finalGroupStatus === 'aprobado_parcial') {
+      warnings.push(`No se pudo guardar estado «aprobado_parcial» (${stErr.message}). Se usa «aprobado».`);
+      stErr = (
         await supabaseAny
           .from('canvas_budget_groups')
-          .update({ status: groupStatus })
+          .update({ ...groupPatch, status: 'aprobado' })
           .eq('id', dbGroupId)
           .eq('obra_id', obraId)
       ).error;
+    }
 
-      if (stErr && groupStatus === 'enviado_parcial') {
-        warnings.push(
-          `No se pudo guardar estado «enviado_parcial» (${stErr.message}). Se usa «enviado».`,
-        );
-        stErr = (
-          await supabaseAny
-            .from('canvas_budget_groups')
-            .update({ status: 'enviado' })
-            .eq('id', dbGroupId)
-            .eq('obra_id', obraId)
-        ).error;
-      }
+    if (stErr) {
+      warnings.push(`Presupuestos aprobados pero no se pudo actualizar estado del grupo: ${stErr.message}`);
+    }
 
-      if (stErr) {
-        warnings.push(`Solicitudes creadas pero no se pudo actualizar estado del grupo: ${stErr.message}`);
-      }
+    const { error: notifError } = await supabaseAny.from('notificaciones').insert({
+      org_id: orgId,
+      obra_id: obraId,
+      tarea_id: null,
+      remitente_id: user.id,
+      destinatario_id: socioId,
+      socio_id: socioId,
+      tipo: 'presupuesto_aprobado',
+      titulo: 'Paquete de tareas aprobado',
+      mensaje: `Se aprobó un paquete con ${totalOk} tarea${totalOk === 1 ? '' : 's'}. Ya podés comenzar bloques en la app.`,
+      leida: false,
+      created_at: nowIso,
+    });
+    if (notifError) {
+      warnings.push(`Notificación al socio no enviada: ${notifError.message}`);
     }
 
     return NextResponse.json({
@@ -380,11 +450,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       socioId,
       tasksIncluded: tareaNodeIds.length,
       tasksPublishedCount: readyNodeIds.length,
-      requestsCreated,
-      requestsSkipped,
+      presupuestosAprobados,
+      presupuestosYaAprobados,
+      presupuestosFallidos,
       pendingPublish,
-      groupStatus,
-      partial: pendingPublish.length > 0 || requestsSkipped > 0,
+      groupStatus: finalGroupStatus,
+      partial: pendingPublish.length > 0 || presupuestosFallidos > 0,
       warnings,
     });
   } catch (e) {

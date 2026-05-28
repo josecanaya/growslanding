@@ -150,7 +150,8 @@ export async function POST(
       const status =
         motivo === 'NO_BLOQUE_OPERATIVO' ||
         motivo === 'TODOS_BLOQUES_COMPLETADOS' ||
-        motivo === 'SIN_BLOQUES'
+        motivo === 'SIN_BLOQUES' ||
+        motivo === 'PRESUPUESTO_APROBADO_NO_ENCONTRADO'
           ? 409
           : 500;
       return NextResponse.json(

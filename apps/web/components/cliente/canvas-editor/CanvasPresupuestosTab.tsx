@@ -8,7 +8,7 @@ import { Building2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/grows';
 import { cn } from '@/lib/utils';
 import type { CanvasBudgetGroup, CanvasNode } from '@/lib/types/canvasMultinivel';
-import { budgetGroupStatusLabel } from './canvasMultinivelHelpers';
+import { budgetGroupStatusLabel, changeWindowStatusLabel } from './canvasMultinivelHelpers';
 import { buildBudgetGroupHierarchyBranches } from '@/lib/canvas/budgetGroupHierarchy';
 import { BudgetGroupTaskTree } from './BudgetGroupTaskTree';
 
@@ -99,6 +99,8 @@ export function CanvasPresupuestosTab({
   const [detailSocioId, setDetailSocioId] = useState<string>('');
   const [detailMensaje, setDetailMensaje] = useState('');
   const [saveBusy, setSaveBusy] = useState(false);
+  const [changeNotes, setChangeNotes] = useState('');
+  const [changeBusy, setChangeBusy] = useState(false);
   const [sendBusy, setSendBusy] = useState(false);
   const [sendNotice, setSendNotice] = useState<string | null>(null);
 
@@ -112,27 +114,73 @@ export function CanvasPresupuestosTab({
 
   const setEnviarResumen = (
     j: {
-      requestsCreated?: number;
-      requestsSkipped?: number;
+      presupuestosAprobados?: number;
+      presupuestosYaAprobados?: number;
+      presupuestosFallidos?: number;
       partial?: boolean;
       pendingPublish?: Array<{ canvasNodeId: string; title: string | null; motivo: string }>;
     },
     warnings: string[],
   ) => {
-    const c = Number(j.requestsCreated) || 0;
-    const s = Number(j.requestsSkipped) || 0;
+    const nuevos = Number(j.presupuestosAprobados) || 0;
+    const ya = Number(j.presupuestosYaAprobados) || 0;
+    const fall = Number(j.presupuestosFallidos) || 0;
     const pend = Array.isArray(j.pendingPublish) ? j.pendingPublish.length : 0;
-    let msg = 'Solicitud enviada.';
-    if (c + s > 0) {
-      msg = `Solicitud enviada. Creadas: ${c}. Omitidas (ya existían): ${s}.`;
-    }
+    let msg = `Paquete aprobado. ${nuevos} presupuesto${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'}.`;
+    if (ya > 0) msg += ` ${ya} ya estaban aprobados.`;
+    if (fall > 0) msg += ` ${fall} con error.`;
     if (j.partial && pend > 0) {
-      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} que todavía no se pudieron publicar en el paquete; quedan pendientes en este mismo grupo. Cuando las corrijas y publiques, volvé a enviar para sumarlas.`;
+      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} sin publicar; cuando las publiques, volvé a enviar para sumarlas al paquete.`;
     }
+    msg += ' El socio ya puede comenzar bloques en esas tareas.';
     if (warnings.length > 0) {
       msg += ` · ${warnings.slice(0, 3).join(' ')}`;
     }
     setSendNotice(msg);
+  };
+
+  const detailStatus = String(detailGroup?.status ?? '').toLowerCase();
+  const detailChangeWindow = String(detailGroup?.changeWindowStatus ?? 'cerrada').toLowerCase();
+  const paqueteAprobado = detailStatus === 'aprobado' || detailStatus === 'aprobado_parcial';
+  const puedeReenviarTrasCambio = detailChangeWindow === 'confirmada_socio';
+  const puedeEnviarPaquete = !paqueteAprobado || puedeReenviarTrasCambio;
+
+  const onSolicitarCambio = async () => {
+    if (!detailGroup) return;
+    if (!changeNotes.trim()) {
+      setSendNotice('Describí qué querés cambiar del paquete aprobado.');
+      return;
+    }
+    setChangeBusy(true);
+    setSendNotice(null);
+    try {
+      const res = await fetch(
+        `/api/obras/${encodeURIComponent(obraId)}/canvas/presupuestos/abrir-cambio-grupo`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            budgetGroupId: detailGroup.id,
+            changeNotes: changeNotes.trim(),
+          }),
+        },
+      );
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) {
+        setSendNotice(typeof j.error === 'string' ? j.error : 'No se pudo abrir la ventana de cambio.');
+        return;
+      }
+      patchBudgetGroup(detailGroup.id, {
+        changeWindowStatus: 'abierta_cliente',
+        changeWindowNotes: changeNotes.trim(),
+      });
+      setSendNotice(
+        'Ventana de cambio abierta. El socio debe confirmar antes de que puedas re-enviar el paquete modificado.',
+      );
+    } finally {
+      setChangeBusy(false);
+    }
   };
 
   const onGuardarGrupo = async () => {
@@ -182,7 +230,7 @@ export function CanvasPresupuestosTab({
     const unpublished = detailTasks.filter((t) => !tareaPublicacionByNodeId[t.id]);
     const published = detailTasks.length - unpublished.length;
     let confirmMsg =
-      '¿Enviar solicitud de presupuesto al socio seleccionado para todas las tareas publicadas de este grupo?';
+      '¿Aprobar y enviar el paquete completo al socio? Se asignarán las tareas y quedarán listas para operar (comenzar bloques).';
     if (unpublished.length > 0 && published > 0) {
       confirmMsg = `Hay ${unpublished.length} tarea${unpublished.length === 1 ? '' : 's'} que todavía no están publicadas.\n\n¿Enviar ahora las ${published} listas y dejar las ${unpublished.length} restantes pendientes en este mismo grupo? Cuando las publiques, vas a poder sumarlas al paquete.`;
     } else if (unpublished.length > 0 && published === 0) {
@@ -230,14 +278,18 @@ export function CanvasPresupuestosTab({
         }
         return;
       }
-      if ((Number(j.requestsCreated) || 0) > 0) {
+      if ((Number(j.presupuestosAprobados) || 0) + (Number(j.presupuestosYaAprobados) || 0) > 0) {
         const st =
           typeof j.groupStatus === 'string' && j.groupStatus
             ? j.groupStatus
             : j.partial
-              ? 'enviado_parcial'
-              : 'enviado';
-        patchBudgetGroup(detailGroup.id, { status: st });
+              ? 'aprobado_parcial'
+              : 'aprobado';
+        patchBudgetGroup(detailGroup.id, {
+          status: st,
+          changeWindowStatus: 'cerrada',
+          changeWindowNotes: null,
+        });
       }
       const w = Array.isArray(j.warnings) ? j.warnings : [];
       setEnviarResumen(j, w);
@@ -361,6 +413,13 @@ export function CanvasPresupuestosTab({
                 <p className="mt-2 text-[11px] text-[#64748b]">
                   Estado: <strong>{budgetGroupStatusLabel(detailGroup.status)}</strong> · Tareas:{' '}
                   {detailTasks.length}
+                  {changeWindowStatusLabel(detailGroup.changeWindowStatus) ? (
+                    <>
+                      {' '}
+                      · Cambios:{' '}
+                      <strong>{changeWindowStatusLabel(detailGroup.changeWindowStatus)}</strong>
+                    </>
+                  ) : null}
                 </p>
               </div>
 
@@ -446,6 +505,44 @@ export function CanvasPresupuestosTab({
                 </Button>
               ) : null}
 
+              {paqueteAprobado ? (
+                <div className="rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-3 py-3 text-sm text-[#1e3a5f]">
+                  <p className="font-semibold">Paquete aprobado</p>
+                  <p className="mt-1 text-[12px]">
+                    El socio ya puede operar estas tareas. Para modificar el paquete, abrí una ventana de
+                    cambio (doble verificación: vos solicitás → el socio confirma → re-enviás).
+                  </p>
+                  {detailChangeWindow === 'abierta_cliente' ? (
+                    <p className="mt-2 text-[12px] font-medium text-amber-800">
+                      Esperando confirmación del socio…
+                    </p>
+                  ) : puedeReenviarTrasCambio ? (
+                    <p className="mt-2 text-[12px] font-medium text-emerald-800">
+                      El socio confirmó el cambio. Podés editar tareas y re-enviar el paquete.
+                    </p>
+                  ) : (
+                    <>
+                      <textarea
+                        className="mt-3 min-h-[72px] w-full rounded-lg border border-[#bfdbfe] bg-white px-3 py-2 text-sm outline-none focus:border-[#0042c8]"
+                        placeholder="Ej.: agregar una tarea, cambiar duración del bloque 2…"
+                        value={changeNotes}
+                        onChange={(e) => setChangeNotes(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2 w-full rounded-lg"
+                        disabled={changeBusy}
+                        onClick={() => void onSolicitarCambio()}
+                      >
+                        {changeBusy ? 'Abriendo…' : 'Solicitar cambio al paquete'}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              ) : null}
+
               <div className="flex flex-col gap-2 border-t border-[#eef2f6] pt-4">
                 <Button
                   type="button"
@@ -460,11 +557,20 @@ export function CanvasPresupuestosTab({
                   type="button"
                   variant="primary"
                   className="w-full rounded-xl"
-                  disabled={sendBusy || detailTasks.length === 0}
+                  disabled={sendBusy || detailTasks.length === 0 || !puedeEnviarPaquete}
                   onClick={() => void onEnviarSolicitud()}
                 >
-                  {sendBusy ? 'Enviando…' : 'Enviar solicitud de presupuesto'}
+                  {sendBusy
+                    ? 'Aprobando paquete…'
+                    : paqueteAprobado && puedeReenviarTrasCambio
+                      ? 'Re-enviar paquete actualizado'
+                      : 'Aprobar y enviar paquete al socio'}
                 </Button>
+                {paqueteAprobado && !puedeEnviarPaquete ? (
+                  <p className="text-center text-[11px] text-[#64748b]">
+                    Para re-enviar, primero solicitá el cambio y esperá la confirmación del socio.
+                  </p>
+                ) : null}
               </div>
             </div>
           </div>

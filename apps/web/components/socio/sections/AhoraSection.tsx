@@ -813,7 +813,7 @@ export function AhoraSection() {
         const preservarSubtareaApi =
           subtareaLocal &&
           subtareaPerteneceATarea(subtareaLocal, tid) &&
-          ['en_progreso', 'para_validar'].includes(normEstadoSub(subtareaLocal.estado));
+          normEstadoSub(subtareaLocal.estado) === 'en_progreso';
 
         if (!lista?.length) {
           if (preservarSubtareaApi) {
@@ -842,6 +842,25 @@ export function AhoraSection() {
         }
 
         const pick = pickSubtareaOperativa(list);
+
+        if (
+          subtareaLocal &&
+          subtareaPerteneceATarea(subtareaLocal, tid) &&
+          normEstadoSub(subtareaLocal.estado) === 'para_validar' &&
+          pick?.id &&
+          pick.id !== subtareaLocal.id
+        ) {
+          const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+          if (full) {
+            setSubtareaActual(full);
+            setTotalSubtareas(list.length);
+            setSubtareasCompletadas(
+              list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
+            );
+            await contarSubtareasScoped();
+            return;
+          }
+        }
 
         if (preservarSubtareaApi && pick?.id && pick.id !== subtareaLocal?.id) {
           await contarSubtareasScoped();
@@ -1200,6 +1219,56 @@ export function AhoraSection() {
     subtareaFijadaRef.current = null;
     setSubtareaActual(null);
     await recargarTareaAhora();
+  };
+
+  /** Tras enviar un bloque a revisión, pasar al siguiente bloque operable o a la siguiente tarea. */
+  const avanzarDesdeBloqueEnRevision = async () => {
+    clearAhoraOperationalSession();
+    setOperationalSession(null);
+    lastStitchPropsRef.current = null;
+    subtareaFijadaRef.current = null;
+
+    const tid =
+      subtareaActual?.tarea_id ??
+      subtareaActual?.tareas?.id ??
+      operationalSessionRef.current?.tareaId ??
+      tareaActual?.id;
+
+    if (!tid || !socioIdGrows) {
+      await avanzarTrasTareaCompletada(tid ?? undefined);
+      return;
+    }
+
+    const { data: lista } = await (supabase as any)
+      .from('tareas_subtareas')
+      .select(SELECT_SUBTAREA_REL)
+      .eq('tarea_id', tid)
+      .order('orden', { ascending: true });
+
+    const visibles = filtrarSubtareasVisiblesSocio((lista ?? []) as BloqueResumen[], socioIdGrows);
+    const pick = pickSubtareaOperativa(visibles);
+
+    if (pick?.id) {
+      const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+      if (full) {
+        setSubtareaActual(full);
+        setTotalSubtareas(visibles.length);
+        setSubtareasCompletadas(
+          visibles.filter((s) => subtareaEstaCompletadaOficial(s.estado)).length,
+        );
+        toast({
+          title: 'Seguí con el próximo bloque',
+          description: 'El bloque anterior quedó en revisión. Podés continuar trabajando.',
+        });
+        return;
+      }
+    }
+
+    await avanzarTrasTareaCompletada(tid);
+    toast({
+      title: 'Tarea en revisión',
+      description: 'Todos los bloques de esta tarea están en revisión o completos. Pasamos a la siguiente.',
+    });
   };
 
   const handleComenzarBloqueOperativo = async (subtareaIdPreferida?: string) => {
@@ -1749,7 +1818,7 @@ export function AhoraSection() {
       subtareaFijadaRef.current = null;
 
       if (action === 'siguiente-tarea') {
-        await avanzarTrasTareaCompletada(tareaIdSalida ?? undefined);
+        await avanzarDesdeBloqueEnRevision();
         return;
       }
       router.push('/socio');
@@ -2292,7 +2361,7 @@ export function AhoraSection() {
         return 'Rehacer bloque';
       }
       if (estadoSub === 'en_progreso') return 'Enviar para validar';
-      if (estadoSub === 'para_validar') return 'En revisión (cliente)';
+      if (estadoSub === 'para_validar') return 'Continuar — siguiente bloque';
       if (subtareaEstaCompletadaOficial(subtareaActual.estado)) return 'Bloque aprobado';
       return 'Iniciar jornada';
     } else if (tareaActual) {
@@ -2328,16 +2397,12 @@ export function AhoraSection() {
         return;
       } else if (estadoSub === 'en_progreso') {
         setShowModalFinalizarSubtarea(true);
-      } else if (
-        estadoSub === 'para_validar' ||
-        subtareaEstaCompletadaOficial(subtareaActual.estado)
-      ) {
+      } else if (estadoSub === 'para_validar') {
+        void avanzarDesdeBloqueEnRevision();
+      } else if (subtareaEstaCompletadaOficial(subtareaActual.estado)) {
         toast({
           title: 'Bloque cerrado',
-          description:
-            estadoSub === 'para_validar'
-              ? 'Este bloque ya fue enviado a validación. Esperá la respuesta del cliente.'
-              : 'Este bloque ya fue aprobado.',
+          description: 'Este bloque ya fue aprobado.',
         });
       } else {
         toast({
@@ -2382,8 +2447,7 @@ export function AhoraSection() {
     if (!subtareaActual && !tareaActual) return true;
     if (
       subtareaActual &&
-      (subtareaActual.estado === 'para_validar' ||
-        subtareaEstaCompletadaOficial(subtareaActual.estado))
+      subtareaEstaCompletadaOficial(subtareaActual.estado)
     ) {
       return true;
     }

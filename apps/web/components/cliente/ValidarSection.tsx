@@ -132,6 +132,7 @@ type ValidarSubtarea = {
   evidencia_url?: string | null;
   evidencia_cargada?: boolean | null;
   evidenciaPublicUrl?: string | null;
+  validadoEnObraAt?: string | null;
 };
 
 type ValidarTarea = {
@@ -156,7 +157,7 @@ type ObraItem = {
 };
 
 type ConfirmacionModal = {
-  tipo: 'validar' | 'rechazar' | null;
+  tipo: 'validar' | 'validar_en_obra' | 'rechazar' | null;
   subtareaId: string | null;
   bloqueNombre: string;
   monto: number | null;
@@ -287,7 +288,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
   }, [tareas, obraSeleccionada]);
 
   const handleAbrirConfirmacion = useCallback(
-    (subtareaId: string, tipo: 'validar' | 'rechazar', bloqueNombre: string, monto: number | null) => {
+    (subtareaId: string, tipo: 'validar' | 'validar_en_obra' | 'rechazar', bloqueNombre: string, monto: number | null) => {
       setConfirmacionModal({
         tipo,
         subtareaId,
@@ -321,10 +322,10 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
 
     try {
       const payload: {
-        accion: 'validar' | 'rechazar';
+        accion: 'validar' | 'validar_en_obra' | 'rechazar';
         motivo?: string;
       } = {
-        accion,
+        accion: accion === 'validar_en_obra' ? 'validar_en_obra' : accion,
       };
 
       if (accion === 'rechazar' && motivoRechazo.trim()) {
@@ -351,7 +352,12 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       if (accion === 'validar') {
         toast({
           title: 'Bloque validado',
-          description: 'El bloque quedó validado correctamente.',
+          description: 'Validación definitiva registrada y pago liberado.',
+        });
+      } else if (accion === 'validar_en_obra') {
+        toast({
+          title: 'Aprobado en obra',
+          description: 'El socio puede continuar. El pago queda pendiente hasta la validación definitiva.',
         });
       } else {
         toast({
@@ -604,6 +610,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                               const esValidado = estadoSub === ESTADO_BLOQUE_FINAL;
                               const esRechazado = estadoSub === 'rechazado';
                               const esParaValidar = estadoSub === ESTADO_BLOQUE_PARA_VALIDAR;
+                              const aprobadoEnObra = Boolean(sub.validadoEnObraAt);
                               
                               const bloqueNombre = `Bloque ${sub.orden ?? sub.bloque_index ?? '—'}`;
                               const evidenciaSrc =
@@ -677,7 +684,32 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                                   )}
                                   
                                   {esParaValidar && (
-                                    <div className="flex gap-2 mt-3">
+                                    <div className="flex flex-col gap-2 mt-3">
+                                      {aprobadoEnObra ? (
+                                        <p className="text-xs font-medium text-emerald-700">
+                                          Aprobado en obra — pendiente liberar pago
+                                        </p>
+                                      ) : null}
+                                      {!aprobadoEnObra ? (
+                                        <Button
+                                          variant="secondary"
+                                          size="sm"
+                                          disabled={subtareaProcessingId === sub.id}
+                                          onClick={() =>
+                                            handleAbrirConfirmacion(
+                                              sub.id,
+                                              'validar_en_obra',
+                                              bloqueNombre,
+                                              sub.montoEstimado
+                                            )
+                                          }
+                                          className="w-full"
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Validar en obra (sin pago)
+                                        </Button>
+                                      ) : null}
+                                      <div className="flex gap-2">
                                       <Button
                                         variant="primary"
                                         size="sm"
@@ -693,7 +725,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                                         className="flex-1 sm:flex-none"
                                       >
                                         <CheckCircle className="h-4 w-4 mr-1" />
-                                        Validar
+                                        Validar y liberar pago
                                       </Button>
                                       <Button
                                         variant="secondary"
@@ -712,6 +744,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                                         <XCircle className="h-4 w-4 mr-1" />
                                         Rechazar
                                       </Button>
+                                      </div>
                                     </div>
                                   )}
                                   
@@ -921,11 +954,20 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           <DialogHeader>
             <DialogTitle>
               {confirmacionModal.tipo === 'validar'
-                ? 'Confirmar validación'
-                : 'Confirmar rechazo'}
+                ? 'Confirmar validación y pago'
+                : confirmacionModal.tipo === 'validar_en_obra'
+                  ? 'Confirmar aprobación en obra'
+                  : 'Confirmar rechazo'}
             </DialogTitle>
             <DialogDescription>
-              {confirmacionModal.tipo === 'validar' ? (
+              {confirmacionModal.tipo === 'validar_en_obra' ? (
+                <>
+                  ¿Aprobás <strong>{confirmacionModal.bloqueNombre}</strong> en obra?
+                  <br />
+                  El socio podrá continuar con el siguiente bloque. El pago{' '}
+                  <strong>no</strong> se libera hasta la validación definitiva.
+                </>
+              ) : confirmacionModal.tipo === 'validar' ? (
                 <>
                   ¿Estás seguro de que querés validar <strong>{confirmacionModal.bloqueNombre}</strong>?
                   <br />
@@ -971,7 +1013,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
               Cancelar
             </Button>
             <Button
-              variant={confirmacionModal.tipo === 'validar' ? 'primary' : 'danger'}
+              variant={
+                confirmacionModal.tipo === 'rechazar'
+                  ? 'danger'
+                  : 'primary'
+              }
               onClick={handleConfirmarAccion}
               disabled={!!subtareaProcessingId}
             >
@@ -979,6 +1025,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Procesando...
+                </>
+              ) : confirmacionModal.tipo === 'validar_en_obra' ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Aprobar en obra
                 </>
               ) : confirmacionModal.tipo === 'validar' ? (
                 <>

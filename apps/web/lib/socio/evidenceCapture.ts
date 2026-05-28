@@ -4,7 +4,7 @@
  * Sin esto, `file.type.startsWith('image/')` rechaza fotos válidas tomadas ahí mismo.
  */
 export function fileLooksLikeImage(file: File): boolean {
-  const t = (file.type || '').toLowerCase();
+  const t = String(file.type ?? '').toLowerCase();
   if (t.startsWith('image/')) return true;
   if (t === 'application/octet-stream' || t === 'binary/octet-stream') {
     const n = file.name || '';

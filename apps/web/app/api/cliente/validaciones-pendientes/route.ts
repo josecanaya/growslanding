@@ -42,6 +42,7 @@ type SubtareaRow = {
   bloque_index?: number | null;
   evidencia_url?: string | null;
   evidencia_cargada?: boolean | null;
+  validado_en_obra_at?: string | null;
 };
 
 async function fetchInChunks<T>(
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
     let subsQuery = supabaseAny
       .from('tareas_subtareas')
       .select(
-        'id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, tareas!inner(id, title, descripcion, estado, obra_id, org_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id)',
+        'id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, validado_en_obra_at, tareas!inner(id, title, descripcion, estado, obra_id, org_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id)',
       )
       .eq('estado', ESTADO_BLOQUE_PARA_VALIDAR)
       .in('tareas.org_id', allowedOrgIds);
@@ -175,6 +176,7 @@ export async function GET(request: NextRequest) {
         evidencia_url: row.evidencia_url ?? null,
         evidencia_cargada: row.evidencia_cargada ?? false,
         evidenciaPublicUrl: evidenciaPublicUrl(row.evidencia_url),
+        validadoEnObraAt: row.validado_en_obra_at ?? null,
       };
       const prev = (subtareasPorTarea.get(tid) ?? []) as typeof item[];
       const ix = prev.findIndex((x) => x.id === row.id);
@@ -185,7 +187,7 @@ export async function GET(request: NextRequest) {
       const allSubs = await fetchInChunks<SubtareaRow>(tareaIds, (chunk) =>
         supabaseAny
           .from('tareas_subtareas')
-          .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada')
+          .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, validado_en_obra_at')
           .in('tarea_id', chunk),
       );
       allSubs.forEach(mergeSub);

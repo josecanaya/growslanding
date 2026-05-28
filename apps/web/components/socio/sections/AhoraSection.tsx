@@ -301,11 +301,21 @@ export function AhoraSection() {
     defaultMessage: string,
     options?: { skipToast?: boolean },
   ): { title: string; description: string } => {
-    const errorMessage = error?.message || error?.error || defaultMessage;
-    const errorCode = error?.errorCode || error?.error;
+    const errorMessageRaw = error?.message ?? error?.error ?? defaultMessage;
+    const errorMessage =
+      typeof errorMessageRaw === 'string'
+        ? errorMessageRaw
+        : errorMessageRaw != null
+          ? JSON.stringify(errorMessageRaw)
+          : defaultMessage;
+    const errorCodeRaw = error?.errorCode ?? error?.error ?? error?.code;
+    const errorCode =
+      typeof errorCodeRaw === 'string' || typeof errorCodeRaw === 'number'
+        ? String(errorCodeRaw)
+        : '';
     
     let title = 'Error';
-    let description = typeof errorMessage === 'string' ? errorMessage : String(errorMessage ?? defaultMessage);
+    let description = errorMessage;
     let variant: 'default' | 'destructive' = 'destructive';
     
     // Mapear todos los códigos de error según reglas
@@ -333,7 +343,7 @@ export function AhoraSection() {
     } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorCode === 'EVIDENCIA_REQUERIDA' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
       title = 'Evidencia requerida';
       description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
-    } else if (errorCode === 403 || errorCode === '403') {
+    } else if (errorCode === '403') {
       title = 'Sin permiso';
       description = 'No tenés permiso para operar esta tarea.';
     } else if (
@@ -842,6 +852,27 @@ export function AhoraSection() {
         }
 
         const pick = pickSubtareaOperativa(list);
+
+        if (
+          subtareaLocal &&
+          subtareaPerteneceATarea(subtareaLocal, tid) &&
+          normEstadoSub(subtareaLocal.estado) === 'para_validar' &&
+          (subtareaLocal as { validado_en_obra_at?: string | null }).validado_en_obra_at
+        ) {
+          const pick = pickSubtareaOperativa(list);
+          if (pick?.id && pick.id !== subtareaLocal.id) {
+            const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+            if (full) {
+              setSubtareaActual(full);
+              setTotalSubtareas(list.length);
+              setSubtareasCompletadas(
+                list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
+              );
+              await contarSubtareasScoped();
+              return;
+            }
+          }
+        }
 
         if (
           subtareaLocal &&

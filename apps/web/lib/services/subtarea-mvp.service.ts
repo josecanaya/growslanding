@@ -96,7 +96,7 @@ export function pickSubtareaOperativaDeLista<T extends { estado?: string | null 
 
 type ValidarParams = ActorContext & {
   metodoPago?: 'EFECTIVO' | 'ONLINE';
-  accion?: 'validar' | 'rechazar';
+  accion?: 'validar' | 'rechazar' | 'validar_en_obra';
   motivo?: string | null;
 };
 
@@ -565,6 +565,24 @@ export class SubtareaMvpService {
       }
 
       return { tareaValidada: false };
+    }
+
+    /** Aprobación en obra: el socio puede seguir; el pago se libera solo con validación definitiva. */
+    if (accion === 'validar_en_obra') {
+      const { error: obraError } = await supabaseAny
+        .from('tareas_subtareas')
+        .update({
+          validado_en_obra_at: ahora,
+          validado_en_obra_por: actor.id,
+          updated_at: ahora,
+        })
+        .eq('id', subtareaId);
+
+      if (obraError) {
+        throw new Error(obraError.message);
+      }
+
+      return { tareaValidada: false, validadoEnObra: true };
     }
 
     const updatePatch: Record<string, unknown> = {

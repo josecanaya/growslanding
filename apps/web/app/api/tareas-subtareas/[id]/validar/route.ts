@@ -18,8 +18,12 @@ export async function POST(
     const body = await request.json().catch(() => ({}));
     const metodoPago: 'EFECTIVO' | 'ONLINE' =
       body?.metodoPago === 'ONLINE' ? 'ONLINE' : 'EFECTIVO';
-    const accion: 'validar' | 'rechazar' =
-      body?.accion === 'rechazar' ? 'rechazar' : 'validar';
+    const accion: 'validar' | 'rechazar' | 'validar_en_obra' =
+      body?.accion === 'rechazar'
+        ? 'rechazar'
+        : body?.accion === 'validar_en_obra'
+          ? 'validar_en_obra'
+          : 'validar';
     const motivo: string | undefined = typeof body?.motivo === 'string' ? body.motivo : undefined;
 
     const cookieStore = await cookies();
@@ -44,7 +48,7 @@ export async function POST(
 
     const { data: subtarea } = await supabaseAny
       .from('tareas_subtareas')
-      .select('id, tarea_id, estado, tareas:tareas(org_id)')
+      .select('id, tarea_id, estado, validado_en_obra_at, tareas:tareas(org_id)')
       .eq('id', id)
       .maybeSingle();
 
@@ -67,13 +71,24 @@ export async function POST(
       );
     }
 
-    if (subtarea.estado === 'validado' && accion === 'validar') {
-      const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
-        subtareaId: id,
-        clienteUserId: user.id,
-        metodoPago,
+    if (accion === 'validar_en_obra' && subtarea.validado_en_obra_at) {
+      return NextResponse.json({ success: true, tareaValidada: false, validadoEnObra: true });
+    }
+
+    if (subtarea.estado === 'validado') {
+      if (accion === 'validar') {
+        const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
+          subtareaId: id,
+          clienteUserId: user.id,
+          metodoPago,
+        });
+        return NextResponse.json({ success: true, tareaValidada: true, reconciliacion });
+      }
+      return NextResponse.json({
+        success: true,
+        tareaValidada: true,
+        validadoEnObra: Boolean(subtarea.validado_en_obra_at),
       });
-      return NextResponse.json({ success: true, tareaValidada: true, reconciliacion });
     }
 
     if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {
@@ -83,7 +98,7 @@ export async function POST(
       );
     }
 
-    const { tareaValidada } = await SubtareaMvpService.validarSubtarea(id, {
+    const { tareaValidada, validadoEnObra } = await SubtareaMvpService.validarSubtarea(id, {
       id: user.id,
       rol,
       metodoPago,
@@ -91,7 +106,7 @@ export async function POST(
       motivo,
     });
 
-    return NextResponse.json({ success: true, tareaValidada });
+    return NextResponse.json({ success: true, tareaValidada, validadoEnObra: validadoEnObra ?? false });
   } catch (error) {
     console.error('[VALIDAR_SUBTAREA] Error:', error);
     return NextResponse.json(

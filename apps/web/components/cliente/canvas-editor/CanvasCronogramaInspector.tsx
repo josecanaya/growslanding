@@ -36,6 +36,7 @@ type EvidenciaBloque = {
   evidencia_cargada?: boolean | null;
   bloque_index?: number | null;
   orden?: number | null;
+  validado_en_obra_at?: string | null;
 };
 
 type TareaDetalle = {
@@ -124,7 +125,10 @@ export function CanvasCronogramaInspector({
     void cargarDetalle();
   }, [cargarDetalle]);
 
-  const validarBloque = async (subtareaId: string, accion: 'validar' | 'rechazar') => {
+  const validarBloque = async (
+    subtareaId: string,
+    accion: 'validar_en_obra' | 'validar' | 'rechazar',
+  ) => {
     setProcessingId(subtareaId);
     try {
       const res = await fetch(`/api/tareas-subtareas/${subtareaId}/validar`, {
@@ -135,11 +139,19 @@ export function CanvasCronogramaInspector({
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(j?.error ?? 'No se pudo completar la acción');
+        throw new Error(typeof j?.error === 'string' ? j.error : 'No se pudo completar la acción');
       }
       toast({
-        title: accion === 'validar' ? 'Bloque validado' : 'Bloque rechazado',
-        description: 'Actualizamos el estado en la obra.',
+        title:
+          accion === 'validar_en_obra'
+            ? 'Aprobado en obra'
+            : accion === 'validar'
+              ? 'Bloque validado y pago liberado'
+              : 'Bloque rechazado',
+        description:
+          accion === 'validar_en_obra'
+            ? 'El socio puede continuar. El pago queda pendiente hasta la validación definitiva.'
+            : 'Actualizamos el estado en la obra.',
       });
       await cargarDetalle();
     } catch (e) {
@@ -273,6 +285,7 @@ export function CanvasCronogramaInspector({
                     const src = evidenciaSrc(ev.evidencia_url);
                     const estadoNorm = normalizeEstadoBloqueParaOperacion(ev.estado);
                     const esParaValidar = estadoNorm === ESTADO_BLOQUE_PARA_VALIDAR;
+                    const aprobadoEnObra = Boolean(ev.validado_en_obra_at);
                     const bloqueLabel = `Bloque ${ev.orden ?? ev.bloque_index ?? '—'}`;
                     return (
                       <div
@@ -291,30 +304,47 @@ export function CanvasCronogramaInspector({
                         ) : null}
                         <div className="space-y-2 p-2">
                           <p className="text-[11px] font-semibold text-[#0f172a]">{bloqueLabel}</p>
+                          {aprobadoEnObra ? (
+                            <p className="text-[10px] font-medium text-emerald-700">
+                              Aprobado en obra — pago pendiente de validación definitiva
+                            </p>
+                          ) : null}
                           {esParaValidar ? (
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2">
                               <Button
                                 type="button"
                                 variant="primary"
                                 size="sm"
-                                className="h-8 flex-1 text-[11px]"
-                                disabled={processingId === ev.id}
-                                onClick={() => void validarBloque(ev.id, 'validar')}
+                                className="h-8 w-full text-[11px]"
+                                disabled={processingId === ev.id || aprobadoEnObra}
+                                onClick={() => void validarBloque(ev.id, 'validar_en_obra')}
                               >
                                 <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                                Validar en obra
+                                Validar en obra (sin liberar pago)
                               </Button>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                className="h-8 px-2"
-                                disabled={processingId === ev.id}
-                                onClick={() => void validarBloque(ev.id, 'rechazar')}
-                                title="Rechazar"
-                              >
-                                <XCircle className="h-3.5 w-3.5" />
-                              </Button>
+                              <div className="flex gap-2">
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8 flex-1 text-[11px]"
+                                  disabled={processingId === ev.id}
+                                  onClick={() => void validarBloque(ev.id, 'validar')}
+                                >
+                                  Validar y liberar pago
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8 px-2"
+                                  disabled={processingId === ev.id}
+                                  onClick={() => void validarBloque(ev.id, 'rechazar')}
+                                  title="Rechazar"
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <p className="text-[10px] text-[#64748b] capitalize">{estadoNorm.replace(/_/g, ' ')}</p>

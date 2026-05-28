@@ -98,7 +98,7 @@ export async function GET(
     const { data: evidenciasSubtareas, error: evidenciasError } = await supabase
       .from('tareas_subtareas')
       .select(
-        'id, tarea_id, estado, evidencia_url, evidencia_cargada, bloque_index, orden, fecha'
+        'id, tarea_id, estado, evidencia_url, evidencia_cargada, bloque_index, orden, fecha, validado_en_obra_at'
       )
       .eq('tarea_id', id)
       .order('orden', { ascending: true, nullsFirst: false });

@@ -196,12 +196,32 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
   const openCamera = useCallback(() => {
     liveProps?.onPersistBeforeCamera?.();
-    fileRefCamera.current?.click();
+    const input = fileRefCamera.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+        return;
+      }
+    } catch {
+      /* showPicker no disponible o requiere gesto directo */
+    }
+    input.click();
   }, [liveProps]);
 
   const openGallery = useCallback(() => {
     liveProps?.onPersistBeforeCamera?.();
-    fileRefGallery.current?.click();
+    const input = fileRefGallery.current;
+    if (!input) return;
+    try {
+      if (typeof input.showPicker === 'function') {
+        input.showPicker();
+        return;
+      }
+    } catch {
+      /* noop */
+    }
+    input.click();
   }, [liveProps]);
 
   // Restaurar estado persistido tras hidratación (sobrevivir suspensión móvil por cámara nativa).
@@ -486,6 +506,26 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
     const first = evidence.find((e) => e.file);
     if (!first?.file) {
+      if (evidenciaUrlPersisted && live.onRetrySendOnly) {
+        try {
+          setLiveError(null);
+          setLiveSending(true);
+          await live.onRetrySendOnly(desc.trim() ? desc.trim() : undefined);
+          setPhase('sent');
+          toast({ title: '¡Evidencia enviada!', description: 'El bloque quedó en revisión ante el cliente.' });
+        } catch (err) {
+          const msg = err instanceof Error && err.message ? err.message : 'No se pudo enviar a validación.';
+          setLiveError(msg);
+          toast({
+            title: 'Error al enviar',
+            description: `${msg} Podés reintentar.`,
+            variant: 'destructive',
+          });
+        } finally {
+          setLiveSending(false);
+        }
+        return;
+      }
       const msg = 'Volvé atrás y volvé a tomar una foto desde la pantalla anterior.';
       setLiveError(msg);
       toast({
@@ -680,18 +720,20 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     return (
       <div className="min-h-screen bg-stitch-surface pb-32 font-stitch-body text-stitch-on-surface">
         <input
+          id="evidence-camera-input"
           ref={fileRefCamera}
           type="file"
           accept="image/*"
-          capture="environment"
-          className="hidden"
+          capture
+          className="sr-only"
           onChange={addPhoto}
         />
         <input
+          id="evidence-gallery-input"
           ref={fileRefGallery}
           type="file"
           accept="image/*"
-          className="hidden"
+          className="sr-only"
           onChange={addPhoto}
         />
         <header className="sticky top-0 z-40 w-full border-b border-stitch-surface-container bg-slate-50/95 backdrop-blur">
@@ -746,14 +788,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     </div>
                   </div>
                   <div className="pointer-events-auto flex justify-center pb-2">
-                    <button
-                      type="button"
-                      onClick={openCamera}
-                      className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-stitch-primary to-stitch-primary-container shadow-lg transition-transform active:scale-95"
+                    <label
+                      htmlFor="evidence-camera-input"
+                      onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                      className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-stitch-primary to-stitch-primary-container shadow-lg transition-transform active:scale-95"
                       aria-label="Capturar"
                     >
                       <Camera className="h-9 w-9 text-white" />
-                    </button>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -770,14 +812,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     type="text"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={openCamera}
-                  className="flex h-[52px] shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container px-8 font-bold text-white shadow-lg"
+                <label
+                  htmlFor="evidence-camera-input"
+                  onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                  className="flex h-[52px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container px-8 font-bold text-white shadow-lg"
                 >
                   Sacar foto
                   <Camera className="h-5 w-5" />
-                </button>
+                </label>
               </div>
             </div>
             <div className="flex flex-col gap-6 lg:col-span-4">
@@ -803,13 +845,13 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     </div>
                   ))}
                   {evidence.length < MAX_EVIDENCE && (
-                    <button
-                      type="button"
-                      onClick={openGallery}
-                      className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-stitch-outline-variant bg-stitch-surface-container-highest text-stitch-outline transition-colors hover:border-stitch-primary hover:text-stitch-primary"
+                    <label
+                      htmlFor="evidence-gallery-input"
+                      onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                      className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-stitch-outline-variant bg-stitch-surface-container-highest text-stitch-outline transition-colors hover:border-stitch-primary hover:text-stitch-primary"
                     >
                       <ImageIcon className="h-8 w-8" />
-                    </button>
+                    </label>
                   )}
                 </div>
                 <div className="mt-8 border-t border-stitch-outline-variant/30 pt-6">

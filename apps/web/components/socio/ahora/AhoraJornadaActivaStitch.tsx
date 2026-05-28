@@ -26,6 +26,7 @@ import type { AhoraStitchChecklistItem } from '@/lib/mocks/socioMockData';
 import { MOCK_AHORA_STITCH } from '@/lib/mocks/socioMockData';
 import { cn } from '@/lib/utils';
 import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
+import type { AhoraFlowPhase } from '@/lib/socio/ahora-operational-session';
 import { Button } from '@/components/ui/grows/Button';
 
 const NAVY = '#00174a';
@@ -103,6 +104,11 @@ export type LiveStitchProps = {
   progresoTotal: number;
   /** Segundos iniciales del reloj (p. ej. desde `hora_inicio` del bloque) */
   initialElapsedSeconds: number;
+  /** Fase operativa frontend (sessionStorage) — desacoplada del backend. */
+  operationalFlowPhase?: AhoraFlowPhase;
+  operationalErrorMessage?: string | null;
+  evidenciaUrlPersisted?: string | null;
+  initialStitchPhase?: string | null;
   /**
    * Primera foto = evidencia oficial (misma pipeline que ModalFinalizarSubtarea).
    * Debe lanzar Error con mensaje claro ante fallo.
@@ -112,10 +118,15 @@ export type LiveStitchProps = {
     problemas?: string;
     qcConfirmed: boolean;
   }) => Promise<void>;
-  /** Llamado por el componente al confirmar el envío con éxito (para que el padre fije lock visual). */
-  onSendSuccess?: () => void;
-  /** Llamado cuando el usuario presiona “Volver” desde la pantalla de éxito (limpiar lock). */
-  onSentDismiss?: () => void;
+  /** Persistir sesión operativa antes de abrir cámara/galería (mobile). */
+  onPersistBeforeCamera?: () => void;
+  /** Notificar cambio de fase visual interna al padre (sessionStorage). */
+  onStitchPhaseChange?: (phase: StitchPhase) => void;
+  /** Reintentar solo enviar-validar cuando upload ya fue exitoso. */
+  onRetrySendOnly?: (problemas?: string) => Promise<void>;
+  /** Salida explícita del flujo — limpia sessionStorage en el padre. */
+  onExitWorkSession?: (action: 'mis-tareas' | 'siguiente-tarea') => void | Promise<void>;
+  hasNextTask?: boolean;
 };
 
 export type AhoraJornadaActivaStitchProps = DemoProps | LiveStitchProps;
@@ -179,16 +190,56 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   const fileRefGallery = useRef<HTMLInputElement | null>(null);
   const fileRefCamera = useRef<HTMLInputElement | null>(null);
 
+  const liveProps = !isDemo ? (props as LiveStitchProps) : null;
+  const operationalFlowPhase = liveProps?.operationalFlowPhase;
+  const evidenciaUrlPersisted = liveProps?.evidenciaUrlPersisted ?? null;
+
+  const openCamera = useCallback(() => {
+    liveProps?.onPersistBeforeCamera?.();
+    fileRefCamera.current?.click();
+  }, [liveProps]);
+
+  const openGallery = useCallback(() => {
+    liveProps?.onPersistBeforeCamera?.();
+    fileRefGallery.current?.click();
+  }, [liveProps]);
+
   // Restaurar estado persistido tras hidratación (sobrevivir suspensión móvil por cámara nativa).
   useEffect(() => {
     if (isDemo) return;
     if (restoredOnceRef.current) return;
     restoredOnceRef.current = true;
+
+    const op = liveProps?.operationalFlowPhase;
+    if (op === 'enviado') {
+      setPhase('sent');
+      return;
+    }
+    if (op === 'subiendo') {
+      setPhase('cierre');
+      setLiveSending(true);
+      return;
+    }
+    if (op === 'error') {
+      setPhase('cierre');
+      setLiveError(liveProps?.operationalErrorMessage ?? 'Ocurrió un error. Podés reintentar.');
+      return;
+    }
+    if (op === 'evidencia_capturada') {
+      setPhase('cierre');
+      return;
+    }
+
+    const stitchPhase = liveProps?.initialStitchPhase;
+    const valid: StitchPhase[] = ['running', 'micro', 'evidence', 'cierre', 'paused'];
+    if (stitchPhase && valid.includes(stitchPhase as StitchPhase)) {
+      setPhase(stitchPhase as StitchPhase);
+      return;
+    }
+
     const r = loadPersisted();
     if (!r) return;
-    const valid: StitchPhase[] = ['running', 'micro', 'evidence', 'cierre', 'sent', 'paused'];
-    if (valid.includes(r.phase) && r.phase !== 'sent') {
-      // 'sent' no se restaura: el padre ya cambió el estado y el dismiss debe ser explícito.
+    if (valid.includes(r.phase)) {
       setPhase(r.phase);
       setMicroIndex(typeof r.microIndex === 'number' ? r.microIndex : 0);
       setDesc(typeof r.desc === 'string' ? r.desc : '');
@@ -196,7 +247,28 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     } else {
       clearPersisted();
     }
-  }, [isDemo]);
+  }, [isDemo, liveProps]);
+
+  /** Sincronizar fase visual con sesión operativa del padre (post-upload / post-enviar). */
+  useEffect(() => {
+    if (isDemo || !operationalFlowPhase) return;
+    if (operationalFlowPhase === 'enviado') {
+      setPhase('sent');
+      setLiveSending(false);
+      setLiveError(null);
+    } else if (operationalFlowPhase === 'subiendo') {
+      setPhase('cierre');
+      setLiveSending(true);
+      setLiveError(null);
+    } else if (operationalFlowPhase === 'error') {
+      setPhase('cierre');
+      setLiveSending(false);
+      setLiveError(liveProps?.operationalErrorMessage ?? 'Ocurrió un error. Podés reintentar.');
+    } else if (operationalFlowPhase === 'evidencia_capturada') {
+      setPhase('cierre');
+      setLiveSending(false);
+    }
+  }, [isDemo, operationalFlowPhase, liveProps?.operationalErrorMessage]);
 
   const microTareas = microTitlesLive;
   const totalMicro = Math.max(microTareas.length, 1);
@@ -232,13 +304,13 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
       clearPersisted();
       return;
     }
+    liveProps?.onStitchPhaseChange?.(phase);
     if (phase === 'running' && microIndex === 0 && !desc && !liveQc) {
-      // Estado por defecto: no hace falta persistir basura.
       clearPersisted();
       return;
     }
     savePersisted({ phase, microIndex, desc, liveQc });
-  }, [phase, microIndex, desc, liveQc, isDemo]);
+  }, [phase, microIndex, desc, liveQc, isDemo, liveProps]);
 
   // Si el navegador se suspende (cambio de pestaña/cámara nativa), reforzamos persistencia inmediata.
   useEffect(() => {
@@ -389,7 +461,29 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
       return;
     }
 
-    const liveProps = props as LiveStitchProps;
+    const live = props as LiveStitchProps;
+
+    if (evidenciaUrlPersisted && live.onRetrySendOnly && (liveError || operationalFlowPhase === 'error')) {
+      try {
+        setLiveError(null);
+        setLiveSending(true);
+        await live.onRetrySendOnly(desc.trim() ? desc.trim() : undefined);
+        setPhase('sent');
+        toast({ title: '¡Evidencia enviada!', description: 'El bloque quedó en revisión ante el cliente.' });
+      } catch (err) {
+        const msg = err instanceof Error && err.message ? err.message : 'No se pudo enviar a validación.';
+        setLiveError(msg);
+        toast({
+          title: 'Error al enviar',
+          description: `${msg} Podés reintentar.`,
+          variant: 'destructive',
+        });
+      } finally {
+        setLiveSending(false);
+      }
+      return;
+    }
+
     const first = evidence.find((e) => e.file);
     if (!first?.file) {
       const msg = 'Volvé atrás y volvé a tomar una foto desde la pantalla anterior.';
@@ -415,14 +509,11 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     try {
       setLiveError(null);
       setLiveSending(true);
-      await liveProps.onSendValidationLive({
+      await live.onSendValidationLive({
         mainPhotoFile,
         problemas: desc.trim() ? desc.trim() : undefined,
         qcConfirmed: liveQc,
       });
-      // Éxito: avisamos al padre para que mantenga este componente montado,
-      // y pasamos a la pantalla de confirmación. NO redirigimos.
-      liveProps.onSendSuccess?.();
       setPhase('sent');
       toast({ title: '¡Evidencia enviada!', description: 'El bloque quedó en revisión ante el cliente.' });
     } catch (err) {
@@ -436,28 +527,33 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     } finally {
       setLiveSending(false);
     }
-  }, [evidence, isDemo, toast, props, liveQc, desc]);
+  }, [evidence, isDemo, toast, props, liveQc, desc, evidenciaUrlPersisted, liveError]);
 
-  const handleSentDismiss = useCallback(() => {
-    // Limpieza completa antes de salir.
-    evidence.forEach((e) => {
-      try {
-        URL.revokeObjectURL(e.preview);
-      } catch {
-        /* noop */
+  const handleSentDismiss = useCallback(
+    async (action: 'mis-tareas' | 'siguiente-tarea' = 'mis-tareas') => {
+      evidence.forEach((e) => {
+        try {
+          URL.revokeObjectURL(e.preview);
+        } catch {
+          /* noop */
+        }
+      });
+      setEvidence([]);
+      setDesc('');
+      setLiveQc(false);
+      setLiveError(null);
+      clearPersisted();
+      if (!isDemo) {
+        const live = props as LiveStitchProps;
+        if (live.onExitWorkSession) {
+          await live.onExitWorkSession(action);
+          return;
+        }
       }
-    });
-    setEvidence([]);
-    setDesc('');
-    setLiveQc(false);
-    setLiveError(null);
-    clearPersisted();
-    if (!isDemo) {
-      const liveProps = props as LiveStitchProps;
-      liveProps.onSentDismiss?.();
-    }
-    router.push('/socio');
-  }, [evidence, isDemo, props, router]);
+      router.push('/socio');
+    },
+    [evidence, isDemo, props, router],
+  );
 
   /* ——— Pausa ——— */
   if (phase === 'paused') {
@@ -652,7 +748,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                   <div className="pointer-events-auto flex justify-center pb-2">
                     <button
                       type="button"
-                      onClick={() => fileRefCamera.current?.click()}
+                      onClick={openCamera}
                       className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-stitch-primary to-stitch-primary-container shadow-lg transition-transform active:scale-95"
                       aria-label="Capturar"
                     >
@@ -676,7 +772,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => fileRefCamera.current?.click()}
+                  onClick={openCamera}
                   className="flex h-[52px] shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container px-8 font-bold text-white shadow-lg"
                 >
                   Sacar foto
@@ -709,7 +805,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                   {evidence.length < MAX_EVIDENCE && (
                     <button
                       type="button"
-                      onClick={() => fileRefGallery.current?.click()}
+                      onClick={openGallery}
                       className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-stitch-outline-variant bg-stitch-surface-container-highest text-stitch-outline transition-colors hover:border-stitch-primary hover:text-stitch-primary"
                     >
                       <ImageIcon className="h-8 w-8" />
@@ -740,6 +836,13 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
   /* ——— Cierre ——— */
   if (phase === 'cierre') {
+    const retrySendOnly = Boolean(
+      !isDemo &&
+        evidenciaUrlPersisted &&
+        liveProps?.onRetrySendOnly &&
+        (liveError || operationalFlowPhase === 'error'),
+    );
+
     return (
       <div className="min-h-screen bg-stitch-surface pb-32 font-stitch-body text-stitch-on-surface antialiased">
         <main className="mx-auto max-w-lg space-y-6 px-6 pb-8 pt-6">
@@ -768,10 +871,15 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                   <img src={e.preview} alt="" className="h-full w-full object-cover" />
                 </div>
               ))}
+              {!evidence.length && evidenciaUrlPersisted ? (
+                <div className="h-12 w-12 overflow-hidden rounded-lg ring-2 ring-emerald-500">
+                  <img src={evidenciaUrlPersisted} alt="" className="h-full w-full object-cover" />
+                </div>
+              ) : null}
             </div>
           </div>
 
-          {!isDemo && (
+          {!isDemo && !retrySendOnly && (
             <div className="flex items-start gap-2 rounded-xl border border-stitch-outline-variant bg-white/80 px-4 py-3">
               <input
                 id="stitch-live-qc"
@@ -794,30 +902,32 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
             >
               <span className="font-semibold">No se pudo enviar la evidencia.</span>
               <span className="text-red-700/90">{liveError}</span>
-              <button
-                type="button"
-                onClick={() => setLiveError(null)}
-                className="self-start text-xs font-bold uppercase tracking-wider text-red-700 underline"
-              >
-                Descartar mensaje
-              </button>
+              {!retrySendOnly ? (
+                <button
+                  type="button"
+                  onClick={() => setPhase('evidence')}
+                  className="self-start text-xs font-bold uppercase tracking-wider text-red-700 underline"
+                >
+                  Volver a cargar evidencia
+                </button>
+              ) : null}
             </div>
           ) : null}
 
           <Button
             type="button"
-            disabled={liveSending || (!isDemo && !liveQc)}
+            disabled={liveSending || (!isDemo && !retrySendOnly && !liveQc)}
             onClick={() => void onEnviarValidacion()}
             className="flex w-full items-center justify-center gap-3 rounded-xl border-0 bg-stitch-primary py-4 font-stitch-headline text-sm font-bold uppercase tracking-widest text-white shadow-lg disabled:opacity-50"
           >
             {liveSending ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Enviando evidencia…</span>
+                <span>{retrySendOnly ? 'Enviando a validación…' : 'Enviando evidencia…'}</span>
               </>
             ) : (
               <>
-                <span>{liveError ? 'Reintentar envío' : 'Enviar a validación'}</span>
+                <span>{liveError || retrySendOnly ? 'Reintentar envío' : 'Enviar a validación'}</span>
                 <Send className="h-5 w-5" />
               </>
             )}
@@ -844,26 +954,29 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
 
   /* ——— Enviado (confirmación post-envío exitoso) ——— */
   if (phase === 'sent') {
+    const previewUrl = evidence[0]?.preview ?? evidenciaUrlPersisted;
+    const showNextTask = !isDemo && (props as LiveStitchProps).hasNextTask;
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-stitch-surface px-6 pb-24 pt-10 text-center font-stitch-body">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 shadow-inner">
           <CheckCircle className="h-12 w-12 text-emerald-600" strokeWidth={1.75} />
         </div>
         <h2 className="mt-6 font-stitch-headline text-2xl font-extrabold tracking-tight text-stitch-primary">
-          ¡Evidencia enviada!
+          Evidencia enviada correctamente
         </h2>
         <p className="mt-2 max-w-sm text-sm text-stitch-on-surface/80">
-          Tu bloque <strong>{taskTitle}</strong> quedó en revisión ante el cliente. Te avisaremos cuando sea
-          aprobado o si necesita ajustes.
+          Bloque enviado a validación. Tu bloque <strong>{taskTitle}</strong> quedó en revisión ante el
+          cliente.
         </p>
 
-        {evidence[0]?.preview ? (
+        {previewUrl ? (
           <div className="mt-6 w-full max-w-xs">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-stitch-on-surface/60">
               Evidencia enviada
             </p>
             <div className="overflow-hidden rounded-2xl border border-stitch-outline-variant/40 shadow-sm">
-              <img src={evidence[0].preview} alt="Evidencia enviada" className="h-44 w-full object-cover" />
+              <img src={previewUrl} alt="Evidencia enviada" className="h-44 w-full object-cover" />
             </div>
           </div>
         ) : null}
@@ -873,11 +986,21 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
             type="button"
             variant="primary"
             className="h-12 w-full rounded-xl bg-stitch-primary text-white"
-            onClick={handleSentDismiss}
+            onClick={() => void handleSentDismiss('mis-tareas')}
           >
             <Home className="mr-2 h-4 w-4" />
             Ir a mis tareas
           </Button>
+          {showNextTask ? (
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-12 w-full rounded-xl border-stitch-outline-variant"
+              onClick={() => void handleSentDismiss('siguiente-tarea')}
+            >
+              Ver siguiente tarea
+            </Button>
+          ) : null}
         </div>
       </div>
     );

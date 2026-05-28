@@ -46,6 +46,16 @@ import {
 } from '@/lib/socio/cargar-tarea-ahora';
 import type { AhoraStitchChecklistItem, AhoraStitchItemState } from '@/lib/mocks/socioMockData';
 import { AhoraJornadaActivaStitch } from '@/components/socio/ahora/AhoraJornadaActivaStitch';
+import {
+  bindOperationalSessionListeners,
+  clearAhoraOperationalSession,
+  loadAhoraOperationalSession,
+  saveAhoraOperationalSession,
+  shouldShowActiveWorkSession,
+  shouldSkipSubtareaBackendRecalc,
+  type AhoraOperationalSession,
+  type AhoraStitchSnapshot,
+} from '@/lib/socio/ahora-operational-session';
 
 async function comprimirImagenSocio(file: File, maxWidth = 1200): Promise<string> {
   return fileToEvidenceDataUrl(file, maxWidth);
@@ -231,22 +241,52 @@ export function AhoraSection() {
   /** FK jornadas_socio / subtareas: socios.id (no auth.users.id). */
   const [socioIdGrows, setSocioIdGrows] = useState<string | null>(null);
   const [subtareaRefreshKey, setSubtareaRefreshKey] = useState(0);
-  /**
-   * Mantener la UI inmersiva `AhoraJornadaActivaStitch` visible después de un envío exitoso de evidencia.
-   * Se setea desde el callback `onSendSuccess` del componente hijo y se libera cuando el usuario presiona
-   * “Ir a mis tareas” en la pantalla de confirmación (`onSentDismiss`).
-   * Sin esto, al cambiar la subtarea a `para_validar` se desmonta el Stitch y se percibe que la app "vuelve al inicio".
-   */
-  const [stitchLockedAfterSent, setStitchLockedAfterSent] = useState(false);
-  const lastStitchPropsRef = useRef<{
-    taskTitle: string;
-    obraLine: string | null;
-    runningChecklist: AhoraStitchChecklistItem[];
-    microStepTitles: string[];
-    progresoHecho: number;
-    progresoTotal: number;
-    initialElapsedSeconds: number;
-  } | null>(null);
+  /** Sesión operativa frontend (sessionStorage) — desacoplada de la FSM backend. */
+  const [operationalSession, setOperationalSession] = useState<AhoraOperationalSession | null>(() =>
+    USE_MOCK_DATA ? null : loadAhoraOperationalSession(),
+  );
+  const operationalSessionRef = useRef<AhoraOperationalSession | null>(operationalSession);
+  operationalSessionRef.current = operationalSession;
+
+  const lastStitchPropsRef = useRef<AhoraStitchSnapshot | null>(
+    operationalSession?.stitchSnapshot ?? null,
+  );
+
+  const patchOperationalSession = useCallback((patch: Partial<AhoraOperationalSession>) => {
+    setOperationalSession((prev) => saveAhoraOperationalSession(prev, patch));
+  }, []);
+
+  useEffect(() => {
+    if (USE_MOCK_DATA) return;
+    return bindOperationalSessionListeners(
+      () => operationalSessionRef.current,
+      (s) => setOperationalSession(s),
+    );
+  }, []);
+
+  /** Restaurar subtarea activa desde sesión operativa tras suspensión del navegador. */
+  useEffect(() => {
+    if (USE_MOCK_DATA) return;
+    const sess = operationalSessionRef.current;
+    if (!sess?.subtareaId || !shouldSkipSubtareaBackendRecalc(sess)) return;
+    if (subtareaActual?.id === sess.subtareaId) return;
+
+    let cancelled = false;
+    (async () => {
+      const { data } = await (supabase as any)
+        .from('tareas_subtareas')
+        .select(SELECT_SUBTAREA_REL)
+        .eq('id', sess.subtareaId)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setSubtareaActual(data);
+        subtareaFijadaRef.current = { id: String(data.id), until: Date.now() + 600_000 };
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [operationalSession?.subtareaId, subtareaActual?.id, supabase]);
   const generarBloquesIntentados = useRef<Set<string>>(new Set());
   const requestEnCursoRef = useRef<Set<string>>(new Set());
   /** Evita que el effect de jornada/subtarea pise el estado recién confirmado por la API. */
@@ -290,9 +330,12 @@ export function AhoraSection() {
     } else if (errorCode === 'TRANSICIÓN_NO_PERMITIDA' || errorMessage.includes('Transicion no permitida') || errorMessage.includes('no permitida') || errorMessage.includes('transición no permitida')) {
       title = 'Acción no permitida';
       description = 'Esta acción no está permitida en este estado.';
-    } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
+    } else if (errorCode === 'EVIDENCIA_FALTANTE' || errorCode === 'EVIDENCIA_REQUERIDA' || errorMessage.includes('Debes cargar evidencia') || errorMessage.includes('evidencia obligatoria')) {
       title = 'Evidencia requerida';
       description = 'Debés cargar evidencia antes de enviar el bloque para validar.';
+    } else if (errorCode === 403 || errorCode === '403') {
+      title = 'Sin permiso';
+      description = 'No tenés permiso para operar esta tarea.';
     } else if (
       errorCode === 'PRESUPUESTO_APROBADO_NO_ENCONTRADO' ||
       errorMessage.includes('No hay presupuesto aprobado')
@@ -744,6 +787,12 @@ export function AhoraSection() {
 
         const fijada = subtareaFijadaRef.current;
         if (fijada && Date.now() < fijada.until) {
+          await contarSubtareasScoped();
+          return;
+        }
+
+        const sess = operationalSessionRef.current;
+        if (shouldSkipSubtareaBackendRecalc(sess) && sess?.tareaId === tid) {
           await contarSubtareasScoped();
           return;
         }
@@ -1284,6 +1333,15 @@ export function AhoraSection() {
           until: Date.now() + 8000,
         };
         setSubtareaActual(data.subtarea);
+        patchOperationalSession({
+          flowPhase: 'bloque_en_progreso',
+          socioId: socioIdGrows,
+          orgId: orgIdResuelta || currentUser?.orgId || null,
+          tareaId,
+          subtareaId: String(data.subtarea.id),
+          errorCode: null,
+          errorMessage: null,
+        });
       }
 
       if (Array.isArray(data?.bloques)) {
@@ -1475,9 +1533,18 @@ export function AhoraSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- contadores encapsulados
   }, [socioIdGrows, orgIdResuelta, currentUser?.id, subtareaRefreshKey]);
 
-  const handleEnviarParaValidar = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string): Promise<boolean> => {
+  const handleEnviarParaValidar = async (
+    evidenciaUrl?: string,
+    videoUrl?: string,
+    problemas?: string,
+    opts?: { skipDestructiveRefresh?: boolean },
+  ): Promise<boolean> => {
     if (!subtareaActual || !currentUser) return false;
-    const requestKey = `enviar-validar:${subtareaActual.id}`;
+    const subtareaId = String(subtareaActual.id);
+    const tareaId =
+      String(subtareaActual.tarea_id ?? subtareaActual.tareas?.id ?? '') || null;
+
+    const requestKey = `enviar-validar:${subtareaId}`;
     if (requestEnCursoRef.current.has(requestKey)) {
       toast({
         title: 'Procesando',
@@ -1490,35 +1557,60 @@ export function AhoraSection() {
     }
 
     const evidenciaObligatoria = subtareaActual.evidencia_obligatoria !== false;
+    const urlCandidate =
+      evidenciaUrl ??
+      operationalSessionRef.current?.evidenciaUrl ??
+      (typeof subtareaActual.evidencia_url === 'string' ? subtareaActual.evidencia_url : null);
     const evidenciaPersistida =
-      Boolean(subtareaActual.evidencia_cargada) &&
-      Boolean(String(subtareaActual.evidencia_url ?? '').trim());
-    const tieneEvidencia =
-      evidenciaPersistida || Boolean(String(evidenciaUrl ?? '').trim());
+      Boolean(subtareaActual.evidencia_cargada) && Boolean(String(subtareaActual.evidencia_url ?? '').trim());
+    const tieneEvidencia = evidenciaPersistida || Boolean(String(urlCandidate ?? '').trim());
     if (evidenciaObligatoria && !tieneEvidencia) {
       handleApiError(
         { errorCode: 'EVIDENCIA_FALTANTE', message: 'Debés subir una foto antes de enviar a validar.' },
         'Debés subir una foto antes de enviar a validar.',
       );
+      patchOperationalSession({
+        flowPhase: 'error',
+        errorCode: 'EVIDENCIA_FALTANTE',
+        errorMessage: 'Debés subir una foto antes de enviar a validar.',
+      });
       return false;
     }
+
+    /** Bloquear UI inmediatamente — antes de que el backend pase a para_validar. */
+    patchOperationalSession({
+      flowPhase: 'subiendo',
+      socioId: socioIdGrows,
+      orgId: orgIdResuelta || currentUser?.orgId || null,
+      tareaId,
+      subtareaId,
+      evidenciaUrl: urlCandidate,
+      tempEvidenceDesc: problemas ?? operationalSessionRef.current?.tempEvidenceDesc ?? null,
+      stitchSnapshot: lastStitchPropsRef.current,
+      errorCode: null,
+      errorMessage: null,
+    });
+    subtareaFijadaRef.current = { id: subtareaId, until: Date.now() + 600_000 };
 
     requestEnCursoRef.current.add(requestKey);
     setIsFinalizando(true);
     setIsSendingTransition(true);
     setIsSendingToValidation(true);
     setError(null);
-    
+
+    if (process.env.NODE_ENV === 'development') {
+      console.info('[ENVIAR_VALIDAR_START]', { subtareaId, tareaId, evidenciaUrl: urlCandidate });
+    }
+
     try {
-      // El endpoint server-side guarda la evidencia y luego avanza la FSM.
-      const response = await fetch(`/api/tareas-subtareas/${subtareaActual.id}/enviar-validar`, {
+      const response = await fetch(`/api/tareas-subtareas/${subtareaId}/enviar-validar`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          evidenciaUrl: evidenciaUrl ?? null,
+          evidenciaUrl: urlCandidate ?? null,
           videoUrl: videoUrl ?? null,
           problemas: problemas ?? null,
         }),
@@ -1526,39 +1618,84 @@ export function AhoraSection() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[ENVIAR_VALIDAR_ERROR]', { subtareaId, status: response.status, errorData });
+        }
         handleApiError(errorData, 'Error al enviar el bloque para validar');
-        setIsFinalizando(false);
+        const errCode = String(errorData?.errorCode ?? errorData?.error ?? response.status);
+        const errMsg =
+          response.status === 403
+            ? 'No tenés permiso para operar esta tarea.'
+            : errCode === 'EVIDENCIA_REQUERIDA'
+              ? 'Debés cargar evidencia antes de enviar el bloque para validar.'
+              : typeof errorData?.message === 'string'
+                ? errorData.message
+                : 'Error al enviar el bloque para validar';
+        patchOperationalSession({
+          flowPhase: 'error',
+          errorCode: errCode,
+          errorMessage: errMsg,
+          evidenciaUrl: errCode === 'EVIDENCIA_REQUERIDA' ? null : urlCandidate,
+        });
         return false;
       }
 
-      // Solo actualizar UI si la API confirma éxito
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[ENVIAR_VALIDAR_OK]', { subtareaId, tareaId });
+      }
+
+      patchOperationalSession({
+        flowPhase: 'enviado',
+        evidenciaUrl: urlCandidate,
+        errorCode: null,
+        errorMessage: null,
+        stitchSnapshot: lastStitchPropsRef.current,
+      });
+
       toast({
         title: 'Bloque enviado para validar',
         description: 'El bloque está ahora en revisión.',
       });
 
-      // Recargar subtarea
-      const { data: subtareaData } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(SELECT_SUBTAREA_REL)
-        .eq('id', subtareaActual.id)
-        .maybeSingle();
+      setSubtareaActual((prev: typeof subtareaActual) =>
+        prev
+          ? {
+              ...prev,
+              estado: 'para_validar',
+              evidencia_url: urlCandidate ?? prev.evidencia_url,
+              evidencia_cargada: true,
+            }
+          : prev,
+      );
 
-      if (subtareaData) {
-        setSubtareaActual(subtareaData);
+      if (!opts?.skipDestructiveRefresh) {
+        const { data: subtareaData } = await (supabase as any)
+          .from('tareas_subtareas')
+          .select(SELECT_SUBTAREA_REL)
+          .eq('id', subtareaId)
+          .maybeSingle();
+        if (subtareaData) {
+          setSubtareaActual(subtareaData);
+        }
+        window.setTimeout(() => {
+          setSubtareaRefreshKey((k) => k + 1);
+        }, 850);
+        await fetchData();
       }
 
-      /** Evita pisar `para_validar` con una lista recién leída que aún viene `en_progreso` */
-      window.setTimeout(() => {
-        setSubtareaRefreshKey((k) => k + 1);
-      }, 850);
-
-      // Recargar contadores y datos
       await cargarContadoresBloques();
-      await fetchData();
       return true;
     } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[ENVIAR_VALIDAR_ERROR]', err);
+      }
       handleApiError(err, 'Error al enviar el bloque para validar. Por favor, intenta nuevamente.');
+      patchOperationalSession({
+        flowPhase: 'error',
+        errorCode: 'ENVIAR_VALIDAR_EXCEPTION',
+        errorMessage: err instanceof Error ? err.message : 'Error al enviar el bloque para validar',
+        evidenciaUrl: urlCandidate,
+      });
       return false;
     } finally {
       requestEnCursoRef.current.delete(requestKey);
@@ -1567,6 +1704,58 @@ export function AhoraSection() {
       setIsFinalizando(false);
     }
   };
+
+  const handleRetryEnviarValidar = async (problemas?: string): Promise<void> => {
+    const url = operationalSessionRef.current?.evidenciaUrl;
+    if (!url?.trim()) {
+      throw new Error('No hay evidencia guardada. Volvé a tomar la foto.');
+    }
+    const ok = await handleEnviarParaValidar(url, undefined, problemas, { skipDestructiveRefresh: true });
+    if (!ok) {
+      throw new Error(
+        operationalSessionRef.current?.errorMessage ?? 'No se pudo enviar el bloque a validación.',
+      );
+    }
+  };
+
+  const handlePersistBeforeCamera = useCallback(() => {
+    const sub = subtareaActual;
+    if (!sub) return;
+    patchOperationalSession({
+      flowPhase: operationalSessionRef.current?.flowPhase ?? 'bloque_en_progreso',
+      socioId: socioIdGrows,
+      orgId: orgIdResuelta || currentUser?.orgId || null,
+      tareaId: String(sub.tarea_id ?? sub.tareas?.id ?? tareaActual?.id ?? ''),
+      subtareaId: String(sub.id),
+      stitchPhase: 'evidence',
+      stitchSnapshot: lastStitchPropsRef.current,
+    });
+  }, [subtareaActual, socioIdGrows, orgIdResuelta, currentUser?.orgId, tareaActual?.id, patchOperationalSession]);
+
+  const handleStitchPhaseChange = useCallback(
+    (stitchPhase: string) => {
+      if (operationalSessionRef.current?.flowPhase === 'enviado') return;
+      patchOperationalSession({ stitchPhase });
+    },
+    [patchOperationalSession],
+  );
+
+  const handleWorkSessionExit = useCallback(
+    async (action: 'mis-tareas' | 'siguiente-tarea') => {
+      const tareaIdSalida = operationalSessionRef.current?.tareaId ?? tareaActual?.id ?? null;
+      clearAhoraOperationalSession();
+      setOperationalSession(null);
+      lastStitchPropsRef.current = null;
+      subtareaFijadaRef.current = null;
+
+      if (action === 'siguiente-tarea') {
+        await avanzarTrasTareaCompletada(tareaIdSalida ?? undefined);
+        return;
+      }
+      router.push('/socio');
+    },
+    [router, tareaActual?.id],
+  );
 
   const handleStitchLiveSend = async ({
     mainPhotoFile,
@@ -1577,24 +1766,39 @@ export function AhoraSection() {
     problemas?: string;
     qcConfirmed: boolean;
   }) => {
-      if (!qcConfirmed) {
-        throw new Error('Confirmá el control de calidad antes de enviar.');
-      }
-      const sid = subtareaActual?.id;
-      if (!sid) {
-        throw new Error('No encontramos el bloque activo.');
-      }
+    if (!qcConfirmed) {
+      throw new Error('Confirmá el control de calidad antes de enviar.');
+    }
+    const sid = String(
+      operationalSessionRef.current?.subtareaId ?? subtareaActual?.id ?? '',
+    );
+    if (!sid) {
+      throw new Error('No encontramos el bloque activo.');
+    }
 
-      setIsUploadingEvidence(true);
-      let dataUrl: string;
-      try {
-        dataUrl = await fileToEvidenceDataUrl(mainPhotoFile, 1200);
-      } finally {
-        setIsUploadingEvidence(false);
+    patchOperationalSession({
+      flowPhase: 'subiendo',
+      subtareaId: sid,
+      tareaId:
+        operationalSessionRef.current?.tareaId ??
+        String(subtareaActual?.tarea_id ?? subtareaActual?.tareas?.id ?? tareaActual?.id ?? ''),
+      tempEvidenceDesc: problemas ?? null,
+      stitchSnapshot: lastStitchPropsRef.current,
+    });
+
+    setIsUploadingEvidence(true);
+    let dataUrl: string;
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[UPLOAD_PHOTO_START]', { subtareaId: sid });
       }
+      dataUrl = await fileToEvidenceDataUrl(mainPhotoFile, 1200);
+    } finally {
+      setIsUploadingEvidence(false);
+    }
 
-      console.info('[EVIDENCIA_TRACE] 1/3 — Iniciando upload', { subtareaId: sid, tareaId: subtareaActual?.tarea_id });
-
+    let urlUsable: string;
+    try {
       const response = await fetch('/api/upload/photo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1603,50 +1807,63 @@ export function AhoraSection() {
       });
       const result = await response.json().catch(() => ({}));
 
-      console.info('[EVIDENCIA_TRACE] 2/3 — Respuesta upload', {
-        ok: response.ok,
-        status: response.status,
-        subtareaId: sid,
-        trace: (result as { trace?: unknown }).trace ?? null,
-        evidencia_url: (result as { evidencia_url?: string }).evidencia_url ?? null,
-        error: (result as { message?: string; error?: string }).message ?? (result as { error?: string }).error ?? null,
-      });
-
       if (!response.ok) {
-        const msg = (result as any).message || (result as any).error || 'Error al subir evidencia';
+        const msg = (result as { message?: string; error?: string }).message || (result as { error?: string }).error || 'Error al subir evidencia';
+        if (process.env.NODE_ENV === 'development') {
+          console.info('[UPLOAD_PHOTO_ERROR]', { subtareaId: sid, status: response.status, msg });
+        }
+        patchOperationalSession({
+          flowPhase: 'error',
+          errorCode: 'UPLOAD_PHOTO_ERROR',
+          errorMessage: msg,
+        });
         throw new Error(msg);
       }
 
-      const trace = (result as { trace?: { historial?: { eventoId?: string; mediaId?: string; tareaId?: string }; historialError?: string | null } }).trace;
-      if (trace?.historialError) {
-        console.warn('[EVIDENCIA_TRACE] Historial parcial — reintentará en enviar-validar', trace.historialError);
-      }
-
-      const urlUsable =
-        (result as any).evidencia_url ?? (result as any).publicUrl ?? (result as any).path;
+      urlUsable =
+        (result as { evidencia_url?: string }).evidencia_url ??
+        (result as { publicUrl?: string }).publicUrl ??
+        (result as { path?: string }).path ??
+        '';
       if (!urlUsable) {
         throw new Error('La subida no devolvió una URL de evidencia usable');
       }
 
-      console.info('[EVIDENCIA_TRACE] 3/3 — Enviando a validar', {
-        subtareaId: sid,
-        evidenciaUrl: urlUsable,
-        eventoId: trace?.historial?.eventoId ?? null,
-        mediaId: trace?.historial?.mediaId ?? null,
-        tareaId: trace?.historial?.tareaId ?? subtareaActual?.tarea_id ?? null,
-      });
-
-      const ok = await handleEnviarParaValidar(String(urlUsable), undefined, problemas);
-      if (!ok) {
-        throw new Error('No se pudo enviar el bloque a validación.');
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[UPLOAD_PHOTO_OK]', {
+          subtareaId: sid,
+          evidenciaUrl: urlUsable,
+          trace: (result as { trace?: unknown }).trace ?? null,
+        });
       }
 
-      console.info('[EVIDENCIA_TRACE] COMPLETADO', {
-        subtareaId: sid,
+      patchOperationalSession({
+        flowPhase: 'evidencia_capturada',
         evidenciaUrl: urlUsable,
-        tareaId: subtareaActual?.tarea_id ?? null,
+        tempEvidenceDesc: problemas ?? null,
       });
-    };
+
+      setSubtareaActual((prev: typeof subtareaActual) =>
+        prev
+          ? { ...prev, evidencia_url: urlUsable, evidencia_cargada: true }
+          : prev,
+      );
+    } catch (uploadErr) {
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[UPLOAD_PHOTO_ERROR]', uploadErr);
+      }
+      throw uploadErr;
+    }
+
+    const ok = await handleEnviarParaValidar(urlUsable, undefined, problemas, {
+      skipDestructiveRefresh: true,
+    });
+    if (!ok) {
+      throw new Error(
+        operationalSessionRef.current?.errorMessage ?? 'No se pudo enviar el bloque a validación.',
+      );
+    }
+  };
 
   const handleFinalizarSubtarea = async (evidenciaUrl?: string, videoUrl?: string, problemas?: string) => {
     if (!subtareaActual || !currentUser) return;
@@ -1975,18 +2192,24 @@ export function AhoraSection() {
   }
 
   /** Pantalla inmersiva igual a `/socio/ahora/demo`, con datos de la tarea/bloque desde Supabase/API */
-  const muestraStitchEnVivo =
+  const backendBlockEnProgreso =
     !USE_MOCK_DATA &&
     Boolean(jornadaActual) &&
     Boolean(subtareaActual) &&
     String(subtareaActual.estado || '').toLowerCase() === 'en_progreso';
 
-  const shouldRenderStitch =
-    (muestraStitchEnVivo && subtareaActual) || (stitchLockedAfterSent && lastStitchPropsRef.current);
+  const showActiveWorkSession = shouldShowActiveWorkSession({
+    backendBlockEnProgreso,
+    session: operationalSession,
+  });
 
-  if (shouldRenderStitch) {
-    let stitchProps = lastStitchPropsRef.current;
-    if (muestraStitchEnVivo && subtareaActual) {
+  const hasNextTask = tareas.length > 1;
+
+  if (showActiveWorkSession) {
+    let stitchProps: AhoraStitchSnapshot | null =
+      lastStitchPropsRef.current ?? operationalSession?.stitchSnapshot ?? null;
+
+    if (backendBlockEnProgreso && subtareaActual) {
       const runningChecklist: AhoraStitchChecklistItem[] =
         bloquesLista.length > 0
           ? bloquesToRunningChecklist(bloquesLista, subtareaActual.id)
@@ -2037,12 +2260,19 @@ export function AhoraSection() {
         progresoHecho={stitchProps.progresoHecho}
         progresoTotal={stitchProps.progresoTotal}
         initialElapsedSeconds={stitchProps.initialElapsedSeconds}
+        operationalFlowPhase={
+          operationalSession?.flowPhase ??
+          (backendBlockEnProgreso ? 'bloque_en_progreso' : 'idle')
+        }
+        operationalErrorMessage={operationalSession?.errorMessage ?? null}
+        evidenciaUrlPersisted={operationalSession?.evidenciaUrl ?? null}
+        initialStitchPhase={operationalSession?.stitchPhase ?? null}
         onSendValidationLive={handleStitchLiveSend}
-        onSendSuccess={() => setStitchLockedAfterSent(true)}
-        onSentDismiss={() => {
-          setStitchLockedAfterSent(false);
-          lastStitchPropsRef.current = null;
-        }}
+        onPersistBeforeCamera={handlePersistBeforeCamera}
+        onStitchPhaseChange={handleStitchPhaseChange}
+        onRetrySendOnly={handleRetryEnviarValidar}
+        onExitWorkSession={handleWorkSessionExit}
+        hasNextTask={hasNextTask}
       />
     );
   }

@@ -242,11 +242,23 @@ export class ClienteWalletService {
     metodoPago?: 'EFECTIVO' | 'ONLINE';
   }) {
     const contexto = await this.obtenerContextoSubtareaValidada(params.subtareaId);
+    const metodoPago = params.metodoPago ?? 'EFECTIVO';
+
+    const montoInfo = await this.resolverMontoSubtarea(
+      contexto.orgId,
+      params.subtareaId,
+      contexto.socioId,
+    );
+    if (montoInfo.monto <= 0) {
+      throw new Error(
+        'MONTO_BLOQUE_INVALIDO: el bloque no tiene monto estimado ni presupuesto aprobado para acreditar la billetera',
+      );
+    }
 
     let socioOk = false;
     let socioError: string | null = null;
     try {
-      await WalletMvpService.registrarPagoPorBloque(params.subtareaId, params.metodoPago ?? 'EFECTIVO');
+      await WalletMvpService.registrarPagoPorBloque(params.subtareaId, metodoPago);
       socioOk = true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error acreditando socio';
@@ -257,27 +269,35 @@ export class ClienteWalletService {
       }
     }
 
-    let clienteOk = false;
+    /** Efectivo: el cliente paga fuera de la app; solo acreditamos al socio. */
+    let clienteOk = metodoPago === 'EFECTIVO';
     let clienteError: string | null = null;
-    try {
-      await this.descontarPagoDeSubtareaValidada({
-        orgId: contexto.orgId,
-        tareaId: contexto.tareaId,
-        subtareaId: params.subtareaId,
-        clienteUserId: params.clienteUserId,
-        socioId: contexto.socioId,
-      });
-      clienteOk = true;
-    } catch (error) {
-      clienteError = error instanceof Error ? error.message : 'Error descontando wallet cliente';
+    let clienteOmitido = metodoPago === 'EFECTIVO';
+
+    if (metodoPago === 'ONLINE') {
+      try {
+        await this.descontarPagoDeSubtareaValidada({
+          orgId: contexto.orgId,
+          tareaId: contexto.tareaId,
+          subtareaId: params.subtareaId,
+          clienteUserId: params.clienteUserId,
+          socioId: contexto.socioId,
+        });
+        clienteOk = true;
+      } catch (error) {
+        clienteError = error instanceof Error ? error.message : 'Error descontando wallet cliente';
+      }
     }
 
     if (!socioOk || !clienteOk) {
       throw new Error(
         `RECONCILIACION_INCOMPLETA:${JSON.stringify({
           subtareaId: params.subtareaId,
+          metodoPago,
+          montoBloque: montoInfo.monto,
           socioOk,
           clienteOk,
+          clienteOmitido,
           socioError,
           clienteError,
         })}`,
@@ -288,8 +308,11 @@ export class ClienteWalletService {
       subtareaId: params.subtareaId,
       orgId: contexto.orgId,
       socioId: contexto.socioId,
+      metodoPago,
+      montoBloque: montoInfo.monto,
       socioOk,
       clienteOk,
+      clienteOmitido,
     };
   }
 

@@ -98,7 +98,7 @@ export async function POST(
       );
     }
 
-    const { tareaValidada, validadoEnObra } = await SubtareaMvpService.validarSubtarea(id, {
+    const { tareaValidada, validadoEnObra, reconciliacion } = await SubtareaMvpService.validarSubtarea(id, {
       id: user.id,
       rol,
       metodoPago,
@@ -106,7 +106,12 @@ export async function POST(
       motivo,
     });
 
-    return NextResponse.json({ success: true, tareaValidada, validadoEnObra: validadoEnObra ?? false });
+    return NextResponse.json({
+      success: true,
+      tareaValidada,
+      validadoEnObra: validadoEnObra ?? false,
+      reconciliacion: reconciliacion ?? undefined,
+    });
   } catch (error) {
     console.error('[VALIDAR_SUBTAREA] Error:', error);
     return NextResponse.json(

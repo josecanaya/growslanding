@@ -600,7 +600,7 @@ export class SubtareaMvpService {
     }
 
     await WalletMvpService.verificarSocioNoSuspendido(socioId);
-    await ClienteWalletService.reconciliarSubtareaValidada({
+    const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
       subtareaId,
       clienteUserId: actor.id,
       metodoPago: actor.metodoPago ?? 'EFECTIVO',
@@ -626,7 +626,7 @@ export class SubtareaMvpService {
       }
     }
 
-    return { tareaValidada };
+    return { tareaValidada, reconciliacion };
   }
 
   /**

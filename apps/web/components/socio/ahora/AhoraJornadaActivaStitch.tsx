@@ -25,7 +25,7 @@ import { useAhoraWorkNav } from '@/components/socio/ahora/AhoraWorkNavContext';
 import type { AhoraStitchChecklistItem } from '@/lib/mocks/socioMockData';
 import { MOCK_AHORA_STITCH } from '@/lib/mocks/socioMockData';
 import { cn } from '@/lib/utils';
-import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
+import { fileLooksLikeImage, stabilizeImageFile } from '@/lib/socio/evidenceCapture';
 import type { AhoraFlowPhase } from '@/lib/socio/ahora-operational-session';
 import { Button } from '@/components/ui/grows/Button';
 
@@ -83,7 +83,7 @@ function formatHMS(totalSec: number) {
 
 const MAX_EVIDENCE = 5;
 
-type EvidenceSlot = { id: string; preview: string; file?: File };
+type EvidenceSlot = { id: string; preview: string; file?: File; uploadedUrl?: string };
 
 type DemoProps = {
   /** Referencia Stitch local (Maqueta) */
@@ -120,6 +120,11 @@ export type LiveStitchProps = {
   }) => Promise<void>;
   /** Persistir sesión operativa antes de abrir cámara/galería (mobile). */
   onPersistBeforeCamera?: () => void;
+  /**
+   * Tras OK en cámara: sube la foto al servidor y persiste URL en sesión operativa.
+   * Debe lanzar Error con mensaje claro ante fallo.
+   */
+  onUploadCameraPhoto?: (file: File) => Promise<{ url: string }>;
   /** Notificar cambio de fase visual interna al padre (sessionStorage). */
   onStitchPhaseChange?: (phase: StitchPhase) => void;
   /** Reintentar solo enviar-validar cuando upload ya fue exitoso. */
@@ -189,6 +194,9 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   const [liveError, setLiveError] = useState<string | null>(null);
   const fileRefGallery = useRef<HTMLInputElement | null>(null);
   const fileRefCamera = useRef<HTMLInputElement | null>(null);
+  const cameraUploadingRef = useRef(false);
+  const evidenceRestoredFromSessionRef = useRef(false);
+  const lastProcessedPhotoRef = useRef<string>('');
 
   const liveProps = !isDemo ? (props as LiveStitchProps) : null;
   const operationalFlowPhase = liveProps?.operationalFlowPhase;
@@ -268,6 +276,21 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
       clearPersisted();
     }
   }, [isDemo, liveProps]);
+
+  /** Si la cámara nativa remontó el componente, restaurar preview desde URL ya subida. */
+  useEffect(() => {
+    if (isDemo || evidenceRestoredFromSessionRef.current) return;
+    if (!evidenciaUrlPersisted || evidence.length > 0) return;
+    if (phase !== 'evidence' && phase !== 'cierre') return;
+    evidenceRestoredFromSessionRef.current = true;
+    setEvidence([
+      {
+        id: 'ev-persisted',
+        preview: evidenciaUrlPersisted,
+        uploadedUrl: evidenciaUrlPersisted,
+      },
+    ]);
+  }, [isDemo, evidenciaUrlPersisted, evidence.length, phase]);
 
   /** Sincronizar fase visual con sesión operativa del padre (post-upload / post-enviar). */
   useEffect(() => {
@@ -392,20 +415,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     });
   }, [microIndex, totalMicro, toast, isDemo]);
 
-  const addPhoto = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const input = e.target;
-      const f = input.files?.[0];
+  const processPhotoFile = useCallback(
+    async (rawFile: File, source: 'camera' | 'gallery', input?: HTMLInputElement) => {
       const resetInput = () => {
+        if (!input) return;
         window.setTimeout(() => {
           input.value = '';
-        }, 300);
+        }, 500);
       };
-
-      if (!f) {
-        resetInput();
-        return;
-      }
 
       if (evidence.length >= MAX_EVIDENCE) {
         toast({
@@ -415,6 +432,21 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
         });
         resetInput();
         return;
+      }
+
+      let f = rawFile;
+      if (source === 'camera') {
+        try {
+          f = await stabilizeImageFile(rawFile);
+        } catch (err) {
+          toast({
+            title: 'No pudimos leer la foto',
+            description: err instanceof Error ? err.message : 'Reintentá la captura.',
+            variant: 'destructive',
+          });
+          resetInput();
+          return;
+        }
       }
 
       const looksLikeImage =
@@ -432,39 +464,145 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
         return;
       }
 
+      const fingerprint = `${source}-${f.name}-${f.size}-${f.lastModified}`;
+      if (lastProcessedPhotoRef.current === fingerprint) {
+        resetInput();
+        return;
+      }
+      lastProcessedPhotoRef.current = fingerprint;
+      window.setTimeout(() => {
+        if (lastProcessedPhotoRef.current === fingerprint) {
+          lastProcessedPhotoRef.current = '';
+        }
+      }, 3000);
+
       const id = `ev-${Date.now()}`;
+      let preview: string;
       try {
-        const preview = URL.createObjectURL(f);
-        setEvidence((prev) => [...prev, { id, preview, file: f }]);
-        toast({
-          title: 'Foto agregada',
-          description: 'Quedará lista para enviar como evidencia oficial.',
-        });
+        preview = URL.createObjectURL(f);
       } catch (err) {
         toast({
           title: 'No pudimos previsualizar la foto',
           description: err instanceof Error ? err.message : 'Reintentá la captura.',
           variant: 'destructive',
         });
+        resetInput();
+        return;
       }
+
+      setEvidence((prev) => [...prev, { id, preview, file: f }]);
       resetInput();
+
+      if (source === 'camera' && !isDemo && liveProps?.onUploadCameraPhoto) {
+        if (cameraUploadingRef.current) return;
+        cameraUploadingRef.current = true;
+        try {
+          const { url } = await liveProps.onUploadCameraPhoto(f);
+          setEvidence((prev) =>
+            prev.map((slot) =>
+              slot.id === id ? { ...slot, uploadedUrl: url, preview: url, file: f } : slot,
+            ),
+          );
+          try {
+            URL.revokeObjectURL(preview);
+          } catch {
+            /* noop */
+          }
+          toast({
+            title: 'Tu foto se subió',
+            description: 'Quedó lista en la galería. Podés finalizar y enviar a validación.',
+          });
+        } catch (err) {
+          setEvidence((prev) => {
+            const slot = prev.find((p) => p.id === id);
+            if (slot?.preview.startsWith('blob:')) {
+              try {
+                URL.revokeObjectURL(slot.preview);
+              } catch {
+                /* noop */
+              }
+            }
+            return prev.filter((p) => p.id !== id);
+          });
+          toast({
+            title: 'No se pudo subir la foto',
+            description: err instanceof Error ? err.message : 'Reintentá la captura.',
+            variant: 'destructive',
+          });
+        } finally {
+          cameraUploadingRef.current = false;
+        }
+        return;
+      }
+
+      toast({
+        title: 'Foto agregada',
+        description: 'Quedará lista para enviar como evidencia oficial.',
+      });
     },
-    [evidence.length, toast],
+    [evidence.length, toast, isDemo, liveProps],
   );
+
+  const addPhotoFromInput = useCallback(
+    (source: 'camera' | 'gallery') => (e: React.ChangeEvent<HTMLInputElement>) => {
+      const input = e.target;
+      const f = input.files?.[0];
+      if (!f) {
+        window.setTimeout(() => {
+          input.value = '';
+        }, 300);
+        return;
+      }
+      void processPhotoFile(f, source, input);
+    },
+    [processPhotoFile],
+  );
+
+  /** iOS/Android: a veces `change` del input de cámara llega al volver de visible. */
+  useEffect(() => {
+    if (isDemo || phase !== 'evidence') return;
+
+    const tryDrainCameraInput = () => {
+      const input = fileRefCamera.current;
+      const f = input?.files?.[0];
+      if (!f || cameraUploadingRef.current) return;
+      void processPhotoFile(f, 'camera', input ?? undefined);
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        window.setTimeout(tryDrainCameraInput, 150);
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', tryDrainCameraInput);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', tryDrainCameraInput);
+    };
+  }, [isDemo, phase, processPhotoFile]);
 
   const removePhoto = useCallback((id: string) => {
     setEvidence((prev) => {
       const x = prev.find((p) => p.id === id);
-      if (x) URL.revokeObjectURL(x.preview);
+      if (x?.preview.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(x.preview);
+        } catch {
+          /* noop */
+        }
+      }
       return prev.filter((p) => p.id !== id);
     });
   }, []);
 
   const onFinalizarEvidencia = useCallback(() => {
-    if (evidence.length === 0) {
+    const tieneFoto = evidence.length > 0 || Boolean(evidenciaUrlPersisted);
+    if (!tieneFoto) {
       toast({
         title: 'Agregá al menos una foto',
-        description: 'Usá el botón de cámara o “Sacar foto”.',
+        description: 'Usá el botón de cámara o «Sacar foto».',
         variant: 'destructive',
       });
       return;
@@ -472,7 +610,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
     setPhase('cierre');
     setHideBottomTabBar(false);
     if (!isDemo) setLiveQc(false);
-  }, [evidence.length, setHideBottomTabBar, toast, isDemo]);
+  }, [evidence.length, evidenciaUrlPersisted, setHideBottomTabBar, toast, isDemo]);
 
   const onEnviarValidacion = useCallback(async () => {
     if (isDemo) {
@@ -572,6 +710,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
   const handleSentDismiss = useCallback(
     async (action: 'mis-tareas' | 'siguiente-tarea' = 'mis-tareas') => {
       evidence.forEach((e) => {
+        if (!e.preview.startsWith('blob:')) return;
         try {
           URL.revokeObjectURL(e.preview);
         } catch {
@@ -724,9 +863,9 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           ref={fileRefCamera}
           type="file"
           accept="image/*"
-          capture
+          capture="environment"
           className="sr-only"
-          onChange={addPhoto}
+          onChange={addPhotoFromInput('camera')}
         />
         <input
           id="evidence-gallery-input"
@@ -734,7 +873,7 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
           type="file"
           accept="image/*"
           className="sr-only"
-          onChange={addPhoto}
+          onChange={addPhotoFromInput('gallery')}
         />
         <header className="sticky top-0 z-40 w-full border-b border-stitch-surface-container bg-slate-50/95 backdrop-blur">
           <div className="flex items-center justify-between px-6 py-4">
@@ -788,14 +927,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     </div>
                   </div>
                   <div className="pointer-events-auto flex justify-center pb-2">
-                    <label
-                      htmlFor="evidence-camera-input"
-                      onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                    <button
+                      type="button"
+                      onClick={openCamera}
                       className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-stitch-primary to-stitch-primary-container shadow-lg transition-transform active:scale-95"
                       aria-label="Capturar"
                     >
                       <Camera className="h-9 w-9 text-white" />
-                    </label>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -812,14 +951,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     type="text"
                   />
                 </div>
-                <label
-                  htmlFor="evidence-camera-input"
-                  onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                <button
+                  type="button"
+                  onClick={openCamera}
                   className="flex h-[52px] shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-stitch-primary to-stitch-primary-container px-8 font-bold text-white shadow-lg"
                 >
                   Sacar foto
                   <Camera className="h-5 w-5" />
-                </label>
+                </button>
               </div>
             </div>
             <div className="flex flex-col gap-6 lg:col-span-4">
@@ -845,13 +984,14 @@ export function AhoraJornadaActivaStitch(props: AhoraJornadaActivaStitchProps) {
                     </div>
                   ))}
                   {evidence.length < MAX_EVIDENCE && (
-                    <label
-                      htmlFor="evidence-gallery-input"
-                      onClick={() => liveProps?.onPersistBeforeCamera?.()}
+                    <button
+                      type="button"
+                      onClick={openGallery}
                       className="flex aspect-square cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-stitch-outline-variant bg-stitch-surface-container-highest text-stitch-outline transition-colors hover:border-stitch-primary hover:text-stitch-primary"
+                      aria-label="Abrir galería"
                     >
                       <ImageIcon className="h-8 w-8" />
-                    </label>
+                    </button>
                   )}
                 </div>
                 <div className="mt-8 border-t border-stitch-outline-variant/30 pt-6">

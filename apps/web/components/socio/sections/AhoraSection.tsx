@@ -1482,6 +1482,61 @@ export function AhoraSection() {
     });
   }, [subtareaActual, socioIdGrows, orgIdResuelta, currentUser?.orgId, tareaActual?.id, patchOperationalSession]);
 
+  const handleUploadCameraPhoto = useCallback(
+    async (file: File): Promise<{ url: string }> => {
+      const sid = String(
+        operationalSessionRef.current?.subtareaId ?? subtareaActual?.id ?? '',
+      );
+      if (!sid) {
+        throw new Error('No encontramos el bloque activo.');
+      }
+
+      const dataUrl = await comprimirImagenSocio(file, 1200);
+      const response = await fetch('/api/upload/photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ dataUrl, subtareaId: sid }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const msg =
+          (result as { message?: string; error?: string }).message ||
+          (result as { error?: string }).error ||
+          'Error al subir evidencia';
+        throw new Error(msg);
+      }
+
+      const urlUsable =
+        (result as { evidencia_url?: string }).evidencia_url ??
+        (result as { publicUrl?: string }).publicUrl ??
+        (result as { path?: string }).path ??
+        '';
+      if (!urlUsable) {
+        throw new Error('La subida no devolvió una URL de evidencia usable');
+      }
+
+      patchOperationalSession({
+        flowPhase: operationalSessionRef.current?.flowPhase ?? 'bloque_en_progreso',
+        subtareaId: sid,
+        tareaId:
+          operationalSessionRef.current?.tareaId ??
+          String(subtareaActual?.tarea_id ?? subtareaActual?.tareas?.id ?? tareaActual?.id ?? ''),
+        evidenciaUrl: urlUsable,
+        stitchPhase: 'evidence',
+        stitchSnapshot: lastStitchPropsRef.current,
+      });
+
+      setSubtareaActual((prev: typeof subtareaActual) =>
+        prev ? { ...prev, evidencia_url: urlUsable, evidencia_cargada: true } : prev,
+      );
+
+      return { url: urlUsable };
+    },
+    [subtareaActual, tareaActual?.id, patchOperationalSession],
+  );
+
   const handleStitchPhaseChange = useCallback(
     (stitchPhase: string) => {
       if (operationalSessionRef.current?.flowPhase === 'enviado') return;
@@ -1524,6 +1579,29 @@ export function AhoraSection() {
     );
     if (!sid) {
       throw new Error('No encontramos el bloque activo.');
+    }
+
+    const urlYaSubida = String(operationalSessionRef.current?.evidenciaUrl ?? '').trim();
+    if (urlYaSubida) {
+      patchOperationalSession({
+        flowPhase: 'subiendo',
+        subtareaId: sid,
+        tareaId:
+          operationalSessionRef.current?.tareaId ??
+          String(subtareaActual?.tarea_id ?? subtareaActual?.tareas?.id ?? tareaActual?.id ?? ''),
+        tempEvidenceDesc: problemas ?? null,
+        stitchSnapshot: lastStitchPropsRef.current,
+      });
+
+      const ok = await handleEnviarParaValidar(urlYaSubida, undefined, problemas, {
+        skipDestructiveRefresh: true,
+      });
+      if (!ok) {
+        throw new Error(
+          operationalSessionRef.current?.errorMessage ?? 'No se pudo enviar el bloque a validación.',
+        );
+      }
+      return;
     }
 
     patchOperationalSession({
@@ -1947,6 +2025,7 @@ export function AhoraSection() {
         initialStitchPhase={operationalSession?.stitchPhase ?? null}
         onSendValidationLive={handleStitchLiveSend}
         onPersistBeforeCamera={handlePersistBeforeCamera}
+        onUploadCameraPhoto={handleUploadCameraPhoto}
         onStitchPhaseChange={handleStitchPhaseChange}
         onRetrySendOnly={handleRetryEnviarValidar}
         onExitWorkSession={handleWorkSessionExit}

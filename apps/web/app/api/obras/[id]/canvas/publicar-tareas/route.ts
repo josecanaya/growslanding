@@ -6,6 +6,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { TareasRepository, TareaMetadataService } from '@/lib/tareas';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,8 +16,6 @@ export const maxDuration = 120;
 const ELEMENTO_CANVAS_NOMBRE = 'Canvas operativo';
 const ELEMENTO_CANVAS_CATEGORIA = 'sistema';
 const TIPO_DEPENDENCIA_FS = 'FINISH_TO_START';
-/** PostgREST suele tropezar con URLs largas en `.in()`; se parte la consulta. */
-const IN_FILTER_CHUNK = 100;
 
 type CanvasNodeRow = {
   id: string;
@@ -174,28 +173,19 @@ async function ensureElementoCanvasOperativo(
 }
 
 async function fetchTareasByCanvasNodeIds(
-  supabaseAny: any,
   obraId: string,
   canvasNodeIds: string[],
   select: string,
 ): Promise<{ data: unknown[] | null; error: { message: string } | null }> {
-  if (canvasNodeIds.length === 0) {
-    return { data: [], error: null };
+  try {
+    const data = await TareasRepository.findByCanvasNodeIds(obraId, canvasNodeIds, select);
+    return { data, error: null };
+  } catch (e) {
+    return {
+      data: null,
+      error: { message: e instanceof Error ? e.message : 'Error al leer tareas' },
+    };
   }
-  const merged: unknown[] = [];
-  for (let i = 0; i < canvasNodeIds.length; i += IN_FILTER_CHUNK) {
-    const chunk = canvasNodeIds.slice(i, i + IN_FILTER_CHUNK);
-    const { data, error } = await supabaseAny
-      .from('tareas')
-      .select(select)
-      .eq('obra_id', obraId)
-      .in('canvas_node_id', chunk);
-    if (error) {
-      return { data: null, error };
-    }
-    merged.push(...(data ?? []));
-  }
-  return { data: merged, error: null };
 }
 
 function buildPreviewFromRows(
@@ -283,7 +273,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const publishedIds = new Set<string>();
     if (taskIds.length > 0) {
       const { data: tareasRows, error: tErr } = await fetchTareasByCanvasNodeIds(
-        supabaseAny,
         obraId,
         taskIds,
         'canvas_node_id',
@@ -433,7 +422,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const canvasNodeIds = taskNodes.map((n) => n.id);
 
     const { data: existingTareas, error: exErr } = await fetchTareasByCanvasNodeIds(
-      supabaseAny,
       obraId,
       canvasNodeIds,
       'id, canvas_node_id, estado, bloques_planificados, elemento_id',
@@ -476,59 +464,36 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
       const existing = existingByCanvasNode.get(node.id);
 
-      if (existing) {
-        const patch: Record<string, unknown> = {
-          title,
-          descripcion,
-          dias_presupuesto: diasPresupuesto,
-          is_critical: isCritical,
-          source: 'canvas',
-          published_from_canvas_at: nowIso,
-          updated_at: nowIso,
-        };
-        if (!existing.elemento_id) {
-          patch.elemento_id = elementoId;
-        }
+      try {
+        const upsert = await TareaMetadataService.upsertDesdeCanvas({
+          existingId: existing?.id ?? null,
+          existingElementoId: existing?.elemento_id ?? null,
+          actorId: user.id,
+          payload: {
+            obra_id: obraId,
+            org_id: orgId,
+            elemento_id: elementoId,
+            canvas_node_id: node.id,
+            title,
+            descripcion,
+            dias_presupuesto: diasPresupuesto,
+            is_critical: isCritical,
+            source: 'canvas',
+            published_from_canvas_at: nowIso,
+          },
+        });
 
-        const { error: upErr } = await supabaseAny.from('tareas').update(patch).eq('id', existing.id);
-        if (upErr) {
-          warnings.push(`No se pudo actualizar tarea para nodo ${node.id}: ${upErr.message}`);
-          skippedNodes++;
-          continue;
+        if (upsert.created) {
+          createdTasks++;
+        } else {
+          updatedTasks++;
         }
-        updatedTasks++;
-        canvasNodeIdToTareaId.set(node.id, existing.id);
-      } else {
-        const insert = {
-          obra_id: obraId,
-          org_id: orgId,
-          elemento_id: elementoId,
-          canvas_node_id: node.id,
-          title,
-          descripcion,
-          estado: 'pendiente' as const,
-          dias_presupuesto: diasPresupuesto,
-          bloques_planificados: 1,
-          is_critical: isCritical,
-          source: 'canvas',
-          published_from_canvas_at: nowIso,
-          prioridad: 'MEDIA',
-          avance: 0,
-        };
-
-        const { data: ins, error: insErr } = await supabaseAny
-          .from('tareas')
-          .insert(insert)
-          .select('id')
-          .single();
-
-        if (insErr || !ins?.id) {
-          warnings.push(`No se pudo crear tarea para nodo ${node.id}: ${insErr?.message ?? 'error'}`);
-          skippedNodes++;
-          continue;
-        }
-        createdTasks++;
-        canvasNodeIdToTareaId.set(node.id, ins.id as string);
+        canvasNodeIdToTareaId.set(node.id, upsert.id);
+      } catch (upsertErr) {
+        warnings.push(
+          `No se pudo publicar tarea para nodo ${node.id}: ${upsertErr instanceof Error ? upsertErr.message : 'error'}`,
+        );
+        skippedNodes++;
       }
     }
 

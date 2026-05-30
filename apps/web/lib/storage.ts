@@ -37,6 +37,27 @@ export async function uploadPhoto(dataUrl: string) {
   return uploadToBucket('evidencias', dataUrl);
 }
 
+export async function uploadVideoBuffer(
+  buffer: Buffer,
+  mime: string,
+  objectPath: string,
+): Promise<{ path: string; publicUrl: string }> {
+  const supabase = createServiceSupabaseClient();
+  const { data, error } = await supabase.storage
+    .from('evidencias_video')
+    .upload(objectPath, buffer, { contentType: mime, upsert: false });
+
+  if (error || !data) {
+    throw new Error(`No se pudo subir el video: ${error?.message ?? 'desconocido'}`);
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from('evidencias_video').getPublicUrl(data.path);
+
+  return { path: data.path, publicUrl };
+}
+
 export async function uploadSignature(dataUrl: string) {
   return uploadToBucket('signatures', dataUrl);
 }

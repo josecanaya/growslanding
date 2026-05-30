@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import {
   MapPin,
   Clock,
@@ -28,11 +27,23 @@ import { Button } from '@/components/ui/button';
 import { ChecklistModal } from '@/components/socio/ChecklistModal';
 import { MensajeriaSocio } from '@/components/socio/MensajeriaSocio';
 import { ModalVerPlanos } from '@/components/socio/presupuestos/ModalVerPlanos';
-import type { Database } from '@/lib/types/supabase.gen';
 import type { ChecklistItem } from '@/data/checklists';
 import { useToast } from '@/components/ui/use-toast';
 import { USE_MOCK_DATA, MOCK_SUBTAREA_JORNADA_HOY, MOCK_CHECKLIST_ITEMS } from '@/lib/mocks/socioMockData';
 import { fetchSocioContextClient } from '@/lib/socios/fetchSocioContextClient';
+import { fetchSocioAhoraClient } from '@/lib/socio/fetchSocioAhoraClient';
+import {
+  fetchSocioJornadaClient,
+  finalizarSocioJornadaClient,
+  iniciarSocioJornadaClient,
+} from '@/lib/socio/fetchSocioJornadaClient';
+import {
+  fetchSocioBloquesResumenClient,
+  fetchSocioSubtareaClient,
+  fetchSocioSubtareaEvidenciaClient,
+} from '@/lib/socio/fetchSocioSubtareaClient';
+import { fetchSocioTareaAvanceClient } from '@/lib/socio/fetchSocioTareaAvanceClient';
+import { evidenciaPublicUrl } from '@/lib/cliente/evidencia-display';
 import {
   ESTADO_BLOQUE_FINAL,
   subtareaEstaCompletadaConLegacy,
@@ -40,10 +51,6 @@ import {
 } from '@/lib/domain/estados-core';
 import { fileLooksLikeImage } from '@/lib/socio/evidenceCapture';
 import { fileToEvidenceDataUrl } from '@/lib/socio/evidenceImage';
-import {
-  buildOrClauseAsignacionSocio,
-  cargarTareaOperativaAhora,
-} from '@/lib/socio/cargar-tarea-ahora';
 import type { AhoraStitchChecklistItem, AhoraStitchItemState } from '@/lib/mocks/socioMockData';
 import { AhoraJornadaActivaStitch } from '@/components/socio/ahora/AhoraJornadaActivaStitch';
 import {
@@ -71,22 +78,6 @@ function bloqueElapsedSeconds(sub: { hora_inicio?: string | null }): number {
   }
   return 0;
 }
-
-const SELECT_SUBTAREA_REL = `
-  *,
-  tareas:tareas (
-    id,
-    title,
-    obra_id,
-    estado,
-    responsable_socio_id,
-    obras:obras (
-      id,
-      name,
-      address
-    )
-  )
-`;
 
 type BloqueResumen = {
   id: string;
@@ -198,13 +189,9 @@ type SupabaseTarea = {
   } | null;
 };
 
-/** Fila de `eventos` con `select('id, nuevo_estado')` — tipar evita `never` en `.find()` con tipos genéricos de Supabase. */
-type EventoRowIdEstado = { id: string; nuevo_estado?: string | null };
-
 export function AhoraSection() {
   const router = useRouter();
   const currentUser = useCurrentUser();
-  const supabase = createClientComponentClient<Database>();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -227,6 +214,7 @@ export function AhoraSection() {
   const [isUploadingEvidence, setIsUploadingEvidence] = useState(false);
   const [isSendingToValidation, setIsSendingToValidation] = useState(false);
   const [tareasCompletadasHoy, setTareasCompletadasHoy] = useState(0);
+  const [progresoGeneral, setProgresoGeneral] = useState({ completadas: 0, total: 0, porcentaje: 0 });
   const [avanceDiario, setAvanceDiario] = useState(0);
   const [evidenciasFinales, setEvidenciasFinales] = useState<string[]>([]);
   const [jornadaActual, setJornadaActual] = useState<any>(null);
@@ -273,20 +261,16 @@ export function AhoraSection() {
 
     let cancelled = false;
     (async () => {
-      const { data } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(SELECT_SUBTAREA_REL)
-        .eq('id', sess.subtareaId)
-        .maybeSingle();
-      if (!cancelled && data) {
-        setSubtareaActual(data);
-        subtareaFijadaRef.current = { id: String(data.id), until: Date.now() + 600_000 };
+      const { subtarea } = await fetchSocioSubtareaClient(sess.subtareaId!);
+      if (!cancelled && subtarea) {
+        setSubtareaActual(subtarea);
+        subtareaFijadaRef.current = { id: String(subtarea.id), until: Date.now() + 600_000 };
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [operationalSession?.subtareaId, subtareaActual?.id, supabase]);
+  }, [operationalSession?.subtareaId, subtareaActual?.id]);
   const generarBloquesIntentados = useRef<Set<string>>(new Set());
   const requestEnCursoRef = useRef<Set<string>>(new Set());
   /** Evita que el effect de jornada/subtarea pise el estado recién confirmado por la API. */
@@ -435,11 +419,8 @@ export function AhoraSection() {
 
   // Una sola tarea operativa (CPM + precedencias + bloques); misma regla en carga y refrescos.
   const recargarTareaAhora = useCallback(
-    async (opts?: { showLoading?: boolean }) => {
+    async (opts?: { showLoading?: boolean; tareaId?: string | null }) => {
       if (!currentUser?.id) return;
-
-      const orgId = orgIdResuelta || currentUser?.orgId;
-      if (!orgId) return;
 
       if (opts?.showLoading) {
         setLoading(true);
@@ -447,23 +428,33 @@ export function AhoraSection() {
       }
 
       try {
-        const socioRow = await fetchSocioContextClient();
-        const socioId = socioIdGrows ?? socioRow?.id ?? null;
-        if (socioRow?.id && !socioIdGrows) {
-          setSocioIdGrows(socioRow.id);
+        const data = await fetchSocioAhoraClient({ tareaId: opts?.tareaId ?? undefined });
+
+        if (data.orgId) {
+          setOrgIdResuelta(data.orgId);
+        }
+        if (data.socioId) {
+          setSocioIdGrows(data.socioId);
         }
 
-        const { tarea, error: loadError } = await cargarTareaOperativaAhora(supabase as any, {
-          orgId,
-          socioId,
-        });
-
-        if (loadError) {
-          setError(loadError);
+        if (data.error) {
+          setError(data.error);
           setTareas([]);
         } else {
           setError(null);
-          setTareas(tarea ? [tarea as SupabaseTarea] : []);
+          setTareas(data.tarea ? [data.tarea as SupabaseTarea] : []);
+        }
+
+        setProgresoGeneral(data.progresoGeneral);
+        setTareasCompletadasHoy(data.tareasCompletadasHoy);
+        setTareasActivasCount(data.tareasActivasCount);
+        setBloquesActivosCount(data.bloquesActivosCount);
+
+        if (data.bloques) {
+          setTareasProgramadasHoy(data.bloques.programadasHoy);
+        }
+        if (data.jornada) {
+          setJornadaActual(data.jornada);
         }
       } catch {
         setError('Error al cargar las tareas.');
@@ -474,14 +465,14 @@ export function AhoraSection() {
         }
       }
     },
-    [currentUser, orgIdResuelta, supabase, socioIdGrows],
+    [currentUser],
   );
 
   const fetchData = async () => {
     await recargarTareaAhora();
   };
 
-  // Resolver org_id si no viene en currentUser (socio vinculado por user_id o email)
+  // Resolver org_id si no viene en currentUser (vía API socio/ahora o context)
   useEffect(() => {
     const resolverOrg = async () => {
       if (orgIdResuelta || !currentUser?.id) return;
@@ -492,25 +483,17 @@ export function AhoraSection() {
           setOrgIdResuelta(combined);
           return;
         }
-        if (currentUser.email) {
-          const supabaseAny = supabase as any;
-          const { data: tareaData } = await supabaseAny
-            .from('tareas')
-            .select('org_id')
-            .or(`responsable.eq.${currentUser.email},responsable.ilike.%${currentUser.email}%`)
-            .limit(1)
-            .maybeSingle();
-          if (tareaData?.org_id) {
-            setOrgIdResuelta(tareaData.org_id);
-          }
+        const data = await fetchSocioAhoraClient();
+        if (data.orgId) {
+          setOrgIdResuelta(data.orgId);
         }
-      } catch (err) {
+      } catch {
         // Error silencioso
       }
     };
 
-    resolverOrg();
-  }, [currentUser?.id, currentUser?.email, orgIdResuelta, supabase]);
+    void resolverOrg();
+  }, [currentUser?.id, orgIdResuelta]);
 
   useEffect(() => {
     if (USE_MOCK_DATA) {
@@ -522,69 +505,10 @@ export function AhoraSection() {
       setError('No hay usuario activo.');
       return;
     }
-    if (!orgIdResuelta && !currentUser.orgId) {
-      return;
-    }
     void recargarTareaAhora({ showLoading: true });
-  }, [currentUser, orgIdResuelta, recargarTareaAhora]);
+  }, [currentUser, recargarTareaAhora]);
 
-  // Calcular progreso general (de TODAS las tareas, no solo las pendientes)
-  const [progresoGeneral, setProgresoGeneral] = useState({ completadas: 0, total: 0, porcentaje: 0 });
-
-  useEffect(() => {
-    const calcularProgreso = async () => {
-      if (!currentUser?.id) {
-        setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-        return;
-      }
-      
-      try {
-        const socioRow = await fetchSocioContextClient();
-        const orgId =
-          orgIdResuelta ||
-          currentUser.orgId ||
-          socioRow?.effective_org_id ||
-          socioRow?.org_id ||
-          null;
-
-        if (!orgId && !socioRow?.id) {
-          setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-          return;
-        }
-
-        const partes = await buildOrClauseAsignacionSocio(supabase as any, socioRow?.id);
-        if (partes.length === 0) {
-          setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-          return;
-        }
-        let q = supabase.from('tareas').select('id, estado, avance');
-        if (orgId) {
-          q = q.eq('org_id', orgId);
-        }
-        q = q.or(partes.join(','));
-        const { data: todasLasTareas } = await q;
-
-        if (!todasLasTareas || todasLasTareas.length === 0) {
-          setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-          return;
-        }
-
-        // Calcular progreso basado en tareas (las subtareas se actualizan en otro useEffect)
-        const total = todasLasTareas.length;
-        const completadas = todasLasTareas.filter((t: any) => {
-          const e = (t.estado || '').toLowerCase();
-          return e === 'validada' || e === 'rechazada' || t.avance === 100;
-        }).length;
-        const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
-        
-        setProgresoGeneral({ completadas, total, porcentaje });
-      } catch (err) {
-        setProgresoGeneral({ completadas: 0, total: 0, porcentaje: 0 });
-      }
-    };
-
-    calcularProgreso();
-  }, [currentUser, orgIdResuelta, supabase]);
+  // Progreso general y tareas completadas hoy: los actualiza recargarTareaAhora vía /api/socio/ahora
 
   // Actualizar progreso cuando cambian las subtareas
   useEffect(() => {
@@ -597,73 +521,6 @@ export function AhoraSection() {
       });
     }
   }, [totalSubtareas, subtareasCompletadas]);
-
-  // Calcular tareas completadas hoy (solo estado oficial validada en eventos; sin legacy finalizado/finalizada)
-  useEffect(() => {
-    const calcularTareasHoy = async () => {
-      if (!currentUser?.id) {
-        setTareasCompletadasHoy(0);
-        return;
-      }
-
-      const orgId = orgIdResuelta || currentUser?.orgId;
-      if (!orgId) {
-        setTareasCompletadasHoy(0);
-        return;
-      }
-
-      try {
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        const hoyISO = hoy.toISOString();
-
-        const socioCtx = await fetchSocioContextClient();
-        const orPartes = await buildOrClauseAsignacionSocio(supabase as any, socioCtx?.id);
-        if (orPartes.length === 0) {
-          setTareasCompletadasHoy(0);
-          return;
-        }
-
-        const { data: misTareas } = await supabase
-          .from('tareas')
-          .select('id')
-          .eq('org_id', String(orgId))
-          .or(orPartes.join(','))
-          .limit(80);
-
-        const tareaIds = (misTareas ?? []).map((t: { id: string }) => t.id).filter(Boolean);
-        if (tareaIds.length === 0) {
-          setTareasCompletadasHoy(0);
-          return;
-        }
-
-        const { data: eventosHoy, error: evErr } = await supabase
-          .from('eventos')
-          .select('tarea_id')
-          .in('tarea_id', tareaIds)
-          .eq('nuevo_estado', 'validada')
-          .gte('created_at', hoyISO);
-
-        if (evErr) {
-          console.error('[AhoraSection] eventos completadas hoy:', evErr);
-          setTareasCompletadasHoy(0);
-          return;
-        }
-
-        if (eventosHoy) {
-          const tareasUnicas = new Set(eventosHoy.map((e: { tarea_id?: string | null }) => e.tarea_id));
-          setTareasCompletadasHoy(tareasUnicas.size);
-        } else {
-          setTareasCompletadasHoy(0);
-        }
-      } catch (err) {
-        console.error('[AhoraSection] calcularTareasHoy:', err);
-        setTareasCompletadasHoy(0);
-      }
-    };
-
-    calcularTareasHoy();
-  }, [currentUser, orgIdResuelta, supabase]);
 
   // Tarea actual (una a la vez, ordenada por CPM)
   const tareaActual = useMemo(() => {
@@ -747,13 +604,7 @@ export function AhoraSection() {
         hoy.setHours(0, 0, 0, 0);
         const hoyISO = hoy.toISOString().split('T')[0];
 
-        const { data: jornadaData } = await (supabase as any)
-          .from('jornadas_socio')
-          .select('*')
-          .eq('socio_id', socioIdGrows)
-          .eq('fecha', hoyISO)
-          .maybeSingle();
-
+        const { jornada: jornadaData } = await fetchSocioJornadaClient(hoyISO);
         if (cancelled) return;
         if (jornadaData) {
           setJornadaActual(jornadaData);
@@ -762,60 +613,48 @@ export function AhoraSection() {
         const tareaIds = tareas.map((t) => t.id).filter(Boolean);
         const tid = tareaActual?.id;
 
-        const contarSubtareasScoped = async () => {
-          if (!socioIdGrows || tareaIds.length === 0) {
-            setTareasProgramadasHoy(0);
-            setTareasCompletadasHoy(0);
+        const contarSubtareasScoped = async (bloquesResumen?: {
+          programadasHoy: number;
+          completadasHoy: number;
+        } | null) => {
+          if (bloquesResumen) {
+            setTareasProgramadasHoy(bloquesResumen.programadasHoy);
+            setTareasCompletadasHoy(bloquesResumen.completadasHoy);
             return;
           }
-          const supAny = supabase as any;
-          const { count: pendCount } = await supAny
-            .from('tareas_subtareas')
-            .select('*', { count: 'exact', head: true })
-            .in('tarea_id', tareaIds)
-            .eq('socio_id', socioIdGrows)
-            .eq('estado', 'pendiente');
-
-          const { count: valCount } = await supAny
-            .from('tareas_subtareas')
-            .select('*', { count: 'exact', head: true })
-            .in('tarea_id', tareaIds)
-            .eq('socio_id', socioIdGrows)
-            .eq('estado', ESTADO_BLOQUE_FINAL);
-
-          setTareasProgramadasHoy(pendCount ?? 0);
-          setTareasCompletadasHoy(valCount ?? 0);
+          if (!socioIdGrows || tareaIds.length === 0) {
+            setTareasProgramadasHoy(0);
+            return;
+          }
+          const stats = await fetchSocioAhoraClient({ tareaId: tid ?? undefined });
+          if (stats.bloques) {
+            setTareasProgramadasHoy(stats.bloques.programadasHoy);
+            setTareasCompletadasHoy(stats.bloques.completadasHoy);
+          }
         };
 
         if (!tid) {
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(null);
           return;
         }
 
         const fijada = subtareaFijadaRef.current;
         if (fijada && Date.now() < fijada.until) {
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(null);
           return;
         }
 
         const sess = operationalSessionRef.current;
         if (shouldSkipSubtareaBackendRecalc(sess) && sess?.tareaId === tid) {
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(null);
           return;
         }
 
-        const supAny = supabase as any;
-
-        // La generación de bloques se hace por click en "Comenzar tarea" para evitar POST repetidos desde renders/effects.
-
-        const { data: lista } = await supAny
-          .from('tareas_subtareas')
-          .select(SELECT_SUBTAREA_REL)
-          .eq('tarea_id', tid)
-          .order('orden', { ascending: true });
+        const ahoraData = await fetchSocioAhoraClient({ tareaId: tid });
+        const lista = (ahoraData.bloques?.lista ?? []) as BloqueResumen[];
 
         if (cancelled) return;
 
@@ -827,13 +666,13 @@ export function AhoraSection() {
 
         if (!lista?.length) {
           if (preservarSubtareaApi) {
-            await contarSubtareasScoped();
+            await contarSubtareasScoped(ahoraData.bloques ?? null);
             return;
           }
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(ahoraData.bloques ?? null);
           return;
         }
 
@@ -841,13 +680,13 @@ export function AhoraSection() {
 
         if (!list.length) {
           if (preservarSubtareaApi) {
-            await contarSubtareasScoped();
+            await contarSubtareasScoped(ahoraData.bloques ?? null);
             return;
           }
           setSubtareaActual(null);
           setTotalSubtareas(0);
           setSubtareasCompletadas(0);
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(ahoraData.bloques ?? null);
           return;
         }
 
@@ -861,14 +700,14 @@ export function AhoraSection() {
         ) {
           const pick = pickSubtareaOperativa(list);
           if (pick?.id && pick.id !== subtareaLocal.id) {
-            const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+            const full = (lista ?? []).find((s) => s.id === pick.id);
             if (full) {
               setSubtareaActual(full);
               setTotalSubtareas(list.length);
               setSubtareasCompletadas(
                 list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
               );
-              await contarSubtareasScoped();
+              await contarSubtareasScoped(ahoraData.bloques ?? null);
               return;
             }
           }
@@ -881,20 +720,20 @@ export function AhoraSection() {
           pick?.id &&
           pick.id !== subtareaLocal.id
         ) {
-          const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+          const full = (lista ?? []).find((s) => s.id === pick.id);
           if (full) {
             setSubtareaActual(full);
             setTotalSubtareas(list.length);
             setSubtareasCompletadas(
               list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
             );
-            await contarSubtareasScoped();
+            await contarSubtareasScoped(ahoraData.bloques ?? null);
             return;
           }
         }
 
         if (preservarSubtareaApi && pick?.id && pick.id !== subtareaLocal?.id) {
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(ahoraData.bloques ?? null);
           return;
         }
 
@@ -905,7 +744,7 @@ export function AhoraSection() {
           normEstadoSub(pick.estado) === 'pendiente' &&
           normEstadoSub(subtareaLocal.estado) === 'en_progreso'
         ) {
-          await contarSubtareasScoped();
+          await contarSubtareasScoped(ahoraData.bloques ?? null);
           return;
         }
 
@@ -914,7 +753,7 @@ export function AhoraSection() {
         setSubtareasCompletadas(
           list.filter((s: any) => subtareaEstaCompletadaOficial(s.estado)).length,
         );
-        await contarSubtareasScoped();
+        await contarSubtareasScoped(ahoraData.bloques ?? null);
       } catch {
         // sin maquillar: no romper la pantalla
       }
@@ -930,7 +769,6 @@ export function AhoraSection() {
     currentUser?.orgId,
     orgIdResuelta,
     socioIdGrows,
-    supabase,
     tareaActual?.id,
     tareasIdsFingerprint,
     subtareaRefreshKey,
@@ -946,66 +784,19 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser?.orgId;
-      if (!orgId) return;
-
       try {
-        const hoy = new Date();
-        hoy.setHours(0, 0, 0, 0);
-        const hoyISO = hoy.toISOString();
-
-        const { data: eventosAvance } = await supabase
-          .from('eventos')
-          .select('id, snapshot_json')
-          .eq('tarea_id', tareaActual.id)
-          .in('nuevo_estado', ['en_progreso', 'en_ejecucion'])
-          .gte('created_at', hoyISO)
-          .order('created_at', { ascending: false })
-          .limit(1) as any;
-
-        if (eventosAvance && eventosAvance.length > 0) {
-          const snapshot = eventosAvance[0].snapshot_json as any;
-          if (snapshot?.avance_diario !== undefined) {
-            setAvanceDiario(snapshot.avance_diario);
-          }
-        }
-
-        const { data: candidatosEv, error: evCandErr } = await supabase
-          .from('eventos')
-          .select('id, nuevo_estado')
-          .eq('tarea_id', tareaActual.id)
-          .order('created_at', { ascending: false })
-          .limit(24);
-
-        if (evCandErr) {
-          console.error('[AhoraSection] eventos evidencias finales:', evCandErr);
-        } else {
-          const oficialOk = new Set(['validada', 'para_validar', 'en_progreso', 'en_ejecucion']);
-          const legacyOk = new Set(['finalizado', 'finalizada']);
-          const lista = (candidatosEv ?? []) as EventoRowIdEstado[];
-          const pick = lista.find((ev) => {
-            const n = (ev.nuevo_estado || '').toLowerCase();
-            return oficialOk.has(n) || legacyOk.has(n);
-          });
-          if (pick?.id) {
-            const { data: mediaData } = await supabase
-              .from('media')
-              .select('path, kind')
-              .eq('evento_id', pick.id)
-              .eq('kind', 'evidencia_final') as any;
-
-            if (mediaData) {
-              setEvidenciasFinales(mediaData.map((m: any) => m.path));
-            }
-          }
+        const data = await fetchSocioTareaAvanceClient(tareaActual.id);
+        if (data.ok) {
+          setAvanceDiario(data.avanceDiario);
+          setEvidenciasFinales(data.evidenciasFinales);
         }
       } catch (err) {
         console.error('[AhoraSection] cargarAvanceYEvidencias:', err);
       }
     };
 
-    cargarAvanceYEvidencias();
-  }, [tareaActual?.id, currentUser, orgIdResuelta, supabase]);
+    void cargarAvanceYEvidencias();
+  }, [tareaActual?.id, currentUser?.id]);
 
   const handleIniciarJornada = async () => {
     if (!currentUser?.id) return;
@@ -1025,115 +816,40 @@ export function AhoraSection() {
     }
 
     setIsIniciando(true);
-    
-    try {
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const hoyISO = hoy.toISOString().split('T')[0];
-      const horaInicio = new Date().toISOString();
 
-      // Obtener obra_id de la tarea o subtarea
-      const obraId = subtareaActual?.tareas?.obra_id || 
-                     subtareaActual?.tarea?.obra_id || 
-                     tareaActual?.obra_id;
-      
+    try {
+      const obraId =
+        subtareaActual?.tareas?.obra_id ||
+        subtareaActual?.tarea?.obra_id ||
+        tareaActual?.obra_id;
+
       if (!obraId) {
         setError('No se pudo determinar la obra');
         setIsIniciando(false);
         return;
       }
 
-      // Verificar si ya existe una jornada para hoy
-      const { data: jornadaExistente, error: errorVerificar } = await (supabase as any)
-        .from('jornadas_socio')
-        .select('*')
-        .eq('socio_id', socioIdGrows)
-        .eq('fecha', hoyISO)
-        .maybeSingle();
-
-      if (errorVerificar) {
-        setError('Error al verificar jornada existente');
-        setIsIniciando(false);
+      const { ok, jornada, error: jornadaErr } = await iniciarSocioJornadaClient(obraId);
+      if (!ok || !jornada) {
+        setError(jornadaErr ?? 'Error al iniciar la jornada');
         return;
       }
-
-      // Si ya existe una jornada, usarla
-      if (jornadaExistente) {
-        setJornadaActual(jornadaExistente);
-        setIsIniciando(false);
-        return;
-      }
-
-      // Crear nueva jornada en jornadas_socio
-      const { data: nuevaJornada, error: jornadaError } = await (supabase as any)
-        .from('jornadas_socio')
-        .insert({
-          socio_id: socioIdGrows,
-          obra_id: obraId,
-          fecha: hoyISO,
-          hora_inicio: horaInicio,
-        })
-        .select()
-        .single();
-
-      if (jornadaError) {
-        // Si el error es por constraint único (jornada ya existe), intentar cargarla
-        if (jornadaError.code === '23505' || jornadaError.message?.includes('unique') || jornadaError.message?.includes('duplicate')) {
-          const { data: jornadaData } = await (supabase as any)
-            .from('jornadas_socio')
-            .select('*')
-            .eq('socio_id', socioIdGrows)
-            .eq('fecha', hoyISO)
-            .maybeSingle();
-          
-          if (jornadaData) {
-            setJornadaActual(jornadaData);
-            setIsIniciando(false);
-            return;
-          }
-        }
-        
-        setError(`Error al iniciar la jornada: ${jornadaError.message || 'Error desconocido'}`);
-        setIsIniciando(false);
-        return;
-      }
-
-      // Usar la jornada recién creada
-      if (nuevaJornada) {
-        setJornadaActual(nuevaJornada);
-      } else {
-        // Si no viene en la respuesta, recargarla
-        const { data: jornadaData } = await (supabase as any)
-          .from('jornadas_socio')
-          .select('*')
-          .eq('socio_id', socioIdGrows)
-          .eq('fecha', hoyISO)
-          .maybeSingle();
-
-        setJornadaActual(jornadaData);
-      }
-    } catch (err: any) {
-      setError(`Error al iniciar la jornada: ${err?.message || 'Error desconocido'}`);
+      setJornadaActual(jornada);
+    } catch (err: unknown) {
+      setError(`Error al iniciar la jornada: ${err instanceof Error ? err.message : 'Error desconocido'}`);
     } finally {
       setIsIniciando(false);
     }
   };
 
-  const recargarSubtareaPorId = React.useCallback(
-    async (subtareaId: string) => {
-      if (USE_MOCK_DATA) return;
-      const { data: subtareaData } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select(SELECT_SUBTAREA_REL)
-        .eq('id', subtareaId)
-        .maybeSingle();
-      if (subtareaData) {
-        setSubtareaActual(subtareaData);
-      }
-      setSubtareaRefreshKey((k) => k + 1);
-    },
-    [supabase],
-  );
+  const recargarSubtareaPorId = React.useCallback(async (subtareaId: string) => {
+    if (USE_MOCK_DATA) return;
+    const { subtarea } = await fetchSocioSubtareaClient(subtareaId);
+    if (subtarea) {
+      setSubtareaActual(subtarea);
+    }
+    setSubtareaRefreshKey((k) => k + 1);
+  }, []);
 
   const vincularSubtareaDesdeBloques = React.useCallback(
     async (
@@ -1192,11 +908,7 @@ export function AhoraSection() {
 
       if (opts?.intentarSoloLectura !== false && tareaFb) {
         try {
-          const { data: lista } = await (supabase as any)
-            .from('tareas_subtareas')
-            .select('id, estado, orden, socio_id')
-            .eq('tarea_id', tareaId)
-            .order('orden', { ascending: true });
+          const { bloques: lista } = await fetchSocioBloquesResumenClient(tareaId);
           if (lista?.length) {
             return vincularSubtareaDesdeBloques(lista as BloqueResumen[], tareaFb);
           }
@@ -1243,7 +955,7 @@ export function AhoraSection() {
         setIsGeneratingBlocks(false);
       }
     },
-    [supabase, vincularSubtareaDesdeBloques],
+    [vincularSubtareaDesdeBloques],
   );
 
   const avanzarTrasTareaCompletada = async (_tareaIdCompletada?: string) => {
@@ -1270,17 +982,14 @@ export function AhoraSection() {
       return;
     }
 
-    const { data: lista } = await (supabase as any)
-      .from('tareas_subtareas')
-      .select(SELECT_SUBTAREA_REL)
-      .eq('tarea_id', tid)
-      .order('orden', { ascending: true });
+    const ahoraData = await fetchSocioAhoraClient({ tareaId: tid });
+    const lista = (ahoraData.bloques?.lista ?? []) as BloqueResumen[];
 
-    const visibles = filtrarSubtareasVisiblesSocio((lista ?? []) as BloqueResumen[], socioIdGrows);
+    const visibles = filtrarSubtareasVisiblesSocio(lista, socioIdGrows);
     const pick = pickSubtareaOperativa(visibles);
 
     if (pick?.id) {
-      const full = (lista ?? []).find((s: { id: string }) => s.id === pick.id);
+      const full = lista.find((s) => s.id === pick.id);
       if (full) {
         setSubtareaActual(full);
         setTotalSubtareas(visibles.length);
@@ -1347,12 +1056,7 @@ export function AhoraSection() {
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
         const hoyISO = hoy.toISOString().split('T')[0];
-        const { data: jornadaData } = await (supabase as any)
-          .from('jornadas_socio')
-          .select('*')
-          .eq('socio_id', socioIdGrows)
-          .eq('fecha', hoyISO)
-          .maybeSingle();
+        const { jornada: jornadaData } = await fetchSocioJornadaClient(hoyISO);
         if (jornadaData) {
           setJornadaActual(jornadaData);
         }
@@ -1458,7 +1162,7 @@ export function AhoraSection() {
         description: 'Ya podés cargar evidencias y avanzar con la tarea.',
       });
 
-      await cargarContadoresBloques();
+      await cargarContadores();
     } catch (err) {
       console.error('[COMENZAR_BLOQUE] error', err);
       handleApiError(err, 'Error inesperado al comenzar el bloque');
@@ -1553,7 +1257,7 @@ export function AhoraSection() {
       });
 
       await recargarTareaAhora();
-      await cargarContadoresTareas();
+      await cargarContadores();
       setSubtareaRefreshKey((k) => k + 1);
     } catch (err) {
       handleApiError(err, 'Error al iniciar la tarea. Por favor, intenta nuevamente.');
@@ -1565,71 +1269,21 @@ export function AhoraSection() {
     }
   };
 
-  // Cargar contadores de tareas y bloques activos
-  const cargarContadoresTareas = async () => {
+  // Contadores de tareas/bloques activos (vía API)
+  const cargarContadores = async () => {
     if (!currentUser?.id) return;
-    
-    const orgId = orgIdResuelta || currentUser?.orgId;
-    if (!orgId) return;
-
     try {
-      let sid = socioIdGrows;
-      if (!sid && currentUser.email) {
-        const { data: socio } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
-        sid = socio?.id ?? null;
-      }
-      if (!sid) return;
-
-      const { count } = await (supabase as any)
-        .from('tareas')
-        .select('*', { count: 'exact', head: true })
-        .eq('responsable_socio_id', sid)
-        .eq('estado', 'en_progreso');
-
-      setTareasActivasCount(count || 0);
-    } catch (err) {
-      handleApiError(err, 'Error al subir la evidencia');
-    }
-  };
-
-  const cargarContadoresBloques = async () => {
-    if (!currentUser?.id) return;
-    
-    const orgId = orgIdResuelta || currentUser?.orgId;
-    if (!orgId) return;
-
-    try {
-      let sid = socioIdGrows;
-      if (!sid && currentUser.email) {
-        const { data: socio } = await (supabase as any)
-          .from('socios')
-          .select('id')
-          .eq('email', currentUser.email)
-          .maybeSingle();
-        sid = socio?.id ?? null;
-      }
-      if (!sid) return;
-
-      const { count } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select('*', { count: 'exact', head: true })
-        .eq('socio_id', sid)
-        .eq('estado', 'en_progreso');
-
-      setBloquesActivosCount(count || 0);
-    } catch (err) {
+      const data = await fetchSocioAhoraClient();
+      setTareasActivasCount(data.tareasActivasCount);
+      setBloquesActivosCount(data.bloquesActivosCount);
+    } catch {
       // Error silencioso
     }
   };
 
   useEffect(() => {
     if (USE_MOCK_DATA) return;
-    void cargarContadoresTareas();
-    void cargarContadoresBloques();
+    void cargarContadores();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- contadores encapsulados
   }, [socioIdGrows, orgIdResuelta, currentUser?.id, subtareaRefreshKey]);
 
@@ -1769,13 +1423,9 @@ export function AhoraSection() {
       );
 
       if (!opts?.skipDestructiveRefresh) {
-        const { data: subtareaData } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select(SELECT_SUBTAREA_REL)
-          .eq('id', subtareaId)
-          .maybeSingle();
-        if (subtareaData) {
-          setSubtareaActual(subtareaData);
+        const { subtarea } = await fetchSocioSubtareaClient(subtareaId);
+        if (subtarea) {
+          setSubtareaActual(subtarea);
         }
         window.setTimeout(() => {
           setSubtareaRefreshKey((k) => k + 1);
@@ -1783,7 +1433,7 @@ export function AhoraSection() {
         await fetchData();
       }
 
-      await cargarContadoresBloques();
+      await cargarContadores();
       return true;
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
@@ -1994,46 +1644,35 @@ export function AhoraSection() {
     if (!tareaId || !currentUser) return;
 
     try {
-      // Actualizar tarea principal a COMPLETADA
-      const { error: updateError } = await (supabase as any)
-        .from('tareas')
-        .update({ estado: 'COMPLETADA' })
-        .eq('id', tareaId);
-
-      if (updateError) {
+      // Estado de tarea solo vía API FSM — no UPDATE directo desde el cliente.
+      const res = await fetch(`/api/tareas/${encodeURIComponent(tareaId)}/transition`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          nuevo_estado: 'para_validar',
+          motivo: 'Tarea completada por socio',
+        }),
+      });
+      if (!res.ok) {
         return;
       }
 
       // Enviar notificación al cliente técnico
       const orgId = orgIdResuelta || currentUser?.orgId;
       if (orgId) {
-        // Obtener obra_id de la tarea
-        const { data: tareaData } = await (supabase as any)
-          .from('tareas')
-          .select('obra_id')
-          .eq('id', tareaId)
-          .maybeSingle();
-
-        if (tareaData?.obra_id) {
-          // Obtener owner_user_id de la organización
-          const { data: orgData } = await (supabase as any)
-            .from('organizaciones')
-            .select('owner_user_id')
-            .eq('id', orgId)
-            .maybeSingle();
-
-          if (orgData?.owner_user_id) {
-            await (supabase as any)
-              .from('notificaciones')
-              .insert({
-                titulo: 'Tarea completada',
-                mensaje: `Todas las subtareas de la tarea han sido completadas`,
-                tipo: 'avance',
-                remitente_id: currentUser.id,
-                destinatario_id: orgData.owner_user_id,
-                org_id: orgId,
-              });
-          }
+        const obraId = tareaActual?.obra_id ?? null;
+        if (obraId) {
+          await fetch('/api/socio/notificaciones/tarea-completada', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              org_id: orgId,
+              obra_id: obraId,
+              tarea_id: tareaId,
+            }),
+          });
         }
       }
     } catch (err) {
@@ -2108,64 +1747,7 @@ export function AhoraSection() {
         return;
       }
 
-      const orgId = orgIdResuelta || currentUser?.orgId;
-
-      // Recalcular tareas completadas hoy
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      const hoyISO = hoy.toISOString();
-      
-      // Primero obtener las tareas de la organización
-      const { data: tareasOrg } = await supabase
-        .from('tareas')
-        .select('id')
-        .eq('org_id', orgId || '');
-
-      const tareasOrgRows = (tareasOrg ?? []) as Array<{ id: string }>;
-      if (tareasOrgRows.length > 0) {
-        const tareaIds = tareasOrgRows.map((t: any) => t.id);
-        
-        const { data: eventosHoy, error: evHoyErr } = await supabase
-          .from('eventos')
-          .select('tarea_id')
-          .in('tarea_id', tareaIds)
-          .eq('nuevo_estado', 'validada')
-          .gte('created_at', hoyISO);
-
-        if (evHoyErr) {
-          console.error('[AhoraSection] eventos post-finalizar:', evHoyErr);
-        } else {
-          const eventosHoyRows = (eventosHoy ?? []) as Array<{ tarea_id: string | null }>;
-          const tareasUnicas = new Set(eventosHoyRows.map((e: any) => e.tarea_id));
-          setTareasCompletadasHoy(tareasUnicas.size);
-        }
-      }
-
-      // Recalcular progreso general
-      const socioCtxProg = await fetchSocioContextClient();
-      const orProg = await buildOrClauseAsignacionSocio(supabase as any, socioCtxProg?.id);
-      let qProg = supabase
-        .from('tareas')
-        .select('id, estado, avance')
-        .eq('org_id', orgId || '');
-      if (orProg.length > 0) {
-        qProg = qProg.or(orProg.join(','));
-      }
-      const { data: todasLasTareas } = await qProg;
-
-      const todasLasTareasRows = (todasLasTareas ?? []) as Array<{ estado?: string | null; avance?: number | null }>;
-      if (todasLasTareasRows.length > 0) {
-        const total = todasLasTareasRows.length;
-        const completadas = todasLasTareasRows.filter((t: any) => {
-          const e = (t.estado || '').toLowerCase();
-          return e === 'validada' || e === 'rechazada' || t.avance === 100;
-        }).length;
-        const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
-        setProgresoGeneral({ completadas, total, porcentaje });
-      }
-
-      // Refrescar datos después de finalizar
-      await fetchData();
+      await recargarTareaAhora({ tareaId: tareaActual?.id ?? undefined });
     } catch (err: any) {
       handleApiError(err, 'Error al finalizar la tarea. Por favor, intenta nuevamente.');
     } finally {
@@ -2253,11 +1835,7 @@ export function AhoraSection() {
     }
     let cancelled = false;
     (async () => {
-      const { data } = await (supabase as any)
-        .from('tareas_subtareas')
-        .select('id, estado, orden')
-        .eq('tarea_id', tid)
-        .order('orden', { ascending: true });
+      const { bloques: data } = await fetchSocioBloquesResumenClient(tid);
       if (!cancelled) {
         setBloquesLista(
           (data as Array<{ id: string; orden: number; estado: string }> | null) || [],
@@ -2267,7 +1845,7 @@ export function AhoraSection() {
     return () => {
       cancelled = true;
     };
-  }, [subtareaActual?.tarea_id, tareaActual?.id, supabase]);
+  }, [subtareaActual?.tarea_id, tareaActual?.id]);
 
   if (loading) {
     return (
@@ -2755,24 +2333,10 @@ export function AhoraSection() {
             onClick={async () => {
               if (!jornadaActual?.id) return;
               try {
-                const { error } = await (supabase as any)
-                  .from('jornadas_socio')
-                  .update({ hora_fin: new Date().toISOString() })
-                  .eq('id', jornadaActual.id);
-
-                if (error) throw error;
-
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0);
-                const hoyISO = hoy.toISOString().split('T')[0];
-                const { data: jornadaData } = await (supabase as any)
-                  .from('jornadas_socio')
-                  .select('*')
-                  .eq('socio_id', socioIdGrows || '')
-                  .eq('fecha', hoyISO)
-                  .maybeSingle();
-                setJornadaActual(jornadaData);
-              } catch (err) {
+                const { ok, jornada, error } = await finalizarSocioJornadaClient(jornadaActual.id);
+                if (!ok) throw new Error(error ?? 'Error al finalizar jornada');
+                setJornadaActual(jornada);
+              } catch {
                 setError('Error al finalizar jornada');
               }
             }}
@@ -2922,12 +2486,11 @@ function ModalEvidencias({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClientComponentClient<Database>();
   const { toast } = useToast();
 
-  // Helper para manejar errores de API
-  const handleApiError = (error: any, defaultMessage: string) => {
-    const errorMessage = error?.message || error?.error || defaultMessage;
+  const handleApiError = (error: unknown, defaultMessage: string) => {
+    const errObj = error as { message?: string; error?: string };
+    const errorMessage = errObj?.message || errObj?.error || defaultMessage;
     toast({
       title: 'Error',
       description: errorMessage,
@@ -2939,16 +2502,12 @@ function ModalEvidencias({
     setLoading(true);
     try {
       if (subtareaId) {
-        const { data, error } = await (supabase as any)
-          .from('tareas_subtareas')
-          .select('evidencia_url, evidencia_cargada')
-          .eq('id', subtareaId)
-          .maybeSingle();
-        if (error) {
+        const data = await fetchSocioSubtareaEvidenciaClient(subtareaId);
+        if (!data.ok) {
           setEvidencias([]);
           return;
         }
-        const url = data?.evidencia_url as string | null | undefined;
+        const url = data.publicUrl ?? data.evidencia_url;
         if (url?.trim()) {
           setEvidencias([
             {
@@ -3084,12 +2643,7 @@ function ModalEvidencias({
     }
   };
 
-  const srcEvidenciaModal = (url: string) => {
-    const u = url.trim();
-    if (!u) return u;
-    if (/^https?:\/\//i.test(u)) return u;
-    return supabase.storage.from('evidencias').getPublicUrl(u).data.publicUrl;
-  };
+  const srcEvidenciaModal = (url: string) => evidenciaPublicUrl(url) ?? url;
 
   const handleVideoSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -3097,29 +2651,28 @@ function ModalEvidencias({
 
     setUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        
-        // Subir video al bucket evidencias_video
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('evidencias_video')
-          .upload(`${tareaId}/${Date.now()}-${file.name}`, file);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('tareaId', tareaId);
+      if (subtareaId?.trim()) {
+        form.append('subtareaId', subtareaId.trim());
+      }
 
-        if (uploadError) {
-          return;
-        }
+      const response = await fetch('/api/upload/video', {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        handleApiError(json, json.error ?? 'Error al subir video');
+        return;
+      }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('evidencias_video')
-          .getPublicUrl(uploadData.path);
-
-        setVideoUrlActual(publicUrl);
-        await cargarVistaEvidencias();
-      };
-      reader.readAsDataURL(file);
+      setVideoUrlActual(json.publicUrl ?? json.video_url ?? null);
+      await cargarVistaEvidencias();
     } catch (err) {
-      // Error silencioso
+      handleApiError(err, 'Error al subir video');
     } finally {
       setUploading(false);
       if (videoInputRef.current) videoInputRef.current.value = '';

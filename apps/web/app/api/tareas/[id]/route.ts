@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { ActualizarTareaSchema } from '../../../../lib/schemas';
 import { PermisoService } from '@/lib/services/permiso.service';
+import { TareaMetadataService } from '@/lib/tareas';
 import type { Database } from '@/lib/types/supabase.gen';
 
 // Asegurar que este endpoint siempre devuelva JSON
@@ -222,178 +224,105 @@ export async function PATCH(
       );
     }
 
-    // Preparar datos de actualización
-    const updateData: any = {
-      updated_at: new Date().toISOString(),
-    };
-
-    // ⚠️ OBSOLETO: cuadrilla_id ya no se usa para lógica de tareas
-    // Se mantiene el campo en la BD por compatibilidad pero siempre debe ser null
-    // Las tareas ahora se asignan directamente por responsable (email)
-    
-    // Si solo viene cuadrilla_id, ignorarlo (obsoleto)
-    const soloCuadrillaId = body.cuadrilla_id !== undefined && Object.keys(body).filter(k => k !== 'cuadrilla_id').length === 0;
-    
-    if (soloCuadrillaId) {
-      // No hacer nada, cuadrilla_id está obsoleto
-      console.warn('[PATCH_TAREA] Intento de actualizar cuadrilla_id (obsoleto), ignorado');
+    if (body.estado !== undefined) {
       return NextResponse.json(
-        { success: false, error: 'cuadrilla_id está obsoleto. Use el campo responsable para asignar tareas.' },
-        { status: 400 }
-      );
-    } else {
-      // Validar otros campos con el schema
-      try {
-        const validatedData = ActualizarTareaSchema.parse(body);
-        
-        if (validatedData.nombre !== undefined) {
-          updateData.title = validatedData.nombre;
-        }
-        if (validatedData.descripcion !== undefined) {
-          updateData.descripcion = validatedData.descripcion;
-        }
-        if (validatedData.responsable !== undefined) {
-          updateData.responsable = validatedData.responsable;
-        }
-        if (validatedData.prioridad !== undefined) {
-          updateData.prioridad = validatedData.prioridad;
-        }
-        if (validatedData.fecha_inicio_estimada !== undefined) {
-          updateData.fecha_inicio_estimada = validatedData.fecha_inicio_estimada;
-        }
-        if (validatedData.fecha_fin_estimada !== undefined) {
-          updateData.fecha_fin_estimada = validatedData.fecha_fin_estimada;
-        }
-        if (validatedData.fecha_inicio_real !== undefined) {
-          updateData.fecha_inicio_real = validatedData.fecha_inicio_real;
-        }
-        if (validatedData.fecha_fin_real !== undefined) {
-          updateData.fecha_fin_real = validatedData.fecha_fin_real;
-        }
-        if (validatedData.avance !== undefined) {
-          updateData.avance = validatedData.avance;
-        }
-        
-        // ⚠️ OBSOLETO: No permitir actualizar cuadrilla_id
-        // Las tareas se asignan por responsable (email), no por cuadrilla
-        if (body.cuadrilla_id !== undefined) {
-          console.warn('[PATCH_TAREA] Intento de actualizar cuadrilla_id (obsoleto), ignorado');
-          // No actualizar cuadrilla_id, siempre debe ser null
-        }
-      } catch (schemaError: any) {
-        console.error('[ERROR_VALIDACION_SCHEMA]', schemaError);
-        return NextResponse.json(
-          { success: false, error: 'Datos inválidos', details: schemaError?.errors || schemaError?.message },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validar que updateData no esté vacío (debe tener al menos updated_at)
-    if (Object.keys(updateData).length === 1 && updateData.updated_at) {
-      console.warn('[WARNING] UpdateData solo tiene updated_at, no hay cambios para aplicar');
-      return NextResponse.json(
-        { success: false, error: 'No hay cambios para aplicar' },
-        { status: 400 }
-      );
-    }
-
-    console.log('[DEBUG_PATCH_TAREA]', {
-      id,
-      organizacionId,
-      updateData,
-      soloCuadrillaId,
-      bodyKeys: Object.keys(body),
-      updateDataKeys: Object.keys(updateData)
-    });
-
-    // Actualizar tarea con manejo de errores mejorado
-    let tarea, updateError;
-    try {
-      const result = await supabase
-        .from('tareas')
-        .update(updateData)
-        .eq('id', id)
-        .eq('org_id', organizacionId)
-        .select('id, title, descripcion, estado, responsable, prioridad, obra_id, elemento_id, updated_at')
-        .single();
-      
-      tarea = result.data;
-      updateError = result.error;
-    } catch (supabaseException: any) {
-      console.error('[ERROR_SUPABASE_EXCEPTION]', {
-        message: supabaseException?.message,
-        name: supabaseException?.name,
-        stack: supabaseException?.stack,
-        error: supabaseException
-      });
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Error al ejecutar actualización en base de datos',
-          details: supabaseException?.message || 'Excepción no capturada en Supabase'
+        {
+          success: false,
+          error:
+            'El estado de la tarea no se actualiza por PATCH. Usá POST /api/tareas/[id]/transition o los comandos de bloque.',
         },
-        { status: 500 }
+        { status: 400 },
       );
     }
 
-    if (updateError) {
-      console.error('[ERROR_UPDATE_TAREA]', {
-        message: updateError.message,
-        details: updateError.details,
-        hint: updateError.hint,
-        code: updateError.code,
-        error: updateError,
-        updateData: updateData
-      });
+    let metadataInput: Parameters<typeof TareaMetadataService.actualizarMetadata>[2] = {};
+
+    const soloCuadrillaId =
+      body.cuadrilla_id !== undefined &&
+      Object.keys(body).filter((k) => k !== 'cuadrilla_id').length === 0;
+
+    if (soloCuadrillaId) {
       return NextResponse.json(
-        { success: false, error: updateError.message || 'Error al actualizar la tarea' },
-        { status: 500 }
+        {
+          success: false,
+          error: 'cuadrilla_id está obsoleto. Use el campo responsable para asignar tareas.',
+        },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: tarea,
-    });
-
-  } catch (error: any) {
-    // Siempre devolver JSON, nunca HTML
-    console.error('[ERROR_PATCH_TAREAS]', {
-      message: error?.message,
-      name: error?.name,
-      stack: error?.stack,
-      error: error,
-      errorString: String(error),
-      errorType: typeof error
-    });
-    
-    // Si es un error de Zod, devolver 400
-    if (error?.name === 'ZodError') {
-      return NextResponse.json(
-        { success: false, error: 'Datos inválidos', details: error?.errors || error?.message },
-        { status: 400 }
-      );
-    }
-
-    // Cualquier otro error, devolver 500 con JSON
-    const errorMessage = error?.message || String(error) || 'Error interno del servidor';
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? {
-          stack: error?.stack,
-          name: error?.name,
-          type: typeof error
-        } : undefined
-      },
-      { 
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json'
-        }
+    try {
+      const validatedData = ActualizarTareaSchema.parse(body);
+      if (validatedData.nombre !== undefined) metadataInput.title = validatedData.nombre;
+      if (validatedData.descripcion !== undefined) {
+        metadataInput.descripcion = validatedData.descripcion;
       }
+      if (validatedData.responsable !== undefined) {
+        metadataInput.responsable = validatedData.responsable;
+      }
+      if (validatedData.prioridad !== undefined) metadataInput.prioridad = validatedData.prioridad;
+      if (validatedData.fecha_inicio_estimada !== undefined) {
+        metadataInput.fecha_inicio_estimada = validatedData.fecha_inicio_estimada;
+      }
+      if (validatedData.fecha_fin_estimada !== undefined) {
+        metadataInput.fecha_fin_estimada = validatedData.fecha_fin_estimada;
+      }
+      if (validatedData.fecha_inicio_real !== undefined) {
+        metadataInput.fecha_inicio_real = validatedData.fecha_inicio_real;
+      }
+      if (validatedData.fecha_fin_real !== undefined) {
+        metadataInput.fecha_fin_real = validatedData.fecha_fin_real;
+      }
+      if (validatedData.avance !== undefined) metadataInput.avance = validatedData.avance;
+    } catch (schemaError: unknown) {
+      console.error('[ERROR_VALIDACION_SCHEMA]', schemaError);
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Datos inválidos',
+          details: schemaError instanceof Error ? schemaError.message : schemaError,
+        },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const tarea = await TareaMetadataService.actualizarMetadata(
+        id,
+        organizacionId,
+        metadataInput,
+      );
+      return NextResponse.json({ success: true, data: tarea });
+    } catch (updateErr: unknown) {
+      const msg = updateErr instanceof Error ? updateErr.message : 'Error al actualizar la tarea';
+      const status = msg.includes('No hay cambios') ? 400 : 500;
+      return NextResponse.json({ success: false, error: msg }, { status });
+    }
+
+  } catch (error: unknown) {
+    console.error('[ERROR_PATCH_TAREAS]', error);
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Datos inválidos', details: error.errors },
+        { status: 400 },
+      );
+    }
+
+    const errorMessage = error instanceof Error ? error.message : 'Error interno del servidor';
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+        details:
+          process.env.NODE_ENV === 'development' && error instanceof Error
+            ? { stack: error.stack, name: error.name }
+            : undefined,
+      },
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
     );
   }
 }

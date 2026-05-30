@@ -7,6 +7,7 @@ import { CrearTareaSchema, CrearTareaDesdeObraSimpleSchema } from '../../../lib/
 import { PermisoService } from '@/lib/services/permiso.service';
 import type { Database } from '@/lib/types/supabase.gen';
 import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
+import { TareaMetadataService } from '@/lib/tareas';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 
 async function puedeCrearTareasEnOrganizacion(
@@ -190,56 +191,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: tarea, error: tareaError } = await supabase
-      .from('tareas')
-      .insert({
+    let tareaOut = await TareaMetadataService.crearTarea(
+      {
         obra_id: pack.obra_id,
         elemento_id: pack.elemento_id,
         org_id: pack.org_id,
         title: pack.title,
         descripcion: pack.descripcion,
-        estado: 'pendiente',
-        prioridad: 'MEDIA',
-        avance: 0,
         bloques_planificados: pack.bloques_planificados,
         dias_presupuesto: pack.dias_presupuesto,
         etapa: pack.etapa,
-        fecha_inicio_estimada: null,
         fecha_fin_estimada: pack.fecha_fin_estimada,
-      } as any)
-      .select(`
-        id,
-        title,
-        descripcion,
-        bloques_planificados,
-        dias_presupuesto,
-        estado,
-        responsable,
-        responsable_socio_id,
-        prioridad,
-        avance,
-        fecha_inicio_estimada,
-        fecha_fin_estimada,
-        fecha_inicio_real,
-        fecha_fin_real,
-        elemento_id,
-        obra_id,
-        org_id,
-        created_at,
-        updated_at,
-        elemento:elementos(id, nombre, categoria, subcategoria)
-      `)
-      .single();
-
-    if (tareaError || !tarea) {
-      console.error('Error creando tarea:', tareaError);
-      return NextResponse.json(
-        { success: false, error: tareaError?.message ?? 'Error al crear tarea' },
-        { status: 500 }
-      );
-    }
-
-    let tareaOut: typeof tarea = tarea;
+      },
+      user.id,
+    );
 
     if (parsedSimple.success && parsedSimple.data.socio_id) {
       const sid = parsedSimple.data.socio_id;
@@ -264,57 +229,11 @@ export async function POST(request: NextRequest) {
         socioData?.email || socioData?.telefono || socioData?.nombre || null;
 
       if (socioData && responsableAsignar) {
-        const { data: updated, error: uErr } = await supabaseAny
-          .from('tareas')
-          .update({
-            responsable: responsableAsignar,
-            responsable_socio_id: socioData.id,
-            cuadrilla_id: socioData.id,
-          })
-          .eq('id', tarea.id)
-          .eq('org_id', pack.org_id)
-          .select(
-            `
-            id,
-            title,
-            descripcion,
-            bloques_planificados,
-            dias_presupuesto,
-            estado,
-            responsable,
-            responsable_socio_id,
-            prioridad,
-            avance,
-            fecha_inicio_estimada,
-            fecha_fin_estimada,
-            elemento_id,
-            obra_id,
-            org_id,
-            created_at,
-            updated_at,
-            elemento:elementos(id, nombre, categoria, subcategoria)
-          `,
-          )
-          .single();
-        if (!uErr && updated) {
-          tareaOut = updated;
-        }
+        tareaOut = await TareaMetadataService.asignarSocioTrasCreacion(tareaOut.id, pack.org_id, {
+          responsable: responsableAsignar,
+          responsable_socio_id: socioData.id,
+        });
       }
-    }
-
-    const { error: estadoError } = await supabase
-      .from('tareas_estados' as any)
-      .insert({
-        tarea_id: tareaOut.id,
-        estado_anterior: null,
-        estado_nuevo: 'pendiente',
-        actor_tipo: 'CLIENTE_TECNICO',
-        actor_id: user.id,
-        motivo: 'Tarea creada',
-      });
-
-    if (estadoError) {
-      console.error('Error creando estado inicial (no crítico):', estadoError);
     }
 
     return NextResponse.json(

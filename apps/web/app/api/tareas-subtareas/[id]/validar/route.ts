@@ -22,7 +22,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
     const metodoPago: 'EFECTIVO' | 'ONLINE' =
-      body?.metodoPago === 'ONLINE' ? 'ONLINE' : 'EFECTIVO';
+      body?.metodoPago === 'EFECTIVO' ? 'EFECTIVO' : 'ONLINE';
     const accion: 'validar' | 'rechazar' | 'validar_en_obra' =
       body?.accion === 'rechazar'
         ? 'rechazar'

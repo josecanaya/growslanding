@@ -182,7 +182,7 @@ export class SubtareaValidarService {
       const result = await ClienteWalletService.reconciliarSubtareaValidada({
         subtareaId: params.subtareaId,
         clienteUserId: params.clienteUserId,
-        metodoPago: params.metodoPago ?? 'EFECTIVO',
+        metodoPago: params.metodoPago ?? 'ONLINE',
       });
       return { result, warning: null };
     } catch (err) {

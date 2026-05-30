@@ -1,4 +1,5 @@
 import { createServiceSupabaseClient } from '../supabase-server';
+import { calcularComision, obtenerConfigPlan } from './plan.service';
 
 type MovimientoOwnerTipo = 'SOCIO' | 'ORG';
 
@@ -73,7 +74,15 @@ export class WalletMvpService {
 
     const montoBruto = await this.obtenerMontoBrutoBloque(subtarea);
     if (montoBruto <= 0) {
-      return;
+      throw new Error('MONTO_BLOQUE_INVALIDO: no hay monto para acreditar al socio');
+    }
+
+    const orgId = tarea.org_id;
+    const plan = orgId ? await obtenerConfigPlan(orgId) : null;
+    const comision = plan ? calcularComision(montoBruto, plan) : 0;
+    const montoNeto = Number(Math.max(0, montoBruto - comision).toFixed(2));
+    if (montoNeto <= 0) {
+      throw new Error('MONTO_NETO_INVALIDO: la comisión consume todo el pago del bloque');
     }
 
     await this.ensureSaldo('SOCIO', socioId);
@@ -88,10 +97,27 @@ export class WalletMvpService {
       presupuesto_id: subtarea.presupuesto_id,
       origen: 'VALIDACION_BLOQUE',
       concepto: `Pago por validación de bloque (${metodoPago})`,
-      monto: montoBruto,
+      monto: montoNeto,
     });
 
-    await this.ajustarSaldo('SOCIO', socioId, montoBruto);
+    await this.ajustarSaldo('SOCIO', socioId, montoNeto);
+
+    if (comision > 0 && orgId) {
+      await this.ensureSaldo('ORG', orgId);
+      await this.crearMovimiento({
+        owner_tipo: 'ORG',
+        owner_id: orgId,
+        tipo: 'CREDITO',
+        estado: 'completado',
+        tarea_id: tarea.id,
+        subtarea_id: subtarea.id,
+        presupuesto_id: subtarea.presupuesto_id,
+        origen: 'VALIDACION_BLOQUE',
+        concepto: `Comisión GROWS por bloque validado`,
+        monto: Number(comision.toFixed(2)),
+      });
+      await this.ajustarSaldo('ORG', orgId, Number(comision.toFixed(2)));
+    }
   }
 
   static async obtenerSaldo(owner_tipo: MovimientoOwnerTipo, owner_id: string) {
@@ -160,7 +186,15 @@ export class WalletMvpService {
 
     const aprobado = (rows ?? []).find((row: any) => String(row.estado ?? '').toUpperCase() === 'APROBADO');
     const monto = Number(aprobado?.monto ?? 0);
-    return Number.isFinite(monto) ? monto : 0;
+    if (!Number.isFinite(monto) || monto <= 0) {
+      return 0;
+    }
+    const { count } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('id', { count: 'exact', head: true })
+      .eq('tarea_id', subtarea.tarea_id);
+    const divisor = Math.max(1, Number(count ?? 0));
+    return Number((monto / divisor).toFixed(2));
   }
 
   static async verificarSocioNoSuspendido(socioId: string) {

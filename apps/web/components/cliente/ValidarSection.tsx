@@ -289,9 +289,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     try {
       const payload: {
         accion: 'validar' | 'validar_en_obra' | 'rechazar';
+        metodoPago?: 'EFECTIVO' | 'ONLINE';
         motivo?: string;
       } = {
         accion: accion === 'validar_en_obra' ? 'validar_en_obra' : accion,
+        metodoPago: accion === 'validar' ? 'ONLINE' : undefined,
       };
 
       if (accion === 'rechazar' && motivoRechazo.trim()) {

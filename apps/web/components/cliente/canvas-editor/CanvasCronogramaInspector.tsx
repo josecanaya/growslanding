@@ -135,7 +135,7 @@ export function CanvasCronogramaInspector({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ accion }),
+        body: JSON.stringify({ accion, metodoPago: accion === 'validar' ? 'ONLINE' : undefined }),
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {

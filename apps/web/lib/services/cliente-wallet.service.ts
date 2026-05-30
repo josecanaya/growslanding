@@ -194,46 +194,128 @@ export class ClienteWalletService {
 
   static async descontarPagoDeSubtareaValidada(params: {
     orgId: string;
-    /** ID de la fila `tareas`; los RPC de reserva/liberación operan por tarea completa */
     tareaId: string;
     subtareaId: string;
     clienteUserId: string | null;
     socioId?: string | null;
   }): Promise<ClienteWalletSaldo> {
-    const montoBloque = await this.resolverMontoSubtarea(params.orgId, params.subtareaId, params.socioId);
+    return this.debitarPorBloqueValidado({
+      orgId: params.orgId,
+      tareaId: params.tareaId,
+      subtareaId: params.subtareaId,
+      clienteUserId: params.clienteUserId,
+      socioId: params.socioId,
+    });
+  }
+
+  /**
+   * Descuenta saldo del cliente por bloque validado (referencia por subtarea, no por tarea entera).
+   */
+  static async debitarPorBloqueValidado(params: {
+    orgId: string;
+    tareaId: string;
+    subtareaId: string;
+    clienteUserId: string | null;
+    socioId?: string | null;
+  }): Promise<ClienteWalletSaldo> {
+    const montoBloque = await this.resolverMontoSubtarea(
+      params.orgId,
+      params.subtareaId,
+      params.socioId,
+    );
     const montoTotal = toMoney(montoBloque.monto);
     assertMontoValido(montoTotal);
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
-    await supabaseAny.rpc('cliente_wallet_reservar_tarea', {
-      p_org_id: params.orgId,
-      p_cliente_user_id: params.clienteUserId,
-      p_tarea_id: params.tareaId,
-      p_monto: montoTotal,
-      p_descripcion: montoBloque.presupuestoId
-        ? `Reserva por bloque validado ${params.subtareaId} / presupuesto ${montoBloque.presupuestoId}`
-        : `Reserva por bloque validado ${params.subtareaId}`,
-    }).then(({ error }: any) => {
-      if (error) throw new Error(error.message);
-    });
+    const { data: existente } = await supabaseAny
+      .from('cliente_wallet_movimientos')
+      .select('id')
+      .eq('org_id', params.orgId)
+      .eq('referencia_tipo', 'subtarea')
+      .eq('referencia_id', params.subtareaId)
+      .eq('tipo', 'LIBERACION_PAGO')
+      .eq('estado', 'confirmado')
+      .limit(1);
 
-    const { data, error } = await supabaseAny.rpc('cliente_wallet_liberar_tarea', {
-      p_org_id: params.orgId,
-      p_tarea_id: params.tareaId,
-      p_socio_id: montoBloque.socioId,
-      p_monto_total: montoTotal,
-      p_monto_pago: montoTotal,
-      p_monto_comision: 0,
-      p_descripcion: `Pago descontado al cliente por bloque validado ${params.subtareaId}`,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+    if (existente?.length) {
+      return this.getSaldo(params.orgId);
     }
 
-    return this.mapSaldo(data);
+    const wallet = await this.getOrCreateWallet(params.orgId, params.clienteUserId);
+
+    const { data: locked, error: lockError } = await supabaseAny
+      .from('cliente_wallets')
+      .select('id, saldo_disponible, saldo_reservado')
+      .eq('id', wallet.id)
+      .maybeSingle();
+
+    if (lockError || !locked) {
+      throw new Error('WALLET_NO_ENCONTRADA');
+    }
+
+    const saldoDisponible = Number(locked.saldo_disponible ?? 0);
+    if (saldoDisponible < montoTotal) {
+      throw new Error(
+        `SALDO_INSUFICIENTE: necesitás ${montoTotal} ARS disponibles (tenés ${saldoDisponible}). Cargá saldo en Billetera.`,
+      );
+    }
+
+    const plan = await obtenerConfigPlan(params.orgId);
+    const comision = toMoney(Math.min(montoTotal, calcularComision(montoTotal, plan)));
+    const montoPagoSocio = toMoney(montoTotal - comision);
+    assertMontoValido(montoPagoSocio);
+
+    const { error: updateError } = await supabaseAny
+      .from('cliente_wallets')
+      .update({
+        saldo_disponible: toMoney(saldoDisponible - montoTotal),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', wallet.id);
+
+    if (updateError) {
+      throw new Error(updateError.message);
+    }
+
+    const socioFinal = montoBloque.socioId;
+    const { error: movError } = await supabaseAny.from('cliente_wallet_movimientos').insert({
+      wallet_id: wallet.id,
+      org_id: params.orgId,
+      tipo: 'LIBERACION_PAGO',
+      monto: montoPagoSocio,
+      estado: 'confirmado',
+      referencia_tipo: 'subtarea',
+      referencia_id: params.subtareaId,
+      descripcion: `Pago por bloque validado ${params.subtareaId}`,
+      metadata: {
+        tarea_id: params.tareaId,
+        socio_id: socioFinal,
+        monto_total: montoTotal,
+        comision,
+      },
+    });
+
+    if (movError) {
+      throw new Error(movError.message);
+    }
+
+    if (comision > 0) {
+      await supabaseAny.from('cliente_wallet_movimientos').insert({
+        wallet_id: wallet.id,
+        org_id: params.orgId,
+        tipo: 'COMISION_GROWS',
+        monto: comision,
+        estado: 'confirmado',
+        referencia_tipo: 'subtarea',
+        referencia_id: params.subtareaId,
+        descripcion: 'Comisión GROWS por bloque validado',
+        metadata: { tarea_id: params.tareaId, socio_id: socioFinal },
+      });
+    }
+
+    return this.getSaldo(params.orgId);
   }
 
   static async reconciliarSubtareaValidada(params: {
@@ -242,7 +324,7 @@ export class ClienteWalletService {
     metodoPago?: 'EFECTIVO' | 'ONLINE';
   }) {
     const contexto = await this.obtenerContextoSubtareaValidada(params.subtareaId);
-    const metodoPago = params.metodoPago ?? 'EFECTIVO';
+    const metodoPago = params.metodoPago ?? 'ONLINE';
 
     const montoInfo = await this.resolverMontoSubtarea(
       contexto.orgId,
@@ -250,17 +332,9 @@ export class ClienteWalletService {
       contexto.socioId,
     );
     if (montoInfo.monto <= 0) {
-      return {
-        subtareaId: params.subtareaId,
-        orgId: contexto.orgId,
-        socioId: contexto.socioId,
-        metodoPago,
-        montoBloque: 0,
-        socioOk: true,
-        clienteOk: true,
-        clienteOmitido: true,
-        omitidoPorMonto: true,
-      };
+      throw new Error(
+        'MONTO_BLOQUE_INVALIDO: el bloque no tiene monto estimado ni presupuesto aprobado para registrar el pago',
+      );
     }
 
     let socioOk = false;
@@ -277,14 +351,13 @@ export class ClienteWalletService {
       }
     }
 
-    /** Efectivo: el cliente paga fuera de la app; solo acreditamos al socio. */
     let clienteOk = metodoPago === 'EFECTIVO';
     let clienteError: string | null = null;
-    let clienteOmitido = metodoPago === 'EFECTIVO';
+    const clienteOmitido = metodoPago === 'EFECTIVO';
 
     if (metodoPago === 'ONLINE') {
       try {
-        await this.descontarPagoDeSubtareaValidada({
+        await this.debitarPorBloqueValidado({
           orgId: contexto.orgId,
           tareaId: contexto.tareaId,
           subtareaId: params.subtareaId,
@@ -521,8 +594,14 @@ export class ClienteWalletService {
     }
 
     const resolved = await this.resolverMontoTarea(orgId, subtarea.tarea_id);
+    const { count } = await supabaseAny
+      .from('tareas_subtareas')
+      .select('id', { count: 'exact', head: true })
+      .eq('tarea_id', subtarea.tarea_id);
+    const divisor = Math.max(1, Number(count ?? 0));
     return {
-      ...resolved,
+      monto: Number((resolved.monto / divisor).toFixed(2)),
+      presupuestoId: resolved.presupuestoId,
       socioId: resolved.socioId ?? socioId,
     };
   }
@@ -589,7 +668,14 @@ export class ClienteWalletService {
       .select('id', { count: 'exact', head: true })
       .eq('tarea_id', tareaId)
       .eq('presupuesto_id', presupuestoId);
-    const divisor = Math.max(1, Number(count ?? 0));
+    let divisor = Math.max(1, Number(count ?? 0));
+    if (divisor <= 1) {
+      const { count: totalTarea } = await supabaseAny
+        .from('tareas_subtareas')
+        .select('id', { count: 'exact', head: true })
+        .eq('tarea_id', tareaId);
+      divisor = Math.max(1, Number(totalTarea ?? 0));
+    }
     return Number((montoPresupuesto / divisor).toFixed(2));
   }
 

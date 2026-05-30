@@ -174,6 +174,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tareas, setTareas] = useState<ValidarTarea[]>([]);
+  const [obrasPendientes, setObrasPendientes] = useState<ObraItem[]>([]);
   const [obraSeleccionada, setObraSeleccionada] = useState<string | null>(null);
   const [subtareaProcessingId, setSubtareaProcessingId] = useState<string | null>(null);
   const [imagenAmpliada, setImagenAmpliada] = useState<{ url: string; titulo: string } | null>(null);
@@ -215,14 +216,16 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       }
 
       const mapped = (json.data?.tareas ?? []) as ValidarTarea[];
+      const obras = (json.data?.obras ?? []) as ObraItem[];
       setTareas(mapped);
+      setObrasPendientes(obras);
       setObraSeleccionada((prev) => {
-        if (obraFiltro && mapped.some((t) => t.obraId === obraFiltro)) {
+        if (obraFiltro && obras.some((o) => o.id === obraFiltro)) {
           return obraFiltro;
         }
         if (obraFiltro) return obraFiltro;
-        if (prev && mapped.some((t) => t.obraId === prev)) return prev;
-        return mapped.length > 0 ? mapped[0].obraId : null;
+        if (prev && obras.some((o) => o.id === prev)) return prev;
+        return obras.length > 0 ? obras[0].id : null;
       });
     } catch {
       setError('No se pudieron obtener las tareas pendientes de validación.');
@@ -243,48 +246,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [loadData]);
 
-  const obrasAgrupadas: ObraItem[] = useMemo(() => {
-    const map = new Map<string, ObraItem>();
-    for (const tarea of tareas) {
-      if (!map.has(tarea.obraId)) {
-        map.set(tarea.obraId, {
-          id: tarea.obraId,
-          nombre: tarea.obraNombre,
-          count: 1,
-        });
-      } else {
-        map.get(tarea.obraId)!.count += 1;
-      }
-    }
-    return Array.from(map.values()).sort((a, b) =>
-      a.nombre.localeCompare(b.nombre)
-    );
-  }, [tareas]);
+  const obrasAgrupadas = obrasPendientes;
 
-  const tareasFiltradas = useMemo(() => {
-    if (!obraSeleccionada) return { pendientes: [], validadas: [] };
-    const filtradas = tareas.filter((t) => t.obraId === obraSeleccionada);
-
-    // Solo mostrar tareas que tienen bloques en estado 'para_validar' (que el cliente puede validar)
-    const pendientes = filtradas.filter((t) => {
-      const tieneBloquesParaValidar = t.subtareas.some(
-        (s) =>
-          normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_PARA_VALIDAR,
-      );
-      return tieneBloquesParaValidar;
-    });
-
-    // Mostrar tareas que están validadas (todas las subtareas validadas o tarea en estado validada)
-    const validadas = filtradas.filter(
-      (t) =>
-        t.estadoOficial === 'validada' ||
-        (t.subtareas.length > 0 &&
-          t.subtareas.every(
-            (s) => normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_FINAL,
-          ))
-    );
-
-    return { pendientes, validadas };
+  const tareasPendientes = useMemo(() => {
+    if (!obraSeleccionada) return [];
+    return tareas.filter((t) => t.obraId === obraSeleccionada);
   }, [tareas, obraSeleccionada]);
 
   const handleAbrirConfirmacion = useCallback(
@@ -337,6 +303,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(payload),
       });
 
@@ -352,7 +319,9 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       if (accion === 'validar') {
         toast({
           title: 'Bloque validado',
-          description: 'Validación definitiva registrada y pago liberado.',
+          description: data?.walletWarning
+            ? `Validación registrada. Aviso billetera: ${String(data.walletWarning).slice(0, 120)}`
+            : 'Validación definitiva registrada y pago liberado.',
         });
       } else if (accion === 'validar_en_obra') {
         toast({
@@ -433,6 +402,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     <div className="flex flex-col gap-6 lg:flex-row">
       <aside className="w-full space-y-2 lg:w-64">
         <h3 className="text-sm font-semibold uppercase text-slate-500">Obras</h3>
+        {obrasAgrupadas.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+            Sin bloques pendientes en ninguna obra.
+          </p>
+        ) : (
         <div className="space-y-2">
           {obrasAgrupadas.map((obra) => {
             const isActive = obraSeleccionada === obra.id;
@@ -457,32 +431,29 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                     {obra.count}
                   </Badge>
                 </div>
-                <p className="text-xs text-slate-500">Tareas con bloques</p>
+                <p className="text-xs text-slate-500">Bloques pendientes</p>
               </button>
             );
           })}
         </div>
+        )}
       </aside>
 
       <section className="flex-1 space-y-6">
-        {tareasFiltradas.pendientes.length > 0 && (
+        {tareasPendientes.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-slate-900">
-                Tareas pendientes de validación ({tareasFiltradas.pendientes.length})
+                Tareas pendientes de validación ({tareasPendientes.length})
               </h2>
             </div>
-            {tareasFiltradas.pendientes.map((tarea) => {
+            {tareasPendientes.map((tarea) => {
               const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
-              
-              const bloquesValidadas = tarea.subtareas.filter(
-                (s) => s.estado === 'validado'
-              ).length;
-              const bloquesRechazadas = tarea.subtareas.filter(
-                (s) => s.estado === 'rechazado'
-              ).length;
-              const totalBloques = tarea.subtareas.length;
+              const bloquesPendientes = tarea.subtareas.filter(
+                (s) =>
+                  normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_PARA_VALIDAR,
+              );
 
               const getEstadoLabel = (estado: string) => {
                 const estadoLower = estado.toLowerCase();
@@ -542,24 +513,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                         )}
                       </div>
 
-                      {totalBloques > 0 && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold uppercase text-slate-500 mb-2">
-                            Resumen de bloques
+                      {bloquesPendientes.length > 0 && (
+                        <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+                          <p className="text-xs font-semibold uppercase text-blue-700">
+                            {bloquesPendientes.length === 1
+                              ? '1 bloque esperando tu revisión'
+                              : `${bloquesPendientes.length} bloques esperando tu revisión`}
                           </p>
-                          <div className="flex flex-wrap gap-3 text-sm">
-                            <span className="text-slate-600">
-                              Total: <strong>{totalBloques}</strong>
-                            </span>
-                            <span className="text-green-600">
-                              Validadas: <strong>{bloquesValidadas}</strong>
-                            </span>
-                            {bloquesRechazadas > 0 && (
-                              <span className="text-red-600">
-                                Rechazadas: <strong>{bloquesRechazadas}</strong>
-                              </span>
-                            )}
-                          </div>
                         </div>
                       )}
 
@@ -599,13 +559,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                         </div>
                       )}
 
-                      {tarea.subtareas.length > 0 && (
+                      {bloquesPendientes.length > 0 && (
                         <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50 p-4">
                           <p className="text-xs font-semibold uppercase text-slate-500">
-                            Bloques pagables
+                            Bloques para validar
                           </p>
                           <div className="space-y-3">
-                            {tarea.subtareas.map((sub) => {
+                            {bloquesPendientes.map((sub) => {
                               const estadoSub = normalizeEstadoBloqueParaOperacion(sub.estado);
                               const esValidado = estadoSub === ESTADO_BLOQUE_FINAL;
                               const esRechazado = estadoSub === 'rechazado';
@@ -769,146 +729,16 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
           </div>
         )}
 
-        {tareasFiltradas.validadas.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <h2 className="text-lg font-semibold text-green-700">
-                Tareas validadas ({tareasFiltradas.validadas.length})
-              </h2>
-            </div>
-            {tareasFiltradas.validadas.map((tarea) => {
-              const fechas = `${formatDate(tarea.fechaInicio)} → ${formatDate(tarea.fechaFin)}`;
-
-              return (
-                <Card
-                  key={tarea.id}
-                  className="rounded-3xl border border-green-200 bg-green-50/30 shadow-sm"
-                >
-                  <div className="flex flex-col gap-4 p-6 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="info" className="border-blue-200 text-blue-700">
-                          <Building2 className="mr-1 h-3 w-3" />
-                          {tarea.obraNombre}
-                        </Badge>
-                        <Badge
-                          variant="success"
-                          className="border-green-200 text-green-700 bg-green-100"
-                        >
-                          <CheckCircle className="mr-1 h-3 w-3" />
-                          VALIDADA
-                        </Badge>
-                        {tarea.cuadrillaNombre && (
-                          <Badge
-                            variant="success"
-                            className="border-emerald-200 text-emerald-600"
-                          >
-                            <Users className="mr-1 h-3 w-3" />
-                            {tarea.cuadrillaNombre}
-                          </Badge>
-                        )}
-                      </div>
-
-                      <h3 className="text-lg font-semibold text-slate-900">
-                        {tarea.titulo}
-                      </h3>
-                      {tarea.descripcion && (
-                        <p className="text-sm text-slate-600">{tarea.descripcion}</p>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {fechas}
-                        </span>
-                        {tarea.responsable && (
-                          <span className="flex items-center gap-1">
-                            <Users className="h-4 w-4" /> Responsable:{' '}
-                            {tarea.responsable}
-                          </span>
-                        )}
-                      </div>
-
-                      {tarea.evidencias.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-xs font-semibold uppercase text-slate-500">
-                            Evidencias ({tarea.evidencias.length})
-                          </p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {tarea.evidencias.map((evidencia, idx) => (
-                              <button
-                                key={`${evidencia.path}-${idx}`}
-                                onClick={() =>
-                                  setImagenAmpliada({
-                                    url: evidencia.url,
-                                    titulo: tarea.titulo,
-                                  })
-                                }
-                                className="group relative aspect-square overflow-hidden rounded-lg border-2 border-slate-200 bg-slate-100 transition hover:border-green-400 hover:shadow-md"
-                              >
-                                <img
-                                  src={evidencia.url}
-                                  alt={`Evidencia ${idx + 1} - ${tarea.titulo}`}
-                                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.src =
-                                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23e5e7eb" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%239ca3af" font-family="sans-serif" font-size="12"%3EImagen no disponible%3C/text%3E%3C/svg%3E';
-                                  }}
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
-                                  <Camera className="h-6 w-6 text-white opacity-0 transition group-hover:opacity-100" />
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {tarea.subtareas.length > 0 && (
-                        <div className="space-y-2 rounded-2xl border border-green-100 bg-white/80 p-4">
-                          <p className="text-xs font-semibold uppercase text-slate-500">
-                            Bloques validados
-                          </p>
-                          <div className="space-y-2">
-                            {tarea.subtareas.map((sub) => (
-                              <div
-                                key={sub.id}
-                                className="flex items-center justify-between rounded-lg border border-green-100 p-2"
-                              >
-                                <div>
-                                  <p className="text-sm font-semibold text-slate-800">
-                                    Bloque {sub.orden ?? sub.bloque_index ?? '—'}
-                                  </p>
-                                  <p className="text-xs text-slate-500">
-                                    Validado:{' '}
-                                    {formatCurrency(
-                                      sub.montoValidado ?? sub.montoEstimado
-                                    )}
-                                  </p>
-                                </div>
-                                <Badge variant="success">VALIDADO</Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+        {tareasPendientes.length === 0 && (
+          <EmptyState
+            title="No hay bloques para validar"
+            description={
+              obrasAgrupadas.length > 0
+                ? 'Esta obra no tiene bloques pendientes de validación en este momento.'
+                : 'Cuando un socio envíe evidencia, los bloques aparecerán acá para que los revises.'
+            }
+          />
         )}
-
-        {tareasFiltradas.pendientes.length === 0 &&
-          tareasFiltradas.validadas.length === 0 && (
-            <EmptyState
-              title="No hay tareas para validar"
-              description="Esta obra no tiene tareas con bloques pendientes de validación."
-            />
-          )}
       </section>
 
       {imagenAmpliada && (

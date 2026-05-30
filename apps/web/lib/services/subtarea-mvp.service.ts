@@ -506,6 +506,7 @@ export class SubtareaMvpService {
 
   /**
    * Valida o rechaza un bloque pagable.
+   * @deprecated Preferir `SubtareaValidarService.ejecutar` desde rutas nuevas.
    */
   static async validarSubtarea(
     subtareaId: string,
@@ -515,118 +516,14 @@ export class SubtareaMvpService {
       throw new Error('FORBIDDEN_ACTION');
     }
 
-    const supabase = createServiceSupabaseClient();
-    const supabaseAny = supabase as any;
-
-    const select = await this.buildSubtareaSelect(supabaseAny);
-    const { data: subtarea, error } = await supabaseAny
-      .from('tareas_subtareas')
-      .select(select)
-      .eq('id', subtareaId)
-      .maybeSingle();
-
-    if (error || !subtarea) {
-      throw new Error('Subtarea no encontrada');
-    }
-
-    if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {
-      throw new Error('El bloque debe estar en estado para_validar para que el cliente opere');
-    }
-
-    if (!this.cumpleRequisitoEvidencia(subtarea)) {
-      throw new Error('No se puede validar el bloque sin evidencia cargada');
-    }
-
-    const socioId = subtarea.socio_id || subtarea.tareas?.responsable_socio_id;
-    if (!socioId) {
-      throw new Error('La subtarea no tiene socio asociado');
-    }
-    const orgId = subtarea.tareas?.org_id;
-    if (!orgId) {
-      throw new Error('La subtarea no tiene organización asociada');
-    }
-
-    const accion = actor.accion ?? 'validar';
-    const ahora = new Date().toISOString();
-
-    if (accion === 'rechazar') {
-      const rejectPatch: Record<string, unknown> = {
-        estado: 'rechazado',
-        updated_at: ahora,
-      };
-
-      const { error: rejectError } = await supabaseAny
-        .from('tareas_subtareas')
-        .update(rejectPatch)
-        .eq('id', subtareaId);
-
-      if (rejectError) {
-        throw new Error(rejectError.message);
-      }
-
-      return { tareaValidada: false };
-    }
-
-    /** Aprobación en obra: el socio puede seguir; el pago se libera solo con validación definitiva. */
-    if (accion === 'validar_en_obra') {
-      const { error: obraError } = await supabaseAny
-        .from('tareas_subtareas')
-        .update({
-          validado_en_obra_at: ahora,
-          validado_en_obra_por: actor.id,
-          updated_at: ahora,
-        })
-        .eq('id', subtareaId);
-
-      if (obraError) {
-        throw new Error(obraError.message);
-      }
-
-      return { tareaValidada: false, validadoEnObra: true };
-    }
-
-    const updatePatch: Record<string, unknown> = {
-      estado: 'validado',
-      updated_at: ahora,
-    };
-
-    const { error: updateError } = await supabaseAny
-      .from('tareas_subtareas')
-      .update(updatePatch)
-      .eq('id', subtareaId);
-
-    if (updateError) {
-      throw new Error(updateError.message);
-    }
-
-    await WalletMvpService.verificarSocioNoSuspendido(socioId);
-    const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
+    const { SubtareaValidarService } = await import('@/lib/tareas/subtarea-validar.service');
+    return SubtareaValidarService.ejecutar({
       subtareaId,
-      clienteUserId: actor.id,
-      metodoPago: actor.metodoPago ?? 'EFECTIVO',
+      actorUserId: actor.id,
+      accion: actor.accion,
+      metodoPago: actor.metodoPago,
+      motivo: actor.motivo,
     });
-
-    const { data: restantes } = await supabaseAny
-      .from('tareas_subtareas')
-      .select('id')
-      .eq('tarea_id', subtarea.tarea_id)
-      .neq('estado', ESTADO_BLOQUE_FINAL)
-      .limit(1);
-
-    const tareaValidada = !restantes || restantes.length === 0;
-
-    if (tareaValidada) {
-      try {
-        await TareaFsmService.reconciliarTareaSiTodosBloquesValidados(subtarea.tarea_id, {
-          actorId: actor.id,
-          motivo: 'Validacion automatica por bloques',
-        });
-      } catch (fsmErr) {
-        console.warn('[validarSubtarea] Cierre automatico de tarea no aplicado:', fsmErr);
-      }
-    }
-
-    return { tareaValidada, reconciliacion };
   }
 
   /**

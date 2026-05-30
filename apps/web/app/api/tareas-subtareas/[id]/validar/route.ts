@@ -3,11 +3,16 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
-import { SubtareaMvpService } from '@/lib/services/subtarea-mvp.service';
 import { ClienteWalletService } from '@/lib/services/cliente-wallet.service';
-import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { PermisoService } from '@/lib/services/permiso.service';
-import { ESTADO_BLOQUE_PARA_VALIDAR } from '@/lib/domain/estados-core';
+import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { normalizeRole } from '@/lib/roles';
+import {
+  ESTADO_BLOQUE_FINAL,
+  ESTADO_BLOQUE_PARA_VALIDAR,
+  normalizeEstadoBloqueParaOperacion,
+} from '@/lib/domain/estados-core';
+import { SubtareaValidarService } from '@/lib/tareas/subtarea-validar.service';
 
 export async function POST(
   request: NextRequest,
@@ -59,28 +64,41 @@ export async function POST(
       );
     }
 
-    const rol = await PermisoService.obtenerRolEnOrganizacion(
-      user.id,
-      subtarea.tareas?.org_id || '',
-    );
+    const orgId = String(subtarea.tareas?.org_id ?? '');
+    const appMeta = (user.app_metadata ?? {}) as Record<string, unknown>;
+    const userMeta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const role = normalizeRole(appMeta.role ?? userMeta.role);
 
-    if (rol !== 'CLIENTE') {
+    const puedeValidar =
+      role === 'ADMIN' ||
+      (await PermisoService.puedeValidarBloquesComoCliente(user.id, orgId, user.email));
+
+    if (!puedeValidar) {
       return NextResponse.json(
-        { success: false, error: 'Solo el cliente puede validar o rechazar bloques' },
+        {
+          success: false,
+          error:
+            'Solo el cliente técnico (dueño o líder de la organización) puede validar o rechazar bloques',
+        },
         { status: 403 },
       );
     }
+
+    const estadoNorm = normalizeEstadoBloqueParaOperacion(subtarea.estado);
 
     if (accion === 'validar_en_obra' && subtarea.validado_en_obra_at) {
       return NextResponse.json({ success: true, tareaValidada: false, validadoEnObra: true });
     }
 
-    if (subtarea.estado === 'validado') {
+    if (estadoNorm === ESTADO_BLOQUE_FINAL) {
       if (accion === 'validar') {
         const reconciliacion = await ClienteWalletService.reconciliarSubtareaValidada({
           subtareaId: id,
           clienteUserId: user.id,
           metodoPago,
+        }).catch((err) => {
+          console.warn('[VALIDAR_SUBTAREA] reconciliar bloque ya validado:', err);
+          return null;
         });
         return NextResponse.json({ success: true, tareaValidada: true, reconciliacion });
       }
@@ -91,26 +109,28 @@ export async function POST(
       });
     }
 
-    if (subtarea.estado !== ESTADO_BLOQUE_PARA_VALIDAR) {
+    if (estadoNorm !== ESTADO_BLOQUE_PARA_VALIDAR) {
       return NextResponse.json(
         { success: false, error: `El bloque debe estar en ${ESTADO_BLOQUE_PARA_VALIDAR}` },
         { status: 409 },
       );
     }
 
-    const { tareaValidada, validadoEnObra, reconciliacion } = await SubtareaMvpService.validarSubtarea(id, {
-      id: user.id,
-      rol,
-      metodoPago,
-      accion,
-      motivo,
-    });
+    const { tareaValidada, validadoEnObra, reconciliacion, walletWarning } =
+      await SubtareaValidarService.ejecutar({
+        subtareaId: id,
+        actorUserId: user.id,
+        accion,
+        metodoPago,
+        motivo,
+      });
 
     return NextResponse.json({
       success: true,
       tareaValidada,
       validadoEnObra: validadoEnObra ?? false,
       reconciliacion: reconciliacion ?? undefined,
+      walletWarning: walletWarning ?? undefined,
     });
   } catch (error) {
     console.error('[VALIDAR_SUBTAREA] Error:', error);

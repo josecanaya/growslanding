@@ -13,6 +13,7 @@ export type { ActualizarTareaMetadataInput } from './tarea-metadata.service';
 export { TareaAsignacionService } from './tarea-asignacion.service';
 export { TareaComandosService } from './tarea-comandos.service';
 export { SubtareaEnviarValidarService } from './subtarea-enviar-validar.service';
+export { SubtareaValidarService } from './subtarea-validar.service';
 
 /** Re-export opcional para imports desde @/lib/tareas */
 export type { EstadoTarea } from '@/lib/services/tarea-fsm.service';

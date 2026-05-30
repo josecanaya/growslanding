@@ -43,6 +43,7 @@ type SubtareaRow = {
   evidencia_url?: string | null;
   evidencia_cargada?: boolean | null;
   validado_en_obra_at?: string | null;
+  monto_estimado?: number | null;
 };
 
 async function fetchInChunks<T>(
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     let subsQuery = supabaseAny
       .from('tareas_subtareas')
       .select(
-        'id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, validado_en_obra_at, tareas!inner(id, title, descripcion, estado, obra_id, org_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id)',
+        'id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, validado_en_obra_at, monto_estimado, tareas!inner(id, title, descripcion, estado, obra_id, org_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id)',
       )
       .eq('estado', ESTADO_BLOQUE_PARA_VALIDAR)
       .in('tareas.org_id', allowedOrgIds);
@@ -95,81 +96,89 @@ export async function GET(request: NextRequest) {
       console.warn('[validaciones-pendientes] subtareas para_validar:', pErr.message);
     }
 
+    const pendientesRows = (pendientesSubs ?? []) as SubtareaRow[];
+
+    if (!pendientesRows.length) {
+      return NextResponse.json({
+        success: true,
+        data: { tareas: [], pendientesCount: 0, obras: [] },
+      });
+    }
+
     const tareaIdsFromSubs: string[] = [
       ...new Set(
-        ((pendientesSubs ?? []) as Array<{ tarea_id?: string; tareas?: { id?: string } }>)
-          .map((r) => r.tarea_id ?? r.tareas?.id)
+        pendientesRows
+          .map((r) => r.tarea_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
 
-    let todasLasTareas: TareaRow[] = [];
-
-    if (tareaIdsFromSubs.length) {
-      todasLasTareas = await fetchInChunks<TareaRow>(tareaIdsFromSubs, (chunk) =>
-        supabaseAny
-          .from('tareas')
-          .select(
-            'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id, org_id',
-          )
-          .in('id', chunk)
-          .in('org_id', allowedOrgIds),
-      );
-    }
-
-    /** Fallback: tareas visibles por org (por si el join de subtareas falla en PostgREST). */
-    if (!todasLasTareas.length && !obraId) {
-      const { data: rawTareas, error: tErr } = await supabaseAny
+    const todasLasTareas = await fetchInChunks<TareaRow>(tareaIdsFromSubs, (chunk) =>
+      supabaseAny
         .from('tareas')
         .select(
           'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id, org_id',
         )
-        .in('org_id', allowedOrgIds)
-        .limit(200);
-      if (tErr) {
-        return NextResponse.json({ success: false, error: tErr.message }, { status: 500 });
-      }
-      todasLasTareas = (rawTareas ?? []) as TareaRow[];
-    } else if (!todasLasTareas.length && obraId) {
-      const { data: rawTareas, error: tErr } = await supabaseAny
-        .from('tareas')
-        .select(
-          'id, title, descripcion, estado, obra_id, responsable, fecha_inicio_real, fecha_fin_real, fecha_inicio, fecha_fin, cuadrilla_id, org_id',
-        )
-        .in('org_id', allowedOrgIds)
-        .eq('obra_id', obraId);
-      if (tErr) {
-        return NextResponse.json({ success: false, error: tErr.message }, { status: 500 });
-      }
-      todasLasTareas = (rawTareas ?? []) as TareaRow[];
+        .in('id', chunk)
+        .in('org_id', allowedOrgIds),
+    );
+
+    if (!todasLasTareas.length) {
+      return NextResponse.json({
+        success: true,
+        data: { tareas: [], pendientesCount: 0, obras: [] },
+      });
     }
 
     const tareaIds = todasLasTareas.map((t) => t.id);
-    const montoMap = new Map<string, number>();
+    const montoTareaMap = new Map<string, number>();
+    const bloquesCountPorTarea = new Map<string, number>();
     if (tareaIds.length) {
-      const presupuestos = await fetchInChunks<{ tarea_id?: string; monto?: number; estado?: string }>(
-        tareaIds,
-        (chunk) =>
-          supabaseAny.from('tareas_presupuestos').select('tarea_id, monto, estado').in('tarea_id', chunk),
+      const presupuestos = await fetchInChunks<{
+        tarea_id?: string;
+        monto?: number;
+        estado?: string;
+      }>(tareaIds, (chunk) =>
+        supabaseAny.from('tareas_presupuestos').select('tarea_id, monto, estado').in('tarea_id', chunk),
       );
       presupuestos.forEach((row) => {
         if (row.tarea_id && String(row.estado ?? '').toUpperCase() === 'APROBADO') {
-          montoMap.set(row.tarea_id, Number(row.monto ?? 0));
+          montoTareaMap.set(row.tarea_id, Number(row.monto ?? 0));
         }
+      });
+
+      const allSubsCount = await fetchInChunks<{ tarea_id?: string | null }>(tareaIds, (chunk) =>
+        supabaseAny.from('tareas_subtareas').select('tarea_id').in('tarea_id', chunk),
+      );
+      allSubsCount.forEach((row) => {
+        const tid = row.tarea_id;
+        if (tid) bloquesCountPorTarea.set(tid, (bloquesCountPorTarea.get(tid) ?? 0) + 1);
       });
     }
 
     const subtareasPorTarea = new Map<string, unknown[]>();
 
+    const resolveMontoBloque = (row: SubtareaRow, tareaId: string): number | null => {
+      const directo = Number(row.monto_estimado ?? 0);
+      if (Number.isFinite(directo) && directo > 0) return directo;
+      const montoTarea = montoTareaMap.get(tareaId);
+      if (!montoTarea || montoTarea <= 0) return null;
+      const count = Math.max(1, bloquesCountPorTarea.get(tareaId) ?? 1);
+      return Number((montoTarea / count).toFixed(2));
+    };
+
     const mergeSub = (row: SubtareaRow) => {
       const tid = row.tarea_id;
       if (!tid) return;
       const estadoNorm = normalizeEstadoBloqueParaOperacion(row.estado ?? 'pendiente');
+      if (estadoNorm !== ESTADO_BLOQUE_PARA_VALIDAR) return;
+
+      const montoDirecto = resolveMontoBloque(row, tid);
       const item = {
         id: row.id,
         estado: estadoNorm,
-        montoEstimado: montoMap.get(tid) ?? null,
-        montoValidado: estadoNorm === ESTADO_BLOQUE_FINAL ? (montoMap.get(tid) ?? null) : null,
+        montoEstimado: montoDirecto,
+        montoValidado: null,
         fecha: row.fecha ?? null,
         orden: row.orden ?? row.bloque_index ?? null,
         bloque_index: row.bloque_index ?? null,
@@ -179,20 +188,10 @@ export async function GET(request: NextRequest) {
         validadoEnObraAt: row.validado_en_obra_at ?? null,
       };
       const prev = (subtareasPorTarea.get(tid) ?? []) as typeof item[];
-      const ix = prev.findIndex((x) => x.id === row.id);
-      subtareasPorTarea.set(tid, ix >= 0 ? prev.map((x, j) => (j === ix ? item : x)) : [...prev, item]);
+      subtareasPorTarea.set(tid, [...prev, item]);
     };
 
-    if (tareaIds.length) {
-      const allSubs = await fetchInChunks<SubtareaRow>(tareaIds, (chunk) =>
-        supabaseAny
-          .from('tareas_subtareas')
-          .select('id, tarea_id, estado, fecha, orden, bloque_index, evidencia_url, evidencia_cargada, validado_en_obra_at')
-          .in('tarea_id', chunk),
-      );
-      allSubs.forEach(mergeSub);
-    }
-    (pendientesSubs ?? []).forEach((row: SubtareaRow) => mergeSub(row));
+    pendientesRows.forEach(mergeSub);
 
     const obraIds = [...new Set(todasLasTareas.map((t) => t.obra_id).filter(Boolean))] as string[];
     const obrasMap = new Map<string, string>();
@@ -203,44 +202,67 @@ export async function GET(request: NextRequest) {
       obras.forEach((o) => obrasMap.set(o.id, o.name?.trim() || 'Obra sin nombre'));
     }
 
-    const tareas = todasLasTareas.map((row) => {
-      const id = String(row.id);
-      const subtareas = (subtareasPorTarea.get(id) ?? []) as Array<{
-        evidencia_url?: string | null;
-      }>;
-      const evidencias = subtareas
-        .filter((s) => s.evidencia_url?.trim())
-        .map((s) => {
-          const u = evidenciaPublicUrl(s.evidencia_url);
-          return u ? { url: u, path: String(s.evidencia_url) } : null;
-        })
-        .filter(Boolean);
+    const tareas = todasLasTareas
+      .map((row) => {
+        const id = String(row.id);
+        const subtareas = (subtareasPorTarea.get(id) ?? []) as Array<{
+          evidencia_url?: string | null;
+        }>;
+        if (!subtareas.length) return null;
 
-      return {
-        id,
-        titulo: String(row.title ?? row.descripcion ?? 'Tarea sin título'),
-        descripcion: row.descripcion ?? null,
-        obraId: String(row.obra_id),
-        obraNombre: obrasMap.get(String(row.obra_id)) ?? 'Obra sin nombre',
-        responsable: row.responsable ?? null,
-        cuadrillaNombre: null,
-        fechaInicio: row.fecha_inicio_real ?? row.fecha_inicio ?? null,
-        fechaFin: row.fecha_fin_real ?? row.fecha_fin ?? null,
-        evidencias,
-        estadoOficial: TareaFsmService.mapLegacyToOficial(String(row.estado ?? '')),
-        subtareas: subtareasPorTarea.get(id) ?? [],
-      };
-    });
+        const evidencias = subtareas
+          .filter((s) => s.evidencia_url?.trim())
+          .map((s) => {
+            const u = evidenciaPublicUrl(s.evidencia_url);
+            return u ? { url: u, path: String(s.evidencia_url) } : null;
+          })
+          .filter(Boolean);
 
-    const pendientesCount = tareas.filter((t) =>
-      (t.subtareas as Array<{ estado: string }>).some(
-        (s) => normalizeEstadoBloqueParaOperacion(s.estado) === ESTADO_BLOQUE_PARA_VALIDAR,
-      ),
-    ).length;
+        return {
+          id,
+          titulo: String(row.title ?? row.descripcion ?? 'Tarea sin título'),
+          descripcion: row.descripcion ?? null,
+          obraId: String(row.obra_id),
+          obraNombre: obrasMap.get(String(row.obra_id)) ?? 'Obra sin nombre',
+          responsable: row.responsable ?? null,
+          cuadrillaNombre: null,
+          fechaInicio: row.fecha_inicio_real ?? row.fecha_inicio ?? null,
+          fechaFin: row.fecha_fin_real ?? row.fecha_fin ?? null,
+          evidencias,
+          estadoOficial: TareaFsmService.mapLegacyToOficial(String(row.estado ?? '')),
+          subtareas,
+        };
+      })
+      .filter(Boolean);
+
+    const obrasPendientes = new Map<string, { id: string; nombre: string; count: number }>();
+    for (const t of tareas) {
+      const obraIdKey = t!.obraId;
+      const prev = obrasPendientes.get(obraIdKey);
+      const bloques = (t!.subtareas as unknown[]).length;
+      if (prev) {
+        prev.count += bloques;
+      } else {
+        obrasPendientes.set(obraIdKey, {
+          id: obraIdKey,
+          nombre: t!.obraNombre,
+          count: bloques,
+        });
+      }
+    }
+
+    const pendientesCount = tareas.reduce(
+      (acc, t) => acc + ((t!.subtareas as unknown[])?.length ?? 0),
+      0,
+    );
 
     return NextResponse.json({
       success: true,
-      data: { tareas, pendientesCount },
+      data: {
+        tareas,
+        pendientesCount,
+        obras: [...obrasPendientes.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+      },
     });
   } catch (e) {
     console.error('[GET validaciones-pendientes]', e);

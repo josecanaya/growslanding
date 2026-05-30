@@ -62,6 +62,49 @@ export class PermisoService {
     return null;
   }
 
+  /**
+   * Dueño de org o líder invitado — prioriza cliente sobre fila `socios` del mismo usuario.
+   * Evita 403 cuando quien valida también tiene perfil de socio en la misma org.
+   */
+  static async puedeValidarBloquesComoCliente(
+    userId: string,
+    orgId: string,
+    userEmail?: string | null,
+  ): Promise<boolean> {
+    if (!orgId) return false;
+    const supabaseAny = createServiceSupabaseClient() as any;
+
+    const { data: org } = await supabaseAny
+      .from('organizations')
+      .select('user_id')
+      .eq('id', orgId)
+      .maybeSingle();
+
+    if (org?.user_id === userId) return true;
+
+    if (!org) {
+      const { data: leg } = await supabaseAny
+        .from('organizaciones')
+        .select('owner_user_id')
+        .eq('id', orgId)
+        .maybeSingle();
+      if (leg?.owner_user_id === userId) return true;
+    }
+
+    if (userEmail) {
+      const { data: invite } = await supabaseAny
+        .from('leader_invites')
+        .select('id')
+        .eq('org_id', orgId)
+        .eq('email', userEmail)
+        .eq('status', 'accepted')
+        .maybeSingle();
+      if (invite) return true;
+    }
+
+    return false;
+  }
+
   static async obtenerSocioIdPorUsuario(userId: string, orgId?: string) {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;

@@ -250,9 +250,17 @@ export class ClienteWalletService {
       contexto.socioId,
     );
     if (montoInfo.monto <= 0) {
-      throw new Error(
-        'MONTO_BLOQUE_INVALIDO: el bloque no tiene monto estimado ni presupuesto aprobado para acreditar la billetera',
-      );
+      return {
+        subtareaId: params.subtareaId,
+        orgId: contexto.orgId,
+        socioId: contexto.socioId,
+        metodoPago,
+        montoBloque: 0,
+        socioOk: true,
+        clienteOk: true,
+        clienteOmitido: true,
+        omitidoPorMonto: true,
+      };
     }
 
     let socioOk = false;

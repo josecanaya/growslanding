@@ -355,7 +355,7 @@ export class ClienteWalletService {
     let clienteError: string | null = null;
     const clienteOmitido = metodoPago === 'EFECTIVO';
 
-    if (metodoPago === 'ONLINE') {
+    if (metodoPago === 'ONLINE' && socioOk) {
       try {
         await this.debitarPorBloqueValidado({
           orgId: contexto.orgId,
@@ -368,6 +368,8 @@ export class ClienteWalletService {
       } catch (error) {
         clienteError = error instanceof Error ? error.message : 'Error descontando wallet cliente';
       }
+    } else if (metodoPago === 'ONLINE' && !socioOk) {
+      clienteError = socioError ?? 'No se acreditó al socio; se omitió el débito al cliente';
     }
 
     if (!socioOk || !clienteOk) {

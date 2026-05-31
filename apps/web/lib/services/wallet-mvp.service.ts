@@ -1,5 +1,6 @@
 import { createServiceSupabaseClient } from '../supabase-server';
 import { calcularComision, obtenerConfigPlan } from './plan.service';
+import { WalletService } from './wallet.service';
 
 type MovimientoOwnerTipo = 'SOCIO' | 'ORG';
 
@@ -85,38 +86,33 @@ export class WalletMvpService {
       throw new Error('MONTO_NETO_INVALIDO: la comisión consume todo el pago del bloque');
     }
 
-    await this.ensureSaldo('SOCIO', socioId);
-
-    await this.crearMovimiento({
+    const creditoSocio = await WalletService.crearCredito({
       owner_tipo: 'SOCIO',
       owner_id: socioId,
-      tipo: 'CREDITO',
-      estado: 'completado',
-      tarea_id: tarea.id,
-      subtarea_id: subtarea.id,
-      presupuesto_id: subtarea.presupuesto_id,
-      origen: 'VALIDACION_BLOQUE',
-      concepto: `Pago por validación de bloque (${metodoPago})`,
       monto: montoNeto,
+      concepto: `Pago por validación de bloque (${metodoPago})`,
+      tarea_id: tarea.id,
+      presupuesto_id: subtarea.presupuesto_id ?? undefined,
     });
 
-    await this.ajustarSaldo('SOCIO', socioId, montoNeto);
+    await this.marcarMovimientoBloque(creditoSocio.id, {
+      subtareaId: subtarea.id,
+      metodoPago,
+    });
 
     if (comision > 0 && orgId) {
-      await this.ensureSaldo('ORG', orgId);
-      await this.crearMovimiento({
+      const comisionRedondeada = Number(comision.toFixed(2));
+      const creditoOrg = await WalletService.crearCredito({
         owner_tipo: 'ORG',
         owner_id: orgId,
-        tipo: 'CREDITO',
-        estado: 'completado',
-        tarea_id: tarea.id,
-        subtarea_id: subtarea.id,
-        presupuesto_id: subtarea.presupuesto_id,
-        origen: 'VALIDACION_BLOQUE',
+        monto: comisionRedondeada,
         concepto: `Comisión GROWS por bloque validado`,
-        monto: Number(comision.toFixed(2)),
+        tarea_id: tarea.id,
+        presupuesto_id: subtarea.presupuesto_id ?? undefined,
       });
-      await this.ajustarSaldo('ORG', orgId, Number(comision.toFixed(2)));
+
+      // Sin subtarea_id en ORG: evita colisión UNIQUE (subtarea_id, tipo) con el crédito del socio.
+      await this.marcarMovimientoBloque(creditoOrg.id, { metodoPago });
     }
   }
 
@@ -231,65 +227,39 @@ export class WalletMvpService {
     };
   }
 
-  private static async crearMovimiento(payload: any) {
+  private static async marcarMovimientoBloque(
+    movimientoId: string,
+    params: { subtareaId?: string; metodoPago: 'EFECTIVO' | 'ONLINE' },
+  ) {
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
 
-    const { error } = await supabaseAny.from('wallet_movimientos').insert(payload);
+    const patch: Record<string, unknown> = {
+      origen: 'VALIDACION_BLOQUE',
+    };
+    if (params.subtareaId) {
+      patch.subtarea_id = params.subtareaId;
+    }
+
+    const { error } = await supabaseAny
+      .from('wallet_movimientos')
+      .update(patch)
+      .eq('id', movimientoId);
 
     if (error) {
-      throw new Error(`Error creando movimiento de wallet: ${error.message}`);
-    }
-  }
-
-  private static async ensureSaldo(owner_tipo: MovimientoOwnerTipo, owner_id: string) {
-    const supabase = createServiceSupabaseClient();
-    const supabaseAny = supabase as any;
-
-    const { data } = await supabaseAny
-      .from('wallet_saldos')
-      .select('id')
-      .eq('owner_tipo', owner_tipo)
-      .eq('owner_id', owner_id)
-      .maybeSingle();
-
-    if (!data) {
-      await supabaseAny.from('wallet_saldos').insert({
-        owner_tipo,
-        owner_id,
-        saldo_actual: 0,
-        saldo_pendiente: 0,
-      });
-    }
-  }
-
-  private static async ajustarSaldo(
-    owner_tipo: MovimientoOwnerTipo,
-    owner_id: string,
-    delta: number,
-  ): Promise<void> {
-    const supabase = createServiceSupabaseClient();
-    const supabaseAny = supabase as any;
-
-    const { data } = await supabaseAny
-      .from('wallet_saldos')
-      .select('id, saldo_actual')
-      .eq('owner_tipo', owner_tipo)
-      .eq('owner_id', owner_id)
-      .maybeSingle();
-
-    if (!data) {
-      await this.ensureSaldo(owner_tipo, owner_id);
-      return this.ajustarSaldo(owner_tipo, owner_id, delta);
+      console.warn('[WalletMvpService] No se pudo marcar movimiento de bloque:', error.message);
+      return;
     }
 
-    await supabaseAny
-      .from('wallet_saldos')
-      .update({
-        saldo_actual: Number((Number(data.saldo_actual || 0) + delta).toFixed(2)),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', data.id);
+    if (params.metodoPago) {
+      const { error: metodoError } = await supabaseAny
+        .from('wallet_movimientos')
+        .update({ metodo_pago: params.metodoPago })
+        .eq('id', movimientoId);
+      if (metodoError) {
+        console.warn('[WalletMvpService] metodo_pago no disponible:', metodoError.message);
+      }
+    }
   }
 
   private static async assertMovimientoNoDuplicado(subtareaId: string) {
@@ -307,15 +277,14 @@ export class WalletMvpService {
       return;
     }
 
-    let query = supabaseAny
+    const { data } = await supabaseAny
       .from('wallet_movimientos')
       .select('id')
       .eq('subtarea_id', subtarea.id)
       .eq('origen', 'VALIDACION_BLOQUE')
       .eq('owner_tipo', 'SOCIO')
-      .eq('owner_id', socioId);
-
-    const { data } = await query.limit(1);
+      .eq('owner_id', socioId)
+      .limit(1);
 
     if (data && data.length > 0) {
       throw new Error('El bloque ya fue pagado previamente');

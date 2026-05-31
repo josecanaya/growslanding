@@ -75,14 +75,26 @@ async function resolveOwner(userId: string, email?: string): Promise<OwnerInfo |
   const supabase = createServiceSupabaseClient();
   const supabaseAny = supabase as any;
 
-  const { data: socio } = await supabaseAny
+  const { data: socioByUser } = await supabaseAny
     .from('socios')
     .select('id, org_id, user_id, email')
-    .or(`user_id.eq.${userId},email.eq.${email || ''}`)
+    .eq('user_id', userId)
     .maybeSingle();
 
-  if (socio?.id) {
-    return { owner_tipo: 'SOCIO', owner_id: socio.id };
+  if (socioByUser?.id) {
+    return { owner_tipo: 'SOCIO', owner_id: socioByUser.id };
+  }
+
+  if (email) {
+    const { data: socioByEmail } = await supabaseAny
+      .from('socios')
+      .select('id, org_id, user_id, email')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (socioByEmail?.id) {
+      return { owner_tipo: 'SOCIO', owner_id: socioByEmail.id };
+    }
   }
 
   let { data: org } = await supabaseAny

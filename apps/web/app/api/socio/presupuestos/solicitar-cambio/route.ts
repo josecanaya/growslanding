@@ -66,20 +66,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const tareaId = presupuesto.tarea_id;
+    if (!tareaId) {
+      return NextResponse.json({ message: 'Presupuesto sin tarea asociada' }, { status: 400 });
+    }
+
     const { data: tarea, error: tareaErr } = await supabase
       .from('tareas')
       .select('id, obra_id')
-      .eq('id', presupuesto.tarea_id)
+      .eq('id', tareaId)
       .maybeSingle();
 
-    if (tareaErr || !tarea?.obra_id) {
+    const obraId = tarea?.obra_id;
+    if (tareaErr || !tarea || !obraId) {
       return NextResponse.json({ message: 'Tarea no encontrada' }, { status: 404 });
     }
 
     const { data: obra } = await supabase
       .from('obras')
       .select('id, org_id')
-      .eq('id', tarea.obra_id)
+      .eq('id', obraId)
       .maybeSingle();
 
     if (!obra?.org_id) {

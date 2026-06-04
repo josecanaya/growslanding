@@ -2,6 +2,33 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 
+/** PostgREST puede devolver relaciones embebidas como objeto o como array de un elemento. */
+function unwrapRelationEmbed<T>(val: T | T[] | null | undefined): T | null {
+  if (val == null) return null;
+  return Array.isArray(val) ? (val[0] ?? null) : val;
+}
+
+type TareaPresupuestoEmbed = {
+  id: string;
+  title: string | null;
+  org_id: string;
+  obra_id: string | null;
+  obras?: { name: string | null } | Array<{ name: string | null }> | null;
+};
+
+function parseTareaPresupuestoEmbed(raw: unknown): TareaPresupuestoEmbed | null {
+  const t = unwrapRelationEmbed(raw as TareaPresupuestoEmbed | TareaPresupuestoEmbed[] | null);
+  if (!t?.id || !t.org_id) return null;
+  return t;
+}
+
+function obraNombreFromEmbed(
+  obras: TareaPresupuestoEmbed['obras'],
+): string | null {
+  const o = unwrapRelationEmbed(obras ?? null);
+  return o?.name ?? null;
+}
+
 export type SolicitudCambioListItem = {
   id: string;
   presupuesto_id: string;
@@ -71,21 +98,15 @@ export async function listSolicitudesCambioPendientes(
   >();
 
   for (const p of presupRows ?? []) {
-    const tarea = p.tareas as {
-      id: string;
-      title: string | null;
-      org_id: string;
-      obra_id: string | null;
-      obras?: { name: string | null } | null;
-    };
-    if (!tarea?.org_id || !orgIds.includes(tarea.org_id)) continue;
+    const tarea = parseTareaPresupuestoEmbed(p.tareas);
+    if (!tarea || !orgIds.includes(tarea.org_id)) continue;
     if (!estadoPresupuestoEsAprobado(p.estado)) continue;
     presupuestoMeta.set(p.id, {
       tarea_id: p.tarea_id ?? tarea.id,
       tarea_titulo: tarea.title,
       org_id: tarea.org_id,
       obra_id: tarea.obra_id,
-      obra_nombre: tarea.obras?.name ?? null,
+      obra_nombre: obraNombreFromEmbed(tarea.obras),
       estado: p.estado,
     });
   }
@@ -120,7 +141,9 @@ export async function listSolicitudesCambioPendientes(
   for (const row of solicitudes ?? []) {
     const meta = presupuestoMeta.get(row.presupuesto_id);
     if (!meta) continue;
-    const socio = row.socios as { nombre?: string | null } | null;
+    const socio = unwrapRelationEmbed(
+      row.socios as { nombre?: string | null } | Array<{ nombre?: string | null }> | null,
+    );
     items.push({
       id: row.id,
       presupuesto_id: row.presupuesto_id,
@@ -191,13 +214,8 @@ export async function assertClientePuedeGestionarSolicitud(
     throw new Error('NOT_FOUND');
   }
 
-  const tarea = pres.tareas as {
-    id: string;
-    title: string | null;
-    org_id: string;
-    obra_id: string | null;
-  };
-  if (!tarea?.org_id || !ownerOrgIds.includes(tarea.org_id)) {
+  const tarea = parseTareaPresupuestoEmbed(pres.tareas);
+  if (!tarea || !ownerOrgIds.includes(tarea.org_id)) {
     throw new Error('FORBIDDEN');
   }
 

@@ -197,6 +197,9 @@ export function AhoraSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tareas, setTareas] = useState<SupabaseTarea[]>([]);
+  /** Hasta 2+ tareas operativas; el socio puede alternar entre ellas. */
+  const [operativasList, setOperativasList] = useState<SupabaseTarea[]>([]);
+  const [tareaSeleccionadaId, setTareaSeleccionadaId] = useState<string | null>(null);
   const [orgIdResuelta, setOrgIdResuelta] = useState<string | null>(currentUser?.orgId ?? null);
   const [showChecklist, setShowChecklist] = useState(false);
   /** Tras «Comenzar bloque/tarea»: primero checklist; null = sólo vista manual del checklist */
@@ -440,9 +443,23 @@ export function AhoraSection() {
         if (data.error) {
           setError(data.error);
           setTareas([]);
+          setOperativasList([]);
         } else {
           setError(null);
-          setTareas(data.tarea ? [data.tarea as SupabaseTarea] : []);
+          const ops = (data.operativas ?? []) as SupabaseTarea[];
+          setOperativasList(ops);
+          const preferida = opts?.tareaId?.trim() || tareaSeleccionadaId;
+          const picked =
+            ops.find((t) => t.id === preferida) ??
+            (data.tarea as SupabaseTarea | null) ??
+            ops[0] ??
+            null;
+          if (picked?.id) {
+            setTareaSeleccionadaId(picked.id);
+            setTareas([picked]);
+          } else {
+            setTareas([]);
+          }
         }
 
         setProgresoGeneral(data.progresoGeneral);
@@ -465,7 +482,7 @@ export function AhoraSection() {
         }
       }
     },
-    [currentUser],
+    [currentUser, tareaSeleccionadaId],
   );
 
   const fetchData = async () => {
@@ -522,10 +539,26 @@ export function AhoraSection() {
     }
   }, [totalSubtareas, subtareasCompletadas]);
 
-  // Tarea actual (una a la vez, ordenada por CPM)
   const tareaActual = useMemo(() => {
-    return tareas[0] || null;
-  }, [tareas]);
+    if (tareaSeleccionadaId) {
+      const enOps = operativasList.find((t) => t.id === tareaSeleccionadaId);
+      if (enOps) return enOps;
+    }
+    return tareas[0] || operativasList[0] || null;
+  }, [tareas, operativasList, tareaSeleccionadaId]);
+
+  const cambiarTareaActiva = useCallback(
+    async (tareaId: string) => {
+      if (tareaId === tareaSeleccionadaId) return;
+      subtareaFijadaRef.current = null;
+      setSubtareaActual(null);
+      clearAhoraOperationalSession();
+      setOperationalSession(null);
+      setTareaSeleccionadaId(tareaId);
+      await recargarTareaAhora({ tareaId, showLoading: true });
+    },
+    [recargarTareaAhora, tareaSeleccionadaId],
+  );
 
   const tareasIdsFingerprint = useMemo(() => tareas.map((t) => t.id).join(','), [tareas]);
 
@@ -958,10 +991,39 @@ export function AhoraSection() {
     [vincularSubtareaDesdeBloques],
   );
 
-  const avanzarTrasTareaCompletada = async (_tareaIdCompletada?: string) => {
+  const buscarBloqueEnOtraTarea = useCallback(
+    async (excluirTareaId?: string): Promise<{ tareaId: string; bloque: BloqueResumen } | null> => {
+      if (!socioIdGrows || operativasList.length < 2) return null;
+      for (const t of operativasList) {
+        if (excluirTareaId && t.id === excluirTareaId) continue;
+        const ahoraData = await fetchSocioAhoraClient({ tareaId: t.id });
+        const lista = (ahoraData.bloques?.lista ?? []) as BloqueResumen[];
+        const visibles = filtrarSubtareasVisiblesSocio(lista, socioIdGrows);
+        const pick = pickSubtareaOperativa(visibles);
+        if (!pick?.id) continue;
+        const full = lista.find((s) => s.id === pick.id);
+        if (full) return { tareaId: t.id, bloque: full };
+      }
+      return null;
+    },
+    [operativasList, socioIdGrows],
+  );
+
+  const avanzarTrasTareaCompletada = async (tareaIdCompletada?: string) => {
     subtareaFijadaRef.current = null;
     setSubtareaActual(null);
-    await recargarTareaAhora();
+    const otro = await buscarBloqueEnOtraTarea(tareaIdCompletada);
+    if (otro) {
+      setTareaSeleccionadaId(otro.tareaId);
+      setSubtareaActual(otro.bloque);
+      await recargarTareaAhora({ tareaId: otro.tareaId });
+      toast({
+        title: 'Seguí en otra tarea',
+        description: 'Pasamos al próximo bloque disponible en otra obra o tarea.',
+      });
+      return;
+    }
+    await recargarTareaAhora({ tareaId: tareaSeleccionadaId ?? undefined });
   };
 
   /** Tras enviar un bloque a revisión, pasar al siguiente bloque operable o a la siguiente tarea. */
@@ -1004,10 +1066,22 @@ export function AhoraSection() {
       }
     }
 
+    const otro = await buscarBloqueEnOtraTarea(tid);
+    if (otro) {
+      setTareaSeleccionadaId(otro.tareaId);
+      await recargarTareaAhora({ tareaId: otro.tareaId });
+      setSubtareaActual(otro.bloque);
+      toast({
+        title: 'Seguí en otra tarea',
+        description: 'Esta tarea quedó en revisión. Continuá con un bloque de otra tarea activa.',
+      });
+      return;
+    }
+
     await avanzarTrasTareaCompletada(tid);
     toast({
       title: 'Tarea en revisión',
-      description: 'Todos los bloques de esta tarea están en revisión o completos. Pasamos a la siguiente.',
+      description: 'Todos los bloques de esta tarea están en revisión o completos.',
     });
   };
 
@@ -2184,6 +2258,30 @@ export function AhoraSection() {
         <p className="mt-2 inline-flex items-center rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#43617c] shadow-sm ring-1 ring-[#163274]/10">
           {jornadaEstadoLabel}
         </p>
+        {operativasList.length > 1 && !USE_MOCK_DATA ? (
+          <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+            {operativasList.map((t) => {
+              const activa = t.id === tareaActual?.id;
+              const enProg = String(t.estado ?? '').toLowerCase().includes('progreso');
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => void cambiarTareaActiva(t.id)}
+                  className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                    activa
+                      ? 'bg-[#163274] text-white shadow-sm'
+                      : 'bg-white text-[#43617c] ring-1 ring-[#163274]/15'
+                  }`}
+                >
+                  {t.obras?.name ? `${t.obras.name.slice(0, 18)} · ` : ''}
+                  {(t.title || 'Tarea').slice(0, 24)}
+                  {enProg ? ' · activa' : ''}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       {/* Card principal tipo stitch: bloque azul + CTA blanco */}

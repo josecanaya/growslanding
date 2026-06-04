@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
+import { estadoPresupuestoEsAprobado } from '@/lib/domain/aprobacion-presupuesto-tarea';
 import { resolveSocioRecordForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -18,7 +19,7 @@ const schema = z.object({
       monto: z.number().nullable().optional(),
       /** Texto libre guardado en `tareas_presupuestos.notas` (JSON) */
       observacion: z.string().max(4000).nullable().optional(),
-      estado: z.enum(['PENDIENTE', 'ENVIADO', 'APROBADO']),
+      estado: z.enum(['PENDIENTE', 'ENVIADO']),
     })
   ).min(1),
 });
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
         // Buscar si ya existe
         const { data: existente, error: existenteError } = await supabase
           .from('tareas_presupuestos')
-          .select('id, notas')
+          .select('id, notas, estado, monto')
           .eq('tarea_id', presupuesto.tarea_id)
           .eq('socio_id', socioId)
           .maybeSingle();
@@ -201,6 +202,15 @@ export async function POST(request: NextRequest) {
           Object.keys(baseNotas).length > 0 ? JSON.stringify(baseNotas) : undefined;
 
         if (existente) {
+          if (estadoPresupuestoEsAprobado(existente.estado)) {
+            errors.push({
+              tarea_id: presupuesto.tarea_id,
+              error:
+                'PRESUPUESTO_APROBADO_INMUTABLE: el monto aprobado no se puede modificar. Usá solicitar cambio.',
+            });
+            continue;
+          }
+
           const patch: Record<string, unknown> = {
             estado: presupuesto.estado,
             updated_at: new Date().toISOString(),

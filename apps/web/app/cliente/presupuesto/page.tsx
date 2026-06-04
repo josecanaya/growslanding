@@ -5,6 +5,7 @@ import type { Route } from 'next';
 import Link from 'next/link';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
 import { PresupuestoCard } from '@/components/cliente/PresupuestoCard';
+import { SolicitudesCambioPresupuestoPanel } from '@/components/cliente/presupuestos/SolicitudesCambioPresupuestoPanel';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { Button } from '@/components/ui/grows';
 
@@ -203,6 +204,7 @@ export default function ClientePresupuestoPage() {
         title="Presupuestos"
         description="Solicitudes y respuestas asociadas a tareas, según lo registrado en la base de datos."
       />
+      <SolicitudesCambioPresupuestoPanel onResponded={() => void load()} />
       {err ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{err}</p>
       ) : null}

@@ -12,7 +12,7 @@ import {
 import { STITCH_INNER, StitchStickySubheader } from '@/components/socio/stitch/socioStitchUi';
 import { cn } from '@/lib/utils';
 
-type FiltroOpo = 'todos' | 'cerca' | 'urgentes' | 'nuevas';
+type FiltroOpo = 'presupuestar' | 'seguimiento' | 'urgentes' | 'cerca';
 
 interface Solicitud {
   obra_id: string;
@@ -35,9 +35,10 @@ function OportunidadesContent() {
   const obraIdHighlight = searchParams.get('obra_id');
 
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
+  const [seguimiento, setSeguimiento] = useState<Solicitud[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<FiltroOpo>('todos');
+  const [filtro, setFiltro] = useState<FiltroOpo>('presupuestar');
 
   useEffect(() => {
     const fetchSolicitudes = async () => {
@@ -71,17 +72,24 @@ function OportunidadesContent() {
             throw new Error('Error al cargar solicitudes');
           }
           const data = await response.json();
-          const todasSolicitudes = data.solicitudes || [];
-          const conDefaults = todasSolicitudes.map((s: Record<string, unknown>) => ({
-            ...s,
-            urgencia: (s.urgencia as Solicitud['urgencia']) || 'MEDIA',
-            cantidad_tareas: Number(s.cantidad_tareas ?? 0),
-          }));
-          // Backend puede no cumplir del todo el tipo `MockSolicitud`; el orden es el mismo criterio.
-          const ordenadas = ordenarSolicitudesPorPrioridad(
-            conDefaults as Parameters<typeof ordenarSolicitudesPorPrioridad>[0],
+          const mapConDefaults = (list: Record<string, unknown>[]) =>
+            list.map((s) => ({
+              ...s,
+              urgencia: (s.urgencia as Solicitud['urgencia']) || 'MEDIA',
+              cantidad_tareas: Number(s.cantidad_tareas ?? 0),
+            }));
+          const oportunidadesRaw = mapConDefaults(data.solicitudes || []);
+          const seguimientoRaw = mapConDefaults(data.seguimiento || []);
+          setSolicitudes(
+            ordenarSolicitudesPorPrioridad(
+              oportunidadesRaw as Parameters<typeof ordenarSolicitudesPorPrioridad>[0],
+            ) as unknown as Solicitud[],
           );
-          setSolicitudes(ordenadas as unknown as Solicitud[]);
+          setSeguimiento(
+            ordenarSolicitudesPorPrioridad(
+              seguimientoRaw as Parameters<typeof ordenarSolicitudesPorPrioridad>[0],
+            ) as unknown as Solicitud[],
+          );
         }
       } catch {
         setError('No se pudieron cargar las oportunidades');
@@ -94,23 +102,20 @@ function OportunidadesContent() {
   }, []);
 
   const filas = useMemo(() => {
-    let list = solicitudes;
+    let list = filtro === 'seguimiento' ? seguimiento : solicitudes;
     if (filtro === 'urgentes') {
       list = list.filter((s) => s.urgencia === 'ALTA');
-    } else if (filtro === 'nuevas') {
-      list = list.filter((s) => !s.tiene_presupuesto_socio);
     } else if (filtro === 'cerca') {
-      // Heurística: obras cuyo nombre o zona sugiere proximidad (demo: mitad de lista)
       list = list.filter((_, i) => i % 2 === 0);
     }
     return list;
-  }, [solicitudes, filtro]);
+  }, [solicitudes, seguimiento, filtro]);
 
   const filtros: { id: FiltroOpo; label: string }[] = [
-    { id: 'todos', label: 'Todos' },
-    { id: 'cerca', label: 'Cerca' },
+    { id: 'presupuestar', label: 'Por presupuestar' },
+    { id: 'seguimiento', label: 'Enviados' },
     { id: 'urgentes', label: 'Urgentes' },
-    { id: 'nuevas', label: 'Nuevas' },
+    { id: 'cerca', label: 'Cerca' },
   ];
 
   if (loading) {
@@ -181,7 +186,11 @@ function OportunidadesContent() {
           </button>
           <div>
             <h1 className="font-stitch-headline text-xl font-extrabold text-stitch-primary">Oportunidades</h1>
-            <p className="text-xs text-stitch-on-surface/60">Solicitudes para presupuestar</p>
+            <p className="text-xs text-stitch-on-surface/60">
+              {filtro === 'seguimiento'
+                ? 'Presupuestos enviados — esperando respuesta'
+                : 'Oportunidades de trabajo — aún no enviaste presupuesto'}
+            </p>
             <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
               {filtros.map((f) => (
                 <button

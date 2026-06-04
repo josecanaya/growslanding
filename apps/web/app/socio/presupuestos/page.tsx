@@ -2,7 +2,21 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useState, useEffect, useMemo, Suspense, useCallback } from 'react';
-import { Loader2, Save, Send, FileText, Eye, Edit, MapPin, Printer, Download, Share2, MessageCircle } from 'lucide-react';
+import {
+  Loader2,
+  Save,
+  Send,
+  FileText,
+  Eye,
+  Edit,
+  MapPin,
+  Printer,
+  Download,
+  Share2,
+  MessageCircle,
+  Scale,
+} from 'lucide-react';
+import { SolicitarCambioPresupuestoModal } from '@/components/socio/presupuestos/SolicitarCambioPresupuestoModal';
 import { Button } from '@/components/ui/grows/Button';
 import { useToast } from '@/components/ui/use-toast';
 import { generarPresupuestoPDF, generarPresupuestoPDFBytes } from '@/lib/pdf/generarPresupuestoPDF';
@@ -48,6 +62,8 @@ function PresupuestosContent() {
   const stitchPresupuestoUi = presupuestosUsanMock || Boolean(obraId);
 
   const [obras, setObras] = useState<ObraConPresupuestos[]>([]);
+  const [showSolicitarCambio, setShowSolicitarCambio] = useState(false);
+  const [solicitudCambioEstado, setSolicitudCambioEstado] = useState<string | null>(null);
   const [loadingObras, setLoadingObras] = useState(false);
   const [nombreContratista, setNombreContratista] = useState<string>('Contratista');
 
@@ -258,6 +274,37 @@ function PresupuestosContent() {
     (p) => p.estado === 'APROBADO'
   );
   const puedeEditar = !presupuestosAprobados; // Solo puede editar si NO todos están aprobados
+  const presupuestoAprobadoRef = useMemo(() => {
+    const p = presupuestosFiltrados.find((x) => (x.estado || '').toUpperCase() === 'APROBADO');
+    if (!p?.id) return null;
+    const ed = editing.get(p.tarea_id);
+    return {
+      id: p.id,
+      monto: ed?.monto ?? p.monto ?? 0,
+    };
+  }, [presupuestosFiltrados, editing]);
+
+  useEffect(() => {
+    if (!presupuestoAprobadoRef?.id || presupuestosUsanMock) {
+      setSolicitudCambioEstado(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const res = await fetch(
+        `/api/socio/presupuestos/solicitudes-cambio?presupuesto_id=${encodeURIComponent(presupuestoAprobadoRef.id)}`,
+        { credentials: 'include' },
+      );
+      const json = await res.json().catch(() => ({}));
+      if (cancelled) return;
+      const ultima = json.ultima as { estado?: string } | null;
+      setSolicitudCambioEstado(ultima?.estado ?? null);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [presupuestoAprobadoRef?.id, presupuestosUsanMock]);
+
   const hayPendientes = presupuestosFiltrados.some(
     (p) => p.estado === 'PENDIENTE' || !p.estado || p.estado === ''
   );
@@ -1056,10 +1103,52 @@ function PresupuestosContent() {
                     Editar
                   </Button>
                 )}
+                {presupuestosAprobados && presupuestoAprobadoRef ? (
+                  solicitudCambioEstado === 'pendiente' ? (
+                    <p className="flex-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-amber-900">
+                      Solicitud de cambio en revisión por el cliente
+                    </p>
+                  ) : solicitudCambioEstado === 'aceptado' ? (
+                    <p className="flex-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs font-semibold text-emerald-900">
+                      El cliente aceptó tu última solicitud de precio
+                    </p>
+                  ) : solicitudCambioEstado === 'rechazado' ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowSolicitarCambio(true)}
+                      disabled={saving}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Scale className="h-4 w-4 mr-2" />
+                      Nueva solicitud de precio
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setShowSolicitarCambio(true)}
+                      disabled={saving}
+                      className="flex-1"
+                      size="sm"
+                    >
+                      <Scale className="h-4 w-4 mr-2" />
+                      Solicitar cambio de precio
+                    </Button>
+                  )
+                ) : null}
               </>
             )}
           </div>
         </div>
+      )}
+      {presupuestoAprobadoRef && (
+        <SolicitarCambioPresupuestoModal
+          open={showSolicitarCambio}
+          onClose={() => setShowSolicitarCambio(false)}
+          presupuestoId={presupuestoAprobadoRef.id}
+          montoActual={presupuestoAprobadoRef.monto}
+          onSuccess={() => setSolicitudCambioEstado('pendiente')}
+        />
       )}
     </div>
   );

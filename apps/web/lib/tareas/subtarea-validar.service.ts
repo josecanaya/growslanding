@@ -58,7 +58,7 @@ export class SubtareaValidarService {
     subtareaId: string;
     actorUserId: string;
     accion?: 'validar' | 'rechazar' | 'validar_en_obra';
-    metodoPago?: 'EFECTIVO' | 'ONLINE';
+    metodoPago?: 'EFECTIVO' | 'ONLINE' | 'TARJETA';
     motivo?: string | null;
   }): Promise<SubtareaValidarResult> {
     const { subtareaId, actorUserId } = params;
@@ -173,7 +173,7 @@ export class SubtareaValidarService {
   private static async reconciliarWalletSeguro(params: {
     subtareaId: string;
     clienteUserId: string;
-    metodoPago?: 'EFECTIVO' | 'ONLINE';
+    metodoPago?: 'EFECTIVO' | 'ONLINE' | 'TARJETA';
   }): Promise<{
     result: Awaited<ReturnType<typeof ClienteWalletService.reconciliarSubtareaValidada>> | null;
     warning: string | null;

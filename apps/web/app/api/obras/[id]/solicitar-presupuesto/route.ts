@@ -13,9 +13,13 @@ export const runtime = 'nodejs';
 const schema = z.object({
   etapa: z.string(),
   tareaIds: z.array(z.string().uuid()).min(1),
-  socioId: z.string().uuid(),
+  socioId: z.string().uuid().optional(),
+  socioIds: z.array(z.string().uuid()).min(1).optional(),
   notas: z.string().optional(),
   bloques: z.number().int().min(1).max(365).optional(),
+}).refine((v) => Boolean(v.socioId) || (v.socioIds && v.socioIds.length > 0), {
+  message: 'Indicá socioId o socioIds',
+  path: ['socioIds'],
 });
 
 /**
@@ -85,34 +89,19 @@ export async function POST(
 
     const orgId = obra.org_id;
 
-    // Validar que el socio pertenece a la organización
-    const { data: socio, error: socioError } = await supabase
-      .from('socios')
-      .select('id, org_id, nombre, estado')
-      .eq('id', payload.socioId)
-      .maybeSingle();
+    const socioIdsList = [
+      ...new Set(
+        (payload.socioIds?.length
+          ? payload.socioIds
+          : payload.socioId
+            ? [payload.socioId]
+            : []
+        ).map((id) => id.trim()),
+      ),
+    ];
 
-    if (socioError || !socio) {
-      return NextResponse.json({ message: 'Socio no encontrado' }, { status: 404 });
-    }
-
-    const esContacto = await socioEsContactoDeOrg(supabase, payload.socioId, orgId);
-    if (!esContacto) {
-      return NextResponse.json(
-        { message: 'Agendá primero al socio en tu agenda de contactos para solicitarle presupuesto.' },
-        { status: 403 },
-      );
-    }
-
-    // Aceptar socios con estado 'activo' o 'pendiente', rechazar solo 'inactivo'
-    if (socio.estado === 'inactivo') {
-      console.log('[SOLICITAR_PRESUPUESTO] Socio inactivo rechazado:', { socioId: payload.socioId, estado: socio.estado });
-      return NextResponse.json({ message: 'El socio no está activo' }, { status: 400 });
-    }
-
-    if (socio.estado && !['activo', 'pendiente'].includes(socio.estado)) {
-      console.log('[SOLICITAR_PRESUPUESTO] Estado de socio no válido:', { socioId: payload.socioId, estado: socio.estado });
-      return NextResponse.json({ message: `El socio tiene un estado no válido: ${socio.estado}` }, { status: 400 });
+    if (socioIdsList.length === 0) {
+      return NextResponse.json({ message: 'Indicá al menos un socio' }, { status: 400 });
     }
 
     // Validar que las tareas pertenecen a la obra
@@ -145,54 +134,6 @@ export async function POST(
       }
     }
 
-    // Verificar si ya existen solicitudes pendientes para evitar duplicados
-    const { data: existentes, error: existentesError } = await supabase
-      .from('tareas_presupuestos')
-      .select('tarea_id, socio_id, estado')
-      .in('tarea_id', payload.tareaIds)
-      .eq('socio_id', payload.socioId)
-      .in('estado', ['PENDIENTE', 'ENVIADO']);
-
-    if (existentesError) {
-      console.error('[SOLICITAR_PRESUPUESTO] Error verificando duplicados:', existentesError);
-      // Continuar de todas formas, no es crítico
-    }
-
-    const tareasExistentes = new Set(
-      (existentes ?? []).map((e) => e.tarea_id)
-    );
-
-    // Filtrar tareas que ya tienen solicitud pendiente
-    const tareasNuevas = payload.tareaIds.filter((tareaId) => !tareasExistentes.has(tareaId));
-    const tareasConSolicitudExistente = payload.tareaIds.filter((tareaId) => tareasExistentes.has(tareaId));
-
-    if (tareasNuevas.length === 0) {
-      // Obtener nombres de las tareas y del socio para el mensaje
-      const tareasExistentesArray = Array.from(tareasExistentes).filter((id): id is string => id !== null && id !== undefined);
-      const { data: tareasInfo } = await supabase
-        .from('tareas')
-        .select('id, title')
-        .in('id', tareasExistentesArray);
-      
-      const nombresTareas = (tareasInfo || []).map(t => t.title || 'Tarea sin título').join(', ');
-      const nombreSocio = socio.nombre || 'este socio';
-      
-      return NextResponse.json(
-        { 
-          message: `Ya solicitaste presupuesto a ${nombreSocio} para todas las tareas seleccionadas`,
-          details: `Las siguientes tareas ya tienen solicitudes pendientes: ${nombresTareas || 'N/A'}`,
-          tareasConSolicitud: Array.from(tareasExistentes),
-        },
-        { status: 400 }
-      );
-    }
-    
-    // Si algunas tareas ya tienen solicitud, informar pero continuar con las nuevas
-    if (tareasConSolicitudExistente.length > 0) {
-      console.log(`[SOLICITAR_PRESUPUESTO] ${tareasConSolicitudExistente.length} tareas ya tienen solicitudes, creando ${tareasNuevas.length} nuevas`);
-    }
-
-    // Obtener información de tareas con elementos para cantidad y unidad
     const { data: tareasConElementos, error: errorTareasConElementos } = await supabase
       .from('tareas')
       .select(`
@@ -204,15 +145,13 @@ export async function POST(
           unidad
         )
       `)
-      .in('id', tareasNuevas);
+      .in('id', payload.tareaIds);
 
     if (errorTareasConElementos) {
       console.warn('[SOLICITAR_PRESUPUESTO] Error obteniendo elementos de tareas:', errorTareasConElementos);
-      // Continuar de todas formas, no es crítico
     }
 
-    // Crear mapa de tarea_id -> { cantidad, unidad }
-    const cantidadUnidadMap = new Map();
+    const cantidadUnidadMap = new Map<string, { cantidad: unknown; unidad: unknown }>();
     if (tareasConElementos) {
       tareasConElementos.forEach((t: any) => {
         if (t.elementos && (Array.isArray(t.elementos) ? t.elementos[0] : t.elementos)) {
@@ -225,98 +164,136 @@ export async function POST(
       });
     }
 
-    // Insertar solicitudes de presupuesto
-    const presupuestosInsert = tareasNuevas.map((tareaId) => {
-      const insertData: Record<string, any> = {
-        tarea_id: tareaId,
-        socio_id: payload.socioId,
-        monto: 0, // Usar 0 en lugar de null si la columna tiene NOT NULL constraint
-        moneda: 'ARS',
-        estado: 'PENDIENTE',
-      };
-      
-      // Agregar cantidad y unidad si están disponibles
-      const cantidadUnidad = cantidadUnidadMap.get(tareaId);
-      if (cantidadUnidad) {
-        insertData.cantidad = cantidadUnidad.cantidad;
-        insertData.unidad = cantidadUnidad.unidad;
+    let totalCreated = 0;
+    let totalSkipped = 0;
+    const erroresSocio: string[] = [];
+
+    for (const socioId of socioIdsList) {
+      const { data: socio, error: socioError } = await supabase
+        .from('socios')
+        .select('id, org_id, nombre, estado')
+        .eq('id', socioId)
+        .maybeSingle();
+
+      if (socioError || !socio) {
+        erroresSocio.push(`Socio ${socioId}: no encontrado`);
+        continue;
       }
-      
-      // Solo agregar notas si hay valor
-      if (payload.notas && payload.notas.trim()) {
-        insertData.notas = payload.notas.trim();
-      } else {
-        insertData.notas = 'Solicitud generada desde Asigna por el cliente técnico';
+
+      const esContacto = await socioEsContactoDeOrg(supabase, socioId, orgId);
+      if (!esContacto) {
+        erroresSocio.push(
+          `${socio.nombre ?? socioId}: agendalo primero en tu agenda de contactos.`,
+        );
+        continue;
       }
-      
-      return insertData;
-    });
 
-    console.log('[SOLICITAR_PRESUPUESTO] Insertando presupuestos:', {
-      count: presupuestosInsert.length,
-      sample: presupuestosInsert[0],
-    });
+      if (socio.estado === 'inactivo') {
+        erroresSocio.push(`${socio.nombre ?? socioId}: inactivo`);
+        continue;
+      }
 
-    const { data: presupuestosCreados, error: insertError } = await supabase
-      .from('tareas_presupuestos')
-      .insert(presupuestosInsert as any)
-      .select('id');
+      if (socio.estado && !['activo', 'pendiente'].includes(socio.estado)) {
+        erroresSocio.push(`${socio.nombre ?? socioId}: estado no válido (${socio.estado})`);
+        continue;
+      }
 
-    if (insertError) {
-      console.error('[SOLICITAR_PRESUPUESTO] Error insertando presupuestos:', {
-        error: insertError,
-        message: insertError.message,
-        details: insertError.details,
-        hint: insertError.hint,
-        code: insertError.code,
-        presupuestosInsert,
+      const { data: existentes, error: existentesError } = await supabase
+        .from('tareas_presupuestos')
+        .select('tarea_id, socio_id, estado')
+        .in('tarea_id', payload.tareaIds)
+        .eq('socio_id', socioId)
+        .in('estado', ['PENDIENTE', 'ENVIADO']);
+
+      if (existentesError) {
+        console.error('[SOLICITAR_PRESUPUESTO] Error verificando duplicados:', existentesError);
+      }
+
+      const tareasExistentes = new Set((existentes ?? []).map((e) => e.tarea_id));
+      const tareasNuevas = payload.tareaIds.filter((tareaId) => !tareasExistentes.has(tareaId));
+      totalSkipped += payload.tareaIds.length - tareasNuevas.length;
+
+      if (tareasNuevas.length === 0) {
+        erroresSocio.push(
+          `${socio.nombre ?? socioId}: ya tenía solicitudes para todas las tareas seleccionadas`,
+        );
+        continue;
+      }
+
+      const presupuestosInsert = tareasNuevas.map((tareaId) => {
+        const insertData: Record<string, any> = {
+          tarea_id: tareaId,
+          socio_id: socioId,
+          monto: 0,
+          moneda: 'ARS',
+          estado: 'PENDIENTE',
+        };
+
+        const cantidadUnidad = cantidadUnidadMap.get(tareaId);
+        if (cantidadUnidad) {
+          insertData.cantidad = cantidadUnidad.cantidad;
+          insertData.unidad = cantidadUnidad.unidad;
+        }
+
+        if (payload.notas && payload.notas.trim()) {
+          insertData.notas = payload.notas.trim();
+        } else {
+          insertData.notas = 'Solicitud generada desde Asigna por el cliente técnico';
+        }
+
+        return insertData;
       });
-      
-      const errorMessage = insertError.message || 'Error desconocido al insertar presupuestos';
-      const errorDetails = {
-        code: insertError.code,
-        details: insertError.details,
-        hint: insertError.hint,
-      };
-      
-      return NextResponse.json(
-        { 
-          message: `Error al crear las solicitudes de presupuesto: ${errorMessage}`,
-          details: errorDetails,
-        },
-        { status: 500 }
-      );
+
+      const { data: presupuestosCreados, error: insertError } = await supabase
+        .from('tareas_presupuestos')
+        .insert(presupuestosInsert as any)
+        .select('id');
+
+      if (insertError) {
+        erroresSocio.push(`${socio.nombre ?? socioId}: ${insertError.message}`);
+        continue;
+      }
+
+      totalCreated += presupuestosCreados?.length || 0;
+
+      const mensajeNotificacion =
+        tareasNuevas.length === 1
+          ? `Tenés 1 tarea para presupuestar en la obra`
+          : `Tenés ${tareasNuevas.length} tareas para presupuestar en la obra`;
+
+      const { error: notificacionError } = await (supabase as any).from('notificaciones').insert({
+        org_id: orgId,
+        remitente_id: user.id,
+        destinatario_id: socioId,
+        obra_id: obraId,
+        tarea_id: tareasNuevas[0] ?? null,
+        titulo: 'Nueva solicitud de presupuesto',
+        mensaje: mensajeNotificacion,
+        tipo: 'presupuesto',
+        leida: false,
+        created_at: new Date().toISOString(),
+      });
+
+      if (notificacionError) {
+        console.error('[SOLICITAR_PRESUPUESTO] Error creando notificación:', notificacionError);
+      }
     }
 
-    // Crear notificación para el socio
-    // Notificación Supabase: usamos siempre remitente_id + destinatario_id (no usar socio_id)
-    const mensajeNotificacion =
-      tareasNuevas.length === 1
-        ? `Tenés 1 tarea para presupuestar en la obra`
-        : `Tenés ${tareasNuevas.length} tareas para presupuestar en la obra`;
-
-    const { error: notificacionError } = await (supabase as any).from('notificaciones').insert({
-      org_id: orgId,
-      remitente_id: user.id,            // cliente técnico
-      destinatario_id: payload.socioId, // socio al que se le pide presupuesto
-      obra_id: obraId,
-      tarea_id: tareasNuevas[0] ?? null,
-      titulo: 'Nueva solicitud de presupuesto',
-      mensaje: mensajeNotificacion,
-      tipo: 'presupuesto',
-      leida: false,
-      created_at: new Date().toISOString(),
-    });
-
-    if (notificacionError) {
-      console.error('[SOLICITAR_PRESUPUESTO] Error creando notificación:', notificacionError);
-      // No fallar si la notificación no se crea, es opcional
+    if (totalCreated === 0) {
+      return NextResponse.json(
+        {
+          message: 'No se creó ninguna solicitud de presupuesto',
+          details: erroresSocio.join(' · ') || undefined,
+        },
+        { status: 400 },
+      );
     }
 
     return NextResponse.json({
       ok: true,
-      created: presupuestosCreados?.length || 0,
-      skipped: payload.tareaIds.length - tareasNuevas.length,
+      created: totalCreated,
+      skipped: totalSkipped,
+      warnings: erroresSocio.length ? erroresSocio : undefined,
     });
   } catch (error) {
     console.error('[SOLICITAR_PRESUPUESTO] Error inesperado:', {

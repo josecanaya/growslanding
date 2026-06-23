@@ -321,10 +321,12 @@ export class ClienteWalletService {
   static async reconciliarSubtareaValidada(params: {
     subtareaId: string;
     clienteUserId: string | null;
-    metodoPago?: 'EFECTIVO' | 'ONLINE';
+    metodoPago?: 'EFECTIVO' | 'ONLINE' | 'TARJETA';
   }) {
     const contexto = await this.obtenerContextoSubtareaValidada(params.subtareaId);
     const metodoPago = params.metodoPago ?? 'ONLINE';
+    const metodoSocio: 'EFECTIVO' | 'ONLINE' =
+      metodoPago === 'EFECTIVO' ? 'EFECTIVO' : 'ONLINE';
 
     const montoInfo = await this.resolverMontoSubtarea(
       contexto.orgId,
@@ -340,7 +342,7 @@ export class ClienteWalletService {
     let socioOk = false;
     let socioError: string | null = null;
     try {
-      await WalletMvpService.registrarPagoPorBloque(params.subtareaId, metodoPago);
+      await WalletMvpService.registrarPagoPorBloque(params.subtareaId, metodoSocio);
       socioOk = true;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error acreditando socio';
@@ -351,9 +353,9 @@ export class ClienteWalletService {
       }
     }
 
-    let clienteOk = metodoPago === 'EFECTIVO';
+    let clienteOk = metodoPago === 'EFECTIVO' || metodoPago === 'TARJETA';
     let clienteError: string | null = null;
-    const clienteOmitido = metodoPago === 'EFECTIVO';
+    const clienteOmitido = metodoPago === 'EFECTIVO' || metodoPago === 'TARJETA';
 
     if (metodoPago === 'ONLINE' && socioOk) {
       try {

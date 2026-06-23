@@ -21,8 +21,12 @@ export async function POST(
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
-    const metodoPago: 'EFECTIVO' | 'ONLINE' =
-      body?.metodoPago === 'EFECTIVO' ? 'EFECTIVO' : 'ONLINE';
+    const metodoPago: 'EFECTIVO' | 'ONLINE' | 'TARJETA' =
+      body?.metodoPago === 'EFECTIVO'
+        ? 'EFECTIVO'
+        : body?.metodoPago === 'TARJETA'
+          ? 'TARJETA'
+          : 'ONLINE';
     const accion: 'validar' | 'rechazar' | 'validar_en_obra' =
       body?.accion === 'rechazar'
         ? 'rechazar'

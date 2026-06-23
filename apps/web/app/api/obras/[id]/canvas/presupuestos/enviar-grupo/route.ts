@@ -6,7 +6,8 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { toDbUuidFromCanvasId, toClientBudgetGroupId } from '@/lib/canvas/canvasSupabaseMapper';
-import { aprobarPresupuestoTareaEnPaquete } from '@/lib/services/aprobar-presupuesto-paquete.service';
+import { solicitarPresupuestoTareaEnPaquete } from '@/lib/services/solicitar-presupuesto-paquete.service';
+import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -101,6 +102,7 @@ async function gateObra(
 type Body = {
   budgetGroupId?: string;
   socioId?: string;
+  socioIds?: string[];
   message?: string;
 };
 
@@ -110,12 +112,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id: obraId } = await params;
     const body = (await req.json().catch(() => ({}))) as Body;
     const budgetGroupIdRaw = typeof body.budgetGroupId === 'string' ? body.budgetGroupId.trim() : '';
-    const socioId = typeof body.socioId === 'string' ? body.socioId.trim() : '';
     const message = typeof body.message === 'string' ? body.message.trim() : '';
+    const socioIdsRaw = Array.isArray(body.socioIds)
+      ? body.socioIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+      : [];
+    if (typeof body.socioId === 'string' && body.socioId.trim()) {
+      socioIdsRaw.push(body.socioId.trim());
+    }
+    const socioIds = [...new Set(socioIdsRaw.map((id) => id.trim()))];
 
-    if (!budgetGroupIdRaw || !socioId) {
+    if (!budgetGroupIdRaw || socioIds.length === 0) {
       return NextResponse.json(
-        { ok: false, error: 'Faltan budgetGroupId o socioId.' },
+        { ok: false, error: 'Faltan budgetGroupId o al menos un socio de la agenda.' },
         { status: 400 },
       );
     }
@@ -156,21 +164,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const orgId = gate.org_id;
     const supabaseAny = supabase as any;
 
-    const { data: inAgenda, error: agErr } = await supabaseAny
-      .from('cliente_socio_agenda')
-      .select('id')
-      .eq('org_id', orgId)
-      .eq('socio_id', socioId)
-      .maybeSingle();
-
-    if (agErr) {
-      return NextResponse.json({ ok: false, error: agErr.message }, { status: 500 });
-    }
-    if (!inAgenda) {
-      return NextResponse.json(
-        { ok: false, error: 'El socio no está en tu agenda para esta organización.' },
-        { status: 403 },
-      );
+    for (const sid of socioIds) {
+      const esContacto = await socioEsContactoDeOrg(supabase, sid, orgId);
+      if (!esContacto) {
+        return NextResponse.json(
+          { ok: false, error: `El socio ${sid} no está en tu agenda para esta organización.` },
+          { status: 403 },
+        );
+      }
     }
 
     const { data: groupRow, error: gErr } = await supabaseAny
@@ -323,56 +324,65 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       mensaje: message || undefined,
     });
 
-    let presupuestosAprobados = 0;
-    let presupuestosYaAprobados = 0;
-    let presupuestosFallidos = 0;
+    let solicitudesCreadas = 0;
+    let solicitudesYaExistentes = 0;
+    let solicitudesFallidas = 0;
 
-    for (const nodeId of readyNodeIds) {
-      const tareaMeta = canvasToTarea.get(nodeId);
-      if (!tareaMeta) continue;
-      const tareaId = tareaMeta.id;
+    for (const socioId of socioIds) {
+      for (const nodeId of readyNodeIds) {
+        const tareaMeta = canvasToTarea.get(nodeId);
+        if (!tareaMeta) continue;
+        const tareaId = tareaMeta.id;
 
-      const result = await aprobarPresupuestoTareaEnPaquete(supabaseAny, {
-        tareaId,
-        socioId,
-        diasPresupuesto: tareaMeta.dias_presupuesto,
-        notasPayload: notasPayload,
-      });
+        const result = await solicitarPresupuestoTareaEnPaquete(supabaseAny, {
+          tareaId,
+          socioId,
+          diasPresupuesto: tareaMeta.dias_presupuesto,
+          notasPayload: notasPayload,
+        });
 
-      if (!result.ok) {
-        presupuestosFallidos += 1;
-        warnings.push(
-          `No se pudo aprobar presupuesto para «${tareaMeta.title ?? tareaId}»: ${result.error}`,
-        );
-        continue;
+        if (!result.ok) {
+          solicitudesFallidas += 1;
+          warnings.push(
+            `No se pudo solicitar presupuesto a socio ${socioId} para «${tareaMeta.title ?? tareaId}»: ${result.error}`,
+          );
+          continue;
+        }
+
+        if (result.result.accion === 'ya_solicitado') {
+          solicitudesYaExistentes += 1;
+        } else {
+          solicitudesCreadas += 1;
+        }
       }
 
-      if (result.result.accion === 'ya_aprobado') {
-        presupuestosYaAprobados += 1;
-      } else {
-        presupuestosAprobados += 1;
-      }
+      const countNuevas = readyNodeIds.length;
+      const mensajeNotificacion =
+        countNuevas === 1
+          ? `Tenés 1 tarea para presupuestar en la obra (paquete ${toClientBudgetGroupId(dbGroupId)})`
+          : `Tenés ${countNuevas} tareas para presupuestar en la obra (paquete ${toClientBudgetGroupId(dbGroupId)})`;
 
-      const { error: eventoError } = await supabaseAny.from('eventos').insert({
-        tarea_id: tareaId,
+      const { error: notifSocioError } = await supabaseAny.from('notificaciones').insert({
         org_id: orgId,
         obra_id: obraId,
-        actor_name: user.email ?? 'Cliente',
-        actor_role: 'Cliente',
-        actor_method: 'login',
-        notas: `Paquete aprobado y tarea asignada al socio (grupo ${toClientBudgetGroupId(dbGroupId)})`,
-        checklist: null,
-        has_nc: false,
-        nuevo_estado: 'pendiente' as const,
-        snapshot_json: null,
+        tarea_id: readyNodeIds.length
+          ? canvasToTarea.get(readyNodeIds[0])?.id ?? null
+          : null,
+        remitente_id: user.id,
+        destinatario_id: socioId,
+        socio_id: socioId,
+        tipo: 'presupuesto',
+        titulo: 'Nueva solicitud de presupuesto',
+        mensaje: message ? `${mensajeNotificacion}. ${message}` : mensajeNotificacion,
+        leida: false,
         created_at: new Date().toISOString(),
       });
-      if (eventoError) {
-        warnings.push(`Evento no registrado para tarea ${tareaId}: ${eventoError.message}`);
+      if (notifSocioError) {
+        warnings.push(`Notificación al socio ${socioId} no enviada: ${notifSocioError.message}`);
       }
     }
 
-    const totalOk = presupuestosAprobados + presupuestosYaAprobados;
+    const totalOk = solicitudesCreadas + solicitudesYaExistentes;
 
     if (totalOk === 0) {
       return NextResponse.json(
@@ -382,23 +392,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             warnings[0] ??
             (pendingPublish.length === tareaNodeIds.length
               ? 'Ninguna tarea del grupo está publicada todavía. Publicá las tareas operativas y volvé a intentar.'
-              : 'No se pudo aprobar ningún presupuesto del paquete.'),
+              : 'No se pudo crear ninguna solicitud de presupuesto del paquete.'),
           warnings,
-          presupuestosFallidos,
+          solicitudesFallidas,
+          presupuestosFallidos: solicitudesFallidas,
           pendingPublish,
           tasksReadyCount: readyNodeIds.length,
         },
-        { status: presupuestosFallidos > 0 || pendingPublish.length > 0 ? 409 : 400 },
+        { status: solicitudesFallidas > 0 || pendingPublish.length > 0 ? 409 : 400 },
       );
     }
 
     const nowIso = new Date().toISOString();
     const finalGroupStatus =
-      pendingPublish.length > 0 ? 'aprobado_parcial' : 'aprobado';
+      pendingPublish.length > 0 ? 'enviado_parcial' : 'enviado';
 
     const groupPatch: Record<string, unknown> = {
       status: finalGroupStatus,
-      approved_at: nowIso,
+      approved_at: null,
       change_window_status: 'cerrada',
       change_window_opened_at: null,
       change_window_notes: null,
@@ -412,50 +423,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         .eq('obra_id', obraId)
     ).error;
 
-    if (stErr && finalGroupStatus === 'aprobado_parcial') {
-      warnings.push(`No se pudo guardar estado «aprobado_parcial» (${stErr.message}). Se usa «aprobado».`);
+    if (stErr && finalGroupStatus === 'enviado_parcial') {
+      warnings.push(`No se pudo guardar estado «enviado_parcial» (${stErr.message}). Se usa «enviado».`);
       stErr = (
         await supabaseAny
           .from('canvas_budget_groups')
-          .update({ ...groupPatch, status: 'aprobado' })
+          .update({ ...groupPatch, status: 'enviado' })
           .eq('id', dbGroupId)
           .eq('obra_id', obraId)
       ).error;
     }
 
     if (stErr) {
-      warnings.push(`Presupuestos aprobados pero no se pudo actualizar estado del grupo: ${stErr.message}`);
-    }
-
-    const { error: notifError } = await supabaseAny.from('notificaciones').insert({
-      org_id: orgId,
-      obra_id: obraId,
-      tarea_id: null,
-      remitente_id: user.id,
-      destinatario_id: socioId,
-      socio_id: socioId,
-      tipo: 'presupuesto_aprobado',
-      titulo: 'Paquete de tareas aprobado',
-      mensaje: `Se aprobó un paquete con ${totalOk} tarea${totalOk === 1 ? '' : 's'}. Ya podés comenzar bloques en la app.`,
-      leida: false,
-      created_at: nowIso,
-    });
-    if (notifError) {
-      warnings.push(`Notificación al socio no enviada: ${notifError.message}`);
+      warnings.push(`Solicitudes enviadas pero no se pudo actualizar estado del grupo: ${stErr.message}`);
     }
 
     return NextResponse.json({
       ok: true,
       budgetGroupId: toClientBudgetGroupId(dbGroupId),
-      socioId,
+      socioIds,
       tasksIncluded: tareaNodeIds.length,
       tasksPublishedCount: readyNodeIds.length,
-      presupuestosAprobados,
-      presupuestosYaAprobados,
-      presupuestosFallidos,
+      solicitudesCreadas,
+      solicitudesYaExistentes,
+      solicitudesFallidas,
+      presupuestosAprobados: solicitudesCreadas,
+      presupuestosYaAprobados: solicitudesYaExistentes,
+      presupuestosFallidos: solicitudesFallidas,
       pendingPublish,
       groupStatus: finalGroupStatus,
-      partial: pendingPublish.length > 0 || presupuestosFallidos > 0,
+      partial: pendingPublish.length > 0 || solicitudesFallidas > 0,
       warnings,
     });
   } catch (e) {

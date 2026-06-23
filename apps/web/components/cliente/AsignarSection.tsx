@@ -773,48 +773,6 @@ export function AsignarSection({ obraId: obraIdProp }: AsignarSectionProps) {
 
       if (error) throw error;
 
-      const row = data as RawPresupuesto | null;
-
-      /** Bug histórico: sólo actualizaba presupuesto; hay que asignar socio en `tareas`. */
-      if (status === 'APROBADO' && row?.tarea_id && row?.socio_id && currentUser?.orgId) {
-        const { data: tarSt } = await supabase
-          .from('tareas')
-          .select('estado')
-          .eq('id', row.tarea_id)
-          .maybeSingle();
-        const { data: socSt } = await supabase
-          .from('socios')
-          .select('email, nombre')
-          .eq('id', row.socio_id)
-          .maybeSingle();
-
-        const patchT = patchTareaTrasPresupuestoAprobado({
-          socioId: row.socio_id,
-          socioEmail: socSt?.email ?? null,
-          socioNombre: socSt?.nombre ?? null,
-          estadoTareaActual: tarSt?.estado ?? null,
-        });
-
-        const { error: tErr } = await supabase
-          .from('tareas')
-          .update(patchT)
-          .eq('id', row.tarea_id)
-          .eq('org_id', currentUser.orgId);
-
-        if (tErr) {
-          console.error('[AsignarSection] Sync tarea tras aprobar:', tErr);
-        } else {
-          await supabase
-            .from('tareas_presupuestos')
-            .update({
-              estado: 'RECHAZADO',
-              updated_at: new Date().toISOString(),
-            })
-            .eq('tarea_id', row.tarea_id)
-            .neq('socio_id', row.socio_id);
-        }
-      }
-
       setBudgets((prev) =>
         prev.map((budget) =>
           budget.id === budgetId

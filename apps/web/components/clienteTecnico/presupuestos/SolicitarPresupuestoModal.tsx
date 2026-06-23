@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Loader2, CheckCircle2, Clock } from 'lucide-react';
 import {
   Dialog,
@@ -11,17 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/grows';
 import { useToast } from '@/components/ui/use-toast';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import type { Database } from '@/lib/types/supabase.gen';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 
@@ -66,14 +57,10 @@ export function SolicitarPresupuestoModal({
   onSuccess,
 }: SolicitarPresupuestoModalProps) {
   const currentUser = useCurrentUser();
-  const supabase = useMemo(
-    () => createClientComponentClient<Database>() as any,
-    []
-  );
   const { toast } = useToast();
   const [socios, setSocios] = useState<Socio[]>([]);
   const [loadingSocios, setLoadingSocios] = useState(true);
-  const [selectedSocioId, setSelectedSocioId] = useState<string>('');
+  const [selectedSocioIds, setSelectedSocioIds] = useState<Set<string>>(new Set());
   const [selectedTareaIds, setSelectedTareaIds] = useState<Set<string>>(
     new Set(tareas.map((t) => t.id))
   );
@@ -105,26 +92,24 @@ export function SolicitarPresupuestoModal({
     async function loadSocios() {
       setLoadingSocios(true);
       try {
-        // Incluir socios con estado 'activo' o 'pendiente' (excluir solo 'inactivo')
-        const { data, error } = await supabase
-          .from('socios')
-          .select('id, nombre, estado')
-          .eq('org_id', orgId)
-          .in('estado', ['activo', 'pendiente'])
-          .order('nombre');
-
-        if (error) {
-          console.error('[SolicitarPresupuestoModal] Error loading socios:', error);
-          throw error;
+        const res = await fetch('/api/cliente/socios/agenda', { credentials: 'include' });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || !j.success || !Array.isArray(j.data)) {
+          setSocios([]);
+          return;
         }
-        
-        console.log('[SolicitarPresupuestoModal] Socios cargados:', data?.length || 0, data);
-        setSocios((data ?? []) as Socio[]);
+        const rows = j.data as Array<{ socio_id: string; socio?: { nombre?: string | null; estado?: string | null } }>;
+        const mapped: Socio[] = rows.map((r) => ({
+          id: r.socio_id,
+          nombre: r.socio?.nombre ?? null,
+          estado: r.socio?.estado ?? 'activo',
+        }));
+        setSocios(mapped);
       } catch (err) {
         console.error('[SolicitarPresupuestoModal] Error loading socios', err);
         toast({
           title: 'Error',
-          description: 'No se pudieron cargar los socios.',
+          description: 'No se pudieron cargar los socios agendados.',
           variant: 'destructive',
         });
       } finally {
@@ -133,13 +118,13 @@ export function SolicitarPresupuestoModal({
     }
 
     void loadSocios();
-  }, [open, currentUser?.orgId, supabase, toast]);
+  }, [open, currentUser?.orgId, toast]);
 
   useEffect(() => {
     if (open) {
       // Resetear selecciones cuando se abre el modal
       setSelectedTareaIds(new Set(tareas.map((t) => t.id)));
-      setSelectedSocioId('');
+      setSelectedSocioIds(new Set());
     }
   }, [open, tareas]);
 
@@ -164,10 +149,10 @@ export function SolicitarPresupuestoModal({
   };
 
   const handleSubmit = async () => {
-    if (!selectedSocioId || selectedTareaIds.size === 0) {
+    if (selectedSocioIds.size === 0 || selectedTareaIds.size === 0) {
       toast({
         title: 'Faltan datos',
-        description: 'Seleccioná al menos una tarea y un socio.',
+        description: 'Seleccioná al menos una tarea y un socio agendado.',
         variant: 'destructive',
       });
       return;
@@ -183,7 +168,7 @@ export function SolicitarPresupuestoModal({
         body: JSON.stringify({
           etapa,
           tareaIds: Array.from(selectedTareaIds),
-          socioId: selectedSocioId,
+          socioIds: Array.from(selectedSocioIds),
         }),
       });
 
@@ -303,7 +288,7 @@ export function SolicitarPresupuestoModal({
               : 'Solicitar presupuesto'}
           </DialogTitle>
           <DialogDescription>
-            Seleccioná las tareas y el socio al que querés enviar la solicitud de presupuesto.
+            Seleccioná las tareas y los contratistas agendados a quienes querés enviar la solicitud de presupuesto.
           </DialogDescription>
         </DialogHeader>
 
@@ -311,26 +296,40 @@ export function SolicitarPresupuestoModal({
           {/* Selector de socio */}
           <div>
             <Label className="mb-2 block text-sm font-medium text-slate-700">
-              Socio destinatario
+              Contratistas agendados ({selectedSocioIds.size} seleccionados)
             </Label>
-            <Select value={selectedSocioId} onValueChange={setSelectedSocioId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccioná un socio" />
-              </SelectTrigger>
-              <SelectContent>
-                {loadingSocios ? (
-                  <div className="px-2 py-1.5 text-sm text-slate-500">Cargando...</div>
-                ) : socios.length === 0 ? (
-                  <div className="px-2 py-1.5 text-sm text-slate-500">No hay socios activos disponibles</div>
-                ) : (
-                  socios.map((socio) => (
-                    <SelectItem key={socio.id} value={socio.id}>
-                      {socio.nombre || 'Socio sin nombre'}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            {loadingSocios ? (
+              <div className="text-sm text-slate-500">Cargando agenda…</div>
+            ) : socios.length === 0 ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                No hay socios en tu agenda. Agendalos desde la sección Agenda.
+              </div>
+            ) : (
+              <div className="max-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 p-3">
+                {socios.map((socio) => {
+                  const checked = selectedSocioIds.has(socio.id);
+                  return (
+                    <div key={socio.id} className="flex items-center gap-2">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => {
+                          setSelectedSocioIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(socio.id)) next.delete(socio.id);
+                            else next.add(socio.id);
+                            return next;
+                          });
+                        }}
+                        id={`socio-${socio.id}`}
+                      />
+                      <Label htmlFor={`socio-${socio.id}`} className="cursor-pointer text-sm font-medium">
+                        {socio.nombre || 'Socio sin nombre'}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Lista de tareas */}
@@ -408,7 +407,7 @@ export function SolicitarPresupuestoModal({
           <Button
             variant="primary"
             onClick={handleSubmit}
-            disabled={saving || !selectedSocioId || selectedTareaIds.size === 0}
+            disabled={saving || selectedSocioIds.size === 0 || selectedTareaIds.size === 0}
           >
             {saving ? (
               <>

@@ -156,12 +156,20 @@ type ObraItem = {
   count: number;
 };
 
+type MetodoPagoUi = 'BILLETERA' | 'EFECTIVO' | 'TARJETA';
+
 type ConfirmacionModal = {
   tipo: 'validar' | 'validar_en_obra' | 'rechazar' | null;
   subtareaId: string | null;
   bloqueNombre: string;
   monto: number | null;
 };
+
+function metodoPagoUiToApi(metodo: MetodoPagoUi): 'ONLINE' | 'EFECTIVO' | 'TARJETA' {
+  if (metodo === 'EFECTIVO') return 'EFECTIVO';
+  if (metodo === 'TARJETA') return 'TARJETA';
+  return 'ONLINE';
+}
 
 export function ValidarSection({ obraId }: ValidarSectionProps) {
   const currentUser = useCurrentUser();
@@ -185,6 +193,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     monto: null,
   });
   const [motivoRechazo, setMotivoRechazo] = useState('');
+  const [metodoPagoUi, setMetodoPagoUi] = useState<MetodoPagoUi>('BILLETERA');
+  const [tarjetaTitular, setTarjetaTitular] = useState('');
+  const [tarjetaNumero, setTarjetaNumero] = useState('');
+  const [tarjetaVencimiento, setTarjetaVencimiento] = useState('');
+  const [tarjetaTipo, setTarjetaTipo] = useState<'credito' | 'debito'>('debito');
 
   /** Mantiene selección de obra alineada al layout padre (`TareasSection`). */
   useEffect(() => {
@@ -264,6 +277,13 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       if (tipo === 'rechazar') {
         setMotivoRechazo('');
       }
+      if (tipo === 'validar') {
+        setMetodoPagoUi('BILLETERA');
+        setTarjetaTitular('');
+        setTarjetaNumero('');
+        setTarjetaVencimiento('');
+        setTarjetaTipo('debito');
+      }
     },
     []
   );
@@ -276,6 +296,11 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
       monto: null,
     });
     setMotivoRechazo('');
+    setMetodoPagoUi('BILLETERA');
+    setTarjetaTitular('');
+    setTarjetaNumero('');
+    setTarjetaVencimiento('');
+    setTarjetaTipo('debito');
   }, []);
 
   const handleConfirmarAccion = useCallback(async () => {
@@ -283,18 +308,44 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
 
     const subtareaId = confirmacionModal.subtareaId;
     const accion = confirmacionModal.tipo;
+
+    if (accion === 'validar' && metodoPagoUi === 'TARJETA') {
+      const digits = tarjetaNumero.replace(/\D/g, '');
+      if (!tarjetaTitular.trim() || digits.length < 13 || !tarjetaVencimiento.trim()) {
+        toast({
+          title: 'Datos de tarjeta incompletos',
+          description: 'Completá titular, número y vencimiento para pagar con tarjeta.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setSubtareaProcessingId(subtareaId);
     handleCerrarConfirmacion();
 
     try {
       const payload: {
         accion: 'validar' | 'validar_en_obra' | 'rechazar';
-        metodoPago?: 'EFECTIVO' | 'ONLINE';
+        metodoPago?: 'EFECTIVO' | 'ONLINE' | 'TARJETA';
         motivo?: string;
+        tarjeta?: { titular: string; ultimos4: string; tipo: 'credito' | 'debito'; vencimiento: string };
       } = {
         accion: accion === 'validar_en_obra' ? 'validar_en_obra' : accion,
-        metodoPago: accion === 'validar' ? 'ONLINE' : undefined,
       };
+
+      if (accion === 'validar') {
+        payload.metodoPago = metodoPagoUiToApi(metodoPagoUi);
+        if (metodoPagoUi === 'TARJETA') {
+          const digits = tarjetaNumero.replace(/\D/g, '');
+          payload.tarjeta = {
+            titular: tarjetaTitular.trim(),
+            ultimos4: digits.slice(-4),
+            tipo: tarjetaTipo,
+            vencimiento: tarjetaVencimiento.trim(),
+          };
+        }
+      }
 
       if (accion === 'rechazar' && motivoRechazo.trim()) {
         payload.motivo = motivoRechazo.trim();
@@ -364,7 +415,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
     } finally {
       setSubtareaProcessingId(null);
     }
-  }, [confirmacionModal, motivoRechazo, loadData, toast, handleCerrarConfirmacion]);
+  }, [confirmacionModal, motivoRechazo, metodoPagoUi, tarjetaTitular, tarjetaNumero, tarjetaVencimiento, tarjetaTipo, loadData, toast, handleCerrarConfirmacion]);
 
   if (!currentUser?.orgId) {
     return (
@@ -801,10 +852,7 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
                 </>
               ) : confirmacionModal.tipo === 'validar' ? (
                 <>
-                  ¿Estás seguro de que querés validar <strong>{confirmacionModal.bloqueNombre}</strong>?
-                  <br />
-                  El bloque será marcado como validado y el pago será procesado
-                  automáticamente.
+                  ¿Validás <strong>{confirmacionModal.bloqueNombre}</strong> y liberás el pago al socio?
                   {confirmacionModal.monto !== null && (
                     <>
                       <br />
@@ -823,6 +871,102 @@ export function ValidarSection({ obraId }: ValidarSectionProps) {
               )}
             </DialogDescription>
           </DialogHeader>
+          {confirmacionModal.tipo === 'validar' && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium text-slate-800">Método de pago</p>
+              <div className="space-y-2">
+                {(
+                  [
+                    {
+                      id: 'BILLETERA' as const,
+                      title: 'Saldo en billetera',
+                      desc: 'Se descuenta de tu billetera Grows y se acredita al socio.',
+                    },
+                    {
+                      id: 'EFECTIVO' as const,
+                      title: 'Efectivo en obra',
+                      desc: 'Pagás en obra; el monto se acredita igual en la billetera del socio.',
+                    },
+                    {
+                      id: 'TARJETA' as const,
+                      title: 'Tarjeta (crédito / débito)',
+                      desc: 'Cobro con tarjeta; el neto va a la billetera del socio.',
+                    },
+                  ] as const
+                ).map((opt) => (
+                  <label
+                    key={opt.id}
+                    className={`flex cursor-pointer gap-3 rounded-lg border p-3 ${
+                      metodoPagoUi === opt.id ? 'border-blue-500 bg-blue-50' : 'border-slate-200'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="metodo-pago-validar"
+                      className="mt-1"
+                      checked={metodoPagoUi === opt.id}
+                      onChange={() => setMetodoPagoUi(opt.id)}
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-slate-900">{opt.title}</span>
+                      <span className="text-xs text-slate-600">{opt.desc}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {metodoPagoUi === 'TARJETA' ? (
+                <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Titular</label>
+                    <input
+                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={tarjetaTitular}
+                      onChange={(e) => setTarjetaTitular(e.target.value)}
+                      placeholder="Nombre en la tarjeta"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-600">Número de tarjeta</label>
+                    <input
+                      className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                      value={tarjetaNumero}
+                      onChange={(e) => setTarjetaNumero(e.target.value)}
+                      placeholder="0000 0000 0000 0000"
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-slate-600">Vencimiento</label>
+                      <input
+                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                        value={tarjetaVencimiento}
+                        onChange={(e) => setTarjetaVencimiento(e.target.value)}
+                        placeholder="MM/AA"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-slate-600">Tipo</label>
+                      <select
+                        className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+                        value={tarjetaTipo}
+                        onChange={(e) =>
+                          setTarjetaTipo(e.target.value === 'credito' ? 'credito' : 'debito')
+                        }
+                      >
+                        <option value="debito">Débito</option>
+                        <option value="credito">Crédito</option>
+                      </select>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    El cobro se registra y el pago neto se acredita en la billetera del socio.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
           {confirmacionModal.tipo === 'rechazar' && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">

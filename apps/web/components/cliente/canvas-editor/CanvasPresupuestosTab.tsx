@@ -96,7 +96,7 @@ export function CanvasPresupuestosTab({
   );
 
   const [detailName, setDetailName] = useState('');
-  const [detailSocioId, setDetailSocioId] = useState<string>('');
+  const [detailSocioIds, setDetailSocioIds] = useState<Set<string>>(new Set());
   const [detailMensaje, setDetailMensaje] = useState('');
   const [saveBusy, setSaveBusy] = useState(false);
   const [changeNotes, setChangeNotes] = useState('');
@@ -107,7 +107,8 @@ export function CanvasPresupuestosTab({
   useEffect(() => {
     if (!detailGroup) return;
     setDetailName(detailGroup.name);
-    setDetailSocioId(detailGroup.scheduledSocioId ?? '');
+    const pre = detailGroup.scheduledSocioId?.trim();
+    setDetailSocioIds(pre ? new Set([pre]) : new Set());
     setDetailMensaje(detailGroup.mensajeSocioBorrador ?? '');
     setSendNotice(null);
   }, [detailGroup]);
@@ -126,13 +127,13 @@ export function CanvasPresupuestosTab({
     const ya = Number(j.presupuestosYaAprobados) || 0;
     const fall = Number(j.presupuestosFallidos) || 0;
     const pend = Array.isArray(j.pendingPublish) ? j.pendingPublish.length : 0;
-    let msg = `Paquete aprobado. ${nuevos} presupuesto${nuevos === 1 ? '' : 's'} nuevo${nuevos === 1 ? '' : 's'}.`;
-    if (ya > 0) msg += ` ${ya} ya estaban aprobados.`;
+    let msg = `Solicitud enviada. ${nuevos} solicitud${nuevos === 1 ? '' : 'es'} nueva${nuevos === 1 ? '' : 's'} de presupuesto.`;
+    if (ya > 0) msg += ` ${ya} ya existían para ese socio.`;
     if (fall > 0) msg += ` ${fall} con error.`;
     if (j.partial && pend > 0) {
-      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} sin publicar; cuando las publiques, volvé a enviar para sumarlas al paquete.`;
+      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} sin publicar; cuando las publiques, volvé a enviar para incluirlas.`;
     }
-    msg += ' El socio ya puede comenzar bloques en esas tareas.';
+    msg += ' Los socios recibirán el paquete para presupuestar (sin asignación automática).';
     if (warnings.length > 0) {
       msg += ` · ${warnings.slice(0, 3).join(' ')}`;
     }
@@ -196,7 +197,8 @@ export function CanvasPresupuestosTab({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: detailName,
-            scheduledSocioId: detailSocioId || null,
+            scheduledSocioId:
+              detailSocioIds.size === 1 ? Array.from(detailSocioIds)[0]! : null,
             mensajeSocioBorrador: detailMensaje || null,
           }),
         },
@@ -208,7 +210,8 @@ export function CanvasPresupuestosTab({
       }
       patchBudgetGroup(detailGroup.id, {
         name: detailName.trim() || detailGroup.name,
-        scheduledSocioId: detailSocioId || null,
+        scheduledSocioId:
+          detailSocioIds.size === 1 ? Array.from(detailSocioIds)[0]! : null,
         mensajeSocioBorrador: detailMensaje || null,
       });
       setSendNotice('Cambios del grupo guardados.');
@@ -223,14 +226,14 @@ export function CanvasPresupuestosTab({
       setSendNotice('El grupo no tiene tareas incluidas.');
       return;
     }
-    if (!detailSocioId) {
-      setSendNotice('Elegí un socio agendado.');
+    if (detailSocioIds.size === 0) {
+      setSendNotice('Elegí al menos un socio de tu agenda.');
       return;
     }
     const unpublished = detailTasks.filter((t) => !tareaPublicacionByNodeId[t.id]);
     const published = detailTasks.length - unpublished.length;
     let confirmMsg =
-      '¿Aprobar y enviar el paquete completo al socio? Se asignarán las tareas y quedarán listas para operar (comenzar bloques).';
+      `¿Enviar el paquete a ${detailSocioIds.size} socio${detailSocioIds.size === 1 ? '' : 's'} para que presupuesten? No se asignarán las tareas hasta que apruebes una oferta.`;
     if (unpublished.length > 0 && published > 0) {
       confirmMsg = `Hay ${unpublished.length} tarea${unpublished.length === 1 ? '' : 's'} que todavía no están publicadas.\n\n¿Enviar ahora las ${published} listas y dejar las ${unpublished.length} restantes pendientes en este mismo grupo? Cuando las publiques, vas a poder sumarlas al paquete.`;
     } else if (unpublished.length > 0 && published === 0) {
@@ -254,7 +257,7 @@ export function CanvasPresupuestosTab({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             budgetGroupId: detailGroup.id,
-            socioId: detailSocioId,
+            socioIds: Array.from(detailSocioIds),
             message: detailMensaje,
           }),
         },
@@ -283,10 +286,12 @@ export function CanvasPresupuestosTab({
           typeof j.groupStatus === 'string' && j.groupStatus
             ? j.groupStatus
             : j.partial
-              ? 'aprobado_parcial'
-              : 'aprobado';
+              ? 'enviado_parcial'
+              : 'enviado';
         patchBudgetGroup(detailGroup.id, {
           status: st,
+          scheduledSocioId:
+            detailSocioIds.size === 1 ? Array.from(detailSocioIds)[0]! : detailGroup.scheduledSocioId,
           changeWindowStatus: 'cerrada',
           changeWindowNotes: null,
         });
@@ -439,7 +444,9 @@ export function CanvasPresupuestosTab({
               </div>
 
               <div>
-                <label className="text-[10px] font-bold uppercase text-[#7b8494]">Socio agendado</label>
+                <label className="text-[10px] font-bold uppercase text-[#7b8494]">
+                  Contratistas agendados ({detailSocioIds.size} seleccionados)
+                </label>
                 {!agendaLoaded ? (
                   <p className="mt-2 text-sm text-[#64748b]">Cargando agenda…</p>
                 ) : agenda.length === 0 ? (
@@ -456,18 +463,34 @@ export function CanvasPresupuestosTab({
                     </Button>
                   </div>
                 ) : (
-                  <select
-                    className="mt-1.5 w-full rounded-xl border border-[#c3c7ce]/40 px-3 py-2 text-sm font-medium text-[#001629] outline-none focus:border-[#24a375]"
-                    value={detailSocioId}
-                    onChange={(e) => setDetailSocioId(e.target.value)}
-                  >
-                    <option value="">Elegir socio…</option>
-                    {agenda.map((a) => (
-                      <option key={a.socio_id} value={a.socio_id}>
-                        {socioLabel(a.socio_id) ?? a.socio_id}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="mt-2 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-[#eef2f6] p-3">
+                    {agenda.map((a) => {
+                      const checked = detailSocioIds.has(a.socio_id);
+                      return (
+                        <label
+                          key={a.socio_id}
+                          className="flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 hover:bg-[#f8fafc]"
+                        >
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-[#c3c7ce]"
+                            checked={checked}
+                            onChange={() => {
+                              setDetailSocioIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(a.socio_id)) next.delete(a.socio_id);
+                                else next.add(a.socio_id);
+                                return next;
+                              });
+                            }}
+                          />
+                          <span className="text-sm font-medium text-[#001629]">
+                            {socioLabel(a.socio_id) ?? a.socio_id}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
@@ -561,10 +584,10 @@ export function CanvasPresupuestosTab({
                   onClick={() => void onEnviarSolicitud()}
                 >
                   {sendBusy
-                    ? 'Aprobando paquete…'
+                    ? 'Enviando solicitudes…'
                     : paqueteAprobado && puedeReenviarTrasCambio
-                      ? 'Re-enviar paquete actualizado'
-                      : 'Aprobar y enviar paquete al socio'}
+                      ? 'Re-enviar solicitud de presupuesto'
+                      : 'Enviar paquete para presupuestar'}
                 </Button>
                 {paqueteAprobado && !puedeEnviarPaquete ? (
                   <p className="text-center text-[11px] text-[#64748b]">

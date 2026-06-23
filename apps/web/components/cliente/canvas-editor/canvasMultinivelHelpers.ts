@@ -474,8 +474,8 @@ export function budgetGroupStatusLabel(status: string | undefined): string {
   const map: Record<string, string> = {
     borrador: 'Borrador',
     listo_para_enviar: 'Listo para enviar',
-    enviado: 'Enviado (legacy)',
-    enviado_parcial: 'Enviado parcial (legacy)',
+    enviado: 'Solicitud enviada a socios',
+    enviado_parcial: 'Solicitud enviada (faltan tareas publicadas)',
     respondido: 'Respondido (legacy)',
     aprobado: 'Aprobado — socio puede operar',
     aprobado_parcial: 'Aprobado parcial (faltan tareas publicadas)',

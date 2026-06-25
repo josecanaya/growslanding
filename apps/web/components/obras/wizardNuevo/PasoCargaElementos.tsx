@@ -122,14 +122,11 @@ export default function PasoCargaElementos({ onPrev, onFinish }: PasoTemplateYCr
         propietario: propietario?.trim() || undefined,
         tipo_obra: obraProductKindToLegacyTipoObra(obraProductKind as ObraProductKind),
         obra_product_kind: obraProductKind,
-        canvas_template_slug: canvasTemplateSlug,
         latitud: latitud !== undefined ? latitud : undefined,
         longitud: longitud !== undefined ? longitud : undefined,
-        fecha_inicio_estimada: wizardState.fecha_inicio_estimada || undefined,
         plantas: plantas !== undefined && plantas > 0 ? plantas : undefined,
         terreno: terreno !== undefined && terreno > 0 ? terreno : undefined,
         superficies: superficies && superficies.length > 0 ? superficies : undefined,
-        m2_estimados: m2Estimados > 0 ? m2Estimados : undefined,
         estado: 'pendiente' as const,
       };
 

@@ -467,22 +467,7 @@ function ObrasSectionContent() {
         await loadObras();
         cerrarModal();
       } else {
-        // Validar que fecha_inicio_estimada esté presente al crear
-        if (!formState.fecha_inicio_estimada) {
-          setError('La fecha de inicio estimada es obligatoria');
-          setIsLoading(false);
-          return;
-        }
-
-        // Validar que la fecha no sea menor a hoy
-        const today = new Date().toISOString().split('T')[0];
-        if (formState.fecha_inicio_estimada < today) {
-          setError('La fecha de inicio estimada no puede ser menor a la fecha actual');
-          setIsLoading(false);
-          return;
-        }
-
-        // Crear nueva obra
+        // Crear nueva obra (fechas de planificación viven en tareas/canvas, no en tabla obras)
         const { data, error: insertError } = await supabase
           .from('obras')
           .insert({
@@ -490,11 +475,8 @@ function ObrasSectionContent() {
             name: formState.nombre,
             address: formState.localizacion || null,
             estado: 'pendiente',
-            fecha_inicio_estimada: formState.fecha_inicio_estimada,
-            // fecha_final_estimada será calculada automáticamente por el backend
-            // inicialmente puede ser igual a fecha_inicio_estimada hasta que haya tareas
           })
-          .select()
+          .select('id, org_id, name, address, estado, created_at')
           .single();
 
         if (insertError) {

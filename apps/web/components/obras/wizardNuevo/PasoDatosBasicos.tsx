@@ -33,7 +33,6 @@ export default function PasoDatosBasicos({ onNext, isLight = false, onFinish }: 
   const direccion = useWizardStore((s) => s.direccion);
   const latitud = useWizardStore((s) => s.latitud);
   const longitud = useWizardStore((s) => s.longitud);
-  const fecha_inicio_estimada = useWizardStore((s) => s.fecha_inicio_estimada);
   const plantas = useWizardStore((s) => s.plantas);
   const superficies = useWizardStore((s) => s.superficies);
   const modoObra = useWizardStore((s) => s.modoObra);
@@ -58,10 +57,8 @@ export default function PasoDatosBasicos({ onNext, isLight = false, onFinish }: 
     if (light) {
       return prop.length >= 2 || dir.length >= 2;
     }
-    const fechaValida =
-      !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
-    return dir.length > 3 && prop.length > 2 && fechaValida;
-  }, [direccion, propietario, obraProductKind, fecha_inicio_estimada, light]);
+    return dir.length > 3 && prop.length > 2;
+  }, [direccion, propietario, obraProductKind, light]);
 
   const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
     setField('direccion', value.direccion);
@@ -133,30 +130,6 @@ export default function PasoDatosBasicos({ onNext, isLight = false, onFinish }: 
                 placeholder="Nombre completo"
                 className={hubInput()}
               />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className={hubLabel()}>
-                Fecha de inicio estimada {!light ? <span className="font-bold text-[#ba1a1a]">*</span> : null}
-              </label>
-              <input
-                type="date"
-                required
-                min={new Date().toISOString().split('T')[0]}
-                value={fecha_inicio_estimada ?? ''}
-                onChange={(e) => {
-                  const selectedDate = e.target.value;
-                  const today = new Date().toISOString().split('T')[0];
-                  if (selectedDate && selectedDate < today) {
-                    return;
-                  }
-                  setField('fecha_inicio_estimada', selectedDate || undefined);
-                }}
-                className={hubInput()}
-              />
-              {!fecha_inicio_estimada && !light ? (
-                <p className="text-xs text-[#42474d]">Obligatoria. Solo fechas desde hoy en adelante.</p>
-              ) : null}
             </div>
           </div>
 

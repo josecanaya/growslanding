@@ -5,6 +5,10 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { obraSchema } from '@/lib/schemas/obras';
 import { listAccessibleOrgIds } from '@/lib/orgs';
+import { buildObraInsertRow, stripMissingColumnFromInsert } from '@/lib/obras/obraInsertPayload';
+
+const OBRA_INSERT_SELECT =
+  'id, org_id, name, address, estado, created_at, propietario, tipo_obra, latitud, longitud, plantas, terreno, superficies';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -492,51 +496,36 @@ export async function POST(request: Request) {
         superficies: superficies ? JSON.stringify(superficies) : null
       });
       
-      const insertData: any = {
+      let insertRow = buildObraInsertRow({
         org_id,
-        name: nombre,  // La tabla usa 'name', no 'nombre'
-        address: localizacion || null,  // La tabla usa 'address', no 'localizacion'
-      };
+        name: nombre,
+        address: localizacion || null,
+        propietario: propietario ?? null,
+        tipo_obra: tipo_obra ?? null,
+        latitud: latitud ?? null,
+        longitud: longitud ?? null,
+        plantas: plantas ?? null,
+        terreno: terreno ?? null,
+        superficies: superficies ?? null,
+        estado: estado ?? null,
+        obra_product_kind: obra_product_kind ?? null,
+      });
 
-      // Agregar campos opcionales solo si existen
-      if (propietario !== undefined && propietario !== null) {
-        insertData.propietario = propietario;
-      }
-      if (tipo_obra !== undefined && tipo_obra !== null) {
-        insertData.tipo_obra = tipo_obra;
-      }
-      if (latitud !== undefined && latitud !== null) {
-        insertData.latitud = latitud;
-      }
-      if (longitud !== undefined && longitud !== null) {
-        insertData.longitud = longitud;
-      }
-      if (plantas !== undefined && plantas !== null) {
-        insertData.plantas = plantas;
-      }
-      if (terreno !== undefined && terreno !== null) {
-        insertData.terreno = terreno;
-      }
-      if (superficies !== undefined && superficies !== null && Array.isArray(superficies)) {
-        insertData.superficies = superficies; // JSONB se maneja automáticamente
-      }
-      if (estado !== undefined && estado !== null) {
-        insertData.estado = estado;
-      }
-      if (obra_product_kind) {
-        insertData.obra_product_kind = obra_product_kind;
-      }
+      let data: Record<string, unknown> | null = null;
+      let error: { message?: string } | null = null;
 
-      let { data, error } = await supabase.from('obras').insert([insertData]).select().single();
-
-      if (error && obra_product_kind) {
-        const msg = String(error.message ?? '');
-        if (msg.includes('obra_product_kind')) {
-          const { obra_product_kind: _o, ...rest } = insertData;
-          const retry = await supabase.from('obras').insert([rest]).select().single();
-          data = retry.data;
-          error = retry.error;
-        }
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const result = await supabase
+          .from('obras')
+          .insert([insertRow])
+          .select(OBRA_INSERT_SELECT)
+          .single();
+        data = result.data;
+        error = result.error;
+        if (!error) break;
+        const stripped = stripMissingColumnFromInsert(insertRow, String(error.message ?? ''));
+        if (!stripped) break;
+        insertRow = stripped;
       }
 
       if (error) {

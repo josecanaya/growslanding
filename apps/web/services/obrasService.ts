@@ -5,10 +5,25 @@ import type { ObraInput } from '@/lib/schemas/obras';
  */
 export async function crearObra(input: ObraInput) {
   try {
+    const body: ObraInput = {
+      org_id: input.org_id,
+      nombre: input.nombre,
+      localizacion: input.localizacion,
+      propietario: input.propietario,
+      tipo_obra: input.tipo_obra,
+      latitud: input.latitud,
+      longitud: input.longitud,
+      plantas: input.plantas,
+      terreno: input.terreno,
+      superficies: input.superficies,
+      estado: input.estado,
+      obra_product_kind: input.obra_product_kind,
+    };
+
     const res = await fetch('/api/obras', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
+      body: JSON.stringify(body),
     });
 
     // Verificar el Content-Type de la respuesta

@@ -10,6 +10,8 @@ import { buildObraInsertRow, stripMissingColumnFromInsert } from '@/lib/obras/ob
 const OBRA_INSERT_SELECT =
   'id, org_id, name, address, estado, created_at, propietario, tipo_obra, latitud, longitud, plantas, terreno, superficies';
 
+type ObrasInsert = Database['public']['Tables']['obras']['Insert'];
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -517,7 +519,7 @@ export async function POST(request: Request) {
       for (let attempt = 0; attempt < 6; attempt += 1) {
         const result = await supabase
           .from('obras')
-          .insert([insertRow])
+          .insert([insertRow as ObrasInsert])
           .select(OBRA_INSERT_SELECT)
           .single();
         data = result.data;

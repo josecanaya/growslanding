@@ -1,3 +1,12 @@
+import type { Database, Json } from '@/lib/types/supabase.gen';
+
+type ObrasTableInsert = Database['public']['Tables']['obras']['Insert'];
+
+/** Fila de insert tipada; `obra_product_kind` puede existir en BD antes de regenerar tipos. */
+export type ObraInsertRow = ObrasTableInsert & {
+  obra_product_kind?: string | null;
+};
+
 /** Columnas que existen en `obras` según supabase.gen (sin fechas opcionales legacy). */
 export const OBRAS_INSERT_ALLOWED_KEYS = [
   'org_id',
@@ -29,8 +38,8 @@ export type ObraInsertPayload = {
   obra_product_kind?: string | null;
 };
 
-export function buildObraInsertRow(data: ObraInsertPayload): Record<string, unknown> {
-  const row: Record<string, unknown> = {
+export function buildObraInsertRow(data: ObraInsertPayload): ObraInsertRow {
+  const row: ObraInsertRow = {
     org_id: data.org_id,
     name: data.name,
     address: data.address ?? null,
@@ -41,7 +50,7 @@ export function buildObraInsertRow(data: ObraInsertPayload): Record<string, unkn
   if (data.longitud != null) row.longitud = data.longitud;
   if (data.plantas != null) row.plantas = data.plantas;
   if (data.terreno != null) row.terreno = data.terreno;
-  if (data.superficies != null) row.superficies = data.superficies;
+  if (data.superficies != null) row.superficies = data.superficies as Json;
   if (data.estado != null) row.estado = data.estado;
   if (data.obra_product_kind) row.obra_product_kind = data.obra_product_kind;
   return row;
@@ -49,14 +58,14 @@ export function buildObraInsertRow(data: ObraInsertPayload): Record<string, unkn
 
 /** Quita columnas que PostgREST rechaza (schema cache / migración pendiente). */
 export function stripMissingColumnFromInsert(
-  row: Record<string, unknown>,
+  row: ObraInsertRow,
   errorMessage: string,
-): Record<string, unknown> | null {
+): ObraInsertRow | null {
   const match = errorMessage.match(/Could not find the '([^']+)' column/i);
   if (!match?.[1]) return null;
   const col = match[1];
   if (!(col in row)) return null;
   const next = { ...row };
-  delete next[col];
+  delete (next as Record<string, unknown>)[col];
   return next;
 }

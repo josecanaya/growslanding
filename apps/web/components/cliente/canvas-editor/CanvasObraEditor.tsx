@@ -43,6 +43,7 @@ import { parseProjectXml } from '@/lib/project/importProjectXml';
 import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 import { publicationReviewCategory } from './canvasMultinivelHelpers';
+import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 
 type Props = { obraId: string };
 
@@ -113,6 +114,8 @@ export function CanvasObraEditor({ obraId }: Props) {
     updateChecklistLabel,
     removeChecklistItem,
     applyImportedCanvas,
+    applyTemplateBySlug,
+    obraProductKind,
     budgetGroups,
     createBudgetGroup,
     patchBudgetGroup,
@@ -120,6 +123,25 @@ export function CanvasObraEditor({ obraId }: Props) {
     tareaPublicacionByNodeId,
     refreshTareaPublicacion,
   } = useCanvasMultinivel(obraId);
+
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [applyingTemplateSlug, setApplyingTemplateSlug] = useState<string | null>(null);
+
+  const handleApplyTemplate = useCallback(
+    async (slug: string) => {
+      setApplyingTemplateSlug(slug);
+      try {
+        const result = await applyTemplateBySlug(slug);
+        if (result.ok) {
+          setLibraryOpen(false);
+          await saveCanvasSnapshotToCloud();
+        }
+      } finally {
+        setApplyingTemplateSlug(null);
+      }
+    },
+    [applyTemplateBySlug, saveCanvasSnapshotToCloud],
+  );
 
   const prevCloudSaveRef = useRef<typeof cloudSaveState>(cloudSaveState);
   useEffect(() => {
@@ -596,6 +618,14 @@ export function CanvasObraEditor({ obraId }: Props) {
         duplicateDisabled={!selectedId}
         deleteDisabled={!selectedId}
         onGoOrganizar={() => setEditorTab('canvas')}
+        onOpenTemplateLibrary={() => setLibraryOpen(true)}
+      />
+      <CanvasTemplateLibraryPanel
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        obraProductKind={obraProductKind}
+        onApply={(slug) => void handleApplyTemplate(slug)}
+        applyingSlug={applyingTemplateSlug}
       />
 
       {cloudSaveMessage ? (

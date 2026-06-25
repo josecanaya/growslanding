@@ -10,13 +10,15 @@ import {
   hubPrimaryButton,
   hubSecondaryButton,
 } from './nuevaObraHubStyles';
+import { useCrearObraFromWizard } from '@/lib/hooks/useCrearObraFromWizard';
 
 type PasoSuperficiesProps = {
   onPrev: () => void;
-  onNext: () => void;
+  onFinish: () => void;
 };
 
-export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps) {
+export default function PasoSuperficies({ onPrev, onFinish }: PasoSuperficiesProps) {
+  const { crear, isSaving, error, setError } = useCrearObraFromWizard();
   const plantas = useWizardStore((s) => s.plantas);
   const terreno = useWizardStore((s) => s.terreno);
   const superficies = useWizardStore((s) => s.superficies);
@@ -151,17 +153,26 @@ export default function PasoSuperficies({ onPrev, onNext }: PasoSuperficiesProps
           </p>
         </div>
 
+        {error ? (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        ) : null}
+
         <div className="flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 sm:flex-row sm:justify-between">
           <button type="button" onClick={onPrev} className={`${hubSecondaryButton()} w-full sm:w-auto`}>
             Atrás
           </button>
           <button
             type="button"
-            disabled={!puedeContinuar}
-            onClick={onNext}
-            className={`${hubPrimaryButton()} w-full px-12 sm:w-auto ${!puedeContinuar ? 'opacity-55' : ''}`}
+            disabled={!puedeContinuar || isSaving}
+            onClick={() => {
+              setError(null);
+              void crear();
+            }}
+            className={`${hubPrimaryButton()} w-full px-12 sm:w-auto`}
           >
-            Siguiente
+            {isSaving ? 'Creando…' : 'Crear obra y abrir canvas'}
           </button>
         </div>
       </div>

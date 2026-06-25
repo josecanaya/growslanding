@@ -35,9 +35,35 @@ export function isObraProductKind(v: string | null | undefined): v is ObraProduc
   return !!v && (OBRA_PRODUCT_KINDS as readonly string[]).includes(v);
 }
 
+/** Sin m², plantas ni paso de superficie: solo datos y canvas + librería ahí. */
+export function isLightObraProductKind(kind: ObraProductKind | ''): boolean {
+  return kind === 'trabajo_simple' || kind === 'mantenimiento';
+}
+
 /** Compatibilidad con columna legacy `tipo_obra` en API. */
 export function obraProductKindToLegacyTipoObra(kind: ObraProductKind): 'nueva' | 'reforma' | 'ampliacion' {
   if (kind === 'reforma') return 'reforma';
   if (kind === 'mantenimiento' || kind === 'trabajo_simple') return 'ampliacion';
   return 'nueva';
+}
+
+const OBRA_PRODUCT_KIND_SESSION_PREFIX = 'grows:obra-product-kind:';
+
+export function seedSessionObraProductKind(obraId: string, kind: ObraProductKind): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(`${OBRA_PRODUCT_KIND_SESSION_PREFIX}${obraId}`, kind);
+  } catch {
+    /* noop */
+  }
+}
+
+export function peekSessionObraProductKind(obraId: string): ObraProductKind | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const v = sessionStorage.getItem(`${OBRA_PRODUCT_KIND_SESSION_PREFIX}${obraId}`);
+    return isObraProductKind(v) ? v : null;
+  } catch {
+    return null;
+  }
 }

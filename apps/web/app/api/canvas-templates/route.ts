@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   listOfficialTemplatesForKind,
   OFFICIAL_CANVAS_TEMPLATES,
+  getOfficialTemplateBySlug,
 } from '@/lib/canvas/officialCanvasTemplates';
 import { isObraProductKind } from '@/lib/canvas/obraProductKind';
 
@@ -20,6 +21,15 @@ export async function GET(request: NextRequest) {
 
   if (kind && isObraProductKind(kind)) {
     templates = listOfficialTemplatesForKind(kind);
+  }
+
+  const slug = request.nextUrl.searchParams.get('slug');
+  if (slug) {
+    const one = templates.find((t) => t.slug === slug) ?? getOfficialTemplateBySlug(slug);
+    if (!one) {
+      return NextResponse.json({ success: false, error: 'Template no encontrado' }, { status: 404 });
+    }
+    templates = [one];
   }
 
   if (visibilidad === 'oficial') {

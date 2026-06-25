@@ -15,15 +15,21 @@ import {
   hubSecondaryButton,
 } from './nuevaObraHubStyles';
 
+import { isLightObraProductKind } from '@/lib/canvas/obraProductKind';
+import { useCrearObraFromWizard } from '@/lib/hooks/useCrearObraFromWizard';
+
 interface PasoDatosBasicosProps {
-  onNext: () => void;
+  onNext?: () => void;
+  isLight?: boolean;
+  onFinish: () => void;
 }
 
-export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
+export default function PasoDatosBasicos({ onNext, isLight = false, onFinish }: PasoDatosBasicosProps) {
   const id = useWizardStore((s) => s.id);
   const propietario = useWizardStore((s) => s.propietario);
   const obraProductKind = useWizardStore((s) => s.obraProductKind);
-  const tipoObra = useWizardStore((s) => s.tipoObra);
+  const light = isLight || isLightObraProductKind(obraProductKind);
+  const { crear, isSaving, error, setError } = useCrearObraFromWizard();
   const direccion = useWizardStore((s) => s.direccion);
   const latitud = useWizardStore((s) => s.latitud);
   const longitud = useWizardStore((s) => s.longitud);
@@ -48,10 +54,14 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
     const prop = (propietario ?? '').trim();
+    if (!obraProductKind) return false;
+    if (light) {
+      return prop.length >= 2 || dir.length >= 2;
+    }
     const fechaValida =
       !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
-    return dir.length > 3 && prop.length > 2 && !!obraProductKind && fechaValida;
-  }, [direccion, propietario, obraProductKind, fecha_inicio_estimada]);
+    return dir.length > 3 && prop.length > 2 && fechaValida;
+  }, [direccion, propietario, obraProductKind, fecha_inicio_estimada, light]);
 
   const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
     setField('direccion', value.direccion);
@@ -127,7 +137,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
 
             <div className="flex flex-col gap-1.5">
               <label className={hubLabel()}>
-                Fecha de inicio estimada <span className="font-bold text-[#ba1a1a]">*</span>
+                Fecha de inicio estimada {!light ? <span className="font-bold text-[#ba1a1a]">*</span> : null}
               </label>
               <input
                 type="date"
@@ -144,7 +154,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
                 }}
                 className={hubInput()}
               />
-              {!fecha_inicio_estimada ? (
+              {!fecha_inicio_estimada && !light ? (
                 <p className="text-xs text-[#42474d]">Obligatoria. Solo fechas desde hoy en adelante.</p>
               ) : null}
             </div>
@@ -173,6 +183,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
             </div>
           </div>
 
+          {!light ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-1.5">
               <label className={hubLabel()}>Cantidad de plantas</label>
@@ -215,19 +226,39 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
               </p>
             </div>
           </div>
+          ) : null}
 
-          {null}
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {error}
+            </div>
+          ) : null}
 
           <div className="mt-10 flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              disabled={!puedeContinuar}
-              onClick={onNext}
-              className={`${hubPrimaryButton()} w-full px-12 sm:w-auto`}
-              data-onboarding="crear-obra"
-            >
-              Siguiente
-            </button>
+            {light ? (
+              <button
+                type="button"
+                disabled={!puedeContinuar || isSaving}
+                onClick={() => {
+                  setError(null);
+                  void crear();
+                }}
+                className={`${hubPrimaryButton()} w-full px-12 sm:w-auto`}
+                data-onboarding="crear-obra"
+              >
+                {isSaving ? 'Creando…' : 'Crear obra y abrir canvas'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!puedeContinuar}
+                onClick={onNext}
+                className={`${hubPrimaryButton()} w-full px-12 sm:w-auto`}
+                data-onboarding="crear-obra"
+              >
+                Siguiente
+              </button>
+            )}
           </div>
         </div>
       </section>

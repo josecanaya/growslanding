@@ -25,6 +25,7 @@ import {
   ZoomIn,
   Building2,
   Building,
+  BookOpen,
 } from 'lucide-react';
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
@@ -77,6 +78,7 @@ export type CanvasEditorProChromeProps = {
   /** Modo conectar tareas — el panel lo gestiona; aquí solo feedback visual */
   connectTareasActive?: boolean;
   onGoOrganizar?: () => void;
+  onOpenTemplateLibrary?: () => void;
 };
 
 function RibbonButton({
@@ -288,6 +290,15 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
 
           {ribbonTab === 'canvas' && (
             <>
+              <RibbonGroup label="Librería">
+                <RibbonButton
+                  icon={BookOpen}
+                  label="Templates"
+                  onClick={props.onOpenTemplateLibrary}
+                  disabled={!props.canvasHydrated}
+                  title="Agregar pack de tareas desde la librería"
+                />
+              </RibbonGroup>
               <RibbonGroup label="Crear">
                 <RibbonButton
                   icon={FolderPlus}

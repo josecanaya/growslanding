@@ -3,17 +3,18 @@
 import { useWizardStore } from './useWizardStore';
 import {
   OBRA_PRODUCT_KIND_LABEL,
+  isLightObraProductKind,
   type ObraProductKind,
 } from '@/lib/canvas/obraProductKind';
 
 /** Resumen lateral del wizard (sin fee de activación). */
 export function ObraWizardResumenAside() {
   const obraProductKind = useWizardStore((s) => s.obraProductKind);
-  const canvasTemplateSlug = useWizardStore((s) => s.canvasTemplateSlug);
-  const canvasTemplateNombre = useWizardStore((s) => s.canvasTemplateNombre);
   const direccion = useWizardStore((s) => s.direccion);
   const propietario = useWizardStore((s) => s.propietario);
   const m2Estimados = useWizardStore((s) => s.m2Estimados);
+
+  const light = isLightObraProductKind(obraProductKind);
 
   const tipoLabel =
     obraProductKind && obraProductKind in OBRA_PRODUCT_KIND_LABEL
@@ -28,26 +29,9 @@ export function ObraWizardResumenAside() {
           <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">Tipo</dt>
           <dd className="mt-0.5 font-semibold text-[#001629]">{tipoLabel}</dd>
         </div>
-        {canvasTemplateNombre ? (
-          <div>
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">
-              Template canvas
-            </dt>
-            <dd className="mt-0.5 font-semibold text-[#001629]">{canvasTemplateNombre}</dd>
-            {canvasTemplateSlug ? (
-              <dd className="text-xs text-[#596574]">{canvasTemplateSlug}</dd>
-            ) : null}
-          </div>
-        ) : null}
-        {m2Estimados > 0 ? (
-          <div>
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">m² estimados</dt>
-            <dd className="mt-0.5 font-semibold tabular-nums text-[#001629]">{m2Estimados}</dd>
-          </div>
-        ) : null}
         {propietario?.trim() ? (
           <div>
-            <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">Propietario</dt>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">Cliente / ref.</dt>
             <dd className="mt-0.5 font-medium text-[#171c1f]">{propietario}</dd>
           </div>
         ) : null}
@@ -57,10 +41,17 @@ export function ObraWizardResumenAside() {
             <dd className="mt-0.5 font-medium text-[#171c1f]">{direccion}</dd>
           </div>
         ) : null}
+        {!light && m2Estimados > 0 ? (
+          <div>
+            <dt className="text-[10px] font-bold uppercase tracking-widest text-[#596574]">m² estimados</dt>
+            <dd className="mt-0.5 font-semibold tabular-nums text-[#001629]">{m2Estimados}</dd>
+          </div>
+        ) : null}
       </dl>
       <p className="mt-5 text-xs leading-relaxed text-[#596574]">
-        GROWS es gratis para crear la obra y armar el canvas. La comisión aplica solo cuando validás
-        trabajo ejecutado.
+        {light
+          ? 'En el canvas vas a abrir la librería y agregar el template del trabajo (portón, puerta, etc.).'
+          : 'En el canvas podés usar la librería de templates y armar el plan de tareas.'}
       </p>
     </div>
   );

@@ -44,6 +44,7 @@ import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
+import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
 
 type Props = { obraId: string };
 
@@ -125,6 +126,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   } = useCanvasMultinivel(obraId);
 
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [planWizardOpen, setPlanWizardOpen] = useState(false);
   const [applyingTemplateSlug, setApplyingTemplateSlug] = useState<string | null>(null);
 
   const handleApplyTemplate = useCallback(
@@ -134,7 +136,13 @@ export function CanvasObraEditor({ obraId }: Props) {
         const result = await applyTemplateBySlug(slug);
         if (result.ok) {
           setLibraryOpen(false);
-          await saveCanvasSnapshotToCloud();
+          if (result.snapshot) {
+            await saveCanvasSnapshotToCloud(result.snapshot);
+          } else {
+            await saveCanvasSnapshotToCloud();
+          }
+        } else if (result.message) {
+          window.alert(result.message);
         }
       } finally {
         setApplyingTemplateSlug(null);
@@ -408,10 +416,30 @@ export function CanvasObraEditor({ obraId }: Props) {
   const vistaCentral = (
     <>
       {vista === 'etapas' && visibleNodes.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-[#bcc3d9] bg-white/85 px-6 py-14 text-center text-[#596574]">
-          <p className="text-base font-bold text-[#0f1e1f]">Sin etapas todavía</p>
+        <div className="rounded-2xl border border-dashed border-[#bcc3d9] bg-white/85 px-6 py-10 text-center text-[#596574]">
+          <p className="text-base font-bold text-[#0f1e1f]">Todavía no hay plan en el canvas</p>
           <p className="mx-auto mt-2 max-w-md text-sm">
-            Creá la primera con <strong>{labelBotonCrear}</strong>. Luego aparecerán en orden horizontal según precedencias definidas entre fases.
+            Respondé unas preguntas y generamos un plan base, o elegí un pack de la librería. Después editás tareas y
+            precedencias acá.
+          </p>
+          <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              type="button"
+              onClick={() => setPlanWizardOpen(true)}
+              className="rounded-xl bg-[#002b49] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#02446f]"
+            >
+              Armar plan con preguntas
+            </button>
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(true)}
+              className="rounded-xl border border-[#94a3b8] bg-white px-5 py-3 text-sm font-semibold text-[#001629] hover:bg-[#f8fafc]"
+            >
+              Ver librería de templates
+            </button>
+          </div>
+          <p className="mx-auto mt-4 max-w-md text-xs text-[#94a3b8]">
+            También podés crear una etapa manual con <strong>{labelBotonCrear}</strong>.
           </p>
         </div>
       )}
@@ -626,6 +654,16 @@ export function CanvasObraEditor({ obraId }: Props) {
         obraProductKind={obraProductKind}
         onApply={(slug) => void handleApplyTemplate(slug)}
         applyingSlug={applyingTemplateSlug}
+      />
+      <CanvasPlanWizardModal
+        open={planWizardOpen}
+        onClose={() => setPlanWizardOpen(false)}
+        defaultObraProductKind={obraProductKind}
+        applying={applyingTemplateSlug != null}
+        onApplySlug={(slug) => {
+          setPlanWizardOpen(false);
+          void handleApplyTemplate(slug);
+        }}
       />
 
       {cloudSaveMessage ? (

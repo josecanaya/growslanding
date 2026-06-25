@@ -756,9 +756,17 @@ export function useCanvasMultinivel(obraId: string) {
       setPathIds(merged.pathIds);
       setProjectKind('simple');
       setSelectedId(null);
-      return { ok: true as const };
+      const snapshot = composeCanvasPersisted({
+        obraNombre,
+        nodes: merged.nodes,
+        pathIds: merged.pathIds,
+        edges: merged.edges,
+        budgetGroups,
+        projectKind: 'simple',
+      });
+      return { ok: true as const, snapshot };
     },
-    [nodes, edges],
+    [nodes, edges, obraNombre, budgetGroups],
   );
 
   const applyImportedCanvas = useCallback(

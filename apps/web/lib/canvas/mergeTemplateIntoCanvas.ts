@@ -96,5 +96,5 @@ export function mergeTemplateIntoCanvas(
     }
   }
 
-  return { nodes: nextNodes, edges: nextEdges, pathIds: [etapa.id] };
+  return { nodes: nextNodes, edges: nextEdges, pathIds: nodes.length === 0 ? [] : [etapa.id] };
 }

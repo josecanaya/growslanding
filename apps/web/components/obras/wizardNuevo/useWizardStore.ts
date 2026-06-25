@@ -1,21 +1,9 @@
-"use client";
+'use client';
 
 import { create } from 'zustand';
 
-import type { CanvasWizardProjectKind } from '@/lib/canvas/canvasProjectProfile';
-import { CALCULO_ACTIVACION_TIPO, calculateFee, type PlanPagoActivacion } from '@/lib/obras/calculateFee';
-
-export type ActivacionParaPagoSnapshot = {
-  m2CubiertosTotales: number;
-  planPago: PlanPagoActivacion;
-  totalUsd: number;
-  installmentUsd: number | null;
-  calculoTipo: string;
-  subtotalUsd: number;
-};
-
-/** Valor normalizado guardado en el wizard (coincide con `CanvasProjectKind` salvo `simple`). */
-export type TipoObra = CanvasWizardProjectKind | '';
+import type { ObraProductKind } from '@/lib/canvas/obraProductKind';
+import { defaultTemplateSlugForKind, getOfficialTemplateBySlug } from '@/lib/canvas/officialCanvasTemplates';
 
 export type ModoObra = 'SIMPLE' | 'ESTRUCTURADA';
 
@@ -28,26 +16,27 @@ export type WizardState = {
   id: string;
   direccion: string;
   propietario: string;
-  tipoObra: TipoObra | '';
+  /** Tipo de obra producto (Casa, Edificio, …) */
+  obraProductKind: ObraProductKind | '';
+  /** @deprecated usar obraProductKind — se mantiene por compatibilidad de UI legacy */
+  tipoObra: string;
   plantas: number;
   terreno: number;
+  m2Estimados: number;
   superficies: { planta: number; cubiertos: number; descubiertos: number }[];
   latitud?: number;
   longitud?: number;
-  fecha_inicio_estimada?: string; // Fecha de inicio estimada de la obra
-  modoObra: ModoObra; // Calculado automáticamente
-  /** Plan seleccionado en la tarjeta de activación */
-  planPagoActivacion: PlanPagoActivacion;
-  /** Snapshot al confirmar "Continuar al pago" (sin checkout aún) */
-  activacionParaPago: ActivacionParaPagoSnapshot | null;
+  fecha_inicio_estimada?: string;
+  modoObra: ModoObra;
+  canvasTemplateSlug: string;
+  canvasTemplateNombre: string;
 };
 
 export type WizardActions = {
   reset: () => void;
   setField: <K extends keyof WizardState>(key: K, value: WizardState[K]) => void;
-  setTipoObra: (tipo: TipoObra | '') => void;
-  setPlanPagoActivacion: (plan: PlanPagoActivacion) => void;
-  confirmarContinuarActivacionParaPago: () => void;
+  setObraProductKind: (kind: ObraProductKind | '') => void;
+  setCanvasTemplate: (slug: string, nombre: string) => void;
   setPlantas: (cantidad: number) => void;
   updatePlantaSuperficie: (
     index: number,
@@ -68,77 +57,47 @@ function generateId(): string {
   return `${nums}${letters}`;
 }
 
-// Función helper para calcular el modo de obra basado en las reglas MVP
 function calcularModoObra(state: WizardState): ModoObra {
-  if (state.tipoObra === 'edificio_multifamiliar') {
-    return 'ESTRUCTURADA';
-  }
-  
-  // Calcular total de m² cubiertos
-  const totalM2Cubiertos = state.superficies.reduce((acc, s) => acc + (s.cubiertos || 0), 0);
-  
-  // Regla 2: m² cubiertos ≥ 80 → ESTRUCTURADA
-  if (totalM2Cubiertos >= 80) {
-    return 'ESTRUCTURADA';
-  }
-  
-  // Regla 3: plantas ≥ 2 → ESTRUCTURADA
-  if (state.plantas >= 2) {
-    return 'ESTRUCTURADA';
-  }
-  
-  // Si no cumple nada: queda SIMPLE
   return 'SIMPLE';
 }
 
 const initialState = (): WizardState => ({
-  // ID vacío inicialmente - se generará en el cliente para evitar errores de hidratación
   id: '',
   direccion: '',
   propietario: '',
+  obraProductKind: '',
   tipoObra: '',
   plantas: 1,
   terreno: 0,
+  m2Estimados: 0,
   superficies: [{ planta: 1, cubiertos: 0, descubiertos: 0 }],
   latitud: undefined,
   longitud: undefined,
   fecha_inicio_estimada: undefined,
   modoObra: 'SIMPLE',
-  planPagoActivacion: 'contado',
-  activacionParaPago: null,
+  canvasTemplateSlug: '',
+  canvasTemplateNombre: '',
 });
 
 export const useWizardStore = create<WizardState & WizardActions>((set, get) => ({
   ...initialState(),
   reset: () => set(initialState()),
   setField: (key, value) => set({ [key]: value } as Partial<WizardState>),
-  setPlanPagoActivacion: (plan) =>
-    set((state) => ({
-      ...state,
-      planPagoActivacion: plan,
-      activacionParaPago: null,
-    })),
-  confirmarContinuarActivacionParaPago: () => {
-    const s = get();
-    const m2CubiertosTotales = s.superficies.reduce((acc, sf) => acc + (sf.cubiertos || 0), 0);
-    const r = calculateFee(m2CubiertosTotales, s.planPagoActivacion);
-    set({
-      activacionParaPago: {
-        m2CubiertosTotales,
-        planPago: s.planPagoActivacion,
-        totalUsd: r.totalUsd,
-        installmentUsd: r.installmentUsd,
-        calculoTipo: CALCULO_ACTIVACION_TIPO,
-        subtotalUsd: r.subtotalUsd,
-      },
-    });
-  },
-  setTipoObra: (tipo) => {
+  setObraProductKind: (kind) => {
     set((state) => {
-      const nuevoState = { ...state, tipoObra: tipo };
-      return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
+      const slug = kind ? defaultTemplateSlugForKind(kind) : '';
+      const tpl = slug ? getOfficialTemplateBySlug(slug) : null;
+      return {
+        ...state,
+        obraProductKind: kind,
+        tipoObra: kind,
+        canvasTemplateSlug: slug,
+        canvasTemplateNombre: tpl?.nombre ?? '',
+        modoObra: 'SIMPLE' as ModoObra,
+      };
     });
   },
+  setCanvasTemplate: (slug, nombre) => set({ canvasTemplateSlug: slug, canvasTemplateNombre: nombre }),
   setPlantas: (cantidad) => {
     const current = get();
     const next = Math.max(1, Math.min(5, cantidad));
@@ -153,7 +112,6 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
         ...state,
         plantas: next,
         superficies: [...existing, ...added],
-        activacionParaPago: null,
       };
       return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
     });
@@ -165,12 +123,12 @@ export const useWizardStore = create<WizardState & WizardActions>((set, get) => 
       i === index ? { ...s, [field]: Math.max(0, value) } : s
     );
     set((state) => {
-      const nuevoState = { ...state, superficies: next, activacionParaPago: null };
-      // Recalcular modoObra solo si cambió 'cubiertos' (para m² cubiertos)
+      const nuevoState = { ...state, superficies: next };
       if (field === 'cubiertos') {
-        return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
+        const total = next.reduce((acc, s) => acc + (s.cubiertos || 0), 0);
+        return { ...nuevoState, m2Estimados: total, modoObra: calcularModoObra(nuevoState) };
       }
-      return nuevoState;
+      return { ...nuevoState, modoObra: calcularModoObra(nuevoState) };
     });
   },
   getTotalConstruido: () => {

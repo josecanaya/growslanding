@@ -246,6 +246,10 @@ export async function POST(request: Request) {
         localizacion,
         propietario,
         tipo_obra,
+        obra_product_kind,
+        canvas_template_slug,
+        m2_estimados,
+        fecha_inicio_estimada,
         latitud,
         longitud,
         plantas,
@@ -522,6 +526,19 @@ export async function POST(request: Request) {
       if (estado !== undefined && estado !== null) {
         insertData.estado = estado;
       }
+      if (obra_product_kind) {
+        insertData.obra_product_kind = obra_product_kind;
+      }
+      if (canvas_template_slug) {
+        insertData.canvas_template_slug = canvas_template_slug;
+      }
+      if (m2_estimados !== undefined && m2_estimados !== null) {
+        insertData.m2_estimados = m2_estimados;
+      }
+      if (fecha_inicio_estimada) {
+        insertData.fecha_inicio_estimada = fecha_inicio_estimada;
+      }
+      insertData.canvas_project_kind = 'simple';
 
       const { data, error } = await supabase
         .from('obras')
@@ -535,6 +552,23 @@ export async function POST(request: Request) {
           { error: 'No se pudo crear la obra', details: error.message },
           { status: 500 }
         );
+      }
+
+      if (data?.id && canvas_template_slug) {
+        try {
+          const { seedCanvasFromTemplateIfEmpty } = await import(
+            '@/lib/services/canvas-template-seed.service'
+          );
+          await seedCanvasFromTemplateIfEmpty({
+            supabase,
+            obraId: data.id,
+            orgId: org_id,
+            templateSlug: canvas_template_slug,
+            obraNombre: nombre,
+          });
+        } catch (seedErr) {
+          console.warn('[POST_OBRAS] Seed canvas template:', seedErr);
+        }
       }
 
       console.log('[POST_OBRAS] Obra creada exitosamente:', data?.id);

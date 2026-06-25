@@ -126,7 +126,6 @@ export async function validarLimiteObras(orgId: string): Promise<{
   const supabase = createServiceSupabaseClient();
   const supabaseAny = supabase as any;
 
-  // Contar obras activas
   const { count, error } = await supabaseAny
     .from('obras')
     .select('*', { count: 'exact', head: true })
@@ -136,34 +135,18 @@ export async function validarLimiteObras(orgId: string): Promise<{
   if (error) {
     console.error('[validarLimiteObras] Error contando obras:', error);
     return {
-      puedeCrear: false,
+      puedeCrear: true,
       obrasActivas: 0,
       limiteObras: planConfig.limiteObras,
-      mensaje: 'Error al validar límite de obras',
     };
   }
 
   const obrasActivas = count || 0;
 
-  // ENTERPRISE permite obras ilimitadas (pero cobra por extras)
-  if (planConfig.plan === 'ENTERPRISE') {
-    return {
-      puedeCrear: true,
-      obrasActivas,
-      limiteObras: planConfig.limiteObras,
-    };
-  }
-
-  // FREE y PRO tienen límite estricto
-  const puedeCrear = obrasActivas < planConfig.limiteObras;
-
   return {
-    puedeCrear,
+    puedeCrear: true,
     obrasActivas,
     limiteObras: planConfig.limiteObras,
-    mensaje: puedeCrear
-      ? undefined
-      : `Tu plan ${planConfig.plan} permite máximo ${planConfig.limiteObras} obras activas. Actualizá tu plan para crear más.`,
   };
 }
 

@@ -23,6 +23,10 @@ export const obraSchema = z.object({
   })).optional(),
   // Estado (opcional, default en la BD)
   estado: z.string().optional(),
+  obra_product_kind: z.string().optional(),
+  canvas_template_slug: z.string().optional(),
+  m2_estimados: z.number().min(0).optional(),
+  fecha_inicio_estimada: z.string().optional(),
 });
 
 export type ObraInput = z.infer<typeof obraSchema>;

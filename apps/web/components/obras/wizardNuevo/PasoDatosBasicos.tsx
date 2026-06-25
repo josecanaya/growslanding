@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { Building2 } from 'lucide-react';
-import { useWizardStore, type TipoObra } from './useWizardStore';
-import { WIZARD_TIPO_OBRA_OPCIONES } from '@/lib/canvas/canvasProjectProfile';
+import { useWizardStore } from './useWizardStore';
+import { WIZARD_OBRA_PRODUCT_OPCIONES } from '@/lib/canvas/obraProductKind';
+import type { ObraProductKind } from '@/lib/canvas/obraProductKind';
 import DireccionAutocomplete from '../wizard/DireccionAutocomplete';
 import ModalMapa from '../wizard/ModalMapa';
 import {
@@ -21,6 +22,7 @@ interface PasoDatosBasicosProps {
 export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const id = useWizardStore((s) => s.id);
   const propietario = useWizardStore((s) => s.propietario);
+  const obraProductKind = useWizardStore((s) => s.obraProductKind);
   const tipoObra = useWizardStore((s) => s.tipoObra);
   const direccion = useWizardStore((s) => s.direccion);
   const latitud = useWizardStore((s) => s.latitud);
@@ -31,7 +33,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   const modoObra = useWizardStore((s) => s.modoObra);
   const setField = useWizardStore((s) => s.setField);
   const ensureId = useWizardStore((s) => s.ensureId);
-  const setTipoObra = useWizardStore((s) => s.setTipoObra);
+  const setObraProductKind = useWizardStore((s) => s.setObraProductKind);
   const setPlantas = useWizardStore((s) => s.setPlantas);
   const updatePlantaSuperficie = useWizardStore((s) => s.updatePlantaSuperficie);
 
@@ -42,16 +44,14 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
   }, [ensureId]);
 
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [otroDetalle, setOtroDetalle] = useState('');
 
   const puedeContinuar = useMemo(() => {
     const dir = (direccion ?? '').trim();
     const prop = (propietario ?? '').trim();
     const fechaValida =
       !!fecha_inicio_estimada && fecha_inicio_estimada >= new Date().toISOString().split('T')[0];
-    const otroOk = tipoObra !== 'otro' || (otroDetalle?.trim().length ?? 0) >= 2;
-    return dir.length > 3 && prop.length > 2 && !!tipoObra && fechaValida && otroOk;
-  }, [direccion, propietario, tipoObra, fecha_inicio_estimada, otroDetalle]);
+    return dir.length > 3 && prop.length > 2 && !!obraProductKind && fechaValida;
+  }, [direccion, propietario, obraProductKind, fecha_inicio_estimada]);
 
   const handleDireccionChange = (value: { direccion: string; lat?: number; lng?: number }) => {
     setField('direccion', value.direccion);
@@ -153,16 +153,13 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
           <div className="flex flex-col gap-3">
             <label className={hubLabel()}>Tipo de obra</label>
             <div className="flex flex-wrap gap-2">
-              {WIZARD_TIPO_OBRA_OPCIONES.map((opt) => {
-                const active = tipoObra === opt.kind;
+              {WIZARD_OBRA_PRODUCT_OPCIONES.map((opt) => {
+                const active = obraProductKind === opt.kind;
                 return (
                   <button
                     key={opt.kind}
                     type="button"
-                    onClick={() => {
-                      setTipoObra(opt.kind as TipoObra);
-                      if (opt.kind !== 'otro') setOtroDetalle('');
-                    }}
+                    onClick={() => setObraProductKind(opt.kind as ObraProductKind)}
                     className={`rounded-full px-4 py-2.5 text-sm font-semibold transition active:scale-95 ${
                       active
                         ? 'bg-[#002b49] text-white shadow-sm'
@@ -174,15 +171,6 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
                 );
               })}
             </div>
-
-            {tipoObra === 'otro' ? (
-              <input
-                placeholder="Describí el tipo de obra"
-                value={otroDetalle}
-                onChange={(e) => setOtroDetalle(e.target.value)}
-                className={hubInput()}
-              />
-            ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -205,7 +193,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className={hubLabel()}>Metros cubiertos (plantas baja / resumen rápido)</label>
+              <label className={hubLabel()}>m² estimados</label>
               <div className="flex items-center overflow-hidden rounded-lg bg-[#f0f4f8] ring-2 ring-transparent focus-within:ring-[#24a375]">
                 <input
                   type="number"
@@ -228,14 +216,7 @@ export default function PasoDatosBasicos({ onNext }: PasoDatosBasicosProps) {
             </div>
           </div>
 
-          {modoObra === 'ESTRUCTURADA' ? (
-            <div className="flex gap-3 rounded-xl border border-[#cfe5ff]/80 bg-[#f6fafe] p-4">
-              <Building2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#002b49]" />
-              <p className="text-sm font-medium text-[#274969]">
-                Activamos herramientas avanzadas por el tamaño/tipo de obra.
-              </p>
-            </div>
-          ) : null}
+          {null}
 
           <div className="mt-10 flex flex-col-reverse gap-3 border-t border-[#eaeef2] pt-8 sm:flex-row sm:justify-end">
             <button

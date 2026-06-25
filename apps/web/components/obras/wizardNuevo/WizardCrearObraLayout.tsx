@@ -15,7 +15,7 @@ const STEPHUB_META = [
     headline: 'Superficie',
     subtitle: 'Superficies por planta, terreno e indicadores',
   },
-  { id: 3, headline: 'Activación', subtitle: 'Revisión final y alta de obra' },
+  { id: 3, headline: 'Template', subtitle: 'Elegí el plan de tareas y creá la obra' },
 ] as const;
 
 function WizardCrearObraLayout() {

@@ -6,6 +6,7 @@ import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import { persistedToSupabaseRows, supabaseRowsToPersisted } from '@/lib/canvas/canvasSupabaseMapper';
+import { trySeedCanvasForObra } from '@/lib/services/canvas-template-seed.service';
 import {
   isMissingOptionalBudgetGroupSocioColumnsError,
   stripBudgetGroupSocioOptionalFields,
@@ -76,6 +77,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!gate.ok) {
       return NextResponse.json({ success: false, message: gate.message }, { status: gate.status });
     }
+
+    await trySeedCanvasForObra(supabase, obraId, gate.org_id);
 
     const supabaseAny = supabase as any;
 

@@ -32,8 +32,7 @@ import {
   staggerPosition,
 } from './canvasMultinivelHelpers';
 import { getDescendantTaskIds } from '@/lib/canvas/budgetGroupTree';
-import { getOfficialTemplateBySlug } from '@/lib/canvas/officialCanvasTemplates';
-import { mergeTemplateIntoCanvas } from '@/lib/canvas/mergeTemplateIntoCanvas';
+import { loadCanvasTemplateImportBundle } from '@/lib/canvas/importCanvasTemplateFromXml';
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -722,51 +721,29 @@ export function useCanvasMultinivel(obraId: string) {
 
   const applyTemplateBySlug = useCallback(
     async (slug: string) => {
-      let template = getOfficialTemplateBySlug(slug);
-      if (!template) {
-        const res = await fetch(`/api/canvas-templates?slug=${encodeURIComponent(slug)}`);
-        const j = await res.json();
-        const row = Array.isArray(j.data) ? j.data[0] : null;
-        if (row) {
-          template = {
-            id: row.slug,
-            slug: row.slug,
-            nombre: row.nombre,
-            obraProductKind: isObraProductKind(row.obra_product_kind)
-              ? row.obra_product_kind
-              : 'trabajo_simple',
-            visibilidad: row.visibilidad ?? 'oficial',
-            descripcion: row.descripcion,
-            tareas: (row.tareas ?? []).map((t: { id?: string; titulo: string; orden: number; duracion_estimada_dias?: number }) => ({
-              id: t.id ?? `${row.slug}-t${t.orden}`,
-              titulo: t.titulo,
-              orden: t.orden,
-              duracionEstimadaDias: t.duracion_estimada_dias ?? 1,
-            })),
-            conexiones: [],
-          };
-        }
+      try {
+        const bundle = await loadCanvasTemplateImportBundle(slug);
+        setNodes(bundle.nodes);
+        setEdges(bundle.edges);
+        setPathIds([]);
+        setProjectKind(bundle.projectKind);
+        setSelectedId(null);
+        const snapshot = composeCanvasPersisted({
+          obraNombre,
+          nodes: bundle.nodes,
+          pathIds: [],
+          edges: bundle.edges,
+          budgetGroups,
+          projectKind: bundle.projectKind,
+        });
+        return { ok: true as const, snapshot };
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : 'No se pudo cargar el template (XML)';
+        return { ok: false as const, message };
       }
-      if (!template) {
-        return { ok: false as const, message: 'Template no encontrado' };
-      }
-      const merged = mergeTemplateIntoCanvas(nodes, edges, template);
-      setNodes(merged.nodes);
-      setEdges(merged.edges);
-      setPathIds(merged.pathIds);
-      setProjectKind('simple');
-      setSelectedId(null);
-      const snapshot = composeCanvasPersisted({
-        obraNombre,
-        nodes: merged.nodes,
-        pathIds: merged.pathIds,
-        edges: merged.edges,
-        budgetGroups,
-        projectKind: 'simple',
-      });
-      return { ok: true as const, snapshot };
     },
-    [nodes, edges, obraNombre, budgetGroups],
+    [obraNombre, budgetGroups],
   );
 
   const applyImportedCanvas = useCallback(

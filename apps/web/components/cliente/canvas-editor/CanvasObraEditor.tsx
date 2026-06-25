@@ -131,13 +131,26 @@ export function CanvasObraEditor({ obraId }: Props) {
 
   const handleApplyTemplate = useCallback(
     async (slug: string) => {
+      if (nodes.length > 0) {
+        const ok = window.confirm(
+          '¿Reemplazar el canvas actual por este template? Es el mismo proceso que importar un XML.',
+        );
+        if (!ok) return;
+      }
       setApplyingTemplateSlug(slug);
       try {
         const result = await applyTemplateBySlug(slug);
         if (result.ok) {
           setLibraryOpen(false);
+          setPlanWizardOpen(false);
           if (result.snapshot) {
-            await saveCanvasSnapshotToCloud(result.snapshot);
+            const saved = await saveCanvasSnapshotToCloud(result.snapshot);
+            if (!saved.ok) {
+              window.alert(
+                saved.message ??
+                  'El plan se cargó en pantalla pero no se pudo guardar en la nube. Usá Guardar.',
+              );
+            }
           } else {
             await saveCanvasSnapshotToCloud();
           }
@@ -148,7 +161,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         setApplyingTemplateSlug(null);
       }
     },
-    [applyTemplateBySlug, saveCanvasSnapshotToCloud],
+    [applyTemplateBySlug, saveCanvasSnapshotToCloud, nodes.length],
   );
 
   const prevCloudSaveRef = useRef<typeof cloudSaveState>(cloudSaveState);
@@ -419,8 +432,8 @@ export function CanvasObraEditor({ obraId }: Props) {
         <div className="rounded-2xl border border-dashed border-[#bcc3d9] bg-white/85 px-6 py-10 text-center text-[#596574]">
           <p className="text-base font-bold text-[#0f1e1f]">Todavía no hay plan en el canvas</p>
           <p className="mx-auto mt-2 max-w-md text-sm">
-            Respondé unas preguntas y generamos un plan base, o elegí un pack de la librería. Después editás tareas y
-            precedencias acá.
+            Filtrá la librería XML con unas preguntas o elegí un plan directo. Al seleccionarlo se importa al canvas
+            automáticamente.
           </p>
           <div className="mx-auto mt-6 flex max-w-sm flex-col gap-3 sm:flex-row sm:justify-center">
             <button
@@ -428,7 +441,7 @@ export function CanvasObraEditor({ obraId }: Props) {
               onClick={() => setPlanWizardOpen(true)}
               className="rounded-xl bg-[#002b49] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#02446f]"
             >
-              Armar plan con preguntas
+              Armar plan (filtrar librería XML)
             </button>
             <button
               type="button"
@@ -659,11 +672,8 @@ export function CanvasObraEditor({ obraId }: Props) {
         open={planWizardOpen}
         onClose={() => setPlanWizardOpen(false)}
         defaultObraProductKind={obraProductKind}
-        applying={applyingTemplateSlug != null}
-        onApplySlug={(slug) => {
-          setPlanWizardOpen(false);
-          void handleApplyTemplate(slug);
-        }}
+        applyingSlug={applyingTemplateSlug}
+        onApplySlug={(slug) => void handleApplyTemplate(slug)}
       />
 
       {cloudSaveMessage ? (

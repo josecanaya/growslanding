@@ -1,24 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Sparkles, X } from 'lucide-react';
 import {
   WIZARD_OBRA_PRODUCT_OPCIONES,
   isObraProductKind,
   type ObraProductKind,
 } from '@/lib/canvas/obraProductKind';
-import {
-  resolveTemplateSlugFromPlanWizard,
-  type TrabajoSimpleDetalle,
-} from '@/lib/canvas/resolvePlanFromAnswers';
-import { getOfficialTemplateBySlug } from '@/lib/canvas/officialCanvasTemplates';
+import { filterCanvasXmlLibrary, listCanvasXmlLibrary } from '@/lib/canvas/canvasXmlLibrary';
+import type { TrabajoSimpleDetalle } from '@/lib/canvas/canvasXmlLibraryFilters';
+import { CanvasXmlLibraryList } from './CanvasXmlLibraryList';
 
 type Props = {
   open: boolean;
   onClose: () => void;
   defaultObraProductKind?: string | null;
   onApplySlug: (slug: string) => void;
-  applying?: boolean;
+  applyingSlug?: string | null;
 };
 
 export function CanvasPlanWizardModal({
@@ -26,25 +24,38 @@ export function CanvasPlanWizardModal({
   onClose,
   defaultObraProductKind,
   onApplySlug,
-  applying,
+  applyingSlug,
 }: Props) {
   const initialKind = isObraProductKind(defaultObraProductKind ?? '')
-    ? defaultObraProductKind
+    ? (defaultObraProductKind as ObraProductKind)
     : 'trabajo_simple';
 
-  const [kind, setKind] = useState<ObraProductKind>(initialKind as ObraProductKind);
+  const [kind, setKind] = useState<ObraProductKind>(initialKind);
   const [detalle, setDetalle] = useState<TrabajoSimpleDetalle>('otro');
+  const library = useMemo(() => listCanvasXmlLibrary(), []);
 
-  const previewSlug = useMemo(
+  const filtered = useMemo(
     () =>
-      resolveTemplateSlugFromPlanWizard({
+      filterCanvasXmlLibrary(library, {
         obraProductKind: kind,
         trabajoSimpleDetalle: kind === 'trabajo_simple' ? detalle : undefined,
       }),
-    [kind, detalle],
+    [library, kind, detalle],
   );
 
-  const preview = getOfficialTemplateBySlug(previewSlug);
+  const autoAppliedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      autoAppliedRef.current = null;
+      return;
+    }
+    if (applyingSlug || filtered.length !== 1) return;
+    const slug = filtered[0]!.slug;
+    if (autoAppliedRef.current === slug) return;
+    autoAppliedRef.current = slug;
+    onApplySlug(slug);
+  }, [open, applyingSlug, filtered, onApplySlug]);
 
   if (!open) return null;
 
@@ -59,7 +70,7 @@ export function CanvasPlanWizardModal({
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-[#24a375]" />
             <h2 id="plan-wizard-title" className="text-lg font-bold text-[#001629]">
-              Armar plan inicial
+              Elegir plan desde la librería XML
             </h2>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-2 hover:bg-[#f1f5f9]" aria-label="Cerrar">
@@ -67,15 +78,22 @@ export function CanvasPlanWizardModal({
           </button>
         </div>
 
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+        <p className="border-b border-[#f1f5f9] px-5 py-2 text-xs text-[#64748b]">
+          Las preguntas filtran la librería. Al tocar un plan se importa al canvas igual que un XML de Archivo.
+        </p>
+
+        <div className="flex-1 space-y-5 overflow-y-auto px-5 py-5">
           <div>
-            <p className="text-sm font-semibold text-[#001629]">1. ¿Qué tipo de obra es?</p>
+            <p className="text-sm font-semibold text-[#001629]">Tipo de obra</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {WIZARD_OBRA_PRODUCT_OPCIONES.map((opt) => (
                 <button
                   key={opt.kind}
                   type="button"
-                  onClick={() => setKind(opt.kind)}
+                  onClick={() => {
+                    setKind(opt.kind);
+                    autoAppliedRef.current = null;
+                  }}
                   className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                     kind === opt.kind
                       ? 'border-[#002b49] bg-[#002b49] text-white'
@@ -90,19 +108,22 @@ export function CanvasPlanWizardModal({
 
           {kind === 'trabajo_simple' ? (
             <div>
-              <p className="text-sm font-semibold text-[#001629]">2. ¿Qué intervención es?</p>
+              <p className="text-sm font-semibold text-[#001629]">Intervención</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(
                   [
                     ['porton', 'Colocar portón'],
                     ['puerta', 'Puerta interior'],
-                    ['otro', 'Otro trabajo acotado'],
+                    ['otro', 'Ver todos los trabajos simples'],
                   ] as const
                 ).map(([id, label]) => (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setDetalle(id)}
+                    onClick={() => {
+                      setDetalle(id);
+                      autoAppliedRef.current = null;
+                    }}
                     className={`rounded-lg border px-3 py-2 text-sm ${
                       detalle === id
                         ? 'border-[#24a375] bg-[#ecfdf5] font-semibold text-[#065f46]'
@@ -114,41 +135,21 @@ export function CanvasPlanWizardModal({
                 ))}
               </div>
             </div>
-          ) : (
-            <p className="text-sm text-[#64748b]">
-              Usamos el plan base de la librería para este tipo. Después podés sumar packs o editar tareas en el
-              canvas.
-            </p>
-          )}
-
-          {preview ? (
-            <div className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-[#64748b]">Vista previa</p>
-              <p className="mt-1 font-semibold text-[#001629]">{preview.nombre}</p>
-              {preview.descripcion ? (
-                <p className="mt-1 text-xs text-[#64748b]">{preview.descripcion}</p>
-              ) : null}
-              <p className="mt-2 text-[11px] text-[#475569]">{preview.tareas.length} tareas en secuencia</p>
-            </div>
           ) : null}
-        </div>
 
-        <div className="flex gap-3 border-t border-[#e2e8f0] px-5 py-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-lg border border-[#cbd5e1] py-2.5 text-sm font-semibold text-[#334155]"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            disabled={applying || !previewSlug}
-            onClick={() => onApplySlug(previewSlug)}
-            className="flex-1 rounded-lg bg-[#002b49] py-2.5 text-sm font-semibold text-white hover:bg-[#02446f] disabled:opacity-50"
-          >
-            {applying ? 'Generando…' : 'Generar plan en el canvas'}
-          </button>
+          <div>
+            <p className="mb-3 text-sm font-semibold text-[#001629]">
+              Planes disponibles ({filtered.length})
+            </p>
+            {filtered.length === 1 && !applyingSlug ? (
+              <p className="mb-2 text-xs text-[#64748b]">Un solo resultado: se carga automáticamente al canvas…</p>
+            ) : null}
+            <CanvasXmlLibraryList
+              entries={filtered}
+              applyingSlug={applyingSlug}
+              onSelect={onApplySlug}
+            />
+          </div>
         </div>
       </div>
     </div>

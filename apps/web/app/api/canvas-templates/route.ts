@@ -1,59 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  listOfficialTemplatesForKind,
-  OFFICIAL_CANVAS_TEMPLATES,
-  getOfficialTemplateBySlug,
-} from '@/lib/canvas/officialCanvasTemplates';
+import { listCanvasXmlLibrary, getCanvasXmlLibraryEntry } from '@/lib/canvas/canvasXmlLibrary';
+import { filterCanvasXmlLibrary } from '@/lib/canvas/canvasXmlLibraryFilters';
 import { isObraProductKind } from '@/lib/canvas/obraProductKind';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/canvas-templates
- * Query: obra_product_kind (opcional)
- * Sprint 1: catálogo oficial en código (+ futuro merge con Supabase).
+ * Catálogo desde canvas-library-catalog.json + XML en public/.
  */
 export async function GET(request: NextRequest) {
   const kind = request.nextUrl.searchParams.get('obra_product_kind');
-  const visibilidad = request.nextUrl.searchParams.get('visibilidad');
-
-  let templates = [...OFFICIAL_CANVAS_TEMPLATES];
-
-  if (kind && isObraProductKind(kind)) {
-    templates = listOfficialTemplatesForKind(kind);
-  }
-
+  const segment = request.nextUrl.searchParams.get('segment');
   const slug = request.nextUrl.searchParams.get('slug');
+
+  let templates = listCanvasXmlLibrary();
+
   if (slug) {
-    const one = templates.find((t) => t.slug === slug) ?? getOfficialTemplateBySlug(slug);
+    const one = getCanvasXmlLibraryEntry(slug);
     if (!one) {
       return NextResponse.json({ success: false, error: 'Template no encontrado' }, { status: 404 });
     }
     templates = [one];
-  }
-
-  if (visibilidad === 'oficial') {
-    templates = templates.filter((t) => t.visibilidad === 'oficial');
+  } else {
+    templates = filterCanvasXmlLibrary(templates, {
+      segment: segment as Parameters<typeof filterCanvasXmlLibrary>[1]['segment'],
+      obraProductKind: kind && isObraProductKind(kind) ? kind : undefined,
+    });
   }
 
   return NextResponse.json({
     success: true,
     data: templates.map((t) => ({
-      id: t.id,
       slug: t.slug,
       nombre: t.nombre,
+      segment: t.segment,
+      xml_url: t.xmlPath,
       obra_product_kind: t.obraProductKind,
-      visibilidad: t.visibilidad,
+      rubro: t.rubro,
+      subtipo: t.subtipo,
       descripcion: t.descripcion,
-      tareas: t.tareas.map((task) => ({
-        id: task.id,
-        titulo: task.titulo,
-        descripcion: task.descripcion,
-        orden: task.orden,
-        duracion_estimada_dias: task.duracionEstimadaDias ?? 1,
-        tipo: task.tipo ?? 'tarea',
-      })),
-      conexiones: t.conexiones,
+      task_count: t.taskCount,
+      tags: t.tags,
+      filtro_unidad: t.filtroUnidad,
+      m2_min: t.m2Min,
+      m2_max: t.m2Max,
+      unidades_min: t.unidadesMin,
+      unidades_max: t.unidadesMax,
     })),
     count: templates.length,
   });

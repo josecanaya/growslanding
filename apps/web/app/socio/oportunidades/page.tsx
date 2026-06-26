@@ -36,6 +36,16 @@ function OportunidadesContent() {
 
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [seguimiento, setSeguimiento] = useState<Solicitud[]>([]);
+  const [bolsaPliegos, setBolsaPliegos] = useState<
+    Array<{
+      obra_id: string;
+      obra_name: string;
+      budget_group_id: string;
+      pliego_nombre: string;
+      cantidad_tareas: number;
+    }>
+  >([]);
+  const [postulandoId, setPostulandoId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<FiltroOpo>('presupuestar');
@@ -90,6 +100,16 @@ function OportunidadesContent() {
               seguimientoRaw as Parameters<typeof ordenarSolicitudesPorPrioridad>[0],
             ) as unknown as Solicitud[],
           );
+          const bolsaRes = await fetch('/api/socio/bolsa-pliegos', {
+            credentials: 'include',
+            cache: 'no-store',
+          });
+          const bolsaJson = await bolsaRes.json().catch(() => ({}));
+          if (bolsaRes.ok && bolsaJson.ok && Array.isArray(bolsaJson.pliegos)) {
+            setBolsaPliegos(bolsaJson.pliegos);
+          } else {
+            setBolsaPliegos([]);
+          }
         }
       } catch {
         setError('No se pudieron cargar las oportunidades');
@@ -110,6 +130,34 @@ function OportunidadesContent() {
     }
     return list;
   }, [solicitudes, seguimiento, filtro]);
+
+  const postularBolsa = async (p: {
+    obra_id: string;
+    budget_group_id: string;
+    pliego_nombre: string;
+  }) => {
+    const key = `${p.obra_id}:${p.budget_group_id}`;
+    setPostulandoId(key);
+    try {
+      const res = await fetch('/api/socio/bolsa-pliegos', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ obraId: p.obra_id, budgetGroupId: p.budget_group_id }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok || !j.ok) {
+        window.alert(typeof j.error === 'string' ? j.error : 'No se pudo postular al pliego.');
+        return;
+      }
+      setBolsaPliegos((prev) =>
+        prev.filter((x) => !(x.obra_id === p.obra_id && x.budget_group_id === p.budget_group_id)),
+      );
+      router.push(`/socio/presupuestos?obra_id=${encodeURIComponent(p.obra_id)}`);
+    } finally {
+      setPostulandoId(null);
+    }
+  };
 
   const filtros: { id: FiltroOpo; label: string }[] = [
     { id: 'presupuestar', label: 'Por presupuestar' },
@@ -213,6 +261,37 @@ function OportunidadesContent() {
       </StitchStickySubheader>
 
       <div className={STITCH_INNER + ' pt-2'}>
+        {filtro === 'presupuestar' && bolsaPliegos.length > 0 ? (
+          <div className="mb-4 space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-wider text-stitch-on-surface/55">
+              Bolsa — paquetes abiertos
+            </p>
+            {bolsaPliegos.map((p) => {
+              const key = `${p.obra_id}:${p.budget_group_id}`;
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col gap-3 rounded-xl border border-stitch-primary/20 bg-stitch-surface-container-lowest px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div>
+                    <p className="font-bold text-stitch-primary">{p.pliego_nombre}</p>
+                    <p className="text-xs text-stitch-on-surface/65">
+                      {p.obra_name} · {p.cantidad_tareas} tarea{p.cantidad_tareas === 1 ? '' : 's'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={postulandoId === key}
+                    onClick={() => void postularBolsa(p)}
+                    className="rounded-full bg-stitch-primary px-4 py-2 text-xs font-bold text-white disabled:opacity-60"
+                  >
+                    {postulandoId === key ? 'Postulando…' : 'Quiero presupuestar'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
         {filas.length === 0 ? (
           <div className="rounded-xl border border-dashed border-stitch-outline/35 bg-stitch-surface-container-lowest py-12 text-center text-sm text-stitch-on-surface/65">
             No hay oportunidades con este criterio.

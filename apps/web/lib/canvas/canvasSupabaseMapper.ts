@@ -82,6 +82,9 @@ type DbBgRow = {
   change_window_status?: string | null;
   change_window_notes?: string | null;
   approved_at?: string | null;
+  bolsa_publicada?: boolean | null;
+  publicado_a_agenda?: boolean | null;
+  pliego_publicado_at?: string | null;
 };
 
 type DbCheckRow = {
@@ -330,6 +333,9 @@ export function supabaseRowsToPersisted(input: {
       mensajeSocioBorrador: row.mensaje_socio_borrador ?? null,
       changeWindowStatus: row.change_window_status ?? 'cerrada',
       changeWindowNotes: row.change_window_notes ?? null,
+      bolsaPublicada: Boolean(row.bolsa_publicada),
+      publicadoAAgenda: Boolean(row.publicado_a_agenda),
+      pliegoPublicadoAt: row.pliego_publicado_at ?? null,
     };
   });
 

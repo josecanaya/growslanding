@@ -234,6 +234,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           g.mensaje_socio_borrador !== undefined
             ? g.mensaje_socio_borrador
             : (prev?.mensaje_socio_borrador as string | null | undefined) ?? null,
+        bolsa_publicada:
+          prev?.bolsa_publicada !== undefined ? Boolean(prev.bolsa_publicada) : false,
+        publicado_a_agenda:
+          prev?.publicado_a_agenda !== undefined ? Boolean(prev.publicado_a_agenda) : false,
+        pliego_publicado_at: (prev?.pliego_publicado_at as string | null | undefined) ?? null,
+        change_window_status:
+          (prev?.change_window_status as string | null | undefined) ?? 'cerrada',
+        change_window_notes: (prev?.change_window_notes as string | null | undefined) ?? null,
+        approved_at: (prev?.approved_at as string | null | undefined) ?? null,
       };
     });
 

@@ -140,6 +140,10 @@ function ObraCompletaFlowInner({
               <strong className="text-[#0f172a]">{graph.projectDuration}d</strong> · críticas{' '}
               <strong className="text-[#15803d]">{criticalCount}</strong>
             </p>
+            <p className="mt-1 text-[10px] leading-snug text-[#94a3b8]">
+              Izquierda → derecha = calendario (día de inicio ES). Cada franja horizontal es una fase.
+              Los huecos en X son espera entre fases o holgura del plan.
+            </p>
             <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-[#334155]">
               <input
                 type="checkbox"

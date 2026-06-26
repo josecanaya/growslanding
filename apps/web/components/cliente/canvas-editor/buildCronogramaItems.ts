@@ -112,7 +112,6 @@ export function computeGlobalTaskSchedule(
     }
   }
 
-  const etapas = nodes.filter((n) => n.type === 'etapa');
   const gateOffset = computeMacroGateOffsets(nodes, edges, localByTask);
 
   for (const t of tasks) {
@@ -130,30 +129,6 @@ export function computeGlobalTaskSchedule(
         localEdges,
       );
       if (localCpm?.byId.get(t.id)?.isCritical) isCritical = true;
-    }
-    const etapa = findAncestor(byId, t.id, 'etapa');
-    if (etapa) {
-      const etapaSiblings = etapas.filter((e) => e.parentId === etapa.parentId);
-      const etapaParentId = etapa.parentId;
-      const etapaEdges = edgesForSiblingLevel(etapaParentId, nodes, edges).filter(
-        (e) => etapas.some((x) => x.id === e.sourceId) && etapas.some((x) => x.id === e.targetId),
-      );
-      const etapaDurations = new Map<string, number>();
-      for (const e of etapaSiblings) {
-        const descTasks = collectDescendantTasks(nodes, e.id);
-        let maxEf = 0;
-        for (const dt of descTasks) {
-          const l = localByTask.get(dt.id);
-          if (l) maxEf = Math.max(maxEf, l.ef);
-        }
-        etapaDurations.set(e.id, Math.max(1, maxEf));
-      }
-      const etapaNodesForCpm: CanvasNode[] = etapaSiblings.map((e) => ({
-        ...e,
-        duracionDias: etapaDurations.get(e.id) ?? 1,
-      }));
-      const etapaCpm = computeCanvasTaskCpm(etapaNodesForCpm, etapaEdges);
-      if (etapaCpm?.byId.get(etapa.id)?.isCritical) isCritical = true;
     }
     absolute.set(t.id, { es, ef, isCritical });
   }

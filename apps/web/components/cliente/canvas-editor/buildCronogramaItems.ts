@@ -92,7 +92,7 @@ function scheduleTasksInContainer(
 }
 
 /** Programación jerárquica: CPM por contenedor de tareas + CPM entre fases. */
-function scheduleHierarchical(
+export function computeGlobalTaskSchedule(
   nodes: CanvasNode[],
   edges: CanvasPrecedenceEdge[],
 ): Map<string, { es: number; ef: number; isCritical: boolean }> {
@@ -185,7 +185,7 @@ export function buildCronogramaItems(
   if (tasks.length === 0) return [];
 
   const byId = byIdMap(nodes);
-  const schedule = scheduleHierarchical(nodes, edges);
+  const schedule = computeGlobalTaskSchedule(nodes, edges);
   const items: CronogramaItem[] = [];
 
   for (const t of tasks) {

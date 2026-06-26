@@ -9,11 +9,15 @@ import {
   edgeKind,
   mergeUniqueEdges,
 } from './obraCompletaVinculos';
+import { buildFaseColorMap } from './obraCompletaFaseColors';
+import type { FaseColorStyle } from './obraCompletaFaseColors';
 
 export type ObraCompletaTaskMetrics = {
   taskId: string;
   title: string;
   breadcrumb: string;
+  faseLabel: string;
+  faseColor: FaseColorStyle;
   duration: number;
   es: number;
   ef: number;
@@ -21,7 +25,6 @@ export type ObraCompletaTaskMetrics = {
   lf: number;
   float: number;
   isCritical: boolean;
-  code: string;
 };
 
 export type ObraCompletaGraph = {
@@ -36,7 +39,7 @@ export type ObraCompletaGraph = {
 };
 
 const NODE_W = 92;
-const NODE_H = 76;
+const NODE_H = 88;
 const LAYER_GAP_X = 36;
 const ROW_GAP_Y = 14;
 const PADDING = 48;
@@ -141,9 +144,14 @@ function breadcrumbForTask(byId: Map<string, CanvasNode>, taskId: string): strin
   return [etapa?.title, dept?.title, ambiente?.title].filter(Boolean).join(' · ') || 'Obra';
 }
 
-function taskCode(index: number): string {
-  if (index < 26) return String.fromCharCode(65 + index);
-  return `T${index + 1}`;
+function defaultFaseColor(label: string): FaseColorStyle {
+  return {
+    key: label,
+    border: '#64748b',
+    bg: '#f8fafc',
+    bar: '#64748b',
+    text: '#334155',
+  };
 }
 
 function computeLateTimes(
@@ -215,15 +223,23 @@ export function buildObraCompletaGraph(
   const allEdges = mergeUniqueEdges(userTaskEdges, macroBridges, implicitChains);
   const lateMap = computeLateTimes(tasks, schedule, allEdges);
 
-  const metrics: ObraCompletaTaskMetrics[] = tasks.map((t, idx) => {
+  const faseNames = tasks.map((t) => breadcrumbFase(breadcrumbForTask(byId, t.id)));
+  const faseColors = buildFaseColorMap(faseNames);
+
+  const metrics: ObraCompletaTaskMetrics[] = tasks.map((t) => {
     const dur = Math.max(1, Math.round(t.duracionDias ?? 1));
     const row = schedule.get(t.id) ?? { es: 0, ef: dur };
     const late = lateMap.get(t.id) ?? { ls: row.es, lf: row.ef, float: 0 };
     const manual = Boolean(t.esCritica);
+    const breadcrumb = breadcrumbForTask(byId, t.id);
+    const faseLabel = breadcrumbFase(breadcrumb);
+    const faseColor = faseColors.get(faseLabel) ?? defaultFaseColor(faseLabel);
     return {
       taskId: t.id,
       title: t.title,
-      breadcrumb: breadcrumbForTask(byId, t.id),
+      breadcrumb,
+      faseLabel,
+      faseColor,
       duration: dur,
       es: row.es,
       ef: row.ef,
@@ -231,7 +247,6 @@ export function buildObraCompletaGraph(
       lf: late.lf,
       float: late.float,
       isCritical: manual || late.float === 0,
-      code: taskCode(idx),
     };
   });
 

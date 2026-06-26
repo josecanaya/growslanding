@@ -82,6 +82,14 @@ function ObraCompletaFlowInner({
     [graph.metricsById],
   );
 
+  const faseLegend = useMemo(() => {
+    const byFase = new Map<string, ObraCompletaTaskMetrics['faseColor']>();
+    for (const m of graph.metricsById.values()) {
+      if (!byFase.has(m.faseLabel)) byFase.set(m.faseLabel, m.faseColor);
+    }
+    return [...byFase.entries()].sort(([a], [b]) => a.localeCompare(b, 'es'));
+  }, [graph.metricsById]);
+
   const onNodeClick = useCallback(
     (_: unknown, node: { id: string }) => {
       setSelected(graph.metricsById.get(node.id) ?? null);
@@ -146,11 +154,52 @@ function ObraCompletaFlowInner({
               · {graph.projectDuration}d · críticas {criticalCount}
             </p>
             <p className="mt-1 text-[10px] leading-snug text-[#94a3b8]">
-              Izquierda → derecha = orden de precedencia. Franja = fase. Líneas{' '}
+              Izquierda → derecha = orden de precedencia. Cada caja tiene color de{' '}
+              <span className="font-semibold text-[#334155]">fase</span> (franja superior). Líneas{' '}
               <span className="font-semibold text-amber-700">naranjas (FS)</span> = cierre de fase/piso →
               inicio del siguiente. <span className="text-[#64748b]">Grises (→)</span> = orden en ambiente sin
               vínculos. Verdes = vínculos del canvas.
             </p>
+            <div className="mt-2 rounded-lg border border-[#f1f5f9] bg-[#f8fafc] px-2.5 py-2">
+              <p className="text-[9px] font-black uppercase tracking-wide text-[#64748b]">
+                Cómo leer cada caja
+              </p>
+              <ul className="mt-1 space-y-0.5 text-[10px] leading-snug text-[#475569]">
+                <li>
+                  <span className="font-semibold text-[#b91c1c]">ES / EF</span> (rojo): inicio y fin{' '}
+                  <em>tempranos</em> en días desde el arranque del plan.
+                </li>
+                <li>
+                  <span className="font-semibold text-[#0f172a]">LS / LF</span> (negro): inicio y fin{' '}
+                  <em>tardíos</em> sin retrasar la obra.
+                </li>
+                <li>
+                  Número grande = <span className="font-semibold">duración</span> de la tarea en días.
+                </li>
+                <li>
+                  <span className="font-semibold text-[#16a34a]">H0</span> en flechas = holgura 0 (encadenadas
+                  sin margen).
+                </li>
+              </ul>
+            </div>
+            {faseLegend.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {faseLegend.map(([name, style]) => (
+                  <span
+                    key={name}
+                    className="inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold"
+                    style={{ borderColor: style.border, backgroundColor: style.bg, color: style.text }}
+                    title={name}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: style.bar }}
+                    />
+                    <span className="truncate">{name}</span>
+                  </span>
+                ))}
+              </div>
+            ) : null}
             <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-[#334155]">
               <input
                 type="checkbox"
@@ -218,8 +267,8 @@ function ObraCompletaFlowInner({
         ) : null}
       </ReactFlow>
 
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-1 text-[10px] font-medium text-[#64748b] shadow-sm">
-        <span className="font-bold text-[#16a34a]">Verde</span> = crítico · Esquinas rojas ES/EF · negras LS/LF
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[min(92vw,520px)] -translate-x-1/2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-1 text-center text-[10px] font-medium text-[#64748b] shadow-sm">
+        Color de borde = fase · <span className="font-bold text-[#16a34a]">Anillo verde</span> = camino crítico
       </div>
     </div>
   );

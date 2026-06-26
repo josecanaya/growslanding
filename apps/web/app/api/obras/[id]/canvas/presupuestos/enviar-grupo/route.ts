@@ -8,6 +8,7 @@ import { listAccessibleOrgIds } from '@/lib/orgs';
 import { toDbUuidFromCanvasId, toClientBudgetGroupId } from '@/lib/canvas/canvasSupabaseMapper';
 import { solicitarPresupuestoTareaEnPaquete } from '@/lib/services/solicitar-presupuesto-paquete.service';
 import { socioEsContactoDeOrg } from '@/lib/socios/agenda-access';
+import { MAX_OFERTORES_POR_PLIEGO } from '@/lib/cliente/pliegoPresupuesto';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -124,6 +125,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!budgetGroupIdRaw || socioIds.length === 0) {
       return NextResponse.json(
         { ok: false, error: 'Faltan budgetGroupId o al menos un socio de la agenda.' },
+        { status: 400 },
+      );
+    }
+
+    if (socioIds.length > MAX_OFERTORES_POR_PLIEGO) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `Un pliego admite hasta ${MAX_OFERTORES_POR_PLIEGO} ofertores. Elegí menos socios.`,
+        },
         { status: 400 },
       );
     }

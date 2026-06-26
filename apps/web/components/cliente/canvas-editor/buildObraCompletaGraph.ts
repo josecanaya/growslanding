@@ -29,9 +29,82 @@ export type ObraCompletaGraph = {
 
 const NODE_W = 92;
 const NODE_H = 76;
-const LAYER_GAP_X = 56;
-const ROW_GAP_Y = 28;
+/** Píxeles por día de inicio temprano (eje horizontal = tiempo). */
+const PX_PER_DAY = 32;
+const ROW_GAP_Y = 20;
 const PADDING = 48;
+
+function computeTopoRank(
+  metrics: ObraCompletaTaskMetrics[],
+  taskEdges: CanvasPrecedenceEdge[],
+): Map<string, number> {
+  const ids = new Set(metrics.map((m) => m.taskId));
+  const preds = new Map<string, string[]>();
+  for (const m of metrics) preds.set(m.taskId, []);
+  for (const e of taskEdges) {
+    if (!ids.has(e.sourceId) || !ids.has(e.targetId)) continue;
+    preds.get(e.targetId)!.push(e.sourceId);
+  }
+  const rank = new Map<string, number>();
+  const visiting = new Set<string>();
+  function depth(id: string): number {
+    if (rank.has(id)) return rank.get(id)!;
+    if (visiting.has(id)) return 0;
+    visiting.add(id);
+    let d = 0;
+    for (const p of preds.get(id) ?? []) d = Math.max(d, depth(p) + 1);
+    visiting.delete(id);
+    rank.set(id, d);
+    return d;
+  }
+  for (const m of metrics) depth(m.taskId);
+  return rank;
+}
+
+/**
+ * Eje X = tiempo (ES) + desplazamiento horizontal entre tareas en paralelo.
+ * Eje Y = carril por fase (primera parte del breadcrumb) para no apilar toda la obra en una columna.
+ */
+function layoutHorizontalByTime(
+  metrics: ObraCompletaTaskMetrics[],
+  taskEdges: CanvasPrecedenceEdge[],
+): Map<string, { x: number; y: number }> {
+  const topo = computeTopoRank(metrics, taskEdges);
+  const etapaLanes = new Map<string, number>();
+  let nextLane = 0;
+  for (const m of metrics) {
+    const fase = m.breadcrumb.split(' · ')[0]?.trim() || 'Obra';
+    if (!etapaLanes.has(fase)) etapaLanes.set(fase, nextLane++);
+  }
+
+  const sorted = [...metrics].sort(
+    (a, b) =>
+      a.es - b.es ||
+      (etapaLanes.get(a.breadcrumb.split(' · ')[0] ?? '') ?? 0) -
+        (etapaLanes.get(b.breadcrumb.split(' · ')[0] ?? '') ?? 0) ||
+      a.ef - b.ef ||
+      a.title.localeCompare(b.title),
+  );
+
+  const staggerInCell = new Map<string, number>();
+  const positions = new Map<string, { x: number; y: number }>();
+
+  for (const m of sorted) {
+    const fase = m.breadcrumb.split(' · ')[0]?.trim() || 'Obra';
+    const lane = etapaLanes.get(fase) ?? 0;
+    const cellKey = `${m.es}|${lane}`;
+    const idx = staggerInCell.get(cellKey) ?? 0;
+    staggerInCell.set(cellKey, idx + 1);
+
+    const topoRank = topo.get(m.taskId) ?? 0;
+    positions.set(m.taskId, {
+      x: PADDING + m.es * PX_PER_DAY + topoRank * 24 + idx * (NODE_W + 14),
+      y: PADDING + lane * (NODE_H + ROW_GAP_Y),
+    });
+  }
+
+  return positions;
+}
 
 function findAncestor(
   byId: Map<string, CanvasNode>,
@@ -105,37 +178,6 @@ function computeLateTimes(
   return late;
 }
 
-function layoutByEarlyStart(
-  metrics: ObraCompletaTaskMetrics[],
-): Map<string, { x: number; y: number }> {
-  const layers = new Map<number, ObraCompletaTaskMetrics[]>();
-  for (const m of metrics) {
-    const layer = Math.round(m.es);
-    const list = layers.get(layer) ?? [];
-    list.push(m);
-    layers.set(layer, list);
-  }
-
-  const layerKeys = [...layers.keys()].sort((a, b) => a - b);
-  const positions = new Map<string, { x: number; y: number }>();
-
-  for (let li = 0; li < layerKeys.length; li++) {
-    const layer = layerKeys[li]!;
-    const list = [...(layers.get(layer) ?? [])].sort(
-      (a, b) => a.ef - b.ef || a.title.localeCompare(b.title),
-    );
-    for (let ri = 0; ri < list.length; ri++) {
-      const m = list[ri]!;
-      positions.set(m.taskId, {
-        x: PADDING + li * (NODE_W + LAYER_GAP_X),
-        y: PADDING + ri * (NODE_H + ROW_GAP_Y),
-      });
-    }
-  }
-
-  return positions;
-}
-
 export function buildObraCompletaGraph(
   nodes: CanvasNode[],
   edges: CanvasPrecedenceEdge[],
@@ -182,7 +224,7 @@ export function buildObraCompletaGraph(
   let projectDuration = 0;
   for (const m of metrics) projectDuration = Math.max(projectDuration, m.ef);
 
-  const positions = layoutByEarlyStart(metrics);
+  const positions = layoutHorizontalByTime(metrics, taskEdges);
 
   const rfNodes: Node[] = metrics.map((m) => {
     const pos = positions.get(m.taskId) ?? { x: 0, y: 0 };
@@ -208,7 +250,7 @@ export function buildObraCompletaGraph(
       id: e.id,
       source: e.sourceId,
       target: e.targetId,
-      type: 'smoothstep',
+      type: 'default',
       animated: false,
       selectable: false,
       focusable: false,

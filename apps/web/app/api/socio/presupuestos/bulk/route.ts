@@ -19,6 +19,7 @@ const schema = z.object({
       monto: z.number().nullable().optional(),
       /** Texto libre guardado en `tareas_presupuestos.notas` (JSON) */
       observacion: z.string().max(4000).nullable().optional(),
+      incluye_materiales: z.boolean().optional(),
       estado: z.enum(['PENDIENTE', 'ENVIADO']),
     })
   ).min(1),
@@ -160,6 +161,20 @@ export async function POST(request: NextRequest) {
 
     for (const presupuesto of payload.presupuestos) {
       try {
+        if (presupuesto.estado === 'ENVIADO') {
+          const m = presupuesto.monto;
+          const d = presupuesto.dias_reales;
+          const mOk = m != null && !Number.isNaN(Number(m)) && Number(m) > 0;
+          const dOk = d != null && !Number.isNaN(Number(d)) && Number(d) > 0;
+          if (!mOk || !dOk) {
+            errors.push({
+              tarea_id: presupuesto.tarea_id,
+              error: 'Completá días y monto (mayores a cero) en todas las tareas antes de publicar.',
+            });
+            continue;
+          }
+        }
+
         // Buscar si ya existe
         const { data: existente, error: existenteError } = await supabase
           .from('tareas_presupuestos')
@@ -196,6 +211,10 @@ export async function POST(request: NextRequest) {
           } else {
             delete baseNotas.observacion;
           }
+        }
+
+        if (presupuesto.incluye_materiales !== undefined) {
+          baseNotas.incluye_materiales = presupuesto.incluye_materiales;
         }
 
         const notasMerged =

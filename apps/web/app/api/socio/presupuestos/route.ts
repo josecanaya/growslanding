@@ -5,6 +5,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { IS_DEV_MODE } from '@/lib/config';
 import { socioPuedeAccederDatosObra } from '@/lib/socios/agenda-access';
+import { toClientBudgetGroupId } from '@/lib/canvas/canvasSupabaseMapper';
 import { resolveSocioRecordForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
 
 export const dynamic = 'force-dynamic';
@@ -320,7 +321,7 @@ export async function GET(request: NextRequest) {
 
     const { data: canvasNodesData, error: canvasNodesError } = await (supabase as unknown as any)
       .from('canvas_nodes')
-      .select('id, parent_id, type, title, created_at, metadata')
+      .select('id, parent_id, type, title, created_at, metadata, budget_group_id')
       .eq('obra_id', obraId);
 
     if (canvasNodesError) {
@@ -334,7 +335,23 @@ export async function GET(request: NextRequest) {
       title: string;
       created_at: string;
       metadata?: Record<string, unknown> | null;
+      budget_group_id?: string | null;
     }>;
+
+    const { data: budgetGroupsData, error: budgetGroupsError } = await (supabase as unknown as any)
+      .from('canvas_budget_groups')
+      .select('id, name, status')
+      .eq('obra_id', obraId);
+
+    if (budgetGroupsError) {
+      console.warn('[PRESUPUESTOS_GET] canvas_budget_groups:', budgetGroupsError);
+    }
+
+    const canvas_budget_groups = (budgetGroupsData ?? []).map((g: { id: string; name: string; status?: string | null }) => ({
+      id: toClientBudgetGroupId(g.id),
+      name: g.name,
+      status: g.status ?? null,
+    }));
 
     // Procesar presupuestos y calcular duración sugerida
     const presupuestos = presupuestosFiltrados.map((p: any) => {
@@ -354,6 +371,7 @@ export async function GET(request: NextRequest) {
       // Extraer dias_reales y observacion de notas si existe (formato JSON)
       let diasReales: number | null = null;
       let observacion: string | null = null;
+      let incluyeMateriales: boolean | null = null;
       if (p.notas) {
         try {
           const notasParsed = JSON.parse(p.notas);
@@ -362,6 +380,9 @@ export async function GET(request: NextRequest) {
           }
           if (typeof notasParsed.observacion === 'string' && notasParsed.observacion.trim()) {
             observacion = notasParsed.observacion.trim();
+          }
+          if (typeof notasParsed.incluye_materiales === 'boolean') {
+            incluyeMateriales = notasParsed.incluye_materiales;
           }
         } catch {
           // Si no es JSON, ignorar
@@ -380,6 +401,7 @@ export async function GET(request: NextRequest) {
         estado: p.estado || 'PENDIENTE',
         dias_reales: diasReales,
         observacion,
+        incluye_materiales: incluyeMateriales,
         monto: p.monto,
         created_at: p.created_at || null,
         updated_at: p.updated_at || null,
@@ -424,6 +446,7 @@ export async function GET(request: NextRequest) {
         },
         presupuestos,
         canvas_nodes,
+        canvas_budget_groups,
       });
   } catch (error) {
     console.error('[PRESUPUESTOS_GET] Error:', error);

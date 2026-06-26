@@ -16,7 +16,7 @@ export function presupuestoLineaEstado(
   const m = edit.monto;
   const d = edit.dias_reales;
   const hasM = m != null && !Number.isNaN(Number(m)) && Number(m) > 0;
-  const hasD = d != null && !Number.isNaN(Number(d)) && Number(d) >= 0;
+  const hasD = d != null && !Number.isNaN(Number(d)) && Number(d) > 0;
 
   if (hasM && hasD) return { key: 'lista', label: 'Lista' };
   if (hasM || hasD) return { key: 'incompleta', label: 'Incompleta' };

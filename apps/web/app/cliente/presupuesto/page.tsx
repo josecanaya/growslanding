@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
-import { PresupuestoCard } from '@/components/cliente/PresupuestoCard';
+import { ClientePresupuestoPaqueteCard } from '@/components/cliente/presupuestos/ClientePresupuestoPaqueteCard';
 import { SolicitudesCambioPresupuestoPanel } from '@/components/cliente/presupuestos/SolicitudesCambioPresupuestoPanel';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { Button } from '@/components/ui/grows';
@@ -20,6 +20,8 @@ type Row = {
   obraId: string | null;
   obraNombre: string;
   cuadrilla: string;
+  budgetGroupId: string | null;
+  budgetGroupName: string | null;
 };
 
 function mapEstadoPresupuesto(estado: string | null | undefined): string {
@@ -44,6 +46,44 @@ function formatEnviado(iso: string | null) {
   } catch {
     return iso;
   }
+}
+
+type PaqueteBucket = {
+  key: string;
+  budgetGroupId: string | null;
+  budgetGroupName: string;
+  socioId: string | null;
+  cuadrilla: string;
+  rows: Row[];
+};
+
+function groupPaquetesEnObra(rows: Row[]): PaqueteBucket[] {
+  const m = new Map<string, PaqueteBucket>();
+  for (const r of rows) {
+    const pkgId = r.budgetGroupId ?? '__sin_paquete__';
+    const socioKey = r.socioId ?? '__sin_socio__';
+    const key = `${pkgId}::${socioKey}`;
+    let b = m.get(key);
+    if (!b) {
+      b = {
+        key,
+        budgetGroupId: r.budgetGroupId,
+        budgetGroupName: r.budgetGroupName?.trim()
+          ? r.budgetGroupName
+          : r.budgetGroupId
+            ? 'Paquete de trabajo'
+            : 'Partidas sueltas',
+        socioId: r.socioId,
+        cuadrilla: r.cuadrilla,
+        rows: [],
+      };
+      m.set(key, b);
+    }
+    b.rows.push(r);
+  }
+  return [...m.values()].sort((a, b) =>
+    a.budgetGroupName.localeCompare(b.budgetGroupName, 'es', { sensitivity: 'base' }),
+  );
 }
 
 type ObraBucket = {
@@ -202,7 +242,7 @@ export default function ClientePresupuestoPage() {
       <SectionHeader
         eyebrow="Compras"
         title="Presupuestos"
-        description="Solicitudes y respuestas asociadas a tareas, según lo registrado en la base de datos."
+        description="Solicitudes agrupadas por obra y paquete de trabajo del canvas."
       />
       <SolicitudesCambioPresupuestoPanel onResponded={() => void load()} />
       {err ? (
@@ -222,13 +262,15 @@ export default function ClientePresupuestoPage() {
         <div className="space-y-12">
           {buckets.map((bucket) => {
             const res = resumenObra(bucket.rows);
+            const paquetes = groupPaquetesEnObra(bucket.rows);
             return (
               <section key={bucket.key} className="space-y-4">
                 <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
                   <div>
                     <h2 className="text-xl font-semibold text-slate-900">{bucket.obraNombre}</h2>
                     <p className="mt-1 text-sm text-slate-600">
-                      {bucket.rows.length} presupuesto{bucket.rows.length === 1 ? '' : 's'} · Pendientes de respuesta:{' '}
+                      {paquetes.length} paquete{paquetes.length === 1 ? '' : 's'} ·{' '}
+                      {bucket.rows.length} partida{bucket.rows.length === 1 ? '' : 's'} · Pendientes de respuesta:{' '}
                       <strong>{res.pendientes}</strong> · Aprobados: <strong>{res.aprobados}</strong>
                       {res.montoAprobado > 0 ? (
                         <>
@@ -270,43 +312,46 @@ export default function ClientePresupuestoPage() {
                     ) : null}
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {bucket.rows.map((p) => {
-                    const actions =
-                      puedeResponder(p.estado) && p.socioId ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={busyId === p.id}
-                            onClick={() => void aprobar(p)}
-                          >
-                            {busyId === p.id ? 'Procesando…' : 'Aprobar'}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            disabled={busyId === p.id}
-                            onClick={() => void rechazar(p)}
-                          >
-                            Rechazar
-                          </Button>
-                        </>
-                      ) : null;
-                    return (
-                      <div key={p.id}>
-                        <PresupuestoCard
-                          titulo={p.tareaTitulo}
-                          cuadrilla={p.cuadrilla}
-                          estado={mapEstadoPresupuesto(p.estado)}
-                          monto={p.monto}
-                          enviado={formatEnviado(p.createdAt)}
-                          actions={actions}
-                        />
-                      </div>
-                    );
-                  })}
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {paquetes.map((pkg) => (
+                    <ClientePresupuestoPaqueteCard
+                      key={pkg.key}
+                      paqueteNombre={pkg.budgetGroupName}
+                      cuadrilla={pkg.cuadrilla}
+                      lineas={pkg.rows.map((p) => {
+                        const actions =
+                          puedeResponder(p.estado) && p.socioId ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                disabled={busyId === p.id}
+                                onClick={() => void aprobar(p)}
+                              >
+                                {busyId === p.id ? 'Procesando…' : 'Aprobar'}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                disabled={busyId === p.id}
+                                onClick={() => void rechazar(p)}
+                              >
+                                Rechazar
+                              </Button>
+                            </>
+                          ) : null;
+                        return {
+                          id: p.id,
+                          tareaTitulo: p.tareaTitulo,
+                          monto: p.monto,
+                          estado: p.estado,
+                          createdAt: p.createdAt,
+                          actions,
+                        };
+                      })}
+                    />
+                  ))}
                 </div>
               </section>
             );

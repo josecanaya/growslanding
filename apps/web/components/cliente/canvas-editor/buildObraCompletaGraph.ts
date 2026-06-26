@@ -3,6 +3,12 @@ import type { Edge, Node } from '@xyflow/react';
 import { MarkerType } from '@xyflow/react';
 
 import { computeGlobalTaskSchedule } from './buildCronogramaItems';
+import {
+  collectImplicitAmbienteChainEdges,
+  collectMacroBridgeTaskEdges,
+  edgeKind,
+  mergeUniqueEdges,
+} from './obraCompletaVinculos';
 
 export type ObraCompletaTaskMetrics = {
   taskId: string;
@@ -25,25 +31,52 @@ export type ObraCompletaGraph = {
   projectDuration: number;
   taskCount: number;
   edgeCount: number;
+  macroBridgeCount: number;
+  implicitAmbienteChainCount: number;
 };
 
 const NODE_W = 92;
 const NODE_H = 76;
-/** Escala horizontal: 1 día de calendario → píxeles (eje X = tiempo). */
-const PX_PER_DAY = 22;
-const ROW_IN_LANE = 10;
-const LANE_BAND = 300;
-const PADDING = 40;
+const LAYER_GAP_X = 36;
+const ROW_GAP_Y = 14;
+const PADDING = 48;
 
 function breadcrumbFase(breadcrumb: string): string {
   return breadcrumb.split(' · ')[0]?.trim() || 'Obra';
 }
 
-/**
- * X = solo ES (tiempo). Y = franja por fase + filas para tareas que se solapan en el tiempo.
- */
-function layoutTimelineSwimlanes(
+function computeLayers(
   metrics: ObraCompletaTaskMetrics[],
+  edges: CanvasPrecedenceEdge[],
+): Map<string, number> {
+  const ids = new Set(metrics.map((m) => m.taskId));
+  const preds = new Map<string, string[]>();
+  for (const m of metrics) preds.set(m.taskId, []);
+  for (const e of edges) {
+    if (!ids.has(e.sourceId) || !ids.has(e.targetId)) continue;
+    preds.get(e.targetId)!.push(e.sourceId);
+  }
+
+  const layer = new Map<string, number>();
+  const visiting = new Set<string>();
+  function depth(id: string): number {
+    if (layer.has(id)) return layer.get(id)!;
+    if (visiting.has(id)) return 0;
+    visiting.add(id);
+    let d = 0;
+    for (const p of preds.get(id) ?? []) d = Math.max(d, depth(p) + 1);
+    visiting.delete(id);
+    layer.set(id, d);
+    return d;
+  }
+  for (const m of metrics) depth(m.taskId);
+  return layer;
+}
+
+/** X por capa de precedencia (cadena visible); Y por fase + fila en la capa. */
+function layoutByPrecedenceLayers(
+  metrics: ObraCompletaTaskMetrics[],
+  layers: Map<string, number>,
 ): Map<string, { x: number; y: number }> {
   const faseOrder = new Map<string, number>();
   let nextFase = 0;
@@ -52,32 +85,34 @@ function layoutTimelineSwimlanes(
     if (!faseOrder.has(f)) faseOrder.set(f, nextFase++);
   }
 
-  const sorted = [...metrics].sort(
-    (a, b) =>
-      a.es - b.es ||
-      (faseOrder.get(breadcrumbFase(a.breadcrumb)) ?? 0) -
-        (faseOrder.get(breadcrumbFase(b.breadcrumb)) ?? 0) ||
-      a.ef - b.ef ||
-      a.title.localeCompare(b.title),
-  );
+  const byLayer = new Map<number, ObraCompletaTaskMetrics[]>();
+  for (const m of metrics) {
+    const L = layers.get(m.taskId) ?? 0;
+    const list = byLayer.get(L) ?? [];
+    list.push(m);
+    byLayer.set(L, list);
+  }
 
-  const rowEndsByLane = new Map<number, number[]>();
   const positions = new Map<string, { x: number; y: number }>();
+  const rowInLayer = new Map<number, number>();
 
-  for (const m of sorted) {
-    const lane = faseOrder.get(breadcrumbFase(m.breadcrumb)) ?? 0;
-    const ends = rowEndsByLane.get(lane) ?? [];
-    let row = 0;
-    while (row < ends.length && (ends[row] ?? 0) > m.es) row += 1;
-    if (row === ends.length) ends.push(m.ef);
-    else ends[row] = Math.max(ends[row] ?? 0, m.ef);
-    rowEndsByLane.set(lane, ends);
-
-    const laneTop = PADDING + lane * LANE_BAND;
-    positions.set(m.taskId, {
-      x: PADDING + m.es * PX_PER_DAY,
-      y: laneTop + row * (NODE_H + ROW_IN_LANE),
-    });
+  for (const L of [...byLayer.keys()].sort((a, b) => a - b)) {
+    const list = [...(byLayer.get(L) ?? [])].sort(
+      (a, b) =>
+        (faseOrder.get(breadcrumbFase(a.breadcrumb)) ?? 0) -
+          (faseOrder.get(breadcrumbFase(b.breadcrumb)) ?? 0) ||
+        a.es - b.es ||
+        a.title.localeCompare(b.title),
+    );
+    for (const m of list) {
+      const lane = faseOrder.get(breadcrumbFase(m.breadcrumb)) ?? 0;
+      const row = rowInLayer.get(L) ?? 0;
+      rowInLayer.set(L, row + 1);
+      positions.set(m.taskId, {
+        x: PADDING + L * (NODE_W + LAYER_GAP_X),
+        y: PADDING + lane * 120 + row * (NODE_H + ROW_GAP_Y),
+      });
+    }
   }
 
   return positions;
@@ -111,16 +146,15 @@ function taskCode(index: number): string {
   return `T${index + 1}`;
 }
 
-/** Holgura total con pasada atrás solo sobre aristas entre tareas (PERT). */
 function computeLateTimes(
   tasks: CanvasNode[],
   schedule: Map<string, { es: number; ef: number }>,
-  taskEdges: CanvasPrecedenceEdge[],
+  allEdges: CanvasPrecedenceEdge[],
 ): Map<string, { ls: number; lf: number; float: number }> {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const succ = new Map<string, string[]>();
   for (const t of tasks) succ.set(t.id, []);
-  for (const e of taskEdges) {
+  for (const e of allEdges) {
     if (!byId.has(e.sourceId) || !byId.has(e.targetId)) continue;
     succ.get(e.sourceId)!.push(e.targetId);
   }
@@ -147,8 +181,7 @@ function computeLateTimes(
       if (sLs != null) lf = Math.min(lf, sLs);
     }
     const ls = Math.max(es, lf - dur);
-    const float = Math.max(0, ls - es);
-    late.set(t.id, { ls, lf, float });
+    late.set(t.id, { ls, lf, float: Math.max(0, ls - es) });
   }
 
   return late;
@@ -160,7 +193,7 @@ export function buildObraCompletaGraph(
 ): ObraCompletaGraph {
   const tasks = nodes.filter((n) => n.type === 'tarea');
   const taskIds = new Set(tasks.map((t) => t.id));
-  const taskEdges = edges.filter((e) => taskIds.has(e.sourceId) && taskIds.has(e.targetId));
+  const userTaskEdges = edges.filter((e) => taskIds.has(e.sourceId) && taskIds.has(e.targetId));
 
   if (tasks.length === 0) {
     return {
@@ -170,16 +203,21 @@ export function buildObraCompletaGraph(
       projectDuration: 0,
       taskCount: 0,
       edgeCount: 0,
+      macroBridgeCount: 0,
+      implicitAmbienteChainCount: 0,
     };
   }
 
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const schedule = computeGlobalTaskSchedule(nodes, edges);
-  const lateMap = computeLateTimes(tasks, schedule, taskEdges);
+  const macroBridges = collectMacroBridgeTaskEdges(nodes, edges, schedule);
+  const implicitChains = collectImplicitAmbienteChainEdges(nodes, userTaskEdges);
+  const allEdges = mergeUniqueEdges(userTaskEdges, macroBridges, implicitChains);
+  const lateMap = computeLateTimes(tasks, schedule, allEdges);
 
   const metrics: ObraCompletaTaskMetrics[] = tasks.map((t, idx) => {
     const dur = Math.max(1, Math.round(t.duracionDias ?? 1));
-    const row = schedule.get(t.id) ?? { es: 0, ef: dur, isCritical: false };
+    const row = schedule.get(t.id) ?? { es: 0, ef: dur };
     const late = lateMap.get(t.id) ?? { ls: row.es, lf: row.ef, float: 0 };
     const manual = Boolean(t.esCritica);
     return {
@@ -200,7 +238,8 @@ export function buildObraCompletaGraph(
   let projectDuration = 0;
   for (const m of metrics) projectDuration = Math.max(projectDuration, m.ef);
 
-  const positions = layoutTimelineSwimlanes(metrics);
+  const layers = computeLayers(metrics, allEdges);
+  const positions = layoutByPrecedenceLayers(metrics, layers);
 
   const rfNodes: Node[] = metrics.map((m) => {
     const pos = positions.get(m.taskId) ?? { x: 0, y: 0 };
@@ -217,36 +256,47 @@ export function buildObraCompletaGraph(
 
   const metricsById = new Map(metrics.map((m) => [m.taskId, m]));
 
-  const rfEdges: Edge[] = taskEdges.map((e) => {
+  const rfEdges: Edge[] = allEdges.map((e) => {
     const s = metricsById.get(e.sourceId);
     const t = metricsById.get(e.targetId);
     const slack = s && t ? Math.max(0, t.es - s.ef) : 0;
-    const critical = Boolean(s?.isCritical && t?.isCritical && slack === 0);
+    const kind = edgeKind(e.id);
+    const critical =
+      kind === 'macro' ||
+      (kind === 'user' && Boolean(s?.isCritical && t?.isCritical && slack === 0));
+    const stroke =
+      kind === 'macro' ? '#d97706' : kind === 'implicit' ? '#64748b' : critical ? '#16a34a' : '#94a3b8';
     return {
       id: e.id,
       source: e.sourceId,
       target: e.targetId,
       type: 'smoothstep',
-      pathOptions: { offset: 12, borderRadius: 8 },
+      pathOptions: { offset: 16, borderRadius: 10 },
       animated: false,
       selectable: false,
       focusable: false,
-      label: slack === 0 ? 'H0' : `H${slack}`,
-      labelStyle: { fontSize: 9, fontWeight: 700, fill: critical ? '#15803d' : '#475569' },
+      label:
+        kind === 'macro' ? 'FS' : kind === 'implicit' ? '→' : slack === 0 ? 'H0' : `H${slack}`,
+      labelStyle: {
+        fontSize: 9,
+        fontWeight: 700,
+        fill: kind === 'macro' ? '#b45309' : kind === 'implicit' ? '#64748b' : critical ? '#15803d' : '#475569',
+      },
       labelBgStyle: { fill: 'rgba(255,255,255,0.92)' },
       labelBgPadding: [4, 2] as [number, number],
       labelBgBorderRadius: 4,
       style: {
-        stroke: critical ? '#16a34a' : '#94a3b8',
-        strokeWidth: critical ? 2.5 : 1.25,
-        strokeDasharray: critical ? undefined : '5 4',
+        stroke,
+        strokeWidth: kind === 'macro' ? 2.5 : kind === 'implicit' ? 1.5 : critical ? 2 : 1.25,
+        strokeDasharray: kind === 'macro' ? '8 4' : kind === 'implicit' ? '4 3' : critical ? undefined : '5 4',
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: critical ? '#16a34a' : '#94a3b8',
+        color: stroke,
         width: 16,
         height: 16,
       },
+      zIndex: kind === 'macro' ? 2 : 1,
     };
   });
 
@@ -256,7 +306,9 @@ export function buildObraCompletaGraph(
     metricsById,
     projectDuration,
     taskCount: tasks.length,
-    edgeCount: taskEdges.length,
+    edgeCount: userTaskEdges.length,
+    macroBridgeCount: macroBridges.length,
+    implicitAmbienteChainCount: implicitChains.length,
   };
 }
 

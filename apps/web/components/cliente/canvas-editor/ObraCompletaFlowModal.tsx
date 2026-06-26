@@ -136,13 +136,20 @@ function ObraCompletaFlowInner({
             <p className="text-[10px] font-black uppercase tracking-wider text-[#64748b]">Obra completa</p>
             <h2 className="text-base font-extrabold text-[#0f172a]">{obraNombre}</h2>
             <p className="mt-1 text-[11px] text-[#64748b]">
-              Solo lectura · {graph.taskCount} tareas · {graph.edgeCount} vínculos · duración{' '}
-              <strong className="text-[#0f172a]">{graph.projectDuration}d</strong> · críticas{' '}
-              <strong className="text-[#15803d]">{criticalCount}</strong>
+              Solo lectura · {graph.taskCount} tareas · {graph.edgeCount} vínculos canvas
+              {graph.macroBridgeCount > 0
+                ? ` · ${graph.macroBridgeCount} enlaces fase/piso`
+                : ''}
+              {graph.implicitAmbienteChainCount > 0
+                ? ` · ${graph.implicitAmbienteChainCount} cadena ambiente`
+                : ''}{' '}
+              · {graph.projectDuration}d · críticas {criticalCount}
             </p>
             <p className="mt-1 text-[10px] leading-snug text-[#94a3b8]">
-              Izquierda → derecha = calendario (día de inicio ES). Cada franja horizontal es una fase.
-              Los huecos en X son espera entre fases o holgura del plan.
+              Izquierda → derecha = orden de precedencia. Franja = fase. Líneas{' '}
+              <span className="font-semibold text-amber-700">naranjas (FS)</span> = cierre de fase/piso →
+              inicio del siguiente. <span className="text-[#64748b]">Grises (→)</span> = orden en ambiente sin
+              vínculos. Verdes = vínculos del canvas.
             </p>
             <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-[#334155]">
               <input

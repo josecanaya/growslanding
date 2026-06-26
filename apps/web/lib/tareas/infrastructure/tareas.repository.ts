@@ -1,4 +1,23 @@
+import { appendFileSync } from 'fs';
+import { join } from 'path';
+
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
+
+function agentDebugLog(payload: Record<string, unknown>) {
+  try {
+    appendFileSync(
+      join(process.cwd(), 'debug-41b243.log'),
+      `${JSON.stringify({ sessionId: '41b243', timestamp: Date.now(), ...payload })}\n`,
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Regla DB: bloques_planificados debe igualar dias_presupuesto (CHECK tareas_bloques_match). */
+function bloquesDesdeDiasPresupuesto(dias: number): number {
+  return Math.max(1, Math.floor(Number(dias) || 1));
+}
 
 /** Campos que solo puede cambiar TareaFsmService / comandos FSM. */
 export const TAREA_CAMPOS_FSM = new Set(['estado']);
@@ -159,18 +178,56 @@ export class TareasRepository {
   }
 
   static async insertFromCanvas(payload: CanvasTareaUpsertPayload): Promise<TareaRow> {
+    const dias = bloquesDesdeDiasPresupuesto(payload.dias_presupuesto);
+    const insertPayload = {
+      ...payload,
+      estado: 'pendiente',
+      dias_presupuesto: dias,
+      bloques_planificados: dias,
+      prioridad: 'MEDIA',
+      avance: 0,
+    };
+    agentDebugLog({
+      runId: 'post-fix',
+      hypothesisId: 'H2',
+      location: 'tareas.repository.ts:insertFromCanvas',
+      message: 'insert payload synced bloques=dias',
+      data: {
+        canvasNodeId: payload.canvas_node_id,
+        dias_presupuesto: insertPayload.dias_presupuesto,
+        bloques_planificados: insertPayload.bloques_planificados,
+      },
+    });
     const { data, error } = await sb()
       .from('tareas')
-      .insert({
-        ...payload,
-        estado: 'pendiente',
-        bloques_planificados: 1,
-        prioridad: 'MEDIA',
-        avance: 0,
-      })
+      .insert(insertPayload)
       .select('*')
       .single();
-    if (error || !data) throw new Error(error?.message ?? 'No se pudo crear la tarea desde canvas');
+    if (error || !data) {
+      agentDebugLog({
+        runId: 'post-fix',
+        hypothesisId: 'H2,H5',
+        location: 'tareas.repository.ts:insertFromCanvas:error',
+        message: 'insert failed',
+        data: {
+          canvasNodeId: payload.canvas_node_id,
+          errorMessage: error?.message ?? null,
+        },
+      });
+      throw new Error(error?.message ?? 'No se pudo crear la tarea desde canvas');
+    }
+    agentDebugLog({
+      runId: 'post-fix',
+      hypothesisId: 'H2',
+      location: 'tareas.repository.ts:insertFromCanvas:success',
+      message: 'insert ok',
+      data: {
+        canvasNodeId: payload.canvas_node_id,
+        tareaId: (data as TareaRow).id,
+        dias_presupuesto: (data as TareaRow).dias_presupuesto,
+        bloques_planificados: (data as TareaRow).bloques_planificados,
+      },
+    });
     return data as TareaRow;
   }
 
@@ -180,8 +237,33 @@ export class TareasRepository {
       if (TAREA_CAMPOS_FSM.has(k)) continue;
       safe[k] = v;
     }
+    if (safe.dias_presupuesto !== undefined) {
+      const dias = bloquesDesdeDiasPresupuesto(Number(safe.dias_presupuesto));
+      safe.dias_presupuesto = dias;
+      safe.bloques_planificados = dias;
+    }
+    agentDebugLog({
+      runId: 'post-fix',
+      hypothesisId: 'H4',
+      location: 'tareas.repository.ts:updateFromCanvas',
+      message: 'update payload synced bloques=dias',
+      data: {
+        tareaId: id,
+        dias_presupuesto: safe.dias_presupuesto,
+        bloques_planificados: safe.bloques_planificados,
+      },
+    });
     const { error } = await sb().from('tareas').update(safe).eq('id', id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      agentDebugLog({
+        runId: 'post-fix',
+        hypothesisId: 'H4,H5',
+        location: 'tareas.repository.ts:updateFromCanvas:error',
+        message: 'update failed',
+        data: { tareaId: id, errorMessage: error.message },
+      });
+      throw new Error(error.message);
+    }
   }
 
   static async findEstadoById(id: string): Promise<string | null> {

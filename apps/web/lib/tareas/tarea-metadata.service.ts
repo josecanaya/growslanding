@@ -88,10 +88,12 @@ export class TareaMetadataService {
     const { existingId, existingElementoId, payload, actorId } = params;
 
     if (existingId) {
+      const dias = Math.max(1, Math.floor(Number(payload.dias_presupuesto) || 1));
       const patch: Record<string, unknown> = {
         title: payload.title,
         descripcion: payload.descripcion ?? null,
-        dias_presupuesto: payload.dias_presupuesto,
+        dias_presupuesto: dias,
+        bloques_planificados: dias,
         is_critical: payload.is_critical,
         source: payload.source,
         published_from_canvas_at: payload.published_from_canvas_at,

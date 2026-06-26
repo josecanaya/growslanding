@@ -403,6 +403,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const allNodes = (nodeRows ?? []) as CanvasNodeRow[];
     const nodesById = new Map(allNodes.map((n) => [n.id, n]));
     const taskNodes = allNodes.filter((n) => n.type === 'tarea');
+    // #region agent log
+    fetch('http://127.0.0.1:7442/ingest/29db9a63-8d84-4477-8ab7-861ee9aeea7c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'41b243'},body:JSON.stringify({sessionId:'41b243',runId:'pre-fix',hypothesisId:'H1,H2,H3,H4',location:'app/api/obras/[id]/canvas/publicar-tareas/route.ts:406',message:'canvas publish task nodes loaded',data:{obraId,allNodesCount:allNodes.length,taskNodesCount:taskNodes.length,plannedSamples:taskNodes.slice(0,5).map((n)=>({nodeId:n.id,planned_duration_days:n.planned_duration_days,plannedType:typeof n.planned_duration_days,titleLen:(n.title??'').length}))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
 
     if (taskNodes.length === 0) {
       return NextResponse.json({
@@ -458,6 +461,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         warnings.push(`Nodo tarea "${title}": sin duración planificada; se usó 1 día.`);
       }
       const diasPresupuesto = Math.max(1, Math.floor(Number(planned) || 1));
+      // #region agent log
+      fetch('http://127.0.0.1:7442/ingest/29db9a63-8d84-4477-8ab7-861ee9aeea7c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'41b243'},body:JSON.stringify({sessionId:'41b243',runId:'pre-fix',hypothesisId:'H1,H2,H3,H4',location:'app/api/obras/[id]/canvas/publicar-tareas/route.ts:464',message:'canvas node duration normalized before upsert',data:{nodeId:node.id,rawPlanned:planned,rawPlannedType:typeof planned,diasPresupuesto,willUpdateExisting:existingByCanvasNode.has(node.id)},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
 
       const descripcion = node.description ?? null;
       const isCritical = Boolean(node.is_critical);
@@ -490,6 +496,9 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
         }
         canvasNodeIdToTareaId.set(node.id, upsert.id);
       } catch (upsertErr) {
+        // #region agent log
+        fetch('http://127.0.0.1:7442/ingest/29db9a63-8d84-4477-8ab7-861ee9aeea7c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'41b243'},body:JSON.stringify({sessionId:'41b243',runId:'pre-fix',hypothesisId:'H2,H4,H5',location:'app/api/obras/[id]/canvas/publicar-tareas/route.ts:497',message:'canvas task upsert failed',data:{nodeId:node.id,diasPresupuesto,errorMessage:upsertErr instanceof Error ? upsertErr.message : String(upsertErr)},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         warnings.push(
           `No se pudo publicar tarea para nodo ${node.id}: ${upsertErr instanceof Error ? upsertErr.message : 'error'}`,
         );

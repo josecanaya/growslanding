@@ -1,0 +1,2445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/project">
+  <Title>Casa nueva 2 plantas — 5 ambientes — 122 tareas ejecutables</Title>
+  <ScheduleFromStart>1</ScheduleFromStart>
+  <StartDate>2026-07-01T08:00:00</StartDate>
+  <MinutesPerDay>480</MinutesPerDay>
+  <MinutesPerWeek>2400</MinutesPerWeek>
+  <DaysPerMonth>20</DaysPerMonth>
+  <Tasks>
+    <Task>
+      <UID>1</UID>
+      <ID>1</ID>
+      <Name>Casa nueva 2 plantas — 5 ambientes — 122 tareas ejecutables</Name>
+      <OutlineNumber>1</OutlineNumber>
+      <OutlineLevel>1</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+    </Task>
+    <Task>
+      <UID>2</UID>
+      <ID>2</ID>
+      <Name>Inicio de obra</Name>
+      <OutlineNumber>1.1</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 8</Notes>
+    </Task>
+    <Task>
+      <UID>3</UID>
+      <ID>3</ID>
+      <Name>Terreno — Preparación general del terreno</Name>
+      <OutlineNumber>1.1.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 1 | Fase: Inicio de obra | Sector: Terreno | Fuente: Operativa inicial</Notes>
+    </Task>
+    <Task>
+      <UID>4</UID>
+      <ID>4</ID>
+      <Name>Terreno — Limpieza inicial del terreno</Name>
+      <OutlineNumber>1.1.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 2 | Fase: Inicio de obra | Sector: Terreno | Fuente: Operativa inicial | Predecesoras ejecutables: 1</Notes>
+      <PredecessorLink>
+        <PredecessorUID>3</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>5</UID>
+      <ID>5</ID>
+      <Name>Obra general — Armado de obrador</Name>
+      <OutlineNumber>1.1.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 3 | Fase: Inicio de obra | Sector: Obra general | Fuente: Operativa inicial | Predecesoras ejecutables: 2</Notes>
+      <PredecessorLink>
+        <PredecessorUID>4</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>6</UID>
+      <ID>6</ID>
+      <Name>Obra general — Acopio inicial de materiales</Name>
+      <OutlineNumber>1.1.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 4 | Fase: Inicio de obra | Sector: Obra general | Fuente: Operativa inicial | Predecesoras ejecutables: 3</Notes>
+      <PredecessorLink>
+        <PredecessorUID>5</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>7</UID>
+      <ID>7</ID>
+      <Name>Frente / servicios — Pilar de luz de obra con caja</Name>
+      <OutlineNumber>1.1.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 5 | Fase: Inicio de obra | Sector: Frente / servicios | Fuente: Electricidad | Tarea catálogo: Pilar Con caja | Precio catálogo: $316.250,00 | Predecesoras ejecutables: 3</Notes>
+      <PredecessorLink>
+        <PredecessorUID>5</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>8</UID>
+      <ID>8</ID>
+      <Name>Frente / servicios — Caja reglamentaria en pared</Name>
+      <OutlineNumber>1.1.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 6 | Fase: Inicio de obra | Sector: Frente / servicios | Fuente: Electricidad | Tarea catálogo: Colocar caja reglamentaria en pared | Precio catálogo: $164.450,00 | Predecesoras ejecutables: 5</Notes>
+      <PredecessorLink>
+        <PredecessorUID>7</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>9</UID>
+      <ID>9</ID>
+      <Name>Obra general — Instalación provisoria de agua de obra</Name>
+      <OutlineNumber>1.1.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 7 | Fase: Inicio de obra | Sector: Obra general | Fuente: Operativa inicial | Predecesoras ejecutables: 3</Notes>
+      <PredecessorLink>
+        <PredecessorUID>5</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>10</UID>
+      <ID>10</ID>
+      <Name>Obra general — Limpieza general de obra - semana 1</Name>
+      <OutlineNumber>1.1.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 8 | Fase: Inicio de obra | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 7 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>9</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>11</UID>
+      <ID>11</ID>
+      <Name>Movimiento de suelo y fundaciones</Name>
+      <OutlineNumber>1.2</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 13</Notes>
+    </Task>
+    <Task>
+      <UID>12</UID>
+      <ID>12</ID>
+      <Name>Vivienda — Excavación de bases</Name>
+      <OutlineNumber>1.2.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 9 | Fase: Movimiento de suelo y fundaciones | Sector: Vivienda | Fuente: Excavación y demolición | Tarea catálogo: Excavación de bases | Precio catálogo: $27.893,25 | Predecesoras ejecutables: 2</Notes>
+      <PredecessorLink>
+        <PredecessorUID>4</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>13</UID>
+      <ID>13</ID>
+      <Name>Parrillero / cochera — Excavación de bases</Name>
+      <OutlineNumber>1.2.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 10 | Fase: Movimiento de suelo y fundaciones | Sector: Parrillero / cochera | Fuente: Excavación y demolición | Tarea catálogo: Excavación de bases | Precio catálogo: $27.893,25 | Predecesoras ejecutables: 9</Notes>
+      <PredecessorLink>
+        <PredecessorUID>12</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>14</UID>
+      <ID>14</ID>
+      <Name>Perímetro PB — Excavación de cimientos 40cm x 80cm</Name>
+      <OutlineNumber>1.2.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 11 | Fase: Movimiento de suelo y fundaciones | Sector: Perímetro PB | Fuente: Excavación y demolición | Tarea catálogo: Excavación de cimientos (40cm X 80 cm) | Precio catálogo: $15.812,50 | Predecesoras ejecutables: 9</Notes>
+      <PredecessorLink>
+        <PredecessorUID>12</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>15</UID>
+      <ID>15</ID>
+      <Name>Muros interiores PB — Excavación de cimientos 40cm x 80cm</Name>
+      <OutlineNumber>1.2.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 12 | Fase: Movimiento de suelo y fundaciones | Sector: Muros interiores PB | Fuente: Excavación y demolición | Tarea catálogo: Excavación de cimientos (40cm X 80 cm) | Precio catálogo: $15.812,50 | Predecesoras ejecutables: 11</Notes>
+      <PredecessorLink>
+        <PredecessorUID>14</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>16</UID>
+      <ID>16</ID>
+      <Name>Interior PB — Tierra, relleno y compactación</Name>
+      <OutlineNumber>1.2.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 13 | Fase: Movimiento de suelo y fundaciones | Sector: Interior PB | Fuente: Suelos | Tarea catálogo: Tierra relleno y compactación | Precio catálogo: $13.915,00 | Predecesoras ejecutables: 11,12</Notes>
+      <PredecessorLink>
+        <PredecessorUID>14</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>15</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>17</UID>
+      <ID>17</ID>
+      <Name>Exterior / patio — Tierra, relleno y compactación</Name>
+      <OutlineNumber>1.2.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 14 | Fase: Movimiento de suelo y fundaciones | Sector: Exterior / patio | Fuente: Suelos | Tarea catálogo: Tierra relleno y compactación | Precio catálogo: $13.915,00 | Predecesoras ejecutables: 10,11</Notes>
+      <PredecessorLink>
+        <PredecessorUID>13</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>14</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>18</UID>
+      <ID>18</ID>
+      <Name>Obra general — Limpieza general de obra - semana 2</Name>
+      <OutlineNumber>1.2.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 15 | Fase: Movimiento de suelo y fundaciones | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 8,14 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>10</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>17</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>19</UID>
+      <ID>19</ID>
+      <Name>Vivienda — Bases</Name>
+      <OutlineNumber>1.2.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 16 | Fase: Movimiento de suelo y fundaciones | Sector: Vivienda | Fuente: Hormigón Armado | Tarea catálogo: Bases | Precio catálogo: $106.260,00 | Predecesoras ejecutables: 13</Notes>
+      <PredecessorLink>
+        <PredecessorUID>16</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>20</UID>
+      <ID>20</ID>
+      <Name>Columnas puntuales — Base individual</Name>
+      <OutlineNumber>1.2.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 17 | Fase: Movimiento de suelo y fundaciones | Sector: Columnas puntuales | Fuente: Hormigón Armado | Tarea catálogo: Base individual | Precio catálogo: $25.300,00 | Predecesoras ejecutables: 16</Notes>
+      <PredecessorLink>
+        <PredecessorUID>19</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>21</UID>
+      <ID>21</ID>
+      <Name>Fundaciones — Viga de equilibrio encofrado</Name>
+      <OutlineNumber>1.2.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 18 | Fase: Movimiento de suelo y fundaciones | Sector: Fundaciones | Fuente: Hormigón Armado | Tarea catálogo: Viga de equilibrio encofrado | Precio catálogo: $208.725,00 | Predecesoras ejecutables: 16,17</Notes>
+      <PredecessorLink>
+        <PredecessorUID>19</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>20</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>22</UID>
+      <ID>22</ID>
+      <Name>Arranque PB — Encadenado de 20 x 20</Name>
+      <OutlineNumber>1.2.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 19 | Fase: Movimiento de suelo y fundaciones | Sector: Arranque PB | Fuente: Hormigón Armado | Tarea catálogo: Encadenado de 20 x 20 | Precio catálogo: $208.725,00 | Predecesoras ejecutables: 18</Notes>
+      <PredecessorLink>
+        <PredecessorUID>21</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>23</UID>
+      <ID>23</ID>
+      <Name>Arranque de muros — Capa aisladora 3 hiladas en paredes de 30</Name>
+      <OutlineNumber>1.2.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 20 | Fase: Movimiento de suelo y fundaciones | Sector: Arranque de muros | Fuente: Mampostería | Tarea catálogo: Capa aisladora 3 hiladas en paredes de 30 | Precio catálogo: $13.409,00 | Predecesoras ejecutables: 19</Notes>
+      <PredecessorLink>
+        <PredecessorUID>22</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>24</UID>
+      <ID>24</ID>
+      <Name>Obra general — Limpieza general de obra - semana 3</Name>
+      <OutlineNumber>1.2.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 21 | Fase: Movimiento de suelo y fundaciones | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 15,20 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>18</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>23</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>25</UID>
+      <ID>25</ID>
+      <Name>Estructura</Name>
+      <OutlineNumber>1.3</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 13</Notes>
+    </Task>
+    <Task>
+      <UID>26</UID>
+      <ID>26</ID>
+      <Name>Planta baja — Columnas y vigas</Name>
+      <OutlineNumber>1.3.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P6DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 22 | Fase: Estructura | Sector: Planta baja | Fuente: Hormigón Armado | Tarea catálogo: Columnas y vigas | Precio catálogo: $234.025,00 | Predecesoras ejecutables: 20</Notes>
+      <PredecessorLink>
+        <PredecessorUID>23</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>27</UID>
+      <ID>27</ID>
+      <Name>Entrepiso PB / PA — Techo de viguetas en P.B</Name>
+      <OutlineNumber>1.3.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 23 | Fase: Estructura | Sector: Entrepiso PB / PA | Fuente: Hormigón Armado | Tarea catálogo: Techo de viguetas en P.B | Precio catálogo: $18.975,00 | Predecesoras ejecutables: 22</Notes>
+      <PredecessorLink>
+        <PredecessorUID>26</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>28</UID>
+      <ID>28</ID>
+      <Name>Escalera PB a PA — Escaleras de 16 escalones simples</Name>
+      <OutlineNumber>1.3.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 24 | Fase: Estructura | Sector: Escalera PB a PA | Fuente: Hormigón Armado | Tarea catálogo: Escaleras de 16 escalones simples | Precio catálogo: $278.300,00 | Predecesoras ejecutables: 23</Notes>
+      <PredecessorLink>
+        <PredecessorUID>27</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>29</UID>
+      <ID>29</ID>
+      <Name>Planta alta — Columnas y vigas</Name>
+      <OutlineNumber>1.3.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 25 | Fase: Estructura | Sector: Planta alta | Fuente: Hormigón Armado | Tarea catálogo: Columnas y vigas | Precio catálogo: $234.025,00 | Predecesoras ejecutables: 23,24</Notes>
+      <PredecessorLink>
+        <PredecessorUID>27</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>28</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>30</UID>
+      <ID>30</ID>
+      <Name>Cubierta / terraza técnica — Losa maciza</Name>
+      <OutlineNumber>1.3.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 26 | Fase: Estructura | Sector: Cubierta / terraza técnica | Fuente: Hormigón Armado | Tarea catálogo: Losa maciza | Precio catálogo: $246.675,00 | Predecesoras ejecutables: 25</Notes>
+      <PredecessorLink>
+        <PredecessorUID>29</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>31</UID>
+      <ID>31</ID>
+      <Name>Núcleo escalera — Tabiques de 15 cm</Name>
+      <OutlineNumber>1.3.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 27 | Fase: Estructura | Sector: Núcleo escalera | Fuente: Hormigón Armado | Tarea catálogo: Tabiques de 15 cm | Precio catálogo: $379.500,00 | Predecesoras ejecutables: 24</Notes>
+      <PredecessorLink>
+        <PredecessorUID>28</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>32</UID>
+      <ID>32</ID>
+      <Name>Baños / ductos — Tabiques de 15 cm</Name>
+      <OutlineNumber>1.3.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 28 | Fase: Estructura | Sector: Baños / ductos | Fuente: Hormigón Armado | Tarea catálogo: Tabiques de 15 cm | Precio catálogo: $379.500,00 | Predecesoras ejecutables: 27</Notes>
+      <PredecessorLink>
+        <PredecessorUID>31</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>33</UID>
+      <ID>33</ID>
+      <Name>Planta alta — Encadenado de 20 x 20</Name>
+      <OutlineNumber>1.3.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 29 | Fase: Estructura | Sector: Planta alta | Fuente: Hormigón Armado | Tarea catálogo: Encadenado de 20 x 20 | Precio catálogo: $208.725,00 | Predecesoras ejecutables: 25,28</Notes>
+      <PredecessorLink>
+        <PredecessorUID>29</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>32</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>34</UID>
+      <ID>34</ID>
+      <Name>Apoyo tanque / exterior — Base individual</Name>
+      <OutlineNumber>1.3.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 30 | Fase: Estructura | Sector: Apoyo tanque / exterior | Fuente: Hormigón Armado | Tarea catálogo: Base individual | Precio catálogo: $25.300,00 | Predecesoras ejecutables: 26</Notes>
+      <PredecessorLink>
+        <PredecessorUID>30</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>35</UID>
+      <ID>35</ID>
+      <Name>Cochera — Piso + fratachado</Name>
+      <OutlineNumber>1.3.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 31 | Fase: Estructura | Sector: Cochera | Fuente: Hormigón Armado | Tarea catálogo: Piso + fratachado | Precio catálogo: $13.282,50 | Predecesoras ejecutables: 14</Notes>
+      <PredecessorLink>
+        <PredecessorUID>17</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>36</UID>
+      <ID>36</ID>
+      <Name>Pluvial exterior — Albañal de hormigón armado 25x25</Name>
+      <OutlineNumber>1.3.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 32 | Fase: Estructura | Sector: Pluvial exterior | Fuente: Hormigón Armado | Tarea catálogo: Albañal de hormigón armado 25x25 | Precio catálogo: $18.975,00 | Predecesoras ejecutables: 26</Notes>
+      <PredecessorLink>
+        <PredecessorUID>30</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>37</UID>
+      <ID>37</ID>
+      <Name>Escalera / refuerzo secundario — Viga de equilibrio encofrado</Name>
+      <OutlineNumber>1.3.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 33 | Fase: Estructura | Sector: Escalera / refuerzo secundario | Fuente: Hormigón Armado | Tarea catálogo: Viga de equilibrio encofrado | Precio catálogo: $208.725,00 | Predecesoras ejecutables: 24</Notes>
+      <PredecessorLink>
+        <PredecessorUID>28</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>38</UID>
+      <ID>38</ID>
+      <Name>Obra general — Limpieza general de obra - semana 4</Name>
+      <OutlineNumber>1.3.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 34 | Fase: Estructura | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 21,33 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>24</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>37</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>39</UID>
+      <ID>39</ID>
+      <Name>Mampostería y cubierta</Name>
+      <OutlineNumber>1.4</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 17</Notes>
+    </Task>
+    <Task>
+      <UID>40</UID>
+      <ID>40</ID>
+      <Name>PB exterior — Paredes de ladrillo hueco portante 13 y 18</Name>
+      <OutlineNumber>1.4.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P6DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 35 | Fase: Mampostería y cubierta | Sector: PB exterior | Fuente: Mampostería | Tarea catálogo: Paredes de ladrillo hueco portante 13 y 18 | Precio catálogo: $11.385,00 | Predecesoras ejecutables: 22,20</Notes>
+      <PredecessorLink>
+        <PredecessorUID>26</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>23</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>41</UID>
+      <ID>41</ID>
+      <Name>PB interior — Paredes de ladrillo hueco 8 y 12</Name>
+      <OutlineNumber>1.4.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 36 | Fase: Mampostería y cubierta | Sector: PB interior | Fuente: Mampostería | Tarea catálogo: Paredes de ladrillo hueco 8 y 12 | Precio catálogo: $11.385,00 | Predecesoras ejecutables: 35</Notes>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>42</UID>
+      <ID>42</ID>
+      <Name>Cocina PB — Paredes bajo mesada</Name>
+      <OutlineNumber>1.4.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 37 | Fase: Mampostería y cubierta | Sector: Cocina PB | Fuente: Mampostería | Tarea catálogo: Paredes bajo mesada | Precio catálogo: $10.120,00 | Predecesoras ejecutables: 36</Notes>
+      <PredecessorLink>
+        <PredecessorUID>41</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>43</UID>
+      <ID>43</ID>
+      <Name>PA exterior — Paredes de ladrillo hueco portante 13 y 18</Name>
+      <OutlineNumber>1.4.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P6DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 38 | Fase: Mampostería y cubierta | Sector: PA exterior | Fuente: Mampostería | Tarea catálogo: Paredes de ladrillo hueco portante 13 y 18 | Precio catálogo: $11.385,00 | Predecesoras ejecutables: 25,29</Notes>
+      <PredecessorLink>
+        <PredecessorUID>29</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>33</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>44</UID>
+      <ID>44</ID>
+      <Name>PA interior — Paredes de ladrillo hueco 8 y 12</Name>
+      <OutlineNumber>1.4.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 39 | Fase: Mampostería y cubierta | Sector: PA interior | Fuente: Mampostería | Tarea catálogo: Paredes de ladrillo hueco 8 y 12 | Precio catálogo: $11.385,00 | Predecesoras ejecutables: 38</Notes>
+      <PredecessorLink>
+        <PredecessorUID>43</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>45</UID>
+      <ID>45</ID>
+      <Name>Cubierta / perímetro — Mojinetes perimetral</Name>
+      <OutlineNumber>1.4.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 40 | Fase: Mampostería y cubierta | Sector: Cubierta / perímetro | Fuente: Mampostería | Tarea catálogo: Mojinetes perimetral | Precio catálogo: $10.499,50 | Predecesoras ejecutables: 38</Notes>
+      <PredecessorLink>
+        <PredecessorUID>43</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>46</UID>
+      <ID>46</ID>
+      <Name>Patio — Parrillero completo</Name>
+      <OutlineNumber>1.4.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 41 | Fase: Mampostería y cubierta | Sector: Patio | Fuente: Mampostería | Tarea catálogo: Parrillero completo | Precio catálogo: $253.000,00 | Predecesoras ejecutables: 14,35</Notes>
+      <PredecessorLink>
+        <PredecessorUID>17</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>47</UID>
+      <ID>47</ID>
+      <Name>Obra general — Limpieza general de obra - semana 5</Name>
+      <OutlineNumber>1.4.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 42 | Fase: Mampostería y cubierta | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 34,41 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>38</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>46</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>48</UID>
+      <ID>48</ID>
+      <Name>Cubierta general — Techos de estructura metálica y chapa</Name>
+      <OutlineNumber>1.4.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 43 | Fase: Mampostería y cubierta | Sector: Cubierta general | Fuente: Cubiertas | Tarea catálogo: Techos de estructura metálica y chapa | Precio catálogo: $20.240,00 | Predecesoras ejecutables: 26,40</Notes>
+      <PredecessorLink>
+        <PredecessorUID>30</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>45</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>49</UID>
+      <ID>49</ID>
+      <Name>Cubierta general — Colocar chapas solo</Name>
+      <OutlineNumber>1.4.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 44 | Fase: Mampostería y cubierta | Sector: Cubierta general | Fuente: Cubiertas | Tarea catálogo: Colocar chapas solo | Precio catálogo: $4.807,00 | Predecesoras ejecutables: 43</Notes>
+      <PredecessorLink>
+        <PredecessorUID>48</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>50</UID>
+      <ID>50</ID>
+      <Name>Cubierta general — Colocar zinguería</Name>
+      <OutlineNumber>1.4.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 45 | Fase: Mampostería y cubierta | Sector: Cubierta general | Fuente: Cubiertas | Tarea catálogo: Colocar zinguería | Precio catálogo: $4.807,00 | Predecesoras ejecutables: 44</Notes>
+      <PredecessorLink>
+        <PredecessorUID>49</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>51</UID>
+      <ID>51</ID>
+      <Name>Mojinetes — Membrana en mojinete</Name>
+      <OutlineNumber>1.4.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 46 | Fase: Mampostería y cubierta | Sector: Mojinetes | Fuente: Cubiertas | Tarea catálogo: Membrana en mojinete | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 40,45</Notes>
+      <PredecessorLink>
+        <PredecessorUID>45</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>50</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>52</UID>
+      <ID>52</ID>
+      <Name>Terraza técnica / losa — H° de pendiente molido, carpeta y membrana</Name>
+      <OutlineNumber>1.4.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 47 | Fase: Mampostería y cubierta | Sector: Terraza técnica / losa | Fuente: Suelos | Tarea catálogo: H° de pendiente (molido+carpeta+membrana) | Precio catálogo: $18.975,00 | Predecesoras ejecutables: 26,30</Notes>
+      <PredecessorLink>
+        <PredecessorUID>30</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>34</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>53</UID>
+      <ID>53</ID>
+      <Name>Cubierta / impermeabilización — Colocar membrana</Name>
+      <OutlineNumber>1.4.14</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 48 | Fase: Mampostería y cubierta | Sector: Cubierta / impermeabilización | Fuente: Cubiertas | Tarea catálogo: Colocar membrana | Precio catálogo: $29.095,00 | Predecesoras ejecutables: 47</Notes>
+      <PredecessorLink>
+        <PredecessorUID>52</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>54</UID>
+      <ID>54</ID>
+      <Name>Cubierta / impermeabilización — Pintar pintura asfáltica</Name>
+      <OutlineNumber>1.4.15</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 49 | Fase: Mampostería y cubierta | Sector: Cubierta / impermeabilización | Fuente: Cubiertas | Tarea catálogo: Pintar pintura asfáltica | Precio catálogo: $4.427,50 | Predecesoras ejecutables: 48</Notes>
+      <PredecessorLink>
+        <PredecessorUID>53</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>55</UID>
+      <ID>55</ID>
+      <Name>Aberturas PB / PA — Colocar ventanas o premarco</Name>
+      <OutlineNumber>1.4.16</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 50 | Fase: Mampostería y cubierta | Sector: Aberturas PB / PA | Fuente: Terminaciones | Tarea catálogo: Colocar Ventanas o premarco | Precio catálogo: $25.300,00 | Predecesoras ejecutables: 35,38,39</Notes>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>43</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>44</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>56</UID>
+      <ID>56</ID>
+      <Name>Obra general — Limpieza general de obra - semana 6</Name>
+      <OutlineNumber>1.4.17</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 51 | Fase: Mampostería y cubierta | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 42,50 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>47</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>57</UID>
+      <ID>57</ID>
+      <Name>Instalaciones embutidas</Name>
+      <OutlineNumber>1.5</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 22</Notes>
+    </Task>
+    <Task>
+      <UID>58</UID>
+      <ID>58</ID>
+      <Name>PB / tablero — Colocar tablero general</Name>
+      <OutlineNumber>1.5.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 52 | Fase: Instalaciones embutidas | Sector: PB / tablero | Fuente: Electricidad | Tarea catálogo: Colocar tablero general | Precio catálogo: $53.130,00 | Predecesoras ejecutables: 6,35</Notes>
+      <PredecessorLink>
+        <PredecessorUID>8</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>59</UID>
+      <ID>59</ID>
+      <Name>PB — Cañerías de alimentación, canaletas y cajas</Name>
+      <OutlineNumber>1.5.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 53 | Fase: Instalaciones embutidas | Sector: PB | Fuente: Electricidad | Tarea catálogo: Cañerías de alimentación Canaletas y cajas | Precio catálogo: $15.180,00 | Predecesoras ejecutables: 35,36,52</Notes>
+      <PredecessorLink>
+        <PredecessorUID>40</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>41</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>58</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>60</UID>
+      <ID>60</ID>
+      <Name>PA — Cañerías de alimentación, canaletas y cajas</Name>
+      <OutlineNumber>1.5.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 54 | Fase: Instalaciones embutidas | Sector: PA | Fuente: Electricidad | Tarea catálogo: Cañerías de alimentación Canaletas y cajas | Precio catálogo: $15.180,00 | Predecesoras ejecutables: 38,39,52</Notes>
+      <PredecessorLink>
+        <PredecessorUID>43</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>44</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>58</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>61</UID>
+      <ID>61</ID>
+      <Name>PB — Bocas de iluminación, cableado y cajas</Name>
+      <OutlineNumber>1.5.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 55 | Fase: Instalaciones embutidas | Sector: PB | Fuente: Electricidad | Tarea catálogo: Bocas de iluminación Cableado y cajas | Precio catálogo: $30.360,00 | Predecesoras ejecutables: 53</Notes>
+      <PredecessorLink>
+        <PredecessorUID>59</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>62</UID>
+      <ID>62</ID>
+      <Name>PA — Bocas de iluminación, cableado y cajas</Name>
+      <OutlineNumber>1.5.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 56 | Fase: Instalaciones embutidas | Sector: PA | Fuente: Electricidad | Tarea catálogo: Bocas de iluminación Cableado y cajas | Precio catálogo: $30.360,00 | Predecesoras ejecutables: 54</Notes>
+      <PredecessorLink>
+        <PredecessorUID>60</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>63</UID>
+      <ID>63</ID>
+      <Name>PB / PA — Tomas de TV / Tel</Name>
+      <OutlineNumber>1.5.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 57 | Fase: Instalaciones embutidas | Sector: PB / PA | Fuente: Electricidad | Tarea catálogo: Tomas de Tv. Tel | Precio catálogo: $29.095,00 | Predecesoras ejecutables: 53,54</Notes>
+      <PredecessorLink>
+        <PredecessorUID>59</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>60</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>64</UID>
+      <ID>64</ID>
+      <Name>Cocina / lavadero — Gas: colocar cajas</Name>
+      <OutlineNumber>1.5.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 58 | Fase: Instalaciones embutidas | Sector: Cocina / lavadero | Fuente: Gas | Tarea catálogo: Colocar cajas | Precio catálogo: $22.770,00 | Predecesoras ejecutables: 37</Notes>
+      <PredecessorLink>
+        <PredecessorUID>42</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>65</UID>
+      <ID>65</ID>
+      <Name>Cocina / lavadero — Gas: cañerías</Name>
+      <OutlineNumber>1.5.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 59 | Fase: Instalaciones embutidas | Sector: Cocina / lavadero | Fuente: Gas | Tarea catálogo: Cañerias | Precio catálogo: $31.625,00 | Predecesoras ejecutables: 58</Notes>
+      <PredecessorLink>
+        <PredecessorUID>64</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>66</UID>
+      <ID>66</ID>
+      <Name>Cocina / lavadero — Gas: picos</Name>
+      <OutlineNumber>1.5.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 60 | Fase: Instalaciones embutidas | Sector: Cocina / lavadero | Fuente: Gas | Tarea catálogo: Picos | Precio catálogo: $31.625,00 | Predecesoras ejecutables: 59</Notes>
+      <PredecessorLink>
+        <PredecessorUID>65</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>67</UID>
+      <ID>67</ID>
+      <Name>Exterior cloacal — Excavar zanja y colocar caño 110</Name>
+      <OutlineNumber>1.5.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 61 | Fase: Instalaciones embutidas | Sector: Exterior cloacal | Fuente: Cloacales | Tarea catálogo: Excavar zanja y colocar caño 110 | Precio catálogo: $3.795,00 | Predecesoras ejecutables: 20</Notes>
+      <PredecessorLink>
+        <PredecessorUID>23</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>68</UID>
+      <ID>68</ID>
+      <Name>Exterior cloacal — Cámara 60 x 60</Name>
+      <OutlineNumber>1.5.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 62 | Fase: Instalaciones embutidas | Sector: Exterior cloacal | Fuente: Cloacales | Tarea catálogo: Camara 60 x 60 | Precio catálogo: $27.830,00 | Predecesoras ejecutables: 61</Notes>
+      <PredecessorLink>
+        <PredecessorUID>67</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>69</UID>
+      <ID>69</ID>
+      <Name>Baño PB — Distribución baño</Name>
+      <OutlineNumber>1.5.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 63 | Fase: Instalaciones embutidas | Sector: Baño PB | Fuente: Cloacales | Tarea catálogo: Distribucion baño | Precio catálogo: $145.475,00 | Predecesoras ejecutables: 36,61</Notes>
+      <PredecessorLink>
+        <PredecessorUID>41</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>67</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>70</UID>
+      <ID>70</ID>
+      <Name>Baño PA — Distribución baño</Name>
+      <OutlineNumber>1.5.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 64 | Fase: Instalaciones embutidas | Sector: Baño PA | Fuente: Cloacales | Tarea catálogo: Distribucion baño | Precio catálogo: $145.475,00 | Predecesoras ejecutables: 39,61</Notes>
+      <PredecessorLink>
+        <PredecessorUID>44</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>67</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>71</UID>
+      <ID>71</ID>
+      <Name>Cocina PB — Distribución cocina</Name>
+      <OutlineNumber>1.5.14</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 65 | Fase: Instalaciones embutidas | Sector: Cocina PB | Fuente: Cloacales | Tarea catálogo: Distribucion cocina | Precio catálogo: $145.475,00 | Predecesoras ejecutables: 37,61</Notes>
+      <PredecessorLink>
+        <PredecessorUID>42</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>67</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>72</UID>
+      <ID>72</ID>
+      <Name>PB / PA — Cañería 110 por piso o paredes</Name>
+      <OutlineNumber>1.5.15</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 66 | Fase: Instalaciones embutidas | Sector: PB / PA | Fuente: Cloacales | Tarea catálogo: Cañeria 110 por piso o paredes | Precio catálogo: $20.240,00 | Predecesoras ejecutables: 63,64,65</Notes>
+      <PredecessorLink>
+        <PredecessorUID>69</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>70</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>71</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>73</UID>
+      <ID>73</ID>
+      <Name>Exterior / cisterna — Colocar cisterna enterrada 1000 l</Name>
+      <OutlineNumber>1.5.16</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 67 | Fase: Instalaciones embutidas | Sector: Exterior / cisterna | Fuente: Agua | Tarea catálogo: Colocar cisterna enterrada 1000 l | Precio catálogo: $341.550,00 | Predecesoras ejecutables: 7,20</Notes>
+      <PredecessorLink>
+        <PredecessorUID>9</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>23</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>74</UID>
+      <ID>74</ID>
+      <Name>Cubierta / tanque — Hacer base tanque de reserva</Name>
+      <OutlineNumber>1.5.17</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 68 | Fase: Instalaciones embutidas | Sector: Cubierta / tanque | Fuente: Agua | Tarea catálogo: Hacer base tanque de reserva | Precio catálogo: $323.840,00 | Predecesoras ejecutables: 30</Notes>
+      <PredecessorLink>
+        <PredecessorUID>34</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>75</UID>
+      <ID>75</ID>
+      <Name>Cubierta / tanque — Colocar tanque elevado</Name>
+      <OutlineNumber>1.5.18</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 69 | Fase: Instalaciones embutidas | Sector: Cubierta / tanque | Fuente: Agua | Tarea catálogo: Colocar taque elevado | Precio catálogo: $75.900,00 | Predecesoras ejecutables: 68</Notes>
+      <PredecessorLink>
+        <PredecessorUID>74</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>76</UID>
+      <ID>76</ID>
+      <Name>PB / PA — Subida a tanque y bajada troncales</Name>
+      <OutlineNumber>1.5.19</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 70 | Fase: Instalaciones embutidas | Sector: PB / PA | Fuente: Agua | Tarea catálogo: Subida a tanque y bajada troncales | Precio catálogo: $13.662,00 | Predecesoras ejecutables: 69</Notes>
+      <PredecessorLink>
+        <PredecessorUID>75</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>77</UID>
+      <ID>77</ID>
+      <Name>Cocina / lavadero — Alimentación a termotanque</Name>
+      <OutlineNumber>1.5.20</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 71 | Fase: Instalaciones embutidas | Sector: Cocina / lavadero | Fuente: Agua | Tarea catálogo: Alimentacion a termotanque | Precio catálogo: $13.662,00 | Predecesoras ejecutables: 70</Notes>
+      <PredecessorLink>
+        <PredecessorUID>76</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>78</UID>
+      <ID>78</ID>
+      <Name>Baños / cocina / lavadero — Distribución de baño, cocina y lavadero</Name>
+      <OutlineNumber>1.5.21</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 72 | Fase: Instalaciones embutidas | Sector: Baños / cocina / lavadero | Fuente: Agua | Tarea catálogo: distribucion de baño/cocina lavadero | Precio catálogo: $194.810,00 | Predecesoras ejecutables: 63,64,65,70,71</Notes>
+      <PredecessorLink>
+        <PredecessorUID>69</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>70</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>71</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>76</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>77</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>79</UID>
+      <ID>79</ID>
+      <Name>Obra general — Limpieza general de obra - semana 7</Name>
+      <OutlineNumber>1.5.22</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 73 | Fase: Instalaciones embutidas | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 51,72 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>56</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>80</UID>
+      <ID>80</ID>
+      <Name>Revoques y cielorrasos</Name>
+      <OutlineNumber>1.6</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 13</Notes>
+    </Task>
+    <Task>
+      <UID>81</UID>
+      <ID>81</ID>
+      <Name>PB exterior — C/A vertical + grueso + fino</Name>
+      <OutlineNumber>1.6.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 74 | Fase: Revoques y cielorrasos | Sector: PB exterior | Fuente: Revoques | Tarea catálogo: C/A vertical + Grueso + Fino | Precio catálogo: $10.626,00 | Predecesoras ejecutables: 50,53,63,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>59</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>69</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>82</UID>
+      <ID>82</ID>
+      <Name>PB interior — Grueso y fino</Name>
+      <OutlineNumber>1.6.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 75 | Fase: Revoques y cielorrasos | Sector: PB interior | Fuente: Revoques | Tarea catálogo: Grueso y Fino | Precio catálogo: $8.222,50 | Predecesoras ejecutables: 50,53,63,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>59</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>69</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>83</UID>
+      <ID>83</ID>
+      <Name>PA exterior — C/A vertical + grueso + fino</Name>
+      <OutlineNumber>1.6.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 76 | Fase: Revoques y cielorrasos | Sector: PA exterior | Fuente: Revoques | Tarea catálogo: C/A vertical + Grueso + Fino | Precio catálogo: $10.626,00 | Predecesoras ejecutables: 50,54,64,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>60</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>70</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>84</UID>
+      <ID>84</ID>
+      <Name>PA interior — Grueso y fino</Name>
+      <OutlineNumber>1.6.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 77 | Fase: Revoques y cielorrasos | Sector: PA interior | Fuente: Revoques | Tarea catálogo: Grueso y Fino | Precio catálogo: $8.222,50 | Predecesoras ejecutables: 50,54,64,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>60</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>70</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>85</UID>
+      <ID>85</ID>
+      <Name>Frente — Material acrílico de frente</Name>
+      <OutlineNumber>1.6.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 78 | Fase: Revoques y cielorrasos | Sector: Frente | Fuente: Revoques | Tarea catálogo: Material acrílico de frente | Precio catálogo: $6.957,50 | Predecesoras ejecutables: 74,76</Notes>
+      <PredecessorLink>
+        <PredecessorUID>81</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>83</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>86</UID>
+      <ID>86</ID>
+      <Name>PB interior — Enduido en yeso</Name>
+      <OutlineNumber>1.6.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 79 | Fase: Revoques y cielorrasos | Sector: PB interior | Fuente: Revoques | Tarea catálogo: Enduido en yeso | Precio catálogo: $6.957,50 | Predecesoras ejecutables: 75</Notes>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>87</UID>
+      <ID>87</ID>
+      <Name>PA interior — Enduido en yeso</Name>
+      <OutlineNumber>1.6.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 80 | Fase: Revoques y cielorrasos | Sector: PA interior | Fuente: Revoques | Tarea catálogo: Enduido en yeso | Precio catálogo: $6.957,50 | Predecesoras ejecutables: 77</Notes>
+      <PredecessorLink>
+        <PredecessorUID>84</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>88</UID>
+      <ID>88</ID>
+      <Name>Aberturas / aristas — Cantoneras de yeso</Name>
+      <OutlineNumber>1.6.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 81 | Fase: Revoques y cielorrasos | Sector: Aberturas / aristas | Fuente: Revoques | Tarea catálogo: Cantoneras de yeso | Precio catálogo: $10.752,50 | Predecesoras ejecutables: 74,75,76,77</Notes>
+      <PredecessorLink>
+        <PredecessorUID>81</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>83</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>84</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>89</UID>
+      <ID>89</ID>
+      <Name>PB — Cielorraso suspendido en durlock</Name>
+      <OutlineNumber>1.6.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 82 | Fase: Revoques y cielorrasos | Sector: PB | Fuente: Revoques | Tarea catálogo: Cielorraso suspendido en durlock | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 75,55</Notes>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>61</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>90</UID>
+      <ID>90</ID>
+      <Name>PA — Cielorraso suspendido en durlock</Name>
+      <OutlineNumber>1.6.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 83 | Fase: Revoques y cielorrasos | Sector: PA | Fuente: Revoques | Tarea catálogo: Cielorraso suspendido en durlock | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 77,56</Notes>
+      <PredecessorLink>
+        <PredecessorUID>84</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>62</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>91</UID>
+      <ID>91</ID>
+      <Name>Frente — Revestimiento exterior de frente</Name>
+      <OutlineNumber>1.6.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 84 | Fase: Revoques y cielorrasos | Sector: Frente | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 78,50 | Agregado solicitado: revestimiento exterior fuera del ODS. Va después de revoques exteriores, premarcos y terminación de frente.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>85</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>92</UID>
+      <ID>92</ID>
+      <Name>Laterales / contrafrente — Revestimiento exterior laterales y contrafrente</Name>
+      <OutlineNumber>1.6.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 85 | Fase: Revoques y cielorrasos | Sector: Laterales / contrafrente | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 74,76,50 | Agregado solicitado: revestimiento exterior fuera del ODS. Va después de revoques exteriores y premarcos.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>81</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>83</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>93</UID>
+      <ID>93</ID>
+      <Name>Obra general — Limpieza general de obra - semana 8</Name>
+      <OutlineNumber>1.6.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 86 | Fase: Revoques y cielorrasos | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 73,83,85 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>79</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>90</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>92</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>94</UID>
+      <ID>94</ID>
+      <Name>Contrapisos, pisos y revestimientos</Name>
+      <OutlineNumber>1.7</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 14</Notes>
+    </Task>
+    <Task>
+      <UID>95</UID>
+      <ID>95</ID>
+      <Name>PB general — Contra pisos</Name>
+      <OutlineNumber>1.7.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 87 | Fase: Contrapisos, pisos y revestimientos | Sector: PB general | Fuente: Suelos | Tarea catálogo: Contra pisos | Precio catálogo: $6.325,00 | Predecesoras ejecutables: 66,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>72</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>96</UID>
+      <ID>96</ID>
+      <Name>PA general — Contra pisos</Name>
+      <OutlineNumber>1.7.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P4DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 88 | Fase: Contrapisos, pisos y revestimientos | Sector: PA general | Fuente: Suelos | Tarea catálogo: Contra pisos | Precio catálogo: $6.325,00 | Predecesoras ejecutables: 66,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>72</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>97</UID>
+      <ID>97</ID>
+      <Name>PB general — Carpeta 3x1</Name>
+      <OutlineNumber>1.7.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 89 | Fase: Contrapisos, pisos y revestimientos | Sector: PB general | Fuente: Suelos | Tarea catálogo: Carpeta 3x1 | Precio catálogo: $6.325,00 | Predecesoras ejecutables: 87,75</Notes>
+      <PredecessorLink>
+        <PredecessorUID>95</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>98</UID>
+      <ID>98</ID>
+      <Name>PA general — Carpeta 3x1</Name>
+      <OutlineNumber>1.7.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 90 | Fase: Contrapisos, pisos y revestimientos | Sector: PA general | Fuente: Suelos | Tarea catálogo: Carpeta 3x1 | Precio catálogo: $6.325,00 | Predecesoras ejecutables: 88,77</Notes>
+      <PredecessorLink>
+        <PredecessorUID>96</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>84</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>99</UID>
+      <ID>99</ID>
+      <Name>Cocina / lavadero — Banquinas con carpeta</Name>
+      <OutlineNumber>1.7.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 91 | Fase: Contrapisos, pisos y revestimientos | Sector: Cocina / lavadero | Fuente: Suelos | Tarea catálogo: Banquinas c/carpeta | Precio catálogo: $15.812,50 | Predecesoras ejecutables: 37,65,89</Notes>
+      <PredecessorLink>
+        <PredecessorUID>42</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>71</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>97</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>100</UID>
+      <ID>100</ID>
+      <Name>PB / PA — Juntas de dilatación y tomarlas</Name>
+      <OutlineNumber>1.7.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 92 | Fase: Contrapisos, pisos y revestimientos | Sector: PB / PA | Fuente: Suelos | Tarea catálogo: Juntas de dilatación y tomarlas | Precio catálogo: $2.909,50 | Predecesoras ejecutables: 89,90</Notes>
+      <PredecessorLink>
+        <PredecessorUID>97</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>98</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>101</UID>
+      <ID>101</ID>
+      <Name>PB estar / comedor / cocina — Pisos porcelanato sin zócalos</Name>
+      <OutlineNumber>1.7.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P5DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 93 | Fase: Contrapisos, pisos y revestimientos | Sector: PB estar / comedor / cocina | Fuente: Revestimientos | Tarea catálogo: Pisos Porcelanato sin zocales | Precio catálogo: $11.385,00 | Predecesoras ejecutables: 89,92</Notes>
+      <PredecessorLink>
+        <PredecessorUID>97</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>100</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>102</UID>
+      <ID>102</ID>
+      <Name>PA dormitorios — Pisos flotantes con zócalos</Name>
+      <OutlineNumber>1.7.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 94 | Fase: Contrapisos, pisos y revestimientos | Sector: PA dormitorios | Fuente: Revestimientos | Tarea catálogo: Pisos flotantes con zocalos | Precio catálogo: $10.120,00 | Predecesoras ejecutables: 90,92</Notes>
+      <PredecessorLink>
+        <PredecessorUID>98</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>100</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>103</UID>
+      <ID>103</ID>
+      <Name>Cocina PB — Revestimiento en pared sin guardas</Name>
+      <OutlineNumber>1.7.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 95 | Fase: Contrapisos, pisos y revestimientos | Sector: Cocina PB | Fuente: Revestimientos | Tarea catálogo: Revestimiento en pared sin guardas | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 75,65,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>71</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>104</UID>
+      <ID>104</ID>
+      <Name>Baño PB — Revestimiento en pared sin guardas</Name>
+      <OutlineNumber>1.7.10</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 96 | Fase: Contrapisos, pisos y revestimientos | Sector: Baño PB | Fuente: Revestimientos | Tarea catálogo: Revestimiento en pared sin guardas | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 75,63,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>82</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>69</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>105</UID>
+      <ID>105</ID>
+      <Name>Baño PA — Revestimiento en pared sin guardas</Name>
+      <OutlineNumber>1.7.11</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P3DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 97 | Fase: Contrapisos, pisos y revestimientos | Sector: Baño PA | Fuente: Revestimientos | Tarea catálogo: Revestimiento en pared sin guardas | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 77,64,72</Notes>
+      <PredecessorLink>
+        <PredecessorUID>84</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>70</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>106</UID>
+      <ID>106</ID>
+      <Name>Baños / cocina — Colocar guardas</Name>
+      <OutlineNumber>1.7.12</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 98 | Fase: Contrapisos, pisos y revestimientos | Sector: Baños / cocina | Fuente: Revestimientos | Tarea catálogo: Colocar guardas | Precio catálogo: $6.072,00 | Predecesoras ejecutables: 95,96,97</Notes>
+      <PredecessorLink>
+        <PredecessorUID>103</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>104</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>105</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>107</UID>
+      <ID>107</ID>
+      <Name>PB / PA — Zócalos con corte</Name>
+      <OutlineNumber>1.7.13</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 99 | Fase: Contrapisos, pisos y revestimientos | Sector: PB / PA | Fuente: Revestimientos | Tarea catálogo: Zocalos con corte | Precio catálogo: $3.795,00 | Predecesoras ejecutables: 93,94</Notes>
+      <PredecessorLink>
+        <PredecessorUID>101</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>102</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>108</UID>
+      <ID>108</ID>
+      <Name>Obra general — Limpieza general de obra - semana 9</Name>
+      <OutlineNumber>1.7.14</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 100 | Fase: Contrapisos, pisos y revestimientos | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 86,99 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>93</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>107</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>109</UID>
+      <ID>109</ID>
+      <Name>Pintura interior</Name>
+      <OutlineNumber>1.8</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 9</Notes>
+    </Task>
+    <Task>
+      <UID>110</UID>
+      <ID>110</ID>
+      <Name>Interior PB / PA — Molduras en moldes</Name>
+      <OutlineNumber>1.8.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 101 | Fase: Pintura interior | Sector: Interior PB / PA | Fuente: Terminaciones | Tarea catálogo: Molduras en moldes | Precio catálogo: $12.650,00 | Predecesoras ejecutables: 79,80</Notes>
+      <PredecessorLink>
+        <PredecessorUID>86</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>87</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>111</UID>
+      <ID>111</ID>
+      <Name>Aberturas PB / PA — Frisos perimetrales aberturas</Name>
+      <OutlineNumber>1.8.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 102 | Fase: Pintura interior | Sector: Aberturas PB / PA | Fuente: Terminaciones | Tarea catálogo: Frisos perimetrales aberturas | Precio catálogo: $8.222,50 | Predecesoras ejecutables: 50,81</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>88</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>112</UID>
+      <ID>112</ID>
+      <Name>Interior PB — Sellador y preparación para pintura interior PB</Name>
+      <OutlineNumber>1.8.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 103 | Fase: Pintura interior | Sector: Interior PB | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 79,82,101,102 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>86</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>89</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>110</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>111</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>113</UID>
+      <ID>113</ID>
+      <Name>Interior PA — Sellador y preparación para pintura interior PA</Name>
+      <OutlineNumber>1.8.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 104 | Fase: Pintura interior | Sector: Interior PA | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 80,83,101,102 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>87</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>90</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>110</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>111</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>114</UID>
+      <ID>114</ID>
+      <Name>Interior PB — Pintura interior primera mano PB</Name>
+      <OutlineNumber>1.8.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 105 | Fase: Pintura interior | Sector: Interior PB | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 103 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>112</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>115</UID>
+      <ID>115</ID>
+      <Name>Interior PA — Pintura interior primera mano PA</Name>
+      <OutlineNumber>1.8.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 106 | Fase: Pintura interior | Sector: Interior PA | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 104 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>113</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>116</UID>
+      <ID>116</ID>
+      <Name>Interior PB — Pintura interior terminación PB</Name>
+      <OutlineNumber>1.8.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 107 | Fase: Pintura interior | Sector: Interior PB | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 105 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>114</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>117</UID>
+      <ID>117</ID>
+      <Name>Interior PA — Pintura interior terminación PA</Name>
+      <OutlineNumber>1.8.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 108 | Fase: Pintura interior | Sector: Interior PA | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 106 | Agregado solicitado: pintura interior fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>115</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>118</UID>
+      <ID>118</ID>
+      <Name>Obra general — Limpieza general de obra - semana 10</Name>
+      <OutlineNumber>1.8.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 109 | Fase: Pintura interior | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 100,107,108,84,85 | Limpieza general periódica cada 7 días. Tarea recurrente agregada fuera del ODS para mantener orden, seguridad y avance limpio de obra.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>108</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>116</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>117</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>91</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>92</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>119</UID>
+      <ID>119</ID>
+      <Name>Terminaciones</Name>
+      <OutlineNumber>1.9</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 9</Notes>
+    </Task>
+    <Task>
+      <UID>120</UID>
+      <ID>120</ID>
+      <Name>PB / PA — Colocar puertas placas</Name>
+      <OutlineNumber>1.9.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 110 | Fase: Terminaciones | Sector: PB / PA | Fuente: Terminaciones | Tarea catálogo: Colocar puertas placas | Precio catálogo: $25.300,00 | Predecesoras ejecutables: 93,94,99,107,108</Notes>
+      <PredecessorLink>
+        <PredecessorUID>101</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>102</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>107</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>116</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>117</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>121</UID>
+      <ID>121</ID>
+      <Name>Aberturas PB / PA — Colocar ventanas con cortina enrollable</Name>
+      <OutlineNumber>1.9.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 111 | Fase: Terminaciones | Sector: Aberturas PB / PA | Fuente: Terminaciones | Tarea catálogo: Colocar ventanas con Conrtina enrollable | Precio catálogo: $56.925,00 | Predecesoras ejecutables: 50,84,85</Notes>
+      <PredecessorLink>
+        <PredecessorUID>55</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>91</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>92</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>122</UID>
+      <ID>122</ID>
+      <Name>Baños / cocina / lavadero — Colocar rejillas de ventilación</Name>
+      <OutlineNumber>1.9.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 112 | Fase: Terminaciones | Sector: Baños / cocina / lavadero | Fuente: Terminaciones | Tarea catálogo: Colocar rejillas de ventilacion | Precio catálogo: $10.120,00 | Predecesoras ejecutables: 60,95,96,97</Notes>
+      <PredecessorLink>
+        <PredecessorUID>66</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>103</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>104</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>105</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>123</UID>
+      <ID>123</ID>
+      <Name>Cocina PB — Colocar mesada</Name>
+      <OutlineNumber>1.9.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 113 | Fase: Terminaciones | Sector: Cocina PB | Fuente: Terminaciones | Tarea catálogo: Colocar mesada | Precio catálogo: $31.625,00 | Predecesoras ejecutables: 91,95</Notes>
+      <PredecessorLink>
+        <PredecessorUID>99</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>103</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>124</UID>
+      <ID>124</ID>
+      <Name>Baño PB / cocina / lavadero — Colocación artefactos</Name>
+      <OutlineNumber>1.9.5</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 114 | Fase: Terminaciones | Sector: Baño PB / cocina / lavadero | Fuente: Agua | Tarea catálogo: Colocacion artefactos | Precio catálogo: $43.010,00 | Predecesoras ejecutables: 96,113,72,66,107</Notes>
+      <PredecessorLink>
+        <PredecessorUID>104</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>123</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>72</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>116</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>125</UID>
+      <ID>125</ID>
+      <Name>Baño PA — Colocación artefactos</Name>
+      <OutlineNumber>1.9.6</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 115 | Fase: Terminaciones | Sector: Baño PA | Fuente: Agua | Tarea catálogo: Colocacion artefactos | Precio catálogo: $43.010,00 | Predecesoras ejecutables: 97,72,66,108</Notes>
+      <PredecessorLink>
+        <PredecessorUID>105</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>72</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>117</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>126</UID>
+      <ID>126</ID>
+      <Name>Baño PA — Colocación bañera</Name>
+      <OutlineNumber>1.9.7</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 116 | Fase: Terminaciones | Sector: Baño PA | Fuente: Agua | Tarea catálogo: Colocacion bañera | Precio catálogo: $174.570,00 | Predecesoras ejecutables: 97,72,66,108</Notes>
+      <PredecessorLink>
+        <PredecessorUID>105</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>78</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>72</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>117</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>127</UID>
+      <ID>127</ID>
+      <Name>Exterior / aberturas — Colocar rejas amuradas</Name>
+      <OutlineNumber>1.9.8</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 117 | Fase: Terminaciones | Sector: Exterior / aberturas | Fuente: Terminaciones | Tarea catálogo: Colocar Rejas amuradas | Precio catálogo: $59.455,00 | Predecesoras ejecutables: 111,84,85</Notes>
+      <PredecessorLink>
+        <PredecessorUID>121</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>91</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>92</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>128</UID>
+      <ID>128</ID>
+      <Name>Frente / cochera — Colocar portón levadizo</Name>
+      <OutlineNumber>1.9.9</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 118 | Fase: Terminaciones | Sector: Frente / cochera | Fuente: Terminaciones | Tarea catálogo: Colocar porton levadizo | Precio catálogo: $158.125,00 | Predecesoras ejecutables: 31,84</Notes>
+      <PredecessorLink>
+        <PredecessorUID>35</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>91</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>129</UID>
+      <ID>129</ID>
+      <Name>Parquizado y cierre exterior</Name>
+      <OutlineNumber>1.10</OutlineNumber>
+      <OutlineLevel>2</OutlineLevel>
+      <Summary>1</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Fase lógica de obra. Cantidad de tareas ejecutables: 4</Notes>
+    </Task>
+    <Task>
+      <UID>130</UID>
+      <ID>130</ID>
+      <Name>Exterior / jardín — Nivelación exterior para parquizado</Name>
+      <OutlineNumber>1.10.1</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 119 | Fase: Parquizado y cierre exterior | Sector: Exterior / jardín | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 117,118,85 | Agregado solicitado: parquizado fuera del ODS. Debe ir después de trabajos pesados exteriores.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>127</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>128</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>92</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>131</UID>
+      <ID>131</ID>
+      <Name>Exterior / jardín — Colocación de tierra negra y preparación de canteros</Name>
+      <OutlineNumber>1.10.2</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 120 | Fase: Parquizado y cierre exterior | Sector: Exterior / jardín | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 119 | Agregado solicitado: parquizado fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>130</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>132</UID>
+      <ID>132</ID>
+      <Name>Exterior / jardín — Colocación de césped y plantas</Name>
+      <OutlineNumber>1.10.3</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P2DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 121 | Fase: Parquizado y cierre exterior | Sector: Exterior / jardín | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 120 | Agregado solicitado: parquizado fuera del ODS.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>131</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+    <Task>
+      <UID>133</UID>
+      <ID>133</ID>
+      <Name>Obra general — Limpieza general de obra - cierre final</Name>
+      <OutlineNumber>1.10.4</OutlineNumber>
+      <OutlineLevel>3</OutlineLevel>
+      <Summary>0</Summary>
+      <Duration>P1DT0H0M0S</Duration>
+      <PercentComplete>0</PercentComplete>
+      <Notes>Nro ejecutable: 122 | Fase: Parquizado y cierre exterior | Sector: Obra general | Fuente: Agregado operativo / terminación | Predecesoras ejecutables: 109,121,110,112,114,115,116,117,118 | Limpieza general final. Se suma a la limpieza periódica cada 7 días.</Notes>
+      <PredecessorLink>
+        <PredecessorUID>118</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>132</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>120</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>122</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>124</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>125</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>126</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>127</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+      <PredecessorLink>
+        <PredecessorUID>128</PredecessorUID>
+        <Type>1</Type>
+      </PredecessorLink>
+    </Task>
+  </Tasks>
+</Project>

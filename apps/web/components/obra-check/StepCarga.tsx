@@ -1,17 +1,17 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, MessageSquare, Table2, X } from 'lucide-react';
+import { Upload, Sparkles, Table2, X } from 'lucide-react';
 
 import { parseObraCheckFile, remapSpreadsheet, type ParsedFile } from '@/lib/obra-check/fileParse';
 import { detectarRubro } from '@/lib/obra-check/rubros';
 import type { ColumnField, ObraCheckTask } from '@/lib/obra-check/types';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
-import { ChatPanel } from './ChatPanel';
+import { ObraCheckPlanFromLibrary } from './ObraCheckPlanFromLibrary';
 import type { OrdenarResult } from '@/lib/obra-check/types';
 
-type Mode = 'upload' | 'chat' | 'manual';
+type Mode = 'upload' | 'library' | 'manual';
 
 let mid = 0;
 function blankTask(): ObraCheckTask {
@@ -41,7 +41,24 @@ const FIELD_LABELS: Record<ColumnField, string> = {
   rubro: 'Rubro',
 };
 
-export function StepCarga({ onOrdered }: { onOrdered: (result: OrdenarResult, tasks: ObraCheckTask[]) => void }) {
+function mapTipoToLibraryKind(tipoObra: string | undefined): string | null {
+  if (!tipoObra) return null;
+  if (tipoObra === 'trabajo_comun') return 'trabajo_simple';
+  if (tipoObra === 'otro') return 'trabajo_simple';
+  return tipoObra;
+}
+
+function togglePredecesora(current: string[], predId: string): string[] {
+  return current.includes(predId) ? current.filter((id) => id !== predId) : [...current, predId];
+}
+
+export function StepCarga({
+  onOrdered,
+  tipoObra,
+}: {
+  onOrdered: (result: OrdenarResult, tasks: ObraCheckTask[]) => void;
+  tipoObra?: string;
+}) {
   const [mode, setMode] = useState<Mode>('upload');
   const [tasks, setTasks] = useState<ObraCheckTask[]>([]);
   const [parsed, setParsed] = useState<ParsedFile | null>(null);
@@ -80,7 +97,14 @@ export function StepCarga({ onOrdered }: { onOrdered: (result: OrdenarResult, ta
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   }
   function removeTask(id: string) {
-    setTasks((ts) => ts.filter((t) => t.id !== id));
+    setTasks((ts) =>
+      ts
+        .filter((t) => t.id !== id)
+        .map((t) => ({
+          ...t,
+          predecesoras: t.predecesoras.filter((p) => p !== id),
+        })),
+    );
   }
 
   async function continuar() {
@@ -104,13 +128,14 @@ export function StepCarga({ onOrdered }: { onOrdered: (result: OrdenarResult, ta
 
   const spreadsheetHeader = parsed?.spreadsheet ? (parsed.spreadsheet.rows[parsed.spreadsheet.headerRowIndex] ?? []) : [];
   const colCount = spreadsheetHeader.length;
+  const namedTasks = tasks.filter((t) => t.nombre.trim().length > 0);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {([
           ['upload', 'Subir archivo', Upload],
-          ['chat', 'Crear con asistente', MessageSquare],
+          ['library', 'Elegir plan XML', Sparkles],
           ['manual', 'Escribir tareas', Table2],
         ] as const).map(([m, label, Icon]) => (
           <button
@@ -192,13 +217,20 @@ export function StepCarga({ onOrdered }: { onOrdered: (result: OrdenarResult, ta
         </OCCard>
       )}
 
-      {mode === 'chat' && (
+      {mode === 'library' && (
         <OCCard>
-          <ChatPanel onAddTasks={(nuevas) => setTasks((t) => [...t, ...nuevas])} />
+          <ObraCheckPlanFromLibrary
+            defaultObraProductKind={mapTipoToLibraryKind(tipoObra)}
+            onLoaded={(nuevas) => {
+              setTasks(nuevas);
+              setParsed(null);
+              setMode('manual');
+            }}
+          />
         </OCCard>
       )}
 
-      {(mode === 'manual' || tasks.length > 0) && (
+      {(mode === 'manual' || tasks.length > 0) && mode !== 'library' && (
         <OCCard className="mt-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-semibold" style={{ color: BRAND.blue }}>
@@ -208,31 +240,76 @@ export function StepCarga({ onOrdered }: { onOrdered: (result: OrdenarResult, ta
               + Agregar
             </OCButton>
           </div>
-          <div className="max-h-72 space-y-1 overflow-y-auto">
-            {tasks.map((t) => (
-              <div key={t.id} className="flex items-center gap-2">
-                <input
-                  style={{ ...inputStyle, flex: 3 }}
-                  value={t.nombre}
-                  placeholder="Nombre de la tarea"
-                  onChange={(e) => updateTask(t.id, { nombre: e.target.value })}
-                />
-                <input
-                  style={{ ...inputStyle, flex: 1, minWidth: 70 }}
-                  type="number"
-                  min={0}
-                  value={t.duracionDias ?? ''}
-                  placeholder="días"
-                  onChange={(e) => updateTask(t.id, { duracionDias: e.target.value ? Number(e.target.value) : null })}
-                />
-                <button onClick={() => removeTask(t.id)} style={{ color: BRAND.muted }} title="Quitar">
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
+          <p className="mb-3 text-xs" style={{ color: BRAND.muted }}>
+            Marcá de qué tarea(s) depende cada una. Eso alimenta el orden y el camino crítico.
+          </p>
+          <div className="max-h-96 space-y-3 overflow-y-auto">
+            {tasks.map((t, idx) => {
+              const candidates = namedTasks.filter((o) => o.id !== t.id);
+              return (
+                <div
+                  key={t.id}
+                  className="rounded-lg p-2"
+                  style={{ border: `1px solid ${BRAND.border}`, background: BRAND.gray }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 shrink-0 text-center text-xs font-semibold" style={{ color: BRAND.muted }}>
+                      {idx + 1}
+                    </span>
+                    <input
+                      style={{ ...inputStyle, flex: 3 }}
+                      value={t.nombre}
+                      placeholder="Nombre de la tarea"
+                      onChange={(e) => updateTask(t.id, { nombre: e.target.value })}
+                    />
+                    <input
+                      style={{ ...inputStyle, flex: 1, minWidth: 70 }}
+                      type="number"
+                      min={0}
+                      value={t.duracionDias ?? ''}
+                      placeholder="días"
+                      onChange={(e) => updateTask(t.id, { duracionDias: e.target.value ? Number(e.target.value) : null })}
+                    />
+                    <button onClick={() => removeTask(t.id)} style={{ color: BRAND.muted }} title="Quitar">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  {candidates.length > 0 && (
+                    <div className="mt-2 pl-8">
+                      <p className="mb-1 text-[11px] font-medium" style={{ color: BRAND.muted }}>
+                        Depende de (precedencia)
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {candidates.map((c) => {
+                          const on = t.predecesoras.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() =>
+                                updateTask(t.id, { predecesoras: togglePredecesora(t.predecesoras, c.id) })
+                              }
+                              className="rounded-md px-2 py-1 text-[11px] font-medium"
+                              style={{
+                                background: on ? BRAND.blue : '#fff',
+                                color: on ? '#fff' : BRAND.text,
+                                border: `1px solid ${on ? BRAND.blue : BRAND.border}`,
+                              }}
+                              title={c.nombre}
+                            >
+                              {c.nombre.length > 28 ? `${c.nombre.slice(0, 28)}…` : c.nombre}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {tasks.length === 0 && (
               <p className="py-4 text-center text-xs" style={{ color: BRAND.muted }}>
-                Todavía no hay tareas. Agregá una o subí un archivo.
+                Todavía no hay tareas. Agregá una, subí un archivo o elegí un plan XML.
               </p>
             )}
           </div>

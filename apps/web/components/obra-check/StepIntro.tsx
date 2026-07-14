@@ -51,7 +51,7 @@ export function StepIntro({ onReady }: { onReady: (sessionId: string, tipoObra: 
           Armá y mandá el plan de tu obra, gratis
         </h1>
         <p className="mt-2 text-sm" style={{ color: BRAND.muted }}>
-          Subí tu cronograma (Excel, Project o CSV) o creá las tareas con el asistente. Grows las ordena,
+          Subí tu cronograma, elegí un plan de la librería XML o escribí las tareas a mano. Grows las ordena,
           arma bloques y te genera los mensajes de WhatsApp para tus contratistas.
         </p>
       </div>

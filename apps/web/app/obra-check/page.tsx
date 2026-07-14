@@ -4,7 +4,7 @@ import { ObraCheckWizard } from '@/components/obra-check/ObraCheckWizard';
 export const metadata: Metadata = {
   title: 'Grows Obra Check — Armá y mandá el plan de tu obra gratis',
   description:
-    'Subí tu cronograma (Excel, Project o CSV) o creá las tareas con el asistente. Grows las ordena, arma bloques y te genera los mensajes de WhatsApp para tus contratistas. Gratis.',
+    'Subí tu cronograma, elegí un plan de la librería XML o escribí las tareas. Grows las ordena, arma bloques y te genera los mensajes de WhatsApp para tus contratistas. Gratis.',
 };
 
 // Ruta pública sin auth (el middleware no la intercepta).

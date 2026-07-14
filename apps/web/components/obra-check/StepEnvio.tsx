@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { Send, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Send, Share2, FileText } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
+import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckContact } from '@/lib/obra-check/types';
 import { BRAND, OCButton, OCCard } from './ui';
 import type { Assignments } from './StepAsignar';
@@ -25,6 +26,12 @@ export function StepEnvio({
   const [generated, setGenerated] = useState<Record<string, { texto: string; waLink: string }>>({});
   const [sent, setSent] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<string | null>(null);
+  const [shareHint, setShareHint] = useState<string | null>(null);
+  const [webShare, setWebShare] = useState(false);
+
+  useEffect(() => {
+    setWebShare(canUseWebShareText());
+  }, []);
 
   async function generar(block: ObraCheckBlock) {
     const contactId = assignments[block.id]!;
@@ -38,12 +45,46 @@ export function StepEnvio({
     }
   }
 
-  function enviar(block: ObraCheckBlock) {
+  async function compartir(block: ObraCheckBlock) {
+    const g = generated[block.id];
+    if (!g) return;
+    const contact = contacts.find((c) => c.id === assignments[block.id]);
+    setShareHint(null);
+    const result = await shareOrOpenWhatsApp({
+      texto: g.texto,
+      waLink: g.waLink,
+      titulo: contact ? `Para ${contact.nombre}` : 'Mensaje de obra',
+    });
+    if (result.method === 'web_share' && 'cancelled' in result && result.cancelled) return;
+    if (result.ok) {
+      setSent((s) => new Set(s).add(block.id));
+      obraCheckApi.event('wa_sent', {
+        blockId: block.id,
+        method: result.method,
+        // El SO no nos dice a quién se compartió; solo registramos el destinatario asignado en la sesión.
+        contactId: assignments[block.id],
+        contactNombre: contact?.nombre ?? null,
+      });
+      if (result.method === 'web_share') {
+        setShareHint(
+          'Compartido. WhatsApp / el sistema no nos dice a qué contacto exacto; el destinatario que cargaste queda en tu sesión.',
+        );
+      }
+    }
+  }
+
+  function abrirWaDirecto(block: ObraCheckBlock) {
     const g = generated[block.id];
     if (!g) return;
     window.open(g.waLink, '_blank', 'noopener');
     setSent((s) => new Set(s).add(block.id));
-    obraCheckApi.event('wa_sent', { blockId: block.id });
+    const contact = contacts.find((c) => c.id === assignments[block.id]);
+    obraCheckApi.event('wa_sent', {
+      blockId: block.id,
+      method: 'wa_link',
+      contactId: assignments[block.id],
+      contactNombre: contact?.nombre ?? null,
+    });
   }
 
   return (
@@ -52,8 +93,16 @@ export function StepEnvio({
         Mandá los trabajos por WhatsApp
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Se abre WhatsApp con el mensaje listo. Lo enviás desde tu propio número.
+        {webShare
+          ? 'Usá «Compartir»: se abre la hoja del celular y elegís WhatsApp + el contacto, sin tipear el número.'
+          : 'Se abre WhatsApp con el mensaje listo. Lo enviás desde tu propio número.'}
       </p>
+
+      {shareHint && (
+        <p className="mb-3 rounded-lg p-2 text-xs" style={{ background: BRAND.gray, color: BRAND.muted }}>
+          {shareHint}
+        </p>
+      )}
 
       <div className="space-y-3">
         {assignedBlocks.map((block) => {
@@ -65,6 +114,11 @@ export function StepEnvio({
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
                   {block.nombre} → {contact?.nombre}
+                  {contact?.telefono ? (
+                    <span className="ml-1 font-normal" style={{ color: BRAND.muted }}>
+                      ({contact.telefono})
+                    </span>
+                  ) : null}
                 </p>
                 {sent.has(block.id) && (
                   <span className="text-xs font-medium" style={{ color: BRAND.green }}>
@@ -105,9 +159,14 @@ export function StepEnvio({
                     Generar mensaje
                   </OCButton>
                 ) : (
-                  <OCButton onClick={() => enviar(block)}>
-                    <Send size={15} /> Enviar por WhatsApp
-                  </OCButton>
+                  <>
+                    <OCButton onClick={() => void compartir(block)}>
+                      <Share2 size={15} /> Compartir
+                    </OCButton>
+                    <OCButton variant="secondary" onClick={() => abrirWaDirecto(block)}>
+                      <Send size={15} /> Abrir WhatsApp
+                    </OCButton>
+                  </>
                 )}
                 <OCButton variant="ghost" disabled title="Disponible pronto">
                   <FileText size={15} /> PDF (pronto)

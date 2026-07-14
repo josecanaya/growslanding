@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import { Check, Contact } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
+import { canUseContactPicker, pickDeviceContact } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckContact } from '@/lib/obra-check/types';
 import { rubroLabel } from '@/lib/obra-check/rubros';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
@@ -23,10 +24,18 @@ export function StepAsignar({
   const [form, setForm] = useState({ nombre: '', telefono: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [devicePicker, setDevicePicker] = useState(false);
 
   useEffect(() => {
     obraCheckApi.listContacts().then(setContacts).catch(() => {});
+    setDevicePicker(canUseContactPicker());
   }, []);
+
+  async function fromDevice() {
+    const picked = await pickDeviceContact();
+    if (!picked) return;
+    setForm({ nombre: picked.nombre, telefono: picked.telefono });
+  }
 
   async function assignNew(block: ObraCheckBlock) {
     if (!form.nombre.trim()) return;
@@ -70,7 +79,8 @@ export function StepAsignar({
         Asigná un contratista a cada bloque
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        El teléfono se usa solo para generar el mensaje de WhatsApp que vos vas a enviar.
+        El nombre va en el mensaje. El teléfono es opcional: en el celular podés compartir eligiendo el
+        contacto en WhatsApp sin tipear el número.
       </p>
 
       <div className="space-y-3">
@@ -115,9 +125,24 @@ export function StepAsignar({
                       ))}
                     </div>
                   )}
+                  {devicePicker && (
+                    <OCButton variant="secondary" onClick={() => void fromDevice()}>
+                      <Contact size={15} /> Elegir de mis contactos
+                    </OCButton>
+                  )}
                   <div className="flex flex-col gap-2 sm:flex-row">
-                    <input style={inputStyle} placeholder="Nombre del contratista" value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} />
-                    <input style={inputStyle} placeholder="WhatsApp (opcional)" value={form.telefono} onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))} />
+                    <input
+                      style={inputStyle}
+                      placeholder="Nombre del contratista"
+                      value={form.nombre}
+                      onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+                    />
+                    <input
+                      style={inputStyle}
+                      placeholder="WhatsApp (opcional)"
+                      value={form.telefono}
+                      onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
+                    />
                     <OCButton onClick={() => assignNew(block)} loading={busy} disabled={!form.nombre.trim()}>
                       Guardar
                     </OCButton>

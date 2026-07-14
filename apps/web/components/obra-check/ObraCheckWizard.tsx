@@ -49,7 +49,7 @@ export function ObraCheckWizard() {
         />
       )}
 
-      {step === 'carga' && <StepCarga onOrdered={onOrdered} />}
+      {step === 'carga' && <StepCarga onOrdered={onOrdered} tipoObra={tipoObra} />}
 
       {step === 'orden' && (
         <div className="mx-auto max-w-4xl">

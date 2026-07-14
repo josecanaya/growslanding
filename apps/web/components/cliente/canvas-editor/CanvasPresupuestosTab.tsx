@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/grows';
 import { cn } from '@/lib/utils';
 import type { CanvasBudgetGroup, CanvasNode } from '@/lib/types/canvasMultinivel';
 import { budgetGroupStatusLabel, changeWindowStatusLabel } from './canvasMultinivelHelpers';
+import { evaluarBloqueoPublicacionPliego } from '@/lib/canvas/budgetGroupPublish';
 import { buildBudgetGroupHierarchyBranches } from '@/lib/canvas/budgetGroupHierarchy';
 import { BudgetGroupTaskTree } from './BudgetGroupTaskTree';
 
@@ -98,6 +99,8 @@ export function CanvasPresupuestosTab({
   const [detailName, setDetailName] = useState('');
   const [detailSocioIds, setDetailSocioIds] = useState<Set<string>>(new Set());
   const [detailMensaje, setDetailMensaje] = useState('');
+  const [publishToAgenda, setPublishToAgenda] = useState(true);
+  const [publishToBolsa, setPublishToBolsa] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [changeNotes, setChangeNotes] = useState('');
   const [changeBusy, setChangeBusy] = useState(false);
@@ -110,6 +113,8 @@ export function CanvasPresupuestosTab({
     const pre = detailGroup.scheduledSocioId?.trim();
     setDetailSocioIds(pre ? new Set([pre]) : new Set());
     setDetailMensaje(detailGroup.mensajeSocioBorrador ?? '');
+    setPublishToAgenda(true);
+    setPublishToBolsa(Boolean(detailGroup.bolsaPublicada));
     setSendNotice(null);
   }, [detailGroup]);
 
@@ -119,6 +124,7 @@ export function CanvasPresupuestosTab({
       presupuestosYaAprobados?: number;
       presupuestosFallidos?: number;
       partial?: boolean;
+      publishToBolsa?: boolean;
       pendingPublish?: Array<{ canvasNodeId: string; title: string | null; motivo: string }>;
     },
     warnings: string[],
@@ -127,13 +133,20 @@ export function CanvasPresupuestosTab({
     const ya = Number(j.presupuestosYaAprobados) || 0;
     const fall = Number(j.presupuestosFallidos) || 0;
     const pend = Array.isArray(j.pendingPublish) ? j.pendingPublish.length : 0;
-    let msg = `Solicitud enviada. ${nuevos} solicitud${nuevos === 1 ? '' : 'es'} nueva${nuevos === 1 ? '' : 's'} de presupuesto.`;
+    let msg = j.publishToBolsa && !(Number(j.presupuestosAprobados) || 0)
+      ? 'Pliego publicado en bolsa. Los socios pueden postularse desde Oportunidades.'
+      : `Solicitud enviada. ${nuevos} solicitud${nuevos === 1 ? '' : 'es'} nueva${nuevos === 1 ? '' : 's'} de presupuesto.`;
     if (ya > 0) msg += ` ${ya} ya existían para ese socio.`;
     if (fall > 0) msg += ` ${fall} con error.`;
     if (j.partial && pend > 0) {
-      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} sin publicar; cuando las publiques, volvé a enviar para incluirlas.`;
+      msg += ` Hay ${pend} tarea${pend === 1 ? '' : 's'} sin publicar en el paquete.`;
     }
-    msg += ' Los socios recibirán el paquete para presupuestar (sin asignación automática).';
+    if (j.publishToBolsa) {
+      msg += ' Publicado en bolsa: cualquier socio puede postularse desde Oportunidades.';
+    }
+    if (!j.publishToBolsa) {
+      msg += ' Los socios invitados recibirán el paquete para presupuestar (sin asignación automática).';
+    }
     if (warnings.length > 0) {
       msg += ` · ${warnings.slice(0, 3).join(' ')}`;
     }
@@ -144,7 +157,21 @@ export function CanvasPresupuestosTab({
   const detailChangeWindow = String(detailGroup?.changeWindowStatus ?? 'cerrada').toLowerCase();
   const paqueteAprobado = detailStatus === 'aprobado' || detailStatus === 'aprobado_parcial';
   const puedeReenviarTrasCambio = detailChangeWindow === 'confirmada_socio';
-  const puedeEnviarPaquete = !paqueteAprobado || puedeReenviarTrasCambio;
+  const bloqueoPublicacion = detailGroup
+    ? evaluarBloqueoPublicacionPliego({
+        groupStatus: detailStatus,
+        changeWindowStatus: detailChangeWindow,
+        pliegoPublicadoAt: detailGroup.pliegoPublicadoAt,
+        tienePresupuestoAprobadoEnGrupo: paqueteAprobado,
+      })
+    : { blocked: false, reason: null, message: null };
+  const pliegoYaPublicado =
+    bloqueoPublicacion.blocked && bloqueoPublicacion.reason === 'ya_publicado';
+  const puedeEnviarPaquete =
+    (!bloqueoPublicacion.blocked || puedeReenviarTrasCambio) &&
+    (!paqueteAprobado || puedeReenviarTrasCambio);
+  const destinoValido =
+    (publishToBolsa || (publishToAgenda && detailSocioIds.size > 0)) && puedeEnviarPaquete;
 
   const onSolicitarCambio = async () => {
     if (!detailGroup) return;
@@ -226,14 +253,22 @@ export function CanvasPresupuestosTab({
       setSendNotice('El grupo no tiene tareas incluidas.');
       return;
     }
-    if (detailSocioIds.size === 0) {
-      setSendNotice('Elegí al menos un socio de tu agenda.');
+    if (!publishToBolsa && publishToAgenda && detailSocioIds.size === 0) {
+      setSendNotice('Elegí al menos un socio de tu agenda o activá «Publicar en bolsa».');
+      return;
+    }
+    if (!publishToBolsa && !publishToAgenda) {
+      setSendNotice('Elegí al menos un destino: agenda o bolsa.');
       return;
     }
     const unpublished = detailTasks.filter((t) => !tareaPublicacionByNodeId[t.id]);
     const published = detailTasks.length - unpublished.length;
-    let confirmMsg =
-      `¿Enviar el paquete a ${detailSocioIds.size} socio${detailSocioIds.size === 1 ? '' : 's'} para que presupuesten? No se asignarán las tareas hasta que apruebes una oferta.`;
+    const sociosCount = detailSocioIds.size;
+    let confirmMsg = publishToBolsa
+      ? publishToAgenda && sociosCount > 0
+        ? `¿Publicar el paquete en bolsa (todos los socios) y además invitar a ${sociosCount} socio${sociosCount === 1 ? '' : 's'} de tu agenda?`
+        : `¿Publicar el paquete en bolsa para que cualquier socio pueda postularse y presupuestar?`
+      : `¿Enviar el paquete a ${sociosCount} socio${sociosCount === 1 ? '' : 's'} de tu agenda para que presupuesten? No se asignarán las tareas hasta que apruebes una oferta.`;
     if (unpublished.length > 0 && published > 0) {
       confirmMsg = `Hay ${unpublished.length} tarea${unpublished.length === 1 ? '' : 's'} que todavía no están publicadas.\n\n¿Enviar ahora las ${published} listas y dejar las ${unpublished.length} restantes pendientes en este mismo grupo? Cuando las publiques, vas a poder sumarlas al paquete.`;
     } else if (unpublished.length > 0 && published === 0) {
@@ -257,8 +292,10 @@ export function CanvasPresupuestosTab({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             budgetGroupId: detailGroup.id,
-            socioIds: Array.from(detailSocioIds),
+            socioIds: publishToAgenda ? Array.from(detailSocioIds) : [],
             message: detailMensaje,
+            publishToAgenda: publishToAgenda && detailSocioIds.size > 0,
+            publishToBolsa,
           }),
         },
       );
@@ -281,7 +318,7 @@ export function CanvasPresupuestosTab({
         }
         return;
       }
-      if ((Number(j.presupuestosAprobados) || 0) + (Number(j.presupuestosYaAprobados) || 0) > 0) {
+      if ((Number(j.presupuestosAprobados) || 0) + (Number(j.presupuestosYaAprobados) || 0) > 0 || j.bolsaPublicada || j.publishToBolsa) {
         const st =
           typeof j.groupStatus === 'string' && j.groupStatus
             ? j.groupStatus
@@ -294,6 +331,9 @@ export function CanvasPresupuestosTab({
             detailSocioIds.size === 1 ? Array.from(detailSocioIds)[0]! : detailGroup.scheduledSocioId,
           changeWindowStatus: 'cerrada',
           changeWindowNotes: null,
+          bolsaPublicada: Boolean(j.bolsaPublicada),
+          publicadoAAgenda: publishToAgenda && detailSocioIds.size > 0,
+          pliegoPublicadoAt: new Date().toISOString(),
         });
       }
       const w = Array.isArray(j.warnings) ? j.warnings : [];
@@ -443,11 +483,61 @@ export function CanvasPresupuestosTab({
                 </div>
               </div>
 
+              <div className="rounded-xl border border-[#eef2f6] bg-[#f8fafc] p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#001629]">
+                  Dónde publicar el pliego
+                </p>
+                <p className="mt-1 text-[11px] text-[#64748b]">
+                  Solo podés publicar una vez. Después los socios presupuestan; para cambiar el paquete usá la
+                  ventana de cambio.
+                </p>
+                <label className="mt-3 flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-[#c3c7ce]"
+                    checked={publishToAgenda}
+                    disabled={!puedeEnviarPaquete}
+                    onChange={(e) => setPublishToAgenda(e.target.checked)}
+                  />
+                  <span className="text-sm text-[#001629]">
+                    <strong>Invitar socios de mi agenda</strong>
+                    <span className="block text-[11px] font-normal text-[#64748b]">
+                      Les llega la solicitud directa (hasta 6 ofertores por paquete en total).
+                    </span>
+                  </span>
+                </label>
+                <label className="mt-2 flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5 h-4 w-4 rounded border-[#c3c7ce]"
+                    checked={publishToBolsa}
+                    disabled={!puedeEnviarPaquete || Boolean(detailGroup?.bolsaPublicada)}
+                    onChange={(e) => setPublishToBolsa(e.target.checked)}
+                  />
+                  <span className="text-sm text-[#001629]">
+                    <strong>Publicar en bolsa</strong>
+                    <span className="block text-[11px] font-normal text-[#64748b]">
+                      Visible para todos los socios; quienes no están en tu agenda pueden postularse.
+                    </span>
+                  </span>
+                </label>
+                {detailGroup?.bolsaPublicada ? (
+                  <p className="mt-2 text-[11px] font-medium text-[#0d6b4c]">Este paquete ya está en bolsa.</p>
+                ) : null}
+                {bloqueoPublicacion.blocked && !puedeReenviarTrasCambio ? (
+                  <p className="mt-2 text-[11px] font-medium text-amber-900">{bloqueoPublicacion.message}</p>
+                ) : null}
+              </div>
+
               <div>
                 <label className="text-[10px] font-bold uppercase text-[#7b8494]">
                   Contratistas agendados ({detailSocioIds.size} seleccionados)
                 </label>
-                {!agendaLoaded ? (
+                {!publishToAgenda ? (
+                  <p className="mt-2 text-sm text-[#64748b]">
+                    Desactivaste la invitación por agenda. Solo se usará la bolsa si la tenés marcada.
+                  </p>
+                ) : !agendaLoaded ? (
                   <p className="mt-2 text-sm text-[#64748b]">Cargando agenda…</p>
                 ) : agenda.length === 0 ? (
                   <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-950">
@@ -580,16 +670,20 @@ export function CanvasPresupuestosTab({
                   type="button"
                   variant="primary"
                   className="w-full rounded-xl"
-                  disabled={sendBusy || detailTasks.length === 0 || !puedeEnviarPaquete}
+                  disabled={sendBusy || detailTasks.length === 0 || !destinoValido}
                   onClick={() => void onEnviarSolicitud()}
                 >
                   {sendBusy
-                    ? 'Enviando solicitudes…'
+                    ? 'Publicando pliego…'
                     : paqueteAprobado && puedeReenviarTrasCambio
-                      ? 'Re-enviar solicitud de presupuesto'
-                      : 'Enviar paquete para presupuestar'}
+                      ? 'Re-publicar paquete (tras cambio confirmado)'
+                      : pliegoYaPublicado
+                        ? 'Pliego ya publicado'
+                        : 'Publicar paquete para presupuestar'}
                 </Button>
-                {paqueteAprobado && !puedeEnviarPaquete ? (
+                {bloqueoPublicacion.blocked && !puedeReenviarTrasCambio ? (
+                  <p className="text-center text-[11px] text-[#64748b]">{bloqueoPublicacion.message}</p>
+                ) : paqueteAprobado && !puedeEnviarPaquete ? (
                   <p className="text-center text-[11px] text-[#64748b]">
                     Para re-enviar, primero solicitá el cambio y esperá la confirmación del socio.
                   </p>

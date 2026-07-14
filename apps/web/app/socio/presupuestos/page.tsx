@@ -15,6 +15,7 @@ import {
   Share2,
   MessageCircle,
   Scale,
+  MoreVertical,
 } from 'lucide-react';
 import { SolicitarCambioPresupuestoModal } from '@/components/socio/presupuestos/SolicitarCambioPresupuestoModal';
 import { Button } from '@/components/ui/grows/Button';
@@ -35,6 +36,7 @@ import { USE_MOCK_DATA, FORCE_PRESUPUESTOS_MOCK, MOCK_OBRAS_PARA_PRESUPUESTOS } 
 import { cn } from '@/lib/utils';
 import { bucketEtapaPresupuesto } from '@/lib/socio/bucketEtapaPresupuesto';
 import { presupuestoLineaEstado } from '@/lib/socio/presupuestoLineaEstado';
+import { presupuestoLineaTieneValoresObligatorios } from '@/lib/socio/presupuestoValores';
 import {
   buildPresupuestoPdfBlob,
   downloadPresupuestoPdf,
@@ -70,11 +72,13 @@ function PresupuestosContent() {
   const [activeEtapa, setActiveEtapa] = useState<'ESTRUCTURA' | 'OBRA_GRIS' | 'TERMINACIONES'>('ESTRUCTURA');
   const [stagePdfPath, setStagePdfPath] = useState<string | null>(null);
   const [planosOpen, setPlanosOpen] = useState(false);
+  const [accionesExtraOpen, setAccionesExtraOpen] = useState(false);
 
   const {
     obra,
     presupuestos,
     canvasNodes,
+    canvasBudgetGroups,
     editing,
     loading,
     saving,
@@ -224,7 +228,12 @@ function PresupuestosContent() {
     }
     let completas = 0;
     presupuestosFiltrados.forEach((p) => {
-      const ed = editing.get(p.tarea_id) || { dias_reales: null, monto: null, observacion: '' };
+      const ed = editing.get(p.tarea_id) || {
+        dias_reales: null,
+        monto: null,
+        observacion: '',
+        incluye_materiales: false,
+      };
       const { key } = presupuestoLineaEstado(p.estado, {
         monto: ed.monto ?? p.monto,
         dias_reales: ed.dias_reales ?? p.dias_reales,
@@ -308,6 +317,26 @@ function PresupuestosContent() {
   const hayPendientes = presupuestosFiltrados.some(
     (p) => p.estado === 'PENDIENTE' || !p.estado || p.estado === ''
   );
+
+  const puedePublicarEtapa = useMemo(() => {
+    const pendientes = presupuestosFiltrados.filter((p) => {
+      const e = (p.estado || '').toUpperCase();
+      return e !== 'ENVIADO' && e !== 'APROBADO';
+    });
+    if (pendientes.length === 0) return false;
+    return pendientes.every((p) => {
+      const ed = editing.get(p.tarea_id) || {
+        dias_reales: null,
+        monto: null,
+        observacion: '',
+        incluye_materiales: false,
+      };
+      return presupuestoLineaTieneValoresObligatorios(ed);
+    });
+  }, [presupuestosFiltrados, editing]);
+
+  const menuItemClass =
+    'flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-50';
 
   // Función para eliminar PDF y permitir editar
   const handleEliminarPDFYEditar = async () => {
@@ -926,6 +955,7 @@ function PresupuestosContent() {
         <ListaTareas
           presupuestos={presupuestosFiltrados}
           canvasNodesRaw={canvasNodes}
+          canvasBudgetGroups={canvasBudgetGroups}
           onFieldChange={onFieldChange}
           editing={editing}
           stitchMode={stitchPresupuestoUi}
@@ -981,7 +1011,7 @@ function PresupuestosContent() {
           />
           <div className="flex flex-col gap-2 px-3 pb-3 pt-0">
             {hayPendientes || !todosEnviadosOAprobados ? (
-              <>
+              <div className="flex gap-2">
                 <Button
                   variant="primary"
                   onClick={() =>
@@ -992,118 +1022,127 @@ function PresupuestosContent() {
                       activeEtapa,
                     )
                   }
-                  disabled={saving}
+                  disabled={saving || !puedePublicarEtapa}
                   loading={saving}
-                  className="h-12 w-full rounded-2xl text-base font-bold"
+                  className="h-12 min-w-0 flex-1 rounded-2xl text-base font-bold"
                   size="sm"
                 >
-                  <Send className="mr-2 h-4 w-4" />
-                  Enviar presupuesto
+                  <Send className="mr-2 h-4 w-4 shrink-0" />
+                  Publicar
                 </Button>
-                <div className="flex gap-2">
+                <div className="relative shrink-0">
                   <Button
+                    type="button"
                     variant="secondary"
-                    onClick={() => handleSaveDraft(presupuestosFiltrados)}
                     disabled={saving}
-                    loading={saving}
-                    className="h-11 flex-1 rounded-xl font-semibold"
+                    className="h-12 w-12 rounded-2xl px-0"
                     size="sm"
+                    aria-label="Más opciones"
+                    onClick={() => setAccionesExtraOpen((v) => !v)}
                   >
-                    <Save className="mr-2 h-4 w-4" />
-                    Guardar borrador
+                    <MoreVertical className="h-5 w-5" />
                   </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={handleGenerarPDF}
-                    disabled={saving}
-                    className="h-11 flex-1 rounded-xl font-semibold"
-                    size="sm"
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    PDF
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={handlePrintPresupuesto}
-                    disabled={saving}
-                    className="h-11 flex-1 rounded-xl font-semibold"
-                    size="sm"
-                  >
-                    <Printer className="mr-2 h-4 w-4" />
-                    Imprimir
-                  </Button>
+                  {accionesExtraOpen ? (
+                    <div className="absolute bottom-full right-0 z-40 mb-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                      <button
+                        type="button"
+                        className={menuItemClass}
+                        disabled={saving}
+                        onClick={() => {
+                          setAccionesExtraOpen(false);
+                          void handleSaveDraft(presupuestosFiltrados);
+                        }}
+                      >
+                        <Save className="h-4 w-4 text-slate-500" />
+                        Guardar borrador
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); void handleGenerarPDF(); }}>
+                        <FileText className="h-4 w-4 text-slate-500" />
+                        Generar PDF
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); handlePrintPresupuesto(); }}>
+                        <Printer className="h-4 w-4 text-slate-500" />
+                        Imprimir
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); handleDescargarPDF(); }}>
+                        <Download className="h-4 w-4 text-slate-500" />
+                        Descargar PDF
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); void handleCompartirPDF(); }}>
+                        <Share2 className="h-4 w-4 text-slate-500" />
+                        Compartir
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); void handleWhatsAppPDF(); }}>
+                        <MessageCircle className="h-4 w-4 text-slate-500" />
+                        WhatsApp
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={handleDescargarPDF}
-                    disabled={saving}
-                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
-                    size="sm"
-                  >
-                    <Download className="mr-1.5 h-4 w-4" />
-                    Descargar
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => void handleCompartirPDF()}
-                    disabled={saving}
-                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
-                    size="sm"
-                  >
-                    <Share2 className="mr-1.5 h-4 w-4" />
-                    Compartir
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => void handleWhatsAppPDF()}
-                    disabled={saving}
-                    className="h-10 flex-1 rounded-xl text-xs font-semibold"
-                    size="sm"
-                  >
-                    <MessageCircle className="mr-1.5 h-4 w-4" />
-                    WhatsApp
-                  </Button>
-                </div>
-              </>
+              </div>
             ) : (
-              // Si ya se envió: mostrar botones de ver PDF / imprimir / editar (si no está aprobado)
-              <>
-                {(stagePdfPath || pdfPath) && (
+              <div className="flex gap-2">
+                {(stagePdfPath || pdfPath) ? (
                   <Button
                     variant="primary"
                     onClick={handleVerPDFEnviado}
                     disabled={saving}
-                    className="flex-1"
+                    className="h-12 min-w-0 flex-1 rounded-2xl font-bold"
                     size="sm"
                   >
-                    <Eye className="h-4 w-4 mr-2" />
+                    <Eye className="mr-2 h-4 w-4" />
                     Ver PDF enviado
                   </Button>
+                ) : (
+                  <p className="flex h-12 min-w-0 flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 px-3 text-center text-xs font-semibold text-slate-600">
+                    Presupuesto publicado
+                  </p>
                 )}
-                <Button
-                  variant="secondary"
-                  onClick={handlePrintPresupuesto}
-                  disabled={saving}
-                  className="flex-1"
-                  size="sm"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir
-                </Button>
-                {puedeEditar && (
+                <div className="relative shrink-0">
                   <Button
+                    type="button"
                     variant="secondary"
-                    onClick={handleEliminarPDFYEditar}
                     disabled={saving}
-                    className="flex-1"
+                    className="h-12 w-12 rounded-2xl px-0"
                     size="sm"
+                    aria-label="Más opciones"
+                    onClick={() => setAccionesExtraOpen((v) => !v)}
                   >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Editar
+                    <MoreVertical className="h-5 w-5" />
                   </Button>
-                )}
-                {presupuestosAprobados && presupuestoAprobadoRef ? (
+                  {accionesExtraOpen ? (
+                    <div className="absolute bottom-full right-0 z-40 mb-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); handlePrintPresupuesto(); }}>
+                        <Printer className="h-4 w-4 text-slate-500" />
+                        Imprimir
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); handleDescargarPDF(); }}>
+                        <Download className="h-4 w-4 text-slate-500" />
+                        Descargar PDF
+                      </button>
+                      <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); void handleCompartirPDF(); }}>
+                        <Share2 className="h-4 w-4 text-slate-500" />
+                        Compartir
+                      </button>
+                      {puedeEditar ? (
+                        <button type="button" className={menuItemClass} disabled={saving} onClick={() => { setAccionesExtraOpen(false); void handleEliminarPDFYEditar(); }}>
+                          <Edit className="h-4 w-4 text-slate-500" />
+                          Editar de nuevo
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
+            {hayPendientes || !todosEnviadosOAprobados ? (
+              !puedePublicarEtapa && !saving ? (
+                <p className="text-center text-[11px] font-medium text-amber-800">
+                  Completá días y precio en todas las partidas para habilitar Publicar.
+                </p>
+              ) : null
+            ) : null}
+            {presupuestosAprobados && presupuestoAprobadoRef ? (
                   solicitudCambioEstado === 'pendiente' ? (
                     <p className="flex-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs font-semibold text-amber-900">
                       Solicitud de cambio en revisión por el cliente
@@ -1136,8 +1175,6 @@ function PresupuestosContent() {
                     </Button>
                   )
                 ) : null}
-              </>
-            )}
           </div>
         </div>
       )}

@@ -5,6 +5,10 @@ import {
   publicationReviewCategory,
 } from './canvasMultinivelHelpers';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
+import {
+  absoluteGateForTaskParent,
+  computeMacroGateOffsets,
+} from './macroGateSchedule';
 
 export type CronogramaItem = {
   id: string;
@@ -92,7 +96,7 @@ function scheduleTasksInContainer(
 }
 
 /** Programación jerárquica: CPM por contenedor de tareas + CPM entre fases. */
-function scheduleHierarchical(
+export function computeGlobalTaskSchedule(
   nodes: CanvasNode[],
   edges: CanvasPrecedenceEdge[],
 ): Map<string, { es: number; ef: number; isCritical: boolean }> {
@@ -108,41 +112,14 @@ function scheduleHierarchical(
     }
   }
 
-  const etapas = nodes.filter((n) => n.type === 'etapa');
-  const etapaDurations = new Map<string, number>();
-  for (const etapa of etapas) {
-    const descTasks = collectDescendantTasks(nodes, etapa.id);
-    let maxEf = 0;
-    for (const t of descTasks) {
-      const lo = localByTask.get(t.id);
-      if (lo) maxEf = Math.max(maxEf, lo.ef);
-    }
-    etapaDurations.set(etapa.id, Math.max(1, maxEf));
-  }
-
-  const etapaSiblings = etapas.filter((e) => e.parentId === null);
-  const etapaParentId = etapaSiblings[0]?.parentId ?? null;
-  const etapaEdges = edgesForSiblingLevel(etapaParentId, nodes, edges).filter(
-    (e) => etapas.some((x) => x.id === e.sourceId) && etapas.some((x) => x.id === e.targetId),
-  );
-
-  const etapaNodesForCpm: CanvasNode[] = etapaSiblings.map((e) => ({
-    ...e,
-    duracionDias: etapaDurations.get(e.id) ?? 1,
-  }));
-  const etapaCpm = computeCanvasTaskCpm(etapaNodesForCpm, etapaEdges);
-  const etapaEs = new Map<string, number>();
-  for (const e of etapaSiblings) {
-    etapaEs.set(e.id, etapaCpm?.byId.get(e.id)?.es ?? 0);
-  }
+  const gateOffset = computeMacroGateOffsets(nodes, edges, localByTask);
 
   for (const t of tasks) {
     const dur = Math.max(1, Math.round(t.duracionDias ?? 1));
     const lo = localByTask.get(t.id) ?? { es: 0, ef: dur };
-    const etapa = findAncestor(byId, t.id, 'etapa');
-    const base = etapa ? (etapaEs.get(etapa.id) ?? 0) : 0;
-    const es = base + lo.es;
-    const ef = base + lo.ef;
+    const gate = absoluteGateForTaskParent(t.parentId, nodes, gateOffset);
+    const es = gate + lo.es;
+    const ef = gate + lo.ef;
     const containerId = t.parentId;
     let isCritical = Boolean(t.esCritica);
     if (containerId) {
@@ -153,7 +130,6 @@ function scheduleHierarchical(
       );
       if (localCpm?.byId.get(t.id)?.isCritical) isCritical = true;
     }
-    if (etapa && etapaCpm?.byId.get(etapa.id)?.isCritical) isCritical = true;
     absolute.set(t.id, { es, ef, isCritical });
   }
 
@@ -185,7 +161,7 @@ export function buildCronogramaItems(
   if (tasks.length === 0) return [];
 
   const byId = byIdMap(nodes);
-  const schedule = scheduleHierarchical(nodes, edges);
+  const schedule = computeGlobalTaskSchedule(nodes, edges);
   const items: CronogramaItem[] = [];
 
   for (const t of tasks) {

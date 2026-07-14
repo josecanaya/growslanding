@@ -45,6 +45,11 @@ export type CanvasBudgetGroup = {
   /** Ventana de cambio post-aprobación: cerrada | abierta_cliente | confirmada_socio */
   changeWindowStatus?: string | null;
   changeWindowNotes?: string | null;
+  /** Pliego visible en bolsa (socios fuera de agenda pueden postularse). */
+  bolsaPublicada?: boolean;
+  publicadoAAgenda?: boolean;
+  /** Primera publicación; bloquea re-envío salvo ventana de cambio confirmada. */
+  pliegoPublicadoAt?: string | null;
 };
 
 export type CanvasNode = {

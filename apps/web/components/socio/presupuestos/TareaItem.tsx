@@ -57,8 +57,12 @@ interface TareaItemProps {
     dias_reales: number | null;
     monto: number | null;
     observacion: string;
+    incluye_materiales: boolean;
   };
-  onFieldChange: (field: 'dias_reales' | 'monto' | 'observacion', value: number | null | string) => void;
+  onFieldChange: (
+    field: 'dias_reales' | 'monto' | 'observacion' | 'incluye_materiales',
+    value: number | null | string | boolean,
+  ) => void;
   stitchMode?: boolean;
   breadcrumb?: string[];
   /** Fila legible tipo app; el detalle queda al expandir. */
@@ -183,6 +187,15 @@ export function TareaItem({
             {ubicacionCorta ? (
               <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500">{ubicacionCorta}</p>
             ) : null}
+            <label className="mt-2 flex cursor-pointer items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-3.5 w-3.5 rounded border-slate-300 text-[#163274]"
+                checked={editing.incluye_materiales}
+                onChange={(e) => onFieldChange('incluye_materiales', e.target.checked)}
+              />
+              <span className="text-[11px] font-medium text-slate-600">Incluye materiales</span>
+            </label>
           </div>
           <div className="shrink-0 text-right">
             <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Monto</p>
@@ -206,6 +219,15 @@ export function TareaItem({
         </button>
         {expandido ? (
           <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-slate-300 text-[#163274] focus:ring-[#163274]"
+                checked={editing.incluye_materiales}
+                onChange={(e) => onFieldChange('incluye_materiales', e.target.checked)}
+              />
+              <span className="text-sm font-medium text-slate-700">Incluye materiales</span>
+            </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">
@@ -338,6 +360,15 @@ export function TareaItem({
 
       {expandido && (
         <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+          <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-[#163274] focus:ring-[#163274]"
+              checked={editing.incluye_materiales}
+              onChange={(e) => onFieldChange('incluye_materiales', e.target.checked)}
+            />
+            <span className="text-sm font-medium text-slate-700">Incluye materiales</span>
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">

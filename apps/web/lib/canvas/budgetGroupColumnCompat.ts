@@ -4,6 +4,17 @@
  * Si el proyecto remoto aún no aplicó el SQL, PostgREST devuelve error de schema cache.
  */
 
+const OPTIONAL_BUDGET_GROUP_COLUMN_MARKERS = [
+  'mensaje_socio_borrador',
+  'scheduled_socio_id',
+  'bolsa_publicada',
+  'publicado_a_agenda',
+  'pliego_publicado_at',
+  'change_window_status',
+  'change_window_notes',
+  'approved_at',
+];
+
 export function isMissingOptionalBudgetGroupSocioColumnsError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false;
   const e = err as { message?: string; code?: string; hint?: string };
@@ -12,8 +23,7 @@ export function isMissingOptionalBudgetGroupSocioColumnsError(err: unknown): boo
   return (
     code === 'PGRST204' ||
     code === '42703' ||
-    msg.includes('mensaje_socio_borrador') ||
-    msg.includes('scheduled_socio_id') ||
+    OPTIONAL_BUDGET_GROUP_COLUMN_MARKERS.some((m) => msg.includes(m)) ||
     msg.includes('schema cache') ||
     (msg.includes('could not find') && msg.includes('column'))
   );

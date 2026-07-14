@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   Loader2,
   MousePointer2,
+  Network,
   RotateCcw,
   RotateCw,
   Save,
@@ -79,6 +80,7 @@ export type CanvasEditorProChromeProps = {
   connectTareasActive?: boolean;
   onGoOrganizar?: () => void;
   onOpenTemplateLibrary?: () => void;
+  onOpenObraCompleta?: () => void;
 };
 
 function RibbonButton({
@@ -437,6 +439,13 @@ export function CanvasEditorProChrome(props: CanvasEditorProChromeProps) {
                 />
               </RibbonGroup>
               <RibbonGroup label="Visualización">
+                <RibbonButton
+                  icon={Network}
+                  label="Obra completa"
+                  onClick={props.onOpenObraCompleta}
+                  disabled={!props.canvasHydrated || props.taskCount === 0}
+                  title="Diagrama PERT de todas las tareas (solo lectura)"
+                />
                 <RibbonButton
                   icon={Filter}
                   label="Filtrar"

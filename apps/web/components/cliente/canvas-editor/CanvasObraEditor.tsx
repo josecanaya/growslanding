@@ -45,6 +45,7 @@ import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
+import { ObraCompletaFlowModal } from './ObraCompletaFlowModal';
 
 type Props = { obraId: string };
 
@@ -73,6 +74,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [projectImportBusy, setProjectImportBusy] = useState(false);
   const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
   const [publicarModalOpen, setPublicarModalOpen] = useState(false);
+  const [obraCompletaOpen, setObraCompletaOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
@@ -660,6 +662,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         deleteDisabled={!selectedId}
         onGoOrganizar={() => setEditorTab('canvas')}
         onOpenTemplateLibrary={() => setLibraryOpen(true)}
+        onOpenObraCompleta={() => setObraCompletaOpen(true)}
       />
       <CanvasTemplateLibraryPanel
         open={libraryOpen}
@@ -821,6 +824,20 @@ export function CanvasObraEditor({ obraId }: Props) {
           obraId={obraId}
           onClose={() => setPublicarModalOpen(false)}
           onAfterPublish={() => void refreshTareaPublicacion()}
+        />
+
+        <ObraCompletaFlowModal
+          open={obraCompletaOpen}
+          onClose={() => setObraCompletaOpen(false)}
+          obraNombre={obraNombre}
+          nodes={nodes}
+          edges={edges}
+          onNavigateToTask={(taskId) => {
+            setEditorTab('canvas');
+            openPathToNode(taskId);
+            setSelectedId(taskId);
+            setInspectorOpen(true);
+          }}
         />
 
         {showCanvasInspector ? (

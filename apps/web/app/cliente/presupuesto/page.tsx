@@ -3,48 +3,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Route } from 'next';
 import Link from 'next/link';
+import { ArrowLeft, Building2, ChevronRight } from 'lucide-react';
 import { SectionHeader } from '@/components/cliente/SectionHeader';
-import { PresupuestoCard } from '@/components/cliente/PresupuestoCard';
+import { ClientePliegoPaqueteCard } from '@/components/cliente/presupuestos/ClientePliegoPaqueteCard';
 import { SolicitudesCambioPresupuestoPanel } from '@/components/cliente/presupuestos/SolicitudesCambioPresupuestoPanel';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
-import { Button } from '@/components/ui/grows';
+import { cn } from '@/lib/utils';
+import {
+  groupPliegosEnObra,
+  puedeResponderPresupuesto,
+  type OfertaPresupuestoBucket,
+  type PresupuestoRowMin,
+} from '@/lib/cliente/pliegoPresupuesto';
 
-type Row = {
-  id: string;
-  monto: number;
-  estado: string | null;
-  createdAt: string | null;
-  tareaId: string;
-  socioId: string | null;
-  tareaTitulo: string;
+type Row = PresupuestoRowMin & {
   obraId: string | null;
   obraNombre: string;
-  cuadrilla: string;
 };
-
-function mapEstadoPresupuesto(estado: string | null | undefined): string {
-  if (!estado) return '—';
-  const u = estado.toUpperCase();
-  if (u === 'BORRADOR' || u === 'DRAFT') return 'Borrador interno';
-  if (u === 'ENVIADO' || u === 'PENDIENTE') return 'Pendiente de respuesta';
-  if (u === 'APROBADO' || u === 'ACEPTADO') return 'Aprobado';
-  if (u === 'RECHAZADO') return 'Rechazado';
-  return estado;
-}
-
-function puedeResponder(estado: string | null | undefined): boolean {
-  const u = (estado ?? '').toUpperCase();
-  return u === 'ENVIADO' || u === 'PENDIENTE';
-}
-
-function formatEnviado(iso: string | null) {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleDateString('es-AR');
-  } catch {
-    return iso;
-  }
-}
 
 type ObraBucket = {
   key: string;
@@ -54,30 +29,44 @@ type ObraBucket = {
 };
 
 function resumenObra(rows: Row[]) {
-  const u = (e: string | null | undefined) => String(e ?? '').toUpperCase();
   let pendientes = 0;
   let aprobados = 0;
-  let otros = 0;
   let montoAprobado = 0;
-  const socios = new Set<string>();
+  const pliegos = groupPliegosEnObra(rows);
+  let pliegosConPendientes = 0;
+  for (const pliego of pliegos) {
+    const hayPend = pliego.ofertas.some((o) =>
+      o.rows.some((r) => puedeResponderPresupuesto(r.estado)),
+    );
+    if (hayPend) pliegosConPendientes++;
+  }
   for (const r of rows) {
-    const est = u(r.estado);
+    const est = String(r.estado ?? '').toUpperCase();
     if (est === 'ENVIADO' || est === 'PENDIENTE') pendientes++;
     else if (est === 'APROBADO' || est === 'ACEPTADO') {
       aprobados++;
-      if (typeof r.monto === 'number' && r.monto > 0) montoAprobado += r.monto;
-    } else otros++;
-    if (r.cuadrilla && r.cuadrilla !== '—') socios.add(r.cuadrilla);
+      if (r.monto > 0) montoAprobado += r.monto;
+    }
   }
-  return { pendientes, aprobados, otros, montoAprobado, sociosCount: socios.size };
+  return {
+    pendientes,
+    aprobados,
+    montoAprobado,
+    pliegosCount: pliegos.length,
+    pliegosConPendientes,
+    ofertoresTotal: new Set(rows.map((r) => r.socioId).filter(Boolean)).size,
+  };
 }
+
+const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
 export default function ClientePresupuestoPage() {
   const user = useCurrentUser();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyOfertaKey, setBusyOfertaKey] = useState<string | null>(null);
+  const [obraSeleccionadaKey, setObraSeleccionadaKey] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?.orgId) {
@@ -130,20 +119,30 @@ export default function ClientePresupuestoPage() {
     );
   }, [rows]);
 
-  const aprobar = async (p: Row) => {
-    if (!puedeResponder(p.estado) || busyId) return;
-    if (!window.confirm(`¿Aprobá el presupuesto de «${p.tareaTitulo}» por ${p.monto ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(p.monto) : 'el monto indicado'}? Se asignará la tarea al socio.`)) {
-      return;
-    }
-    setBusyId(p.id);
+  const obraActiva = useMemo(
+    () => buckets.find((b) => b.key === obraSeleccionadaKey) ?? null,
+    [buckets, obraSeleccionadaKey],
+  );
+
+  const aprobarOferta = async (oferta: OfertaPresupuestoBucket, obraId: string | null) => {
+    if (busyOfertaKey) return;
+    const pendientes = oferta.rows.filter((p) => puedeResponderPresupuesto(p.estado));
+    if (pendientes.length === 0) return;
+    const total = pendientes.reduce((s, p) => s + (p.monto > 0 ? p.monto : 0), 0);
+    const msg = `¿Adjudicás la oferta de «${oferta.cuadrilla}»?\n\nSe aprobarán ${pendientes.length} partida(s) del paquete${total > 0 ? ` por ${ars.format(total)}` : ''}. Las demás ofertas del mismo pliego quedarán descartadas en cada tarea.`;
+    if (!window.confirm(msg)) return;
+
+    setBusyOfertaKey(oferta.key);
     setErr(null);
     try {
-      const res = await fetch(`/api/cliente/presupuestos/${encodeURIComponent(p.id)}/aprobar`, {
+      const res = await fetch('/api/cliente/presupuestos/aprobar-paquete', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presupuesto_ids: pendientes.map((p) => p.id) }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErr(json.error || 'No se pudo aprobar');
+        setErr(json.error || 'No se pudo adjudicar la oferta');
         return;
       }
       await load();
@@ -151,39 +150,37 @@ export default function ClientePresupuestoPage() {
         window.dispatchEvent(new CustomEvent('grows:presupuesto-respondido'));
       }
     } catch {
-      setErr('Error de red al aprobar');
+      setErr('Error de red al adjudicar');
     } finally {
-      setBusyId(null);
+      setBusyOfertaKey(null);
     }
   };
 
-  const rechazar = async (p: Row) => {
-    if (!puedeResponder(p.estado) || busyId) return;
-    if (!p.socioId) {
-      setErr('Falta identificar al socio para rechazar.');
+  const rechazarOferta = async (oferta: OfertaPresupuestoBucket, obraId: string | null) => {
+    if (busyOfertaKey) return;
+    const pendientes = oferta.rows.filter((p) => puedeResponderPresupuesto(p.estado));
+    if (pendientes.length === 0) return;
+    if (!oferta.socioId || !obraId) {
+      setErr('Faltan datos del socio u obra para rechazar.');
       return;
     }
-    if (!p.obraId) {
-      setErr('Falta la obra asociada para rechazar.');
-      return;
-    }
-    const comentario = window.prompt('Motivo del rechazo (opcional):') ?? '';
-    setBusyId(p.id);
+    const comentario = window.prompt(`Motivo del rechazo de la oferta de ${oferta.cuadrilla} (opcional):`) ?? '';
+    setBusyOfertaKey(oferta.key);
     setErr(null);
     try {
       const res = await fetch('/api/presupuestos/rechazar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          socio_id: p.socioId,
-          obra_id: p.obraId,
-          tarea_ids: [p.tareaId],
+          socio_id: oferta.socioId,
+          obra_id: obraId,
+          tarea_ids: pendientes.map((p) => p.tareaId),
           comentario: comentario.trim() || null,
         }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErr(json.error || 'No se pudo rechazar');
+        setErr(json.error || 'No se pudo rechazar la oferta');
         return;
       }
       await load();
@@ -193,16 +190,133 @@ export default function ClientePresupuestoPage() {
     } catch {
       setErr('Error de red al rechazar');
     } finally {
-      setBusyId(null);
+      setBusyOfertaKey(null);
     }
   };
+
+  const listadoObras = (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {buckets.map((bucket) => {
+        const res = resumenObra(bucket.rows);
+        const tienePendientes = res.pliegosConPendientes > 0;
+        return (
+          <button
+            key={bucket.key}
+            type="button"
+            onClick={() => setObraSeleccionadaKey(bucket.key)}
+            className={cn(
+              'flex w-full flex-col rounded-xl border-2 p-5 text-left shadow-sm transition hover:shadow-md',
+              tienePendientes
+                ? 'border-amber-300 bg-amber-50/90 hover:border-amber-400'
+                : 'border-emerald-200 bg-emerald-50/50 hover:border-emerald-300',
+            )}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-start gap-3">
+                <span
+                  className={cn(
+                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
+                    tienePendientes ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-800',
+                  )}
+                >
+                  <Building2 className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold leading-snug text-slate-900">{bucket.obraNombre}</h2>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {tienePendientes ? 'Pliegos con ofertas pendientes' : 'Pliegos al día'}
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
+            </div>
+            <p className="mt-4 text-sm text-slate-700">
+              {res.pliegosCount} pliego{res.pliegosCount === 1 ? '' : 's'} · hasta 6 ofertores c/u
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              Pendientes: <strong className="text-amber-900">{res.pendientes}</strong> · Aprobadas:{' '}
+              <strong className="text-emerald-800">{res.aprobados}</strong>
+            </p>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  const detalleObra =
+    obraActiva &&
+    (() => {
+      const res = resumenObra(obraActiva.rows);
+      const pliegos = groupPliegosEnObra(obraActiva.rows);
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <button
+                type="button"
+                onClick={() => setObraSeleccionadaKey(null)}
+                className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Todas las obras
+              </button>
+              <h2 className="text-2xl font-semibold text-slate-900">{obraActiva.obraNombre}</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {pliegos.length} pliego{pliegos.length === 1 ? '' : 's'} · {res.pendientes} partida
+                {res.pendientes === 1 ? '' : 's'} pendiente{res.pendientes === 1 ? '' : 's'}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-semibold text-amber-950">
+                  Pliego en comparación (ámbar)
+                </span>
+                <span className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-900">
+                  Pliego adjudicado (verde)
+                </span>
+              </div>
+            </div>
+            {obraActiva.obraId ? (
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href={`/cliente/tareas/${encodeURIComponent(obraActiva.obraId)}/editor` as Route}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50"
+                >
+                  Abrir canvas
+                </Link>
+                <Link
+                  href={`/cliente/obras/${encodeURIComponent(obraActiva.obraId)}` as Route}
+                  className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                >
+                  Ver obra
+                </Link>
+              </div>
+            ) : null}
+          </div>
+          <div className="space-y-5">
+            {pliegos.map((pliego) => (
+              <ClientePliegoPaqueteCard
+                key={pliego.key}
+                pliegoNombre={pliego.pliegoNombre}
+                ofertas={pliego.ofertas}
+                busyOfertaKey={busyOfertaKey}
+                onAprobarOferta={(oferta) => void aprobarOferta(oferta, obraActiva.obraId)}
+                onRechazarOferta={(oferta) => void rechazarOferta(oferta, obraActiva.obraId)}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    })();
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <SectionHeader
         eyebrow="Compras"
         title="Presupuestos"
-        description="Solicitudes y respuestas asociadas a tareas, según lo registrado en la base de datos."
+        description={
+          obraSeleccionadaKey
+            ? 'Cada paquete es un pliego: compará ofertores (hasta 6) y adjudicá una oferta completa.'
+            : 'Elegí una obra para ver los pliegos y ofertas de presupuesto.'
+        }
       />
       <SolicitudesCambioPresupuestoPanel onResponded={() => void load()} />
       {err ? (
@@ -218,100 +332,10 @@ export default function ClientePresupuestoPage() {
         <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-600">
           No hay presupuestos de tareas todavía.
         </p>
+      ) : obraSeleccionadaKey ? (
+        detalleObra
       ) : (
-        <div className="space-y-12">
-          {buckets.map((bucket) => {
-            const res = resumenObra(bucket.rows);
-            return (
-              <section key={bucket.key} className="space-y-4">
-                <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-end md:justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-slate-900">{bucket.obraNombre}</h2>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {bucket.rows.length} presupuesto{bucket.rows.length === 1 ? '' : 's'} · Pendientes de respuesta:{' '}
-                      <strong>{res.pendientes}</strong> · Aprobados: <strong>{res.aprobados}</strong>
-                      {res.montoAprobado > 0 ? (
-                        <>
-                          {' '}
-                          · Total aprobado:{' '}
-                          <strong>
-                            {new Intl.NumberFormat('es-AR', {
-                              style: 'currency',
-                              currency: 'ARS',
-                              maximumFractionDigits: 0,
-                            }).format(res.montoAprobado)}
-                          </strong>
-                        </>
-                      ) : null}
-                      {res.sociosCount > 0 ? (
-                        <>
-                          {' '}
-                          · Socios (cuadrillas distintas): <strong>{res.sociosCount}</strong>
-                        </>
-                      ) : null}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {bucket.obraId ? (
-                      <>
-                        <Link
-                          href={`/cliente/tareas/${encodeURIComponent(bucket.obraId)}/editor` as Route}
-                          className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 hover:bg-slate-50"
-                        >
-                          Abrir canvas
-                        </Link>
-                        <Link
-                          href={`/cliente/obras/${encodeURIComponent(bucket.obraId)}` as Route}
-                          className="inline-flex h-9 items-center justify-center rounded-lg px-3 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-                        >
-                          Ver obra
-                        </Link>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {bucket.rows.map((p) => {
-                    const actions =
-                      puedeResponder(p.estado) && p.socioId ? (
-                        <>
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={busyId === p.id}
-                            onClick={() => void aprobar(p)}
-                          >
-                            {busyId === p.id ? 'Procesando…' : 'Aprobar'}
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            disabled={busyId === p.id}
-                            onClick={() => void rechazar(p)}
-                          >
-                            Rechazar
-                          </Button>
-                        </>
-                      ) : null;
-                    return (
-                      <div key={p.id}>
-                        <PresupuestoCard
-                          titulo={p.tareaTitulo}
-                          cuadrilla={p.cuadrilla}
-                          estado={mapEstadoPresupuesto(p.estado)}
-                          monto={p.monto}
-                          enviado={formatEnviado(p.createdAt)}
-                          actions={actions}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+        listadoObras
       )}
     </div>
   );

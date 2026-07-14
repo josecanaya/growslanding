@@ -25,8 +25,8 @@
     "@radix-ui/react-slot": "^1.0.3",
     "@radix-ui/react-tabs": "^1.1.13",
     "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/auth-helpers-shared": "0.7.0",
     "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/auth-helpers-shared": "0.7.0",
     "@supabase/supabase-js": "^2.45.2",
     "@types/three": "^0.180.0",
     "@xyflow/react": "^12.10.2",
@@ -52,6 +52,7 @@
     "three-stdlib": "^2.36.0",
     "web-ifc": "^0.0.72",
     "web-ifc-three": "^0.0.126",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8",
     "zustand": "^5.0.8"
   },

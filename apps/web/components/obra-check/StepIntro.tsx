@@ -58,8 +58,8 @@ export function StepIntro({ onReady }: { onReady: (sessionId: string, tipoObra: 
 
       <OCCard>
         <div className="space-y-4">
-          <OCField label="Email" hint="Te enviamos el resumen del plan.">
-            <input style={inputStyle} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vos@estudio.com" />
+          <OCField label="Email (obligatorio)" hint="Te enviamos el resumen del plan y un link para entrar a Grows.">
+            <input style={inputStyle} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vos@estudio.com" />
           </OCField>
           <OCField label="Empresa / estudio (opcional)">
             <input style={inputStyle} value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Estudio Belgrano" />

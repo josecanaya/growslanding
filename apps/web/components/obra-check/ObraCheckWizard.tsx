@@ -175,6 +175,7 @@ export function ObraCheckWizard() {
       {step === 'presupuesto' && (
         <StepBudgetGroups
           blocks={blocks}
+          tasks={tasks}
           onBack={() => setStep('orden')}
           onContinue={async (groups, nextBlocks) => {
             await obraCheckApi.saveBudgetGroups(groups);

@@ -34,7 +34,7 @@ export function StepEnvio({
   const [webShare, setWebShare] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [leads, setLeads] = useState<
-    Array<{ id: string; nombre: string; telefono: string; blockId: string | null; mensaje: string | null }>
+    Array<{ id: string; telefono: string; email: string | null; blockId: string | null; mensaje: string | null }>
   >([]);
 
   useEffect(() => {
@@ -206,8 +206,8 @@ export function StepEnvio({
                   </p>
                   {blockLeads.map((l) => (
                     <p key={l.id}>
-                      {l.nombre} · {l.telefono}
-                      {l.mensaje ? ` · “${l.mensaje.slice(0, 60)}”` : ''}
+                      {l.telefono || l.email}
+                      {l.mensaje ? ` · ${l.mensaje.slice(0, 80)}` : ''}
                     </p>
                   ))}
                 </div>

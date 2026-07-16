@@ -19,7 +19,7 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export type CreateSessionInput = {
-  email?: string;
+  email: string;
   empresa?: string;
   tipoObra?: string;
   consentProcesamiento: true;
@@ -88,6 +88,9 @@ export const obraCheckApi = {
     call<{ ok: boolean }>('events', { method: 'POST', body: JSON.stringify({ tipo, payload }) }).catch(() => ({
       ok: false,
     })),
+
+  complete: () =>
+    call<{ sent: boolean; alreadySent: boolean }>('complete', { method: 'POST', body: JSON.stringify({}) }),
 
   chat: (message: string, state?: Record<string, unknown>) =>
     call<{ reply?: string; actions?: unknown[]; fallback?: boolean }>('chat', {

@@ -7,7 +7,7 @@ import { obraCheckDb, logEvent, OBRA_CHECK_COOKIE } from '@/lib/obra-check/db';
 export const dynamic = 'force-dynamic';
 
 const bodySchema = z.object({
-  email: z.string().email().optional(),
+  email: z.string().email(),
   empresa: z.string().max(200).optional(),
   tipoObra: z.string().max(60).optional(),
   consentProcesamiento: z.literal(true), // obligatorio para operar

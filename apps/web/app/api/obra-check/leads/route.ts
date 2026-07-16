@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await db
     .from('obra_check_form_responses')
-    .select('id, nombre, telefono, email, rubro, empresa, mensaje, created_at, invite_id')
+    .select('id, nombre, telefono, email, rubro, empresa, mensaje, detalle_json, created_at, invite_id')
     .eq('session_id', session.id)
     .order('created_at', { ascending: false });
 
@@ -40,6 +40,7 @@ export async function GET() {
     rubro: string | null;
     empresa: string | null;
     mensaje: string | null;
+    detalle_json: unknown | null;
     created_at: string;
     invite_id: string;
   }>).map((r) => ({
@@ -50,6 +51,7 @@ export async function GET() {
     rubro: r.rubro,
     empresa: r.empresa,
     mensaje: r.mensaje,
+    detalle: r.detalle_json,
     createdAt: r.created_at,
     blockId: blockByInvite[r.invite_id] ?? null,
   }));

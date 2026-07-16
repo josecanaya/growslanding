@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { ObraCheckBlock, ObraCheckBudgetGroup } from '@/lib/obra-check/types';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckTask } from '@/lib/obra-check/types';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 
 let groupCounter = 0;
@@ -27,13 +28,16 @@ function buildDefaultGroups(blocks: ObraCheckBlock[]): ObraCheckBudgetGroup[] {
 
 export function StepBudgetGroups({
   blocks,
+  tasks,
   onBack,
   onContinue,
 }: {
   blocks: ObraCheckBlock[];
+  tasks: ObraCheckTask[];
   onBack: () => void;
   onContinue: (groups: ObraCheckBudgetGroup[], blocks: ObraCheckBlock[]) => void | Promise<void>;
 }) {
+  const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
   const initialGroups = useMemo(() => buildDefaultGroups(blocks), [blocks]);
   const [groups, setGroups] = useState<ObraCheckBudgetGroup[]>(initialGroups);
   const [draftBlocks, setDraftBlocks] = useState<ObraCheckBlock[]>(
@@ -42,13 +46,22 @@ export function StepBudgetGroups({
       budgetGroupId: initialGroups.find((g) => g.blockIds.includes(b.id))?.id ?? null,
     })),
   );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set(initialGroups.map((g) => g.id)),
+  );
+  const [expandedBlocks, setExpandedBlocks] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function taskNamesForBlock(block: ObraCheckBlock): ObraCheckTask[] {
+    return block.taskIds.map((id) => taskById.get(id)).filter(Boolean) as ObraCheckTask[];
+  }
 
   function addGroup() {
     groupCounter += 1;
     const id = `bg-new-${groupCounter}`;
     setGroups((curr) => [...curr, { id, nombre: nextGroupName(curr.length + 1), blockIds: [] }]);
+    setExpandedGroups((s) => new Set(s).add(id));
   }
 
   function renameGroup(id: string, nombre: string) {
@@ -77,82 +90,177 @@ export function StepBudgetGroups({
     [groups, draftBlocks],
   );
 
+  function toggleGroup(id: string) {
+    setExpandedGroups((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleBlock(id: string) {
+    setExpandedBlocks((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div className="mx-auto max-w-3xl">
       <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
         Armá grupos de presupuesto
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Antes de asignar contratistas, definí los grupos comerciales. Dentro de cada grupo van los paquetes
-        de tareas que Grows armó al ordenar.
+        Cada grupo es un pedido comercial que le mandás a un contratista. Adentro van los paquetes
+        de tareas — expandí cada uno para ver qué incluye.
       </p>
 
       <OCCard className="mb-4">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
-            Grupos
+            Grupos comerciales
           </p>
           <OCButton variant="secondary" onClick={addGroup}>
             + Grupo
           </OCButton>
         </div>
         <div className="space-y-2">
-          {groups.map((group) => (
-            <div key={group.id} className="flex gap-2">
-              <input
-                style={inputStyle}
-                value={group.nombre}
-                onChange={(e) => renameGroup(group.id, e.target.value)}
-                placeholder="Nombre del grupo"
-              />
-              <div className="min-w-[100px] rounded-lg px-3 py-2 text-xs font-medium" style={{ background: BRAND.gray, color: BRAND.muted }}>
-                {draftBlocks.filter((b) => b.budgetGroupId === group.id).length} paquete(s)
+          {groups.map((group) => {
+            const groupBlocks = draftBlocks.filter((b) => b.budgetGroupId === group.id);
+            const taskCount = groupBlocks.reduce((n, b) => n + b.taskIds.length, 0);
+            const open = expandedGroups.has(group.id);
+            return (
+              <div key={group.id} className="rounded-lg" style={{ background: BRAND.gray }}>
+                <div className="flex items-center gap-2 p-2">
+                  <button type="button" onClick={() => toggleGroup(group.id)} className="shrink-0">
+                    {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                  <input
+                    style={{ ...inputStyle, flex: 1 }}
+                    value={group.nombre}
+                    onChange={(e) => renameGroup(group.id, e.target.value)}
+                    placeholder="Nombre del grupo"
+                  />
+                  <span className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium" style={{ background: '#fff', color: BRAND.muted }}>
+                    {groupBlocks.length} paq. · {taskCount} tareas
+                  </span>
+                </div>
+                {open && groupBlocks.length > 0 && (
+                  <div className="space-y-2 border-t px-2 pb-2 pt-2" style={{ borderColor: BRAND.border }}>
+                    {groupBlocks.map((block) => {
+                      const blockTasks = taskNamesForBlock(block);
+                      const blockOpen = expandedBlocks.has(block.id);
+                      return (
+                        <div key={block.id} className="rounded-lg bg-white p-2">
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between text-left"
+                            onClick={() => toggleBlock(block.id)}
+                          >
+                            <div>
+                              <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
+                                {block.nombre}
+                              </p>
+                              <p className="text-xs" style={{ color: BRAND.muted }}>
+                                {blockTasks.length} tarea(s){block.fase ? ` · ${block.fase}` : ''}
+                              </p>
+                            </div>
+                            {blockOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                          </button>
+                          {blockOpen && (
+                            <ul className="mt-2 space-y-0.5 border-t pt-2 text-xs" style={{ borderColor: BRAND.border, color: BRAND.text }}>
+                              {blockTasks.map((t) => (
+                                <li key={t.id} className="flex justify-between gap-2 py-0.5">
+                                  <span>{t.nombre}</span>
+                                  {t.duracionDias != null && (
+                                    <span style={{ color: BRAND.muted }}>{t.duracionDias}d</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {open && groupBlocks.length === 0 && (
+                  <p className="border-t px-3 pb-2 pt-1 text-xs" style={{ borderColor: BRAND.border, color: BRAND.muted }}>
+                    Sin paquetes. Asigná paquetes abajo.
+                  </p>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </OCCard>
 
       <OCCard className="mb-4">
         <p className="mb-3 text-sm font-semibold" style={{ color: BRAND.text }}>
-          Meté los paquetes dentro de grupos
+          Asignar paquetes a grupos
         </p>
         <div className="space-y-2">
-          {draftBlocks.map((block) => (
-            <div key={block.id} className="grid grid-cols-1 gap-2 rounded-lg p-2 sm:grid-cols-[1fr_220px]" style={{ background: BRAND.gray }}>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
-                  {block.nombre}
-                </p>
-                <p className="text-xs" style={{ color: BRAND.muted }}>
-                  {block.taskIds.length} tarea(s){block.fase ? ` · ${block.fase}` : ''}
-                </p>
+          {draftBlocks.map((block) => {
+            const blockTasks = taskNamesForBlock(block);
+            const blockOpen = expandedBlocks.has(`assign-${block.id}`);
+            return (
+              <div key={block.id} className="rounded-lg p-2" style={{ background: BRAND.gray }}>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_200px] sm:items-start">
+                  <div>
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-left"
+                      onClick={() => toggleBlock(`assign-${block.id}`)}
+                    >
+                      {blockOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
+                        {block.nombre}
+                      </p>
+                    </button>
+                    <p className="ml-5 text-xs" style={{ color: BRAND.muted }}>
+                      {blockTasks.length} tarea(s){block.fase ? ` · ${block.fase}` : ''}
+                    </p>
+                    {blockOpen && (
+                      <ul className="ml-5 mt-1 space-y-0.5 text-xs" style={{ color: BRAND.text }}>
+                        {blockTasks.map((t) => (
+                          <li key={t.id}>
+                            · {t.nombre}
+                            {t.duracionDias != null ? ` (${t.duracionDias}d)` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <select
+                    style={inputStyle}
+                    value={block.budgetGroupId ?? ''}
+                    onChange={(e) => assignBlock(block.id, e.target.value)}
+                  >
+                    <option value="">Sin grupo</option>
+                    {groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <select
-                style={inputStyle}
-                value={block.budgetGroupId ?? ''}
-                onChange={(e) => assignBlock(block.id, e.target.value)}
-              >
-                <option value="">Sin grupo</option>
-                {groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </OCCard>
 
       <OCCard>
         <p className="mb-3 text-sm font-semibold" style={{ color: BRAND.text }}>
-          Vista previa
+          Vista previa — qué le llega al contratista
         </p>
         <div className="space-y-3">
           {groupedPreview.map((group) => (
             <div key={group.id} className="rounded-lg p-3" style={{ background: BRAND.gray }}>
-              <p className="text-sm font-semibold" style={{ color: BRAND.blue }}>
+              <p className="text-sm font-bold" style={{ color: BRAND.blue }}>
                 {group.nombre}
               </p>
               {group.blocks.length === 0 ? (
@@ -160,11 +268,26 @@ export function StepBudgetGroups({
                   Todavía no tiene paquetes.
                 </p>
               ) : (
-                <ul className="mt-2 space-y-1 text-xs" style={{ color: BRAND.text }}>
-                  {group.blocks.map((block) => (
-                    <li key={block.id}>{block.nombre}</li>
-                  ))}
-                </ul>
+                <div className="mt-2 space-y-2">
+                  {group.blocks.map((block) => {
+                    const blockTasks = taskNamesForBlock(block);
+                    return (
+                      <div key={block.id} className="rounded-lg bg-white p-2">
+                        <p className="text-xs font-semibold" style={{ color: BRAND.text }}>
+                          {block.nombre}
+                        </p>
+                        <ul className="mt-1 space-y-0.5 text-xs" style={{ color: BRAND.muted }}>
+                          {blockTasks.map((t) => (
+                            <li key={t.id}>
+                              {t.nombre}
+                              {t.duracionDias != null ? ` · ${t.duracionDias}d` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           ))}

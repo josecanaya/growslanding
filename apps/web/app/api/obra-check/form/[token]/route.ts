@@ -59,16 +59,6 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
     .eq('block_client_id', inv.block_client_id)
     .order('orden', { ascending: true });
 
-  let contactNombre: string | null = null;
-  if (inv.contact_id) {
-    const { data: contact } = await db
-      .from('obra_check_contacts')
-      .select('nombre')
-      .eq('id', inv.contact_id)
-      .maybeSingle();
-    contactNombre = (contact as { nombre: string } | null)?.nombre ?? null;
-  }
-
   const sess = session as { empresa: string | null; tipo_obra: string | null; email: string | null } | null;
 
   return NextResponse.json({
@@ -80,7 +70,6 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
       rubro: (block as { rubro: string | null } | null)?.rubro ?? null,
       empresa: sess?.empresa ?? null,
       tipoObra: sess?.tipo_obra ?? null,
-      contactoSugerido: contactNombre,
       tareas: ((tareas ?? []) as { nombre: string; duracion_dias: number | null; orden: number }[]).map((t) => ({
         nombre: t.nombre,
         duracionDias: t.duracion_dias,
@@ -89,15 +78,28 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
   });
 }
 
-const submitSchema = z.object({
-  nombre: z.string().min(2).max(120),
-  telefono: z.string().min(6).max(40),
-  email: z.string().email().max(160).optional().or(z.literal('')),
-  rubro: z.string().max(80).optional().nullable(),
-  empresa: z.string().max(120).optional().nullable(),
-  mensaje: z.string().max(2000).optional().nullable(),
-  aceptaContacto: z.boolean().default(true),
+const taskDetalleSchema = z.object({
+  nombre: z.string(),
+  included: z.boolean(),
+  dias: z.number().nullable().optional(),
+  precio: z.number().nullable().optional(),
+  inicio: z.string().nullable().optional(),
+  fin: z.string().nullable().optional(),
 });
+
+const submitSchema = z
+  .object({
+    telefono: z.string().max(40).optional().or(z.literal('')),
+    email: z.string().email().max(160).optional().or(z.literal('')),
+    detalle: z.array(taskDetalleSchema).min(1),
+    aceptaContacto: z.boolean().default(true),
+  })
+  .refine((d) => {
+    const tel = (d.telefono ?? '').replace(/[^\d+]/g, '');
+    const mail = (d.email ?? '').trim();
+    return tel.length >= 6 || mail.length > 0;
+  }, { message: 'Indicá teléfono o email.' })
+  .refine((d) => d.detalle.some((t) => t.included), { message: 'Marcá al menos una tarea.' });
 
 /** POST /api/obra-check/form/[token] — el contratista deja sus datos (lead). */
 export async function POST(request: NextRequest, ctx: Ctx) {
@@ -116,7 +118,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   const db = obraCheckDb();
   const { data: invite } = await db
     .from('obra_check_invites')
-    .select('id, session_id, block_client_id, contact_id, expires_at, responded_at')
+    .select('id, session_id, block_client_id, contact_id, tipo, expires_at, responded_at')
     .eq('token', token)
     .maybeSingle();
 
@@ -129,6 +131,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     session_id: string;
     block_client_id: string;
     contact_id: string | null;
+    tipo: string;
     expires_at: string;
     responded_at: string | null;
   };
@@ -137,20 +140,40 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ success: false, error: 'Este link expiró.' }, { status: 410 });
   }
 
-  const telefono = body.telefono.replace(/[^\d+]/g, '');
-  if (telefono.length < 6) {
-    return NextResponse.json({ success: false, error: 'Teléfono inválido.' }, { status: 400 });
+  const telefono = (body.telefono ?? '').replace(/[^\d+]/g, '') || null;
+  const email = body.email?.trim() || null;
+
+  if (!telefono && !email) {
+    return NextResponse.json({ success: false, error: 'Indicá teléfono o email.' }, { status: 400 });
   }
+
+  const included = body.detalle.filter((t) => t.included);
+  const mensaje =
+    inv.tipo === 'pedido_presupuesto'
+      ? included
+          .map((t) => {
+            const parts = [t.nombre];
+            if (t.dias != null) parts.push(`${t.dias}d`);
+            if (t.precio != null) parts.push(`$${t.precio}`);
+            return parts.join(' · ');
+          })
+          .join(' | ')
+      : included
+          .map((t) => `${t.nombre}${t.inicio && t.fin ? ` (${t.inicio} → ${t.fin})` : ''}`)
+          .join(' | ');
+
+  const displayName = telefono ? `Contratista ${telefono.slice(-4)}` : email!.split('@')[0];
 
   const { error: respErr } = await db.from('obra_check_form_responses').insert({
     invite_id: inv.id,
     session_id: inv.session_id,
-    nombre: body.nombre.trim(),
+    nombre: displayName,
     telefono,
-    email: body.email?.trim() || null,
-    rubro: body.rubro?.trim() || null,
-    empresa: body.empresa?.trim() || null,
-    mensaje: body.mensaje?.trim() || null,
+    email,
+    rubro: null,
+    empresa: null,
+    mensaje: mensaje || null,
+    detalle_json: body.detalle,
     acepta_contacto: body.aceptaContacto,
   });
 
@@ -158,25 +181,20 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     return NextResponse.json({ success: false, error: 'No se pudo guardar.', detail: respErr.message }, { status: 500 });
   }
 
-  // Actualizar o crear contacto de la sesión con el teléfono real (el dato que buscamos).
-  if (inv.contact_id) {
+  if (inv.contact_id && telefono) {
     await db
       .from('obra_check_contacts')
-      .update({
-        nombre: body.nombre.trim(),
-        telefono,
-        rubro: body.rubro?.trim() || null,
-      })
+      .update({ telefono, nombre: displayName })
       .eq('id', inv.contact_id)
       .eq('session_id', inv.session_id);
-  } else {
+  } else if (telefono) {
     const { data: created } = await db
       .from('obra_check_contacts')
       .insert({
         session_id: inv.session_id,
-        nombre: body.nombre.trim(),
+        nombre: displayName,
         telefono,
-        rubro: body.rubro?.trim() || null,
+        rubro: null,
       })
       .select('id')
       .single();
@@ -194,25 +212,23 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   await logEvent(db, inv.session_id, 'form_response', {
     inviteId: inv.id,
     blockId: inv.block_client_id,
-    telefono: true,
+    telefono: Boolean(telefono),
+    email: Boolean(email),
+    tasksIncluded: included.length,
   });
 
-  // Link de confirmación para que el contratista se escriba a sí mismo / reenvíe (opcional UX).
-  const confirmText = [
-    `Listo ✓ Registré mis datos para el trabajo.`,
-    `Nombre: ${body.nombre.trim()}`,
-    `WhatsApp: ${telefono}`,
-    body.mensaje?.trim() ? `Nota: ${body.mensaje.trim()}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
-  const confirmWaLink = `https://wa.me/?text=${encodeURIComponent(confirmText)}`;
+  const confirmLines = [
+    `Listo ✓ Registré mi respuesta.`,
+    telefono ? `WhatsApp: ${telefono}` : '',
+    email ? `Email: ${email}` : '',
+    mensaje ? `Detalle: ${mensaje}` : '',
+  ].filter(Boolean);
+  const confirmWaLink = telefono
+    ? `https://wa.me/?text=${encodeURIComponent(confirmLines.join('\n'))}`
+    : null;
 
   return NextResponse.json({
     success: true,
-    data: {
-      ok: true,
-      confirmWaLink,
-    },
+    data: { ok: true, confirmWaLink },
   });
 }

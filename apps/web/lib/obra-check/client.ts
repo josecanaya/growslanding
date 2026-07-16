@@ -48,7 +48,26 @@ export const obraCheckApi = {
     blockId: string;
     tipo: 'orden_trabajo' | 'pedido_presupuesto';
     fechaLimite?: string | null;
-  }) => call<{ texto: string; waLink: string }>('wa', { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    call<{ texto: string; waLink: string; formUrl: string; inviteToken: string }>('wa', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  listLeads: () =>
+    call<
+      Array<{
+        id: string;
+        nombre: string;
+        telefono: string;
+        email: string | null;
+        rubro: string | null;
+        empresa: string | null;
+        mensaje: string | null;
+        createdAt: string;
+        blockId: string | null;
+      }>
+    >('leads', { method: 'GET' }),
 
   event: (tipo: string, payload?: Record<string, unknown>) =>
     call<{ ok: boolean }>('events', { method: 'POST', body: JSON.stringify({ tipo, payload }) }).catch(() => ({

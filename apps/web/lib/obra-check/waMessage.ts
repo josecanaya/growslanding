@@ -1,12 +1,47 @@
 /**
- * Plantillas de mensaje de WhatsApp para Obra Check.
- *
- * El texto es del arquitecto (sale desde SU número), por eso NO lleva marca Grows: la marca va
- * en el PDF adjunto (Fase 3). Tono profesional, corto, sin jerga.
+ * Mensajes cortos de WhatsApp que apuntan al formulario público (captura de contacto).
+ * El detalle de tareas vive en el form — no en el texto del chat.
  */
 
 export type WaTipo = 'orden_trabajo' | 'pedido_presupuesto';
 
+export type WaFormMessageInput = {
+  tipo: WaTipo;
+  contactoNombre: string;
+  bloqueNombre: string;
+  formUrl: string;
+  tipoObra?: string | null;
+  nTareas: number;
+};
+
+export function buildWaFormMessage(input: WaFormMessageInput): string {
+  const { tipo, contactoNombre, bloqueNombre, formUrl, tipoObra, nTareas } = input;
+  const obra = tipoObra ? ` de la obra ${tipoObra}` : '';
+  const n = nTareas;
+  const tareasLabel = `${n} ${n === 1 ? 'tarea' : 'tareas'}`;
+
+  if (tipo === 'pedido_presupuesto') {
+    return [
+      `Hola ${contactoNombre} 👋 Estoy armando ${bloqueNombre}${obra} y quiero pedirte presupuesto.`,
+      ``,
+      `📋 Son ${tareasLabel}. Completá tus datos y mirá el detalle acá:`,
+      formUrl,
+      ``,
+      `Cuando lo completes me llega tu contacto para seguir.`,
+    ].join('\n');
+  }
+
+  return [
+    `Hola ${contactoNombre} 👋 Te paso el detalle de ${bloqueNombre}${obra}.`,
+    ``,
+    `📋 ${tareasLabel}. Abrí el formulario, confirmá tus datos y revisá el alcance:`,
+    formUrl,
+    ``,
+    `Cualquier duda me escribís.`,
+  ].join('\n');
+}
+
+/** @deprecated Preferí buildWaFormMessage — el listado de tareas va en el formulario. */
 export type WaMessageInput = {
   tipo: WaTipo;
   contactoNombre: string;
@@ -51,9 +86,18 @@ export function buildWaMessage(input: WaMessageInput): string {
     .join('\n');
 }
 
-/** Construye el link wa.me. Sin teléfono → link genérico para que el usuario elija el contacto. */
 export function buildWaLink(texto: string, telefono?: string | null): string {
   const encoded = encodeURIComponent(texto);
   const tel = (telefono ?? '').replace(/[^\d]/g, '');
   return tel ? `https://wa.me/${tel}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+}
+
+export function newInviteToken(): string {
+  const bytes = new Uint8Array(18);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }

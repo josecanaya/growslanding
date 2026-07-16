@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, TrendingUp, ShieldCheck } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { BRAND, OCButton, OCCard } from './ui';
@@ -20,8 +20,14 @@ export function StepUpsell({
   tareasCriticas: number;
   totalTareas: number;
 }) {
+  const [leadsCount, setLeadsCount] = useState(0);
+
   useEffect(() => {
     obraCheckApi.event('upsell_view', { enviados, contratistas });
+    obraCheckApi
+      .listLeads()
+      .then((l) => setLeadsCount(l.length))
+      .catch(() => {});
   }, [enviados, contratistas]);
 
   const ctaHref = `/auth/login?utm_source=obra_check${sessionId ? `&session=${sessionId}` : ''}`;
@@ -41,7 +47,8 @@ export function StepUpsell({
           <Stat value={tareasCriticas} label="críticas" />
         </div>
         <p className="mt-3 text-sm" style={{ color: BRAND.muted }}>
-          Enviaste <b>{enviados}</b> paquete(s) a <b>{contratistas}</b> contratista(s).
+          Enviaste <b>{enviados}</b> formulario(s). Capturaste{' '}
+          <b style={{ color: BRAND.green }}>{leadsCount}</b> contacto(s) reales del contratista.
         </p>
       </OCCard>
 
@@ -60,7 +67,7 @@ export function StepUpsell({
         <OCButton className="w-full">Activá el seguimiento con Grows — tus tareas ya están cargadas</OCButton>
       </a>
       <p className="mt-3 text-xs" style={{ color: BRAND.muted }}>
-        Diagnóstico y envío: siempre gratis. Seguimiento de ejecución: Grows.
+        Diagnóstico, envío y captura de contacto: gratis. Seguimiento de ejecución: Grows.
       </p>
     </div>
   );
@@ -69,8 +76,12 @@ export function StepUpsell({
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
     <div>
-      <p className="text-2xl font-extrabold" style={{ color: BRAND.blue }}>{value}</p>
-      <p className="text-xs" style={{ color: BRAND.muted }}>{label}</p>
+      <p className="text-2xl font-extrabold" style={{ color: BRAND.blue }}>
+        {value}
+      </p>
+      <p className="text-xs" style={{ color: BRAND.muted }}>
+        {label}
+      </p>
     </div>
   );
 }

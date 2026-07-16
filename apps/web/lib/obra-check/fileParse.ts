@@ -15,6 +15,7 @@ import type { ColumnMapping, ExcelParseResult, ObraCheckTask, ObraCheckWarning }
 export type ParsedFile = {
   tasks: ObraCheckTask[];
   warnings: ObraCheckWarning[];
+  kind: 'spreadsheet' | 'xml';
   /** Presente sólo para planillas: permite re-mapear columnas en la UI. */
   spreadsheet?: {
     rows: unknown[][];
@@ -55,7 +56,12 @@ export async function parseObraCheckFile(file: File): Promise<ParsedFile> {
   if (ext === 'xml') {
     const text = await readText(file);
     const res = projectXmlToTasks(text);
-    return { tasks: res.tasks, warnings: res.warnings, projectName: res.projectName };
+    return {
+      kind: 'xml',
+      tasks: res.tasks,
+      warnings: res.warnings,
+      projectName: res.projectName,
+    };
   }
 
   // xlsx / xls / csv → SheetJS
@@ -63,12 +69,19 @@ export async function parseObraCheckFile(file: File): Promise<ParsedFile> {
   const buf = await readArrayBuffer(file);
   const wb = XLSX.read(buf, { type: 'array' });
   const sheetName = wb.SheetNames[0];
-  if (!sheetName) return { tasks: [], warnings: [{ kind: 'sin_nombre', message: 'El archivo no tiene hojas.' }] };
+  if (!sheetName) {
+    return {
+      kind: 'spreadsheet',
+      tasks: [],
+      warnings: [{ kind: 'sin_nombre', message: 'El archivo no tiene hojas.' }],
+    };
+  }
   const sheet = wb.Sheets[sheetName]!;
   const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false, defval: null });
 
   const result = excelToTasks({ rows, origen });
   return {
+    kind: 'spreadsheet',
     tasks: result.tasks,
     warnings: result.warnings,
     spreadsheet: {

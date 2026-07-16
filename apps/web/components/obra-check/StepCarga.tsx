@@ -9,6 +9,7 @@ import type { ColumnField, ObraCheckTask } from '@/lib/obra-check/types';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 import { ObraCheckPlanFromLibrary } from './ObraCheckPlanFromLibrary';
+import { SpreadsheetEtlPreview, XmlEtlPreview } from './FileEtlPreview';
 import type { OrdenarResult } from '@/lib/obra-check/types';
 
 type Mode = 'upload' | 'library' | 'manual';
@@ -29,17 +30,6 @@ function blankTask(): ObraCheckTask {
     origen: 'chat',
   };
 }
-
-const FIELD_LABELS: Record<ColumnField, string> = {
-  nombre: 'Nombre de tarea',
-  duracion: 'Duración (días)',
-  inicio: 'Fecha inicio',
-  fin: 'Fecha fin',
-  predecesoras: 'Predecesoras',
-  responsable: 'Responsable',
-  avance: 'Avance %',
-  rubro: 'Rubro',
-};
 
 function mapTipoToLibraryKind(tipoObra: string | undefined): string | null {
   if (!tipoObra) return null;
@@ -83,10 +73,45 @@ export function StepCarga({
 
   function remap(field: ColumnField, colIndex: number) {
     if (!parsed?.spreadsheet) return;
-    const mapping = { ...parsed.spreadsheet.mapping, [field]: colIndex };
-    if (colIndex < 0) delete (mapping as Record<string, number>)[field];
-    const result = remapSpreadsheet(parsed.spreadsheet.rows, parsed.spreadsheet.headerRowIndex, mapping, parsed.spreadsheet.origen);
-    setParsed({ ...parsed, tasks: result.tasks, spreadsheet: { ...parsed.spreadsheet, mapping } });
+    const mapping = { ...parsed.spreadsheet.mapping };
+    // Un campo solo puede mapear a una columna; si otra columna lo tenía, se limpia al asignar.
+    for (const k of Object.keys(mapping) as ColumnField[]) {
+      if (k !== field && mapping[k] === colIndex) delete mapping[k];
+    }
+    if (colIndex < 0) delete mapping[field];
+    else mapping[field] = colIndex;
+    const result = remapSpreadsheet(
+      parsed.spreadsheet.rows,
+      parsed.spreadsheet.headerRowIndex,
+      mapping,
+      parsed.spreadsheet.origen,
+    );
+    setParsed({
+      ...parsed,
+      tasks: result.tasks,
+      spreadsheet: { ...parsed.spreadsheet, mapping, confidence: result.confidence },
+    });
+    setTasks(result.tasks);
+  }
+
+  function changeHeaderRow(headerRowIndex: number) {
+    if (!parsed?.spreadsheet) return;
+    const result = remapSpreadsheet(
+      parsed.spreadsheet.rows,
+      headerRowIndex,
+      parsed.spreadsheet.mapping,
+      parsed.spreadsheet.origen,
+    );
+    setParsed({
+      ...parsed,
+      tasks: result.tasks,
+      spreadsheet: {
+        ...parsed.spreadsheet,
+        headerRowIndex,
+        mapping: result.mapping,
+        confidence: result.confidence,
+      },
+    });
     setTasks(result.tasks);
   }
 
@@ -126,9 +151,8 @@ export function StepCarga({
     }
   }
 
-  const spreadsheetHeader = parsed?.spreadsheet ? (parsed.spreadsheet.rows[parsed.spreadsheet.headerRowIndex] ?? []) : [];
-  const colCount = spreadsheetHeader.length;
   const namedTasks = tasks.filter((t) => t.nombre.trim().length > 0);
+  const isXmlPreview = parsed?.kind === 'xml';
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -187,31 +211,21 @@ export function StepCarga({
 
           {parsed?.spreadsheet && (
             <div className="mt-4 rounded-lg p-3" style={{ background: BRAND.gray }}>
-              <p className="mb-2 text-xs font-semibold" style={{ color: BRAND.text }}>
-                Confirmá cómo interpretamos las columnas
-                {parsed.spreadsheet.confidence < 0.8 && (
-                  <span style={{ color: BRAND.error }}> · revisá el mapeo</span>
-                )}
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {(Object.keys(FIELD_LABELS) as ColumnField[]).map((field) => (
-                  <label key={field} className="text-xs">
-                    <span className="mb-0.5 block" style={{ color: BRAND.muted }}>{FIELD_LABELS[field]}</span>
-                    <select
-                      style={{ ...inputStyle, padding: '0.35rem 0.5rem', fontSize: '0.75rem' }}
-                      value={parsed.spreadsheet!.mapping[field] ?? -1}
-                      onChange={(e) => remap(field, parseInt(e.target.value, 10))}
-                    >
-                      <option value={-1}>—</option>
-                      {Array.from({ length: colCount }).map((_, c) => (
-                        <option key={c} value={c}>
-                          {String(spreadsheetHeader[c] ?? `Col ${c + 1}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                ))}
-              </div>
+              <SpreadsheetEtlPreview
+                rows={parsed.spreadsheet.rows}
+                headerRowIndex={parsed.spreadsheet.headerRowIndex}
+                mapping={parsed.spreadsheet.mapping}
+                confidence={parsed.spreadsheet.confidence}
+                onRemap={remap}
+                onHeaderRowChange={changeHeaderRow}
+                previewTasks={tasks}
+              />
+            </div>
+          )}
+
+          {isXmlPreview && !parsed?.spreadsheet && (
+            <div className="mt-4 rounded-lg p-3" style={{ background: BRAND.gray }}>
+              <XmlEtlPreview projectName={parsed?.projectName} tasks={tasks} />
             </div>
           )}
         </OCCard>

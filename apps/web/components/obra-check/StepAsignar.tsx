@@ -79,8 +79,8 @@ export function StepAsignar({
         Asigná un contratista a cada bloque
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        El nombre va en el mensaje. El teléfono es opcional: en el celular podés compartir eligiendo el
-        contacto en WhatsApp sin tipear el número.
+        Poné un nombre orientativo (ej. “Electricista Juan”). El WhatsApp real lo deja el contratista
+        en el formulario que le mandás — así no dependés de adivinar el número al compartir.
       </p>
 
       <div className="space-y-3">

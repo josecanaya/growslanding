@@ -8,6 +8,7 @@ export type ObraCheckTaskRow = {
   client_id: string;
   block_client_id: string | null;
   nombre: string;
+  fase: string | null;
   rubro: string | null;
   duracion_dias: number | string | null;
   inicio: string | null;
@@ -24,6 +25,7 @@ export function rowToTask(row: ObraCheckTaskRow): ObraCheckTask {
   return {
     id: row.client_id,
     nombre: row.nombre,
+    fase: row.fase ?? null,
     rubro: row.rubro,
     duracionDias: row.duracion_dias == null ? null : Number(row.duracion_dias),
     inicio: row.inicio,
@@ -44,6 +46,7 @@ export function taskToRow(sessionId: string, t: ObraCheckTask): Record<string, u
     client_id: t.id,
     block_client_id: t.blockId,
     nombre: t.nombre,
+    fase: t.fase ?? null,
     rubro: t.rubro,
     duracion_dias: t.duracionDias,
     inicio: t.inicio,

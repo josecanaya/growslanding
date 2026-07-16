@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Send, Share2, FileText, Copy, CheckCircle2 } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
-import type { ObraCheckBlock, ObraCheckContact } from '@/lib/obra-check/types';
+import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
 import { BRAND, OCButton, OCCard } from './ui';
 import type { Assignments } from './StepAsignar';
 
@@ -14,11 +14,13 @@ type Generated = { texto: string; waLink: string; formUrl: string };
 
 export function StepEnvio({
   blocks,
+  budgetGroups,
   assignments,
   contacts,
   onFinish,
 }: {
   blocks: ObraCheckBlock[];
+  budgetGroups?: ObraCheckBudgetGroup[];
   assignments: Assignments;
   contacts: ObraCheckContact[];
   onFinish: (enviados: number) => void;
@@ -130,8 +132,22 @@ export function StepEnvio({
         </p>
       )}
 
-      <div className="space-y-3">
-        {assignedBlocks.map((block) => {
+      <div className="space-y-4">
+        {(budgetGroups && budgetGroups.length > 0
+          ? budgetGroups.map((group) => ({
+              id: group.id,
+              nombre: group.nombre,
+              blocks: assignedBlocks.filter((b) => group.blockIds.includes(b.id)),
+            }))
+          : [{ id: 'default', nombre: 'Paquetes', blocks: assignedBlocks }]).map((group) => (
+          <div key={group.id}>
+            {budgetGroups && budgetGroups.length > 0 && group.blocks.length > 0 && (
+              <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
+                {group.nombre}
+              </p>
+            )}
+            <div className="space-y-3">
+        {group.blocks.map((block) => {
           const contact = contacts.find((c) => c.id === assignments[block.id]);
           const tipo = tipos[block.id] ?? 'orden_trabajo';
           const g = generated[block.id];
@@ -222,6 +238,9 @@ export function StepEnvio({
             </OCCard>
           );
         })}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="mt-4 flex items-center justify-between">

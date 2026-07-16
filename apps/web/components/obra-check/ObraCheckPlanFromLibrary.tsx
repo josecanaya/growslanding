@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 import { fetchCanvasTemplateXml } from '@/lib/canvas/importCanvasTemplateFromXml';
 import { projectXmlToTasks } from '@/lib/obra-check/xmlAdapter';
@@ -10,8 +10,8 @@ import { PlanXmlLibraryPicker } from '@/components/canvas/PlanXmlLibraryPicker';
 import { BRAND } from './ui';
 
 /**
- * Mismo asistente de precarga XML que el canvas: filtra la librería y convierte el
- * Project XML elegido a ObraCheckTask[] (con precedencias del archivo).
+ * Búsqueda filtrada en la librería XML (mismo catálogo del canvas).
+ * Convierte el Project XML elegido a ObraCheckTask[] con precedencias.
  */
 export function ObraCheckPlanFromLibrary({
   defaultObraProductKind,
@@ -44,16 +44,17 @@ export function ObraCheckPlanFromLibrary({
   return (
     <div>
       <div className="mb-3 flex items-center gap-2">
-        <Sparkles size={18} style={{ color: BRAND.green }} />
+        <Search size={18} style={{ color: BRAND.green }} />
         <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
-          Elegí un plan de la librería XML
+          Buscar en librería
         </p>
       </div>
       <PlanXmlLibraryPicker
         defaultObraProductKind={defaultObraProductKind}
         onApplySlug={(slug) => void applySlug(slug)}
         applyingSlug={applyingSlug}
-        hint="Es el mismo flujo que en el canvas de Grows: filtrás y cargás el XML. Las precedencias vienen del plan."
+        title="Buscar en librería"
+        hint="Filtrá por m², pisos, ambientes, complejidad… y elegí el plan. Las precedencias vienen del XML."
       />
       {error && (
         <p className="mt-3 text-sm" style={{ color: BRAND.error }}>

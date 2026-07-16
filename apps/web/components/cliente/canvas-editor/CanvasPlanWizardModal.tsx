@@ -45,7 +45,8 @@ export function CanvasPlanWizardModal({
             onApplySlug={onApplySlug}
             applyingSlug={applyingSlug}
             autoApplySingle
-            hint="Las preguntas filtran la librería. Al tocar un plan se importa al canvas igual que un XML de Archivo."
+            title="Buscar en librería"
+            hint="Filtrá por m², pisos, ambientes… Al tocar un plan se importa al canvas igual que un XML de Archivo."
           />
         </div>
       </div>

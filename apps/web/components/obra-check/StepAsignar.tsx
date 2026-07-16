@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Check, Contact } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseContactPicker, pickDeviceContact } from '@/lib/obra-check/share';
-import type { ObraCheckBlock, ObraCheckContact } from '@/lib/obra-check/types';
+import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
 import { rubroLabel } from '@/lib/obra-check/rubros';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 
@@ -13,9 +13,11 @@ export type Assignments = Record<string, string>;
 
 export function StepAsignar({
   blocks,
+  budgetGroups,
   onContinue,
 }: {
   blocks: ObraCheckBlock[];
+  budgetGroups?: ObraCheckBudgetGroup[];
   onContinue: (assignments: Assignments, contacts: ObraCheckContact[]) => void;
 }) {
   const [contacts, setContacts] = useState<ObraCheckContact[]>([]);
@@ -83,8 +85,22 @@ export function StepAsignar({
         en el formulario que le mandás — así no dependés de adivinar el número al compartir.
       </p>
 
-      <div className="space-y-3">
-        {blocks.map((block) => {
+      <div className="space-y-4">
+        {(budgetGroups && budgetGroups.length > 0
+          ? budgetGroups.map((group) => ({
+              id: group.id,
+              nombre: group.nombre,
+              blocks: blocks.filter((b) => group.blockIds.includes(b.id)),
+            }))
+          : [{ id: 'default', nombre: 'Paquetes', blocks }]).map((group) => (
+          <div key={group.id}>
+            {budgetGroups && budgetGroups.length > 0 && (
+              <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
+                {group.nombre}
+              </p>
+            )}
+            <div className="space-y-3">
+        {group.blocks.map((block) => {
           const assignedId = assignments[block.id];
           const assignedContact = contacts.find((c) => c.id === assignedId);
           return (
@@ -152,6 +168,9 @@ export function StepAsignar({
             </OCCard>
           );
         })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {error && <p className="mt-3 text-sm" style={{ color: BRAND.error }}>{error}</p>}

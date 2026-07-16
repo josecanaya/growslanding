@@ -14,6 +14,8 @@ export type ObraCheckTask = {
   /** client_id: identidad estable dentro de la sesión (no es el uuid de Supabase). */
   id: string;
   nombre: string;
+  /** Fase funcional / comercial definida por el usuario antes de ordenar. */
+  fase: string | null;
   rubro: string | null;
   duracionDias: number | null;
   inicio: string | null; // ISO date (YYYY-MM-DD)
@@ -35,9 +37,17 @@ export type ObraCheckBlock = {
   id: string;
   nombre: string;
   rubro: string | null;
+  fase: string | null;
+  budgetGroupId?: string | null;
   orden: number;
   /** client_ids de las tareas del bloque. */
   taskIds: string[];
+};
+
+export type ObraCheckBudgetGroup = {
+  id: string;
+  nombre: string;
+  blockIds: string[];
 };
 
 export type ObraCheckContact = {

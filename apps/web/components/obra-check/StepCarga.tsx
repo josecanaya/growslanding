@@ -1,16 +1,14 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, Sparkles, Table2, X } from 'lucide-react';
+import { Upload, Search, Table2, X } from 'lucide-react';
 
 import { parseObraCheckFile, remapSpreadsheet, type ParsedFile } from '@/lib/obra-check/fileParse';
 import { detectarRubro } from '@/lib/obra-check/rubros';
 import type { ColumnField, ObraCheckTask } from '@/lib/obra-check/types';
-import { obraCheckApi } from '@/lib/obra-check/client';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 import { ObraCheckPlanFromLibrary } from './ObraCheckPlanFromLibrary';
 import { SpreadsheetEtlPreview, XmlEtlPreview } from './FileEtlPreview';
-import type { OrdenarResult } from '@/lib/obra-check/types';
 
 type Mode = 'upload' | 'library' | 'manual';
 
@@ -20,6 +18,7 @@ function blankTask(): ObraCheckTask {
   return {
     id: `man-${Date.now()}-${mid}`,
     nombre: '',
+    fase: null,
     rubro: null,
     duracionDias: null,
     inicio: null,
@@ -43,10 +42,10 @@ function togglePredecesora(current: string[], predId: string): string[] {
 }
 
 export function StepCarga({
-  onOrdered,
+  onContinue,
   tipoObra,
 }: {
-  onOrdered: (result: OrdenarResult, tasks: ObraCheckTask[]) => void;
+  onContinue: (tasks: ObraCheckTask[]) => void;
   tipoObra?: string;
 }) {
   const [mode, setMode] = useState<Mode>('upload');
@@ -132,23 +131,13 @@ export function StepCarga({
     );
   }
 
-  async function continuar() {
+  function continuar() {
     const clean = tasks.filter((t) => t.nombre.trim().length > 0).map((t) => ({ ...t, rubro: t.rubro ?? detectarRubro(t.nombre) }));
     if (clean.length === 0) {
       setError('Cargá al menos una tarea con nombre.');
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      await obraCheckApi.saveTasks(clean);
-      const result = await obraCheckApi.ordenar();
-      onOrdered(result, result.tasks);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
+    onContinue(clean);
   }
 
   const namedTasks = tasks.filter((t) => t.nombre.trim().length > 0);
@@ -159,7 +148,7 @@ export function StepCarga({
       <div className="mb-4 flex flex-wrap gap-2">
         {([
           ['upload', 'Subir archivo', Upload],
-          ['library', 'Elegir plan XML', Sparkles],
+          ['library', 'Buscar en librería', Search],
           ['manual', 'Escribir tareas', Table2],
         ] as const).map(([m, label, Icon]) => (
           <button

@@ -40,7 +40,7 @@ export function ObraCheckCanvasView({
       nodes.push({
         id: `block-${block.id}`,
         position: { x: bi * COL_WIDTH, y: 0 },
-        data: { label: block.nombre },
+        data: { label: `${block.fase ? `${block.fase} · ` : ''}${block.nombre}` },
         draggable: false,
         selectable: false,
         style: {

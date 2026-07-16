@@ -18,7 +18,7 @@ export async function POST(_request: NextRequest) {
   const { data: taskRows, error: loadErr } = await db
     .from('obra_check_tasks')
     .select(
-      'client_id, block_client_id, nombre, rubro, duracion_dias, inicio, fin, predecesoras, responsable_label, orden, es_critica, origen, fila_origen',
+      'client_id, block_client_id, nombre, fase, rubro, duracion_dias, inicio, fin, predecesoras, responsable_label, orden, es_critica, origen, fila_origen',
     )
     .eq('session_id', session.id);
 
@@ -38,16 +38,22 @@ export async function POST(_request: NextRequest) {
         client_id: b.id,
         nombre: b.nombre,
         rubro: b.rubro,
+        fase: b.fase ?? null,
         orden: b.orden,
       })),
     );
   }
 
-  // Persistir orden/es_critica/bloque por tarea.
+  // Persistir orden/es_critica/bloque/fase por tarea.
   for (const t of result.tasks) {
     await db
       .from('obra_check_tasks')
-      .update({ orden: t.orden ?? 0, es_critica: t.esCritica ?? null, block_client_id: t.blockId })
+      .update({
+        orden: t.orden ?? 0,
+        es_critica: t.esCritica ?? null,
+        block_client_id: t.blockId,
+        fase: t.fase ?? null,
+      })
       .eq('session_id', session.id)
       .eq('client_id', t.id);
   }

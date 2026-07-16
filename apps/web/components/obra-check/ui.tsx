@@ -104,7 +104,7 @@ export const inputStyle: React.CSSProperties = {
 };
 
 export function StepBar({ current }: { current: number }) {
-  const steps = ['Inicio', 'Cargar', 'Ordenar', 'Asignar', 'Enviar'];
+  const steps = ['Inicio', 'Cargar', 'Fases', 'Ordenar', 'Presupuesto', 'Asignar', 'Enviar'];
   return (
     <div className="mb-6 flex items-center gap-2">
       {steps.map((s, i) => (

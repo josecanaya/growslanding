@@ -6,6 +6,7 @@ function t(id: string, rubro: string | null, orden: number): ObraCheckTask {
   return {
     id,
     nombre: id,
+    fase: null,
     rubro,
     duracionDias: 1,
     inicio: null,

@@ -3,7 +3,15 @@
 import { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 
-import type { ObraCheckBlock, ObraCheckContact, ObraCheckTask, ObraCheckWarning, OrdenarResult } from '@/lib/obra-check/types';
+import { obraCheckApi } from '@/lib/obra-check/client';
+import type {
+  ObraCheckBlock,
+  ObraCheckBudgetGroup,
+  ObraCheckContact,
+  ObraCheckTask,
+  ObraCheckWarning,
+  OrdenarResult,
+} from '@/lib/obra-check/types';
 import { BRAND, OCButton, OCCard, StepBar } from './ui';
 import { StepIntro } from './StepIntro';
 import { StepCarga } from './StepCarga';
@@ -11,9 +19,20 @@ import { ObraCheckCanvasView } from './ObraCheckCanvasView';
 import { StepAsignar, type Assignments } from './StepAsignar';
 import { StepEnvio } from './StepEnvio';
 import { StepUpsell } from './StepUpsell';
+import { StepFases } from './StepFases';
+import { StepBudgetGroups } from './StepBudgetGroups';
 
-type Step = 'intro' | 'carga' | 'orden' | 'asignar' | 'envio' | 'upsell';
-const STEP_INDEX: Record<Step, number> = { intro: 0, carga: 1, orden: 2, asignar: 3, envio: 4, upsell: 4 };
+type Step = 'intro' | 'carga' | 'fases' | 'orden' | 'presupuesto' | 'asignar' | 'envio' | 'upsell';
+const STEP_INDEX: Record<Step, number> = {
+  intro: 0,
+  carga: 1,
+  fases: 2,
+  orden: 3,
+  presupuesto: 4,
+  asignar: 5,
+  envio: 6,
+  upsell: 6,
+};
 
 export function ObraCheckWizard() {
   const [step, setStep] = useState<Step>('intro');
@@ -21,11 +40,14 @@ export function ObraCheckWizard() {
   const [tipoObra, setTipoObra] = useState<string>('');
   const [tasks, setTasks] = useState<ObraCheckTask[]>([]);
   const [blocks, setBlocks] = useState<ObraCheckBlock[]>([]);
+  const [budgetGroups, setBudgetGroups] = useState<ObraCheckBudgetGroup[]>([]);
   const [cpm, setCpm] = useState<OrdenarResult['cpm']>({ duracionTotalDias: 0, tareasCriticas: 0 });
   const [warnings, setWarnings] = useState<ObraCheckWarning[]>([]);
   const [assignments, setAssignments] = useState<Assignments>({});
   const [contacts, setContacts] = useState<ObraCheckContact[]>([]);
   const [enviados, setEnviados] = useState(0);
+  const [busyOrdenar, setBusyOrdenar] = useState(false);
+  const [errorOrdenar, setErrorOrdenar] = useState<string | null>(null);
 
   function onOrdered(result: OrdenarResult) {
     setTasks(result.tasks);
@@ -33,6 +55,33 @@ export function ObraCheckWizard() {
     setCpm(result.cpm);
     setWarnings(result.warnings);
     setStep('orden');
+  }
+
+  async function handleFasesContinue(nextTasks: ObraCheckTask[]) {
+    setTasks(nextTasks);
+    setBusyOrdenar(true);
+    setErrorOrdenar(null);
+    try {
+      await obraCheckApi.saveTasks(nextTasks);
+      const result = await obraCheckApi.ordenar();
+      // La fase ya viene persistida y vuelve desde ordenar; merge defensivo por si la columna aún no existe.
+      const mergedTasks = result.tasks.map((task) => ({
+        ...task,
+        fase: task.fase ?? nextTasks.find((t) => t.id === task.id)?.fase ?? null,
+      }));
+      const mergedBlocks = result.blocks.map((block) => ({
+        ...block,
+        fase:
+          block.fase ??
+          mergedTasks.find((task) => block.taskIds.includes(task.id))?.fase ??
+          null,
+      }));
+      onOrdered({ ...result, tasks: mergedTasks, blocks: mergedBlocks });
+    } catch (e) {
+      setErrorOrdenar((e as Error).message);
+    } finally {
+      setBusyOrdenar(false);
+    }
   }
 
   return (
@@ -49,7 +98,35 @@ export function ObraCheckWizard() {
         />
       )}
 
-      {step === 'carga' && <StepCarga onOrdered={onOrdered} tipoObra={tipoObra} />}
+      {step === 'carga' && (
+        <StepCarga
+          onContinue={(preparedTasks) => {
+            setTasks(preparedTasks);
+            setStep('fases');
+          }}
+          tipoObra={tipoObra}
+        />
+      )}
+
+      {step === 'fases' && (
+        <div>
+          <StepFases
+            tasks={tasks}
+            onBack={() => setStep('carga')}
+            onContinue={(nextTasks) => void handleFasesContinue(nextTasks)}
+          />
+          {busyOrdenar && (
+            <p className="mt-3 text-center text-sm" style={{ color: BRAND.muted }}>
+              Ordenando plan…
+            </p>
+          )}
+          {errorOrdenar && (
+            <p className="mt-3 text-center text-sm" style={{ color: BRAND.error }}>
+              {errorOrdenar}
+            </p>
+          )}
+        </div>
+      )}
 
       {step === 'orden' && (
         <div className="mx-auto max-w-4xl">
@@ -76,18 +153,42 @@ export function ObraCheckWizard() {
             </OCCard>
           )}
 
+          {errorOrdenar && (
+            <OCCard className="mt-4" style={{ borderColor: BRAND.error }}>
+              <p className="text-sm" style={{ color: BRAND.error }}>
+                {errorOrdenar}
+              </p>
+            </OCCard>
+          )}
+
           <div className="mt-5 flex justify-between">
-            <OCButton variant="ghost" onClick={() => setStep('carga')}>
-              ← Volver
+            <OCButton variant="ghost" onClick={() => setStep('fases')}>
+              ← Volver a fases
             </OCButton>
-            <OCButton onClick={() => setStep('asignar')}>Asignar contratistas →</OCButton>
+            <OCButton onClick={() => setStep('presupuesto')} loading={busyOrdenar}>
+              Crear grupos de presupuesto →
+            </OCButton>
           </div>
         </div>
+      )}
+
+      {step === 'presupuesto' && (
+        <StepBudgetGroups
+          blocks={blocks}
+          onBack={() => setStep('orden')}
+          onContinue={async (groups, nextBlocks) => {
+            await obraCheckApi.saveBudgetGroups(groups);
+            setBudgetGroups(groups);
+            setBlocks(nextBlocks);
+            setStep('asignar');
+          }}
+        />
       )}
 
       {step === 'asignar' && (
         <StepAsignar
           blocks={blocks}
+          budgetGroups={budgetGroups}
           onContinue={(a, c) => {
             setAssignments(a);
             setContacts(c);
@@ -99,6 +200,7 @@ export function ObraCheckWizard() {
       {step === 'envio' && (
         <StepEnvio
           blocks={blocks}
+          budgetGroups={budgetGroups}
           assignments={assignments}
           contacts={contacts}
           onFinish={(n) => {

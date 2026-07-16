@@ -127,6 +127,7 @@ export function excelToTasks(input: ExcelAdapterInput): ExcelParseResult {
     tasks.push({
       id,
       nombre,
+      fase: null,
       rubro,
       duracionDias: duracion,
       inicio: parseFecha(cellStr(row, mapping.inicio)),

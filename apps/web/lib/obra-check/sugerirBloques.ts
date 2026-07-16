@@ -26,21 +26,25 @@ export function sugerirBloques(tasksOrdenadas: ObraCheckTask[]): ObraCheckBlock[
 
   let current: ObraCheckBlock | null = null;
   let currentRubro: string | null | undefined = undefined;
+  let currentFase: string | null | undefined = undefined;
 
   for (const t of ordered) {
     const mismoRubro = current !== null && currentRubro === t.rubro;
+    const mismaFase = current !== null && currentFase === (t.fase ?? null);
     const hayLugar = current !== null && current.taskIds.length < MAX_TAREAS_POR_BLOQUE;
 
-    if (!current || !mismoRubro || !hayLugar) {
+    if (!current || !mismoRubro || !mismaFase || !hayLugar) {
       current = {
         id: genBlockId(),
         nombre: rubroLabel(t.rubro),
         rubro: t.rubro,
+        fase: t.fase ?? null,
         orden: blocks.length,
         taskIds: [],
       };
       blocks.push(current);
       currentRubro = t.rubro;
+      currentFase = t.fase ?? null;
     }
     current.taskIds.push(t.id);
   }

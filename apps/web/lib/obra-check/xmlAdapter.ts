@@ -51,6 +51,7 @@ export function projectXmlToTasks(xmlText: string): XmlAdapterResult {
     return {
       id,
       nombre: n.name,
+      fase: null,
       rubro: detectarRubro(n.name),
       duracionDias: n.durationDays,
       inicio: null,

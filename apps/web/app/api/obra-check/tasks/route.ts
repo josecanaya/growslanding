@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const taskSchema = z.object({
   id: z.string().min(1).max(120),
   nombre: z.string().min(1).max(300),
+  fase: z.string().max(120).nullable().default(null),
   rubro: z.string().max(60).nullable().default(null),
   duracionDias: z.number().nonnegative().nullable().default(null),
   inicio: z.string().max(20).nullable().default(null),

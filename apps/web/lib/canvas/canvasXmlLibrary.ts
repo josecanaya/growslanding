@@ -72,4 +72,4 @@ export function getCanvasXmlLibraryEntry(slug: string): CanvasXmlLibraryEntry | 
   return r ? mapEntry(r) : null;
 }
 
-export { filterCanvasXmlLibrary, scoreCatalogMatch } from './canvasXmlLibraryFilters';
+export { filterCanvasXmlLibrary, scoreCatalogMatch, nearestCanvasXmlLibrary } from './canvasXmlLibraryFilters';

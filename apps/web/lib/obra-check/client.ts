@@ -3,7 +3,7 @@
  * El browser nunca habla directo con Supabase: todo pasa por estas rutas (cookie httpOnly).
  */
 
-import type { ObraCheckContact, ObraCheckTask, OrdenarResult } from './types';
+import type { ObraCheckBudgetGroup, ObraCheckContact, ObraCheckTask, OrdenarResult } from './types';
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/obra-check/${path}`, {
@@ -34,6 +34,21 @@ export const obraCheckApi = {
     call<{ count: number }>('tasks', { method: 'PUT', body: JSON.stringify({ tasks }) }),
 
   ordenar: () => call<OrdenarResult>('ordenar', { method: 'POST' }),
+
+  saveBudgetGroups: (groups: ObraCheckBudgetGroup[]) =>
+    call<{ count: number }>('budget-groups', {
+      method: 'PUT',
+      body: JSON.stringify({
+        groups: groups.map((g, i) => ({
+          id: g.id,
+          nombre: g.nombre,
+          blockIds: g.blockIds,
+          orden: i,
+        })),
+      }),
+    }),
+
+  listBudgetGroups: () => call<ObraCheckBudgetGroup[]>('budget-groups', { method: 'GET' }),
 
   listContacts: () => call<ObraCheckContact[]>('contacts', { method: 'GET' }),
 

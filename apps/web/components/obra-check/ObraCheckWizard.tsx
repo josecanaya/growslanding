@@ -137,6 +137,10 @@ export function ObraCheckWizard() {
             {blocks.length} paquetes · {tasks.length} tareas · {cpm.tareasCriticas} en camino crítico
             {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días`} — agrupado en 4 fases
           </p>
+          <p className="mb-3 text-xs" style={{ color: BRAND.muted }}>
+            Las flechas unen <strong>tareas</strong> (no solo fases). Si falta alguna, volvé a Fases y usá
+            «Depende» o «Encadenar en orden».
+          </p>
 
           <ObraCheckCanvasView tasks={tasks} />
 

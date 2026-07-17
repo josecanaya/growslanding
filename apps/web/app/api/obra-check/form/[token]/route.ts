@@ -1,11 +1,22 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 
 import { obraCheckDb, logEvent } from '@/lib/obra-check/db';
+import { notifyRequesterFormResponse } from '@/lib/obra-check/notify-requester';
+import { listObraCheckPlanos, signedPlanoUrls } from '@/lib/obra-check/planos';
 
 export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ token: string }> };
+
+function appOrigin(request: NextRequest): string {
+  const env = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  if (env) return env.replace(/\/$/, '');
+  const proto = request.headers.get('x-forwarded-proto') ?? 'http';
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? 'localhost:3000';
+  return `${proto}://${host}`;
+}
 
 /** GET /api/obra-check/form/[token] — datos públicos del invite (sin cookie). */
 export async function GET(_request: NextRequest, ctx: Ctx) {
@@ -41,7 +52,7 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 
   const { data: session } = await db
     .from('obra_check_sessions')
-    .select('empresa, tipo_obra, email')
+    .select('empresa, tipo_obra, email, metros_cuadrados')
     .eq('id', inv.session_id)
     .maybeSingle();
 
@@ -87,7 +98,15 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
     .in('block_client_id', blockIds)
     .order('orden', { ascending: true });
 
-  const sess = session as { empresa: string | null; tipo_obra: string | null; email: string | null } | null;
+  const sess = session as {
+    empresa: string | null;
+    tipo_obra: string | null;
+    email: string | null;
+    metros_cuadrados: number | null;
+  } | null;
+
+  const planos = await listObraCheckPlanos(db, inv.session_id);
+  const planosSigned = await signedPlanoUrls(planos, 60 * 60 * 24 * 7);
 
   return NextResponse.json({
     success: true,
@@ -98,6 +117,8 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
       rubro,
       empresa: sess?.empresa ?? null,
       tipoObra: sess?.tipo_obra ?? null,
+      metrosCuadrados: sess?.metros_cuadrados ?? null,
+      planos: planosSigned,
       tareas: ((tareas ?? []) as { nombre: string; duracion_dias: number | null; orden: number }[]).map((t) => ({
         nombre: t.nombre,
         duracionDias: t.duracion_dias,
@@ -191,23 +212,31 @@ export async function POST(request: NextRequest, ctx: Ctx) {
           .join(' | ');
 
   const displayName = telefono ? `Contratista ${telefono.slice(-4)}` : email!.split('@')[0];
+  const viewToken = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '').slice(0, 8);
 
-  const { error: respErr } = await db.from('obra_check_form_responses').insert({
-    invite_id: inv.id,
-    session_id: inv.session_id,
-    nombre: displayName,
-    telefono,
-    email,
-    rubro: null,
-    empresa: null,
-    mensaje: mensaje || null,
-    detalle_json: body.detalle,
-    acepta_contacto: body.aceptaContacto,
-  });
+  const { data: inserted, error: respErr } = await db
+    .from('obra_check_form_responses')
+    .insert({
+      invite_id: inv.id,
+      session_id: inv.session_id,
+      nombre: displayName,
+      telefono,
+      email,
+      rubro: null,
+      empresa: null,
+      mensaje: mensaje || null,
+      detalle_json: body.detalle,
+      acepta_contacto: body.aceptaContacto,
+      view_token: viewToken,
+    })
+    .select('id, view_token')
+    .single();
 
-  if (respErr) {
-    return NextResponse.json({ success: false, error: 'No se pudo guardar.', detail: respErr.message }, { status: 500 });
+  if (respErr || !inserted) {
+    return NextResponse.json({ success: false, error: 'No se pudo guardar.', detail: respErr?.message }, { status: 500 });
   }
+
+  const responseId = (inserted as { id: string }).id;
 
   if (inv.contact_id && telefono) {
     await db
@@ -245,6 +274,58 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     tasksIncluded: included.length,
   });
 
+  // Resolver nombre del grupo + datos de la obra para devolver al solicitante.
+  const { data: sessionRow } = await db
+    .from('obra_check_sessions')
+    .select('email, empresa, tipo_obra, metros_cuadrados')
+    .eq('id', inv.session_id)
+    .maybeSingle();
+  const sess = sessionRow as {
+    email: string | null;
+    empresa: string | null;
+    tipo_obra: string | null;
+    metros_cuadrados: number | null;
+  } | null;
+
+  let grupoNombre = 'Presupuesto';
+  const { data: blockRow } = await db
+    .from('obra_check_blocks')
+    .select('nombre, budget_group_client_id')
+    .eq('session_id', inv.session_id)
+    .eq('client_id', inv.block_client_id)
+    .maybeSingle();
+  const blk = blockRow as { nombre: string; budget_group_client_id: string | null } | null;
+  if (blk?.budget_group_client_id) {
+    const { data: g } = await db
+      .from('obra_check_budget_groups')
+      .select('nombre')
+      .eq('session_id', inv.session_id)
+      .eq('client_id', blk.budget_group_client_id)
+      .maybeSingle();
+    grupoNombre = (g as { nombre: string } | null)?.nombre ?? blk.nombre;
+  } else if (blk) {
+    grupoNombre = blk.nombre;
+  }
+
+  const viewUrl = `${appOrigin(request)}/obra-check/r/${viewToken}`;
+  let emailedRequester = false;
+  if (sess?.email) {
+    const notify = await notifyRequesterFormResponse(db, inv.session_id, responseId, {
+      sessionEmail: sess.email,
+      empresa: sess.empresa,
+      tipoObra: sess.tipo_obra,
+      metrosCuadrados: sess.metros_cuadrados,
+      grupoNombre,
+      contratistaNombre: displayName,
+      contratistaTelefono: telefono,
+      contratistaEmail: email,
+      tipo: inv.tipo,
+      detalle: body.detalle,
+      viewUrl,
+    });
+    emailedRequester = notify.emailed;
+  }
+
   const confirmLines = [
     `Listo ✓ Registré mi respuesta.`,
     telefono ? `WhatsApp: ${telefono}` : '',
@@ -257,6 +338,6 @@ export async function POST(request: NextRequest, ctx: Ctx) {
 
   return NextResponse.json({
     success: true,
-    data: { ok: true, confirmWaLink },
+    data: { ok: true, confirmWaLink, emailedRequester, viewUrl },
   });
 }

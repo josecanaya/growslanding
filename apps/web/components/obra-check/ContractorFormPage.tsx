@@ -20,6 +20,8 @@ type FormData = {
   rubro: string | null;
   empresa: string | null;
   tipoObra: string | null;
+  metrosCuadrados: number | null;
+  planos: Array<{ id: string; nombre: string; url: string; mime: string }>;
   tareas: TaskItem[];
 };
 
@@ -163,8 +165,44 @@ export function ContractorFormPage({ token }: { token: string }) {
         <p className="mt-1 text-sm" style={{ color: BRAND.muted }}>
           {data.bloqueNombre}
           {data.tipoObra ? ` · ${data.tipoObra}` : ''}
+          {data.metrosCuadrados != null ? ` · ${data.metrosCuadrados} m²` : ''}
         </p>
       </div>
+
+      {(data.metrosCuadrados != null || (data.planos?.length ?? 0) > 0) && (
+        <OCCard className="mb-4" style={{ background: '#EFF6FF', borderColor: '#93C5FD' }}>
+          <p className="text-sm font-bold" style={{ color: BRAND.blue }}>
+            Datos de la obra
+          </p>
+          {data.metrosCuadrados != null && (
+            <p className="mt-1 text-sm" style={{ color: BRAND.text }}>
+              Superficie: <strong>{data.metrosCuadrados} m²</strong>
+            </p>
+          )}
+          {(data.planos?.length ?? 0) > 0 && (
+            <div className="mt-2">
+              <p className="text-xs font-semibold" style={{ color: BRAND.muted }}>
+                Planos adjuntos
+              </p>
+              <ul className="mt-1 space-y-1">
+                {data.planos.map((p) => (
+                  <li key={p.id}>
+                    <a
+                      href={p.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium underline"
+                      style={{ color: BRAND.blueLight }}
+                    >
+                      {p.nombre}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </OCCard>
+      )}
 
       <OCCard className="mb-4">
         <p className="mb-3 text-sm font-semibold" style={{ color: BRAND.text }}>

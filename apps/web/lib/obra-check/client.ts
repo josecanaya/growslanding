@@ -83,10 +83,40 @@ export const obraCheckApi = {
         rubro: string | null;
         empresa: string | null;
         mensaje: string | null;
+        detalle: unknown;
         createdAt: string;
         blockId: string | null;
+        viewToken: string | null;
       }>
     >('leads', { method: 'GET' }),
+
+  getObraDatos: () =>
+    call<{
+      metrosCuadrados: number | null;
+      planos: Array<{ id: string; nombre: string; mime: string; url: string; sizeBytes: number }>;
+    }>('obra-datos', { method: 'GET' }),
+
+  saveMetrosCuadrados: (metrosCuadrados: number | null) =>
+    call<{ ok: boolean }>('obra-datos', {
+      method: 'PATCH',
+      body: JSON.stringify({ metrosCuadrados }),
+    }),
+
+  uploadPlano: async (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/api/obra-check/obra-datos', {
+      method: 'POST',
+      credentials: 'include',
+      body: form,
+    });
+    const json = await res.json().catch(() => ({ success: false, error: 'Respuesta inválida' }));
+    if (!res.ok || !json.success) throw new Error(json.error ?? `Error ${res.status}`);
+    return json.data as { id: string; nombre: string; mime: string; url: string; sizeBytes: number };
+  },
+
+  deletePlano: (planoId: string) =>
+    call<{ ok: boolean }>(`obra-datos?planoId=${encodeURIComponent(planoId)}`, { method: 'DELETE' }),
 
   event: (tipo: string, payload?: Record<string, unknown>) =>
     call<{ ok: boolean }>('events', { method: 'POST', body: JSON.stringify({ tipo, payload }) }).catch(() => ({

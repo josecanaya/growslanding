@@ -14,27 +14,31 @@ export type WaFormMessageInput = {
   nTareas: number;
 };
 
-export function buildWaFormMessage(input: WaFormMessageInput): string {
+export function buildWaFormMessage(input: WaFormMessageInput & { metrosCuadrados?: number | null }): string {
   const { tipo, contactoNombre, bloqueNombre, formUrl, tipoObra, nTareas } = input;
   const obra = tipoObra ? ` de la obra ${tipoObra}` : '';
   const n = nTareas;
   const tareasLabel = `${n} ${n === 1 ? 'tarea' : 'tareas'}`;
+  const m2 =
+    input.metrosCuadrados != null && Number.isFinite(input.metrosCuadrados)
+      ? ` Superficie: ${input.metrosCuadrados} m².`
+      : '';
 
   if (tipo === 'pedido_presupuesto') {
     return [
       `Hola ${contactoNombre} 👋 Estoy armando ${bloqueNombre}${obra} y quiero pedirte presupuesto.`,
       ``,
-      `📋 Son ${tareasLabel}. Completá tus datos y mirá el detalle acá:`,
+      `📋 Son ${tareasLabel}.${m2} Completá tus datos, mirá los planos y el detalle acá:`,
       formUrl,
       ``,
-      `Cuando lo completes me llega tu contacto para seguir.`,
+      `Cuando lo completes me llega tu respuesta completa.`,
     ].join('\n');
   }
 
   return [
     `Hola ${contactoNombre} 👋 Te paso el detalle de ${bloqueNombre}${obra}.`,
     ``,
-    `📋 ${tareasLabel}. Abrí el formulario, confirmá tus datos y revisá el alcance:`,
+    `📋 ${tareasLabel}.${m2} Abrí el formulario, confirmá tus datos y revisá alcance y planos:`,
     formUrl,
     ``,
     `Cualquier duda me escribís.`,

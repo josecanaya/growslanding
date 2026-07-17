@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Send, Share2, FileText, Copy, CheckCircle2, Package } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Send, Share2, FileText, Copy, CheckCircle2, Package, ExternalLink } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
 import { budgetDisplaySections } from './budget-groups/buildDefaultHierarchy';
 import { BRAND, OCButton, OCCard } from './ui';
 import type { Assignments } from './StepAsignar';
+import { ObraDatosPedidoPanel } from './ObraDatosPedidoPanel';
 
 type Tipo = 'orden_trabajo' | 'pedido_presupuesto';
 
@@ -20,8 +21,28 @@ type SendGroup = {
   blocks: ObraCheckBlock[];
   taskCount: number;
   contactId: string;
-  /** Bloque representativo para el invite (el form carga todo el grupo vía budget_group). */
   primaryBlockId: string;
+};
+
+type Lead = {
+  id: string;
+  nombre: string;
+  telefono: string;
+  email: string | null;
+  mensaje: string | null;
+  detalle: unknown;
+  createdAt: string;
+  blockId: string | null;
+  viewToken: string | null;
+};
+
+type DetalleItem = {
+  nombre: string;
+  included: boolean;
+  dias?: number | null;
+  precio?: number | null;
+  inicio?: string | null;
+  fin?: string | null;
 };
 
 export function StepEnvio({
@@ -37,6 +58,9 @@ export function StepEnvio({
   contacts: ObraCheckContact[];
   onFinish: (enviados: number) => void;
 }) {
+  const [obraReady, setObraReady] = useState(false);
+  const onReadyChange = useCallback((ready: boolean) => setObraReady(ready), []);
+
   const sendGroups = useMemo((): SendGroup[] => {
     const sections =
       budgetGroups && budgetGroups.length > 0
@@ -72,9 +96,7 @@ export function StepEnvio({
   const [shareHint, setShareHint] = useState<string | null>(null);
   const [webShare, setWebShare] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [leads, setLeads] = useState<
-    Array<{ id: string; telefono: string; email: string | null; blockId: string | null; mensaje: string | null }>
-  >([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
     setWebShare(canUseWebShareText());
@@ -82,6 +104,10 @@ export function StepEnvio({
   }, []);
 
   async function generar(group: SendGroup) {
+    if (!obraReady) {
+      setShareHint('Completá m² y al menos un plano antes de generar el pedido.');
+      return;
+    }
     const tipo = tipos[group.groupId] ?? 'pedido_presupuesto';
     setBusy(group.groupId);
     try {
@@ -121,7 +147,7 @@ export function StepEnvio({
         formUrl: g.formUrl,
       });
       setShareHint(
-        'Compartido. El contacto real lo vas a ver cuando el contratista complete el formulario.',
+        'Compartido. Cuando respondan, ves el presupuesto completo acá (y por email si Resend está configurado).',
       );
     }
   }
@@ -166,9 +192,11 @@ export function StepEnvio({
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
         {webShare
-          ? 'Un mensaje por grupo: el contratista recibe el paquete de trabajos completo (todos los paquetes del presupuesto).'
-          : 'Cada link abre el formulario con el alcance completo del grupo asignado.'}
+          ? 'Primero cargá m² y planos. Después un mensaje por grupo con el paquete completo.'
+          : 'Completá m² y planos; cada link abre el formulario con el alcance del grupo.'}
       </p>
+
+      <ObraDatosPedidoPanel onReadyChange={onReadyChange} />
 
       {shareHint && (
         <p className="mb-3 rounded-lg p-2 text-xs" style={{ background: BRAND.gray, color: BRAND.muted }}>
@@ -258,22 +286,55 @@ export function StepEnvio({
                 </>
               )}
 
-              {groupLeads.length > 0 && (
-                <div
-                  className="mb-3 rounded-lg p-2 text-xs"
-                  style={{ background: '#ECFDF5', border: `1px solid ${BRAND.green}`, color: BRAND.text }}
-                >
-                  <p className="mb-1 flex items-center gap-1 font-semibold" style={{ color: BRAND.green }}>
-                    <CheckCircle2 size={14} /> Contacto capturado
-                  </p>
-                  {groupLeads.map((l) => (
-                    <p key={l.id}>
-                      {l.telefono || l.email}
-                      {l.mensaje ? ` · ${l.mensaje.slice(0, 80)}` : ''}
+              {groupLeads.map((l) => {
+                const items = (Array.isArray(l.detalle) ? l.detalle : []) as DetalleItem[];
+                const included = items.filter((t) => t.included);
+                const total = included.reduce(
+                  (s, t) => s + (typeof t.precio === 'number' ? t.precio : 0),
+                  0,
+                );
+                return (
+                  <div
+                    key={l.id}
+                    className="mb-3 rounded-lg p-2 text-xs"
+                    style={{ background: '#ECFDF5', border: `1px solid ${BRAND.green}`, color: BRAND.text }}
+                  >
+                    <p className="mb-1 flex items-center gap-1 font-semibold" style={{ color: BRAND.green }}>
+                      <CheckCircle2 size={14} /> Respuesta completa recibida
                     </p>
-                  ))}
-                </div>
-              )}
+                    <p>
+                      {l.nombre}
+                      {l.telefono ? ` · ${l.telefono}` : ''}
+                      {l.email ? ` · ${l.email}` : ''}
+                    </p>
+                    {included.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {included.map((t, i) => (
+                          <li key={`${t.nombre}-${i}`}>
+                            {t.nombre}
+                            {t.dias != null ? ` · ${t.dias}d` : ''}
+                            {t.precio != null ? ` · $${Number(t.precio).toLocaleString('es-AR')}` : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {total > 0 && (
+                      <p className="mt-1 font-bold">Total: ${total.toLocaleString('es-AR')}</p>
+                    )}
+                    {l.viewToken && (
+                      <a
+                        href={`/obra-check/r/${l.viewToken}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 inline-flex items-center gap-1 font-semibold"
+                        style={{ color: BRAND.blue }}
+                      >
+                        Ver respuesta completa <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
 
               <div className="flex flex-wrap gap-2">
                 {!g ? (
@@ -281,6 +342,7 @@ export function StepEnvio({
                     variant="secondary"
                     onClick={() => void generar(group)}
                     loading={busy === group.groupId}
+                    disabled={!obraReady}
                   >
                     Generar link del grupo
                   </OCButton>

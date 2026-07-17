@@ -97,6 +97,13 @@ export async function POST(request: NextRequest) {
 
   const formUrl = `${appOrigin(request)}/obra-check/f/${token}`;
   const c = contact as { nombre: string; telefono: string | null };
+
+  const { data: sessionM2 } = await db
+    .from('obra_check_sessions')
+    .select('metros_cuadrados')
+    .eq('id', session.id)
+    .maybeSingle();
+
   const texto = buildWaFormMessage({
     tipo: parsed.tipo,
     contactoNombre: c.nombre,
@@ -104,6 +111,7 @@ export async function POST(request: NextRequest) {
     formUrl,
     tipoObra: session.tipo_obra,
     nTareas: count ?? 0,
+    metrosCuadrados: (sessionM2 as { metros_cuadrados: number | null } | null)?.metros_cuadrados ?? null,
   });
   const waLink = buildWaLink(texto, c.telefono);
 

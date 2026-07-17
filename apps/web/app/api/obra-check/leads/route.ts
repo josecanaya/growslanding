@@ -12,7 +12,7 @@ export async function GET() {
 
   const { data, error } = await db
     .from('obra_check_form_responses')
-    .select('id, nombre, telefono, email, rubro, empresa, mensaje, detalle_json, created_at, invite_id')
+    .select('id, nombre, telefono, email, rubro, empresa, mensaje, detalle_json, created_at, invite_id, view_token')
     .eq('session_id', session.id)
     .order('created_at', { ascending: false });
 
@@ -43,6 +43,7 @@ export async function GET() {
     detalle_json: unknown | null;
     created_at: string;
     invite_id: string;
+    view_token: string | null;
   }>).map((r) => ({
     id: r.id,
     nombre: r.nombre,
@@ -54,6 +55,7 @@ export async function GET() {
     detalle: r.detalle_json,
     createdAt: r.created_at,
     blockId: blockByInvite[r.invite_id] ?? null,
+    viewToken: r.view_token,
   }));
 
   return NextResponse.json({ success: true, data: leads });

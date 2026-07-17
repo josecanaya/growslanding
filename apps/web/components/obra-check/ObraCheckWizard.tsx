@@ -85,7 +85,7 @@ export function ObraCheckWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
+    <div className={`mx-auto px-4 ${step === 'intro' ? 'max-w-3xl py-6 sm:py-10' : 'max-w-4xl py-8'}`}>
       {step !== 'intro' && step !== 'upsell' && <StepBar current={STEP_INDEX[step]} />}
 
       {step === 'intro' && (
@@ -222,9 +222,11 @@ export function ObraCheckWizard() {
         />
       )}
 
-      <p className="mt-8 text-center text-[11px]" style={{ color: BRAND.muted }}>
-        Grows Obra Check · {tipoObra ? `Obra: ${tipoObra} · ` : ''}Herramienta gratuita
-      </p>
+      {step !== 'intro' && (
+        <p className="mt-8 text-center text-[11px]" style={{ color: BRAND.muted }}>
+          Grows Obra Check · {tipoObra ? `Obra: ${tipoObra} · ` : ''}Herramienta gratuita
+        </p>
+      )}
     </div>
   );
 }

@@ -38,8 +38,8 @@ export function StepBudgetGroups({
         Organizá presupuestos por fase
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Cada <b>fase</b> es un grupo comercial base. Adentro creá <b>subgrupos</b> (ej. distintos contratistas)
-        y arrastrá los paquetes en el canvas — mismo motor que el resto de Grows.
+        Cada columna es una de las <b>4 fases</b>. Creá subgrupos comerciales y arrastrá los paquetes
+        dentro de la misma columna — mismo canvas que Grows (@xyflow).
       </p>
 
       <OCCard className="mb-4 !p-3">

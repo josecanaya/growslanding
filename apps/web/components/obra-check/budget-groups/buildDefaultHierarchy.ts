@@ -1,34 +1,24 @@
 import type { ObraCheckBlock, ObraCheckBudgetGroup } from '@/lib/obra-check/types';
+import { CANONICAL_PHASES, normalizePhase } from '@/lib/obra-check/phases';
 
 let subCounter = 0;
 
-function phaseId(name: string, index: number) {
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'general';
-  return `fase-${slug}-${index}`;
+function phaseGroupId(phase: string) {
+  return `fase-${phase.toLowerCase()}`;
 }
 
 /**
- * Arma jerarquía inicial: una fase por cada fase de obra + un subgrupo
- * con todos los paquetes de esa fase (sin mezclar fases).
+ * Siempre las 4 fases canónicas + un subgrupo por fase con sus paquetes.
  */
 export function buildDefaultHierarchy(blocks: ObraCheckBlock[]): ObraCheckBudgetGroup[] {
-  const ordered = [...blocks].sort((a, b) => a.orden - b.orden);
-  const phaseOrder: string[] = [];
-  const byPhase = new Map<string, ObraCheckBlock[]>();
-
-  for (const block of ordered) {
-    const fase = block.fase?.trim() || 'General';
-    if (!byPhase.has(fase)) {
-      phaseOrder.push(fase);
-      byPhase.set(fase, []);
-    }
-    byPhase.get(fase)!.push(block);
-  }
-
   const groups: ObraCheckBudgetGroup[] = [];
 
-  phaseOrder.forEach((fase, pi) => {
-    const faseGroupId = phaseId(fase, pi);
+  CANONICAL_PHASES.forEach((fase, pi) => {
+    const faseGroupId = phaseGroupId(fase);
+    const phaseBlocks = [...blocks]
+      .filter((b) => normalizePhase(b.fase) === fase)
+      .sort((a, b) => a.orden - b.orden);
+
     groups.push({
       id: faseGroupId,
       nombre: fase,
@@ -39,11 +29,8 @@ export function buildDefaultHierarchy(blocks: ObraCheckBlock[]): ObraCheckBudget
     });
 
     subCounter += 1;
-    const subId = `sub-${faseGroupId}-${subCounter}`;
-    const phaseBlocks = byPhase.get(fase) ?? [];
-
     groups.push({
-      id: subId,
+      id: `sub-${faseGroupId}-${subCounter}`,
       nombre: phaseBlocks.length > 1 ? 'Presupuesto conjunto' : 'Presupuesto',
       blockIds: phaseBlocks.map((b) => b.id),
       parentId: faseGroupId,
@@ -59,16 +46,10 @@ export function blocksFromGroups(
   blocks: ObraCheckBlock[],
   groups: ObraCheckBudgetGroup[],
 ): ObraCheckBlock[] {
-  const subgroups = groups.filter((g) => g.kind === 'subgrupo' || (!g.kind && g.parentId));
+  const subgroups = groups.filter((g) => g.kind === 'subgrupo' || g.parentId);
   const blockToGroup = new Map<string, string>();
   for (const g of subgroups) {
     for (const bid of g.blockIds) blockToGroup.set(bid, g.id);
-  }
-  // Fallback: flat groups sin jerarquía
-  if (subgroups.length === 0) {
-    for (const g of groups) {
-      for (const bid of g.blockIds) blockToGroup.set(bid, g.id);
-    }
   }
   return blocks.map((b) => ({
     ...b,
@@ -76,17 +57,13 @@ export function blocksFromGroups(
   }));
 }
 
-export function leafGroups(groups: ObraCheckBudgetGroup[]): ObraCheckBudgetGroup[] {
-  return groups.filter((g) => g.kind === 'subgrupo' || (g.kind !== 'fase' && Boolean(g.parentId ?? g.blockIds.length)));
-}
-
 export function phaseGroups(groups: ObraCheckBudgetGroup[]): ObraCheckBudgetGroup[] {
   return groups.filter((g) => g.kind === 'fase' || (!g.parentId && g.kind !== 'subgrupo'));
 }
 
-export function nextSubgroupId(phaseId: string) {
+export function nextSubgroupId(phaseIdVal: string) {
   subCounter += 1;
-  return `sub-${phaseId}-${subCounter}`;
+  return `sub-${phaseIdVal}-${subCounter}`;
 }
 
 export function budgetDisplaySections(
@@ -95,16 +72,6 @@ export function budgetDisplaySections(
 ): Array<{ phaseName: string | null; subgroupName: string; blocks: ObraCheckBlock[] }> {
   const phases = phaseGroups(groups).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
   const subs = groups.filter((g) => g.kind === 'subgrupo' || g.parentId);
-
-  if (phases.length === 0) {
-    return groups
-      .map((g) => ({
-        phaseName: null,
-        subgroupName: g.nombre,
-        blocks: blocks.filter((b) => g.blockIds.includes(b.id)),
-      }))
-      .filter((s) => s.blocks.length > 0);
-  }
 
   return phases.flatMap((phase) =>
     subs
@@ -117,4 +84,15 @@ export function budgetDisplaySections(
       }))
       .filter((s) => s.blocks.length > 0),
   );
+}
+
+/** Posición X de columna de fase (0..3). */
+export function phaseColumnX(phaseName: string, colWidth = 260, gap = 36): number {
+  const idx = CANONICAL_PHASES.indexOf(normalizePhase(phaseName));
+  return Math.max(0, idx) * (colWidth + gap);
+}
+
+export function phaseFromColumnX(x: number, colWidth = 260, gap = 36): (typeof CANONICAL_PHASES)[number] {
+  const idx = Math.round(x / (colWidth + gap));
+  return CANONICAL_PHASES[Math.min(Math.max(idx, 0), CANONICAL_PHASES.length - 1)];
 }

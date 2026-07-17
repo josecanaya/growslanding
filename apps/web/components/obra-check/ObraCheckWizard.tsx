@@ -134,11 +134,11 @@ export function ObraCheckWizard() {
             Así ordenó Grows tu obra
           </h2>
           <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-            {blocks.length} bloques · {tasks.length} tareas · {cpm.tareasCriticas} en camino crítico
-            {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días de duración`}
+            {blocks.length} paquetes · {tasks.length} tareas · {cpm.tareasCriticas} en camino crítico
+            {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días`} — agrupado en 4 fases
           </p>
 
-          <ObraCheckCanvasView tasks={tasks} blocks={blocks} />
+          <ObraCheckCanvasView tasks={tasks} />
 
           {warnings.length > 0 && (
             <OCCard className="mt-4" style={{ background: '#FFFDF5', borderColor: BRAND.gold }}>

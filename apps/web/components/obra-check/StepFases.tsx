@@ -2,17 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { CANONICAL_PHASES, PHASE_COLORS as PHASE_COLORS_SHARED } from '@/lib/obra-check/phases';
 import type { ObraCheckTask } from '@/lib/obra-check/types';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 
-const DEFAULT_PHASES = ['Preparacion', 'Estructura', 'Instalaciones', 'Terminaciones'];
+const DEFAULT_PHASES = [...CANONICAL_PHASES];
 
-const PHASE_COLORS: Record<string, string> = {
-  Preparacion: '#E8F4FD',
-  Estructura: '#FFF3E0',
-  Instalaciones: '#E8F5E9',
-  Terminaciones: '#F3E5F5',
-};
+const PHASE_COLORS: Record<string, string> = Object.fromEntries(
+  CANONICAL_PHASES.map((p) => [p, PHASE_COLORS_SHARED[p].bg]),
+);
 
 function inferPhase(task: ObraCheckTask): string {
   const text = `${task.rubro ?? ''} ${task.nombre}`.toLowerCase();

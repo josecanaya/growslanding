@@ -10,23 +10,24 @@ import {
   useReactFlow,
   applyNodeChanges,
   type Node,
-  type Edge,
   type NodeChange,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Plus } from 'lucide-react';
 
+import { CANONICAL_PHASES, PHASE_COLORS, normalizePhase } from '@/lib/obra-check/phases';
 import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckTask } from '@/lib/obra-check/types';
 import { BRAND, OCButton, inputStyle } from '../ui';
-import { budgetFlowNodeTypes } from './budgetFlowNodes';
-import { nextSubgroupId, phaseGroups } from './buildDefaultHierarchy';
+import { obraCheckFlowNodeTypes } from '../obraCheckFlowNodes';
+import { nextSubgroupId, phaseColumnX, phaseFromColumnX, phaseGroups } from './buildDefaultHierarchy';
 
-const PHASE_GAP = 40;
-const PHASE_INNER_W = 220;
-const SUB_HEADER = 52;
-const PKG_HEIGHT = 82;
+const COL_W = 260;
+const COL_GAP = 36;
+const PHASE_HDR = 48;
+const SUB_HDR = 36;
+const PKG_H = 68;
 const PKG_GAP = 8;
-const SUB_PAD = 12;
+const SUB_PAD = 10;
 
 type FlowProps = {
   groups: ObraCheckBudgetGroup[];
@@ -35,174 +36,135 @@ type FlowProps = {
   onChange: (groups: ObraCheckBudgetGroup[]) => void;
 };
 
-function isPhaseGroupId(id: string, groups: ObraCheckBudgetGroup[]) {
-  return phaseGroups(groups).some((p) => p.id === id);
-}
+type SubRect = { id: string; phaseId: string; x: number; y: number; w: number; h: number };
 
-function layoutNodes(
+function layoutBudgetNodes(
   groups: ObraCheckBudgetGroup[],
   blocks: ObraCheckBlock[],
   tasks: ObraCheckTask[],
-): { nodes: Node[]; edges: Edge[] } {
+): { nodes: Node[]; subRects: SubRect[] } {
   const taskById = new Map(tasks.map((t) => [t.id, t]));
   const blockById = new Map(blocks.map((b) => [b.id, b]));
   const phases = phaseGroups(groups).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
   const subgroups = groups.filter((g) => g.kind === 'subgrupo' || g.parentId);
   const nodes: Node[] = [];
-  const edges: Edge[] = [];
+  const subRects: SubRect[] = [];
 
-  let phaseX = 0;
+  CANONICAL_PHASES.forEach((canonical) => {
+    const phase = phases.find((p) => normalizePhase(p.nombre) === canonical);
+    if (!phase) return;
 
-  for (const phase of phases) {
+    const colX = phaseColumnX(canonical, COL_W, COL_GAP);
     const subs = subgroups
       .filter((s) => s.parentId === phase.id)
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
 
-    let innerY = 48;
-    let maxInnerH = 48;
-    const phaseNodesStart = nodes.length;
+    let y = PHASE_HDR;
+    let maxH = PHASE_HDR + 40;
 
-    for (const sub of subs) {
+    subs.forEach((sub) => {
       const pkgs = sub.blockIds.map((id) => blockById.get(id)).filter(Boolean) as ObraCheckBlock[];
-      const subInnerH = SUB_HEADER + Math.max(pkgs.length, 1) * (PKG_HEIGHT + PKG_GAP) + SUB_PAD;
-      maxInnerH = Math.max(maxInnerH, innerY + subInnerH + SUB_PAD);
+      const subH = SUB_HDR + Math.max(pkgs.length, 1) * (PKG_H + PKG_GAP) + SUB_PAD * 2;
+      maxH = Math.max(maxH, y + subH + 16);
 
-      const taskCount = pkgs.reduce((n, p) => n + p.taskIds.length, 0);
-
-      nodes.push({
+      subRects.push({
         id: sub.id,
-        type: 'group',
-        parentId: phase.id,
-        extent: 'parent',
-        position: { x: SUB_PAD, y: innerY },
-        data: { label: sub.nombre, packageCount: pkgs.length, taskCount },
-        draggable: false,
-        selectable: true,
-        style: {
-          width: PHASE_INNER_W - SUB_PAD * 2,
-          height: subInnerH,
-          background: '#FFFDF5',
-          border: `1.5px solid ${BRAND.border}`,
-          borderRadius: 10,
-          zIndex: 2,
-        },
+        phaseId: phase.id,
+        x: colX + SUB_PAD,
+        y,
+        w: COL_W - SUB_PAD * 2,
+        h: subH,
       });
 
       nodes.push({
-        id: `label-${sub.id}`,
-        type: 'subgrupo',
-        parentId: sub.id,
-        extent: 'parent',
-        position: { x: 8, y: 6 },
-        data: { label: sub.nombre, packageCount: pkgs.length, taskCount },
+        id: `sub-lane-${sub.id}`,
+        type: 'subgrupoLane',
+        position: { x: colX + SUB_PAD, y },
+        data: { label: sub.nombre, packageCount: pkgs.length, subgroupId: sub.id },
         draggable: false,
         selectable: true,
-        style: { zIndex: 3 },
+        style: { width: COL_W - SUB_PAD * 2, height: subH, zIndex: 2 },
       });
 
       pkgs.forEach((pkg, pi) => {
         const preview = pkg.taskIds
           .map((tid) => taskById.get(tid)?.nombre)
           .filter(Boolean) as string[];
-        const pkgNodeId = `pkg-${pkg.id}`;
         nodes.push({
-          id: pkgNodeId,
+          id: `pkg-${pkg.id}`,
           type: 'paquete',
-          parentId: sub.id,
-          extent: 'parent',
-          position: { x: 8, y: SUB_HEADER + pi * (PKG_HEIGHT + PKG_GAP) },
+          position: { x: colX + SUB_PAD + 8, y: y + SUB_HDR + pi * (PKG_H + PKG_GAP) },
           data: {
             label: pkg.nombre,
-            fase: pkg.fase,
             taskCount: pkg.taskIds.length,
             taskPreview: preview,
             blockId: pkg.id,
             subgroupId: sub.id,
             phaseId: phase.id,
+            phaseName: canonical,
           },
           draggable: true,
           selectable: true,
-          style: { width: PHASE_INNER_W - SUB_PAD * 2 - 16, zIndex: 4 },
-        });
-        edges.push({
-          id: `e-${sub.id}-${pkgNodeId}`,
-          source: sub.id,
-          target: pkgNodeId,
-          style: { stroke: BRAND.border, strokeWidth: 1 },
+          style: { width: COL_W - SUB_PAD * 2 - 16, zIndex: 5 },
         });
       });
 
-      innerY += subInnerH + SUB_GAP;
-    }
+      y += subH + 12;
+    });
 
-    const pkgInPhase = subs.reduce((n, s) => n + s.blockIds.length, 0);
+    const colors = PHASE_COLORS[canonical];
+    const pkgCount = subs.reduce((n, s) => n + s.blockIds.length, 0);
 
-    nodes.splice(phaseNodesStart, 0, {
-      id: phase.id,
-      type: 'group',
-      position: { x: phaseX, y: 0 },
-      data: { label: phase.nombre, subgroupCount: subs.length, packageCount: pkgInPhase },
-      draggable: true,
+    nodes.unshift({
+      id: `phase-lane-${phase.id}`,
+      type: 'phaseLane',
+      position: { x: colX, y: 0 },
+      data: { label: canonical, count: pkgCount },
+      draggable: false,
       selectable: true,
       style: {
-        width: PHASE_INNER_W,
-        height: maxInnerH,
-        background: 'rgba(245,246,247,0.85)',
-        border: `2px solid ${BRAND.blue}`,
+        width: COL_W,
+        height: maxH,
+        zIndex: 1,
+        background: colors.bg,
+        border: `2px solid ${colors.border}`,
         borderRadius: 14,
-        zIndex: 0,
       },
     });
+  });
 
-    nodes.push({
-      id: `label-${phase.id}`,
-      type: 'fase',
-      parentId: phase.id,
-      extent: 'parent',
-      position: { x: SUB_PAD, y: 8 },
-      data: { label: phase.nombre, subgroupCount: subs.length, packageCount: pkgInPhase },
-      draggable: false,
-      selectable: false,
-      style: { zIndex: 1, pointerEvents: 'none' },
-    });
-
-    phaseX += PHASE_INNER_W + PHASE_GAP;
-  }
-
-  return { nodes, edges };
+  return { nodes, subRects };
 }
 
-function syncFromGroups(groups: ObraCheckBudgetGroup[]): ObraCheckBudgetGroup[] {
-  return groups.map((g) => {
-    if (g.kind === 'fase' || (!g.parentId && g.kind !== 'subgrupo')) {
-      return { ...g, blockIds: [] };
-    }
-    return g;
-  });
+function findSubAtPosition(rects: SubRect[], x: number, y: number): SubRect | null {
+  for (const r of rects) {
+    if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return r;
+  }
+  return null;
 }
 
 function FlowInner({ groups, blocks, tasks, onChange }: FlowProps) {
-  const { nodes: initialNodes, edges: initialEdges } = useMemo(
-    () => layoutNodes(groups, blocks, tasks),
+  const { nodes: initialNodes, subRects: initialRects } = useMemo(
+    () => layoutBudgetNodes(groups, blocks, tasks),
     [groups, blocks, tasks],
   );
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+  const subRectsRef = useRef<SubRect[]>(initialRects);
+  const groupsRef = useRef(groups);
   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
   const [selectedSubId, setSelectedSubId] = useState<string | null>(null);
   const [renameSub, setRenameSub] = useState('');
-  const groupsRef = useRef(groups);
-  const { getIntersectingNodes, fitView } = useReactFlow();
+  const { fitView } = useReactFlow();
 
   useEffect(() => {
     groupsRef.current = groups;
   }, [groups]);
 
   useEffect(() => {
-    const laid = layoutNodes(groups, blocks, tasks);
+    const laid = layoutBudgetNodes(groups, blocks, tasks);
     setNodes(laid.nodes);
-    setEdges(laid.edges);
-    const t = window.setTimeout(() => void fitView({ padding: 0.12, duration: 220 }), 80);
+    subRectsRef.current = laid.subRects;
+    const t = window.setTimeout(() => void fitView({ padding: 0.1, duration: 200 }), 60);
     return () => window.clearTimeout(t);
   }, [groups, blocks, tasks, fitView]);
 
@@ -210,66 +172,54 @@ function FlowInner({ groups, blocks, tasks, onChange }: FlowProps) {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
-  const syncPhaseOrder = useCallback(
-    (nds: Node[]) => {
-      const phaseNodes = nds
-        .filter((n) => n.type === 'group' && isPhaseGroupId(n.id, groupsRef.current))
-        .sort((a, b) => a.position.x - b.position.x);
-      const orderMap = new Map(phaseNodes.map((n, i) => [n.id, i]));
-      onChange(
-        groupsRef.current.map((g) =>
-          g.kind === 'fase' || (!g.parentId && g.kind !== 'subgrupo')
-            ? { ...g, orden: orderMap.get(g.id) ?? g.orden ?? 0 }
-            : g,
-        ),
-      );
-    },
-    [onChange],
-  );
-
   const onNodeDragStop = useCallback(
     (_: unknown, node: Node) => {
-      if (node.type === 'group' && isPhaseGroupId(node.id, groupsRef.current)) {
-        syncPhaseOrder(nodes);
-        return;
-      }
       if (node.type !== 'paquete') return;
 
       const blockId = (node.data as { blockId: string }).blockId;
       const currentSubId = (node.data as { subgroupId: string }).subgroupId;
-      const phaseId = (node.data as { phaseId: string }).phaseId;
+      const phaseName = (node.data as { phaseName: string }).phaseName;
+      const block = blocks.find((b) => b.id === blockId);
+      if (!block) return;
 
-      const hits = getIntersectingNodes(node).filter(
-        (n) => n.type === 'group' && n.parentId === phaseId && n.id !== phaseId,
-      );
-      const targetSub = hits[0];
-      if (!targetSub || targetSub.id === currentSubId) return;
+      const targetPhase = phaseFromColumnX(node.position.x, COL_W, COL_GAP);
+      if (normalizePhase(block.fase) !== targetPhase) {
+        return;
+      }
+
+      const centerY = node.position.y + PKG_H / 2;
+      const hit = findSubAtPosition(subRectsRef.current, node.position.x + 20, centerY);
+      if (!hit || hit.id === currentSubId) return;
 
       const next = groupsRef.current.map((g) => {
         if (g.id === currentSubId) {
           return { ...g, blockIds: g.blockIds.filter((id) => id !== blockId) };
         }
-        if (g.id === targetSub.id) {
+        if (g.id === hit.id) {
           return { ...g, blockIds: [...new Set([...g.blockIds, blockId])] };
         }
         return g;
       });
-      onChange(syncFromGroups(next));
+      onChange(next);
     },
-    [getIntersectingNodes, nodes, onChange, syncPhaseOrder],
+    [blocks, onChange],
   );
 
-  const onSelectionChange = useCallback(
-    ({ nodes: sel }: { nodes: Node[] }) => {
-      const phase = sel.find((n) => n.type === 'group' && isPhaseGroupId(n.id, groupsRef.current));
-      const sub = sel.find((n) => n.type === 'subgrupo' || (n.type === 'group' && n.parentId && !n.id.startsWith('fase-')));
-      const subGroup = sub?.type === 'subgrupo' ? groupsRef.current.find((g) => `label-${g.id}` === sub.id) : groupsRef.current.find((g) => g.id === sub?.id);
-      setSelectedPhaseId(phase?.id ?? null);
-      setSelectedSubId(subGroup?.id ?? (sub?.type === 'group' ? sub.id : null));
-      if (subGroup) setRenameSub(subGroup.nombre);
-    },
-    [],
-  );
+  const onSelectionChange = useCallback(({ nodes: sel }: { nodes: Node[] }) => {
+    const subLane = sel.find((n) => n.type === 'subgrupoLane');
+    const phaseLane = sel.find((n) => n.type === 'phaseLane');
+    if (subLane) {
+      const sid = (subLane.data as { subgroupId: string }).subgroupId;
+      setSelectedSubId(sid);
+      setRenameSub((subLane.data as { label: string }).label);
+      const sub = groupsRef.current.find((g) => g.id === sid);
+      setSelectedPhaseId(sub?.parentId ?? null);
+    } else if (phaseLane) {
+      const pid = phaseLane.id.replace('phase-lane-', '');
+      setSelectedPhaseId(pid);
+      setSelectedSubId(null);
+    }
+  }, []);
 
   function addSubgroup() {
     const phaseId = selectedPhaseId ?? phaseGroups(groups)[0]?.id;
@@ -303,7 +253,7 @@ function FlowInner({ groups, blocks, tasks, onChange }: FlowProps) {
     <div>
       <div
         style={{
-          height: 540,
+          height: 560,
           width: '100%',
           borderRadius: 12,
           overflow: 'hidden',
@@ -312,22 +262,24 @@ function FlowInner({ groups, blocks, tasks, onChange }: FlowProps) {
       >
         <ReactFlow
           nodes={nodes}
-          edges={edges}
-          nodeTypes={budgetFlowNodeTypes}
+          edges={[]}
+          nodeTypes={obraCheckFlowNodeTypes}
           onNodesChange={onNodesChange}
           onNodeDragStop={onNodeDragStop}
           onSelectionChange={onSelectionChange}
           nodesConnectable={false}
+          panOnDrag
+          zoomOnScroll
           proOptions={{ hideAttribution: true }}
           minZoom={0.2}
-          maxZoom={1.5}
+          maxZoom={1.4}
           fitView
         >
           <Background color={BRAND.border} gap={18} />
           <Controls showInteractive={false} />
           <Panel position="top-right" className="!m-2 flex flex-col gap-2">
             <OCButton variant="secondary" onClick={addSubgroup} className="text-xs">
-              <Plus size={14} /> Subgrupo en fase
+              <Plus size={14} /> Subgrupo
             </OCButton>
             {selectedSubId && (
               <div className="rounded-lg bg-white p-2 shadow-md" style={{ border: `1px solid ${BRAND.border}` }}>
@@ -346,17 +298,17 @@ function FlowInner({ groups, blocks, tasks, onChange }: FlowProps) {
           </Panel>
           <Panel
             position="top-left"
-            className="!m-2 max-w-[240px] rounded-lg bg-white/95 p-2.5 text-[10px] leading-relaxed shadow-sm"
+            className="!m-2 max-w-[260px] rounded-lg bg-white/95 p-2.5 text-[10px] leading-relaxed shadow-sm"
             style={{ border: `1px solid ${BRAND.border}`, color: BRAND.muted }}
           >
-            <b style={{ color: BRAND.blue }}>Las fases son la base.</b> Creá subgrupos comerciales y arrastrá
-            paquetes entre ellos. Reordená fases arrastrando las columnas.
+            <b style={{ color: BRAND.blue }}>4 fases fijas.</b> Arrastrá los paquetes entre subgrupos
+            de la misma columna. Creá subgrupos con el botón +.
           </Panel>
         </ReactFlow>
       </div>
       {unassigned.length > 0 && (
         <p className="mt-2 text-xs" style={{ color: BRAND.error }}>
-          {unassigned.length} paquete(s) sin subgrupo — arrastralos a un subgrupo de su fase.
+          {unassigned.length} paquete(s) sin subgrupo.
         </p>
       )}
     </div>

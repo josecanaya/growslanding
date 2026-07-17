@@ -63,6 +63,8 @@ export const obraCheckApi = {
   generarWa: (body: {
     contactId: string;
     blockId: string;
+    budgetGroupId?: string;
+    groupName?: string;
     tipo: 'orden_trabajo' | 'pedido_presupuesto';
     fechaLimite?: string | null;
   }) =>

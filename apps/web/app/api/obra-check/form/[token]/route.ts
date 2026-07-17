@@ -47,16 +47,44 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 
   const { data: block } = await db
     .from('obra_check_blocks')
-    .select('nombre, rubro')
+    .select('nombre, rubro, budget_group_client_id')
     .eq('session_id', inv.session_id)
     .eq('client_id', inv.block_client_id)
     .maybeSingle();
+
+  const blk = block as {
+    nombre: string;
+    rubro: string | null;
+    budget_group_client_id: string | null;
+  } | null;
+
+  let blockIds = [inv.block_client_id];
+  let bloqueNombre = blk?.nombre ?? 'Trabajo';
+  let rubro = blk?.rubro ?? null;
+
+  if (blk?.budget_group_client_id) {
+    const { data: groupRow } = await db
+      .from('obra_check_budget_groups')
+      .select('nombre')
+      .eq('session_id', inv.session_id)
+      .eq('client_id', blk.budget_group_client_id)
+      .maybeSingle();
+    if (groupRow) bloqueNombre = (groupRow as { nombre: string }).nombre;
+
+    const { data: groupBlocks } = await db
+      .from('obra_check_blocks')
+      .select('client_id')
+      .eq('session_id', inv.session_id)
+      .eq('budget_group_client_id', blk.budget_group_client_id);
+    const ids = ((groupBlocks ?? []) as { client_id: string }[]).map((b) => b.client_id);
+    if (ids.length > 0) blockIds = ids;
+  }
 
   const { data: tareas } = await db
     .from('obra_check_tasks')
     .select('nombre, duracion_dias, orden')
     .eq('session_id', inv.session_id)
-    .eq('block_client_id', inv.block_client_id)
+    .in('block_client_id', blockIds)
     .order('orden', { ascending: true });
 
   const sess = session as { empresa: string | null; tipo_obra: string | null; email: string | null } | null;
@@ -66,8 +94,8 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
     data: {
       tipo: inv.tipo,
       alreadyResponded: Boolean(inv.responded_at),
-      bloqueNombre: (block as { nombre: string } | null)?.nombre ?? 'Trabajo',
-      rubro: (block as { rubro: string | null } | null)?.rubro ?? null,
+      bloqueNombre,
+      rubro,
       empresa: sess?.empresa ?? null,
       tipoObra: sess?.tipo_obra ?? null,
       tareas: ((tareas ?? []) as { nombre: string; duracion_dias: number | null; orden: number }[]).map((t) => ({

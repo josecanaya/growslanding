@@ -133,7 +133,7 @@ export function StepBudgetGroups({
               })();
             }}
           >
-            Continuar a asignar →
+          Continuar a asignar grupos →
           </OCButton>
         </div>
       </div>

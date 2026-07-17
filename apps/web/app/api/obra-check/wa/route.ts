@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic';
 const bodySchema = z.object({
   contactId: z.string().uuid(),
   blockId: z.string().max(120),
+  budgetGroupId: z.string().max(120).optional(),
+  groupName: z.string().max(200).optional(),
   tipo: z.enum(['orden_trabajo', 'pedido_presupuesto']),
   fechaLimite: z.string().max(20).nullable().optional(),
 });
@@ -44,17 +46,42 @@ export async function POST(request: NextRequest) {
 
   const { data: block } = await db
     .from('obra_check_blocks')
-    .select('nombre')
+    .select('nombre, budget_group_client_id')
     .eq('session_id', session.id)
     .eq('client_id', parsed.blockId)
     .maybeSingle();
   if (!block) return NextResponse.json({ success: false, error: 'Bloque no encontrado.' }, { status: 404 });
 
+  const blk = block as { nombre: string; budget_group_client_id: string | null };
+  const groupId = parsed.budgetGroupId ?? blk.budget_group_client_id;
+
+  // Alcance = todos los paquetes del grupo de presupuesto (paquete de trabajos entero).
+  let blockClientIds = [parsed.blockId];
+  let displayName = parsed.groupName?.trim() || blk.nombre;
+  if (groupId) {
+    const { data: groupRow } = await db
+      .from('obra_check_budget_groups')
+      .select('nombre')
+      .eq('session_id', session.id)
+      .eq('client_id', groupId)
+      .maybeSingle();
+    if (groupRow && !parsed.groupName?.trim()) {
+      displayName = (groupRow as { nombre: string }).nombre;
+    }
+    const { data: groupBlocks } = await db
+      .from('obra_check_blocks')
+      .select('client_id')
+      .eq('session_id', session.id)
+      .eq('budget_group_client_id', groupId);
+    const ids = ((groupBlocks ?? []) as { client_id: string }[]).map((b) => b.client_id);
+    if (ids.length > 0) blockClientIds = ids;
+  }
+
   const { count } = await db
     .from('obra_check_tasks')
     .select('id', { count: 'exact', head: true })
     .eq('session_id', session.id)
-    .eq('block_client_id', parsed.blockId);
+    .in('block_client_id', blockClientIds);
 
   const token = newInviteToken();
   const { error: inviteErr } = await db.from('obra_check_invites').insert({
@@ -73,7 +100,7 @@ export async function POST(request: NextRequest) {
   const texto = buildWaFormMessage({
     tipo: parsed.tipo,
     contactoNombre: c.nombre,
-    bloqueNombre: (block as { nombre: string }).nombre,
+    bloqueNombre: displayName,
     formUrl,
     tipoObra: session.tipo_obra,
     nTareas: count ?? 0,

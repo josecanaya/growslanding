@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Send, Share2, FileText, Copy, CheckCircle2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Send, Share2, FileText, Copy, CheckCircle2, Package } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
@@ -12,6 +12,17 @@ import type { Assignments } from './StepAsignar';
 type Tipo = 'orden_trabajo' | 'pedido_presupuesto';
 
 type Generated = { texto: string; waLink: string; formUrl: string };
+
+type SendGroup = {
+  groupId: string;
+  phaseName: string | null;
+  groupName: string;
+  blocks: ObraCheckBlock[];
+  taskCount: number;
+  contactId: string;
+  /** Bloque representativo para el invite (el form carga todo el grupo vía budget_group). */
+  primaryBlockId: string;
+};
 
 export function StepEnvio({
   blocks,
@@ -26,7 +37,34 @@ export function StepEnvio({
   contacts: ObraCheckContact[];
   onFinish: (enviados: number) => void;
 }) {
-  const assignedBlocks = blocks.filter((b) => assignments[b.id]);
+  const sendGroups = useMemo((): SendGroup[] => {
+    const sections =
+      budgetGroups && budgetGroups.length > 0
+        ? budgetDisplaySections(budgetGroups, blocks)
+        : blocks.map((b) => ({
+            groupId: b.budgetGroupId ?? b.id,
+            phaseName: b.fase,
+            subgroupName: b.nombre,
+            blocks: [b],
+          }));
+
+    return sections
+      .map((s) => {
+        const contactId = assignments[s.groupId];
+        if (!contactId || s.blocks.length === 0) return null;
+        return {
+          groupId: s.groupId,
+          phaseName: s.phaseName,
+          groupName: s.subgroupName,
+          blocks: s.blocks,
+          taskCount: s.blocks.reduce((n, b) => n + b.taskIds.length, 0),
+          contactId,
+          primaryBlockId: s.blocks[0]!.id,
+        } satisfies SendGroup;
+      })
+      .filter(Boolean) as SendGroup[];
+  }, [budgetGroups, blocks, assignments]);
+
   const [tipos, setTipos] = useState<Record<string, Tipo>>({});
   const [generated, setGenerated] = useState<Record<string, Generated>>({});
   const [sent, setSent] = useState<Set<string>>(new Set());
@@ -43,25 +81,30 @@ export function StepEnvio({
     obraCheckApi.listLeads().then(setLeads).catch(() => {});
   }, []);
 
-  async function generar(block: ObraCheckBlock) {
-    const contactId = assignments[block.id]!;
-    const tipo = tipos[block.id] ?? 'orden_trabajo';
-    setBusy(block.id);
+  async function generar(group: SendGroup) {
+    const tipo = tipos[group.groupId] ?? 'pedido_presupuesto';
+    setBusy(group.groupId);
     try {
-      const res = await obraCheckApi.generarWa({ contactId, blockId: block.id, tipo });
+      const res = await obraCheckApi.generarWa({
+        contactId: group.contactId,
+        blockId: group.primaryBlockId,
+        budgetGroupId: group.groupId,
+        groupName: group.groupName,
+        tipo,
+      });
       setGenerated((g) => ({
         ...g,
-        [block.id]: { texto: res.texto, waLink: res.waLink, formUrl: res.formUrl },
+        [group.groupId]: { texto: res.texto, waLink: res.waLink, formUrl: res.formUrl },
       }));
     } finally {
       setBusy(null);
     }
   }
 
-  async function compartir(block: ObraCheckBlock) {
-    const g = generated[block.id];
+  async function compartir(group: SendGroup) {
+    const g = generated[group.groupId];
     if (!g) return;
-    const contact = contacts.find((c) => c.id === assignments[block.id]);
+    const contact = contacts.find((c) => c.id === group.contactId);
     setShareHint(null);
     const result = await shareOrOpenWhatsApp({
       texto: g.texto,
@@ -70,11 +113,11 @@ export function StepEnvio({
     });
     if (result.method === 'web_share' && 'cancelled' in result && result.cancelled) return;
     if (result.ok) {
-      setSent((s) => new Set(s).add(block.id));
+      setSent((s) => new Set(s).add(group.groupId));
       obraCheckApi.event('wa_sent', {
-        blockId: block.id,
+        budgetGroupId: group.groupId,
         method: result.method,
-        contactId: assignments[block.id],
+        contactId: group.contactId,
         formUrl: g.formUrl,
       });
       setShareHint(
@@ -83,25 +126,25 @@ export function StepEnvio({
     }
   }
 
-  function abrirWaDirecto(block: ObraCheckBlock) {
-    const g = generated[block.id];
+  function abrirWaDirecto(group: SendGroup) {
+    const g = generated[group.groupId];
     if (!g) return;
     window.open(g.waLink, '_blank', 'noopener');
-    setSent((s) => new Set(s).add(block.id));
+    setSent((s) => new Set(s).add(group.groupId));
     obraCheckApi.event('wa_sent', {
-      blockId: block.id,
+      budgetGroupId: group.groupId,
       method: 'wa_link',
-      contactId: assignments[block.id],
+      contactId: group.contactId,
       formUrl: g.formUrl,
     });
   }
 
-  async function copyForm(blockId: string) {
-    const g = generated[blockId];
+  async function copyForm(groupId: string) {
+    const g = generated[groupId];
     if (!g?.formUrl) return;
     try {
       await navigator.clipboard.writeText(g.formUrl);
-      setCopied(blockId);
+      setCopied(groupId);
       setTimeout(() => setCopied(null), 2000);
     } catch {
       /* ignore */
@@ -119,12 +162,12 @@ export function StepEnvio({
   return (
     <div className="mx-auto max-w-2xl">
       <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
-        Compartí el formulario por WhatsApp
+        Enviá cada grupo de presupuesto
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
         {webShare
-          ? 'No mandamos la lista de tareas por chat: mandamos un link. El contratista ve el alcance y deja su WhatsApp real — ese es el contacto que necesitás.'
-          : 'El mensaje lleva un link al formulario. Cuando lo completen, ves su teléfono acá abajo.'}
+          ? 'Un mensaje por grupo: el contratista recibe el paquete de trabajos completo (todos los paquetes del presupuesto).'
+          : 'Cada link abre el formulario con el alcance completo del grupo asignado.'}
       </p>
 
       {shareHint && (
@@ -133,45 +176,62 @@ export function StepEnvio({
         </p>
       )}
 
+      {sendGroups.length === 0 && (
+        <OCCard>
+          <p className="text-sm" style={{ color: BRAND.muted }}>
+            No hay grupos asignados. Volvé a Asignar y elegí un contratista por grupo de presupuesto.
+          </p>
+        </OCCard>
+      )}
+
       <div className="space-y-4">
-        {(budgetGroups && budgetGroups.length > 0
-          ? budgetDisplaySections(budgetGroups, assignedBlocks)
-          : [{ phaseName: null, subgroupName: 'Paquetes', blocks: assignedBlocks }]).map((section) => (
-          <div key={`${section.phaseName ?? 'p'}-${section.subgroupName}`}>
-            {section.phaseName && (
-              <p className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: BRAND.blueLight }}>
-                {section.phaseName}
-              </p>
-            )}
-            {section.blocks.length > 0 && (
-              <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
-                {section.subgroupName}
-              </p>
-            )}
-            <div className="space-y-3">
-        {section.blocks.map((block) => {
-          const contact = contacts.find((c) => c.id === assignments[block.id]);
-          const tipo = tipos[block.id] ?? 'orden_trabajo';
-          const g = generated[block.id];
-          const blockLeads = leads.filter((l) => l.blockId === block.id);
+        {sendGroups.map((group) => {
+          const contact = contacts.find((c) => c.id === group.contactId);
+          const tipo = tipos[group.groupId] ?? 'pedido_presupuesto';
+          const g = generated[group.groupId];
+          const blockIds = new Set(group.blocks.map((b) => b.id));
+          const groupLeads = leads.filter((l) => l.blockId && blockIds.has(l.blockId));
+
           return (
-            <OCCard key={block.id}>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
-                  {block.nombre} → {contact?.nombre}
+            <OCCard key={group.groupId}>
+              {group.phaseName && (
+                <p
+                  className="mb-1 text-[10px] font-bold uppercase tracking-wide"
+                  style={{ color: BRAND.blueLight }}
+                >
+                  {group.phaseName}
                 </p>
-                {sent.has(block.id) && (
+              )}
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div>
+                  <p className="flex items-center gap-1.5 text-sm font-semibold" style={{ color: BRAND.text }}>
+                    <Package size={14} />
+                    {group.groupName} → {contact?.nombre}
+                  </p>
+                  <p className="text-xs" style={{ color: BRAND.muted }}>
+                    {group.blocks.length} paquete{group.blocks.length === 1 ? '' : 's'} ·{' '}
+                    {group.taskCount} tarea{group.taskCount === 1 ? '' : 's'}
+                  </p>
+                </div>
+                {sent.has(group.groupId) && (
                   <span className="text-xs font-medium" style={{ color: BRAND.green }}>
                     Enviado ✓
                   </span>
                 )}
               </div>
 
+              <ul className="mb-2 space-y-0.5 text-[11px]" style={{ color: BRAND.muted }}>
+                {group.blocks.map((b) => (
+                  <li key={b.id}>· {b.nombre}</li>
+                ))}
+              </ul>
+
               <div className="mb-2 flex gap-2">
-                {(['orden_trabajo', 'pedido_presupuesto'] as Tipo[]).map((t) => (
+                {(['pedido_presupuesto', 'orden_trabajo'] as Tipo[]).map((t) => (
                   <button
                     key={t}
-                    onClick={() => setTipos((prev) => ({ ...prev, [block.id]: t }))}
+                    type="button"
+                    onClick={() => setTipos((prev) => ({ ...prev, [group.groupId]: t }))}
                     className="rounded-lg px-3 py-1.5 text-xs font-medium"
                     style={{
                       background: tipo === t ? BRAND.blue : '#fff',
@@ -198,7 +258,7 @@ export function StepEnvio({
                 </>
               )}
 
-              {blockLeads.length > 0 && (
+              {groupLeads.length > 0 && (
                 <div
                   className="mb-3 rounded-lg p-2 text-xs"
                   style={{ background: '#ECFDF5', border: `1px solid ${BRAND.green}`, color: BRAND.text }}
@@ -206,7 +266,7 @@ export function StepEnvio({
                   <p className="mb-1 flex items-center gap-1 font-semibold" style={{ color: BRAND.green }}>
                     <CheckCircle2 size={14} /> Contacto capturado
                   </p>
-                  {blockLeads.map((l) => (
+                  {groupLeads.map((l) => (
                     <p key={l.id}>
                       {l.telefono || l.email}
                       {l.mensaje ? ` · ${l.mensaje.slice(0, 80)}` : ''}
@@ -217,19 +277,23 @@ export function StepEnvio({
 
               <div className="flex flex-wrap gap-2">
                 {!g ? (
-                  <OCButton variant="secondary" onClick={() => generar(block)} loading={busy === block.id}>
-                    Generar link + mensaje
+                  <OCButton
+                    variant="secondary"
+                    onClick={() => void generar(group)}
+                    loading={busy === group.groupId}
+                  >
+                    Generar link del grupo
                   </OCButton>
                 ) : (
                   <>
-                    <OCButton onClick={() => void compartir(block)}>
+                    <OCButton onClick={() => void compartir(group)}>
                       <Share2 size={15} /> Compartir formulario
                     </OCButton>
-                    <OCButton variant="secondary" onClick={() => abrirWaDirecto(block)}>
+                    <OCButton variant="secondary" onClick={() => abrirWaDirecto(group)}>
                       <Send size={15} /> Abrir WhatsApp
                     </OCButton>
-                    <OCButton variant="ghost" onClick={() => void copyForm(block.id)}>
-                      <Copy size={15} /> {copied === block.id ? 'Copiado' : 'Copiar link'}
+                    <OCButton variant="ghost" onClick={() => void copyForm(group.groupId)}>
+                      <Copy size={15} /> {copied === group.groupId ? 'Copiado' : 'Copiar link'}
                     </OCButton>
                   </>
                 )}
@@ -240,9 +304,6 @@ export function StepEnvio({
             </OCCard>
           );
         })}
-            </div>
-          </div>
-        ))}
       </div>
 
       <div className="mt-4 flex items-center justify-between">

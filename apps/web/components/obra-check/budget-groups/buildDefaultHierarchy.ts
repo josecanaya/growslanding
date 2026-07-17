@@ -69,7 +69,12 @@ export function nextSubgroupId(phaseIdVal: string) {
 export function budgetDisplaySections(
   groups: ObraCheckBudgetGroup[],
   blocks: ObraCheckBlock[],
-): Array<{ phaseName: string | null; subgroupName: string; blocks: ObraCheckBlock[] }> {
+): Array<{
+  groupId: string;
+  phaseName: string | null;
+  subgroupName: string;
+  blocks: ObraCheckBlock[];
+}> {
   const phases = phaseGroups(groups).sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
   const subs = groups.filter((g) => g.kind === 'subgrupo' || g.parentId);
 
@@ -78,6 +83,7 @@ export function budgetDisplaySections(
       .filter((s) => s.parentId === phase.id)
       .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
       .map((sub) => ({
+        groupId: sub.id,
         phaseName: phase.nombre,
         subgroupName: sub.nombre,
         blocks: blocks.filter((b) => sub.blockIds.includes(b.id)),

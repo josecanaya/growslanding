@@ -9,6 +9,8 @@ const groupSchema = z.object({
   id: z.string().min(1).max(120),
   nombre: z.string().min(1).max(200),
   blockIds: z.array(z.string().max(120)).default([]),
+  parentId: z.string().max(120).nullable().optional(),
+  kind: z.enum(['fase', 'subgrupo']).optional(),
   orden: z.number().int().optional(),
 });
 
@@ -31,7 +33,6 @@ export async function PUT(request: NextRequest) {
 
   await db.from('obra_check_budget_groups').delete().eq('session_id', session.id);
 
-  // Limpiar asignación previa de grupos en bloques.
   await db
     .from('obra_check_blocks')
     .update({ budget_group_client_id: null })
@@ -44,6 +45,8 @@ export async function PUT(request: NextRequest) {
         client_id: g.id,
         nombre: g.nombre.trim(),
         orden: g.orden ?? i,
+        parent_client_id: g.parentId ?? null,
+        kind: g.kind ?? (g.parentId ? 'subgrupo' : 'fase'),
       })),
     );
     if (error) {
@@ -77,7 +80,7 @@ export async function GET() {
 
   const { data: groups, error } = await db
     .from('obra_check_budget_groups')
-    .select('client_id, nombre, orden')
+    .select('client_id, nombre, orden, parent_client_id, kind')
     .eq('session_id', session.id)
     .order('orden', { ascending: true });
 
@@ -98,10 +101,19 @@ export async function GET() {
     blockIdsByGroup.set(b.budget_group_client_id, arr);
   }
 
-  const result = ((groups ?? []) as { client_id: string; nombre: string; orden: number }[]).map((g) => ({
+  const result = ((groups ?? []) as {
+    client_id: string;
+    nombre: string;
+    orden: number;
+    parent_client_id: string | null;
+    kind: string;
+  }[]).map((g) => ({
     id: g.client_id,
     nombre: g.nombre,
     blockIds: blockIdsByGroup.get(g.client_id) ?? [],
+    parentId: g.parent_client_id,
+    kind: g.kind as 'fase' | 'subgrupo',
+    orden: g.orden,
   }));
 
   return NextResponse.json({ success: true, data: result });

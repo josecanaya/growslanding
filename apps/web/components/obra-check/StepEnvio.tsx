@@ -5,6 +5,7 @@ import { Send, Share2, FileText, Copy, CheckCircle2 } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
+import { budgetDisplaySections } from './budget-groups/buildDefaultHierarchy';
 import { BRAND, OCButton, OCCard } from './ui';
 import type { Assignments } from './StepAsignar';
 
@@ -134,20 +135,21 @@ export function StepEnvio({
 
       <div className="space-y-4">
         {(budgetGroups && budgetGroups.length > 0
-          ? budgetGroups.map((group) => ({
-              id: group.id,
-              nombre: group.nombre,
-              blocks: assignedBlocks.filter((b) => group.blockIds.includes(b.id)),
-            }))
-          : [{ id: 'default', nombre: 'Paquetes', blocks: assignedBlocks }]).map((group) => (
-          <div key={group.id}>
-            {budgetGroups && budgetGroups.length > 0 && group.blocks.length > 0 && (
+          ? budgetDisplaySections(budgetGroups, assignedBlocks)
+          : [{ phaseName: null, subgroupName: 'Paquetes', blocks: assignedBlocks }]).map((section) => (
+          <div key={`${section.phaseName ?? 'p'}-${section.subgroupName}`}>
+            {section.phaseName && (
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: BRAND.blueLight }}>
+                {section.phaseName}
+              </p>
+            )}
+            {section.blocks.length > 0 && (
               <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
-                {group.nombre}
+                {section.subgroupName}
               </p>
             )}
             <div className="space-y-3">
-        {group.blocks.map((block) => {
+        {section.blocks.map((block) => {
           const contact = contacts.find((c) => c.id === assignments[block.id]);
           const tipo = tipos[block.id] ?? 'orden_trabajo';
           const g = generated[block.id];

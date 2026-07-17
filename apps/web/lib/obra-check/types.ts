@@ -48,6 +48,10 @@ export type ObraCheckBudgetGroup = {
   id: string;
   nombre: string;
   blockIds: string[];
+  /** null = grupo raíz (fase). */
+  parentId?: string | null;
+  kind?: 'fase' | 'subgrupo';
+  orden?: number;
 };
 
 export type ObraCheckContact = {

@@ -6,6 +6,7 @@ import { obraCheckApi } from '@/lib/obra-check/client';
 import { canUseContactPicker, pickDeviceContact } from '@/lib/obra-check/share';
 import type { ObraCheckBlock, ObraCheckBudgetGroup, ObraCheckContact } from '@/lib/obra-check/types';
 import { rubroLabel } from '@/lib/obra-check/rubros';
+import { budgetDisplaySections } from './budget-groups/buildDefaultHierarchy';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 
 /** blockClientId -> contactId */
@@ -87,20 +88,19 @@ export function StepAsignar({
 
       <div className="space-y-4">
         {(budgetGroups && budgetGroups.length > 0
-          ? budgetGroups.map((group) => ({
-              id: group.id,
-              nombre: group.nombre,
-              blocks: blocks.filter((b) => group.blockIds.includes(b.id)),
-            }))
-          : [{ id: 'default', nombre: 'Paquetes', blocks }]).map((group) => (
-          <div key={group.id}>
-            {budgetGroups && budgetGroups.length > 0 && (
-              <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
-                {group.nombre}
+          ? budgetDisplaySections(budgetGroups, blocks)
+          : [{ phaseName: null, subgroupName: 'Paquetes', blocks }]).map((section) => (
+          <div key={`${section.phaseName ?? 'p'}-${section.subgroupName}`}>
+            {section.phaseName && (
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: BRAND.blueLight }}>
+                {section.phaseName}
               </p>
             )}
+            <p className="mb-2 text-sm font-semibold" style={{ color: BRAND.blue }}>
+              {section.subgroupName}
+            </p>
             <div className="space-y-3">
-        {group.blocks.map((block) => {
+        {section.blocks.map((block) => {
           const assignedId = assignments[block.id];
           const assignedContact = contacts.find((c) => c.id === assignedId);
           return (

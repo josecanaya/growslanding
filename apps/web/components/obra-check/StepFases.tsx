@@ -68,11 +68,39 @@ export function StepFases({
   const depCount = draft.reduce((n, t) => n + t.predecesoras.length, 0);
 
   function setTaskPhase(taskId: string, fase: string) {
-    setDraft((curr) => curr.map((t) => (t.id === taskId ? { ...t, fase: fase || null } : t)));
+    setDraft((curr) =>
+      curr.map((t) => {
+        if (t.id !== taskId) return t;
+        const nextFase = fase || null;
+        const phaseKey = (nextFase ?? '').trim();
+        const allowed = new Set(
+          curr
+            .filter((o) => o.id !== taskId && (o.fase ?? '').trim() === phaseKey)
+            .map((o) => o.id),
+        );
+        return {
+          ...t,
+          fase: nextFase,
+          predecesoras: t.predecesoras.filter((p) => allowed.has(p)),
+        };
+      }),
+    );
   }
 
   function setTaskPreds(taskId: string, predecesoras: string[]) {
-    setDraft((curr) => curr.map((t) => (t.id === taskId ? { ...t, predecesoras } : t)));
+    setDraft((curr) => {
+      const target = curr.find((t) => t.id === taskId);
+      if (!target) return curr;
+      const phase = (target.fase ?? '').trim();
+      const allowed = new Set(
+        curr
+          .filter((t) => t.id !== taskId && (t.fase ?? '').trim() === phase)
+          .map((t) => t.id),
+      );
+      return curr.map((t) =>
+        t.id === taskId ? { ...t, predecesoras: predecesoras.filter((p) => allowed.has(p)) } : t,
+      );
+    });
   }
 
   /** Encadena FS en orden de lista dentro de la fase. */
@@ -152,8 +180,8 @@ export function StepFases({
         Agrupá tus tareas en fases
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Asigná fases y definí de qué tarea depende cada una <strong>antes</strong> de armar el canvas.
-        Las flechas del diagrama salen de estas precedencias (también dentro de la misma fase).
+        Asigná fases y definí dependencias <strong>solo dentro de cada fase</strong> antes de armar el
+        canvas. No se permiten vínculos entre fases distintas.
       </p>
 
       <OCCard className="mb-4">
@@ -304,7 +332,24 @@ export function StepFases({
         <OCButton variant="ghost" onClick={onBack}>
           ← Volver a tareas
         </OCButton>
-        <OCButton onClick={() => onContinue(draft)} disabled={unassigned.length > 0}>
+        <OCButton
+          onClick={() => {
+            // Al continuar, limpia vínculos entre fases distintas.
+            const byId = new Map(draft.map((t) => [t.id, t]));
+            const cleaned = draft.map((t) => {
+              const phase = (t.fase ?? '').trim();
+              return {
+                ...t,
+                predecesoras: t.predecesoras.filter((pid) => {
+                  const p = byId.get(pid);
+                  return p != null && (p.fase ?? '').trim() === phase;
+                }),
+              };
+            });
+            onContinue(cleaned);
+          }}
+          disabled={unassigned.length > 0}
+        >
           Ordenar y armar paquetes →
         </OCButton>
       </div>
@@ -346,9 +391,6 @@ function TaskRow({
 }) {
   const samePhase = allTasks.filter(
     (t) => t.id !== task.id && (t.fase?.trim() || '') === (task.fase?.trim() || ''),
-  );
-  const otherPhase = allTasks.filter(
-    (t) => t.id !== task.id && (t.fase?.trim() || '') !== (task.fase?.trim() || ''),
   );
   const predNames = task.predecesoras
     .map((id) => allTasks.find((t) => t.id === id)?.nombre)
@@ -423,10 +465,14 @@ function TaskRow({
 
       {depsOpen && (
         <div className="mt-2 space-y-2 border-t pt-2" style={{ borderColor: BRAND.border }}>
-          {samePhase.length > 0 && (
+          {!task.fase?.trim() ? (
+            <p className="text-xs" style={{ color: BRAND.muted }}>
+              Asigná una fase primero para vincular tareas.
+            </p>
+          ) : samePhase.length > 0 ? (
             <div>
               <p className="mb-1 text-[10px] font-semibold uppercase" style={{ color: BRAND.muted }}>
-                Dentro de esta fase
+                Depende de (misma fase)
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {samePhase.map((c) => {
@@ -449,38 +495,9 @@ function TaskRow({
                 })}
               </div>
             </div>
-          )}
-          {otherPhase.length > 0 && (
-            <div>
-              <p className="mb-1 text-[10px] font-semibold uppercase" style={{ color: BRAND.muted }}>
-                Otras fases
-              </p>
-              <div className="flex max-h-28 flex-wrap gap-1.5 overflow-y-auto">
-                {otherPhase.map((c) => {
-                  const on = task.predecesoras.includes(c.id);
-                  return (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => onTogglePred(c.id)}
-                      className="rounded-md px-2 py-1 text-[11px] font-medium"
-                      style={{
-                        background: on ? BRAND.blue : '#fff',
-                        color: on ? '#fff' : BRAND.text,
-                        border: `1px solid ${on ? BRAND.blue : BRAND.border}`,
-                      }}
-                      title={c.fase ?? ''}
-                    >
-                      {c.nombre.length > 22 ? `${c.nombre.slice(0, 22)}…` : c.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {samePhase.length === 0 && otherPhase.length === 0 && (
+          ) : (
             <p className="text-xs" style={{ color: BRAND.muted }}>
-              No hay otras tareas para vincular.
+              No hay otras tareas en esta fase para vincular.
             </p>
           )}
         </div>

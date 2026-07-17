@@ -134,13 +134,20 @@ export function ObraCheckWizard() {
             Así ordenó Grows tu obra
           </h2>
           <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-            {blocks.length} paquetes · {tasks.length} tareas · {cpm.tareasCriticas} en camino crítico
-            {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días`} — agrupado en 4 fases
+            {blocks.length} paquetes · {tasks.length} tareas
+            {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días`} — timeline por fase
           </p>
-          <p className="mb-3 text-xs" style={{ color: BRAND.muted }}>
-            Las flechas unen <strong>tareas</strong> (no solo fases). Si falta alguna, volvé a Fases y usá
-            «Depende» o «Encadenar en orden».
-          </p>
+          {cpm.tareasCriticas > 0 ? (
+            <p className="mb-3 text-sm font-semibold" style={{ color: '#A16207' }}>
+              Camino crítico: {cpm.tareasCriticas} tarea{cpm.tareasCriticas === 1 ? '' : 's'} — si se
+              atrasan, se atrasa la obra.
+            </p>
+          ) : (
+            <p className="mb-3 text-xs" style={{ color: BRAND.muted }}>
+              Definí dependencias dentro de cada fase («Depende» o «Encadenar en orden») para ver el
+              camino crítico.
+            </p>
+          )}
 
           <ObraCheckCanvasView tasks={tasks} />
 

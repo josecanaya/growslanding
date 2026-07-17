@@ -10,10 +10,26 @@
 
 import { calcularCPM, type TareaCPM } from '@/lib/utils/cpm';
 import type { ObraCheckTask, ObraCheckWarning, OrdenarResult } from './types';
+import { normalizePhase } from './phases';
 import { rubroOrden } from './rubros';
 import { sugerirBloques } from './sugerirBloques';
 
 const DURACION_DEFAULT = 1;
+
+/** Las dependencias solo valen dentro de la misma fase. */
+function stripCrossPhasePredecessors(tasks: ObraCheckTask[]): ObraCheckTask[] {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  return tasks.map((t) => {
+    const phase = normalizePhase(t.fase);
+    return {
+      ...t,
+      predecesoras: t.predecesoras.filter((pid) => {
+        const p = byId.get(pid);
+        return p != null && normalizePhase(p.fase) === phase;
+      }),
+    };
+  });
+}
 
 function ordenarPorRubroYFecha(tasks: ObraCheckTask[]): ObraCheckTask[] {
   const withIndex = tasks.map((t, i) => ({ t, i }));
@@ -34,19 +50,20 @@ function ordenarPorRubroYFecha(tasks: ObraCheckTask[]): ObraCheckTask[] {
 
 export function ordenarTareas(tasks: ObraCheckTask[]): OrdenarResult {
   const warnings: ObraCheckWarning[] = [];
+  const scoped = stripCrossPhasePredecessors(tasks);
 
-  if (tasks.length === 0) {
+  if (scoped.length === 0) {
     return { tasks: [], blocks: [], cpm: { duracionTotalDias: 0, tareasCriticas: 0 }, warnings };
   }
 
-  const hayDependencias = tasks.some((t) => t.predecesoras.length > 0);
+  const hayDependencias = scoped.some((t) => t.predecesoras.length > 0);
 
   if (!hayDependencias) {
     warnings.push({
       kind: 'sin_dependencias',
-      message: 'El plan no declara dependencias entre tareas. Se ordenó por fecha y secuencia constructiva.',
+      message: 'El plan no declara dependencias entre tareas de la misma fase. Se ordenó por fecha y secuencia constructiva.',
     });
-    const ordered = ordenarPorRubroYFecha(tasks);
+    const ordered = ordenarPorRubroYFecha(scoped);
     const blocks = sugerirBloques(ordered);
     const ordered2 = aplicarBloques(ordered, blocks);
     return {
@@ -57,7 +74,7 @@ export function ordenarTareas(tasks: ObraCheckTask[]): OrdenarResult {
     };
   }
 
-  const cpmInput: TareaCPM[] = tasks.map((t) => ({
+  const cpmInput: TareaCPM[] = scoped.map((t) => ({
     id: t.id,
     name: t.nombre,
     duration: t.duracionDias ?? DURACION_DEFAULT,
@@ -73,7 +90,7 @@ export function ordenarTareas(tasks: ObraCheckTask[]): OrdenarResult {
       kind: 'ciclo_detectado',
       message: `Se detectó un ciclo en las dependencias (${(err as Error).message}). Se ordenó por secuencia constructiva.`,
     });
-    const ordered = ordenarPorRubroYFecha(tasks);
+    const ordered = ordenarPorRubroYFecha(scoped);
     const blocks = sugerirBloques(ordered);
     return {
       tasks: aplicarBloques(ordered, blocks),
@@ -84,7 +101,7 @@ export function ordenarTareas(tasks: ObraCheckTask[]): OrdenarResult {
   }
 
   const byId = new Map(cpmResult.tareas.map((r) => [r.id, r]));
-  const ordered = [...tasks]
+  const ordered = [...scoped]
     .map((t, i) => ({ t, r: byId.get(t.id), i }))
     .sort((a, b) => {
       const esA = a.r?.es ?? 0;

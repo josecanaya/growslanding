@@ -7,6 +7,7 @@ import { BRAND } from './ui';
 
 export const obraCheckFlowNodeTypes = {
   phaseLane: memo(PhaseLaneNode),
+  phaseLabel: memo(PhaseLabelNode),
   phaseFrame: memo(PhaseFrameNode),
   taskCard: memo(TaskCardNode),
   blockTag: memo(BlockTagNode),
@@ -27,6 +28,24 @@ function PhaseLaneNode({ data }: NodeProps) {
   );
 }
 
+/** Etiqueta lateral sutil de fase (timeline). */
+function PhaseLabelNode({ data }: NodeProps) {
+  const d = data as { label: string; count: number; accent: string };
+  return (
+    <div className="flex h-full w-full flex-col justify-center pr-2" style={{ pointerEvents: 'none' }}>
+      <p
+        className="text-[10px] font-bold uppercase tracking-wider"
+        style={{ color: d.accent }}
+      >
+        {d.label}
+      </p>
+      <p className="text-[9px]" style={{ color: BRAND.muted }}>
+        {d.count} tarea{d.count === 1 ? '' : 's'}
+      </p>
+    </div>
+  );
+}
+
 function PhaseFrameNode() {
   return <div className="h-full w-full" style={{ pointerEvents: 'none' }} />;
 }
@@ -38,41 +57,52 @@ function TaskCardNode({ data, selected }: NodeProps) {
     critical?: boolean;
     predCount?: number;
   };
+  const critical = Boolean(d.critical);
   const handleStyle = {
-    width: 8,
-    height: 8,
-    background: d.critical ? BRAND.gold : BRAND.blueLight,
+    width: 7,
+    height: 7,
+    background: critical ? BRAND.gold : '#94a3b8',
     border: '1.5px solid #fff',
+    opacity: critical ? 1 : 0.7,
   };
   return (
     <div
-      className="rounded-lg px-2 py-1.5 shadow-sm"
+      className="rounded-lg px-2.5 py-1.5"
       style={{
-        background: '#fff',
-        border: `1.5px solid ${d.critical ? BRAND.gold : BRAND.border}`,
-        boxShadow: selected ? `0 0 0 2px ${BRAND.gold}55` : d.critical ? `0 0 0 1px ${BRAND.gold}33` : 'none',
+        background: critical ? '#FFFBEB' : '#fff',
+        border: critical ? `2.5px solid ${BRAND.gold}` : `1px solid ${BRAND.border}`,
+        boxShadow: critical
+          ? `0 0 0 3px ${BRAND.gold}40, 0 2px 8px rgba(232,197,71,0.35)`
+          : selected
+            ? `0 0 0 2px ${BRAND.blueLight}44`
+            : '0 1px 2px rgba(15,23,42,0.04)',
+        opacity: critical ? 1 : 0.92,
       }}
     >
-      <Handle id="in-top" type="target" position={Position.Top} style={handleStyle} />
       <Handle id="in-left" type="target" position={Position.Left} style={handleStyle} />
-      <p className="text-[11px] font-semibold leading-tight" style={{ color: BRAND.text }}>
+      {critical ? (
+        <p
+          className="mb-0.5 text-[8px] font-black uppercase tracking-wide"
+          style={{ color: '#A16207' }}
+        >
+          Camino crítico
+        </p>
+      ) : null}
+      <p
+        className="line-clamp-2 text-[11px] font-semibold leading-tight"
+        style={{ color: BRAND.text }}
+      >
         {d.label}
       </p>
       <div className="mt-0.5 flex items-center justify-between gap-1">
         {d.duracion != null ? (
-          <p className="text-[10px]" style={{ color: BRAND.muted }}>
+          <p className="text-[10px] tabular-nums" style={{ color: BRAND.muted }}>
             {d.duracion}d
           </p>
         ) : (
           <span />
         )}
-        {(d.predCount ?? 0) > 0 ? (
-          <p className="text-[9px] font-semibold" style={{ color: BRAND.blue }}>
-            ← {d.predCount}
-          </p>
-        ) : null}
       </div>
-      <Handle id="out-bottom" type="source" position={Position.Bottom} style={handleStyle} />
       <Handle id="out-right" type="source" position={Position.Right} style={handleStyle} />
     </div>
   );

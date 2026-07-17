@@ -11,6 +11,8 @@ export type ObraCheckTaskRow = {
   fase: string | null;
   rubro: string | null;
   duracion_dias: number | string | null;
+  unidad: string | null;
+  cantidad: number | string | null;
   inicio: string | null;
   fin: string | null;
   predecesoras: string[] | null;
@@ -28,6 +30,8 @@ export function rowToTask(row: ObraCheckTaskRow): ObraCheckTask {
     fase: row.fase ?? null,
     rubro: row.rubro,
     duracionDias: row.duracion_dias == null ? null : Number(row.duracion_dias),
+    unidad: row.unidad ?? 'm2',
+    cantidad: row.cantidad == null ? null : Number(row.cantidad),
     inicio: row.inicio,
     fin: row.fin,
     predecesoras: row.predecesoras ?? [],
@@ -49,6 +53,8 @@ export function taskToRow(sessionId: string, t: ObraCheckTask): Record<string, u
     fase: t.fase ?? null,
     rubro: t.rubro,
     duracion_dias: t.duracionDias,
+    unidad: t.unidad ?? 'm2',
+    cantidad: t.cantidad ?? null,
     inicio: t.inicio,
     fin: t.fin,
     predecesoras: t.predecesoras,

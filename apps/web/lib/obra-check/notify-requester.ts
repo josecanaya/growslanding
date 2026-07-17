@@ -24,6 +24,7 @@ export type RequesterNotifyPayload = {
     fin?: string | null;
   }>;
   viewUrl: string;
+  inboxUrl?: string;
 };
 
 function formatDetalle(p: RequesterNotifyPayload): string {
@@ -56,6 +57,9 @@ function buildText(p: RequesterNotifyPayload): string {
     ``,
     `Ver respuesta completa:`,
     p.viewUrl,
+    p.inboxUrl ? `` : null,
+    p.inboxUrl ? `Tu bandeja (todas las respuestas):` : null,
+    p.inboxUrl ?? null,
   ]
     .filter((x) => x != null)
     .join('\n');
@@ -93,7 +97,12 @@ function buildHtml(p: RequesterNotifyPayload): string {
     </thead>
     <tbody>${rows || '<tr><td colspan="4" style="padding:8px">Sin ítems</td></tr>'}</tbody>
   </table>
-  <p><a href="${p.viewUrl}" style="display:inline-block;background:#E8C547;color:#0C1D36;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">Ver respuesta completa</a></p>
+  <p><a href="${p.viewUrl}" style="display:inline-block;background:#E8C547;color:#0C1D36;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:700">Ver esta respuesta</a></p>
+  ${
+    p.inboxUrl
+      ? `<p style="margin-top:12px"><a href="${p.inboxUrl}" style="color:#4A6FA5">Abrir tu bandeja de presupuestos</a> — el contratista no necesita reenviarte nada.</p>`
+      : ''
+  }
   <p style="color:#5A5A5A;font-size:12px">Grows Obra Check</p>
   </body></html>`;
 }

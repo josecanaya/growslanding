@@ -6,8 +6,11 @@ function task(id: string, over: Partial<ObraCheckTask> = {}): ObraCheckTask {
   return {
     id,
     nombre: over.nombre ?? id,
+    fase: over.fase ?? null,
     rubro: over.rubro ?? null,
     duracionDias: over.duracionDias ?? 1,
+    unidad: over.unidad ?? 'm2',
+    cantidad: over.cantidad ?? null,
     inicio: over.inicio ?? null,
     fin: over.fin ?? null,
     predecesoras: over.predecesoras ?? [],

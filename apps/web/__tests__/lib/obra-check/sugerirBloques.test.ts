@@ -9,6 +9,8 @@ function t(id: string, rubro: string | null, orden: number): ObraCheckTask {
     fase: null,
     rubro,
     duracionDias: 1,
+    unidad: 'm2',
+    cantidad: null,
     inicio: null,
     fin: null,
     predecesoras: [],

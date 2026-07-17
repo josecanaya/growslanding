@@ -215,6 +215,8 @@ export function ObraCheckWizard() {
           budgetGroups={budgetGroups}
           assignments={assignments}
           contacts={contacts}
+          tasks={tasks}
+          onTasksChange={setTasks}
           onFinish={(n) => {
             setEnviados(n);
             setStep('upsell');

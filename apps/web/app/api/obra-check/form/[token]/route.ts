@@ -93,7 +93,7 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 
   const { data: tareas } = await db
     .from('obra_check_tasks')
-    .select('nombre, duracion_dias, orden')
+    .select('nombre, duracion_dias, orden, unidad, cantidad, client_id')
     .eq('session_id', inv.session_id)
     .in('block_client_id', blockIds)
     .order('orden', { ascending: true });
@@ -119,9 +119,19 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
       tipoObra: sess?.tipo_obra ?? null,
       metrosCuadrados: sess?.metros_cuadrados ?? null,
       planos: planosSigned,
-      tareas: ((tareas ?? []) as { nombre: string; duracion_dias: number | null; orden: number }[]).map((t) => ({
+      tareas: ((tareas ?? []) as {
+        nombre: string;
+        duracion_dias: number | null;
+        orden: number;
+        unidad: string | null;
+        cantidad: number | null;
+        client_id: string;
+      }[]).map((t) => ({
+        id: t.client_id,
         nombre: t.nombre,
         duracionDias: t.duracion_dias,
+        unidad: t.unidad ?? 'm2',
+        cantidad: t.cantidad == null ? null : Number(t.cantidad),
       })),
     },
   });
@@ -130,6 +140,9 @@ export async function GET(_request: NextRequest, ctx: Ctx) {
 const taskDetalleSchema = z.object({
   nombre: z.string(),
   included: z.boolean(),
+  taskId: z.string().nullable().optional(),
+  unidad: z.string().nullable().optional(),
+  cantidad: z.number().nullable().optional(),
   dias: z.number().nullable().optional(),
   precio: z.number().nullable().optional(),
   inicio: z.string().nullable().optional(),
@@ -274,10 +287,9 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     tasksIncluded: included.length,
   });
 
-  // Resolver nombre del grupo + datos de la obra para devolver al solicitante.
   const { data: sessionRow } = await db
     .from('obra_check_sessions')
-    .select('email, empresa, tipo_obra, metros_cuadrados')
+    .select('email, empresa, tipo_obra, metros_cuadrados, inbox_token')
     .eq('id', inv.session_id)
     .maybeSingle();
   const sess = sessionRow as {
@@ -285,6 +297,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     empresa: string | null;
     tipo_obra: string | null;
     metros_cuadrados: number | null;
+    inbox_token: string | null;
   } | null;
 
   let grupoNombre = 'Presupuesto';
@@ -307,7 +320,10 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     grupoNombre = blk.nombre;
   }
 
-  const viewUrl = `${appOrigin(request)}/obra-check/r/${viewToken}`;
+  const origin = appOrigin(request);
+  const viewUrl = `${origin}/obra-check/r/${viewToken}`;
+  const inboxUrl = sess?.inbox_token ? `${origin}/obra-check/inbox/${sess.inbox_token}` : viewUrl;
+
   let emailedRequester = false;
   if (sess?.email) {
     const notify = await notifyRequesterFormResponse(db, inv.session_id, responseId, {
@@ -322,22 +338,13 @@ export async function POST(request: NextRequest, ctx: Ctx) {
       tipo: inv.tipo,
       detalle: body.detalle,
       viewUrl,
+      inboxUrl,
     });
     emailedRequester = notify.emailed;
   }
 
-  const confirmLines = [
-    `Listo ✓ Registré mi respuesta.`,
-    telefono ? `WhatsApp: ${telefono}` : '',
-    email ? `Email: ${email}` : '',
-    mensaje ? `Detalle: ${mensaje}` : '',
-  ].filter(Boolean);
-  const confirmWaLink = telefono
-    ? `https://wa.me/?text=${encodeURIComponent(confirmLines.join('\n'))}`
-    : null;
-
   return NextResponse.json({
     success: true,
-    data: { ok: true, confirmWaLink, emailedRequester, viewUrl },
+    data: { ok: true, emailedRequester, viewUrl, inboxUrl },
   });
 }

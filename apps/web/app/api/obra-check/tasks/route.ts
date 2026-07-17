@@ -13,6 +13,8 @@ const taskSchema = z.object({
   fase: z.string().max(120).nullable().default(null),
   rubro: z.string().max(60).nullable().default(null),
   duracionDias: z.number().nonnegative().nullable().default(null),
+  unidad: z.string().max(20).nullable().default('m2'),
+  cantidad: z.number().nonnegative().nullable().default(null),
   inicio: z.string().max(20).nullable().default(null),
   fin: z.string().max(20).nullable().default(null),
   predecesoras: z.array(z.string().max(120)).default([]),

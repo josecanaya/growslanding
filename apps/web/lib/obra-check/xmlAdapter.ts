@@ -54,6 +54,8 @@ export function projectXmlToTasks(xmlText: string): XmlAdapterResult {
       fase: null,
       rubro: detectarRubro(n.name),
       duracionDias: n.durationDays,
+      unidad: 'm2',
+      cantidad: null,
       inicio: null,
       fin: null,
       predecesoras: preds,

@@ -130,6 +130,8 @@ export function excelToTasks(input: ExcelAdapterInput): ExcelParseResult {
       fase: null,
       rubro,
       duracionDias: duracion,
+      unidad: 'm2',
+      cantidad: null,
       inicio: parseFecha(cellStr(row, mapping.inicio)),
       fin: parseFecha(cellStr(row, mapping.fin)),
       predecesoras: [],

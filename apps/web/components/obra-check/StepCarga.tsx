@@ -21,6 +21,8 @@ function blankTask(): ObraCheckTask {
     fase: null,
     rubro: null,
     duracionDias: null,
+    unidad: 'm2',
+    cantidad: null,
     inicio: null,
     fin: null,
     predecesoras: [],

@@ -3,25 +3,21 @@
 import { useEffect, useState } from 'react';
 import { FileText, Trash2, Upload } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
-import { BRAND, OCButton, OCCard, OCField, inputStyle } from './ui';
+import { BRAND, OCButton, OCCard } from './ui';
 
 type Plano = { id: string; nombre: string; mime: string; url: string; sizeBytes: number };
 
-/** m² + planos que ve quien presupuesta. Obligatorio antes de mandar el pedido. */
+/** Planos del pedido (m² van por tarea). */
 export function ObraDatosPedidoPanel({
   onReadyChange,
 }: {
   onReadyChange?: (ready: boolean) => void;
 }) {
-  const [metros, setMetros] = useState('');
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedHint, setSavedHint] = useState<string | null>(null);
 
-  const m2Num = metros.trim() ? Number(metros.replace(',', '.')) : NaN;
-  const m2Ok = Number.isFinite(m2Num) && m2Num > 0;
-  const ready = m2Ok && planos.length > 0;
+  const ready = planos.length > 0;
 
   useEffect(() => {
     onReadyChange?.(ready);
@@ -30,27 +26,9 @@ export function ObraDatosPedidoPanel({
   useEffect(() => {
     obraCheckApi
       .getObraDatos()
-      .then((d) => {
-        if (d.metrosCuadrados != null) setMetros(String(d.metrosCuadrados));
-        setPlanos(d.planos);
-      })
+      .then((d) => setPlanos(d.planos))
       .catch(() => {});
   }, []);
-
-  async function saveM2() {
-    if (!m2Ok) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await obraCheckApi.saveMetrosCuadrados(m2Num);
-      setSavedHint('m² guardados');
-      setTimeout(() => setSavedHint(null), 2000);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -59,12 +37,6 @@ export function ObraDatosPedidoPanel({
     setBusy(true);
     setError(null);
     try {
-      if (!m2Ok) {
-        // Guardar m² si ya está escrito antes de subir.
-        // (no bloquea el upload)
-      } else {
-        await obraCheckApi.saveMetrosCuadrados(m2Num);
-      }
       const uploaded = await obraCheckApi.uploadPlano(file);
       setPlanos((p) => [...p, uploaded]);
     } catch (err) {
@@ -89,45 +61,20 @@ export function ObraDatosPedidoPanel({
   return (
     <OCCard className="mb-4" style={{ borderColor: ready ? BRAND.green : BRAND.gold, background: '#FFFDF5' }}>
       <p className="text-sm font-bold" style={{ color: BRAND.blue }}>
-        Datos de la obra (los ve quien presupuesta)
+        Planos del pedido
       </p>
       <p className="mt-1 text-xs" style={{ color: BRAND.muted }}>
-        Sin m² y planos el contratista no sabe de qué se trata. Completalos antes de generar el link.
+        Adjuntá planos para que el contratista entienda el alcance. Las cantidades (m²) se cargan por
+        tarea abajo.
       </p>
 
-      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1">
-          <OCField label="Superficie (m²)" hint="Obligatorio">
-            <input
-              style={inputStyle}
-              inputMode="decimal"
-              value={metros}
-              onChange={(e) => setMetros(e.target.value)}
-              onBlur={() => void saveM2()}
-              placeholder="Ej: 120"
-            />
-          </OCField>
-        </div>
-        <OCButton variant="secondary" onClick={() => void saveM2()} loading={busy} disabled={!m2Ok}>
-          Guardar m²
-        </OCButton>
-      </div>
-      {savedHint && (
-        <p className="mt-1 text-xs" style={{ color: BRAND.green }}>
-          {savedHint}
-        </p>
-      )}
-
-      <div className="mt-4">
-        <p className="mb-2 text-xs font-semibold" style={{ color: BRAND.text }}>
-          Planos / documentos (PDF o imagen)
-        </p>
+      <div className="mt-3">
         <label
           className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-4 text-sm font-medium"
           style={{ borderColor: BRAND.border, color: BRAND.blue, background: '#fff' }}
         >
           <Upload size={16} />
-          {busy ? 'Subiendo…' : 'Adjuntar plano'}
+          {busy ? 'Subiendo…' : 'Adjuntar plano (PDF o imagen)'}
           <input
             type="file"
             accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -170,9 +117,7 @@ export function ObraDatosPedidoPanel({
 
       {!ready && (
         <p className="mt-3 text-xs font-medium" style={{ color: '#A16207' }}>
-          Falta {!m2Ok ? 'indicar m²' : ''}
-          {!m2Ok && planos.length === 0 ? ' y ' : ''}
-          {planos.length === 0 ? 'adjuntar al menos un plano' : ''}.
+          Adjuntá al menos un plano antes de generar el link.
         </p>
       )}
       {error && (

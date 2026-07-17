@@ -28,7 +28,16 @@ export type CreateSessionInput = {
 
 export const obraCheckApi = {
   createSession: (body: CreateSessionInput) =>
-    call<{ sessionId: string }>('session', { method: 'POST', body: JSON.stringify(body) }),
+    call<{ sessionId: string; inboxToken: string | null }>('session', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  getSession: () =>
+    call<{ sessionId: string; email: string | null; inboxToken: string | null; inboxUrl: string | null }>(
+      'session',
+      { method: 'GET' },
+    ),
 
   saveTasks: (tasks: ObraCheckTask[]) =>
     call<{ count: number }>('tasks', { method: 'PUT', body: JSON.stringify({ tasks }) }),

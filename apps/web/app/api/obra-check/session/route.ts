@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
 
-import { obraCheckDb, logEvent, OBRA_CHECK_COOKIE } from '@/lib/obra-check/db';
+import { obraCheckDb, logEvent, OBRA_CHECK_COOKIE, getSessionFromCookie } from '@/lib/obra-check/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       consent_patrones: parsed.consentPatrones,
       consent_version: parsed.consentVersion ?? 'v1',
     })
-    .select('id, session_token')
+    .select('id, session_token, inbox_token')
     .single();
 
   if (error || !data) {
@@ -56,5 +56,48 @@ export async function POST(request: NextRequest) {
 
   await logEvent(db, data.id as string, 'session_created', { tipoObra: parsed.tipoObra });
 
-  return NextResponse.json({ success: true, data: { sessionId: data.id } });
+  return NextResponse.json({
+    success: true,
+    data: {
+      sessionId: data.id,
+      inboxToken: (data as { inbox_token?: string }).inbox_token ?? null,
+    },
+  });
+}
+
+/** GET /api/obra-check/session — datos de la sesión actual (incluye bandeja). */
+export async function GET(request: NextRequest) {
+  const db = obraCheckDb();
+  const session = await getSessionFromCookie(db);
+  if (!session) return NextResponse.json({ success: false, error: 'Sesión no encontrada.' }, { status: 401 });
+
+  const { data } = await db
+    .from('obra_check_sessions')
+    .select('id, email, empresa, tipo_obra, inbox_token, metros_cuadrados')
+    .eq('id', session.id)
+    .maybeSingle();
+
+  const row = data as {
+    id: string;
+    email: string | null;
+    empresa: string | null;
+    tipo_obra: string | null;
+    inbox_token: string | null;
+    metros_cuadrados: number | null;
+  } | null;
+
+  const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const inboxUrl = row?.inbox_token
+    ? `${origin.replace(/\/$/, '')}/obra-check/inbox/${row.inbox_token}`
+    : null;
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      sessionId: row?.id ?? session.id,
+      email: row?.email ?? session.email,
+      inboxToken: row?.inbox_token ?? null,
+      inboxUrl,
+    },
+  });
 }

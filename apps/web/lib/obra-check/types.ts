@@ -18,6 +18,10 @@ export type ObraCheckTask = {
   fase: string | null;
   rubro: string | null;
   duracionDias: number | null;
+  /** Unidad de medición (m2, ml, gl, un, etc.). */
+  unidad: string | null;
+  /** Cantidad en esa unidad (ej. 45 m²). La carga el solicitante. */
+  cantidad: number | null;
   inicio: string | null; // ISO date (YYYY-MM-DD)
   fin: string | null;
   /** client_ids de tareas predecesoras. */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { CANONICAL_PHASES, PHASE_COLORS as PHASE_COLORS_SHARED } from '@/lib/obra-check/phases';
 import type { ObraCheckTask } from '@/lib/obra-check/types';
@@ -24,20 +24,30 @@ function togglePredecesora(list: string[], id: string): string[] {
   return list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 }
 
-export function StepFases({
+export function PanelFases({
   tasks,
-  onBack,
-  onContinue,
+  onApply,
+  applying,
 }: {
   tasks: ObraCheckTask[];
-  onBack: () => void;
-  onContinue: (tasks: ObraCheckTask[]) => void;
+  /** Aplica los cambios: persiste y re-ordena el plan (rearma paquetes). */
+  onApply: (tasks: ObraCheckTask[]) => void;
+  applying: boolean;
 }) {
   const initialTasks = useMemo(
     () => tasks.map((t) => ({ ...t, fase: t.fase ?? inferPhase(t) })),
     [tasks],
   );
   const [draft, setDraft] = useState<ObraCheckTask[]>(initialTasks);
+  // Cuando el padre aplica el re-orden, las tasks nuevas llegan por props: sincronizar el borrador.
+  const initialSigRef = useRef('');
+  useEffect(() => {
+    const sig = initialTasks.map((t) => `${t.id}|${t.fase ?? ''}`).join(';');
+    if (sig !== initialSigRef.current) {
+      initialSigRef.current = sig;
+      setDraft(initialTasks);
+    }
+  }, [initialTasks]);
   const [extraPhases, setExtraPhases] = useState<string[]>([]);
   const [newPhase, setNewPhase] = useState('');
   const [expandedPhases, setExpandedPhases] = useState<Set<string>>(new Set(DEFAULT_PHASES));
@@ -66,6 +76,11 @@ export function StepFases({
 
   const unassigned = draft.filter((t) => !t.fase?.trim());
   const depCount = draft.reduce((n, t) => n + t.predecesoras.length, 0);
+  const dirty = useMemo(() => {
+    const sig = (list: ObraCheckTask[]) =>
+      list.map((t) => `${t.id}|${t.fase ?? ''}|${[...t.predecesoras].sort().join(',')}`).sort().join(';');
+    return sig(draft) !== sig(initialTasks);
+  }, [draft, initialTasks]);
 
   function setTaskPhase(taskId: string, fase: string) {
     setDraft((curr) =>
@@ -175,13 +190,10 @@ export function StepFases({
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
-        Agrupá tus tareas en fases
-      </h2>
-      <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Asigná fases y definí dependencias <strong>solo dentro de cada fase</strong> antes de armar el
-        canvas. No se permiten vínculos entre fases distintas.
+    <div>
+      <p className="mb-3 text-xs leading-relaxed" style={{ color: BRAND.muted }}>
+        Corregí la fase de cada tarea y las dependencias <strong>dentro de cada fase</strong>. Al
+        aplicar, Grows re-ordena el plan y rearma los paquetes.
       </p>
 
       <OCCard className="mb-4">
@@ -328,13 +340,21 @@ export function StepFases({
         })}
       </div>
 
-      <div className="mt-5 flex justify-between">
-        <OCButton variant="ghost" onClick={onBack}>
-          ← Volver a tareas
-        </OCButton>
+      <div
+        className="sticky bottom-0 mt-4 flex items-center justify-between gap-2 rounded-xl border p-3"
+        style={{ background: dirty ? '#FFFBEB' : '#fff', borderColor: dirty ? BRAND.gold : BRAND.border }}
+      >
+        <p className="text-xs" style={{ color: BRAND.muted }}>
+          {unassigned.length > 0
+            ? `Asigná fase a ${unassigned.length} tarea(s) para aplicar.`
+            : dirty
+              ? 'Tenés cambios sin aplicar — el plan de la izquierda todavía no los refleja.'
+              : 'Todo aplicado.'}
+        </p>
         <OCButton
+          loading={applying}
           onClick={() => {
-            // Al continuar, limpia vínculos entre fases distintas.
+            // Al aplicar, limpia vínculos entre fases distintas.
             const byId = new Map(draft.map((t) => [t.id, t]));
             const cleaned = draft.map((t) => {
               const phase = (t.fase ?? '').trim();
@@ -346,18 +366,13 @@ export function StepFases({
                 }),
               };
             });
-            onContinue(cleaned);
+            onApply(cleaned);
           }}
-          disabled={unassigned.length > 0}
+          disabled={unassigned.length > 0 || !dirty}
         >
-          Ordenar y armar paquetes →
+          Aplicar y re-ordenar
         </OCButton>
       </div>
-      {unassigned.length > 0 && (
-        <p className="mt-2 text-center text-xs" style={{ color: BRAND.muted }}>
-          Asigná todas las tareas a una fase para continuar.
-        </p>
-      )}
     </div>
   );
 }

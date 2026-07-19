@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { Check } from 'lucide-react';
 
 export const BRAND = {
   blue: '#0C1D36',
@@ -24,27 +25,44 @@ export const BRAND = {
 export function OCButton({
   children,
   variant = 'primary',
+  size = 'md',
   disabled,
   loading,
   className = '',
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'dark';
+  size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
 }) {
   const styles: Record<string, React.CSSProperties> = {
-    primary: { background: BRAND.gold, color: BRAND.blue, border: 'none' },
-    secondary: { background: 'transparent', color: BRAND.blue, border: `1.5px solid ${BRAND.blue}` },
+    primary: {
+      background: BRAND.gold,
+      color: BRAND.blue,
+      border: 'none',
+      boxShadow: '0 2px 8px rgba(232,197,71,0.35)',
+    },
+    dark: { background: BRAND.blue, color: '#fff', border: 'none' },
+    secondary: { background: '#fff', color: BRAND.blue, border: `1.5px solid ${BRAND.blue}` },
     ghost: { background: 'transparent', color: BRAND.muted, border: 'none' },
+  };
+  const sizes: Record<string, string> = {
+    sm: 'px-3 py-1.5 text-xs rounded-lg',
+    md: 'px-4 py-2.5 text-sm rounded-lg',
+    lg: 'px-6 py-3.5 text-base rounded-xl',
   };
   return (
     <button
       {...props}
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-95 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 hover:brightness-95 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${sizes[size]} ${className}`}
       style={styles[variant]}
     >
-      {loading ? '…' : children}
+      {loading ? (
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        children
+      )}
     </button>
   );
 }
@@ -61,7 +79,7 @@ export function OCCard({
   return (
     <div
       className={`rounded-xl bg-white p-5 ${className}`}
-      style={{ border: `1px solid ${BRAND.border}`, boxShadow: '0 1px 2px rgba(0,0,0,0.04)', ...style }}
+      style={{ border: `1px solid ${BRAND.border}`, boxShadow: '0 1px 3px rgba(12,29,54,0.05)', ...style }}
     >
       {children}
     </div>
@@ -103,33 +121,130 @@ export const inputStyle: React.CSSProperties = {
   background: '#fff',
 };
 
-export function StepBar({ current }: { current: number }) {
-  const steps = ['Inicio', 'Cargar', 'Fases', 'Ordenar', 'Presupuesto', 'Asignar', 'Enviar'];
+/** Encabezado de pantalla: título + subtítulo + chips de resumen opcionales. */
+export function ScreenHeader({
+  title,
+  subtitle,
+  chips,
+}: {
+  title: string;
+  subtitle?: React.ReactNode;
+  chips?: Array<{ label: string; tone?: 'default' | 'gold' | 'green' }>;
+}) {
   return (
-    <div className="mb-6 flex items-center gap-2">
-      {steps.map((s, i) => (
-        <React.Fragment key={s}>
-          <div className="flex items-center gap-2">
-            <div
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
-              style={{
-                background: i <= current ? BRAND.blue : BRAND.gray,
-                color: i <= current ? '#fff' : BRAND.muted,
-                border: i === current ? `2px solid ${BRAND.gold}` : 'none',
-              }}
-            >
-              {i + 1}
-            </div>
-            <span
-              className="hidden text-xs font-medium sm:inline"
-              style={{ color: i <= current ? BRAND.blue : BRAND.muted }}
-            >
-              {s}
-            </span>
-          </div>
-          {i < steps.length - 1 && <div className="h-px flex-1" style={{ background: BRAND.border }} />}
-        </React.Fragment>
-      ))}
+    <div className="mb-5">
+      <h2 className="text-xl font-extrabold tracking-tight sm:text-2xl" style={{ color: BRAND.blue }}>
+        {title}
+      </h2>
+      {subtitle && (
+        <p className="mt-1 text-sm leading-relaxed" style={{ color: BRAND.muted }}>
+          {subtitle}
+        </p>
+      )}
+      {chips && chips.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {chips.map((c) => (
+            <OCChip key={c.label} tone={c.tone}>
+              {c.label}
+            </OCChip>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OCChip({
+  children,
+  tone = 'default',
+}: {
+  children: React.ReactNode;
+  tone?: 'default' | 'gold' | 'green';
+}) {
+  const tones: Record<string, React.CSSProperties> = {
+    default: { background: '#fff', color: BRAND.muted, border: `1px solid ${BRAND.border}` },
+    gold: { background: '#FFFBEB', color: '#92600A', border: `1px solid ${BRAND.gold}` },
+    green: { background: '#ECFDF5', color: BRAND.green, border: `1px solid #A7F3D0` },
+  };
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+      style={tones[tone]}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Barra de progreso de 3 pasos: Cargar → Armar → Enviar. */
+export function StepBar({ current }: { current: number }) {
+  const steps = ['Cargar', 'Armar el plan', 'Enviar'];
+  return (
+    <div className="mb-7">
+      <div className="flex items-center">
+        {steps.map((s, i) => {
+          const done = i < current;
+          const active = i === current;
+          return (
+            <React.Fragment key={s}>
+              <div className="flex flex-col items-center gap-1.5" style={{ minWidth: 76 }}>
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-all"
+                  style={{
+                    background: done ? BRAND.green : active ? BRAND.blue : '#fff',
+                    color: done || active ? '#fff' : BRAND.muted,
+                    border: active
+                      ? `2.5px solid ${BRAND.gold}`
+                      : done
+                        ? 'none'
+                        : `1.5px solid ${BRAND.border}`,
+                    boxShadow: active ? '0 2px 10px rgba(12,29,54,0.25)' : 'none',
+                  }}
+                >
+                  {done ? <Check size={16} strokeWidth={3} /> : i + 1}
+                </div>
+                <span
+                  className="text-[11px] font-semibold"
+                  style={{ color: active ? BRAND.blue : done ? BRAND.green : BRAND.muted }}
+                >
+                  {s}
+                </span>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="relative mx-1 mb-5 h-1 flex-1 overflow-hidden rounded-full" style={{ background: BRAND.border }}>
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+                    style={{ background: BRAND.green, width: i < current ? '100%' : '0%' }}
+                  />
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Barra fija inferior con CTA — mantiene la acción principal siempre visible. */
+export function StickyActionBar({
+  children,
+  hint,
+}: {
+  children: React.ReactNode;
+  hint?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="sticky bottom-0 z-20 -mx-4 mt-6 border-t px-4 py-3 backdrop-blur-sm sm:rounded-t-xl"
+      style={{ background: 'rgba(255,255,255,0.92)', borderColor: BRAND.border }}
+    >
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+        <div className="min-w-0 text-xs" style={{ color: BRAND.muted }}>
+          {hint}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">{children}</div>
+      </div>
     </div>
   );
 }

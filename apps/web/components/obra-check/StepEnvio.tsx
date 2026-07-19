@@ -12,7 +12,7 @@ import type {
 } from '@/lib/obra-check/types';
 import { budgetDisplaySections } from './budget-groups/buildDefaultHierarchy';
 import { BRAND, OCButton, OCCard, inputStyle } from './ui';
-import type { Assignments } from './StepAsignar';
+import type { Assignments } from './PanelAsignar';
 import { ObraDatosPedidoPanel } from './ObraDatosPedidoPanel';
 
 type Tipo = 'orden_trabajo' | 'pedido_presupuesto';
@@ -57,7 +57,7 @@ export function StepEnvio({
   contacts,
   tasks,
   onTasksChange,
-  onFinish,
+  onSentCountChange,
 }: {
   blocks: ObraCheckBlock[];
   budgetGroups?: ObraCheckBudgetGroup[];
@@ -65,7 +65,7 @@ export function StepEnvio({
   contacts: ObraCheckContact[];
   tasks: ObraCheckTask[];
   onTasksChange: (tasks: ObraCheckTask[]) => void;
-  onFinish: (enviados: number) => void;
+  onSentCountChange?: (n: number) => void;
 }) {
   const [obraReady, setObraReady] = useState(false);
   const onReadyChange = useCallback((ready: boolean) => setObraReady(ready), []);
@@ -192,7 +192,11 @@ export function StepEnvio({
     });
     if (result.method === 'web_share' && 'cancelled' in result && result.cancelled) return;
     if (result.ok) {
-      setSent((s) => new Set(s).add(group.groupId));
+      setSent((s) => {
+        const next = new Set(s).add(group.groupId);
+        onSentCountChange?.(next.size);
+        return next;
+      });
       obraCheckApi.event('wa_sent', {
         budgetGroupId: group.groupId,
         method: result.method,
@@ -206,7 +210,11 @@ export function StepEnvio({
     const g = generated[group.groupId];
     if (!g) return;
     window.open(g.waLink, '_blank', 'noopener');
-    setSent((s) => new Set(s).add(group.groupId));
+    setSent((s) => {
+      const next = new Set(s).add(group.groupId);
+      onSentCountChange?.(next.size);
+      return next;
+    });
   }
 
   async function copyForm(groupId: string) {
@@ -233,7 +241,7 @@ export function StepEnvio({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
         Enviá cada grupo de presupuesto
       </h2>
@@ -468,14 +476,13 @@ export function StepEnvio({
         })}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex items-center justify-start">
         <OCButton
           variant="ghost"
           onClick={() => void obraCheckApi.listLeads().then(setLeads).catch(() => {})}
         >
           Actualizar respuestas
         </OCButton>
-        <OCButton onClick={() => onFinish(sent.size)}>Ver resumen →</OCButton>
       </div>
     </div>
   );

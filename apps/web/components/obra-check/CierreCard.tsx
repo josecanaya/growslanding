@@ -5,7 +5,8 @@ import { Eye, TrendingUp, ShieldCheck, Mail, CheckCircle2 } from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
 import { BRAND, OCButton, OCCard } from './ui';
 
-export function StepUpsell({
+export function CierreCard({
+  active,
   sessionId,
   enviados,
   contratistas,
@@ -13,6 +14,8 @@ export function StepUpsell({
   tareasCriticas,
   totalTareas,
 }: {
+  /** true recién cuando hubo al menos un envío: dispara complete() y muestra la card completa. */
+  active: boolean;
   sessionId: string | null;
   enviados: number;
   contratistas: number;
@@ -24,6 +27,7 @@ export function StepUpsell({
   const [emailStatus, setEmailStatus] = useState<'pending' | 'sent' | 'already' | 'error'>('pending');
 
   useEffect(() => {
+    if (!active) return;
     obraCheckApi.event('upsell_view', { enviados, contratistas });
     obraCheckApi
       .listLeads()
@@ -34,12 +38,24 @@ export function StepUpsell({
       .complete()
       .then((r) => setEmailStatus(r.alreadySent ? 'already' : r.sent ? 'sent' : 'error'))
       .catch(() => setEmailStatus('error'));
-  }, [enviados, contratistas]);
+  }, [active, enviados, contratistas]);
+
+  if (!active) {
+    return (
+      <div
+        className="mx-auto mt-6 max-w-xl rounded-xl border border-dashed p-4 text-center text-xs"
+        style={{ borderColor: BRAND.border, color: BRAND.muted }}
+      >
+        Cuando envíes el primer grupo, te mostramos acá el resumen y el acceso a Grows con tu plan
+        ya cargado.
+      </div>
+    );
+  }
 
   const ctaHref = `/auth/login?utm_source=obra_check${sessionId ? `&session=${sessionId}` : ''}`;
 
   return (
-    <div className="mx-auto max-w-xl text-center">
+    <div className="mx-auto mt-8 max-w-xl text-center">
       <div className="mb-4">
         <h2 className="text-2xl font-extrabold" style={{ color: BRAND.blue }}>
           ¡Plan listo! ¿Querés seguirlo en Grows?

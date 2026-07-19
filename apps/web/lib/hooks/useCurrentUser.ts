@@ -13,6 +13,12 @@ import { normalizeRole } from '@/lib/roles';
 import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 const AUTH_PREFIX = '/auth';
+/** Superficies públicas sin sesión: el watcher global no debe expulsarlas a login. */
+const PUBLIC_PREFIXES = ['/auth', '/obra-check'];
+
+function isPublicPath(path: string): boolean {
+  return PUBLIC_PREFIXES.some((p) => path.startsWith(p));
+}
 
 // Función global para verificar rate limit en localStorage
 function hasActiveRateLimit(): boolean {
@@ -93,7 +99,7 @@ export function useCurrentUser(): SessionUser | null {
     let active = true;
 
     const currentPath = pathnameRef.current;
-    if (currentPath.startsWith(AUTH_PREFIX)) {
+    if (isPublicPath(currentPath)) {
       return;
     }
 
@@ -151,7 +157,7 @@ export function useCurrentUser(): SessionUser | null {
           clearClientSessionArtifacts();
           resetStore();
           setUser(null);
-          if (!pathnameRef.current.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
+          if (!isPublicPath(pathnameRef.current) && !isRedirectingRef.current) {
             isRedirectingRef.current = true;
             router.replace('/auth/login');
           }
@@ -188,7 +194,7 @@ export function useCurrentUser(): SessionUser | null {
           clearClientSessionArtifacts();
           resetStore();
           setUser(null);
-          if (!pathnameRef.current.startsWith(AUTH_PREFIX) && !isRedirectingRef.current) {
+          if (!isPublicPath(pathnameRef.current) && !isRedirectingRef.current) {
             isRedirectingRef.current = true;
             router.replace('/auth/login');
           }

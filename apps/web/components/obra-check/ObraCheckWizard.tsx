@@ -1,9 +1,19 @@
 'use client';
 
+/**
+ * Wizard de Obra Check — 3 pantallas: Cargar → Armar → Enviar.
+ *
+ * Los defaults hacen el trabajo: al continuar desde la carga se encadena
+ * session → saveTasks (con fase inferida) → ordenar → jerarquía de paquetes por defecto,
+ * sin pantallas intermedias. En «Armar» el usuario corrige (fases, paquetes, contratistas)
+ * y en «Enviar» genera los links de WhatsApp; el cierre (email + CTA a Grows) es una card
+ * al final del envío, no una pantalla aparte.
+ */
+
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
 
 import { obraCheckApi } from '@/lib/obra-check/client';
+import { inferPhaseFor } from '@/lib/obra-check/phases';
 import type {
   ObraCheckBlock,
   ObraCheckBudgetGroup,
@@ -12,30 +22,58 @@ import type {
   ObraCheckWarning,
   OrdenarResult,
 } from '@/lib/obra-check/types';
-import { BRAND, OCButton, OCCard, StepBar } from './ui';
-import { StepIntro } from './StepIntro';
-import { StepCarga } from './StepCarga';
-import { ObraCheckCanvasView } from './ObraCheckCanvasView';
-import { StepAsignar, type Assignments } from './StepAsignar';
+import { BRAND, StepBar } from './ui';
+import { ScreenCarga, type CargaSubmit } from './ScreenCarga';
+import { ScreenArmar } from './ScreenArmar';
 import { StepEnvio } from './StepEnvio';
-import { StepUpsell } from './StepUpsell';
-import { StepFases } from './StepFases';
-import { StepBudgetGroups } from './StepBudgetGroups';
+import { CierreCard } from './CierreCard';
+import { ScreenHeader } from './ui';
+import type { Assignments } from './PanelAsignar';
+import { buildDefaultHierarchy } from './budget-groups/buildDefaultHierarchy';
 
-type Step = 'intro' | 'carga' | 'fases' | 'orden' | 'presupuesto' | 'asignar' | 'envio' | 'upsell';
-const STEP_INDEX: Record<Step, number> = {
-  intro: 0,
-  carga: 1,
-  fases: 2,
-  orden: 3,
-  presupuesto: 4,
-  asignar: 5,
-  envio: 6,
-  upsell: 6,
-};
+type Step = 'carga' | 'armar' | 'enviar';
+const STEP_INDEX: Record<Step, number> = { carga: 0, armar: 1, enviar: 2 };
+
+/** Merge defensivo de fase (por si la columna aún no existe server-side). */
+function mergeFases(result: OrdenarResult, source: ObraCheckTask[]): OrdenarResult {
+  const bySource = new Map(source.map((t) => [t.id, t]));
+  const tasks = result.tasks.map((task) => ({
+    ...task,
+    fase: task.fase ?? bySource.get(task.id)?.fase ?? null,
+  }));
+  const blocks = result.blocks.map((block) => ({
+    ...block,
+    fase: block.fase ?? tasks.find((t) => block.taskIds.includes(t.id))?.fase ?? null,
+  }));
+  return { ...result, tasks, blocks };
+}
+
+/** Intenta conservar asignaciones tras re-ordenar, matcheando grupos por fase+nombre. */
+function preserveAssignments(
+  prev: Assignments,
+  prevGroups: ObraCheckBudgetGroup[],
+  nextGroups: ObraCheckBudgetGroup[],
+): Assignments {
+  const keyOf = (g: ObraCheckBudgetGroup, all: ObraCheckBudgetGroup[]) => {
+    const parent = all.find((p) => p.id === g.parentId);
+    return `${parent?.nombre ?? ''}::${g.nombre}`;
+  };
+  const prevByKey = new Map<string, string>();
+  for (const g of prevGroups) {
+    const contactId = prev[g.id];
+    if (contactId) prevByKey.set(keyOf(g, prevGroups), contactId);
+  }
+  const next: Assignments = {};
+  for (const g of nextGroups) {
+    if (g.kind === 'fase' && !g.parentId) continue;
+    const contactId = prevByKey.get(keyOf(g, nextGroups));
+    if (contactId) next[g.id] = contactId;
+  }
+  return next;
+}
 
 export function ObraCheckWizard() {
-  const [step, setStep] = useState<Step>('intro');
+  const [step, setStep] = useState<Step>('carga');
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [tipoObra, setTipoObra] = useState<string>('');
   const [tasks, setTasks] = useState<ObraCheckTask[]>([]);
@@ -46,200 +84,155 @@ export function ObraCheckWizard() {
   const [assignments, setAssignments] = useState<Assignments>({});
   const [contacts, setContacts] = useState<ObraCheckContact[]>([]);
   const [enviados, setEnviados] = useState(0);
-  const [busyOrdenar, setBusyOrdenar] = useState(false);
-  const [errorOrdenar, setErrorOrdenar] = useState<string | null>(null);
 
-  function onOrdered(result: OrdenarResult) {
-    setTasks(result.tasks);
-    setBlocks(result.blocks);
-    setCpm(result.cpm);
-    setWarnings(result.warnings);
-    setStep('orden');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  /** Carga → Armar: crea sesión, guarda tareas con fase inferida y ordena, en una sola espera. */
+  async function handleCargaSubmit(data: CargaSubmit) {
+    setBusy(true);
+    setError(null);
+    try {
+      const { sessionId: sid } = await obraCheckApi.createSession({
+        email: data.email,
+        empresa: data.empresa || undefined,
+        tipoObra: data.tipoObra || undefined,
+        consentProcesamiento: true,
+        consentPatrones: data.consentPatrones,
+      });
+      setSessionId(sid);
+      setTipoObra(data.tipoObra);
+
+      const withFase = data.tasks.map((t) => ({
+        ...t,
+        fase: t.fase ?? inferPhaseFor(t.nombre, t.rubro),
+      }));
+      await obraCheckApi.saveTasks(withFase);
+      const result = mergeFases(await obraCheckApi.ordenar(), withFase);
+
+      const groups = buildDefaultHierarchy(result.blocks);
+      setTasks(result.tasks);
+      setBlocks(result.blocks);
+      setCpm(result.cpm);
+      setWarnings(result.warnings);
+      setBudgetGroups(groups);
+      setAssignments({});
+      setStep('armar');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
   }
 
-  async function handleFasesContinue(nextTasks: ObraCheckTask[]) {
-    setTasks(nextTasks);
-    setBusyOrdenar(true);
-    setErrorOrdenar(null);
+  /** Edición de fases aplicada: re-ordena y rearma paquetes preservando asignaciones por nombre. */
+  async function handleApplyFases(nextTasks: ObraCheckTask[]) {
+    setBusy(true);
+    setError(null);
     try {
       await obraCheckApi.saveTasks(nextTasks);
-      const result = await obraCheckApi.ordenar();
-      // La fase ya viene persistida y vuelve desde ordenar; merge defensivo por si la columna aún no existe.
-      const mergedTasks = result.tasks.map((task) => ({
-        ...task,
-        fase: task.fase ?? nextTasks.find((t) => t.id === task.id)?.fase ?? null,
-      }));
-      const mergedBlocks = result.blocks.map((block) => ({
-        ...block,
-        fase:
-          block.fase ??
-          mergedTasks.find((task) => block.taskIds.includes(task.id))?.fase ??
-          null,
-      }));
-      onOrdered({ ...result, tasks: mergedTasks, blocks: mergedBlocks });
+      const result = mergeFases(await obraCheckApi.ordenar(), nextTasks);
+      const nextGroups = buildDefaultHierarchy(result.blocks);
+      setAssignments((prev) => preserveAssignments(prev, budgetGroups, nextGroups));
+      setTasks(result.tasks);
+      setBlocks(result.blocks);
+      setCpm(result.cpm);
+      setWarnings(result.warnings);
+      setBudgetGroups(nextGroups);
     } catch (e) {
-      setErrorOrdenar((e as Error).message);
+      setError((e as Error).message);
     } finally {
-      setBusyOrdenar(false);
+      setBusy(false);
+    }
+  }
+
+  /** Armar → Enviar: persiste la jerarquía de paquetes definitiva. */
+  async function handleArmarContinue() {
+    setBusy(true);
+    setError(null);
+    try {
+      const cleaned = budgetGroups
+        .filter((g) => g.nombre.trim())
+        .map((g) => ({
+          ...g,
+          blockIds: g.kind === 'subgrupo' || g.parentId ? g.blockIds : [],
+        }));
+      await obraCheckApi.saveBudgetGroups(cleaned);
+      setStep('enviar');
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   }
 
   return (
-    <div className={`mx-auto px-4 ${step === 'intro' ? 'max-w-3xl py-6 sm:py-10' : 'max-w-4xl py-8'}`}>
-      {step !== 'intro' && step !== 'upsell' && <StepBar current={STEP_INDEX[step]} />}
-
-      {step === 'intro' && (
-        <StepIntro
-          onReady={(sid, tipo) => {
-            setSessionId(sid);
-            setTipoObra(tipo);
-            setStep('carga');
-          }}
-        />
-      )}
+    <div className={`mx-auto px-4 py-6 sm:py-8 ${step === 'armar' ? 'max-w-6xl' : 'max-w-3xl'}`}>
+      <StepBar current={STEP_INDEX[step]} />
 
       {step === 'carga' && (
-        <StepCarga
-          onContinue={(preparedTasks) => {
-            setTasks(preparedTasks);
-            setStep('fases');
-          }}
-          tipoObra={tipoObra}
+        <ScreenCarga onSubmit={(d) => void handleCargaSubmit(d)} submitting={busy} submitError={error} />
+      )}
+
+      {step === 'armar' && (
+        <ScreenArmar
+          tasks={tasks}
+          blocks={blocks}
+          budgetGroups={budgetGroups}
+          cpm={cpm}
+          warnings={warnings}
+          assignments={assignments}
+          contacts={contacts}
+          applyingFases={busy}
+          onApplyFases={(t) => void handleApplyFases(t)}
+          onBudgetGroupsChange={setBudgetGroups}
+          onAssignmentsChange={setAssignments}
+          onContactsChange={setContacts}
+          onContinue={() => void handleArmarContinue()}
+          continueBusy={busy}
+          continueError={error}
         />
       )}
 
-      {step === 'fases' && (
-        <div>
-          <StepFases
-            tasks={tasks}
-            onBack={() => setStep('carga')}
-            onContinue={(nextTasks) => void handleFasesContinue(nextTasks)}
+      {step === 'enviar' && (
+        <div className="mx-auto max-w-2xl">
+          <ScreenHeader
+            title="Enviá cada grupo por WhatsApp"
+            subtitle="Generás el link, lo compartís desde tu número y la respuesta del contratista llega sola a tu bandeja."
           />
-          {busyOrdenar && (
-            <p className="mt-3 text-center text-sm" style={{ color: BRAND.muted }}>
-              Ordenando plan…
-            </p>
-          )}
-          {errorOrdenar && (
-            <p className="mt-3 text-center text-sm" style={{ color: BRAND.error }}>
-              {errorOrdenar}
-            </p>
-          )}
-        </div>
-      )}
-
-      {step === 'orden' && (
-        <div className="mx-auto max-w-4xl">
-          <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
-            Así ordenó Grows tu obra
-          </h2>
-          <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-            {blocks.length} paquetes · {tasks.length} tareas
-            {cpm.duracionTotalDias > 0 && ` · ${cpm.duracionTotalDias} días`} — timeline por fase
-          </p>
-          {cpm.tareasCriticas > 0 ? (
-            <p className="mb-3 text-sm font-semibold" style={{ color: '#A16207' }}>
-              Camino crítico: {cpm.tareasCriticas} tarea{cpm.tareasCriticas === 1 ? '' : 's'} — si se
-              atrasan, se atrasa la obra.
-            </p>
-          ) : (
-            <p className="mb-3 text-xs" style={{ color: BRAND.muted }}>
-              Definí dependencias dentro de cada fase («Depende» o «Encadenar en orden») para ver el
-              camino crítico.
-            </p>
-          )}
-
-          <ObraCheckCanvasView tasks={tasks} />
-
-          {warnings.length > 0 && (
-            <OCCard className="mt-4" style={{ background: '#FFFDF5', borderColor: BRAND.gold }}>
-              <div className="flex items-start gap-2">
-                <AlertTriangle size={18} style={{ color: BRAND.gold, marginTop: 2 }} />
-                <div className="space-y-1 text-sm" style={{ color: BRAND.text }}>
-                  {warnings.map((w, i) => (
-                    <p key={i}>{w.message}</p>
-                  ))}
-                </div>
-              </div>
-            </OCCard>
-          )}
-
-          {errorOrdenar && (
-            <OCCard className="mt-4" style={{ borderColor: BRAND.error }}>
-              <p className="text-sm" style={{ color: BRAND.error }}>
-                {errorOrdenar}
-              </p>
-            </OCCard>
-          )}
-
-          <div className="mt-5 flex justify-between">
-            <OCButton variant="ghost" onClick={() => setStep('fases')}>
-              ← Volver a fases
-            </OCButton>
-            <OCButton onClick={() => setStep('presupuesto')} loading={busyOrdenar}>
-              Crear grupos de presupuesto →
-            </OCButton>
+          <StepEnvio
+            blocks={blocks}
+            budgetGroups={budgetGroups}
+            assignments={assignments}
+            contacts={contacts}
+            tasks={tasks}
+            onTasksChange={setTasks}
+            onSentCountChange={setEnviados}
+          />
+          <CierreCard
+            active={enviados > 0}
+            sessionId={sessionId}
+            enviados={enviados}
+            contratistas={new Set(Object.values(assignments)).size}
+            duracionDias={cpm.duracionTotalDias}
+            tareasCriticas={cpm.tareasCriticas}
+            totalTareas={tasks.length}
+          />
+          <div className="mt-4 text-center">
+            <button
+              className="text-xs font-medium underline-offset-2 hover:underline"
+              style={{ color: BRAND.muted }}
+              onClick={() => setStep('armar')}
+            >
+              ← Volver a armar el plan
+            </button>
           </div>
         </div>
       )}
 
-      {step === 'presupuesto' && (
-        <StepBudgetGroups
-          blocks={blocks}
-          tasks={tasks}
-          onBack={() => setStep('orden')}
-          onContinue={async (groups, nextBlocks) => {
-            await obraCheckApi.saveBudgetGroups(groups);
-            setBudgetGroups(groups);
-            setBlocks(nextBlocks);
-            setStep('asignar');
-          }}
-        />
-      )}
-
-      {step === 'asignar' && (
-        <StepAsignar
-          blocks={blocks}
-          budgetGroups={budgetGroups}
-          onContinue={(a, c) => {
-            setAssignments(a);
-            setContacts(c);
-            setStep('envio');
-          }}
-        />
-      )}
-
-      {step === 'envio' && (
-        <StepEnvio
-          blocks={blocks}
-          budgetGroups={budgetGroups}
-          assignments={assignments}
-          contacts={contacts}
-          tasks={tasks}
-          onTasksChange={setTasks}
-          onFinish={(n) => {
-            setEnviados(n);
-            setStep('upsell');
-          }}
-        />
-      )}
-
-      {step === 'upsell' && (
-        <StepUpsell
-          sessionId={sessionId}
-          enviados={enviados}
-          contratistas={new Set(Object.values(assignments)).size}
-          duracionDias={cpm.duracionTotalDias}
-          tareasCriticas={cpm.tareasCriticas}
-          totalTareas={tasks.length}
-        />
-      )}
-
-      {step !== 'intro' && (
-        <p className="mt-8 text-center text-[11px]" style={{ color: BRAND.muted }}>
-          Grows Obra Check · {tipoObra ? `Obra: ${tipoObra} · ` : ''}Herramienta gratuita
-        </p>
-      )}
+      <p className="mt-8 text-center text-[11px]" style={{ color: BRAND.muted }}>
+        Grows Obra Check · {tipoObra ? `Obra: ${tipoObra} · ` : ''}Herramienta gratuita
+      </p>
     </div>
   );
 }

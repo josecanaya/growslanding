@@ -19,17 +19,21 @@ type AssignableGroup = {
   taskCount: number;
 };
 
-export function StepAsignar({
+export function PanelAsignar({
   blocks,
   budgetGroups,
-  onContinue,
+  assignments,
+  contacts,
+  onAssignmentsChange,
+  onContactsChange,
 }: {
   blocks: ObraCheckBlock[];
   budgetGroups?: ObraCheckBudgetGroup[];
-  onContinue: (assignments: Assignments, contacts: ObraCheckContact[]) => void;
+  assignments: Assignments;
+  contacts: ObraCheckContact[];
+  onAssignmentsChange: (a: Assignments) => void;
+  onContactsChange: (c: ObraCheckContact[]) => void;
 }) {
-  const [contacts, setContacts] = useState<ObraCheckContact[]>([]);
-  const [assignments, setAssignments] = useState<Assignments>({});
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [form, setForm] = useState({ nombre: '', telefono: '' });
   const [busy, setBusy] = useState(false);
@@ -56,8 +60,11 @@ export function StepAsignar({
   }, [budgetGroups, blocks]);
 
   useEffect(() => {
-    obraCheckApi.listContacts().then(setContacts).catch(() => {});
+    if (contacts.length === 0) {
+      obraCheckApi.listContacts().then(onContactsChange).catch(() => {});
+    }
     setDevicePicker(canUseContactPicker());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function fromDevice() {
@@ -74,7 +81,7 @@ export function StepAsignar({
       for (const block of group.blocks) {
         await obraCheckApi.asignar({ contactId, blockId: block.id });
       }
-      setAssignments((a) => ({ ...a, [group.groupId]: contactId }));
+      onAssignmentsChange({ ...assignments, [group.groupId]: contactId });
       setOpenGroup(null);
       setForm({ nombre: '', telefono: '' });
     } catch (e) {
@@ -94,11 +101,11 @@ export function StepAsignar({
         rubro: group.blocks[0]?.rubro ?? null,
         telefono: form.telefono.trim() || null,
       });
-      setContacts((c) => [...c, contact]);
+      onContactsChange([...contacts, contact]);
       for (const block of group.blocks) {
         await obraCheckApi.asignar({ contactId: contact.id, blockId: block.id });
       }
-      setAssignments((a) => ({ ...a, [group.groupId]: contact.id }));
+      onAssignmentsChange({ ...assignments, [group.groupId]: contact.id });
       setOpenGroup(null);
       setForm({ nombre: '', telefono: '' });
     } catch (e) {
@@ -111,13 +118,10 @@ export function StepAsignar({
   const assignedCount = Object.keys(assignments).length;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h2 className="mb-1 text-xl font-bold" style={{ color: BRAND.blue }}>
-        Asigná contratista a cada grupo de presupuesto
-      </h2>
-      <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        El botón <strong>Asignar</strong> aplica al <strong>grupo entero</strong> (todos los paquetes
-        de ese presupuesto). Así mandás el paquete de trabajos completo a un solo contratista.
+    <div>
+      <p className="mb-3 text-xs leading-relaxed" style={{ color: BRAND.muted }}>
+        Cada grupo de presupuesto va <strong>entero</strong> a un contratista. Podés elegir de tus
+        contactos o crear uno nuevo con su WhatsApp.
       </p>
 
       <div className="space-y-4">
@@ -229,13 +233,15 @@ export function StepAsignar({
         </p>
       )}
 
-      <div className="mt-5 flex items-center justify-between">
-        <span className="text-xs" style={{ color: BRAND.muted }}>
-          {assignedCount}/{groups.length} grupos asignados
-        </span>
-        <OCButton onClick={() => onContinue(assignments, contacts)} disabled={assignedCount === 0}>
-          Continuar al envío →
-        </OCButton>
+      <div
+        className="mt-4 rounded-xl border p-3 text-center text-xs font-semibold"
+        style={{
+          borderColor: assignedCount === groups.length && groups.length > 0 ? '#A7F3D0' : BRAND.border,
+          background: assignedCount === groups.length && groups.length > 0 ? '#ECFDF5' : '#fff',
+          color: assignedCount === groups.length && groups.length > 0 ? BRAND.green : BRAND.muted,
+        }}
+      >
+        {assignedCount}/{groups.length} grupos con contratista
       </div>
     </div>
   );

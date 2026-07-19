@@ -25,3 +25,15 @@ export function normalizePhase(fase: string | null | undefined): CanonicalPhase 
 export function phaseIndex(fase: string | null | undefined): number {
   return CANONICAL_PHASES.indexOf(normalizePhase(fase));
 }
+
+/**
+ * Infiere la fase de una tarea desde rubro+nombre (mismo criterio que la asignación manual).
+ * Usada para auto-asignar fases al continuar desde la carga: el usuario corrige, no construye.
+ */
+export function inferPhaseFor(nombre: string, rubro?: string | null): CanonicalPhase {
+  const text = `${rubro ?? ''} ${nombre}`.toLowerCase();
+  if (/demolic|suelo|fundac|estructura|mampost|hormigon/.test(text)) return 'Estructura';
+  if (/electri|sanitar|gas|instal/.test(text)) return 'Instalaciones';
+  if (/pint|limpieza|revoque|piso|carpinter|techo|colocacion|zocalo|griferia/.test(text)) return 'Terminaciones';
+  return 'Preparacion';
+}

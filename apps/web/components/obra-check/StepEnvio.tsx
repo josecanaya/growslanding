@@ -1,9 +1,25 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Send, Share2, FileText, Copy, CheckCircle2, Package, ExternalLink, Inbox } from 'lucide-react';
+import {
+  Send,
+  Share2,
+  FileText,
+  Copy,
+  CheckCircle2,
+  Package,
+  ExternalLink,
+  Inbox,
+  Contact,
+} from 'lucide-react';
 import { obraCheckApi } from '@/lib/obra-check/client';
-import { canUseWebShareText, shareOrOpenWhatsApp } from '@/lib/obra-check/share';
+import {
+  canUseWebShareText,
+  canUseContactPicker,
+  pickDeviceContact,
+  shareOrOpenWhatsApp,
+} from '@/lib/obra-check/share';
+import { buildWaLink } from '@/lib/obra-check/waMessage';
 import type {
   ObraCheckBlock,
   ObraCheckBudgetGroup,
@@ -57,6 +73,7 @@ export function StepEnvio({
   contacts,
   tasks,
   onTasksChange,
+  onContactsChange,
   onSentCountChange,
 }: {
   blocks: ObraCheckBlock[];
@@ -65,6 +82,7 @@ export function StepEnvio({
   contacts: ObraCheckContact[];
   tasks: ObraCheckTask[];
   onTasksChange: (tasks: ObraCheckTask[]) => void;
+  onContactsChange?: (contacts: ObraCheckContact[]) => void;
   onSentCountChange?: (n: number) => void;
 }) {
   const [obraReady, setObraReady] = useState(false);
@@ -118,12 +136,16 @@ export function StepEnvio({
   const [busy, setBusy] = useState<string | null>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
   const [webShare, setWebShare] = useState(false);
+  const [devicePicker, setDevicePicker] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [savingQty, setSavingQty] = useState(false);
+  const [phoneDraft, setPhoneDraft] = useState<Record<string, string>>({});
+  const [savingPhone, setSavingPhone] = useState<string | null>(null);
 
   useEffect(() => {
     setWebShare(canUseWebShareText());
+    setDevicePicker(canUseContactPicker());
     obraCheckApi.listLeads().then(setLeads).catch(() => {});
     obraCheckApi
       .getSession()
@@ -181,6 +203,21 @@ export function StepEnvio({
     }
   }
 
+  function markSent(group: SendGroup, method: string) {
+    setSent((s) => {
+      const next = new Set(s).add(group.groupId);
+      onSentCountChange?.(next.size);
+      return next;
+    });
+    const g = generated[group.groupId];
+    obraCheckApi.event('wa_sent', {
+      budgetGroupId: group.groupId,
+      method,
+      contactId: group.contactId,
+      formUrl: g?.formUrl,
+    });
+  }
+
   async function compartir(group: SendGroup) {
     const g = generated[group.groupId];
     if (!g) return;
@@ -191,30 +228,49 @@ export function StepEnvio({
       titulo: contact ? `Formulario para ${contact.nombre}` : 'Formulario de obra',
     });
     if (result.method === 'web_share' && 'cancelled' in result && result.cancelled) return;
-    if (result.ok) {
-      setSent((s) => {
-        const next = new Set(s).add(group.groupId);
-        onSentCountChange?.(next.size);
+    if (result.ok) markSent(group, result.method);
+  }
+
+  /** Abre el chat de WhatsApp del contacto asignado (wa.me/<telefono>) con el mensaje ya cargado. */
+  function enviarDirecto(group: SendGroup) {
+    const g = generated[group.groupId];
+    if (!g) return;
+    const contact = contacts.find((c) => c.id === group.contactId);
+    const telefono = (contact?.telefono ?? '').trim();
+    if (!telefono) {
+      setShareHint(`Agregá el WhatsApp de ${contact?.nombre ?? 'este contacto'} para enviarlo directo.`);
+      return;
+    }
+    const link = buildWaLink(g.texto, telefono);
+    window.open(link, '_blank', 'noopener,noreferrer');
+    markSent(group, 'wa_directo');
+  }
+
+  /** Guarda el teléfono en el contacto para poder enviarle directo (persiste en la sesión). */
+  async function guardarTelefono(group: SendGroup) {
+    const draft = (phoneDraft[group.groupId] ?? '').trim();
+    if (!draft) return;
+    setSavingPhone(group.groupId);
+    setShareHint(null);
+    try {
+      const updated = await obraCheckApi.updateContact({ id: group.contactId, telefono: draft });
+      onContactsChange?.(contacts.map((c) => (c.id === updated.id ? updated : c)));
+      setPhoneDraft((p) => {
+        const next = { ...p };
+        delete next[group.groupId];
         return next;
       });
-      obraCheckApi.event('wa_sent', {
-        budgetGroupId: group.groupId,
-        method: result.method,
-        contactId: group.contactId,
-        formUrl: g.formUrl,
-      });
+    } catch (e) {
+      setShareHint((e as Error).message);
+    } finally {
+      setSavingPhone(null);
     }
   }
 
-  function abrirWaDirecto(group: SendGroup) {
-    const g = generated[group.groupId];
-    if (!g) return;
-    window.open(g.waLink, '_blank', 'noopener');
-    setSent((s) => {
-      const next = new Set(s).add(group.groupId);
-      onSentCountChange?.(next.size);
-      return next;
-    });
+  async function elegirTelefonoDispositivo(groupId: string) {
+    const picked = await pickDeviceContact();
+    if (!picked?.telefono) return;
+    setPhoneDraft((p) => ({ ...p, [groupId]: picked.telefono }));
   }
 
   async function copyForm(groupId: string) {
@@ -291,6 +347,7 @@ export function StepEnvio({
       <div className="space-y-4">
         {sendGroups.map((group) => {
           const contact = contacts.find((c) => c.id === group.contactId);
+          const contactTelefono = (contact?.telefono ?? '').trim();
           const tipo = tipos[group.groupId] ?? 'pedido_presupuesto';
           const g = generated[group.groupId];
           const blockIds = new Set(group.blocks.map((b) => b.id));
@@ -444,6 +501,45 @@ export function StepEnvio({
                 );
               })}
 
+              {g && !contactTelefono && (
+                <div
+                  className="mb-2 rounded-lg border p-2"
+                  style={{ borderColor: BRAND.border, background: BRAND.gray }}
+                >
+                  <p className="mb-1.5 text-[11px]" style={{ color: BRAND.muted }}>
+                    Agregá el WhatsApp de <strong>{contact?.nombre}</strong> para enviarle el pedido
+                    directo a su chat.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.8rem' }}
+                      inputMode="tel"
+                      placeholder="Ej: +54 9 11 1234 5678"
+                      value={phoneDraft[group.groupId] ?? ''}
+                      onChange={(e) =>
+                        setPhoneDraft((p) => ({ ...p, [group.groupId]: e.target.value }))
+                      }
+                    />
+                    {devicePicker && (
+                      <OCButton
+                        variant="ghost"
+                        onClick={() => void elegirTelefonoDispositivo(group.groupId)}
+                      >
+                        <Contact size={15} /> Mis contactos
+                      </OCButton>
+                    )}
+                    <OCButton
+                      variant="secondary"
+                      loading={savingPhone === group.groupId}
+                      disabled={!(phoneDraft[group.groupId] ?? '').trim()}
+                      onClick={() => void guardarTelefono(group)}
+                    >
+                      Guardar número
+                    </OCButton>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 {!g ? (
                   <OCButton
@@ -456,11 +552,11 @@ export function StepEnvio({
                   </OCButton>
                 ) : (
                   <>
-                    <OCButton onClick={() => void compartir(group)}>
-                      <Share2 size={15} /> Compartir formulario
+                    <OCButton onClick={() => enviarDirecto(group)} disabled={!contactTelefono}>
+                      <Send size={15} /> Enviar a {contact?.nombre ?? 'contacto'} por WhatsApp
                     </OCButton>
-                    <OCButton variant="secondary" onClick={() => abrirWaDirecto(group)}>
-                      <Send size={15} /> Abrir WhatsApp
+                    <OCButton variant="secondary" onClick={() => void compartir(group)}>
+                      <Share2 size={15} /> Compartir a otro
                     </OCButton>
                     <OCButton variant="ghost" onClick={() => void copyForm(group.groupId)}>
                       <Copy size={15} /> {copied === group.groupId ? 'Copiado' : 'Copiar link'}

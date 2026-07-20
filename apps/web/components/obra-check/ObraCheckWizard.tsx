@@ -207,6 +207,7 @@ export function ObraCheckWizard() {
             contacts={contacts}
             tasks={tasks}
             onTasksChange={setTasks}
+            onContactsChange={setContacts}
             onSentCountChange={setEnviados}
           />
           <CierreCard

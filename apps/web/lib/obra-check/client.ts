@@ -66,6 +66,9 @@ export const obraCheckApi = {
   createContact: (body: { nombre: string; rubro?: string | null; telefono?: string | null }) =>
     call<ObraCheckContact>('contacts', { method: 'POST', body: JSON.stringify(body) }),
 
+  updateContact: (body: { id: string; telefono: string | null }) =>
+    call<ObraCheckContact>('contacts', { method: 'PATCH', body: JSON.stringify(body) }),
+
   asignar: (body: { contactId: string; blockId?: string; taskClientIds?: string[] }) =>
     call<{ ok: boolean }>('asignar', { method: 'POST', body: JSON.stringify(body) }),
 

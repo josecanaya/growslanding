@@ -411,40 +411,26 @@ function TaskRow({
     .map((id) => allTasks.find((t) => t.id === id)?.nombre)
     .filter(Boolean);
 
+  const hasDeps = depsOpen || task.predecesoras.length > 0;
+
   return (
     <div
-      className={`rounded-lg p-2 ${compact ? '' : 'mb-1'}`}
-      style={{ background: compact ? '#fff' : BRAND.gray }}
+      className={`rounded-lg p-2.5 ${compact ? '' : 'mb-1'}`}
+      style={{ background: compact ? '#fff' : BRAND.gray, border: `1px solid ${BRAND.border}` }}
     >
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" />
-        <div className="flex shrink-0 flex-col gap-0.5">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={!onMoveUp}
-            className="px-1 text-[10px] leading-none disabled:opacity-30"
-            style={{ color: BRAND.muted }}
-            title="Subir"
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={!onMoveDown}
-            className="px-1 text-[10px] leading-none disabled:opacity-30"
-            style={{ color: BRAND.muted }}
-            title="Bajar"
-          >
-            ▼
-          </button>
-        </div>
+      {/* Fila 1: selección + nombre (ancho completo) + reordenar */}
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          className="mt-0.5 shrink-0"
+        />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" style={{ color: BRAND.text }}>
+          <p className="truncate text-sm font-medium" style={{ color: BRAND.text }} title={task.nombre}>
             {task.nombre}
           </p>
-          <p className="text-xs" style={{ color: BRAND.muted }}>
+          <p className="truncate text-xs" style={{ color: BRAND.muted }}>
             {task.rubro ?? 'Sin rubro'}
             {task.duracionDias != null ? ` · ${task.duracionDias}d` : ''}
             {predNames.length > 0
@@ -452,20 +438,37 @@ function TaskRow({
               : ''}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onToggleDeps}
-          className="shrink-0 rounded-md px-2 py-1 text-[10px] font-bold"
-          style={{
-            background: depsOpen || task.predecesoras.length ? BRAND.blue : '#fff',
-            color: depsOpen || task.predecesoras.length ? '#fff' : BRAND.text,
-            border: `1px solid ${BRAND.border}`,
-          }}
-        >
-          Depende
-        </button>
+        {(onMoveUp || onMoveDown) && (
+          <div className="flex shrink-0 flex-col gap-0.5">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={!onMoveUp}
+              className="px-1 text-[10px] leading-none disabled:opacity-30"
+              style={{ color: BRAND.muted }}
+              title="Subir"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={!onMoveDown}
+              className="px-1 text-[10px] leading-none disabled:opacity-30"
+              style={{ color: BRAND.muted }}
+              title="Bajar"
+            >
+              ▼
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Fila 2: controles (fase + dependencias) en su propia línea */}
+      <div className="mt-2 flex items-center gap-2">
         <select
-          style={{ ...inputStyle, width: 'auto', minWidth: 120, fontSize: '0.8rem' }}
+          style={{ ...inputStyle, width: '100%', fontSize: '0.8rem', padding: '0.4rem 0.5rem' }}
+          className="min-w-0 flex-1"
           value={task.fase ?? ''}
           onChange={(e) => onPhaseChange(e.target.value)}
         >
@@ -476,6 +479,26 @@ function TaskRow({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={onToggleDeps}
+          className="flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-bold"
+          style={{
+            background: hasDeps ? BRAND.blue : '#fff',
+            color: hasDeps ? '#fff' : BRAND.text,
+            border: `1px solid ${hasDeps ? BRAND.blue : BRAND.border}`,
+          }}
+        >
+          Depende
+          {task.predecesoras.length > 0 && (
+            <span
+              className="rounded-full px-1 text-[9px] font-bold"
+              style={{ background: hasDeps ? 'rgba(255,255,255,0.25)' : BRAND.gray }}
+            >
+              {task.predecesoras.length}
+            </span>
+          )}
+        </button>
       </div>
 
       {depsOpen && (

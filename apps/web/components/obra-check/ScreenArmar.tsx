@@ -38,6 +38,7 @@ export function ScreenArmar({
   contacts,
   applyingFases,
   onApplyFases,
+  onTasksChange,
   onBudgetGroupsChange,
   onAssignmentsChange,
   onContactsChange,
@@ -54,6 +55,8 @@ export function ScreenArmar({
   contacts: ObraCheckContact[];
   applyingFases: boolean;
   onApplyFases: (tasks: ObraCheckTask[]) => void;
+  /** Cambios de cantidad/unidad (no re-ordenan). `persist` = guardar en server. */
+  onTasksChange: (tasks: ObraCheckTask[], persist: boolean) => void;
   onBudgetGroupsChange: (groups: ObraCheckBudgetGroup[]) => void;
   onAssignmentsChange: (a: Assignments) => void;
   onContactsChange: (c: ObraCheckContact[]) => void;
@@ -67,7 +70,9 @@ export function ScreenArmar({
   const subgroups = budgetGroups.filter((g) => g.kind === 'subgrupo' || g.parentId);
   const allBlocksGrouped = blocks.every((b) => subgroups.some((s) => s.blockIds.includes(b.id)));
   const assignedCount = Object.keys(assignments).length;
-  const canContinue = allBlocksGrouped && assignedCount > 0 && !continueBusy;
+  const sinCantidad = tasks.filter((t) => t.cantidad == null || !(t.cantidad > 0)).length;
+  const cantidadesOk = sinCantidad === 0;
+  const canContinue = allBlocksGrouped && assignedCount > 0 && cantidadesOk && !continueBusy;
 
   const chips = [
     { label: `${tasks.length} tareas` },
@@ -85,7 +90,7 @@ export function ScreenArmar({
     <div className="mx-auto max-w-6xl">
       <ScreenHeader
         title="Así ordenó Grows tu obra"
-        subtitle="Revisá el plan, ajustá lo que quieras y asigná cada grupo a un contratista. Nada de esto es definitivo: podés corregir todo acá."
+        subtitle="Primero revisá y ordená las fases y cargá la cantidad de cada tarea. Después armá los paquetes y asigná un contratista. Nada es definitivo: podés corregir todo acá."
         chips={chips}
       />
 
@@ -140,9 +145,14 @@ export function ScreenArmar({
           </div>
           <OCCard className="h-fit max-h-[640px] overflow-y-auto lg:sticky lg:top-4">
             <p className="mb-1 text-sm font-bold" style={{ color: BRAND.blue }}>
-              Editar fases y dependencias
+              Fases, dependencias y cantidades
             </p>
-            <PanelFases tasks={tasks} onApply={onApplyFases} applying={applyingFases} />
+            <PanelFases
+              tasks={tasks}
+              onApply={onApplyFases}
+              applying={applyingFases}
+              onTasksChange={onTasksChange}
+            />
           </OCCard>
         </div>
       )}
@@ -187,7 +197,15 @@ export function ScreenArmar({
 
       <StickyActionBar
         hint={
-          !allBlocksGrouped ? (
+          sinCantidad > 0 ? (
+            <span>
+              Cargá la cantidad (m², etc.) en{' '}
+              <button className="font-semibold underline" onClick={() => setVista('plan')}>
+                Plan por fases
+              </button>{' '}
+              — faltan {sinCantidad} tarea(s).
+            </span>
+          ) : !allBlocksGrouped ? (
             'Hay paquetes sin subgrupo en «Paquetes y contratistas».'
           ) : assignedCount === 0 ? (
             <span>

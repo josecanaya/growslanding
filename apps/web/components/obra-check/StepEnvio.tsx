@@ -64,15 +64,12 @@ type DetalleItem = {
   precio?: number | null;
 };
 
-const UNIDADES = ['m2', 'ml', 'gl', 'un'] as const;
-
 export function StepEnvio({
   blocks,
   budgetGroups,
   assignments,
   contacts,
   tasks,
-  onTasksChange,
   onContactsChange,
   onSentCountChange,
 }: {
@@ -81,7 +78,6 @@ export function StepEnvio({
   assignments: Assignments;
   contacts: ObraCheckContact[];
   tasks: ObraCheckTask[];
-  onTasksChange: (tasks: ObraCheckTask[]) => void;
   onContactsChange?: (contacts: ObraCheckContact[]) => void;
   onSentCountChange?: (n: number) => void;
 }) {
@@ -139,7 +135,6 @@ export function StepEnvio({
   const [devicePicker, setDevicePicker] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [savingQty, setSavingQty] = useState(false);
   const [phoneDraft, setPhoneDraft] = useState<Record<string, string>>({});
   const [savingPhone, setSavingPhone] = useState<string | null>(null);
 
@@ -156,27 +151,12 @@ export function StepEnvio({
       .catch(() => {});
   }, []);
 
-  function patchTask(taskId: string, patch: Partial<ObraCheckTask>) {
-    onTasksChange(tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t)));
-  }
-
-  async function persistCantidades() {
-    setSavingQty(true);
-    try {
-      await obraCheckApi.saveTasks(tasks);
-    } catch (e) {
-      setShareHint((e as Error).message);
-    } finally {
-      setSavingQty(false);
-    }
-  }
-
   async function generar(group: SendGroup) {
     if (!canGenerate) {
       setShareHint(
         !obraReady
           ? 'Adjuntá al menos un plano.'
-          : 'Completá la cantidad (m² u otra unidad) en todas las tareas del grupo.',
+          : 'Faltan cantidades: volvé a «armar el plan» y cargá los m² (u otra unidad) de todas las tareas.',
       );
       return;
     }
@@ -302,8 +282,8 @@ export function StepEnvio({
         Enviá cada grupo de presupuesto
       </h2>
       <p className="mb-4 text-sm" style={{ color: BRAND.muted }}>
-        Cargá cantidad por tarea (m², etc.), adjuntá planos y mandá el link. La respuesta del
-        contratista llega sola a tu bandeja.
+        Adjuntá los planos y mandá el link de cada grupo. Las cantidades ya las cargaste al armar el
+        plan. La respuesta del contratista llega sola a tu bandeja.
       </p>
 
       {inboxUrl && (
@@ -382,49 +362,28 @@ export function StepEnvio({
 
               <div className="mb-3 rounded-lg border p-2" style={{ borderColor: BRAND.border }}>
                 <p className="mb-2 text-[10px] font-bold uppercase" style={{ color: BRAND.muted }}>
-                  Cantidad por tarea (vos) · días y precio (contratista)
+                  Cantidades del pedido · días y precio los carga el contratista
                 </p>
-                <div className="space-y-2">
-                  {groupTasks.map((t) => (
-                    <div key={t.id} className="grid grid-cols-[1fr_70px_88px] items-center gap-1.5">
-                      <p className="truncate text-xs font-medium" style={{ color: BRAND.text }} title={t.nombre}>
-                        {t.nombre}
-                      </p>
-                      <select
-                        style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.75rem' }}
-                        value={t.unidad ?? 'm2'}
-                        onChange={(e) => patchTask(t.id, { unidad: e.target.value })}
-                      >
-                        {UNIDADES.map((u) => (
-                          <option key={u} value={u}>
-                            {u === 'm2' ? 'm²' : u}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        style={{ ...inputStyle, padding: '6px 8px', fontSize: '0.75rem' }}
-                        inputMode="decimal"
-                        placeholder="cant."
-                        value={t.cantidad ?? ''}
-                        onChange={(e) => {
-                          const v = e.target.value.replace(',', '.');
-                          patchTask(t.id, {
-                            cantidad: v === '' ? null : Number(v),
-                          });
-                        }}
-                        onBlur={() => void persistCantidades()}
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-1">
+                  {groupTasks.map((t) => {
+                    const ok = t.cantidad != null && t.cantidad > 0;
+                    return (
+                      <div key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate" style={{ color: BRAND.text }} title={t.nombre}>
+                          {t.nombre}
+                        </span>
+                        <span
+                          className="shrink-0 font-semibold"
+                          style={{ color: ok ? BRAND.text : BRAND.gold }}
+                        >
+                          {ok
+                            ? `${t.cantidad} ${t.unidad === 'm2' ? 'm²' : t.unidad ?? ''}`
+                            : 'sin cantidad'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <OCButton
-                  variant="ghost"
-                  className="mt-2 !text-[11px]"
-                  loading={savingQty}
-                  onClick={() => void persistCantidades()}
-                >
-                  Guardar cantidades
-                </OCButton>
               </div>
 
               <div className="mb-2 flex gap-2">

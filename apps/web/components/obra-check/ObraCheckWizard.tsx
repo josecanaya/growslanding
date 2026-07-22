@@ -146,6 +146,18 @@ export function ObraCheckWizard() {
     }
   }
 
+  /** Cambios de cantidad/unidad por tarea: no re-ordena. Persiste en server si `persist`. */
+  async function handleTasksChange(nextTasks: ObraCheckTask[], persist: boolean) {
+    setTasks(nextTasks);
+    if (persist) {
+      try {
+        await obraCheckApi.saveTasks(nextTasks);
+      } catch {
+        /* silencioso: cargar cantidad no debe bloquear la edición del plan */
+      }
+    }
+  }
+
   /** Armar → Enviar: persiste la jerarquía de paquetes definitiva. */
   async function handleArmarContinue() {
     setBusy(true);
@@ -185,6 +197,7 @@ export function ObraCheckWizard() {
           contacts={contacts}
           applyingFases={busy}
           onApplyFases={(t) => void handleApplyFases(t)}
+          onTasksChange={(t, persist) => void handleTasksChange(t, persist)}
           onBudgetGroupsChange={setBudgetGroups}
           onAssignmentsChange={setAssignments}
           onContactsChange={setContacts}
@@ -206,7 +219,6 @@ export function ObraCheckWizard() {
             assignments={assignments}
             contacts={contacts}
             tasks={tasks}
-            onTasksChange={setTasks}
             onContactsChange={setContacts}
             onSentCountChange={setEnviados}
           />

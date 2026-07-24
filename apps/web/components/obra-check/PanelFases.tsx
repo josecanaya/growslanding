@@ -8,6 +8,9 @@ import { BRAND, OCButton, OCCard, inputStyle } from './ui';
 
 const DEFAULT_PHASES = [...CANONICAL_PHASES];
 
+const UNIDADES = ['m2', 'ml', 'gl', 'un'] as const;
+const unidadLabel = (u: string) => (u === 'm2' ? 'm²' : u);
+
 const PHASE_COLORS: Record<string, string> = Object.fromEntries(
   CANONICAL_PHASES.map((p) => [p, PHASE_COLORS_SHARED[p].bg]),
 );
@@ -28,11 +31,17 @@ export function PanelFases({
   tasks,
   onApply,
   applying,
+  onTasksChange,
 }: {
   tasks: ObraCheckTask[];
   /** Aplica los cambios: persiste y re-ordena el plan (rearma paquetes). */
   onApply: (tasks: ObraCheckTask[]) => void;
   applying: boolean;
+  /**
+   * Cambios que NO re-ordenan el plan (cantidad/unidad por tarea). `persist` = guardar en server.
+   * Se aplica sobre las tareas ya ordenadas (no sobre el borrador de fases sin aplicar).
+   */
+  onTasksChange?: (tasks: ObraCheckTask[], persist: boolean) => void;
 }) {
   const initialTasks = useMemo(
     () => tasks.map((t) => ({ ...t, fase: t.fase ?? inferPhase(t) })),
@@ -76,6 +85,14 @@ export function PanelFases({
 
   const unassigned = draft.filter((t) => !t.fase?.trim());
   const depCount = draft.reduce((n, t) => n + t.predecesoras.length, 0);
+  const conCantidad = draft.filter((t) => t.cantidad != null && t.cantidad > 0).length;
+
+  /** Cantidad/unidad por tarea: no re-ordena. Actualiza borrador (display) y propaga (persiste en blur). */
+  function patchTaskQty(taskId: string, patch: Partial<ObraCheckTask>, persist: boolean) {
+    setDraft((curr) => curr.map((tk) => (tk.id === taskId ? { ...tk, ...patch } : tk)));
+    const next = tasks.map((tk) => (tk.id === taskId ? { ...tk, ...patch } : tk));
+    onTasksChange?.(next, persist);
+  }
   const dirty = useMemo(() => {
     const sig = (list: ObraCheckTask[]) =>
       list.map((t) => `${t.id}|${t.fase ?? ''}|${[...t.predecesoras].sort().join(',')}`).sort().join(';');
@@ -192,8 +209,10 @@ export function PanelFases({
   return (
     <div>
       <p className="mb-3 text-xs leading-relaxed" style={{ color: BRAND.muted }}>
-        Corregí la fase de cada tarea y las dependencias <strong>dentro de cada fase</strong>. Al
-        aplicar, Grows re-ordena el plan y rearma los paquetes.
+        <strong style={{ color: BRAND.blue }}>1 · Fases:</strong> revisá y ordená las fases de la
+        obra (podés crear nuevas y mover tareas). <strong style={{ color: BRAND.blue }}>2 · Cantidad:</strong>{' '}
+        cargá los m² (u otra unidad) de cada tarea acá mismo. Al aplicar, Grows re-ordena el plan y
+        rearma los paquetes.
       </p>
 
       <OCCard className="mb-4">
@@ -225,12 +244,23 @@ export function PanelFases({
             </button>
           ))}
         </div>
-        <p className="mt-3 text-xs" style={{ color: BRAND.muted }}>
-          Precedencias marcadas:{' '}
-          <span className="font-semibold" style={{ color: BRAND.blue }}>
-            {depCount}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: BRAND.muted }}>
+          <span>
+            Precedencias:{' '}
+            <span className="font-semibold" style={{ color: BRAND.blue }}>
+              {depCount}
+            </span>
           </span>
-        </p>
+          <span>
+            Cantidades cargadas:{' '}
+            <span
+              className="font-semibold"
+              style={{ color: conCantidad === draft.length ? BRAND.green : BRAND.gold }}
+            >
+              {conCantidad}/{draft.length}
+            </span>
+          </span>
+        </div>
       </OCCard>
 
       {selectedIds.size > 0 && (
@@ -268,6 +298,7 @@ export function PanelFases({
                 onTogglePred={(predId) =>
                   setTaskPreds(task.id, togglePredecesora(task.predecesoras, predId))
                 }
+                onQtyChange={(patch, persist) => patchTaskQty(task.id, patch, persist)}
               />
             ))}
           </div>
@@ -321,6 +352,7 @@ export function PanelFases({
                       onTogglePred={(predId) =>
                         setTaskPreds(task.id, togglePredecesora(task.predecesoras, predId))
                       }
+                      onQtyChange={(patch, persist) => patchTaskQty(task.id, patch, persist)}
                       onMoveUp={idx > 0 ? () => moveTask(phase, task.id, -1) : undefined}
                       onMoveDown={
                         idx < phaseTasks.length - 1 ? () => moveTask(phase, task.id, 1) : undefined
@@ -387,6 +419,7 @@ function TaskRow({
   onPhaseChange,
   onToggleDeps,
   onTogglePred,
+  onQtyChange,
   onMoveUp,
   onMoveDown,
   compact,
@@ -400,6 +433,7 @@ function TaskRow({
   onPhaseChange: (fase: string) => void;
   onToggleDeps: () => void;
   onTogglePred: (predId: string) => void;
+  onQtyChange?: (patch: Partial<ObraCheckTask>, persist: boolean) => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   compact?: boolean;
@@ -411,40 +445,26 @@ function TaskRow({
     .map((id) => allTasks.find((t) => t.id === id)?.nombre)
     .filter(Boolean);
 
+  const hasDeps = depsOpen || task.predecesoras.length > 0;
+
   return (
     <div
-      className={`rounded-lg p-2 ${compact ? '' : 'mb-1'}`}
-      style={{ background: compact ? '#fff' : BRAND.gray }}
+      className={`rounded-lg p-2.5 ${compact ? '' : 'mb-1'}`}
+      style={{ background: compact ? '#fff' : BRAND.gray, border: `1px solid ${BRAND.border}` }}
     >
-      <div className="flex items-center gap-2">
-        <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" />
-        <div className="flex shrink-0 flex-col gap-0.5">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={!onMoveUp}
-            className="px-1 text-[10px] leading-none disabled:opacity-30"
-            style={{ color: BRAND.muted }}
-            title="Subir"
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={!onMoveDown}
-            className="px-1 text-[10px] leading-none disabled:opacity-30"
-            style={{ color: BRAND.muted }}
-            title="Bajar"
-          >
-            ▼
-          </button>
-        </div>
+      {/* Fila 1: selección + nombre (ancho completo) + reordenar */}
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          className="mt-0.5 shrink-0"
+        />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" style={{ color: BRAND.text }}>
+          <p className="truncate text-sm font-medium" style={{ color: BRAND.text }} title={task.nombre}>
             {task.nombre}
           </p>
-          <p className="text-xs" style={{ color: BRAND.muted }}>
+          <p className="truncate text-xs" style={{ color: BRAND.muted }}>
             {task.rubro ?? 'Sin rubro'}
             {task.duracionDias != null ? ` · ${task.duracionDias}d` : ''}
             {predNames.length > 0
@@ -452,20 +472,37 @@ function TaskRow({
               : ''}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onToggleDeps}
-          className="shrink-0 rounded-md px-2 py-1 text-[10px] font-bold"
-          style={{
-            background: depsOpen || task.predecesoras.length ? BRAND.blue : '#fff',
-            color: depsOpen || task.predecesoras.length ? '#fff' : BRAND.text,
-            border: `1px solid ${BRAND.border}`,
-          }}
-        >
-          Depende
-        </button>
+        {(onMoveUp || onMoveDown) && (
+          <div className="flex shrink-0 flex-col gap-0.5">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={!onMoveUp}
+              className="px-1 text-[10px] leading-none disabled:opacity-30"
+              style={{ color: BRAND.muted }}
+              title="Subir"
+            >
+              ▲
+            </button>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={!onMoveDown}
+              className="px-1 text-[10px] leading-none disabled:opacity-30"
+              style={{ color: BRAND.muted }}
+              title="Bajar"
+            >
+              ▼
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Fila 2: controles (fase + dependencias) en su propia línea */}
+      <div className="mt-2 flex items-center gap-2">
         <select
-          style={{ ...inputStyle, width: 'auto', minWidth: 120, fontSize: '0.8rem' }}
+          style={{ ...inputStyle, width: '100%', fontSize: '0.8rem', padding: '0.4rem 0.5rem' }}
+          className="min-w-0 flex-1"
           value={task.fase ?? ''}
           onChange={(e) => onPhaseChange(e.target.value)}
         >
@@ -476,7 +513,65 @@ function TaskRow({
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={onToggleDeps}
+          className="flex shrink-0 items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-bold"
+          style={{
+            background: hasDeps ? BRAND.blue : '#fff',
+            color: hasDeps ? '#fff' : BRAND.text,
+            border: `1px solid ${hasDeps ? BRAND.blue : BRAND.border}`,
+          }}
+        >
+          Depende
+          {task.predecesoras.length > 0 && (
+            <span
+              className="rounded-full px-1 text-[9px] font-bold"
+              style={{ background: hasDeps ? 'rgba(255,255,255,0.25)' : BRAND.gray }}
+            >
+              {task.predecesoras.length}
+            </span>
+          )}
+        </button>
       </div>
+
+      {/* Fila 3: cantidad por tarea (m², etc.) — se carga acá, al armar el plan */}
+      {onQtyChange && (
+        <div className="mt-2 flex items-center gap-2">
+          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide" style={{ color: BRAND.muted }}>
+            Cantidad
+          </span>
+          <select
+            style={{ ...inputStyle, width: 'auto', fontSize: '0.75rem', padding: '0.35rem 0.4rem' }}
+            className="shrink-0"
+            value={task.unidad ?? 'm2'}
+            onChange={(e) => onQtyChange({ unidad: e.target.value }, true)}
+          >
+            {UNIDADES.map((u) => (
+              <option key={u} value={u}>
+                {unidadLabel(u)}
+              </option>
+            ))}
+          </select>
+          <input
+            style={{
+              ...inputStyle,
+              fontSize: '0.8rem',
+              padding: '0.35rem 0.5rem',
+              borderColor: task.cantidad != null && task.cantidad > 0 ? BRAND.border : BRAND.gold,
+            }}
+            className="min-w-0 flex-1"
+            inputMode="decimal"
+            placeholder={`cant. (${unidadLabel(task.unidad ?? 'm2')})`}
+            value={task.cantidad ?? ''}
+            onChange={(e) => {
+              const v = e.target.value.replace(',', '.');
+              onQtyChange({ cantidad: v === '' ? null : Number(v) }, false);
+            }}
+            onBlur={() => onQtyChange({}, true)}
+          />
+        </div>
+      )}
 
       {depsOpen && (
         <div className="mt-2 space-y-2 border-t pt-2" style={{ borderColor: BRAND.border }}>

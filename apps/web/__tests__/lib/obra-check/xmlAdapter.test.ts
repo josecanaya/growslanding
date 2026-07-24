@@ -6,7 +6,7 @@ import { projectXmlToTasks } from '@/lib/obra-check/xmlAdapter';
 // Reutiliza un template real de canvas (formato MS Project) ya versionado en el repo.
 const XML_PATH = resolve(
   __dirname,
-  '../../../public/canvas-templates/casa/casa_1p_2amb_chica.xml',
+  '../../../public/canvas-templates/casa/casa_1p_3amb_media.xml',
 );
 
 describe('projectXmlToTasks', () => {

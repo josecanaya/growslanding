@@ -1,5 +1,12 @@
 /**
- * Genera 50 XML + index JSON desde templates/canvas-library-catalog-v1.csv
+ * Genera los XML + index JSON de la librería de planes.
+ *
+ * Dos fuentes:
+ *  - `templates/canvas-library-catalog-v1.csv` → trabajos comunes/simples (cadena lineal).
+ *  - `lib/canvas/flagshipPlans.ts` → planes flagship CURADOS para casa / reforma / edificio
+ *    (secuencias reales, muchas tareas, precedencias ramificadas). Reemplazan a los planes
+ *    lineales autogenerados de esos tipos.
+ *
  * Ejecutar: pnpm exec tsx scripts/generate-canvas-template-library.ts
  */
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
@@ -9,6 +16,11 @@ import {
   buildSimpleLinearPlanTemplateXml,
   type PlanDurationPreset,
 } from '../lib/canvas/buildCanvasTemplateProjectXml';
+import {
+  buildStructuredPlanTemplateXml,
+  countStructuredPlanTasks,
+} from '../lib/canvas/buildStructuredPlanTemplateXml';
+import { FLAGSHIP_PLANS } from '../lib/canvas/flagshipPlans';
 
 const root = join(__dirname, '..');
 const csvPath = join(root, 'templates/canvas-library-catalog-v1.csv');
@@ -16,16 +28,21 @@ const publicRoot = join(root, 'public/canvas-templates');
 const indexOut = join(root, 'lib/canvas/generated/canvas-library-catalog.json');
 
 const csv = readFileSync(csvPath, 'utf8');
-const entries = parseCanvasLibraryCatalogCsv(csv);
+const allCsvEntries = parseCanvasLibraryCatalogCsv(csv);
 
-if (entries.length === 0) {
+// Los tipos casa/reforma/edificio ahora vienen de planes flagship curados, no de la cadena
+// lineal del CSV: los descartamos del CSV para no duplicar slugs ni versionar planes pobres.
+const FLAGSHIP_SEGMENTS = new Set(FLAGSHIP_PLANS.map((p) => p.segment));
+const entries = allCsvEntries.filter((e) => !FLAGSHIP_SEGMENTS.has(e.segment as never));
+
+if (entries.length === 0 && FLAGSHIP_PLANS.length === 0) {
   console.error('Catálogo vacío:', csvPath);
   process.exit(1);
 }
 
 mkdirSync(join(root, 'lib/canvas/generated'), { recursive: true });
 
-const indexPayload = entries.map((e) => ({
+const csvIndexPayload = entries.map((e) => ({
   segment: e.segment,
   slug: e.slug,
   nombre: e.nombreVisible,
@@ -76,5 +93,45 @@ for (const e of entries) {
   console.log('wrote', file);
 }
 
-writeFileSync(indexOut, JSON.stringify({ version: 1, count: entries.length, entries: indexPayload }, null, 2), 'utf8');
-console.log('wrote', indexOut, `(${entries.length} templates)`);
+// Planes flagship curados (casa / reforma / edificio).
+const flagshipIndexPayload = FLAGSHIP_PLANS.map((p) => {
+  const dir = join(publicRoot, p.segment);
+  mkdirSync(dir, { recursive: true });
+  const xml = buildStructuredPlanTemplateXml(p.spec);
+  const file = join(dir, `${p.slug}.xml`);
+  writeFileSync(file, xml, 'utf8');
+  const taskCount = countStructuredPlanTasks(p.spec);
+  console.log('wrote', file, `(${taskCount} tareas)`);
+  return {
+    segment: p.segment,
+    slug: p.slug,
+    nombre: p.nombreVisible,
+    descripcion: p.duracionGuia,
+    obra_product_kind: p.obraProductKind,
+    rubro: p.rubro,
+    subtipo: p.subtipo,
+    filtro_unidad: p.filtroUnidad,
+    unidades_min: p.unidadesMin,
+    unidades_max: p.unidadesMax,
+    m2_min: p.m2Min,
+    m2_max: p.m2Max,
+    complejidad: p.complejidad,
+    plantas: p.plantas,
+    ambientes_min: p.ambientesMin,
+    ambientes_max: p.ambientesMax,
+    plantas_edificio: p.plantasEdificio,
+    deptos_por_piso: p.deptosPorPiso,
+    pb_comercial: p.pbComercial,
+    subsuelo_cocheras: p.subsueloCocheras,
+    amenities: p.amenities,
+    tags: p.tags,
+    task_count: taskCount,
+    xml_path: `/canvas-templates/${p.segment}/${p.slug}.xml`,
+    tareas: p.spec.phases.flatMap((ph) => ph.tasks.map((tk) => tk.name)),
+  };
+});
+
+const indexPayload = [...csvIndexPayload, ...flagshipIndexPayload];
+
+writeFileSync(indexOut, JSON.stringify({ version: 1, count: indexPayload.length, entries: indexPayload }, null, 2), 'utf8');
+console.log('wrote', indexOut, `(${indexPayload.length} templates)`);

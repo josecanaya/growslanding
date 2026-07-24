@@ -129,7 +129,7 @@ export function ScreenHeader({
 }: {
   title: string;
   subtitle?: React.ReactNode;
-  chips?: Array<{ label: string; tone?: 'default' | 'gold' | 'green' }>;
+  chips?: Array<{ label: string; tone?: 'default' | 'gold' | 'green' | 'red' }>;
 }) {
   return (
     <div className="mb-5">
@@ -159,12 +159,13 @@ export function OCChip({
   tone = 'default',
 }: {
   children: React.ReactNode;
-  tone?: 'default' | 'gold' | 'green';
+  tone?: 'default' | 'gold' | 'green' | 'red';
 }) {
   const tones: Record<string, React.CSSProperties> = {
     default: { background: '#fff', color: BRAND.muted, border: `1px solid ${BRAND.border}` },
     gold: { background: '#FFFBEB', color: '#92600A', border: `1px solid ${BRAND.gold}` },
     green: { background: '#ECFDF5', color: BRAND.green, border: `1px solid #A7F3D0` },
+    red: { background: '#FEF2F2', color: '#DC2626', border: `1px solid #FCA5A5` },
   };
   return (
     <span

@@ -28,19 +28,17 @@ function PhaseLaneNode({ data }: NodeProps) {
   );
 }
 
-/** Etiqueta lateral sutil de fase (timeline). */
+/** Encabezado de fase (arriba de cada banda del timeline horizontal). */
 function PhaseLabelNode({ data }: NodeProps) {
   const d = data as { label: string; count: number; accent: string };
   return (
-    <div className="flex h-full w-full flex-col justify-center pr-2" style={{ pointerEvents: 'none' }}>
-      <p
-        className="text-[10px] font-bold uppercase tracking-wider"
-        style={{ color: d.accent }}
-      >
+    <div className="flex h-full w-full items-center gap-2 pl-1" style={{ pointerEvents: 'none' }}>
+      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: d.accent }} />
+      <p className="text-[11px] font-black uppercase tracking-wider" style={{ color: d.accent }}>
         {d.label}
       </p>
-      <p className="text-[9px]" style={{ color: BRAND.muted }}>
-        {d.count} tarea{d.count === 1 ? '' : 's'}
+      <p className="text-[10px]" style={{ color: BRAND.muted }}>
+        · {d.count} tarea{d.count === 1 ? '' : 's'}
       </p>
     </div>
   );
@@ -58,10 +56,11 @@ function TaskCardNode({ data, selected }: NodeProps) {
     predCount?: number;
   };
   const critical = Boolean(d.critical);
+  const CRITICAL = '#DC2626';
   const handleStyle = {
     width: 7,
     height: 7,
-    background: critical ? BRAND.gold : '#94a3b8',
+    background: critical ? CRITICAL : '#94a3b8',
     border: '1.5px solid #fff',
     opacity: critical ? 1 : 0.7,
   };
@@ -69,10 +68,10 @@ function TaskCardNode({ data, selected }: NodeProps) {
     <div
       className="rounded-lg px-2.5 py-1.5"
       style={{
-        background: critical ? '#FFFBEB' : '#fff',
-        border: critical ? `2.5px solid ${BRAND.gold}` : `1px solid ${BRAND.border}`,
+        background: critical ? '#FEF2F2' : '#fff',
+        border: critical ? `2.5px solid ${CRITICAL}` : `1px solid ${BRAND.border}`,
         boxShadow: critical
-          ? `0 0 0 3px ${BRAND.gold}40, 0 2px 8px rgba(232,197,71,0.35)`
+          ? `0 0 0 3px ${CRITICAL}33, 0 2px 8px rgba(220,38,38,0.30)`
           : selected
             ? `0 0 0 2px ${BRAND.blueLight}44`
             : '0 1px 2px rgba(15,23,42,0.04)',
@@ -83,7 +82,7 @@ function TaskCardNode({ data, selected }: NodeProps) {
       {critical ? (
         <p
           className="mb-0.5 text-[8px] font-black uppercase tracking-wide"
-          style={{ color: '#A16207' }}
+          style={{ color: CRITICAL }}
         >
           Camino crítico
         </p>

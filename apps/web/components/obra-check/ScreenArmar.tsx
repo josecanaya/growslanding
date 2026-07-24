@@ -74,7 +74,7 @@ export function ScreenArmar({
     { label: `${blocks.length} paquetes` },
     ...(cpm.duracionTotalDias > 0 ? [{ label: `${cpm.duracionTotalDias} días de plan` }] : []),
     ...(cpm.tareasCriticas > 0
-      ? [{ label: `${cpm.tareasCriticas} críticas`, tone: 'gold' as const }]
+      ? [{ label: `${cpm.tareasCriticas} críticas`, tone: 'red' as const }]
       : []),
     ...(assignedCount > 0
       ? [{ label: `${assignedCount} grupo(s) con contratista`, tone: 'green' as const }]

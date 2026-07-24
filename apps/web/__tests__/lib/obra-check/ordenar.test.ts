@@ -73,6 +73,51 @@ describe('ordenarTareas', () => {
     expect(res.tasks).toHaveLength(2);
   });
 
+  it('encadena fases: el camino crítico atraviesa toda la obra y la duración se suma', () => {
+    // Estructura: E1(3) → E2(2); Instalaciones: I1(4) e I2(1) sin deps declaradas;
+    // Terminaciones: T1(2). Las fases van en secuencia: Estructura → Instalaciones → Terminaciones.
+    const tasks: ObraCheckTask[] = [
+      task('E1', { fase: 'Estructura', duracionDias: 3 }),
+      task('E2', { fase: 'Estructura', duracionDias: 2, predecesoras: ['E1'] }),
+      task('I1', { fase: 'Instalaciones', duracionDias: 4 }),
+      task('I2', { fase: 'Instalaciones', duracionDias: 1 }),
+      task('T1', { fase: 'Terminaciones', duracionDias: 2 }),
+    ];
+
+    const res = ordenarTareas(tasks);
+
+    // Duración total = 5 (Estructura) + 4 (rama larga de Instalaciones) + 2 (Terminaciones) = 11.
+    expect(res.cpm.duracionTotalDias).toBe(11);
+
+    const byId = new Map(res.tasks.map((t) => [t.id, t]));
+    // El crítico cruza las TRES fases: E1→E2→I1→T1. I2 tiene holgura.
+    expect(byId.get('E1')!.esCritica).toBe(true);
+    expect(byId.get('E2')!.esCritica).toBe(true);
+    expect(byId.get('I1')!.esCritica).toBe(true);
+    expect(byId.get('T1')!.esCritica).toBe(true);
+    expect(byId.get('I2')!.esCritica).toBe(false);
+
+    // Las predecesoras persistidas siguen siendo solo intra-fase (las virtuales no se guardan).
+    expect(byId.get('I1')!.predecesoras).toEqual([]);
+    expect(byId.get('T1')!.predecesoras).toEqual([]);
+
+    // Orden: Estructura antes que Instalaciones antes que Terminaciones.
+    const orderIds = res.tasks.map((t) => t.id);
+    expect(orderIds.indexOf('E2')).toBeLessThan(orderIds.indexOf('I1'));
+    expect(orderIds.indexOf('I1')).toBeLessThan(orderIds.indexOf('T1'));
+  });
+
+  it('multi-fase sin dependencias declaradas: igual encadena por fases con warning', () => {
+    const tasks: ObraCheckTask[] = [
+      task('E1', { fase: 'Estructura', duracionDias: 3 }),
+      task('T1', { fase: 'Terminaciones', duracionDias: 2 }),
+    ];
+    const res = ordenarTareas(tasks);
+    expect(res.cpm.duracionTotalDias).toBe(5);
+    expect(res.tasks.every((t) => t.esCritica)).toBe(true);
+    expect(res.warnings.some((w) => w.kind === 'sin_dependencias')).toBe(true);
+  });
+
   it('asigna cada tarea a un bloque', () => {
     const tasks: ObraCheckTask[] = [
       task('a', { rubro: 'pintura', duracionDias: 1 }),

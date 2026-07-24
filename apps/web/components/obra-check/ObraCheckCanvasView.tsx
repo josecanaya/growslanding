@@ -5,11 +5,11 @@ import { Background, Controls, MiniMap, ReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import type { ObraCheckTask } from '@/lib/obra-check/types';
-import { buildObraCheckPhaseGraph } from './buildObraCheckGraph';
+import { buildObraCheckPhaseGraph, CRITICAL_COLOR } from './buildObraCheckGraph';
 import { obraCheckFlowNodeTypes } from './obraCheckFlowNodes';
 import { BRAND } from './ui';
 
-/** Vista timeline por fase (solo deps intra-fase), con minimapa y camino crítico. */
+/** Timeline horizontal: fases encadenadas de izquierda a derecha, camino crítico global en rojo. */
 export function ObraCheckCanvasView({ tasks }: { tasks: ObraCheckTask[] }) {
   const graph = useMemo(() => buildObraCheckPhaseGraph(tasks), [tasks]);
 
@@ -19,13 +19,13 @@ export function ObraCheckCanvasView({ tasks }: { tasks: ObraCheckTask[] }) {
         <div
           className="mb-3 flex flex-wrap items-center gap-2 rounded-xl px-3 py-2.5"
           style={{
-            background: 'linear-gradient(90deg, #FFFBEB 0%, #FEF3C7 100%)',
-            border: `1.5px solid ${BRAND.gold}`,
+            background: 'linear-gradient(90deg, #FEF2F2 0%, #FEE2E2 100%)',
+            border: `1.5px solid ${CRITICAL_COLOR}`,
           }}
         >
           <span
-            className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wide"
-            style={{ background: BRAND.gold, color: BRAND.blue }}
+            className="rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-white"
+            style={{ background: CRITICAL_COLOR }}
           >
             Camino crítico
           </span>
@@ -33,7 +33,7 @@ export function ObraCheckCanvasView({ tasks }: { tasks: ObraCheckTask[] }) {
             {graph.criticalTaskCount} tarea{graph.criticalTaskCount === 1 ? '' : 's'} sin holgura
           </p>
           <p className="text-xs" style={{ color: BRAND.muted }}>
-            Si se atrasan, se atrasa toda la obra. Resaltadas en dorado.
+            Atraviesa toda la obra: si se atrasan, se atrasa la entrega. Resaltadas en rojo.
           </p>
         </div>
       ) : null}
@@ -76,7 +76,7 @@ export function ObraCheckCanvasView({ tasks }: { tasks: ObraCheckTask[] }) {
             nodeColor={(n) => {
               if (n.type === 'phaseFrame' || n.type === 'phaseLabel') return '#e2e8f0';
               const critical = Boolean((n.data as { critical?: boolean } | undefined)?.critical);
-              return critical ? BRAND.gold : '#94a3b8';
+              return critical ? CRITICAL_COLOR : '#94a3b8';
             }}
             style={{
               width: 168,
@@ -97,19 +97,19 @@ export function ObraCheckCanvasView({ tasks }: { tasks: ObraCheckTask[] }) {
           <span className="font-semibold" style={{ color: BRAND.blue }}>
             {graph.edgeCount}
           </span>{' '}
-          vínculo{graph.edgeCount === 1 ? '' : 's'} (solo dentro de cada fase)
+          vínculo{graph.edgeCount === 1 ? '' : 's'}
         </span>
         <span aria-hidden>·</span>
-        <span>Timeline → izquierda a derecha</span>
+        <span>Fases encadenadas → izquierda a derecha</span>
         <span aria-hidden>·</span>
         <span>
-          <span className="font-bold" style={{ color: '#A16207' }}>
-            Dorado
+          <span className="font-bold" style={{ color: CRITICAL_COLOR }}>
+            Rojo
           </span>{' '}
-          = camino crítico
+          = camino crítico de toda la obra
         </span>
         <span aria-hidden>·</span>
-        <span>Mapita abajo a la derecha para recorrer</span>
+        <span>Punteado = enlace entre fases</span>
       </div>
     </div>
   );

@@ -115,13 +115,9 @@ export async function POST(request: NextRequest) {
   });
   const waLink = buildWaLink(texto, c.telefono);
 
-  await db.from('obra_check_wa_messages').insert({
-    session_id: session.id,
-    contact_id: parsed.contactId,
-    block_client_id: parsed.blockId,
-    tipo: parsed.tipo,
-    texto,
-  });
+  // El texto y el link viven en el propio invite (obra_check_wa_messages se eliminó: era
+  // write-only y duplicaba estos campos).
+  await db.from('obra_check_invites').update({ texto, wa_link: waLink }).eq('token', token);
   await logEvent(db, session.id, 'wa_generated', {
     tipo: parsed.tipo,
     tieneTelefono: Boolean(c.telefono),

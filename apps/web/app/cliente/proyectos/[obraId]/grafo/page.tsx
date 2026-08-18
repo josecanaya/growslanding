@@ -11,9 +11,9 @@ export default async function ProyectoGrafoPage({
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <SectionHeader
-        eyebrow="Proyecto vivo"
-        title="Grafo de transformaciones"
-        description="IDEA → transformación → estado. Una sola fuente de verdad en canvas_nodes."
+        eyebrow="Horizonte"
+        title="El proyecto se habla"
+        description="Chateá en Cursor. El MCP lee la inteligencia de construcción (grows-conocimiento). Este canvas es el horizonte: IDEA → transformación → estado. El front es libre; Grows da el marco y mide tokens."
       />
       <ProyectoVivoCanvas obraId={obraId} obraNombre="Proyecto" />
     </div>

@@ -399,6 +399,13 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
       </div>
 
       <aside className="w-full shrink-0 space-y-4 rounded-xl border border-slate-200 bg-white p-4 lg:w-80">
+        <div className="rounded-lg border border-sky-100 bg-sky-50 p-3">
+          <p className="text-xs font-bold uppercase tracking-wide text-sky-800">Cómo se usa</p>
+          <p className="mt-1 text-xs leading-relaxed text-sky-950">
+            Esto es el horizonte, no el teclado. Pedí estados, transformaciones o features en el chat de Cursor. El MCP apunta a la carpeta de conocimiento. Acá solo se mira y se acepta.
+          </p>
+        </div>
+
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Crecimiento</p>
           <p className="text-sm text-slate-800">
@@ -440,7 +447,7 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
         </div>
 
         <div className="space-y-2 border-t border-slate-100 pt-3">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Orquestador L0</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Atajo local (opcional)</p>
           <p className="text-[11px] text-slate-500">
             Objetivo: {grafoMeta?.objetivo_texto?.trim() || 'sin objetivo_texto'}
           </p>

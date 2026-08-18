@@ -227,3 +227,8 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** Construcción, concepto de Grows, patrones A→T→B y bitácora MCP viven en el repo hermano `grows-conocimiento` (Graphify). El canvas (`canvas_nodes`) sigue siendo la única fuente de verdad de la obra. No copiar obras ni PII a GitHub.
 - **Ámbito:** orquestador L0, agentes, MCP.
 - **Obligación:** No escribir dominio en growslanding salvo el puente anonimizado a `corpus/02_patrones` (al aceptar L0; env `GROWS_CONOCIMIENTO_ROOT`). No usar Graphify como store de un proyecto.
+
+### [2026-08-18] Se opera chateando; canvas = horizonte
+- **Qué se decidió:** El teclado es Cursor + MCP. El MCP de inteligencia apunta a `grows-conocimiento`, no al código. El front es libre; Grows da marco A→T→B, inteligencia de construcción y medición de tokens. Features pedidas se registran en `corpus/04_features/`.
+- **Ámbito:** agente Cursor, MCP, UI del grafo.
+- **Obligación:** No convertir el horizonte en un wizard. El agente consulta Graphify de esa carpeta y solo escribe `propuesta`.

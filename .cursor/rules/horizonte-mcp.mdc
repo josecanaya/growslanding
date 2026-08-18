@@ -1,0 +1,30 @@
+---
+description: Grows se opera chateando. El canvas es el horizonte. El MCP de inteligencia apunta a grows-conocimiento.
+alwaysApply: true
+---
+
+# Horizonte + MCP
+
+Grows no se usa rellenando formularios. Se **habla** en este chat.
+
+## Tres piezas
+
+1. **Este chat (Cursor)** — teclado. Pedís estados, transformaciones, features. Grows cuantifica tokens.
+2. **MCP `grows-conocimiento`** — inteligencia. Carpeta `c:\Users\Usuario\Desktop\Jose\grows-conocimiento`. Construcción + marco. Query antes de inventar oficio o receta.
+3. **Canvas** — horizonte. `canvas_nodes` / `canvas_edges`. Muestra IDEA → T → B. El front es libre (cualquier dominio); no es un wizard de m².
+
+MCP `supabase` = filas de una obra. No es el corpus.
+
+## Qué hacer cuando el usuario pide crear / cambiar el proyecto
+
+- Consultar Graphify (`grows-conocimiento`) si hay duda de dominio.
+- Escribir en el horizonte solo **propuesta** (POST `/api/obras/[id]/grafo/propuestas` o insert puntual actor `agente`). Nunca `validada`, wallet, ni PUT replace-all del canvas.
+- Registrar en el corpus (append, sin PII):
+  - patrón A→T→B → `corpus/02_patrones/`
+  - feature pedida → `corpus/04_features/`
+  - qué se preguntó al MCP → `corpus/03_mcp/`
+- El humano acepta en el horizonte. El agente no marca `realizada` de ejecución.
+
+## Prohibido
+
+Secretos, `obra_id`, montos, clientes en GitHub. Mezclar Graphify de código con el corpus. Tratar Graphify como store de una obra.

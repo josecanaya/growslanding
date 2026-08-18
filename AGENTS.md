@@ -1,7 +1,11 @@
 # Grows (producto)
 
-El conocimiento de construcción, cómo funciona Grows a nivel de dominio, los patrones A→T→B y las bitácoras MCP se escriben en el repo hermano `grows-conocimiento`, no en `canvas_nodes` ni en este monorepo.
+Se opera **chateando en Cursor**. El canvas es el horizonte, no el teclado.
 
-Puente operativo: al aceptar una propuesta L0, el producto appendea un patrón anonimizado en `corpus/02_patrones/` (títulos y `transform_kind` solamente). Ruta del repo hermano: env `GROWS_CONOCIMIENTO_ROOT`.
+- Inteligencia (construcción + marco): repo hermano `grows-conocimiento`. El MCP Graphify **apunta a esa carpeta**, no al código.
+- Obra viva: `canvas_nodes` / `canvas_edges`. El agente solo escribe `propuesta`.
+- Grows cuantifica tokens. El front es libre (cualquier dominio); este producto da el marco A→T→B.
+
+Al aceptar L0, append anonimizado en `corpus/02_patrones/` (`GROWS_CONOCIMIENTO_ROOT`). Features pedidas → `corpus/04_features/`. Bitácora MCP → `corpus/03_mcp/`.
 
 Reglas de **cómo programar** este código: `grows_context/`.

@@ -1,5 +1,7 @@
 # 📋 INFORME TÉCNICO COMPLETO: SISTEMA DE NOTIFICACIONES Y MENSAJES
 
+> **Nota (2026-08-18):** La tabla `gaucho_memoria` y `/api/gaucho-memoria` fueron eliminadas. El chat interno de producto sigue en `mensajes`. Las secciones de Gaucho de este informe son históricas.
+
 **Fecha:** 27 de noviembre de 2025  
 **Proyecto:** GROWS - Sistema de Gestión de Obras  
 **Alcance:** Análisis exhaustivo basado EXCLUSIVAMENTE en el código real del repositorio

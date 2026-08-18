@@ -186,16 +186,6 @@ async function resolveOwnerPermitido(
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (!data) {
-    const legacy = await supabaseAny
-      .from('organizaciones')
-      .select('id')
-      .eq('id', ownerId)
-      .eq('owner_user_id', userId)
-      .maybeSingle();
-    data = legacy.data;
-  }
-
   return Boolean(data?.id);
 }
 

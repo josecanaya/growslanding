@@ -223,7 +223,7 @@ Si una regla de memoria contradice código actual:
 - **Ámbito:** Frontend cliente y socio.
 - **Obligación:** Revisar copy en pantallas nuevas; nombres de rutas/API legacy pueden quedar en inglés o técnico.
 
-### [2026-04-24] Referencia Stitch (reforma) para agenda y QR cuenta
-- **Qué se decidió:** La UI de Agenda de socios y la tarjeta QR en cuenta socio toman estructura, jerarquía y estilo de los HTML en `reforma/stitch_arquitectura_socio_existente/agenda_de_socios`, `.../agendar_socio_scanner` y `reforma/stitch_socio/_10_cuenta/qr`, adaptados a Tailwind del repo.
-- **Ámbito:** `app/cliente/agenda-socios`, `components/socio/SocioQrCard`, `CuentaSection`.
-- **Obligación:** No reemplazar esos mocks por diseño distinto sin pedido explícito.
+### [2026-08-18] Corpus de conocimiento fuera del producto
+- **Qué se decidió:** Construcción, concepto de Grows, patrones A→T→B y bitácora MCP viven en el repo hermano `grows-conocimiento` (Graphify). El canvas (`canvas_nodes`) sigue siendo la única fuente de verdad de la obra. No copiar obras ni PII a GitHub.
+- **Ámbito:** orquestador L0, agentes, MCP.
+- **Obligación:** No escribir dominio en growslanding salvo el puente anonimizado a `corpus/02_patrones` (al aceptar L0; env `GROWS_CONOCIMIENTO_ROOT`). No usar Graphify como store de un proyecto.

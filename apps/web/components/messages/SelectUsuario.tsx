@@ -110,11 +110,11 @@ export function SelectUsuario({
           // 1. Obtener cliente técnico (owner de la organización)
           const { data: orgData } = await supabaseAny
             .from('organizations')
-            .select('owner_user_id')
+            .select('user_id')
             .eq('id', currentUser.orgId)
             .maybeSingle();
 
-          if (orgData?.owner_user_id) {
+          if (orgData?.user_id) {
             // Obtener datos del cliente técnico desde auth.users (si es posible)
             // Por ahora, usamos org_id como referencia
             usuariosList.push({

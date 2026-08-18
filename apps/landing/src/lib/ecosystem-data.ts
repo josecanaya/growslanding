@@ -101,17 +101,6 @@ export const ecosystemData: EcosystemData = {
       subnodes: ['Seguimiento', 'Feedback'],
       href: '/ecosistema/cliente-final'
     },
-    {
-      id: 'ia-growsbot',
-      name: 'IA GrowsBot',
-      description: 'Asistente inteligente que automatiza procesos',
-      category: 'people',
-      size: 'l',
-      color: '#0891b2',
-      icon: 'Bot',
-      subnodes: ['Asistente contextual', 'Automatizaciones'],
-      href: '/ecosistema/ia-growsbot'
-    },
 
     // 🟡 Módulos funcionales
     {
@@ -310,11 +299,6 @@ export const ecosystemData: EcosystemData = {
     { source: 'presupuestos', target: 'pagos-protegidos', type: 'solid', strength: 0.8, bidirectional: true },
     { source: 'auditoria', target: 'reportes', type: 'solid', strength: 0.7 },
     { source: 'auditoria', target: 'reputacion', type: 'dashed', strength: 0.6 },
-
-    // Conexiones IA
-    { source: 'ia-growsbot', target: 'notificaciones', type: 'solid', strength: 0.8, bidirectional: true },
-    { source: 'ia-growsbot', target: 'flujos-aprobacion', type: 'solid', strength: 0.7, bidirectional: true },
-    { source: 'ia-growsbot', target: 'grows-platform', type: 'solid', strength: 0.9 },
 
     // Conexiones integraciones
     { source: 'supabase', target: 'reportes', type: 'dashed', strength: 0.5 },

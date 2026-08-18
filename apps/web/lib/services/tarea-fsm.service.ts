@@ -1,6 +1,7 @@
 import { createServiceSupabaseClient } from '../supabase-server';
 import { RolActor } from './permiso.service';
 import { WalletMvpService } from './wallet-mvp.service';
+import { syncProyectoVivoGraphFromTareaEstado } from '../proyecto-vivo/syncGraphFromTareaEstado';
 import {
   ESTADOS_TAREA,
   ESTADO_BLOQUE_FINAL,
@@ -164,6 +165,15 @@ export class TareaFsmService {
       motivo: params.motivo,
     });
 
+    try {
+      await syncProyectoVivoGraphFromTareaEstado({
+        tareaId: params.tareaId,
+        nuevoEstado: params.nuevoEstado,
+      });
+    } catch (syncErr) {
+      console.warn('[TareaFsmService] sync proyecto_vivo graph:', syncErr);
+    }
+
     return updated;
   }
 
@@ -320,6 +330,30 @@ export class TareaFsmService {
     });
     if (estadoLegacyErr) {
       console.error('[TareaFsmService] Error registrando estado legacy', estadoLegacyErr);
+    }
+
+    // Espejo en `eventos` (tabla canónica de evidencia/auditoría operativa).
+    try {
+      const { data: tareaRow } = await supabaseAny
+        .from('tareas')
+        .select('org_id, obra_id')
+        .eq('id', params.tareaId)
+        .maybeSingle();
+      if (tareaRow?.org_id) {
+        await supabaseAny.from('eventos').insert({
+          org_id: tareaRow.org_id,
+          obra_id: tareaRow.obra_id ?? null,
+          tarea_id: params.tareaId,
+          tipo: 'fsm_transition',
+          descripcion: `FSM ${params.estadoAnterior} → ${params.estadoNuevo}`,
+          nuevo_estado: params.estadoNuevo,
+          actor_role: params.actorRol,
+          notas: params.motivo || null,
+          snapshot_json: metadata,
+        });
+      }
+    } catch (mirrorErr) {
+      console.warn('[TareaFsmService] No se pudo espejar en eventos', mirrorErr);
     }
   }
 

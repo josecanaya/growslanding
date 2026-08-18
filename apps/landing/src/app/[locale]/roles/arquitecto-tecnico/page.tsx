@@ -1,7 +1,7 @@
 'use client';
 
 import { Navigation } from '@/components/navigation/Navigation';
-import { ArrowLeft, ArrowDown, Compass, Building, BarChart3, Workflow, Database, Zap, TrendingUp, CheckCircle, Shield, Globe, LogIn, UserPlus, FileText, Target, Layers, Sparkles, Bot, ClipboardList, CheckSquare, Users, Bell, Calendar, CheckCircle2, Clock, Award, MessageSquare, HardHat, User, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { ArrowLeft, ArrowDown, Compass, Building, BarChart3, Workflow, Database, Zap, TrendingUp, CheckCircle, Shield, Globe, LogIn, UserPlus, FileText, Target, Layers, Sparkles, ClipboardList, CheckSquare, Users, Bell, Calendar, CheckCircle2, Clock, Award, MessageSquare, HardHat, User, Building2, Mail, Phone, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -118,8 +118,8 @@ export default function ArquitectoTecnicoPage() {
                      <span className="text-gray-700"><strong>Indicadores de desempeño</strong> que facilitan la supervisión y el control de calidad.</span>
                    </div>
                    <div className="flex items-start gap-3">
-                     <Bot className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                     <span className="text-gray-700"><strong>Integración directa</strong> con GROWS·Bot para optimizar tareas administrativas y técnicas.</span>
+                     <Workflow className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                     <span className="text-gray-700"><strong>Grafo vivo de la obra</strong> para ver idea, estados y transformaciones en un solo lugar.</span>
                    </div>
                  </div>
                </div>
@@ -141,7 +141,7 @@ export default function ArquitectoTecnicoPage() {
             {/* Sidebar */}
             <aside className="bg-[#0F172A] rounded-xl p-4 flex flex-col space-y-2">
               {[
-                { id: 0, title: 'Chat', subtitle: 'con GrowsBot', icon: MessageSquare },
+                { id: 0, title: 'Chat', subtitle: 'interno', icon: MessageSquare },
                 { id: 1, title: 'Obras', subtitle: '', icon: HardHat },
                 { id: 2, title: 'Tareas', subtitle: '', icon: ClipboardList },
                 { id: 3, title: 'Cuadrillas', subtitle: '', icon: Users },
@@ -178,7 +178,7 @@ export default function ArquitectoTecnicoPage() {
                  <div>
                    <h3 className="text-4xl font-bold text-gray-900 mb-6">
                      {[
-                       { title: 'Chat con GrowsBot' },
+                       { title: 'Chat interno' },
                        { title: 'Gestión de Obras' },
                        { title: 'Panel de Tareas' },
                        { title: 'Gestión de Cuadrillas' },
@@ -193,11 +193,11 @@ export default function ArquitectoTecnicoPage() {
                  <div className="prose prose-lg max-w-none">
                    <p className="text-xl text-gray-700 leading-relaxed mb-6">
                      {[
-                       'El módulo de Chat permite al arquitecto comunicarse directamente con los socios constructores y supervisores. Puede revisar incidencias, validar entregas y automatizar respuestas mediante GrowsBot, integrando información en tiempo real con el flujo de obra.',
+                       'El módulo de Chat permite al arquitecto comunicarse directamente con los socios constructores y supervisores. Puede revisar incidencias, validar entregas e integrar la conversación con el flujo de obra.',
                        'Desde Obras, el arquitecto controla todo el portafolio activo: presupuestos, legajos técnicos, cronogramas y validaciones. Cada proyecto se conecta con las tareas, cuadrillas y reportes automáticos de avance.',
                        'El tablero de Tareas permite visualizar el progreso detallado de cada actividad, ajustar dependencias y aprobar entregas validadas. Todas las acciones quedan registradas dentro del flujo FSM de GROWS.',
                        'Esta vista permite al arquitecto controlar la disponibilidad y desempeño de las cuadrillas en obra. Se visualizan horas validadas, especialidades y evaluaciones técnicas por proyecto.',
-                       'Centraliza todas las alertas generadas por el sistema o GrowsBot. Informa sobre tareas pendientes, pagos, incidentes o entregas listas para revisión técnica.',
+                       'Centraliza todas las alertas generadas por el sistema. Informa sobre tareas pendientes, pagos, incidentes o entregas listas para revisión técnica.',
                        'Sincroniza los hitos del proyecto, reuniones, entregas y validaciones. Permite planificar la ejecución semanal y mensual con métricas automáticas de avance.',
                        'En la sección de Cuenta, el arquitecto gestiona su perfil profesional, permisos de acceso y notificaciones. También puede configurar la sincronización con herramientas externas o habilitar autenticación avanzada.',
                      ][activeSection]}
@@ -210,7 +210,7 @@ export default function ArquitectoTecnicoPage() {
                      {
                        features: [
                          'Comunicación bidireccional en tiempo real',
-                         'Respuestas automatizadas con GrowsBot',
+                         'Seguimiento de incidencias y validaciones',
                          'Historial completo de conversaciones',
                          'Integración con tareas y obras activas'
                        ]
@@ -242,7 +242,7 @@ export default function ArquitectoTecnicoPage() {
                      {
                        features: [
                          'Alertas automáticas del sistema',
-                         'Notificaciones de GrowsBot',
+                         'Notificaciones del sistema',
                          'Recordatorios de tareas pendientes',
                          'Alertas de pagos y validaciones'
                        ]

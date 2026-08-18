@@ -13,7 +13,6 @@ export { EmptyState } from './EmptyState';
 export { Badge } from './Badge';
 export { SectionLayout } from './SectionLayout';
 export { VerificacionSistemaGROWS } from './VerificacionSistemaGROWS';
-export { ChatDemo } from './ChatDemo';
 export { DiagnosticTool } from './DiagnosticTool';
 
 // Re-exportar tipos para facilitar el uso

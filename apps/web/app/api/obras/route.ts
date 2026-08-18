@@ -61,6 +61,7 @@ export async function GET() {
         name,
         address,
         estado,
+        graph_mode,
         created_at,
         updated_at,
         organizations (
@@ -114,6 +115,7 @@ export async function GET() {
         name: obra.name,
         address: obra.address,
         estado: obra.estado,
+        graphMode: obra.graph_mode ?? 'obra_plan',
         createdAt: obra.created_at,
         updatedAt: obra.updated_at,
         organization: organization

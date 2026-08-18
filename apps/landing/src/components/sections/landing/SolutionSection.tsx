@@ -1,7 +1,7 @@
 'use client';
 
 import {useTranslations} from 'next-intl';
-import {FileText, Calendar, Eye, Users, MessageSquare, Building2, TrendingUp, CreditCard} from 'lucide-react';
+import {FileText, Calendar, Eye, Users, GitBranch, Building2, TrendingUp, CreditCard} from 'lucide-react';
 
 export function SolutionSection() {
   const t = useTranslations('solution');
@@ -24,8 +24,8 @@ export function SolutionSection() {
       icon: Users,
     },
     {
-      key: 'growsbot',
-      icon: MessageSquare,
+      key: 'grafo',
+      icon: GitBranch,
     },
     {
       key: 'multitenant',

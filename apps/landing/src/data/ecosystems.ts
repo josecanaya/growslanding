@@ -221,15 +221,6 @@ export const ecosystems = {
         x: 280,
         y: 380
       },
-      {
-        id: 'ia-growsbot',
-        name: 'IA Bot',
-        color: '#3DB7B0',
-        size: 'l',
-        category: 'roles',
-        x: 280,
-        y: 220
-      },
       // Modules (yellow)
       {
         id: 'obras',
@@ -365,8 +356,7 @@ export const ecosystems = {
       { from: 'grows-center', to: 'coordinador', type: 'center' },
       { from: 'grows-center', to: 'socio-constructor', type: 'center' },
       { from: 'grows-center', to: 'supervisor', type: 'center' },
-      { from: 'grows-center', to: 'cliente-final', type: 'center' },
-      { from: 'grows-center', to: 'ia-growsbot', type: 'center' }
+      { from: 'grows-center', to: 'cliente-final', type: 'center' }
     ] as EcosystemConnection[]
   }
 } as const;

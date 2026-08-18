@@ -58,7 +58,73 @@ type DbNodeRow = {
   budget_group_id: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
+  transform_kind?: string | null;
+  from_node_id?: string | null;
+  to_node_id?: string | null;
+  executor_kind?: string | null;
+  executor_ref?: string | null;
+  graph_status?: string | null;
+  t_value?: number | null;
+  t_components?: Record<string, unknown> | null;
+  t_formula_id?: string | null;
 };
+
+function optionalClientNodeUuid(clientId: string | undefined): string | null {
+  if (!clientId) return null;
+  try {
+    return toDbUuidFromCanvasId(clientId);
+  } catch {
+    return null;
+  }
+}
+
+function readProyectoVivoFieldsFromRow(row: DbNodeRow): Pick<
+  CanvasNode,
+  | 'transformKind'
+  | 'fromNodeId'
+  | 'toNodeId'
+  | 'executorKind'
+  | 'executorRef'
+  | 'graphStatus'
+  | 'tValue'
+  | 'tComponents'
+  | 'tFormulaId'
+> {
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  const transformKind = (row.transform_kind ?? meta.transform_kind) as CanvasNode['transformKind'];
+  const graphStatus = (row.graph_status ?? meta.graph_status) as CanvasNode['graphStatus'];
+  const fromDb = row.from_node_id ?? (typeof meta.from_node_id === 'string' ? meta.from_node_id : null);
+  const toDb = row.to_node_id ?? (typeof meta.to_node_id === 'string' ? meta.to_node_id : null);
+  const tComponentsRaw = row.t_components ?? meta.t_components;
+  let tComponents: Record<string, number> | undefined;
+  if (tComponentsRaw && typeof tComponentsRaw === 'object' && !Array.isArray(tComponentsRaw)) {
+    tComponents = {};
+    for (const [k, v] of Object.entries(tComponentsRaw as Record<string, unknown>)) {
+      if (typeof v === 'number' && Number.isFinite(v)) tComponents[k] = v;
+    }
+  }
+  const tValueRaw = row.t_value ?? meta.t_value;
+  const tValue =
+    tValueRaw == null ? undefined : typeof tValueRaw === 'number' ? tValueRaw : Number(tValueRaw);
+
+  return {
+    transformKind: transformKind ?? undefined,
+    fromNodeId: fromDb ? toClientNodeId(fromDb) : undefined,
+    toNodeId: toDb ? toClientNodeId(toDb) : undefined,
+    executorKind: ((row.executor_kind ?? meta.executor_kind) as CanvasNode['executorKind']) ?? undefined,
+    executorRef:
+      typeof (row.executor_ref ?? meta.executor_ref) === 'string'
+        ? String(row.executor_ref ?? meta.executor_ref)
+        : undefined,
+    graphStatus: graphStatus ?? undefined,
+    tValue: tValue != null && !Number.isNaN(tValue) ? tValue : undefined,
+    tComponents,
+    tFormulaId:
+      typeof (row.t_formula_id ?? meta.t_formula_id) === 'string'
+        ? String(row.t_formula_id ?? meta.t_formula_id)
+        : undefined,
+  };
+}
 
 type DbEdgeRow = {
   id: string;
@@ -166,6 +232,7 @@ export function persistedToSupabaseRows(
       notas: n.notas,
       socioLabel: n.socioLabel,
     };
+    if (n.orquestador) meta.orquestador = n.orquestador;
 
     const projectUid =
       n.importSourceUid != null ? String(n.importSourceUid) : null;
@@ -193,6 +260,15 @@ export function persistedToSupabaseRows(
       budget_group_id: budgetGroupUuid,
       metadata: meta,
       created_at: n.createdAt ?? new Date().toISOString(),
+      transform_kind: n.transformKind ?? null,
+      from_node_id: optionalClientNodeUuid(n.fromNodeId),
+      to_node_id: optionalClientNodeUuid(n.toNodeId),
+      executor_kind: n.executorKind ?? null,
+      executor_ref: n.executorRef ?? null,
+      graph_status: n.graphStatus ?? null,
+      t_value: n.tValue ?? null,
+      t_components: n.tComponents ?? {},
+      t_formula_id: n.tFormulaId ?? null,
     };
   });
 
@@ -290,6 +366,17 @@ export function supabaseRowsToPersisted(input: {
     if (typeof meta.notas === 'string') base.notas = meta.notas;
     if (typeof meta.tipoLabel === 'string') base.tipoLabel = meta.tipoLabel;
     if (typeof meta.socioLabel === 'string') base.socioLabel = meta.socioLabel;
+    const orq = meta.orquestador;
+    if (orq && typeof orq === 'object' && !Array.isArray(orq)) {
+      const o = orq as Record<string, unknown>;
+      if (o.origen === 'agente' && (o.estado === 'pendiente' || o.estado === 'aceptada')) {
+        base.orquestador = {
+          origen: 'agente',
+          estado: o.estado,
+          formulaId: 'l0',
+        };
+      }
+    }
 
     if (row.description) base.descripcion = row.description;
 
@@ -306,10 +393,14 @@ export function supabaseRowsToPersisted(input: {
         if (!Number.isNaN(uid)) base.importSourceUid = uid;
       }
       if (row.project_outline_number) base.importOutlineNumber = row.project_outline_number;
+    } else if (row.type === 'estado') {
+      /* estados usan graph_status; no checklist ni presupuesto */
     } else {
       if (row.status) base.estadoNivel = row.status as CanvasNode['estadoNivel'];
       if (row.progress != null) base.avancePct = Number(row.progress);
     }
+
+    Object.assign(base, readProyectoVivoFieldsFromRow(row));
 
     return base;
   });

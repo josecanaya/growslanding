@@ -4,7 +4,7 @@ import type {
   CanvasNode,
   CanvasPrecedenceEdge,
 } from '@/lib/types/canvasMultinivel';
-import { CANVAS_MULTINIVEL_STORAGE_VERSION } from '@/lib/types/canvasMultinivel';
+import { CANVAS_MULTINIVEL_STORAGE_VERSION, isCanvasEstadoNode } from '@/lib/types/canvasMultinivel';
 import { normalizeCanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 
 /** Una clave estable por obra: la versión va dentro del JSON (`v`). */
@@ -29,7 +29,23 @@ function normalizeNode(n: CanvasNode): CanvasNode {
     if (n.budgetGroupId) out.budgetGroupId = n.budgetGroupId;
     if (n.importSourceUid != null) out.importSourceUid = n.importSourceUid;
     if (n.importOutlineNumber) out.importOutlineNumber = n.importOutlineNumber;
+    if (n.transformKind) out.transformKind = n.transformKind;
+    if (n.fromNodeId) out.fromNodeId = n.fromNodeId;
+    if (n.toNodeId) out.toNodeId = n.toNodeId;
+    if (n.executorKind) out.executorKind = n.executorKind;
+    if (n.executorRef) out.executorRef = n.executorRef;
+    if (n.graphStatus) out.graphStatus = n.graphStatus;
+    if (n.tValue != null) out.tValue = n.tValue;
+    if (n.tComponents) out.tComponents = { ...n.tComponents };
+    if (n.tFormulaId) out.tFormulaId = n.tFormulaId;
+    if (n.orquestador) out.orquestador = { ...n.orquestador };
     return out;
+  }
+  if (isCanvasEstadoNode(n)) {
+    return {
+      ...n,
+      graphStatus: n.graphStatus ?? 'fantasma',
+    };
   }
   const { checklist: _chk, esCritica: _crit, budgetGroupId: _bg, importSourceUid: _iu, importOutlineNumber: _io, ...rest } = n;
   return rest;

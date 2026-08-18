@@ -51,7 +51,7 @@ export const enStorytelling = {
       paragraphs: [
         "The work is monitored as a living system.",
         "Site data feeds the control panel.",
-        "GrowsBot detects deviations and suggests corrections.",
+        "GROWS detects deviations and suggests corrections.",
         "Decisions based on evidence, not intuition."
       ]
     },

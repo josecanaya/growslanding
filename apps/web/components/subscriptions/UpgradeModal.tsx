@@ -102,7 +102,7 @@ export function UpgradeModalProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase
         .from('organizations')
         .update({ plan_actual: state.targetPlanId })
-        .eq('owner_user_id', authData.user.id);
+        .eq('user_id', authData.user.id);
 
       if (error) {
         console.error('[UpgradeModal] Error updating plan:', error);

@@ -2,7 +2,33 @@ import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 
 /** Canvas operativo multinivel — sin geometría BIM; jerarquía, precedencias y tareas locales. */
 
-export type CanvasNivelTipo = 'etapa' | 'planta' | 'sector' | 'ambiente' | 'tarea';
+export type CanvasNivelTipo =
+  | 'etapa'
+  | 'planta'
+  | 'sector'
+  | 'ambiente'
+  | 'tarea'
+  | 'estado';
+
+export type ObraGraphMode = 'obra_plan' | 'proyecto_vivo';
+
+export type TransformKind = 'conocimiento' | 'coordinacion' | 'ejecucion';
+
+export type ExecutorKind = 'humano' | 'empresa' | 'agente' | 'sin_asignar';
+
+export type GraphStatusEstado = 'alcanzado' | 'fantasma';
+
+export type GraphStatusTransformacion = 'propuesta' | 'en_curso' | 'realizada' | 'bloqueada';
+
+export type GraphNodeStatus = GraphStatusEstado | GraphStatusTransformacion;
+
+export function isCanvasTransformacionNode(n: Pick<CanvasNode, 'type'>): boolean {
+  return n.type === 'tarea';
+}
+
+export function isCanvasEstadoNode(n: Pick<CanvasNode, 'type'>): boolean {
+  return n.type === 'estado';
+}
 
 /** Estados de contenedor local (etapa, planta, sector, ambiente). */
 export type CanvasNivelEstadoLocal =
@@ -83,6 +109,22 @@ export type CanvasNode = {
   /** Auditoría de import Project XML — no mostrar en UI operativa. */
   importSourceUid?: number;
   importOutlineNumber?: string;
+  /** Proyecto vivo: semántica transformación (type=tarea) o estado (type=estado) */
+  transformKind?: TransformKind;
+  fromNodeId?: string;
+  toNodeId?: string;
+  executorKind?: ExecutorKind;
+  executorRef?: string;
+  graphStatus?: GraphNodeStatus;
+  tValue?: number | null;
+  tComponents?: Record<string, number>;
+  tFormulaId?: string;
+  /** Sugerencia del orquestador L0. Ausente = creada por humano. */
+  orquestador?: {
+    origen: 'agente';
+    estado: 'pendiente' | 'aceptada';
+    formulaId: 'l0';
+  };
 };
 
 /** v1 obra+nodes+pathIds; v2 + edges; v3 + budgetGroups; v4 + projectKind */

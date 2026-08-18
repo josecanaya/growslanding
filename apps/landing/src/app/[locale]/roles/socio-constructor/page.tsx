@@ -29,7 +29,7 @@ export default function SocioConstructorPage() {
     {
       id: "notificaciones",
       title: "Notificaciones",
-      description: "Alertas automáticas de pagos, validaciones o incidencias relevantes enviadas por el sistema o por GROWS·Bot en tiempo real.",
+      description: "Alertas automáticas de pagos, validaciones o incidencias relevantes enviadas por el sistema en tiempo real.",
       icon: Bell,
     },
     {

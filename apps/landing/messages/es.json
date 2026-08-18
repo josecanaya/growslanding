@@ -12,16 +12,16 @@
       "line2": "impulsada por IA"
     },
     "ctaButton": "Explorar GROWS",
-    "badge": "Ahora con IA integrada · GrowsBot",
+    "badge": "Gestión inteligente de obras",
     "titleOld": "GROWS – Plataforma B2B de Gestión Inteligente con IA",
     "subtitleOld": "Obras de pequeña y mediana escala con control profesional",
-    "description": "Centraliza planificación, ejecución y control con GrowsBot (IA), +1800 catálogos constructivos y cronogramas automáticos por CPM",
+    "description": "Centraliza planificación, ejecución y control con +1800 catálogos constructivos y cronogramas automáticos por CPM",
     "ctaPrimary": "Empezar gratis",
     "ctaSecondary": "Ver demo en vivo",
     "stats": {
       "tasks": "Tareas Estandarizadas",
       "traceability": "Trazabilidad FSM",
-      "support": "Soporte con GrowsBot"
+      "support": "Chat interno entre roles"
     }
   },
   "problem": {
@@ -68,9 +68,9 @@
         "title": "Gestión Centralizada",
         "description": "Un solo panel B2B multi-tenant para gestionar todas tus obras, socios y cuadrillas"
       },
-      "growsbot": {
-        "title": "GrowsBot (IA)",
-        "description": "Asistente inteligente 24/7 que responde consultas técnicas y sugiere optimizaciones"
+      "grafo": {
+        "title": "Grafo vivo",
+        "description": "Cada proyecto es IDEA → estado → transformación → estado, con una sola fuente de verdad"
       },
       "multitenant": {
         "title": "Multi-tenant Seguro",
@@ -165,7 +165,7 @@
     "stats": {
       "trial": "Sin límite en Free",
       "setup": "5 minutos de setup",
-      "support": "Chat con GrowsBot 24/7"
+      "support": "Chat interno entre roles"
     }
   },
   "footer": {

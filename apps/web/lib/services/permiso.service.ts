@@ -43,18 +43,6 @@ export class PermisoService {
       .eq('id', orgId)
       .maybeSingle();
 
-    // Compat temporal con esquema legacy
-    if (!organizacion) {
-      const legacyOrg = await supabaseAny
-        .from('organizaciones')
-        .select('owner_user_id')
-        .eq('id', orgId)
-        .maybeSingle();
-      if (legacyOrg.data) {
-        organizacion = { user_id: legacyOrg.data.owner_user_id };
-      }
-    }
-
     if (organizacion?.user_id === userId) {
       return 'CLIENTE';
     }
@@ -81,15 +69,6 @@ export class PermisoService {
       .maybeSingle();
 
     if (org?.user_id === userId) return true;
-
-    if (!org) {
-      const { data: leg } = await supabaseAny
-        .from('organizaciones')
-        .select('owner_user_id')
-        .eq('id', orgId)
-        .maybeSingle();
-      if (leg?.owner_user_id === userId) return true;
-    }
 
     if (userEmail) {
       const { data: invite } = await supabaseAny

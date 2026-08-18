@@ -1,5 +1,7 @@
 # 📊 INFORME TÉCNICO - LANDING PAGE GROWS
 
+> **Nota (2026-08-18):** Gaucho / GrowsBot / `/api/fierro` / `/api/gaucho` fueron eliminados. Las secciones de chatbot de este informe son históricas.
+
 **Fecha de análisis:** 2025-01-21  
 **Ubicación:** `apps/landing`  
 **Framework:** Next.js 14.0.4 (App Router)  

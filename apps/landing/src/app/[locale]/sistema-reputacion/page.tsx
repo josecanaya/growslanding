@@ -217,7 +217,7 @@ export default function SistemaPage() {
                 de respuesta y desempeño de cuadrillas.
               </p>
               <p>
-                GROWS·Bot interpreta las conversaciones y las transforma en acciones dentro del flujo 
+                GROWS interpreta los eventos de obra y los transforma en acciones dentro del flujo
                 (por ejemplo: "validar avance" o "reprogramar tarea").
               </p>
             </div>

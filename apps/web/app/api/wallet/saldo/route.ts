@@ -92,16 +92,6 @@ async function resolveOwner(userId: string, email?: string): Promise<OwnerInfo |
     .eq('user_id', userId)
     .maybeSingle();
 
-  // Compat temporal con esquema legacy
-  if (!org) {
-    const legacyOrg = await supabaseAny
-      .from('organizaciones')
-      .select('id')
-      .eq('owner_user_id', userId)
-      .maybeSingle();
-    org = legacyOrg.data;
-  }
-
   if (org?.id) {
     return { owner_tipo: 'ORG', owner_id: org.id };
   }

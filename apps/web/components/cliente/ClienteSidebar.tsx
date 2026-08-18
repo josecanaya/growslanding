@@ -25,7 +25,9 @@ export function isClienteNavItemActive(pathname: string, href: string): boolean 
   if (pathname === href) return true;
   if (href === '/cliente/dashboard') return false;
   if (href === '/cliente/obras') {
-    return pathname.startsWith('/cliente/obras') || pathname.startsWith('/cliente/tareas');
+    return pathname.startsWith('/cliente/obras') ||
+      pathname.startsWith('/cliente/tareas') ||
+      pathname.startsWith('/cliente/proyectos');
   }
   return pathname.startsWith(href);
 }

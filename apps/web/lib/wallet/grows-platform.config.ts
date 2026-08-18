@@ -31,17 +31,5 @@ export async function resolveGrowsPlatformOrgId(): Promise<string | null> {
     return cachedPlatformOrgId;
   }
 
-  const { data: legacy } = await supabaseAny
-    .from('organizaciones')
-    .select('id')
-    .ilike('nombre', '%grows%')
-    .limit(1)
-    .maybeSingle();
-
-  if (legacy?.id) {
-    cachedPlatformOrgId = String(legacy.id);
-    return cachedPlatformOrgId;
-  }
-
   return null;
 }

@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
 
     const supabaseAny = createServiceSupabaseClient() as any;
     const { data: orgData } = await supabaseAny
-      .from('organizaciones')
-      .select('owner_user_id')
+      .from('organizations')
+      .select('user_id')
       .eq('id', orgId)
       .maybeSingle();
 
-    if (!orgData?.owner_user_id) {
+    if (!orgData?.user_id) {
       return NextResponse.json({ ok: true, skipped: true });
     }
 
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       mensaje: 'Todas las subtareas de la tarea han sido completadas',
       tipo: 'avance',
       remitente_id: session.user.id,
-      destinatario_id: orgData.owner_user_id,
+      destinatario_id: orgData.user_id,
       org_id: orgId,
       obra_id: obraId,
       tarea_id: tareaId,

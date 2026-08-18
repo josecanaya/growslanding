@@ -1,5 +1,7 @@
 # 📊 INFORME MARKETING / LANDING — MVP 1.0 Y PRE-SEED
 
+> **Nota (2026-08-18):** Gaucho / GrowsBot ya no forman parte del producto. Las menciones a chatbot, `/api/fierro` o n8n de landing en este documento son históricas.
+
 **Fecha:** 2025-01-21  
 **Estado:** Landing funcional con mejoras pendientes para MVP  
 **URL:** grows.com.ar
@@ -19,7 +21,7 @@
 - ✅ **PricingSection** - 4 planes (Free, Starter, Pro, Enterprise) con CTAs funcionales
 - ✅ **CTASection** - Formulario de captura de leads conectado a Supabase
 - ✅ **Footer** completo con información de contacto
-- ✅ **GrowsBot** - Chatbot funcional integrado con n8n
+- ✅ **CTASection** - Formulario de captura de leads conectado a Supabase
 
 #### **2. CTAs y Conversión**
 - ✅ **Hero CTA** → Calendly (agendar demo)
@@ -37,7 +39,6 @@
 
 #### **4. Integraciones Funcionales**
 - ✅ **API `/api/leads`** - Guarda leads en Supabase (tabla `leads`)
-- ✅ **API `/api/fierro`** - Chatbot conectado con n8n
 - ✅ **Supabase** - Cliente configurado y funcionando
 
 #### **5. Recursos Visuales Existentes**

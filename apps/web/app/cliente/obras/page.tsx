@@ -62,11 +62,18 @@ export default function ObrasPage() {
         title="Obras"
         description="Obras de tu organización (Supabase)."
         action={
-          <Link href={'/cliente/obras/nueva' as Route}>
-            <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-              Nueva obra
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href={'/cliente/proyectos/nuevo' as Route}>
+              <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />}>
+                Desde una idea
+              </Button>
+            </Link>
+            <Link href={'/cliente/obras/nueva' as Route}>
+              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
+                Nueva obra
+              </Button>
+            </Link>
+          </div>
         }
       />
       {error && (
@@ -98,7 +105,11 @@ export default function ObrasPage() {
                 ubicacion={o.address || 'Sin ubicación'}
                 estado={estadoLabel(o.estado)}
                 avancePct={avance}
-                href={`/cliente/tareas/${o.id}/editor` as Route}
+                href={
+                  (o.graphMode === 'proyecto_vivo'
+                    ? `/cliente/proyectos/${o.id}/grafo`
+                    : `/cliente/tareas/${o.id}/editor`) as Route
+                }
                 onEliminar={handleEliminarObra}
                 eliminando={eliminandoId === o.id}
               />

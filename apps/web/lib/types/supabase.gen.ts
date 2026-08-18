@@ -14,6 +14,597 @@ export type Database = {
   }
   public: {
     Tables: {
+      canvas_budget_group_tasks: {
+        Row: {
+          budget_group_id: string
+          created_at: string
+          id: string
+          obra_id: string
+          org_id: string | null
+          task_node_id: string
+        }
+        Insert: {
+          budget_group_id: string
+          created_at?: string
+          id?: string
+          obra_id: string
+          org_id?: string | null
+          task_node_id: string
+        }
+        Update: {
+          budget_group_id?: string
+          created_at?: string
+          id?: string
+          obra_id?: string
+          org_id?: string | null
+          task_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_budget_group_tasks_budget_group_id_fkey"
+            columns: ["budget_group_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_budget_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_group_tasks_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_group_tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_group_tasks_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_group_tasks_task_node_id_fkey"
+            columns: ["task_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_budget_groups: {
+        Row: {
+          approved_at: string | null
+          bolsa_publicada: boolean
+          change_window_notes: string | null
+          change_window_opened_at: string | null
+          change_window_status: string
+          created_at: string
+          description: string | null
+          id: string
+          mensaje_socio_borrador: string | null
+          name: string
+          obra_id: string
+          org_id: string | null
+          pliego_publicado_at: string | null
+          publicado_a_agenda: boolean
+          scheduled_socio_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          bolsa_publicada?: boolean
+          change_window_notes?: string | null
+          change_window_opened_at?: string | null
+          change_window_status?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          mensaje_socio_borrador?: string | null
+          name: string
+          obra_id: string
+          org_id?: string | null
+          pliego_publicado_at?: string | null
+          publicado_a_agenda?: boolean
+          scheduled_socio_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          bolsa_publicada?: boolean
+          change_window_notes?: string | null
+          change_window_opened_at?: string | null
+          change_window_status?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          mensaje_socio_borrador?: string | null
+          name?: string
+          obra_id?: string
+          org_id?: string | null
+          pliego_publicado_at?: string | null
+          publicado_a_agenda?: boolean
+          scheduled_socio_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_budget_groups_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_groups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_groups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_budget_groups_scheduled_socio_id_fkey"
+            columns: ["scheduled_socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_edges: {
+        Row: {
+          created_at: string
+          id: string
+          is_critical: boolean
+          lag_days: number
+          metadata: Json
+          obra_id: string
+          org_id: string | null
+          source_node_id: string
+          target_node_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_critical?: boolean
+          lag_days?: number
+          metadata?: Json
+          obra_id: string
+          org_id?: string | null
+          source_node_id: string
+          target_node_id: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_critical?: boolean
+          lag_days?: number
+          metadata?: Json
+          obra_id?: string
+          org_id?: string | null
+          source_node_id?: string
+          target_node_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_edges_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_edges_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_edges_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_nodes: {
+        Row: {
+          budget_group_id: string | null
+          created_at: string
+          description: string | null
+          executor_kind: string | null
+          executor_ref: string | null
+          from_node_id: string | null
+          graph_status: string | null
+          id: string
+          is_critical: boolean
+          is_summary: boolean
+          metadata: Json
+          obra_id: string
+          org_id: string | null
+          parent_id: string | null
+          planned_duration_days: number | null
+          position_x: number | null
+          position_y: number | null
+          progress: number | null
+          project_outline_level: number | null
+          project_outline_number: string | null
+          project_source: string | null
+          project_uid: string | null
+          sort_order: number | null
+          status: string | null
+          t_components: Json | null
+          t_formula_id: string | null
+          t_value: number | null
+          title: string
+          to_node_id: string | null
+          transform_kind: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          budget_group_id?: string | null
+          created_at?: string
+          description?: string | null
+          executor_kind?: string | null
+          executor_ref?: string | null
+          from_node_id?: string | null
+          graph_status?: string | null
+          id?: string
+          is_critical?: boolean
+          is_summary?: boolean
+          metadata?: Json
+          obra_id: string
+          org_id?: string | null
+          parent_id?: string | null
+          planned_duration_days?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          progress?: number | null
+          project_outline_level?: number | null
+          project_outline_number?: string | null
+          project_source?: string | null
+          project_uid?: string | null
+          sort_order?: number | null
+          status?: string | null
+          t_components?: Json | null
+          t_formula_id?: string | null
+          t_value?: number | null
+          title: string
+          to_node_id?: string | null
+          transform_kind?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          budget_group_id?: string | null
+          created_at?: string
+          description?: string | null
+          executor_kind?: string | null
+          executor_ref?: string | null
+          from_node_id?: string | null
+          graph_status?: string | null
+          id?: string
+          is_critical?: boolean
+          is_summary?: boolean
+          metadata?: Json
+          obra_id?: string
+          org_id?: string | null
+          parent_id?: string | null
+          planned_duration_days?: number | null
+          position_x?: number | null
+          position_y?: number | null
+          progress?: number | null
+          project_outline_level?: number | null
+          project_outline_number?: string | null
+          project_source?: string | null
+          project_uid?: string | null
+          sort_order?: number | null
+          status?: string | null
+          t_components?: Json | null
+          t_formula_id?: string | null
+          t_value?: number | null
+          title?: string
+          to_node_id?: string | null
+          transform_kind?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_nodes_budget_group_id_fkey"
+            columns: ["budget_group_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_budget_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_from_node_id_fkey"
+            columns: ["from_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_nodes_to_node_id_fkey"
+            columns: ["to_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_task_checklist_items: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          obra_id: string
+          org_id: string | null
+          sort_order: number | null
+          task_node_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          obra_id: string
+          org_id?: string | null
+          sort_order?: number | null
+          task_node_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          obra_id?: string
+          org_id?: string | null
+          sort_order?: number | null
+          task_node_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_task_checklist_items_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_task_checklist_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_task_checklist_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_task_checklist_items_task_node_id_fkey"
+            columns: ["task_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_task_templates: {
+        Row: {
+          autor_user_id: string | null
+          created_at: string
+          descripcion: string | null
+          id: string
+          nombre: string
+          obra_product_kind: string
+          org_id: string | null
+          slug: string
+          updated_at: string
+          visibilidad: string
+        }
+        Insert: {
+          autor_user_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre: string
+          obra_product_kind: string
+          org_id?: string | null
+          slug: string
+          updated_at?: string
+          visibilidad?: string
+        }
+        Update: {
+          autor_user_id?: string | null
+          created_at?: string
+          descripcion?: string | null
+          id?: string
+          nombre?: string
+          obra_product_kind?: string
+          org_id?: string | null
+          slug?: string
+          updated_at?: string
+          visibilidad?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_task_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_task_templates_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_template_connections: {
+        Row: {
+          id: string
+          source_task_id: string
+          target_task_id: string
+          template_id: string
+          tipo_conexion: string
+        }
+        Insert: {
+          id?: string
+          source_task_id: string
+          target_task_id: string
+          template_id: string
+          tipo_conexion?: string
+        }
+        Update: {
+          id?: string
+          source_task_id?: string
+          target_task_id?: string
+          template_id?: string
+          tipo_conexion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_template_connections_source_task_id_fkey"
+            columns: ["source_task_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_template_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_template_connections_target_task_id_fkey"
+            columns: ["target_task_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_template_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_template_connections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      canvas_template_tasks: {
+        Row: {
+          descripcion: string | null
+          duracion_estimada_dias: number
+          id: string
+          metadata: Json
+          orden: number
+          template_id: string
+          tipo: string
+          titulo: string
+        }
+        Insert: {
+          descripcion?: string | null
+          duracion_estimada_dias?: number
+          id?: string
+          metadata?: Json
+          orden: number
+          template_id: string
+          tipo?: string
+          titulo: string
+        }
+        Update: {
+          descripcion?: string | null
+          duracion_estimada_dias?: number
+          id?: string
+          metadata?: Json
+          orden?: number
+          template_id?: string
+          tipo?: string
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_template_tasks_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categorias_legajo: {
         Row: {
           descripcion: string | null
@@ -34,6 +625,195 @@ export type Database = {
           orden?: number
         }
         Relationships: []
+      }
+      cliente_socio_agenda: {
+        Row: {
+          alias: string | null
+          created_at: string
+          estado: string
+          id: string
+          metodo: string
+          notas: string | null
+          org_id: string
+          socio_id: string
+          source_socio_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          alias?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          metodo: string
+          notas?: string | null
+          org_id: string
+          socio_id: string
+          source_socio_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alias?: string | null
+          created_at?: string
+          estado?: string
+          id?: string
+          metodo?: string
+          notas?: string | null
+          org_id?: string
+          socio_id?: string
+          source_socio_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_socio_agenda_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_socio_agenda_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_socio_agenda_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_socio_agenda_source_socio_id_fkey"
+            columns: ["source_socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_wallet_movimientos: {
+        Row: {
+          created_at: string
+          descripcion: string | null
+          estado: Database["public"]["Enums"]["cliente_wallet_movimiento_estado"]
+          id: string
+          metadata: Json
+          monto: number
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          org_id: string
+          referencia_id: string | null
+          referencia_tipo: string | null
+          tipo: Database["public"]["Enums"]["cliente_wallet_movimiento_tipo"]
+          wallet_id: string
+        }
+        Insert: {
+          created_at?: string
+          descripcion?: string | null
+          estado?: Database["public"]["Enums"]["cliente_wallet_movimiento_estado"]
+          id?: string
+          metadata?: Json
+          monto: number
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          org_id: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo: Database["public"]["Enums"]["cliente_wallet_movimiento_tipo"]
+          wallet_id: string
+        }
+        Update: {
+          created_at?: string
+          descripcion?: string | null
+          estado?: Database["public"]["Enums"]["cliente_wallet_movimiento_estado"]
+          id?: string
+          metadata?: Json
+          monto?: number
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          org_id?: string
+          referencia_id?: string | null
+          referencia_tipo?: string | null
+          tipo?: Database["public"]["Enums"]["cliente_wallet_movimiento_tipo"]
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_wallet_movimientos_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_wallet_movimientos_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_wallet_movimientos_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "cliente_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cliente_wallets: {
+        Row: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        Insert: {
+          cliente_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          moneda?: string
+          org_id: string
+          saldo_disponible?: number
+          saldo_reservado?: number
+          updated_at?: string
+        }
+        Update: {
+          cliente_user_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          moneda?: string
+          org_id?: string
+          saldo_disponible?: number
+          saldo_reservado?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_wallets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cliente_wallets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cuadrilla_socios: {
         Row: {
@@ -140,6 +920,13 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cuadrillas_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
             referencedColumns: ["id"]
           },
           {
@@ -315,6 +1102,13 @@ export type Database = {
             foreignKeyName: "escrow_org_fk"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_org_fk"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -416,6 +1210,13 @@ export type Database = {
             foreignKeyName: "eventos_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eventos_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -427,48 +1228,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      gaucho_memoria: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string
-          intencion_detectada: string | null
-          interes: string | null
-          metadata: Json | null
-          nombre: string | null
-          respuesta: string | null
-          rol_detectado: string | null
-          session_id: string | null
-          user_message: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          intencion_detectada?: string | null
-          interes?: string | null
-          metadata?: Json | null
-          nombre?: string | null
-          respuesta?: string | null
-          rol_detectado?: string | null
-          session_id?: string | null
-          user_message?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          intencion_detectada?: string | null
-          interes?: string | null
-          metadata?: Json | null
-          nombre?: string | null
-          respuesta?: string | null
-          rol_detectado?: string | null
-          session_id?: string | null
-          user_message?: string | null
-        }
-        Relationships: []
       }
       jornadas_socio: {
         Row: {
@@ -514,6 +1273,57 @@ export type Database = {
             columns: ["socio_id"]
             isOneToOne: false
             referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leader_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          nombre: string
+          org_id: string
+          rol: string
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          nombre?: string
+          org_id: string
+          rol?: string
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          nombre?: string
+          org_id?: string
+          rol?: string
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leader_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leader_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -598,6 +1408,13 @@ export type Database = {
             foreignKeyName: "mensajes_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mensajes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -606,11 +1423,13 @@ export type Database = {
       notificaciones: {
         Row: {
           created_at: string | null
+          destinatario_id: string | null
           id: string
           leida: boolean | null
           mensaje: string
           obra_id: string | null
           org_id: string | null
+          remitente_id: string | null
           socio_id: string | null
           tarea_id: string | null
           tipo: string | null
@@ -618,11 +1437,13 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          destinatario_id?: string | null
           id?: string
           leida?: boolean | null
           mensaje: string
           obra_id?: string | null
           org_id?: string | null
+          remitente_id?: string | null
           socio_id?: string | null
           tarea_id?: string | null
           tipo?: string | null
@@ -630,11 +1451,13 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          destinatario_id?: string | null
           id?: string
           leida?: boolean | null
           mensaje?: string
           obra_id?: string | null
           org_id?: string | null
+          remitente_id?: string | null
           socio_id?: string | null
           tarea_id?: string | null
           tipo?: string | null
@@ -646,6 +1469,13 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notificaciones_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
             referencedColumns: ["id"]
           },
           {
@@ -671,15 +1501,523 @@ export type Database = {
           },
         ]
       }
+      obra_check_blocks: {
+        Row: {
+          budget_group_client_id: string | null
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          fase: string | null
+          id: string
+          nombre: string
+          orden: number
+          rubro: string | null
+          session_id: string
+        }
+        Insert: {
+          budget_group_client_id?: string | null
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          fase?: string | null
+          id?: string
+          nombre: string
+          orden?: number
+          rubro?: string | null
+          session_id: string
+        }
+        Update: {
+          budget_group_client_id?: string | null
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          fase?: string | null
+          id?: string
+          nombre?: string
+          orden?: number
+          rubro?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_blocks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_check_blocks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_budget_groups: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          kind: string
+          nombre: string
+          orden: number
+          parent_client_id: string | null
+          session_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          nombre: string
+          orden?: number
+          parent_client_id?: string | null
+          session_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          nombre?: string
+          orden?: number
+          parent_client_id?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_budget_groups_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          nombre: string
+          rubro: string | null
+          session_id: string
+          telefono: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nombre: string
+          rubro?: string | null
+          session_id: string
+          telefono?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nombre?: string
+          rubro?: string | null
+          session_id?: string
+          telefono?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_contacts_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_events: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          session_id: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          session_id?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          session_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_form_responses: {
+        Row: {
+          acepta_contacto: boolean
+          created_at: string
+          detalle_json: Json | null
+          email: string | null
+          empresa: string | null
+          id: string
+          invite_id: string
+          mensaje: string | null
+          nombre: string
+          notified_requester_at: string | null
+          rubro: string | null
+          session_id: string
+          telefono: string | null
+          view_token: string | null
+        }
+        Insert: {
+          acepta_contacto?: boolean
+          created_at?: string
+          detalle_json?: Json | null
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          invite_id: string
+          mensaje?: string | null
+          nombre: string
+          notified_requester_at?: string | null
+          rubro?: string | null
+          session_id: string
+          telefono?: string | null
+          view_token?: string | null
+        }
+        Update: {
+          acepta_contacto?: boolean
+          created_at?: string
+          detalle_json?: Json | null
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          invite_id?: string
+          mensaje?: string | null
+          nombre?: string
+          notified_requester_at?: string | null
+          rubro?: string | null
+          session_id?: string
+          telefono?: string | null
+          view_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_form_responses_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_invites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_check_form_responses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_invites: {
+        Row: {
+          block_client_id: string
+          contact_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          responded_at: string | null
+          session_id: string
+          tipo: string
+          token: string
+        }
+        Insert: {
+          block_client_id: string
+          contact_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          responded_at?: string | null
+          session_id: string
+          tipo: string
+          token: string
+        }
+        Update: {
+          block_client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          responded_at?: string | null
+          session_id?: string
+          tipo?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_invites_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_check_invites_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_planos: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime: string
+          session_id: string
+          size_bytes: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime: string
+          session_id: string
+          size_bytes?: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime?: string
+          session_id?: string
+          size_bytes?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_planos_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_sessions: {
+        Row: {
+          completion_email_sent_at: string | null
+          consent_patrones: boolean
+          consent_procesamiento: boolean
+          consent_version: string | null
+          created_at: string
+          email: string | null
+          empresa: string | null
+          id: string
+          inbox_token: string | null
+          last_activity_at: string
+          metros_cuadrados: number | null
+          session_token: string
+          tipo_obra: string | null
+        }
+        Insert: {
+          completion_email_sent_at?: string | null
+          consent_patrones?: boolean
+          consent_procesamiento?: boolean
+          consent_version?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          inbox_token?: string | null
+          last_activity_at?: string
+          metros_cuadrados?: number | null
+          session_token?: string
+          tipo_obra?: string | null
+        }
+        Update: {
+          completion_email_sent_at?: string | null
+          consent_patrones?: boolean
+          consent_procesamiento?: boolean
+          consent_version?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          id?: string
+          inbox_token?: string | null
+          last_activity_at?: string
+          metros_cuadrados?: number | null
+          session_token?: string
+          tipo_obra?: string | null
+        }
+        Relationships: []
+      }
+      obra_check_tasks: {
+        Row: {
+          block_client_id: string | null
+          cantidad: number | null
+          client_id: string
+          contact_id: string | null
+          created_at: string
+          duracion_dias: number | null
+          es_critica: boolean | null
+          fase: string | null
+          fila_origen: number | null
+          fin: string | null
+          id: string
+          inicio: string | null
+          nombre: string
+          orden: number
+          origen: string
+          predecesoras: string[]
+          responsable_label: string | null
+          rubro: string | null
+          session_id: string
+          unidad: string | null
+        }
+        Insert: {
+          block_client_id?: string | null
+          cantidad?: number | null
+          client_id: string
+          contact_id?: string | null
+          created_at?: string
+          duracion_dias?: number | null
+          es_critica?: boolean | null
+          fase?: string | null
+          fila_origen?: number | null
+          fin?: string | null
+          id?: string
+          inicio?: string | null
+          nombre: string
+          orden?: number
+          origen?: string
+          predecesoras?: string[]
+          responsable_label?: string | null
+          rubro?: string | null
+          session_id: string
+          unidad?: string | null
+        }
+        Update: {
+          block_client_id?: string | null
+          cantidad?: number | null
+          client_id?: string
+          contact_id?: string | null
+          created_at?: string
+          duracion_dias?: number | null
+          es_critica?: boolean | null
+          fase?: string | null
+          fila_origen?: number | null
+          fin?: string | null
+          id?: string
+          inicio?: string | null
+          nombre?: string
+          orden?: number
+          origen?: string
+          predecesoras?: string[]
+          responsable_label?: string | null
+          rubro?: string | null
+          session_id?: string
+          unidad?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_check_tasks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      obra_check_wa_messages: {
+        Row: {
+          block_client_id: string | null
+          contact_id: string | null
+          generado_at: string
+          id: string
+          session_id: string
+          texto: string
+          tipo: string
+        }
+        Insert: {
+          block_client_id?: string | null
+          contact_id?: string | null
+          generado_at?: string
+          id?: string
+          session_id: string
+          texto: string
+          tipo: string
+        }
+        Update: {
+          block_client_id?: string | null
+          contact_id?: string | null
+          generado_at?: string
+          id?: string
+          session_id?: string
+          texto?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obra_check_wa_messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "obra_check_wa_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "obra_check_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       obras: {
         Row: {
+          activation_discount_usd: number | null
+          activation_m2: number | null
+          activation_payment_plan: string | null
+          activation_price_per_m2_usd: number | null
+          activation_status: string | null
+          activation_total_usd: number | null
           address: string | null
+          canvas_depth_config: Json | null
+          canvas_project_kind: string | null
+          canvas_template_slug: string | null
+          canvas_ui: Json
           created_at: string | null
           estado: string | null
+          graph_mode: string
           id: string
           latitud: number | null
           longitud: number | null
+          m2_estimados: number | null
           name: string
+          objetivo_texto: string | null
+          obra_product_kind: string | null
           org_id: string
           plantas: number | null
           propietario: string | null
@@ -689,13 +2027,27 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          activation_discount_usd?: number | null
+          activation_m2?: number | null
+          activation_payment_plan?: string | null
+          activation_price_per_m2_usd?: number | null
+          activation_status?: string | null
+          activation_total_usd?: number | null
           address?: string | null
+          canvas_depth_config?: Json | null
+          canvas_project_kind?: string | null
+          canvas_template_slug?: string | null
+          canvas_ui?: Json
           created_at?: string | null
           estado?: string | null
+          graph_mode?: string
           id?: string
           latitud?: number | null
           longitud?: number | null
+          m2_estimados?: number | null
           name: string
+          objetivo_texto?: string | null
+          obra_product_kind?: string | null
           org_id: string
           plantas?: number | null
           propietario?: string | null
@@ -705,13 +2057,27 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          activation_discount_usd?: number | null
+          activation_m2?: number | null
+          activation_payment_plan?: string | null
+          activation_price_per_m2_usd?: number | null
+          activation_status?: string | null
+          activation_total_usd?: number | null
           address?: string | null
+          canvas_depth_config?: Json | null
+          canvas_project_kind?: string | null
+          canvas_template_slug?: string | null
+          canvas_ui?: Json
           created_at?: string | null
           estado?: string | null
+          graph_mode?: string
           id?: string
           latitud?: number | null
           longitud?: number | null
+          m2_estimados?: number | null
           name?: string
+          objetivo_texto?: string | null
+          obra_product_kind?: string | null
           org_id?: string
           plantas?: number | null
           propietario?: string | null
@@ -721,6 +2087,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "obras_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "obras_org_id_fkey"
             columns: ["org_id"]
@@ -762,6 +2135,210 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      presupuesto_solicitudes_cambio: {
+        Row: {
+          created_at: string
+          estado: string
+          id: string
+          monto_actual: number
+          monto_propuesto: number
+          motivo: string
+          presupuesto_id: string
+          respuesta_cliente: string | null
+          socio_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_actual: number
+          monto_propuesto: number
+          motivo: string
+          presupuesto_id: string
+          respuesta_cliente?: string | null
+          socio_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          id?: string
+          monto_actual?: number
+          monto_propuesto?: number
+          motivo?: string
+          presupuesto_id?: string
+          respuesta_cliente?: string | null
+          socio_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presupuesto_solicitudes_cambio_presupuesto_id_fkey"
+            columns: ["presupuesto_id"]
+            isOneToOne: false
+            referencedRelation: "tareas_presupuestos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presupuesto_solicitudes_cambio_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_tokens: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          ref_id: string
+          scope: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          ref_id: string
+          scope: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          ref_id?: string
+          scope?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      socio_metodos_retiro: {
+        Row: {
+          activo: boolean
+          alias: string | null
+          banco: string | null
+          cbu: string | null
+          created_at: string
+          cvu: string | null
+          es_principal: boolean
+          id: string
+          mercado_pago_alias: string | null
+          mercado_pago_cvu: string | null
+          socio_id: string
+          tipo: string
+          titular: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          alias?: string | null
+          banco?: string | null
+          cbu?: string | null
+          created_at?: string
+          cvu?: string | null
+          es_principal?: boolean
+          id?: string
+          mercado_pago_alias?: string | null
+          mercado_pago_cvu?: string | null
+          socio_id: string
+          tipo?: string
+          titular: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          alias?: string | null
+          banco?: string | null
+          cbu?: string | null
+          created_at?: string
+          cvu?: string | null
+          es_principal?: boolean
+          id?: string
+          mercado_pago_alias?: string | null
+          mercado_pago_cvu?: string | null
+          socio_id?: string
+          tipo?: string
+          titular?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "socio_metodos_retiro_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      socio_retiros: {
+        Row: {
+          created_at: string
+          estado: string
+          id: string
+          metadata: Json | null
+          metodo_retiro_id: string | null
+          monto: number
+          processed_at: string | null
+          socio_id: string
+          tipo: string
+          wallet_movimiento_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          estado?: string
+          id?: string
+          metadata?: Json | null
+          metodo_retiro_id?: string | null
+          monto: number
+          processed_at?: string | null
+          socio_id: string
+          tipo: string
+          wallet_movimiento_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          estado?: string
+          id?: string
+          metadata?: Json | null
+          metodo_retiro_id?: string | null
+          monto?: number
+          processed_at?: string | null
+          socio_id?: string
+          tipo?: string
+          wallet_movimiento_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "socio_retiros_metodo_retiro_id_fkey"
+            columns: ["metodo_retiro_id"]
+            isOneToOne: false
+            referencedRelation: "socio_metodos_retiro"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "socio_retiros_socio_id_fkey"
+            columns: ["socio_id"]
+            isOneToOne: false
+            referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "socio_retiros_wallet_movimiento_id_fkey"
+            columns: ["wallet_movimiento_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_movimientos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       socio_suspensiones: {
         Row: {
@@ -816,8 +2393,10 @@ export type Database = {
           estado: string | null
           id: string
           nombre: string | null
-          org_id: string
+          org_id: string | null
+          public_codigo: string | null
           telefono: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -826,8 +2405,10 @@ export type Database = {
           estado?: string | null
           id?: string
           nombre?: string | null
-          org_id: string
+          org_id?: string | null
+          public_codigo?: string | null
           telefono?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -836,10 +2417,19 @@ export type Database = {
           estado?: string | null
           id?: string
           nombre?: string | null
-          org_id?: string
+          org_id?: string | null
+          public_codigo?: string | null
           telefono?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "socios_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "socios_org_id_fkey"
             columns: ["org_id"]
@@ -1011,6 +2601,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tareas_canvas_node_id_fkey"
+            columns: ["canvas_node_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_nodes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tareas_elemento_id_fkey"
             columns: ["elemento_id"]
             isOneToOne: false
@@ -1028,6 +2625,13 @@ export type Database = {
             foreignKeyName: "tareas_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
+            referencedRelation: "organizaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tareas_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
@@ -1036,6 +2640,88 @@ export type Database = {
             columns: ["responsable_socio_id"]
             isOneToOne: false
             referencedRelation: "socios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tareas_estados: {
+        Row: {
+          actor_id: string | null
+          actor_tipo: string | null
+          created_at: string
+          estado_anterior: string | null
+          estado_nuevo: string | null
+          id: string
+          motivo: string | null
+          tarea_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_tipo?: string | null
+          created_at?: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          motivo?: string | null
+          tarea_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_tipo?: string | null
+          created_at?: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          motivo?: string | null
+          tarea_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_estados_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tareas_eventos: {
+        Row: {
+          actor_id: string | null
+          actor_tipo: string | null
+          created_at: string
+          estado_anterior: string | null
+          estado_nuevo: string | null
+          id: string
+          metadata: Json | null
+          tarea_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_tipo?: string | null
+          created_at?: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          metadata?: Json | null
+          tarea_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_tipo?: string | null
+          created_at?: string
+          estado_anterior?: string | null
+          estado_nuevo?: string | null
+          id?: string
+          metadata?: Json | null
+          tarea_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tareas_eventos_tarea_id_fkey"
+            columns: ["tarea_id"]
+            isOneToOne: false
+            referencedRelation: "tareas"
             referencedColumns: ["id"]
           },
         ]
@@ -1103,9 +2789,12 @@ export type Database = {
           evidencia_obligatoria: boolean
           evidencia_url: string | null
           fecha: string | null
+          fecha_validacion: string | null
           hora_fin: string | null
           hora_inicio: string | null
           id: string
+          monto_estimado: number | null
+          monto_validado: number | null
           orden: number
           presupuesto_id: string | null
           problemas: string | null
@@ -1113,6 +2802,9 @@ export type Database = {
           tarea_id: string
           unidad: string
           updated_at: string
+          validado_en_obra_at: string | null
+          validado_en_obra_por: string | null
+          validado_por: string | null
           video_url: string | null
         }
         Insert: {
@@ -1124,9 +2816,12 @@ export type Database = {
           evidencia_obligatoria?: boolean
           evidencia_url?: string | null
           fecha?: string | null
+          fecha_validacion?: string | null
           hora_fin?: string | null
           hora_inicio?: string | null
           id?: string
+          monto_estimado?: number | null
+          monto_validado?: number | null
           orden: number
           presupuesto_id?: string | null
           problemas?: string | null
@@ -1134,6 +2829,9 @@ export type Database = {
           tarea_id: string
           unidad: string
           updated_at?: string
+          validado_en_obra_at?: string | null
+          validado_en_obra_por?: string | null
+          validado_por?: string | null
           video_url?: string | null
         }
         Update: {
@@ -1145,9 +2843,12 @@ export type Database = {
           evidencia_obligatoria?: boolean
           evidencia_url?: string | null
           fecha?: string | null
+          fecha_validacion?: string | null
           hora_fin?: string | null
           hora_inicio?: string | null
           id?: string
+          monto_estimado?: number | null
+          monto_validado?: number | null
           orden?: number
           presupuesto_id?: string | null
           problemas?: string | null
@@ -1155,6 +2856,9 @@ export type Database = {
           tarea_id?: string
           unidad?: string
           updated_at?: string
+          validado_en_obra_at?: string | null
+          validado_en_obra_por?: string | null
+          validado_por?: string | null
           video_url?: string | null
         }
         Relationships: [
@@ -1251,41 +2955,230 @@ export type Database = {
       wallet_saldos: {
         Row: {
           id: string
+          limite_sobregiro: number
           moneda: string
           owner_id: string
           owner_tipo: string
+          proxima_liquidacion_at: string | null
           saldo_actual: number
           saldo_pendiente: number
+          suspendido: boolean
+          suspendido_desde: string | null
+          ultima_liquidacion_at: string | null
           updated_at: string
         }
         Insert: {
           id?: string
+          limite_sobregiro?: number
           moneda?: string
           owner_id: string
           owner_tipo: string
+          proxima_liquidacion_at?: string | null
           saldo_actual?: number
           saldo_pendiente?: number
+          suspendido?: boolean
+          suspendido_desde?: string | null
+          ultima_liquidacion_at?: string | null
           updated_at?: string
         }
         Update: {
           id?: string
+          limite_sobregiro?: number
           moneda?: string
           owner_id?: string
           owner_tipo?: string
+          proxima_liquidacion_at?: string | null
           saldo_actual?: number
           saldo_pendiente?: number
+          suspendido?: boolean
+          suspendido_desde?: string | null
+          ultima_liquidacion_at?: string | null
           updated_at?: string
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      organizaciones: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          created_at: string | null
+          cuit: string | null
+          id: string | null
+          name: string | null
+          nombre: string | null
+          owner_user_id: string | null
+          plan_actual: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          cuit?: string | null
+          id?: string | null
+          name?: string | null
+          nombre?: string | null
+          owner_user_id?: string | null
+          plan_actual?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          cuit?: string | null
+          id?: string | null
+          name?: string | null
+          nombre?: string | null
+          owner_user_id?: string | null
+          plan_actual?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      cliente_wallet_acreditar_manual: {
+        Args: {
+          p_cliente_user_id: string
+          p_descripcion?: string
+          p_monto: number
+          p_org_id: string
+        }
+        Returns: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cliente_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cliente_wallet_devolver_reserva: {
+        Args: {
+          p_descripcion?: string
+          p_org_id: string
+          p_referencia_id: string
+        }
+        Returns: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cliente_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cliente_wallet_liberar_tarea: {
+        Args: {
+          p_descripcion?: string
+          p_monto_comision?: number
+          p_monto_pago: number
+          p_monto_total: number
+          p_org_id: string
+          p_socio_id: string
+          p_tarea_id: string
+        }
+        Returns: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cliente_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cliente_wallet_reservar_tarea: {
+        Args: {
+          p_cliente_user_id: string
+          p_descripcion?: string
+          p_monto: number
+          p_org_id: string
+          p_tarea_id: string
+        }
+        Returns: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cliente_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      ensure_cliente_wallet: {
+        Args: { p_cliente_user_id?: string; p_org_id: string }
+        Returns: {
+          cliente_user_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          moneda: string
+          org_id: string
+          saldo_disponible: number
+          saldo_reservado: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cliente_wallets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      grows_generate_public_code: { Args: never; Returns: string }
     }
     Enums: {
+      cliente_wallet_movimiento_estado:
+        | "pendiente"
+        | "confirmado"
+        | "rechazado"
+        | "cancelado"
+        | "revertido"
+      cliente_wallet_movimiento_tipo:
+        | "CARGA_SALDO"
+        | "RESERVA_TAREA"
+        | "LIBERACION_PAGO"
+        | "DEVOLUCION_RESERVA"
+        | "COMISION_GROWS"
+        | "AJUSTE_MANUAL"
       escrow_estado:
         | "pendiente"
         | "retenido"
@@ -1443,6 +3336,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cliente_wallet_movimiento_estado: [
+        "pendiente",
+        "confirmado",
+        "rechazado",
+        "cancelado",
+        "revertido",
+      ],
+      cliente_wallet_movimiento_tipo: [
+        "CARGA_SALDO",
+        "RESERVA_TAREA",
+        "LIBERACION_PAGO",
+        "DEVOLUCION_RESERVA",
+        "COMISION_GROWS",
+        "AJUSTE_MANUAL",
+      ],
       escrow_estado: [
         "pendiente",
         "retenido",

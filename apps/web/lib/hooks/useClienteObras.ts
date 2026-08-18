@@ -12,6 +12,7 @@ export type ClienteObraListaItem = {
   createdAt?: string | null;
   updatedAt?: string | null;
   _count?: { tareas?: number };
+  graphMode?: string | null;
 };
 
 export async function fetchClienteObras(signal?: AbortSignal): Promise<ClienteObraListaItem[]> {

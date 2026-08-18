@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Wrench, TrendingDown, ArrowRight, CheckCircle, Zap, Users, BarChart3, Bot, Shield, Calendar, CreditCard, MessageCircle, Clock, Lightbulb } from 'lucide-react';
+import { AlertTriangle, Wrench, TrendingDown, ArrowRight, CheckCircle, Zap, Users, BarChart3, Shield, Calendar, CreditCard, MessageCircle, Clock, Lightbulb } from 'lucide-react';
 
 // Componente para conversaciones estilo WhatsApp
 function WhatsAppChat({ 
@@ -164,9 +164,9 @@ export function IntegratedSolutionSection() {
         borderColor: "border-red-200"
       },
       solution: {
-        title: "GrowsBot IA",
-        description: "Asistente inteligente 24/7 con optimizaciones automáticas",
-        icon: Bot,
+        title: "Alertas y métricas",
+        description: "Panel de control con desviaciones, KPIs y notificaciones automáticas",
+        icon: BarChart3,
         color: "text-grows-primary",
         bgColor: "bg-blue-50",
         borderColor: "border-blue-200"

@@ -31,12 +31,7 @@ async function obtenerUserIdClienteOrganizacion(orgId: string): Promise<string |
     .eq('id', orgId)
     .maybeSingle();
   if (row?.user_id) return String(row.user_id);
-  const { data: leg } = await supabaseAny
-    .from('organizaciones')
-    .select('owner_user_id')
-    .eq('id', orgId)
-    .maybeSingle();
-  return leg?.owner_user_id ? String(leg.owner_user_id) : null;
+  return null;
 }
 
 export class SubtareaEnviarValidarService {

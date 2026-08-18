@@ -58,19 +58,19 @@ export default function ObrasPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <SectionHeader
-        eyebrow="Proyectos"
-        title="Obras"
-        description="Obras de tu organización (Supabase)."
+        eyebrow="Proyecto vivo"
+        title="Proyectos"
+        description="IDEA → transformación → estado. Las obras clásicas siguen en el editor de planificación."
         action={
           <div className="flex flex-wrap gap-2">
             <Link href={'/cliente/proyectos/nuevo' as Route}>
-              <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />}>
+              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
                 Desde una idea
               </Button>
             </Link>
             <Link href={'/cliente/obras/nueva' as Route}>
-              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Nueva obra
+              <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />}>
+                Plan clásico
               </Button>
             </Link>
           </div>
@@ -89,7 +89,14 @@ export default function ObrasPage() {
         </div>
       ) : obras.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
-          No hay obras. Creá la primera o pedí acceso a tu organización.
+          No hay proyectos. Empezá desde una idea para abrir el grafo vivo.
+          <span className="mt-4 block">
+            <Link href={'/cliente/proyectos/nuevo' as Route}>
+              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
+                Desde una idea
+              </Button>
+            </Link>
+          </span>
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -34,7 +34,7 @@ export function isClienteNavItemActive(pathname: string, href: string): boolean 
 
 export const CLIENTE_NAV_ITEMS = [
   { href: '/cliente/dashboard' as Route, label: 'Hub', icon: LayoutGrid },
-  { href: '/cliente/obras' as Route, label: 'Obras', icon: Building2 },
+  { href: '/cliente/obras' as Route, label: 'Proyectos', icon: Building2 },
   { href: '/cliente/validar' as Route, label: 'Validaciones', icon: BadgeCheck },
   { href: '/cliente/presupuesto' as Route, label: 'Presupuestos', icon: FileSpreadsheet },
   { href: '/cliente/billetera' as Route, label: 'Billetera', icon: Wallet },

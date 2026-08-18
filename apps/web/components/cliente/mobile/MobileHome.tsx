@@ -98,16 +98,16 @@ export function MobileHome() {
           </p>
         ) : (
           <div className="bg-white rounded-2xl p-8 border border-gray-200/70 shadow-sm text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin obras aún</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sin proyectos aún</h3>
             <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-              Creá tu primera obra para ver el resumen en esta pantalla.
+              Empezá desde una idea para abrir el grafo vivo.
             </p>
             <button
               type="button"
-              onClick={() => router.push('/cliente/obras/nueva' as Route)}
+              onClick={() => router.push('/cliente/proyectos/nuevo' as Route)}
               className="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
-              Crear obra
+              Desde una idea
             </button>
           </div>
         )}

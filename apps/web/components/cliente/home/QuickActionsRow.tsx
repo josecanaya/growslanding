@@ -16,7 +16,7 @@ export function QuickActionsRow({ obraId, singleRow = false }: QuickActionsRowPr
   const handleAction = (actionType: string) => {
     switch (actionType) {
       case 'obra-nueva':
-        router.push('/cliente/obras/nueva');
+        router.push('/cliente/proyectos/nuevo');
         break;
       case 'resumen':
         if (obraId) {
@@ -53,7 +53,7 @@ export function QuickActionsRow({ obraId, singleRow = false }: QuickActionsRowPr
   const actions = [
     {
       icon: Plus,
-      label: 'Obra nueva',
+      label: 'Desde idea',
       actionType: 'obra-nueva',
       isPrimary: true,
     },

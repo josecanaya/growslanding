@@ -12,8 +12,8 @@ export function QuickActionsGrid({ router }: QuickActionsGridProps) {
   const actions = [
     {
       icon: Plus,
-      label: 'Crear obra',
-      action: () => router.push('/cliente/obras/nueva' as Route),
+      label: 'Desde idea',
+      action: () => router.push('/cliente/proyectos/nuevo' as Route),
       color: 'bg-blue-600',
     },
     {

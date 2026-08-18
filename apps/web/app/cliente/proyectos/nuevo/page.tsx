@@ -64,7 +64,7 @@ export default function NuevoProyectoDesdeIdeaPage() {
             />
           </label>
           <label className="block text-sm font-medium text-slate-700">
-            Objetivo (opcional, para orquestador futuro)
+            Objetivo (el orquestador L0 propone transformaciones a partir de esto)
             <textarea
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
               rows={3}

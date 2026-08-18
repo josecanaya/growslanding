@@ -22,10 +22,23 @@ import {
   type ApiTareaRow,
 } from '@/lib/mappers/tarea-api-to-ui';
 
-type ObraRes = { id: string; name: string; address: string | null; estado: string | null; orgId: string };
+type ObraRes = {
+  id: string;
+  name: string;
+  address: string | null;
+  estado: string | null;
+  orgId: string;
+  graphMode?: string | null;
+};
 type StatTarea = ApiTareaRow & { descripcion?: string | null };
 
 type Props = { obraId: string };
+
+function hrefObra(o: Pick<ObraRes, 'id' | 'graphMode'>): Route {
+  return (o.graphMode === 'proyecto_vivo'
+    ? `/cliente/proyectos/${o.id}/grafo`
+    : `/cliente/tareas/${o.id}/editor`) as Route;
+}
 
 const prioridadEtiqueta = (p: string | null) => {
   return mapPrioridadDb(p) === 'alta'
@@ -70,6 +83,7 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
         address: o.address ?? null,
         estado: o.estado,
         orgId: o.orgId,
+        graphMode: o.graphMode ?? o.graph_mode ?? null,
       }));
       setObras(mapped);
       const one = mapped.find((o) => o.id === obraId) || null;
@@ -160,7 +174,7 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
                 <button
                   key={o.id}
                   type="button"
-                  onClick={() => router.push(`/cliente/tareas/${o.id}/editor` as Route)}
+                  onClick={() => router.push(hrefObra(o))}
                   className={cn(
                     'rounded-xl p-5 text-left transition',
                     active
@@ -213,7 +227,16 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
                   {fase}
                 </span>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap gap-2">
+                {obra.graphMode === 'proyecto_vivo' && (
+                  <Link
+                    href={hrefObra(obra)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#001629] shadow-sm transition hover:bg-white/90"
+                  >
+                    <GitBranch className="h-3.5 w-3.5" />
+                    Grafo vivo
+                  </Link>
+                )}
                 <Link
                   href={`/cliente/obras/${obra.id}/timeline` as Route}
                   className="inline-flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#326293] shadow-sm transition hover:bg-white"
@@ -319,7 +342,7 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
         <aside className="flex w-full shrink-0 flex-col gap-4 xl:w-[200px]">
           <button
             type="button"
-            onClick={() => router.push(`/cliente/tareas/${obra.id}` as Route)}
+            onClick={() => router.push(hrefObra(obra))}
             className="flex w-full flex-col items-center justify-center gap-3 rounded-xl bg-[#5d5e64] py-8 text-white shadow-lg shadow-[#5d5e64]/20 transition hover:bg-[#515258]"
           >
             <Plus className="h-8 w-8" strokeWidth={1.5} />

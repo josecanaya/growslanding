@@ -163,16 +163,16 @@ export function HomeDesktop() {
           {!loading && !obraActual && obras.length === 0 && !obrasError && (
             <div className="bg-white rounded-2xl p-12 border border-gray-200/70 shadow-sm text-center">
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Crear tu primera obra
+                Empezá desde una idea
               </h3>
               <p className="text-base text-gray-500 mb-8 max-w-md mx-auto">
-                Comienza creando una nueva obra para gestionar tu proyecto
+                Un nodo IDEA y el grafo de transformaciones. Sin wizard de m².
               </p>
               <button
-                onClick={() => router.push('/cliente/obras/nueva' as Route)}
+                onClick={() => router.push('/cliente/proyectos/nuevo' as Route)}
                 className="px-8 py-3 bg-blue-600 text-white text-base font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
               >
-                Crear obra
+                Crear proyecto
               </button>
             </div>
           )}

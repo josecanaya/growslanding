@@ -53,7 +53,9 @@ export function ClienteHeader() {
 
   const title = useMemo(() => {
     if (pathname.startsWith('/cliente/dashboard')) return 'Grows Hub';
-    if (pathname.startsWith('/cliente/obras/nueva')) return 'Nueva obra';
+    if (pathname.startsWith('/cliente/proyectos/nuevo')) return 'Desde una idea';
+    if (pathname.includes('/grafo')) return 'Grafo vivo';
+    if (pathname.startsWith('/cliente/obras/nueva')) return 'Nueva obra (plan clásico)';
     if (pathname.includes('/timeline') && nombreObraDesdeLista) return nombreObraDesdeLista;
     if (obraIdEnPath && nombreObraDesdeLista) return nombreObraDesdeLista;
     if (pathname.startsWith('/cliente/obras')) return 'Obras';

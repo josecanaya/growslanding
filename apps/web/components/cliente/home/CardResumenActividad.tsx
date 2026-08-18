@@ -102,7 +102,7 @@ export function CardResumenActividad({
         <div className="py-6 text-center">
           <p className="text-xs text-gray-500 mb-3">Aún no hay avances registrados</p>
           <button
-            onClick={() => router.push('/cliente/obras/nueva' as Route)}
+            onClick={() => router.push('/cliente/proyectos/nuevo' as Route)}
             className="text-xs text-blue-600 font-medium hover:underline"
           >
             Crear tarea

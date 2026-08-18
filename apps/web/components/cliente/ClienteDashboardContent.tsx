@@ -161,7 +161,7 @@ export function ClienteDashboardContent() {
                 <span className="font-bold">trabajo</span>
               </h2>
               <p className="mt-4 max-w-md text-sm leading-relaxed text-[#545f6e]">
-                Gestioná tus obras, presupuestos, validaciones y equipos desde un solo lugar.
+                Empezá desde una idea. El grafo IDEA → transformación → estado es la obra viva.
               </p>
             </div>
 
@@ -179,7 +179,7 @@ export function ClienteDashboardContent() {
                 <Landmark className="h-10 w-10 text-[#f6fafe] opacity-95 xl:h-12 xl:w-12" strokeWidth={1.25} />
                 <div>
                   <p className="mb-1 text-xs font-medium uppercase tracking-widest opacity-60">Módulo 01</p>
-                  <h3 className="text-2xl font-semibold tracking-tight">Obras</h3>
+                  <h3 className="text-2xl font-semibold tracking-tight">Proyectos</h3>
                 </div>
               </BauhausDomainLink>
 
@@ -244,11 +244,11 @@ export function ClienteDashboardContent() {
           <div>
             <h4 className="mb-6 text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones</h4>
             <Link
-              href={'/cliente/obras/nueva' as Route}
+              href={'/cliente/proyectos/nuevo' as Route}
               className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#001629] py-4 px-6 text-sm font-bold tracking-wide text-white shadow-lg transition hover:-translate-x-1 hover:shadow-xl active:scale-95"
             >
               <PlusCircle className="h-5 w-5" />
-              + Nueva obra
+              Desde una idea
             </Link>
           </div>
           <div className="min-h-0 flex-1">
@@ -304,7 +304,7 @@ export function ClienteDashboardContent() {
               >
                 <Landmark className="h-10 w-10" strokeWidth={1} />
               </Link>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#001629]">Obras</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#001629]">Proyectos</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Link

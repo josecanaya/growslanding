@@ -160,18 +160,18 @@ export function HomeMobile() {
 
       {!loading && !obraActual && obras.length === 0 && !obrasError && (
         <div className="bg-white rounded-2xl p-6 border border-gray-200/70 shadow-sm text-center">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
-            Crear tu primera obra
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            Comienza creando una nueva obra para gestionar tu proyecto
-          </p>
-          <button
-            onClick={() => router.push('/cliente/obras/nueva' as Route)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Crear obra
-          </button>
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              Empezá desde una idea
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Un nodo IDEA y el grafo de transformaciones.
+            </p>
+            <button
+              onClick={() => router.push('/cliente/proyectos/nuevo' as Route)}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Crear proyecto
+            </button>
         </div>
       )}
 

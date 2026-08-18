@@ -119,11 +119,13 @@ export type CanvasNode = {
   tValue?: number | null;
   tComponents?: Record<string, number>;
   tFormulaId?: string;
-  /** Sugerencia del orquestador L0. Ausente = creada por humano. */
+  /** Sugerencia del orquestador. Ausente = creada por humano. */
   orquestador?: {
     origen: 'agente';
     estado: 'pendiente' | 'aceptada';
-    formulaId: 'l0';
+    formulaId: 'l0' | 'chat';
+    /** Texto original del turno de chat (sin PII de más: es lo que el usuario escribió). */
+    chatUser?: string;
   };
 };
 

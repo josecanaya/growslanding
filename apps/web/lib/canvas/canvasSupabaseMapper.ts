@@ -373,7 +373,10 @@ export function supabaseRowsToPersisted(input: {
         base.orquestador = {
           origen: 'agente',
           estado: o.estado,
-          formulaId: 'l0',
+          formulaId: o.formulaId === 'chat' ? 'chat' : 'l0',
+          ...(typeof o.chatUser === 'string' && o.chatUser.trim()
+            ? { chatUser: o.chatUser.trim().slice(0, 4000) }
+            : {}),
         };
       }
     }

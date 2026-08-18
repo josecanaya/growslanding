@@ -1,6 +1,6 @@
 'use client';
 
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 
 export type EstadoVivoNodeData = {
   label: string;
@@ -8,7 +8,7 @@ export type EstadoVivoNodeData = {
   inFrontera?: boolean;
 };
 
-export function EstadoVivoNode({ data, selected }: NodeProps<EstadoVivoNodeData>) {
+export function EstadoVivoNode({ data, selected }: NodeProps<Node<EstadoVivoNodeData>>) {
   const fantasma = data.graphStatus === 'fantasma';
   const frontera = Boolean(data.inFrontera);
   return (

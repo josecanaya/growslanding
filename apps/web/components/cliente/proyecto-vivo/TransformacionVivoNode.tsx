@@ -1,6 +1,6 @@
 'use client';
 
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import type { TransformKind } from '@/lib/types/canvasMultinivel';
 
 export type TransformacionVivoNodeData = {
@@ -21,7 +21,7 @@ const KIND_COLOR: Record<TransformKind, string> = {
   ejecucion: 'border-emerald-600 bg-emerald-50',
 };
 
-export function TransformacionVivoNode({ data, selected }: NodeProps<TransformacionVivoNodeData>) {
+export function TransformacionVivoNode({ data, selected }: NodeProps<Node<TransformacionVivoNodeData>>) {
   const color = data.isCritical
     ? 'border-red-600 bg-red-50'
     : KIND_COLOR[data.transformKind] ?? 'border-slate-400 bg-white';

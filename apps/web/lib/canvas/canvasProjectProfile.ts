@@ -155,6 +155,8 @@ function defaultPresentation(t: CanvasNivelTipo): LevelPresentation {
       return { tipoNodoLabel: 'Ambiente', crearLabel: '+ Ambiente', defaultTitle: 'Nuevo ambiente' };
     case 'tarea':
       return { tipoNodoLabel: 'Tarea', crearLabel: '+ Tarea', defaultTitle: 'Nueva tarea' };
+    case 'estado':
+      return { tipoNodoLabel: 'Estado', crearLabel: '+ Estado', defaultTitle: 'Nuevo estado' };
   }
 }
 

@@ -58,7 +58,7 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
       },
     );
 
-    let pending = Buffer.alloc(0);
+    let pending: Uint8Array = new Uint8Array();
     const waiting = new Map<number, (msg: Rpc) => void>();
     let nextId = 1;
     let settled = false;
@@ -101,7 +101,7 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         }, 20000);
       });
 
-    child.stdout.on('data', (d: Buffer) => {
+    child.stdout.on('data', (d: Uint8Array) => {
       const out = pushMcpBytes(pending, d);
       pending = out.pending;
       for (const raw of out.messages) {

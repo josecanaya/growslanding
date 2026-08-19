@@ -7,9 +7,9 @@ export function encodeMcpMessage(payload: unknown): Buffer {
 }
 
 export function pushMcpBytes(
-  pending: Buffer,
-  chunk: Buffer,
-): { pending: Buffer; messages: unknown[] } {
+  pending: Uint8Array,
+  chunk: Uint8Array,
+): { pending: Uint8Array; messages: unknown[] } {
   let buf = Buffer.concat([pending, chunk]);
   const messages: unknown[] = [];
 
@@ -56,7 +56,7 @@ export function pushMcpBytes(
     buf = buf.subarray(start + len);
   }
 
-  return { pending: buf, messages };
+  return { pending: new Uint8Array(buf), messages };
 }
 
 export function textFromMcpResult(result: unknown): string {

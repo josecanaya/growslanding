@@ -116,9 +116,14 @@ export type CanvasNode = {
   executorKind?: ExecutorKind;
   executorRef?: string;
   graphStatus?: GraphNodeStatus;
-  tValue?: number | null;
-  tComponents?: Record<string, number>;
-  tFormulaId?: string;
+  /** proyecto_vivo: identidad de T (no catálogo Grows). */
+  energyUnitId?: string | null;
+  /** proyecto_vivo: q en E=qT. */
+  energyQuantity?: number | null;
+  /** proyecto_vivo: C. No es wallet. */
+  capitalAmount?: number | null;
+  /** proyecto_vivo: moneda de C; default USD. */
+  capitalCurrency?: string | null;
   /** Sugerencia del orquestador. Ausente = creada por humano. */
   orquestador?: {
     origen: 'agente';

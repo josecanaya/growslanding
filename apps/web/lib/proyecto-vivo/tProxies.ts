@@ -1,3 +1,8 @@
+/**
+ * OBSOLETO (2026-08-19): no es F(f)=(qT,C).
+ * gamma/criticidad/sigma no son identidad energética. No usar en proyecto_vivo.
+ * Conservado solo para no romper imports; no llamar desde UI ni APIs.
+ */
 import type { CanvasMultinivelPersisted, CanvasNode } from '@/lib/types/canvasMultinivel';
 import { isCanvasEstadoNode, isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
 import { computeFrontera } from '@/lib/proyecto-vivo/computeFrontera';
@@ -8,7 +13,6 @@ export type TProxiesV0 = {
   sigma: number;
 };
 
-/** Experimentos de T — sin fórmula canónica ni persistencia automática de t_value. */
 export function proxies_v0(
   transformacion: CanvasNode,
   grafo: CanvasMultinivelPersisted,

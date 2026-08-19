@@ -35,9 +35,10 @@ function normalizeNode(n: CanvasNode): CanvasNode {
     if (n.executorKind) out.executorKind = n.executorKind;
     if (n.executorRef) out.executorRef = n.executorRef;
     if (n.graphStatus) out.graphStatus = n.graphStatus;
-    if (n.tValue != null) out.tValue = n.tValue;
-    if (n.tComponents) out.tComponents = { ...n.tComponents };
-    if (n.tFormulaId) out.tFormulaId = n.tFormulaId;
+    if (n.energyUnitId) out.energyUnitId = n.energyUnitId;
+    if (n.energyQuantity != null) out.energyQuantity = n.energyQuantity;
+    if (n.capitalAmount != null) out.capitalAmount = n.capitalAmount;
+    if (n.capitalCurrency) out.capitalCurrency = n.capitalCurrency;
     if (n.orquestador) out.orquestador = { ...n.orquestador };
     return out;
   }

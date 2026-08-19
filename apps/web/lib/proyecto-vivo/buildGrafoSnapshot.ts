@@ -2,6 +2,7 @@ import type { CanvasMultinivelPersisted, ObraGraphMode } from '@/lib/types/canva
 import { isCanvasEstadoNode, isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
 import { toClientNodeId } from '@/lib/canvas/canvasSupabaseMapper';
 import { computeFrontera } from '@/lib/proyecto-vivo/computeFrontera';
+import { CAPITAL_CURRENCY_DEFAULT, sumarCapital, sumarQPorUnidad } from '@/lib/proyecto-vivo/energia';
 
 export type TareaPuenteRow = {
   id: string;
@@ -23,15 +24,21 @@ export type GrafoSnapshot = {
     to_node_id: string | null;
     executor_kind: string | null;
     executor_ref: string | null;
-    t_value: number | null;
-    t_components: Record<string, number> | null;
+    energy_unit_id: string | null;
+    energy_quantity: number | null;
+    capital_amount: number | null;
+    capital_currency: string | null;
     tarea_id: string | null;
     tarea_estado: string | null;
     orquestador_estado: 'pendiente' | 'aceptada' | null;
   }>;
   precedencias: Array<{ source: string; target: string }>;
   frontera: ReturnType<typeof computeFrontera>;
-  crecimiento: { estadosAlcanzados: number; tSuma: number | null };
+  crecimiento: {
+    estadosAlcanzados: number;
+    energiaPorUnidad: Array<{ energy_unit_id: string; q: number }>;
+    capitalUsd: number | null;
+  };
 };
 
 export function buildGrafoSnapshot(input: {
@@ -63,8 +70,10 @@ export function buildGrafoSnapshot(input: {
       to_node_id: n.toNodeId ?? null,
       executor_kind: n.executorKind ?? null,
       executor_ref: n.executorRef ?? null,
-      t_value: n.tValue ?? null,
-      t_components: n.tComponents ?? null,
+      energy_unit_id: n.energyUnitId ?? null,
+      energy_quantity: n.energyQuantity ?? null,
+      capital_amount: n.capitalAmount ?? null,
+      capital_currency: n.capitalCurrency ?? null,
       tarea_id: puente?.id ?? null,
       tarea_estado: puente?.estado ?? null,
       orquestador_estado: n.orquestador?.estado ?? null,
@@ -80,10 +89,11 @@ export function buildGrafoSnapshot(input: {
     (n) => isCanvasEstadoNode(n) && n.graphStatus === 'alcanzado',
   ).length;
 
-  const tValues = transformaciones
-    .filter((t) => t.graph_status === 'realizada' && t.t_value != null)
-    .map((t) => t.t_value as number);
-  const tSuma = tValues.length > 0 ? tValues.reduce((a, b) => a + b, 0) : null;
+  const realizadas = input.canvas.nodes.filter(
+    (n) => isCanvasTransformacionNode(n) && n.graphStatus === 'realizada',
+  );
+  const energiaPorUnidad = sumarQPorUnidad(realizadas);
+  const capitalUsd = sumarCapital(realizadas, CAPITAL_CURRENCY_DEFAULT);
 
   const tareaEstadoByCanvasNodeId = new Map<string, string>();
   for (const t of transformaciones) {
@@ -98,6 +108,6 @@ export function buildGrafoSnapshot(input: {
     transformaciones,
     precedencias,
     frontera: computeFrontera(input.canvas, { tareaEstadoByCanvasNodeId }),
-    crecimiento: { estadosAlcanzados, tSuma },
+    crecimiento: { estadosAlcanzados, energiaPorUnidad, capitalUsd },
   };
 }

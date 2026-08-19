@@ -25,7 +25,7 @@ function estado(id: string, title: string, extra?: Partial<CanvasNode>): CanvasN
 }
 
 describe('canvasSupabaseMapper proyecto_vivo roundtrip', () => {
-  it('conserva estado + transformación con from/to y T', () => {
+  it('conserva estado + transformación con from/to y F(f)=(qT,C)', () => {
     const ideaId = toClientNodeId('11111111-1111-1111-1111-111111111111');
     const trId = toClientNodeId('22222222-2222-2222-2222-222222222222');
     const anteId = toClientNodeId('33333333-3333-3333-3333-333333333333');
@@ -50,9 +50,10 @@ describe('canvasSupabaseMapper proyecto_vivo roundtrip', () => {
           fromNodeId: ideaId,
           toNodeId: anteId,
           graphStatus: 'propuesta',
-          tValue: 3,
-          tComponents: { gamma: 1, sigma: 1, criticidad: 0 },
-          tFormulaId: 'proxies_v0',
+          energyUnitId: 'T_ingenieria_X',
+          energyQuantity: 40,
+          capitalAmount: 800,
+          capitalCurrency: 'USD',
         },
         estado(anteId, 'Anteproyecto', { graphStatus: 'fantasma' }),
       ],
@@ -64,7 +65,10 @@ describe('canvasSupabaseMapper proyecto_vivo roundtrip', () => {
     expect(trRow?.from_node_id).toBe('11111111-1111-1111-1111-111111111111');
     expect(trRow?.to_node_id).toBe('33333333-3333-3333-3333-333333333333');
     expect(trRow?.graph_status).toBe('propuesta');
-    expect(Number(trRow?.t_value)).toBe(3);
+    expect(trRow?.energy_unit_id).toBe('T_ingenieria_X');
+    expect(Number(trRow?.energy_quantity)).toBe(40);
+    expect(Number(trRow?.capital_amount)).toBe(800);
+    expect(trRow?.capital_currency).toBe('USD');
 
     const back = supabaseRowsToPersisted({
       obra: { id: OBRA_ID, name: 'Test', canvas_project_kind: 'otro', canvas_ui: { pathIds: [] } },
@@ -78,7 +82,9 @@ describe('canvasSupabaseMapper proyecto_vivo roundtrip', () => {
     expect(tr?.transformKind).toBe('conocimiento');
     expect(tr?.fromNodeId).toBe(ideaId);
     expect(tr?.toNodeId).toBe(anteId);
-    expect(tr?.tValue).toBe(3);
-    expect(tr?.tComponents?.gamma).toBe(1);
+    expect(tr?.energyUnitId).toBe('T_ingenieria_X');
+    expect(tr?.energyQuantity).toBe(40);
+    expect(tr?.capitalAmount).toBe(800);
+    expect(tr?.capitalCurrency).toBe('USD');
   });
 });

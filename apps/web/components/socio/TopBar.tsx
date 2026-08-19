@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Bell, Clock, ClipboardList, NotebookPen, Users, User, X } from 'lucide-react';
+import { Bell, Clock, ClipboardList, NotebookPen, BookOpen, Users, User, X } from 'lucide-react';
 import type { Route } from 'next';
 
 interface TopBarProps {
@@ -39,6 +39,7 @@ export function TopBar({
     { id: 'tareas', label: 'Tareas', icon: ClipboardList, route: '/socio/tareas' as Route },
     // 4. Presupuesta (NUEVA) - placeholder /socio/presupuestos
     { id: 'presupuestos', label: 'Presupuesta', icon: NotebookPen, route: '/socio/presupuestos' as Route },
+    { id: 'conocimiento', label: 'Conocimiento', icon: BookOpen, route: '/socio/conocimiento' as Route },
     // 5. Mi Cuadrilla - mantener la ruta actual que ya funciona
     { id: 'cuadrilla', label: 'Mi Cuadrilla', icon: Users, route: '/socio/cuadrilla' as Route },
     // 6. Cuenta - mantener la ruta actual

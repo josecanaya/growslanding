@@ -232,3 +232,8 @@ Si una regla de memoria contradice código actual:
 - **Qué se decidió:** El teclado es Cursor + MCP. El MCP de inteligencia apunta a `grows-conocimiento`, no al código. El front es libre; Grows da marco A→T→B, inteligencia de construcción y medición de tokens. Features pedidas se registran en `corpus/04_features/`.
 - **Ámbito:** agente Cursor, MCP, UI del grafo.
 - **Obligación:** No convertir el horizonte en un wizard. El agente consulta Graphify de esa carpeta y solo escribe `propuesta`.
+
+### [2026-08-19] Dos capas: proyecto_vivo vs Uber de obra
+- **Qué se decidió:** F(f)=(qT, C) vive solo en proyecto_vivo (`energy_unit_id`, `energy_quantity`, `capital_amount`, `capital_currency` USD). No es wallet ni comisión. `t_value` / gamma / sigma / criticidad / `t_formula_id` no definen energía. El FSM de tareas no se reinterpreta; al validar, el adaptador existente marca f realizada y B alcanzado.
+- **Ámbito:** canvas_nodes de graph_mode=proyecto_vivo.
+- **Obligación:** No llevar qT/C al wallet. No tocar presupuestos, socios ni comisiones. No sumar T de identidades distintas.

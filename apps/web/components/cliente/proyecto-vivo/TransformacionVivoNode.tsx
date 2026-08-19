@@ -7,7 +7,10 @@ export type TransformacionVivoNodeData = {
   label: string;
   transformKind: TransformKind;
   graphStatus: string;
-  tValue: number | null;
+  energyUnitId?: string | null;
+  energyQuantity?: number | null;
+  capitalAmount?: number | null;
+  capitalCurrency?: string | null;
   inFrontera?: boolean;
   isCritical?: boolean;
   es?: number;
@@ -46,8 +49,15 @@ export function TransformacionVivoNode({ data, selected }: NodeProps<Node<Transf
           {data.duracionDias != null ? ` · ${data.duracionDias}d` : ''}
         </p>
       )}
-      {data.tValue != null && (
-        <p className="mt-0.5 text-[10px] text-slate-600">T = {data.tValue}</p>
+      {data.energyUnitId && data.energyQuantity != null && (
+        <p className="mt-0.5 text-[10px] text-slate-600">
+          {data.energyQuantity} {data.energyUnitId}
+        </p>
+      )}
+      {data.capitalAmount != null && (
+        <p className="mt-0.5 text-[10px] text-slate-600">
+          {data.capitalAmount} {data.capitalCurrency ?? 'USD'}
+        </p>
       )}
       <Handle type="source" position={Position.Right} className="!bg-violet-500" />
     </div>

@@ -26,6 +26,16 @@ export function SocioPanelDashboard() {
 
       <TrabajosHoySection />
 
+      <a
+        href="/socio/conocimiento"
+        className="block rounded-2xl border border-[#163274]/15 bg-white px-4 py-3 shadow-sm"
+      >
+        <p className="text-xs font-bold uppercase tracking-wide text-[#163274]">Chat</p>
+        <p className="mt-1 text-sm text-slate-700">
+          Preguntá al conocimiento de Grows (misma carpeta que Cursor / MCP).
+        </p>
+      </a>
+
       <AccesosRapidosGrid hideTitle={false} showOnly="high" stitchLayout />
 
       <HomeSolicitudesSection />

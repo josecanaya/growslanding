@@ -64,9 +64,10 @@ type DbNodeRow = {
   executor_kind?: string | null;
   executor_ref?: string | null;
   graph_status?: string | null;
-  t_value?: number | null;
-  t_components?: Record<string, unknown> | null;
-  t_formula_id?: string | null;
+  energy_unit_id?: string | null;
+  energy_quantity?: number | null;
+  capital_amount?: number | null;
+  capital_currency?: string | null;
 };
 
 function optionalClientNodeUuid(clientId: string | undefined): string | null {
@@ -86,26 +87,20 @@ function readProyectoVivoFieldsFromRow(row: DbNodeRow): Pick<
   | 'executorKind'
   | 'executorRef'
   | 'graphStatus'
-  | 'tValue'
-  | 'tComponents'
-  | 'tFormulaId'
+  | 'energyUnitId'
+  | 'energyQuantity'
+  | 'capitalAmount'
+  | 'capitalCurrency'
 > {
   const meta = (row.metadata ?? {}) as Record<string, unknown>;
   const transformKind = (row.transform_kind ?? meta.transform_kind) as CanvasNode['transformKind'];
   const graphStatus = (row.graph_status ?? meta.graph_status) as CanvasNode['graphStatus'];
   const fromDb = row.from_node_id ?? (typeof meta.from_node_id === 'string' ? meta.from_node_id : null);
   const toDb = row.to_node_id ?? (typeof meta.to_node_id === 'string' ? meta.to_node_id : null);
-  const tComponentsRaw = row.t_components ?? meta.t_components;
-  let tComponents: Record<string, number> | undefined;
-  if (tComponentsRaw && typeof tComponentsRaw === 'object' && !Array.isArray(tComponentsRaw)) {
-    tComponents = {};
-    for (const [k, v] of Object.entries(tComponentsRaw as Record<string, unknown>)) {
-      if (typeof v === 'number' && Number.isFinite(v)) tComponents[k] = v;
-    }
-  }
-  const tValueRaw = row.t_value ?? meta.t_value;
-  const tValue =
-    tValueRaw == null ? undefined : typeof tValueRaw === 'number' ? tValueRaw : Number(tValueRaw);
+  const qtyRaw = row.energy_quantity ?? meta.energy_quantity;
+  const capRaw = row.capital_amount ?? meta.capital_amount;
+  const qty = qtyRaw == null ? undefined : typeof qtyRaw === 'number' ? qtyRaw : Number(qtyRaw);
+  const cap = capRaw == null ? undefined : typeof capRaw === 'number' ? capRaw : Number(capRaw);
 
   return {
     transformKind: transformKind ?? undefined,
@@ -117,11 +112,15 @@ function readProyectoVivoFieldsFromRow(row: DbNodeRow): Pick<
         ? String(row.executor_ref ?? meta.executor_ref)
         : undefined,
     graphStatus: graphStatus ?? undefined,
-    tValue: tValue != null && !Number.isNaN(tValue) ? tValue : undefined,
-    tComponents,
-    tFormulaId:
-      typeof (row.t_formula_id ?? meta.t_formula_id) === 'string'
-        ? String(row.t_formula_id ?? meta.t_formula_id)
+    energyUnitId:
+      typeof (row.energy_unit_id ?? meta.energy_unit_id) === 'string'
+        ? String(row.energy_unit_id ?? meta.energy_unit_id)
+        : undefined,
+    energyQuantity: qty != null && !Number.isNaN(qty) ? qty : undefined,
+    capitalAmount: cap != null && !Number.isNaN(cap) ? cap : undefined,
+    capitalCurrency:
+      typeof (row.capital_currency ?? meta.capital_currency) === 'string'
+        ? String(row.capital_currency ?? meta.capital_currency)
         : undefined,
   };
 }
@@ -266,9 +265,10 @@ export function persistedToSupabaseRows(
       executor_kind: n.executorKind ?? null,
       executor_ref: n.executorRef ?? null,
       graph_status: n.graphStatus ?? null,
-      t_value: n.tValue ?? null,
-      t_components: n.tComponents ?? {},
-      t_formula_id: n.tFormulaId ?? null,
+      energy_unit_id: n.energyUnitId ?? null,
+      energy_quantity: n.energyQuantity ?? null,
+      capital_amount: n.capitalAmount ?? null,
+      capital_currency: n.capitalCurrency ?? null,
     };
   });
 

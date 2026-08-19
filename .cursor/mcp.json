@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=rpzaihmpdcktpqkycidt"
+    },
+    "grows-conocimiento": {
+      "command": "C:\\Python312\\python.exe",
+      "args": [
+        "-m",
+        "graphify.serve",
+        "C:\\Users\\Usuario\\Desktop\\Jose\\grows-conocimiento\\graphify-out\\graph.json",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}

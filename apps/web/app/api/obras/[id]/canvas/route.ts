@@ -374,9 +374,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    const { data: obraUiRow } = await supabaseAny
+      .from('obras')
+      .select('canvas_ui')
+      .eq('id', obraId)
+      .maybeSingle();
+    const prevUi =
+      obraUiRow?.canvas_ui && typeof obraUiRow.canvas_ui === 'object' && !Array.isArray(obraUiRow.canvas_ui)
+        ? (obraUiRow.canvas_ui as Record<string, unknown>)
+        : {};
+    const obrasPatch = {
+      ...rows.obrasPatch,
+      canvas_ui: { ...prevUi, pathIds: snapshot.pathIds },
+    };
+
     const { error: upObraErr } = await supabaseAny
       .from('obras')
-      .update(rows.obrasPatch as any)
+      .update(obrasPatch as any)
       .eq('id', obraId)
       .eq('org_id', orgId);
     if (upObraErr) {

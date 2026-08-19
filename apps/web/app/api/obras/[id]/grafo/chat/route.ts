@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { loadProyectoVivoForWrite } from '@/lib/proyecto-vivo/loadGrafoSnapshot';
 import { insertarPropuestaEnCanvas } from '@/lib/proyecto-vivo/orquestador/insertarPropuestaEnCanvas';
-import { proponerDesdeChat } from '@/lib/proyecto-vivo/orquestador/proponerDesdeChat';
+import { turnoHorizonteChat } from '@/lib/proyecto-vivo/orquestador/turnoHorizonteChat';
+import { mergeCanvasUiHilo, type HiloLinea } from '@/lib/proyecto-vivo/hiloCanvasUi';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,7 +14,7 @@ const bodySchema = z.object({
 
 /**
  * POST /api/obras/[id]/grafo/chat
- * Un turno de habla → una propuesta A→T→B. No receta de obra. No realizada. No wallet.
+ * Habla contra el corpus. Solo escribe nodos si el mensaje es un paso (verbo → estado).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,26 +30,55 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const loaded = await loadProyectoVivoForWrite(obraId);
     if (!loaded.ok) return loaded.response;
 
-    const propuesta = proponerDesdeChat({
+    const turno = await turnoHorizonteChat({
       canvas: loaded.canvas,
       mensaje: parsed.data.mensaje,
+      objetivo: loaded.objetivoTexto,
     });
 
-    const result = await insertarPropuestaEnCanvas({
-      supabase: loaded.supabase,
-      obraId,
-      orgId: loaded.orgId,
-      canvas: loaded.canvas,
-      propuesta,
-    });
+    let insert = {
+      insertedTransformaciones: 0,
+      insertedEstados: 0,
+      insertedEdges: 0,
+      transformacionIds: [] as string[],
+      motivo: turno.propuesta.motivo,
+    };
+    if (turno.propuesta.nodos.length > 0) {
+      insert = await insertarPropuestaEnCanvas({
+        supabase: loaded.supabase,
+        obraId,
+        orgId: loaded.orgId,
+        canvas: loaded.canvas,
+        propuesta: turno.propuesta,
+      });
+    }
 
-    const paso = propuesta.pasos[0];
+    const now = new Date().toISOString();
+    const extra: HiloLinea[] = [
+      {
+        id: `u-${now}`,
+        role: 'user',
+        text: parsed.data.mensaje.trim(),
+        at: now,
+      },
+      {
+        id: `h-${now}`,
+        role: 'horizonte',
+        text: turno.reply,
+        at: now,
+      },
+    ];
+    const canvasUi = mergeCanvasUiHilo(loaded.canvasUi, extra);
+    await (loaded.supabase as any).from('obras').update({ canvas_ui: canvasUi }).eq('id', obraId);
+
     return NextResponse.json({
       success: true,
       data: {
-        ...result,
-        reply: propuesta.motivo,
-        paso: paso ?? null,
+        ...insert,
+        reply: turno.reply,
+        hilo: canvasUi.hilo,
+        anotoPaso: turno.propuesta.nodos.length > 0,
+        paso: turno.propuesta.pasos[0] ?? null,
       },
     });
   } catch (e) {

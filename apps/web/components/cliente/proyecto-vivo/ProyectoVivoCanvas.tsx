@@ -17,7 +17,7 @@ import type { CanvasMultinivelPersisted, CanvasNode } from '@/lib/types/canvasMu
 import { isCanvasEstadoNode, isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
 import { buildProyectoVivoFlow } from '@/lib/proyecto-vivo/proyectoVivoFlow';
 import { computeProyectoVivoCpm } from '@/lib/proyecto-vivo/computeProyectoVivoCpm';
-import { Button } from '@/components/ui/grows';
+import { parseHiloCanvasUi, type HiloLinea } from '@/lib/proyecto-vivo/hiloCanvasUi';
 import { EstadoVivoNode } from './EstadoVivoNode';
 import { TransformacionVivoNode } from './TransformacionVivoNode';
 
@@ -31,8 +31,6 @@ type Props = {
   obraNombre: string;
 };
 
-type ChatLine = { id: string; role: 'user' | 'horizonte'; text: string };
-
 function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,7 +38,7 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
   const [snapshot, setSnapshot] = useState<CanvasMultinivelPersisted | null>(null);
   const [vista, setVista] = useState<'conversacion' | 'tiempo'>('conversacion');
   const [draft, setDraft] = useState('');
-  const [optimistic, setOptimistic] = useState<ChatLine[]>([]);
+  const [hilo, setHilo] = useState<HiloLinea[]>([]);
   const scroller = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async (quiet = false) => {
@@ -54,7 +52,10 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
       if (!canvasRes.ok) {
         throw new Error(canvasJson.message ?? 'No se pudo cargar el horizonte');
       }
-      const data = canvasJson.data as CanvasMultinivelPersisted & { obraNombre?: string };
+      const data = canvasJson.data as CanvasMultinivelPersisted & {
+        obraNombre?: string;
+        obra?: { canvas_ui?: unknown };
+      };
       setSnapshot({
         v: data.v,
         obraNombre: data.obraNombre ?? obraNombre,
@@ -64,7 +65,7 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
         budgetGroups: data.budgetGroups ?? [],
         projectKind: data.projectKind ?? 'otro',
       });
-      setOptimistic([]);
+      setHilo(parseHiloCanvasUi(data.obra?.canvas_ui));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar');
     } finally {
@@ -100,26 +101,12 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
     setEdges(flow.edges);
   }, [flow.nodes, flow.edges, setNodes, setEdges]);
 
-  const hilo = useMemo(() => {
-    const lines: ChatLine[] = [];
-    if (!snapshot) return lines;
-    const transforms = snapshot.nodes
-      .filter(isCanvasTransformacionNode)
-      .slice()
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    for (const t of transforms) {
-      const dest = snapshot.nodes.find((n) => n.id === t.toNodeId);
-      const userText = t.orquestador?.chatUser?.trim() || t.title;
-      lines.push({ id: `u-${t.id}`, role: 'user', text: userText });
-      const estado = t.orquestador?.estado === 'pendiente' ? 'propuesta' : t.graphStatus;
-      lines.push({
-        id: `h-${t.id}`,
-        role: 'horizonte',
-        text: `${t.title} → ${dest?.title ?? '…'} (${estado})`,
-      });
-    }
-    return [...lines, ...optimistic];
-  }, [snapshot, optimistic]);
+  const pendientes = useMemo(() => {
+    if (!snapshot) return [];
+    return snapshot.nodes.filter(
+      (n) => isCanvasTransformacionNode(n) && n.orquestador?.estado === 'pendiente',
+    );
+  }, [snapshot]);
 
   useEffect(() => {
     scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: 'smooth' });
@@ -161,9 +148,14 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
     setDraft('');
     setSaving(true);
     setError(null);
-    setOptimistic((prev) => [
+    setHilo((prev) => [
       ...prev,
-      { id: `opt-u-${Date.now()}`, role: 'user', text: mensaje },
+      {
+        id: `opt-u-${Date.now()}`,
+        role: 'user',
+        text: mensaje,
+        at: new Date().toISOString(),
+      },
     ]);
     try {
       const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/grafo/chat`, {
@@ -185,11 +177,10 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(
+      await fetch(
         `/api/obras/${encodeURIComponent(obraId)}/grafo/propuestas/${encodeURIComponent(transformacionId)}/aceptar`,
         { method: 'POST' },
       );
-      const json = await res.json().catch(() => ({}));
       await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al aceptar');
@@ -200,42 +191,49 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
 
   if (loading) {
     return (
-      <div className="flex h-[480px] items-center justify-center gap-2 text-slate-600">
+      <div className="flex h-[480px] items-center justify-center gap-2 text-stone-500">
         <Loader2 className="h-5 w-5 animate-spin" />
-        Cargando horizonte…
+        Cargando…
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-[560px] flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <Button
-          variant={vista === 'conversacion' ? 'primary' : 'secondary'}
-          size="sm"
+    <div className="flex min-h-[560px] flex-col gap-5">
+      <div className="flex gap-6 border-b border-stone-200 text-sm">
+        <button
+          type="button"
+          className={`pb-2 ${
+            vista === 'conversacion'
+              ? 'border-b-2 border-stone-900 font-medium text-stone-900'
+              : 'text-stone-500'
+          }`}
           onClick={() => setVista('conversacion')}
         >
           Conversación
-        </Button>
-        <Button
-          variant={vista === 'tiempo' ? 'primary' : 'secondary'}
-          size="sm"
+        </button>
+        <button
+          type="button"
+          className={`pb-2 ${
+            vista === 'tiempo'
+              ? 'border-b-2 border-stone-900 font-medium text-stone-900'
+              : 'text-stone-500'
+          }`}
           onClick={() => setVista('tiempo')}
         >
-          Tiempo (CPM)
-        </Button>
+          Tiempo
+        </button>
         {vista === 'tiempo' && cpmBundle && (
-          <p className="ml-auto text-xs text-slate-500">
-            Duración {cpmBundle.resultado.project_duration}d · críticas{' '}
-            {cpmBundle.resultado.critical_count}
+          <p className="ml-auto pb-2 text-xs text-stone-400">
+            {cpmBundle.resultado.project_duration}d · {cpmBundle.resultado.critical_count} críticas
           </p>
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</p>}
+      {error && <p className="text-sm text-red-800">{error}</p>}
 
       {vista === 'tiempo' ? (
-        <div className="h-[560px] rounded-xl border border-slate-200 bg-slate-50">
+        <div className="h-[560px] overflow-hidden rounded-md border border-stone-200 bg-stone-50">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -249,86 +247,104 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
           </ReactFlow>
         </div>
       ) : (
-        <div className="flex min-h-[560px] flex-col gap-4 lg:flex-row">
-          <div className="flex min-h-[480px] flex-1 flex-col rounded-xl border border-slate-200 bg-white">
-            <div ref={scroller} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="flex min-h-[560px] flex-col gap-8 lg:flex-row">
+          <div className="flex min-h-[480px] flex-1 flex-col">
+            <div ref={scroller} className="min-h-0 flex-1 space-y-8 overflow-y-auto pr-1">
               {hilo.length === 0 && (
-                <p className="text-sm leading-relaxed text-slate-600">
-                  Escribí lo que querés que exista después. Cada mensaje es una transformación
-                  propuesta. Podés usar «verbo → estado» si querés ser preciso. No hay wizard.
+                <p className="max-w-xl text-[15px] leading-7 text-stone-600">
+                  Preguntá por el lote, el programa o cómo empezar. No se crea nada en el
+                  horizonte hasta que escribas un paso con flecha, por ejemplo{' '}
+                  <span className="whitespace-nowrap font-medium text-stone-800">
+                    Elegir lote → Lote entre medianeras
+                  </span>
+                  .
                 </p>
               )}
               {hilo.map((m) => (
-                <div
-                  key={m.id}
-                  className={`max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
-                    m.role === 'user'
-                      ? 'ml-auto bg-[#001629] text-white'
-                      : 'bg-slate-100 text-slate-800'
-                  }`}
-                >
-                  {m.text}
+                <div key={m.id} className="max-w-xl">
+                  <p className="mb-1 text-[11px] tracking-wide text-stone-400">
+                    {m.role === 'user' ? 'Vos' : 'Oficio'}
+                  </p>
+                  <p
+                    className={`whitespace-pre-wrap text-[15px] leading-7 ${
+                      m.role === 'user' ? 'text-stone-900' : 'text-stone-700'
+                    }`}
+                  >
+                    {m.text}
+                  </p>
                 </div>
               ))}
+              {saving && <p className="text-sm text-stone-400">Leyendo el corpus…</p>}
             </div>
             <form
-              className="flex gap-2 border-t border-slate-100 p-3"
+              className="mt-4 flex items-end gap-3 border-t border-stone-200 pt-4"
               onSubmit={(e) => {
                 e.preventDefault();
                 void hablar();
               }}
             >
-              <input
-                className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                placeholder="Seguí el proyecto…"
+              <textarea
+                className="min-h-[72px] min-w-0 flex-1 resize-none bg-transparent text-[15px] leading-6 text-stone-900 outline-none placeholder:text-stone-400"
+                placeholder="Preguntá, o anotá verbo → estado"
                 value={draft}
+                rows={3}
                 onChange={(e) => setDraft(e.target.value)}
                 disabled={saving}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void hablar();
+                  }
+                }}
               />
-              <Button
-                variant="primary"
-                size="sm"
+              <button
                 type="submit"
-                icon={saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 disabled={saving || !draft.trim()}
+                className="mb-1 inline-flex items-center gap-2 text-sm font-medium text-stone-900 disabled:text-stone-400"
               >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 Enviar
-              </Button>
+              </button>
             </form>
           </div>
 
-          <aside className="w-full shrink-0 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4 lg:w-72">
-            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Cadena</p>
-            <ol className="space-y-2">
-              {cadena.map((n) => {
-                const t = isCanvasTransformacionNode(n);
-                const pendiente = t && n.orquestador?.estado === 'pendiente';
-                return (
-                  <li
-                    key={n.id}
-                    className={`rounded-lg border px-2 py-1.5 text-xs ${
-                      t ? 'border-violet-200 bg-white' : 'border-slate-200 bg-white'
-                    }`}
-                  >
-                    <p className="font-semibold text-slate-800">{n.title}</p>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">
-                      {t ? n.transformKind ?? 'T' : n.graphStatus ?? 'estado'}
-                    </p>
-                    {pendiente && (
-                      <Button
-                        className="mt-1"
-                        variant="primary"
-                        size="sm"
-                        onClick={() => void aceptar(n.id)}
-                        disabled={saving}
-                      >
-                        Aceptar
-                      </Button>
-                    )}
+          <aside className="w-full shrink-0 space-y-6 lg:w-64 lg:border-l lg:border-stone-200 lg:pl-6">
+            {pendientes.length > 0 && (
+              <div>
+                <p className="mb-3 text-[11px] tracking-wide text-stone-400">Por aceptar</p>
+                <ul className="space-y-4">
+                  {pendientes.map((n) => {
+                    const dest = snapshot?.nodes.find((x) => x.id === n.toNodeId);
+                    return (
+                      <li key={n.id}>
+                        <p className="text-sm text-stone-800">
+                          {n.title}
+                          {dest ? ` → ${dest.title}` : ''}
+                        </p>
+                        <button
+                          type="button"
+                          className="mt-1 text-sm text-stone-600 underline-offset-2 hover:underline"
+                          onClick={() => void aceptar(n.id)}
+                          disabled={saving}
+                        >
+                          Aceptar
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+            <div>
+              <p className="mb-3 text-[11px] tracking-wide text-stone-400">Cadena</p>
+              <ol className="space-y-3">
+                {cadena.map((n) => (
+                  <li key={n.id} className="text-sm leading-5 text-stone-700">
+                    {n.title}
                   </li>
-                );
-              })}
-            </ol>
+                ))}
+              </ol>
+            </div>
           </aside>
         </div>
       )}

@@ -9,11 +9,11 @@ export default async function ProyectoGrafoPage({
   const { obraId } = await params;
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-8 px-2 py-2">
       <SectionHeader
         eyebrow="Horizonte"
-        title="Hablá el proyecto"
-        description="Cada mensaje es una transformación. El canvas de tiempo (CPM) es otra lente, no el teclado."
+        title="El proyecto"
+        description="Preguntá. El horizonte solo anota un paso si lo escribís como verbo → estado."
       />
       <ProyectoVivoCanvas obraId={obraId} obraNombre="Proyecto" />
     </div>

@@ -126,6 +126,7 @@ export async function loadProyectoVivoForWrite(
       orgId: string;
       objetivoTexto: string | null;
       canvas: CanvasMultinivelPersisted;
+      canvasUi: unknown;
       supabase: ReturnType<typeof createServiceSupabaseClient>;
     }
   | { ok: false; response: NextResponse }
@@ -148,6 +149,7 @@ export async function loadProyectoVivoForWrite(
     orgId: gated.obra.org_id,
     objetivoTexto: gated.obra.objetivo_texto ?? null,
     canvas: loaded.persisted,
+    canvasUi: gated.obra.canvas_ui,
     supabase: gated.supabase,
   };
 }

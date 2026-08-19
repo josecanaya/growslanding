@@ -14,7 +14,7 @@ export default function SocioConocimientoPage() {
     {
       id: 'intro',
       role: 'conocimiento',
-      text: 'Este chat lee la carpeta grows-conocimiento (Graphify). Preguntá por construcción, el marco A→f→B o cómo se ejecuta en obra. No mueve wallet ni tareas.',
+      text: 'Este chat habla por MCP con la fábrica (grows-conocimiento / graph.json). Misma fuente que Cursor. Sin API key. No mueve wallet ni tareas.',
     },
   ]);
 
@@ -52,7 +52,7 @@ export default function SocioConocimientoPage() {
     <div className="flex min-h-[70vh] flex-col px-4 py-6">
       <h1 className="mb-1 text-lg font-semibold text-[#163274]">Conocimiento</h1>
       <p className="mb-4 text-xs text-slate-500">
-        Misma carpeta que el MCP de Cursor: C:\Users\Usuario\Desktop\Jose\grows-conocimiento
+        MCP local: graphify.serve sobre grows-conocimiento. No hay API key.
       </p>
       {error && <p className="mb-2 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</p>}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3">

@@ -32,7 +32,7 @@ export function SocioPanelDashboard() {
       >
         <p className="text-xs font-bold uppercase tracking-wide text-[#163274]">Chat</p>
         <p className="mt-1 text-sm text-slate-700">
-          Preguntá al conocimiento de Grows (misma carpeta que Cursor / MCP).
+        Preguntá al conocimiento (MCP de grows-conocimiento, sin API key).
         </p>
       </a>
 

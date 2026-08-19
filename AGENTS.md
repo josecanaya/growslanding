@@ -2,7 +2,7 @@
 
 Se opera **chateando en Cursor**. El canvas es el horizonte, no el teclado.
 
-- Inteligencia (construcción + marco): repo hermano `grows-conocimiento`. El MCP Graphify **apunta a esa carpeta**, no al código.
+- Inteligencia (construcción + marco): repo hermano `grows-conocimiento`. El MCP Graphify **apunta a esa carpeta**, no al código. El chat `/socio/conocimiento` usa el mismo MCP stdio. Sin API key.
 - Obra viva: `canvas_nodes` / `canvas_edges`. El agente solo escribe `propuesta`.
 - Grows cuantifica tokens. El front es libre (cualquier dominio); este producto da el marco A→T→B.
 

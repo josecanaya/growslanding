@@ -16,7 +16,7 @@ const bodySchema = z.object({
 
 /**
  * POST /api/socio/conocimiento/chat
- * Habla contra Graphify de grows-conocimiento. No toca wallet, tareas ni FSM.
+ * MCP stdio (graphify.serve) sobre grows-conocimiento. Sin API key. No toca wallet ni FSM.
  */
 export async function POST(req: NextRequest) {
   try {

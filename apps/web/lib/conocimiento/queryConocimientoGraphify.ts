@@ -1,27 +1,39 @@
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
-import { resolveConocimientoRoot } from '@/lib/proyecto-vivo/orquestador/appendPatronAnonimo';
+import { conversarDesdeGrafo } from '@/lib/conocimiento/conversarDesdeGrafo';
+import { queryConocimientoMcp } from '@/lib/conocimiento/queryConocimientoMcp';
+import {
+  conocimientoGraphPath,
+  resolveConocimientoPython,
+  resolveConocimientoRoot,
+} from '@/lib/conocimiento/paths';
 
-const DEFAULT_PYTHON = 'C:\\Python312\\python.exe';
+export { conocimientoGraphPath };
 
-export function conocimientoGraphPath(): string | null {
-  const root = resolveConocimientoRoot();
-  if (!root) return null;
-  const graph = path.join(root, 'graphify-out', 'graph.json');
-  return fs.existsSync(graph) ? graph : null;
-}
-
-/** Consulta Graphify sobre grows-conocimiento. No usa wallet ni FSM. */
-export function queryConocimientoGraphify(pregunta: string): Promise<{ ok: boolean; text: string }> {
+/** Consulta Graphify de grows-conocimiento vía MCP stdio. Sin API key. */
+export async function queryConocimientoGraphify(
+  pregunta: string,
+): Promise<{ ok: boolean; text: string }> {
   const root = resolveConocimientoRoot();
   if (!root) {
-    return Promise.resolve({
+    return {
       ok: false,
       text: 'No está la carpeta grows-conocimiento. Definí GROWS_CONOCIMIENTO_ROOT.',
-    });
+    };
   }
-  const python = process.env.GROWS_GRAPHIFY_PYTHON?.trim() || DEFAULT_PYTHON;
+
+  const mcp = await queryConocimientoMcp(pregunta);
+  if (mcp.ok || mcp.queryText || mcp.godText) {
+    return {
+      ok: true,
+      text: conversarDesdeGrafo({
+        pregunta,
+        queryText: mcp.queryText,
+        godText: mcp.godText,
+      }),
+    };
+  }
+
+  const python = resolveConocimientoPython();
   const q = pregunta.replace(/\s+/g, ' ').trim().slice(0, 500);
 
   return new Promise((resolve) => {
@@ -33,7 +45,14 @@ export function queryConocimientoGraphify(pregunta: string): Promise<{ ok: boole
     let err = '';
     const timer = setTimeout(() => {
       child.kill();
-      resolve({ ok: false, text: 'La consulta al conocimiento tardó demasiado.' });
+      resolve({
+        ok: false,
+        text: conversarDesdeGrafo({
+          pregunta,
+          queryText: '',
+          godText: mcp.text,
+        }),
+      });
     }, 40000);
     child.stdout.on('data', (d) => {
       out += String(d);
@@ -41,14 +60,24 @@ export function queryConocimientoGraphify(pregunta: string): Promise<{ ok: boole
     child.stderr.on('data', (d) => {
       err += String(d);
     });
-    child.on('error', (e) => {
+    child.on('error', () => {
       clearTimeout(timer);
-      resolve({ ok: false, text: e.message });
+      resolve({
+        ok: false,
+        text: conversarDesdeGrafo({ pregunta, queryText: '', godText: mcp.text }),
+      });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
-      const text = (out.trim() || err.trim() || 'Sin respuesta del grafo.').slice(0, 8000);
-      resolve({ ok: code === 0 && out.trim().length > 0, text });
+      const queryText = out.trim();
+      resolve({
+        ok: code === 0 && queryText.length > 0,
+        text: conversarDesdeGrafo({
+          pregunta,
+          queryText,
+          godText: err.trim() || mcp.text,
+        }).slice(0, 8000),
+      });
     });
   });
 }

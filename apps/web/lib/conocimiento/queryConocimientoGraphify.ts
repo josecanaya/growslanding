@@ -50,8 +50,11 @@ export async function queryConocimientoGraphify(
     });
     let out = '';
     let err = '';
+    let settled = false;
 
     const answer = async (queryText: string, godText?: string) => {
+      if (settled) return;
+      settled = true;
       const result = await responderConConocimiento({
         pregunta,
         history,

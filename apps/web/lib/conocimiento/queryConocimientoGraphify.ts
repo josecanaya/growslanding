@@ -1,18 +1,25 @@
 import { spawn } from 'node:child_process';
-import { conversarDesdeGrafo } from '@/lib/conocimiento/conversarDesdeGrafo';
 import { queryConocimientoMcp } from '@/lib/conocimiento/queryConocimientoMcp';
 import {
   conocimientoGraphPath,
   resolveConocimientoPython,
   resolveConocimientoRoot,
 } from '@/lib/conocimiento/paths';
+import {
+  responderConConocimiento,
+  type ChatHistoryMessage,
+} from '@/lib/conocimiento/responderConConocimiento';
 
 export { conocimientoGraphPath };
 
-/** Consulta Graphify de grows-conocimiento vía MCP stdio. Sin API key. */
+/**
+ * Recupera conocimiento desde grows-conocimiento vía Graphify/MCP y usa ese
+ * contexto como RAG para una respuesta conversacional de LLM.
+ */
 export async function queryConocimientoGraphify(
   pregunta: string,
-): Promise<{ ok: boolean; text: string }> {
+  history: ChatHistoryMessage[] = [],
+): Promise<{ ok: boolean; text: string; source?: 'llm' | 'fallback' }> {
   const root = resolveConocimientoRoot();
   if (!root) {
     return {
@@ -23,16 +30,16 @@ export async function queryConocimientoGraphify(
 
   const mcp = await queryConocimientoMcp(pregunta);
   if (mcp.ok || mcp.queryText || mcp.godText) {
-    return {
-      ok: true,
-      text: conversarDesdeGrafo({
-        pregunta,
-        queryText: mcp.queryText,
-        godText: mcp.godText,
-      }),
-    };
+    return responderConConocimiento({
+      pregunta,
+      history,
+      queryText: mcp.queryText,
+      godText: mcp.godText,
+    });
   }
 
+  // Fallback de recuperación para entornos donde graphify.serve/MCP no responde,
+  // pero el CLI de Graphify sí está disponible sobre la misma carpeta.
   const python = resolveConocimientoPython();
   const q = pregunta.replace(/\s+/g, ' ').trim().slice(0, 500);
 
@@ -43,17 +50,22 @@ export async function queryConocimientoGraphify(
     });
     let out = '';
     let err = '';
+
+    const answer = async (queryText: string, godText?: string) => {
+      const result = await responderConConocimiento({
+        pregunta,
+        history,
+        queryText,
+        godText,
+      });
+      resolve(result);
+    };
+
     const timer = setTimeout(() => {
       child.kill();
-      resolve({
-        ok: false,
-        text: conversarDesdeGrafo({
-          pregunta,
-          queryText: '',
-          godText: mcp.text,
-        }),
-      });
+      void answer('', mcp.text);
     }, 40000);
+
     child.stdout.on('data', (d) => {
       out += String(d);
     });
@@ -62,22 +74,11 @@ export async function queryConocimientoGraphify(
     });
     child.on('error', () => {
       clearTimeout(timer);
-      resolve({
-        ok: false,
-        text: conversarDesdeGrafo({ pregunta, queryText: '', godText: mcp.text }),
-      });
+      void answer('', mcp.text);
     });
-    child.on('close', (code) => {
+    child.on('close', () => {
       clearTimeout(timer);
-      const queryText = out.trim();
-      resolve({
-        ok: code === 0 && queryText.length > 0,
-        text: conversarDesdeGrafo({
-          pregunta,
-          queryText,
-          godText: err.trim() || mcp.text,
-        }).slice(0, 8000),
-      });
+      void answer(out.trim(), err.trim() || mcp.text);
     });
   });
 }

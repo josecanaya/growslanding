@@ -5,7 +5,11 @@ import {
   pushMcpBytes,
   textFromMcpResult,
 } from '@/lib/conocimiento/mcpStdio';
-import { conocimientoGraphPath, resolveConocimientoPython, resolveConocimientoRoot } from '@/lib/conocimiento/paths';
+import {
+  conocimientoGraphPath,
+  resolveConocimientoPython,
+  resolveConocimientoRoot,
+} from '@/lib/conocimiento/paths';
 
 export type McpConocimientoHit = {
   ok: boolean;
@@ -19,15 +23,25 @@ type JsonSchema = {
   required?: string[];
 };
 
-type Rpc = { jsonrpc: '2.0'; id?: number; method?: string; result?: unknown; error?: { message?: string } };
+type Rpc = {
+  jsonrpc: '2.0';
+  id?: number;
+  method?: string;
+  result?: unknown;
+  error?: { message?: string };
+};
 
 function isRpc(x: unknown): x is Rpc {
   return Boolean(x && typeof x === 'object' && (x as Rpc).jsonrpc === '2.0');
 }
 
 /**
- * Una consulta = un proceso MCP stdio de graphify.serve sobre este graph.json.
- * query_graph + god_nodes. Cero API keys.
+ * Consulta el graph.json generado desde GROWS_CONOCIMIENTO_ROOT mediante
+ * graphify.serve/MCP stdio.
+ *
+ * Importante: la búsqueda usa exclusivamente la pregunta real del usuario.
+ * No se agregan palabras fijas (canvas, frontera, orquestador, etc.) porque
+ * sesgaban todas las consultas hacia los mismos nodos del corpus.
  */
 export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoHit> {
   const empty = (text: string): McpConocimientoHit => ({
@@ -39,13 +53,20 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
 
   const root = resolveConocimientoRoot();
   const graph = conocimientoGraphPath();
-  if (!root || !graph) {
-    return Promise.resolve(empty('No está graphify-out/graph.json de grows-conocimiento.'));
+  if (!root) {
+    return Promise.resolve(
+      empty('No se encontró la carpeta de conocimiento. Definí GROWS_CONOCIMIENTO_ROOT.'),
+    );
+  }
+  if (!graph) {
+    return Promise.resolve(
+      empty(`La carpeta de conocimiento existe, pero no tiene graphify-out/graph.json: ${root}`),
+    );
   }
 
   const python = resolveConocimientoPython();
   const q = pregunta.replace(/\s+/g, ' ').trim().slice(0, 500);
-  const busqueda = `${q} orquestador átomo transformación frontera canvas secuencia constructiva`;
+  if (!q) return Promise.resolve(empty('La consulta está vacía.'));
 
   return new Promise((resolve) => {
     const child = spawn(
@@ -128,7 +149,7 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         const init = await request('initialize', {
           protocolVersion: '2024-11-05',
           capabilities: {},
-          clientInfo: { name: 'grows-conocimiento-chat', version: '1' },
+          clientInfo: { name: 'grows-conocimiento-chat', version: '2' },
         });
         if (init.error) {
           finish(empty(init.error.message ?? 'initialize MCP'));
@@ -137,8 +158,11 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         send({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} });
 
         const listed = await request('tools/list', {});
-        const tools = (listed.result as { tools?: Array<{ name: string; inputSchema?: JsonSchema }> } | undefined)
-          ?.tools;
+        const tools = (
+          listed.result as
+            | { tools?: Array<{ name: string; inputSchema?: JsonSchema }> }
+            | undefined
+        )?.tools;
         const queryTool =
           tools?.find((t) => t.name === 'query_graph') ??
           tools?.find((t) => /query/i.test(t.name));
@@ -150,25 +174,30 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         const called = await request('tools/call', {
           name: queryTool.name,
           arguments: {
-            ...argsForQueryTool(queryTool.inputSchema, busqueda),
+            ...argsForQueryTool(queryTool.inputSchema, q),
             depth: 4,
-            token_budget: 2500,
+            token_budget: 3500,
           },
         });
         if (called.error) {
           finish(empty(called.error.message ?? 'tools/call'));
           return;
         }
+
         const queryText = textFromMcpResult(called.result);
         let godText = '';
-        if (tools?.some((t) => t.name === 'god_nodes')) {
+
+        // god_nodes es solo fallback. Usarlo siempre hacía que respuestas
+        // distintas terminaran mostrando el mismo núcleo general del corpus.
+        if (!queryText.trim() && tools?.some((t) => t.name === 'god_nodes')) {
           const g = await request('tools/call', {
             name: 'god_nodes',
             arguments: { top_n: 8 },
           });
           if (!g.error) godText = textFromMcpResult(g.result);
         }
-        const ok = queryText.length > 0 || godText.length > 0;
+
+        const ok = queryText.trim().length > 0 || godText.trim().length > 0;
         finish({
           ok,
           queryText,

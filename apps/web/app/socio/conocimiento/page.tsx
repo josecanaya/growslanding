@@ -6,6 +6,11 @@ import { Button } from '@/components/ui/grows';
 
 type Line = { id: string; role: 'user' | 'conocimiento'; text: string };
 
+type ApiHistoryMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 export default function SocioConocimientoPage() {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
@@ -14,22 +19,32 @@ export default function SocioConocimientoPage() {
     {
       id: 'intro',
       role: 'conocimiento',
-      text: 'Este chat habla por MCP con la fábrica (grows-conocimiento / graph.json). Misma fuente que Cursor. Sin API key. No mueve wallet ni tareas.',
+      text: 'Este chat usa el grafo de conocimiento de Grows como contexto. Podés preguntar y seguir conversando sobre la misma idea.',
     },
   ]);
 
   const enviar = async () => {
     const mensaje = draft.trim();
     if (!mensaje || busy) return;
+
+    const history: ApiHistoryMessage[] = hilo
+      .filter((m) => m.id !== 'intro')
+      .slice(-10)
+      .map((m) => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.text.slice(0, 2000),
+      }));
+
     setDraft('');
     setBusy(true);
     setError(null);
     setHilo((h) => [...h, { id: `u-${Date.now()}`, role: 'user', text: mensaje }]);
+
     try {
       const res = await fetch('/api/socio/conocimiento/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje }),
+        body: JSON.stringify({ mensaje, history }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message ?? 'No se pudo consultar');
@@ -52,7 +67,7 @@ export default function SocioConocimientoPage() {
     <div className="flex min-h-[70vh] flex-col px-4 py-6">
       <h1 className="mb-1 text-lg font-semibold text-[#163274]">Conocimiento</h1>
       <p className="mb-4 text-xs text-slate-500">
-        MCP local: graphify.serve sobre grows-conocimiento. No hay API key.
+        Chat RAG: Graphify/MCP recupera la carpeta grows-conocimiento y el modelo responde con ese contexto.
       </p>
       {error && <p className="mb-2 rounded-lg bg-red-50 p-2 text-sm text-red-800">{error}</p>}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3">
@@ -76,7 +91,7 @@ export default function SocioConocimientoPage() {
       >
         <input
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-          placeholder="Preguntá al corpus…"
+          placeholder="Preguntá al conocimiento de Grows…"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           disabled={busy}

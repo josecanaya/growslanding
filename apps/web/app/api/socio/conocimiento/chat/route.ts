@@ -10,13 +10,20 @@ import { queryConocimientoGraphify } from '@/lib/conocimiento/queryConocimientoG
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const historyMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().trim().min(1).max(2000),
+});
+
 const bodySchema = z.object({
   mensaje: z.string().trim().min(1).max(500),
+  history: z.array(historyMessageSchema).max(12).optional().default([]),
 });
 
 /**
  * POST /api/socio/conocimiento/chat
- * MCP stdio (graphify.serve) sobre grows-conocimiento. Sin API key. No toca wallet ni FSM.
+ * Graphify/MCP recupera contexto desde grows-conocimiento y un LLM responde
+ * usando ese contexto + historial. No toca wallet, tareas ni FSM.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -41,13 +48,17 @@ export async function POST(req: NextRequest) {
 
     const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
-      return NextResponse.json({ message: 'Escribí una pregunta.' }, { status: 400 });
+      return NextResponse.json({ message: 'Consulta o historial inválido.' }, { status: 400 });
     }
 
-    const result = await queryConocimientoGraphify(parsed.data.mensaje);
+    const result = await queryConocimientoGraphify(
+      parsed.data.mensaje,
+      parsed.data.history,
+    );
+
     return NextResponse.json({
       success: result.ok,
-      data: { reply: result.text },
+      data: { reply: result.text, source: result.source ?? 'fallback' },
     });
   } catch (e) {
     console.error('[POST /api/socio/conocimiento/chat]', e);

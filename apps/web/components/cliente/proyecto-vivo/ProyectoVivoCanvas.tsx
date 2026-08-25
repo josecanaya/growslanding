@@ -161,7 +161,13 @@ function ProyectoVivoCanvasInner({ obraId, obraNombre }: Props) {
       const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/grafo/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje }),
+        body: JSON.stringify({
+          mensaje,
+          historial: hilo.slice(-12).map((h) => ({
+            role: h.role,
+            text: h.text.slice(0, 2000),
+          })),
+        }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(json.message ?? 'No se pudo seguir');

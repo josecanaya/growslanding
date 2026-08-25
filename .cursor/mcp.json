@@ -13,6 +13,13 @@
         "stdio"
       ],
       "cwd": "C:\\Users\\Usuario\\Desktop\\Jose\\grows-conocimiento"
+    },
+    "grows-plataforma": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\Usuario\\Desktop\\Jose\\Grows\\mcp-grows-plataforma\\index.mjs"
+      ],
+      "cwd": "C:\\Users\\Usuario\\Desktop\\Jose\\Grows\\mcp-grows-plataforma"
     }
   }
 }

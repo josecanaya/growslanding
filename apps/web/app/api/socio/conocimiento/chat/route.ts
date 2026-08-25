@@ -5,18 +5,30 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
 import { resolveSocioRecordForAuthUser } from '@/lib/socios/resolveSocioForAuthUser';
-import { queryConocimientoGraphify } from '@/lib/conocimiento/queryConocimientoGraphify';
+import { buscarEnCorpusAsync } from '@/lib/conocimiento/buscarEnCorpus';
+import { queryConocimientoMcp } from '@/lib/conocimiento/queryConocimientoMcp';
+import { responderConConocimiento } from '@/lib/conocimiento/responderConConocimiento';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 120;
 
 const bodySchema = z.object({
-  mensaje: z.string().trim().min(1).max(500),
+  mensaje: z.string().trim().min(1).max(2000),
+  historial: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'horizonte', 'assistant', 'conocimiento']),
+        text: z.string().max(4000),
+      }),
+    )
+    .max(20)
+    .optional(),
 });
 
 /**
  * POST /api/socio/conocimiento/chat
- * MCP stdio (graphify.serve) sobre grows-conocimiento. Sin API key. No toca wallet ni FSM.
+ * Corpus/Graphify → LLM. No wallet ni FSM.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -44,10 +56,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Escribí una pregunta.' }, { status: 400 });
     }
 
-    const result = await queryConocimientoGraphify(parsed.data.mensaje);
+    const mensaje = parsed.data.mensaje;
+    const corpus = await buscarEnCorpusAsync(mensaje, 3);
+    let grafoText = '';
+    try {
+      const mcp = await queryConocimientoMcp(mensaje);
+      grafoText = [mcp.queryText, mcp.godText].filter(Boolean).join('\n\n').slice(0, 3500);
+    } catch {
+      grafoText = '';
+    }
+
+    const historial = (parsed.data.historial ?? []).map((h) => ({
+      role: (h.role === 'user' ? 'user' : 'horizonte') as 'user' | 'horizonte',
+      text: h.text,
+    }));
+
+    const resp = await responderConConocimiento({
+      mensaje,
+      objetivo: null,
+      contexto: {
+        corpus,
+        grafoText,
+        fuente: corpus.length || grafoText ? 'local' : 'vacio',
+      },
+      historial,
+      anotoPaso: null,
+    });
+
     return NextResponse.json({
-      success: result.ok,
-      data: { reply: result.text },
+      success: true,
+      data: { reply: resp.text, via: resp.via },
     });
   } catch (e) {
     console.error('[POST /api/socio/conocimiento/chat]', e);

@@ -1,30 +1,35 @@
 ---
-description: Grows se opera chateando. El canvas es el horizonte. El MCP de inteligencia apunta a grows-conocimiento.
+description: Grows se opera chateando desde Cursor. MCP plataforma + conocimiento. Lógica A→T→B.
 alwaysApply: true
 ---
 
-# Horizonte + MCP
+# Horizonte + MCP (motor Cursor)
 
-Grows no se usa rellenando formularios. Se **habla** en este chat.
+Grows no se usa rellenando formularios. Se **habla** en este chat (tu cuenta Cursor).
 
-## Tres piezas
+## Piezas
 
-1. **Este chat (Cursor)** — teclado. Pedís estados, transformaciones, features. Grows cuantifica tokens.
-2. **MCP `grows-conocimiento`** — inteligencia. Carpeta `c:\Users\Usuario\Desktop\Jose\grows-conocimiento`. Construcción + marco. Query antes de inventar oficio o receta.
-3. **Canvas** — horizonte. `canvas_nodes` / `canvas_edges`. Muestra IDEA → T → B. El front es libre (cualquier dominio); no es un wizard de m².
+1. **Este chat** — teclado. Pedís estados, transformaciones, features.
+2. **MCP `grows-conocimiento`** — oficio (corpus Graphify).
+3. **MCP `grows-plataforma`** — obra viva: `listar_obras_vivas`, `leer_horizonte`, `proponer_paso`, `anotar_hilo`.
+4. **MCP `supabase`** — SQL crudo; preferí `grows-plataforma` para el horizonte.
+5. **Front** — el humano acepta propuestas; CPM es lente; socio/bolsa/cobro es el core operativo intacto.
 
-MCP `supabase` = filas de una obra. No es el corpus.
+## Lógica Grows (obligatoria)
 
-## Qué hacer cuando el usuario pide crear / cambiar el proyecto
+- Solo escribir **propuesta** en el canvas. Nunca `realizada`, wallet, ni PUT replace-all.
+- Pregunta coloquial → responder con oficio (corpus). Paso al grafo solo con `verbo → estado`.
+- Al aceptar en el front, el puente a tareas/bolsa/FSM ya existe; el agente no lo dispara desde acá salvo que el usuario lo pida explícitamente y sea seguro.
+- Append al corpus sin PII: patrones → `02_patrones/`, features → `04_features/`, MCP → `03_mcp/`.
 
-- Consultar Graphify (`grows-conocimiento`) si hay duda de dominio.
-- Escribir en el horizonte solo **propuesta** (POST `/api/obras/[id]/grafo/propuestas` o insert puntual actor `agente`). Nunca `validada`, wallet, ni PUT replace-all del canvas.
-- Registrar en el corpus (append, sin PII):
-  - patrón A→T→B → `corpus/02_patrones/`
-  - feature pedida → `corpus/04_features/`
-  - qué se preguntó al MCP → `corpus/03_mcp/`
-- El humano acepta en el horizonte. El agente no marca `realizada` de ejecución.
+## Cuando el usuario habla de una obra
+
+1. `listar_obras_vivas` o usar la obra que nombre.
+2. `leer_horizonte`.
+3. Consultar `grows-conocimiento` si hace falta oficio.
+4. Si pide anotar: `proponer_paso` con `verbo → estado` + `anotar_hilo`.
+5. Decirle que acepte en el horizonte del front.
 
 ## Prohibido
 
-Secretos, `obra_id`, montos, clientes en GitHub. Mezclar Graphify de código con el corpus. Tratar Graphify como store de una obra.
+Secretos, montos, clientes en GitHub. Mezclar Graphify de código con el corpus. Tratar Graphify como store de una obra.

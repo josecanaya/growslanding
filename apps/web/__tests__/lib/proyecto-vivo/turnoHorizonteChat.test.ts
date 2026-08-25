@@ -1,6 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { turnoHorizonteChat } from '@/lib/proyecto-vivo/orquestador/turnoHorizonteChat';
 import type { CanvasMultinivelPersisted } from '@/lib/types/canvasMultinivel';
+
+vi.mock('@/lib/conocimiento/queryConocimientoMcp', () => ({
+  queryConocimientoMcp: async () => ({ ok: false, text: '', queryText: '', godText: '' }),
+}));
 
 const canvas: CanvasMultinivelPersisted = {
   v: 4,
@@ -31,6 +35,6 @@ describe('turnoHorizonteChat', () => {
       objetivo: 'edificio de 100 departamentos',
     });
     expect(t.propuesta.nodos).toHaveLength(0);
-    expect(t.reply.toLowerCase()).toMatch(/lote|medianera|tipolog/);
+    expect(t.reply.toLowerCase()).toMatch(/lote|medianera|esquina|tipolog/);
   });
 });

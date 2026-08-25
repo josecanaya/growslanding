@@ -3,18 +3,28 @@ import { z } from 'zod';
 import { loadProyectoVivoForWrite } from '@/lib/proyecto-vivo/loadGrafoSnapshot';
 import { insertarPropuestaEnCanvas } from '@/lib/proyecto-vivo/orquestador/insertarPropuestaEnCanvas';
 import { turnoHorizonteChat } from '@/lib/proyecto-vivo/orquestador/turnoHorizonteChat';
-import { mergeCanvasUiHilo, type HiloLinea } from '@/lib/proyecto-vivo/hiloCanvasUi';
+import { mergeCanvasUiHilo, parseHiloCanvasUi, type HiloLinea } from '@/lib/proyecto-vivo/hiloCanvasUi';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 120;
 
 const bodySchema = z.object({
   mensaje: z.string().trim().min(1).max(4000),
+  historial: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'horizonte', 'assistant']),
+        text: z.string().max(4000),
+      }),
+    )
+    .max(20)
+    .optional(),
 });
 
 /**
  * POST /api/obras/[id]/grafo/chat
- * Habla contra el corpus. Solo escribe nodos si el mensaje es un paso (verbo → estado).
+ * RAG (corpus/Graphify) → LLM si hay key. Solo escribe nodos con verbo → estado.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,10 +40,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const loaded = await loadProyectoVivoForWrite(obraId);
     if (!loaded.ok) return loaded.response;
 
+    const hiloPrev = parseHiloCanvasUi(loaded.canvasUi);
+    const historial =
+      parsed.data.historial?.map((h) => ({ role: h.role, text: h.text })) ??
+      hiloPrev.map((h) => ({ role: h.role, text: h.text }));
+
     const turno = await turnoHorizonteChat({
       canvas: loaded.canvas,
       mensaje: parsed.data.mensaje,
       objetivo: loaded.objetivoTexto,
+      historial,
     });
 
     let insert = {
@@ -76,6 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         ...insert,
         reply: turno.reply,
+        via: turno.via,
         hilo: canvasUi.hilo,
         anotoPaso: turno.propuesta.nodos.length > 0,
         paso: turno.propuesta.pasos[0] ?? null,

@@ -45,7 +45,7 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
 
   const python = resolveConocimientoPython();
   const q = pregunta.replace(/\s+/g, ' ').trim().slice(0, 500);
-  const busqueda = `${q} orquestador átomo transformación frontera canvas secuencia constructiva`;
+  const busqueda = q;
 
   return new Promise((resolve) => {
     const child = spawn(
@@ -161,7 +161,9 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         }
         const queryText = textFromMcpResult(called.result);
         let godText = '';
-        if (tools?.some((t) => t.name === 'god_nodes')) {
+        const queryVacio =
+          !queryText.trim() || /0 nodes|no matching|no nodes/i.test(queryText);
+        if (queryVacio && tools?.some((t) => t.name === 'god_nodes')) {
           const g = await request('tools/call', {
             name: 'god_nodes',
             arguments: { top_n: 8 },

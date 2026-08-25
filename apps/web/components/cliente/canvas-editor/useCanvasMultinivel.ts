@@ -217,6 +217,39 @@ export function useCanvasMultinivel(obraId: string) {
     };
   }, [obraId]);
 
+  const reloadCanvasFromCloud = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/obras/${encodeURIComponent(obraId)}/canvas`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const j = await res.json();
+      if (!res.ok || !j.success || !j.data) return;
+      const name = j.data.obraNombre ?? j.data.obra?.name ?? 'Obra';
+      setObraNombre(name);
+      setNodes(Array.isArray(j.data.nodes) ? j.data.nodes : []);
+      setEdges(Array.isArray(j.data.edges) ? j.data.edges : []);
+      setPathIds(Array.isArray(j.data.pathIds) ? j.data.pathIds : []);
+      setBudgetGroups(Array.isArray(j.data.budgetGroups) ? j.data.budgetGroups : []);
+      const k = j.data.projectKind ?? j.data.obra?.canvas_project_kind;
+      if (typeof k === 'string') setProjectKind(k as CanvasProjectKind);
+      saveCanvasMultinivel(
+        obraId,
+        composeCanvasPersisted({
+          obraNombre: name,
+          nodes: Array.isArray(j.data.nodes) ? j.data.nodes : [],
+          pathIds: j.data.pathIds ?? [],
+          edges: j.data.edges ?? [],
+          budgetGroups: j.data.budgetGroups ?? [],
+          projectKind: typeof k === 'string' ? k : 'edificio_multifamiliar',
+        }),
+      );
+      await refreshTareaPublicacion();
+    } catch {
+      /* noop */
+    }
+  }, [obraId, refreshTareaPublicacion]);
+
   useEffect(() => {
     if (!canvasHydrated) return;
     void refreshTareaPublicacion();
@@ -338,7 +371,7 @@ export function useCanvasMultinivel(obraId: string) {
   }, [containerNode, nodes]);
 
   const visibleNodes = useMemo(
-    () => nodes.filter((n) => n.parentId === containerId),
+    () => nodes.filter((n) => n.parentId === containerId && n.type !== 'estado'),
     [nodes, containerId],
   );
 
@@ -779,6 +812,7 @@ export function useCanvasMultinivel(obraId: string) {
     cloudSaveMessage,
     tareaPublicacionByNodeId,
     refreshTareaPublicacion,
+    reloadCanvasFromCloud,
     nodes,
     edges,
     pathIds,

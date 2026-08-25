@@ -54,12 +54,12 @@ export function ClienteHeader() {
   const title = useMemo(() => {
     if (pathname.startsWith('/cliente/dashboard')) return 'Grows Hub';
     if (pathname.startsWith('/cliente/proyectos/nuevo')) return 'Desde una idea';
-    if (pathname.includes('/grafo')) return 'Grafo vivo';
+    if (pathname.includes('/grafo')) return 'Organizar';
     if (pathname.startsWith('/cliente/obras/nueva')) return 'Nueva obra (plan clásico)';
     if (pathname.includes('/timeline') && nombreObraDesdeLista) return nombreObraDesdeLista;
     if (obraIdEnPath && nombreObraDesdeLista) return nombreObraDesdeLista;
     if (pathname.startsWith('/cliente/obras')) return 'Obras';
-    if (pathname.startsWith('/cliente/tareas/') && pathname.includes('/editor')) return 'Editor de planificación';
+    if (pathname.startsWith('/cliente/tareas/') && pathname.includes('/editor')) return 'Organizar';
     if (pathname.startsWith('/cliente/tareas/') && !pathname.includes('/editor')) return 'Planificación de obra';
     if (pathname.startsWith('/cliente/tareas')) return 'Planificación de obra';
     if (pathname.startsWith('/cliente/validar')) return 'Validaciones';

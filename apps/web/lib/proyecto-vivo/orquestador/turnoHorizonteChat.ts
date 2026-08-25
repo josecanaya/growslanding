@@ -7,10 +7,11 @@ import {
 import { resumenCadenaCanvas } from '@/lib/conocimiento/growsOficioPrompt';
 import type { ContextoConocimiento } from '@/lib/conocimiento/recuperarContextoConocimiento';
 import { intencionDelHabla } from '@/lib/proyecto-vivo/orquestador/intencionDelHabla';
-import { proponerDesdeChat } from '@/lib/proyecto-vivo/orquestador/proponerDesdeChat';
-import type { CanvasMultinivelPersisted } from '@/lib/types/canvasMultinivel';
-import { isCanvasEstadoNode, isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
-import type { PropuestaL0Result } from '@/lib/proyecto-vivo/orquestador/proponerL0';
+import {
+  pasoDesdeHabla,
+  proponerPasoEnCanvasObra,
+} from '@/lib/proyecto-vivo/orquestador/proponerPasoEnCanvasObra';
+import type { CanvasMultinivelPersisted, CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
 
 async function contextoDePregunta(mensaje: string): Promise<ContextoConocimiento> {
   const corpus = await buscarEnCorpusAsync(mensaje, 3);
@@ -28,11 +29,17 @@ async function contextoDePregunta(mensaje: string): Promise<ContextoConocimiento
   };
 }
 
-function cadenaParaPrompt(canvas: CanvasMultinivelPersisted): string {
-  const idea =
-    canvas.nodes.find((n) => isCanvasEstadoNode(n) && n.title.toLowerCase() === 'idea') ??
-    canvas.nodes.find((n) => isCanvasEstadoNode(n) && n.graphStatus === 'alcanzado');
-  if (!idea) {
+function resumenOrganizar(canvas: CanvasMultinivelPersisted): string {
+  const etapas = canvas.nodes.filter((n) => n.type === 'etapa' && n.parentId === null);
+  const lineas: string[] = [];
+  for (const e of etapas.slice(0, 12)) {
+    lineas.push(`Etapa: ${e.title}`);
+    const tareas = canvas.nodes.filter((n) => n.parentId === e.id && n.type === 'tarea');
+    for (const t of tareas.slice(0, 20)) {
+      lineas.push(`  - ${t.title}${t.descripcion ? `: ${t.descripcion.slice(0, 80)}` : ''}`);
+    }
+  }
+  if (lineas.length === 0) {
     return resumenCadenaCanvas(
       canvas.nodes.map((n) => ({
         type: n.type,
@@ -43,48 +50,29 @@ function cadenaParaPrompt(canvas: CanvasMultinivelPersisted): string {
       })),
     );
   }
-  const out = [idea];
-  const seen = new Set([idea.id]);
-  let from = idea.id;
-  for (let i = 0; i < 40; i++) {
-    const nextT = canvas.nodes.find(
-      (n) => isCanvasTransformacionNode(n) && n.fromNodeId === from && !seen.has(n.id),
-    );
-    if (!nextT) break;
-    out.push(nextT);
-    seen.add(nextT.id);
-    if (nextT.toNodeId) {
-      const b = canvas.nodes.find((n) => n.id === nextT.toNodeId);
-      if (b && !seen.has(b.id)) {
-        out.push(b);
-        seen.add(b.id);
-        from = b.id;
-        continue;
-      }
-    }
-    break;
-  }
-  return resumenCadenaCanvas(
-    out.map((n) => ({
-      type: n.type,
-      title: n.title,
-      graphStatus: n.graphStatus,
-      transformKind: n.transformKind,
-      orquestadorEstado: n.orquestador?.estado,
-    })),
-  );
+  return lineas.join('\n');
 }
+
+export type TurnoHorizonteResult = {
+  reply: string;
+  via: 'cursor' | 'llm_local' | 'sintesis';
+  nodos: CanvasNode[];
+  edges: CanvasPrecedenceEdge[];
+  tareaId: string | null;
+  motivo: string;
+  anotoPaso: boolean;
+};
 
 export async function turnoHorizonteChat(input: {
   canvas: CanvasMultinivelPersisted;
   mensaje: string;
   objetivo: string | null;
   historial?: HiloTurno[];
-}): Promise<{ reply: string; propuesta: PropuestaL0Result; via: 'cursor' | 'llm_local' | 'sintesis' }> {
+}): Promise<TurnoHorizonteResult> {
   const mensaje = input.mensaje.replace(/\s+/g, ' ').trim();
   const intencion = intencionDelHabla(mensaje);
   const contexto = await contextoDePregunta(mensaje);
-  const cadenaResumen = cadenaParaPrompt(input.canvas);
+  const cadenaResumen = resumenOrganizar(input.canvas);
 
   if (intencion !== 'paso') {
     const resp = await responderConConocimiento({
@@ -96,27 +84,33 @@ export async function turnoHorizonteChat(input: {
       cadenaResumen,
     });
     return {
-      propuesta: {
-        fromEstadoId: null,
-        pasos: [],
-        nodos: [],
-        edges: [],
-        motivo: 'charla',
-      },
       reply: resp.text,
       via: resp.via,
+      nodos: [],
+      edges: [],
+      tareaId: null,
+      motivo: 'charla',
+      anotoPaso: false,
     };
   }
 
-  const propuesta = proponerDesdeChat({ canvas: input.canvas, mensaje });
-  const paso = propuesta.pasos[0] ?? null;
+  const propuesta = proponerPasoEnCanvasObra({ canvas: input.canvas, mensaje });
+  const paso = pasoDesdeHabla(mensaje);
   const resp = await responderConConocimiento({
     mensaje,
     objetivo: input.objetivo,
     contexto,
     historial: input.historial,
-    anotoPaso: paso ? { verb: paso.verb, estadoB: paso.estadoB } : null,
+    anotoPaso: { verb: paso.verb, estadoB: paso.detalle },
     cadenaResumen,
   });
-  return { propuesta, reply: resp.text, via: resp.via };
+  return {
+    reply: resp.text,
+    via: resp.via,
+    nodos: propuesta.nodos,
+    edges: propuesta.edges,
+    tareaId: propuesta.tareaId,
+    motivo: propuesta.motivo,
+    anotoPaso: propuesta.nodos.some((n) => n.type === 'tarea'),
+  };
 }

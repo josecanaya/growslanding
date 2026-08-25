@@ -58,19 +58,19 @@ export default function ObrasPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <SectionHeader
-        eyebrow="Proyecto vivo"
+        eyebrow="Proyectos"
         title="Proyectos"
-        description="IDEA → transformación → estado. Las obras clásicas siguen en el editor de planificación."
+        description="Mismo canvas Organizar (etapas, tareas, CPM). El chat acompaña."
         action={
           <div className="flex flex-wrap gap-2">
             <Link href={'/cliente/proyectos/nuevo' as Route}>
               <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Desde una idea
+                Nuevo proyecto
               </Button>
             </Link>
             <Link href={'/cliente/obras/nueva' as Route}>
               <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Plan clásico
+                Obra
               </Button>
             </Link>
           </div>
@@ -89,11 +89,11 @@ export default function ObrasPage() {
         </div>
       ) : obras.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
-          No hay proyectos. Empezá desde una idea para abrir el grafo vivo.
+          No hay proyectos. Creá uno para abrir el Organizar.
           <span className="mt-4 block">
             <Link href={'/cliente/proyectos/nuevo' as Route}>
               <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Desde una idea
+                Nuevo proyecto
               </Button>
             </Link>
           </span>
@@ -112,11 +112,7 @@ export default function ObrasPage() {
                 ubicacion={o.address || 'Sin ubicación'}
                 estado={estadoLabel(o.estado)}
                 avancePct={avance}
-                href={
-                  (o.graphMode === 'proyecto_vivo'
-                    ? `/cliente/proyectos/${o.id}/grafo`
-                    : `/cliente/tareas/${o.id}/editor`) as Route
-                }
+                href={`/cliente/tareas/${o.id}/editor` as Route}
                 onEliminar={handleEliminarObra}
                 eliminando={eliminandoId === o.id}
               />

@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         obra: { id: obra.id, name: obra.name, graph_mode: 'proyecto_vivo' },
-        redirectTo: `/cliente/proyectos/${obra.id}/grafo`,
+        redirectTo: `/cliente/tareas/${obra.id}/editor`,
       },
       { status: 201 },
     );

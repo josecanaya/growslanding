@@ -133,11 +133,11 @@ export async function loadProyectoVivoForWrite(
 > {
   const gated = await authAndLoadObra(obraId);
   if (!gated.ok) return gated;
-  if (gated.obra.graph_mode !== 'proyecto_vivo') {
+  if (gated.obra.graph_mode !== 'proyecto_vivo' && gated.obra.graph_mode !== 'obra_plan') {
     return {
       ok: false,
       response: NextResponse.json(
-        { success: false, message: 'El orquestador solo aplica a graph_mode=proyecto_vivo' },
+        { success: false, message: 'El chat solo aplica a obras con canvas (obra_plan o proyecto_vivo)' },
         { status: 400 },
       ),
     };

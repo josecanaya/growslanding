@@ -45,6 +45,7 @@ import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
+import { CanvasHablarPanel } from './CanvasHablarPanel';
 import { ObraCompletaFlowModal } from './ObraCompletaFlowModal';
 
 type Props = { obraId: string };
@@ -77,6 +78,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [obraCompletaOpen, setObraCompletaOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
+  const [hablarOpen, setHablarOpen] = useState(true);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
   const {
@@ -125,6 +127,7 @@ export function CanvasObraEditor({ obraId }: Props) {
     applyBudgetGroupToNode,
     tareaPublicacionByNodeId,
     refreshTareaPublicacion,
+    reloadCanvasFromCloud,
   } = useCanvasMultinivel(obraId);
 
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -699,7 +702,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         </div>
       ) : null}
 
-      <div className="mx-auto flex w-full max-w-[1920px] flex-1 min-h-0 gap-3 px-3 pb-3">
+      <div className="relative mx-auto flex w-full max-w-[1920px] flex-1 min-h-0 gap-3 px-3 pb-3">
         {showProjectBrowser ? (
           <CanvasProjectBrowser
             obraNombre={obraNombre}
@@ -712,6 +715,23 @@ export function CanvasObraEditor({ obraId }: Props) {
             onGoRoot={() => goToBreadcrumbIndex(0)}
             onNavigateToNode={openPathToNode}
           />
+        ) : null}
+
+        <CanvasHablarPanel
+          obraId={obraId}
+          open={hablarOpen && editorTab === 'canvas'}
+          onClose={() => setHablarOpen(false)}
+          onCanvasMaybeChanged={() => void reloadCanvasFromCloud()}
+        />
+
+        {!hablarOpen && editorTab === 'canvas' ? (
+          <button
+            type="button"
+            onClick={() => setHablarOpen(true)}
+            className="absolute bottom-20 left-4 z-20 rounded-full bg-[#1e40af] px-3 py-2 text-xs font-bold text-white shadow-lg lg:left-auto lg:right-24"
+          >
+            Hablar
+          </button>
         ) : null}
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col py-3">

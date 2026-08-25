@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { loadProyectoVivoForWrite } from '@/lib/proyecto-vivo/loadGrafoSnapshot';
-import { insertarPropuestaEnCanvas } from '@/lib/proyecto-vivo/orquestador/insertarPropuestaEnCanvas';
+import { insertarNodosCanvasObra } from '@/lib/proyecto-vivo/orquestador/insertarNodosCanvasObra';
 import { turnoHorizonteChat } from '@/lib/proyecto-vivo/orquestador/turnoHorizonteChat';
 import { mergeCanvasUiHilo, parseHiloCanvasUi, type HiloLinea } from '@/lib/proyecto-vivo/hiloCanvasUi';
 
@@ -24,7 +24,7 @@ const bodySchema = z.object({
 
 /**
  * POST /api/obras/[id]/grafo/chat
- * RAG (corpus/Graphify) → LLM si hay key. Solo escribe nodos con verbo → estado.
+ * Acompaña el Organizar: propone etapa/tarea/precedencia (mismo canvas CPM).
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -53,36 +53,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
 
     let insert = {
-      insertedTransformaciones: 0,
-      insertedEstados: 0,
+      insertedNodes: 0,
       insertedEdges: 0,
       transformacionIds: [] as string[],
-      motivo: turno.propuesta.motivo,
+      motivo: turno.motivo,
     };
-    if (turno.propuesta.nodos.length > 0) {
-      insert = await insertarPropuestaEnCanvas({
+    if (turno.nodos.length > 0 || turno.edges.length > 0) {
+      insert = await insertarNodosCanvasObra({
         supabase: loaded.supabase,
         obraId,
         orgId: loaded.orgId,
         canvas: loaded.canvas,
-        propuesta: turno.propuesta,
+        nodos: turno.nodos,
+        edges: turno.edges,
+        motivo: turno.motivo,
       });
     }
 
     const now = new Date().toISOString();
     const extra: HiloLinea[] = [
-      {
-        id: `u-${now}`,
-        role: 'user',
-        text: parsed.data.mensaje.trim(),
-        at: now,
-      },
-      {
-        id: `h-${now}`,
-        role: 'horizonte',
-        text: turno.reply,
-        at: now,
-      },
+      { id: `u-${now}`, role: 'user', text: parsed.data.mensaje.trim(), at: now },
+      { id: `h-${now}`, role: 'horizonte', text: turno.reply, at: now },
     ];
     const canvasUi = mergeCanvasUiHilo(loaded.canvasUi, extra);
     await (loaded.supabase as any).from('obras').update({ canvas_ui: canvasUi }).eq('id', obraId);
@@ -94,8 +85,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         reply: turno.reply,
         via: turno.via,
         hilo: canvasUi.hilo,
-        anotoPaso: turno.propuesta.nodos.length > 0,
-        paso: turno.propuesta.pasos[0] ?? null,
+        anotoPaso: turno.anotoPaso,
+        tareaId: turno.tareaId,
       },
     });
   } catch (e) {

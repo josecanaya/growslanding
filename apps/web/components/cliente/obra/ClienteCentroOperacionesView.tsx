@@ -35,9 +35,7 @@ type StatTarea = ApiTareaRow & { descripcion?: string | null };
 type Props = { obraId: string };
 
 function hrefObra(o: Pick<ObraRes, 'id' | 'graphMode'>): Route {
-  return (o.graphMode === 'proyecto_vivo'
-    ? `/cliente/proyectos/${o.id}/grafo`
-    : `/cliente/tareas/${o.id}/editor`) as Route;
+  return `/cliente/tareas/${o.id}/editor` as Route;
 }
 
 const prioridadEtiqueta = (p: string | null) => {
@@ -234,7 +232,7 @@ export function ClienteCentroOperacionesView({ obraId }: Props) {
                     className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[#001629] shadow-sm transition hover:bg-white/90"
                   >
                     <GitBranch className="h-3.5 w-3.5" />
-                    Grafo vivo
+                    Organizar
                   </Link>
                 )}
                 <Link

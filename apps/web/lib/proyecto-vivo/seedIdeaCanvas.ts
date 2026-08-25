@@ -2,26 +2,27 @@ import { composeCanvasPersisted } from '@/lib/canvas/canvasMultinivelStorage';
 import type { CanvasMultinivelPersisted } from '@/lib/types/canvasMultinivel';
 import { newCanvasNodeId } from '@/lib/proyecto-vivo/ids';
 
+/** Seed = primera etapa del Organizar (misma UI que casa / XML). */
 export function buildSeedIdeaCanvasSnapshot(obraNombre: string): CanvasMultinivelPersisted {
-  const ideaId = newCanvasNodeId();
+  const etapaId = newCanvasNodeId();
   const now = new Date().toISOString();
   return composeCanvasPersisted({
     obraNombre: obraNombre.trim() || 'Proyecto',
     nodes: [
       {
-        id: ideaId,
+        id: etapaId,
         parentId: null,
         level: 1,
-        type: 'estado',
-        title: 'Idea',
-        position: { x: 0, y: 120 },
+        type: 'etapa',
+        title: '00. Definición del proyecto',
+        position: { x: 40, y: 40 },
         createdAt: now,
-        graphStatus: 'alcanzado',
+        estadoNivel: 'en_curso',
       },
     ],
     pathIds: [],
     edges: [],
     budgetGroups: [],
-    projectKind: 'otro',
+    projectKind: 'edificio_multifamiliar',
   });
 }

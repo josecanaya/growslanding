@@ -33,7 +33,7 @@ export function isClienteNavItemActive(pathname: string, href: string): boolean 
 }
 
 export const CLIENTE_NAV_ITEMS = [
-  { href: '/cliente/dashboard' as Route, label: 'Hub', icon: LayoutGrid },
+  { href: '/cliente/dashboard' as Route, label: 'Canvas', icon: LayoutGrid },
   { href: '/cliente/obras' as Route, label: 'Proyectos', icon: Building2 },
   { href: '/cliente/validar' as Route, label: 'Validaciones', icon: BadgeCheck },
   { href: '/cliente/presupuesto' as Route, label: 'Presupuestos', icon: FileSpreadsheet },
@@ -43,13 +43,20 @@ export const CLIENTE_NAV_ITEMS = [
   { href: '/cliente/cuenta' as Route, label: 'Cuenta', icon: UserCircle },
 ] as const;
 
-export function ClienteSidebar({ className }: { className?: string }) {
+export function ClienteSidebar({
+  className,
+  variant = 'default',
+}: {
+  className?: string;
+  variant?: 'default' | 'canvas';
+}) {
   const pathname = usePathname() ?? '';
   const user = useCurrentUser();
   const orgLabel = user?.orgName || user?.orgId?.slice(0, 8) || 'Grows';
   const [notifNoLeidas, setNotifNoLeidas] = useState(0);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClientComponentClient>['channel']> | null>(null);
   const supabase = useMemo(() => createClientComponentClient<Database>(), []);
+  const canvas = variant === 'canvas';
 
   useEffect(() => {
     if (!user?.orgId || !user?.id) {
@@ -151,11 +158,20 @@ export function ClienteSidebar({ className }: { className?: string }) {
   return (
     <aside
       className={cn(
-        'flex h-full w-[4.5rem] shrink-0 flex-col items-center border-r border-slate-200/80 bg-slate-50 py-6',
+        'flex h-full w-[4.5rem] shrink-0 flex-col items-center border-r py-6',
+        canvas
+          ? 'border-white/10 bg-[var(--grows-canvas-blue,#0C1D36)]'
+          : 'border-slate-200/80 bg-slate-50',
         className,
       )}
     >
-      <Link href="/cliente/dashboard" className="mb-8 font-bold tracking-tighter text-sky-950">
+      <Link
+        href="/cliente/dashboard"
+        className={cn(
+          'mb-8 font-bold tracking-tighter',
+          canvas ? 'text-white' : 'text-sky-950',
+        )}
+      >
         <span className="text-xl">G.</span>
       </Link>
       <nav className="flex flex-1 flex-col items-center gap-6">
@@ -169,9 +185,13 @@ export function ClienteSidebar({ className }: { className?: string }) {
               title={label}
               className={cn(
                 'group relative flex h-11 w-11 items-center justify-center rounded-xl transition',
-                active
-                  ? 'bg-white text-sky-700 shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-sky-600'
-                  : 'text-slate-400 hover:bg-white hover:text-sky-600',
+                canvas
+                  ? active
+                    ? 'bg-white/15 text-white shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-white'
+                    : 'text-white/45 hover:bg-white/10 hover:text-white'
+                  : active
+                    ? 'bg-white text-sky-700 shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-sky-600'
+                    : 'text-slate-400 hover:bg-white hover:text-sky-600',
               )}
             >
               <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} />
@@ -187,13 +207,21 @@ export function ClienteSidebar({ className }: { className?: string }) {
       <div className="mt-auto flex flex-col items-center gap-4">
         <span
           title={user?.orgName || ''}
-          className="max-w-[3rem] truncate text-[9px] font-semibold uppercase leading-tight text-slate-400"
+          className={cn(
+            'max-w-[3rem] truncate text-[9px] font-semibold uppercase leading-tight',
+            canvas ? 'text-white/40' : 'text-slate-400',
+          )}
         >
           {orgLabel}
         </span>
         <button
           type="button"
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-400 hover:bg-white hover:text-sky-600"
+          className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-xl',
+            canvas
+              ? 'text-white/45 hover:bg-white/10 hover:text-white'
+              : 'text-slate-400 hover:bg-white hover:text-sky-600',
+          )}
           title="Ajustes"
         >
           <Settings className="h-5 w-5" strokeWidth={1.75} />

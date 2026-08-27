@@ -86,6 +86,11 @@ export type CanvasNode = {
   type: CanvasNivelTipo;
   title: string;
   position: { x: number; y: number };
+  /**
+   * Sólo tareas: posición manual en la vista "Obra completa" (workflow global aplanado).
+   * Independiente de `position` (que es local al contenedor). Ausente = usar auto-layout por capas.
+   */
+  wfPos?: { x: number; y: number };
   createdAt: string;
   estadoTarea?: CanvasTareaEstadoLocal;
   duracionDias?: number;

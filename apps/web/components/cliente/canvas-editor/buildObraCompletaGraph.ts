@@ -198,7 +198,9 @@ function computeLateTimes(
 export function buildObraCompletaGraph(
   nodes: CanvasNode[],
   edges: CanvasPrecedenceEdge[],
+  opts?: { editable?: boolean },
 ): ObraCompletaGraph {
+  const editable = Boolean(opts?.editable);
   const tasks = nodes.filter((n) => n.type === 'tarea');
   const taskIds = new Set(tasks.map((t) => t.id));
   const userTaskEdges = edges.filter((e) => taskIds.has(e.sourceId) && taskIds.has(e.targetId));
@@ -256,15 +258,20 @@ export function buildObraCompletaGraph(
   const layers = computeLayers(metrics, allEdges);
   const positions = layoutByPrecedenceLayers(metrics, layers);
 
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
   const rfNodes: Node[] = metrics.map((m) => {
-    const pos = positions.get(m.taskId) ?? { x: 0, y: 0 };
+    const layoutPos = positions.get(m.taskId) ?? { x: 0, y: 0 };
+    // Editable: la posición manual del workflow (`wfPos`) manda; si no hay, cae al auto-layout.
+    const wf = taskById.get(m.taskId)?.wfPos;
+    const pos = editable && wf ? { x: wf.x, y: wf.y } : layoutPos;
     return {
       id: m.taskId,
       type: 'pertTask',
       position: pos,
-      draggable: false,
+      draggable: editable,
       selectable: true,
-      connectable: false,
+      connectable: editable,
+      deletable: false,
       data: { metrics: m },
     };
   });
@@ -276,6 +283,8 @@ export function buildObraCompletaGraph(
     const t = metricsById.get(e.targetId);
     const slack = s && t ? Math.max(0, t.es - s.ef) : 0;
     const kind = edgeKind(e.id);
+    // Sólo las precedencias reales (`user`) son editables: seleccionables + borrables.
+    const isUserEdge = kind === 'user';
     const critical =
       kind === 'macro' ||
       (kind === 'user' && Boolean(s?.isCritical && t?.isCritical && slack === 0));
@@ -288,8 +297,9 @@ export function buildObraCompletaGraph(
       type: 'smoothstep',
       pathOptions: { offset: 16, borderRadius: 10 },
       animated: false,
-      selectable: false,
-      focusable: false,
+      selectable: editable && isUserEdge,
+      deletable: editable && isUserEdge,
+      focusable: editable && isUserEdge,
       label:
         kind === 'macro' ? 'FS' : kind === 'implicit' ? '→' : slack === 0 ? 'H0' : `H${slack}`,
       labelStyle: {

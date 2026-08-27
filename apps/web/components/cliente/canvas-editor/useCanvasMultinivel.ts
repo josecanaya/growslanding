@@ -19,6 +19,7 @@ import {
 import {
   canEnterNode,
   canAddPrecedenceEdge,
+  canAddPrecedenceEdgeGlobalTasks,
   canAddPrecedenceEdgeInAncestorSubtree,
   childTypeForContainer,
   collectSubtreeIds,
@@ -623,6 +624,39 @@ export function useCanvasMultinivel(obraId: string) {
     [flattenSubtreePrecedenceRelaxed, containerId, containerNode?.type, nodes, edges],
   );
 
+  /**
+   * Conexión de precedencia GLOBAL entre tareas (vista "Obra completa"): admite tareas de
+   * distintos contenedores y valida ciclos sobre todo el grafo tarea→tarea.
+   */
+  const tryPrecedenceConnectionGlobal = useCallback(
+    (c: Connection) => {
+      if (!c.source || !c.target) return false;
+      if (!canAddPrecedenceEdgeGlobalTasks(nodes, edges, c.source, c.target)) return false;
+      const id = newCanvasEdgeId();
+      setEdges((prev) => [
+        ...prev,
+        { id, sourceId: c.source, targetId: c.target, critical: false },
+      ]);
+      return true;
+    },
+    [nodes, edges],
+  );
+
+  /** Posición manual de una tarea en el workflow global (persiste en `wfPos`, no toca `position`). */
+  const updateWorkflowPosition = useCallback(
+    (taskId: string, position: { x: number; y: number }) => {
+      patchNode(taskId, { wfPos: { x: position.x, y: position.y } });
+    },
+    [patchNode],
+  );
+
+  /** "Re-acomodar": limpia posiciones manuales del workflow → vuelve al auto-layout por capas. */
+  const clearWorkflowPositions = useCallback(() => {
+    setNodes((prev) =>
+      prev.map((n) => (n.type === 'tarea' && n.wfPos ? { ...n, wfPos: undefined } : n)),
+    );
+  }, []);
+
   const removeEdgeIds = useCallback((ids: string[]) => {
     if (!ids.length) return;
     setEdges((prev) => prev.filter((e) => !ids.includes(e.id)));
@@ -836,6 +870,9 @@ export function useCanvasMultinivel(obraId: string) {
     duplicateNode,
     createChildOf,
     tryPrecedenceConnection,
+    tryPrecedenceConnectionGlobal,
+    updateWorkflowPosition,
+    clearWorkflowPositions,
     removeEdgeIds,
     patchEdge,
     addChecklistItem,

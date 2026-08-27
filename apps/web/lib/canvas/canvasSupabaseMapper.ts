@@ -232,6 +232,14 @@ export function persistedToSupabaseRows(
       socioLabel: n.socioLabel,
     };
     if (n.orquestador) meta.orquestador = n.orquestador;
+    if (
+      n.type === 'tarea' &&
+      n.wfPos &&
+      Number.isFinite(n.wfPos.x) &&
+      Number.isFinite(n.wfPos.y)
+    ) {
+      meta.wfPos = { x: n.wfPos.x, y: n.wfPos.y };
+    }
 
     const projectUid =
       n.importSourceUid != null ? String(n.importSourceUid) : null;
@@ -387,6 +395,10 @@ export function supabaseRowsToPersisted(input: {
       if (row.status) base.estadoTarea = row.status as CanvasNode['estadoTarea'];
       if (row.planned_duration_days != null) base.duracionDias = Number(row.planned_duration_days);
       base.esCritica = row.is_critical;
+      const wf = meta.wfPos as { x?: unknown; y?: unknown } | undefined;
+      if (wf && typeof wf.x === 'number' && typeof wf.y === 'number') {
+        base.wfPos = { x: wf.x, y: wf.y };
+      }
       base.checklist = checklistByTask.get(base.id) ?? [];
       if (row.budget_group_id) {
         base.budgetGroupId = toClientBudgetGroupId(row.budget_group_id);

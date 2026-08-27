@@ -190,6 +190,46 @@ export function canAddPrecedenceEdgeInAncestorSubtree(
   return true;
 }
 
+/**
+ * Precedencia global entre tareas (vista "Obra completa"): permite conectar tareas de
+ * distintos contenedores (etapas/ambientes) y valida ciclos sobre TODO el grafo tarea→tarea.
+ */
+export function canAddPrecedenceEdgeGlobalTasks(
+  nodes: CanvasNode[],
+  edges: CanvasPrecedenceEdge[],
+  sourceId: string,
+  targetId: string,
+): boolean {
+  if (sourceId === targetId) return false;
+  const s = nodes.find((n) => n.id === sourceId);
+  const t = nodes.find((n) => n.id === targetId);
+  if (!s || !t || s.type !== 'tarea' || t.type !== 'tarea') return false;
+  if (edges.some((e) => e.sourceId === sourceId && e.targetId === targetId)) return false;
+
+  const taskIds = new Set(nodes.filter((n) => n.type === 'tarea').map((n) => n.id));
+  const adj = new Map<string, string[]>();
+  const addAdj = (a: string, b: string) => {
+    if (!adj.has(a)) adj.set(a, []);
+    adj.get(a)!.push(b);
+  };
+  for (const e of edges) {
+    if (!taskIds.has(e.sourceId) || !taskIds.has(e.targetId)) continue;
+    addAdj(e.sourceId, e.targetId);
+  }
+  addAdj(sourceId, targetId);
+
+  const stack: string[] = [targetId];
+  const seen = new Set<string>();
+  while (stack.length) {
+    const u = stack.pop()!;
+    if (u === sourceId) return false;
+    if (seen.has(u)) continue;
+    seen.add(u);
+    for (const v of adj.get(u) ?? []) stack.push(v);
+  }
+  return true;
+}
+
 export function descendantTaskNodesUnderAncestor(
   nodes: CanvasNode[],
   ancestorId: string,

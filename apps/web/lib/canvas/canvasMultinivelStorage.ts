@@ -48,7 +48,7 @@ function normalizeNode(n: CanvasNode): CanvasNode {
       graphStatus: n.graphStatus ?? 'fantasma',
     };
   }
-  const { checklist: _chk, esCritica: _crit, budgetGroupId: _bg, importSourceUid: _iu, importOutlineNumber: _io, ...rest } = n;
+  const { checklist: _chk, esCritica: _crit, budgetGroupId: _bg, importSourceUid: _iu, importOutlineNumber: _io, wfPos: _wf, ...rest } = n;
   return rest;
 }
 
@@ -214,7 +214,10 @@ function sanitizeEdges(nodes: CanvasNode[], edges: CanvasPrecedenceEdge[]): Canv
     const s = byId.get(e.sourceId);
     const t = byId.get(e.targetId);
     if (!s || !t) continue;
-    if (s.parentId !== t.parentId) continue;
+    // Precedencias entre hermanos (mismo padre) O precedencias globales tarea→tarea
+    // (vista "Obra completa": permiten conectar tareas de distintos contenedores).
+    const bothTasks = s.type === 'tarea' && t.type === 'tarea';
+    if (!bothTasks && s.parentId !== t.parentId) continue;
     const dupK = `${e.sourceId}->${e.targetId}`;
     if (seen.has(dupK)) continue;
     seen.add(dupK);

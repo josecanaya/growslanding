@@ -9,14 +9,31 @@ import {
   Panel,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
+  useNodesState,
   useReactFlow,
+  type Connection,
+  type Edge,
+  type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { X, Focus, GitBranch } from 'lucide-react';
+import { X, Focus, GitBranch, LayoutGrid } from 'lucide-react';
 
 import type { CanvasNode, CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
 import { buildObraCompletaGraph, type ObraCompletaTaskMetrics } from './buildObraCompletaGraph';
 import { pertFlowNodeTypes } from './PertTaskNode';
+
+/** Callbacks para editar el workflow global en la misma vista (arrastrar / conectar / borrar). */
+export type ObraCompletaEditable = {
+  /** Crea precedencia global tarea→tarea; devuelve false si es inválida (ciclo/duplicado). */
+  onConnect: (c: Connection) => boolean;
+  /** Persiste la posición manual de una tarea en el workflow. */
+  onNodeDragStop: (taskId: string, pos: { x: number; y: number }) => void;
+  /** Borra precedencias reales (`user`) por id. */
+  onRemoveEdges: (edgeIds: string[]) => void;
+  /** Vuelve al auto-layout por capas (limpia posiciones manuales). */
+  onReacomodar: () => void;
+};
 
 type Props = {
   open: boolean;
@@ -25,6 +42,7 @@ type Props = {
   nodes: CanvasNode[];
   edges: CanvasPrecedenceEdge[];
   onNavigateToTask?: (taskNodeId: string) => void;
+  editable?: ObraCompletaEditable;
 };
 
 function FitOnOpen({ active }: { active: boolean }) {
@@ -59,11 +77,16 @@ function ObraCompletaFlowInner({
   edges,
   onClose,
   onNavigateToTask,
+  editable,
 }: Omit<Props, 'open'>) {
   const [soloCriticas, setSoloCriticas] = useState(false);
   const [selected, setSelected] = useState<ObraCompletaTaskMetrics | null>(null);
+  const isEditable = Boolean(editable);
 
-  const graph = useMemo(() => buildObraCompletaGraph(nodes, edges), [nodes, edges]);
+  const graph = useMemo(
+    () => buildObraCompletaGraph(nodes, edges, { editable: isEditable }),
+    [nodes, edges, isEditable],
+  );
 
   const filtered = useMemo(() => {
     if (!soloCriticas) return graph;
@@ -76,6 +99,46 @@ function ObraCompletaFlowInner({
       edges: graph.edges.filter((e) => criticalIds.has(e.source) && criticalIds.has(e.target)),
     };
   }, [graph, soloCriticas]);
+
+  // Estado controlado de ReactFlow: permite arrastrar en vivo; se re-sincroniza cuando
+  // cambian nodos/edges/filtro (el grafo se reconstruye desde `wfPos` y precedencias reales).
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>(filtered.nodes);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>(filtered.edges);
+  useEffect(() => {
+    setRfNodes(filtered.nodes);
+  }, [filtered.nodes, setRfNodes]);
+  useEffect(() => {
+    setRfEdges(filtered.edges);
+  }, [filtered.edges, setRfEdges]);
+
+  const onConnect = useCallback(
+    (c: Connection) => {
+      editable?.onConnect(c);
+    },
+    [editable],
+  );
+
+  const onEdgesDelete = useCallback(
+    (deleted: Edge[]) => {
+      if (!editable || deleted.length === 0) return;
+      editable.onRemoveEdges(deleted.map((e) => e.id));
+    },
+    [editable],
+  );
+
+  const onNodeDragStop = useCallback(
+    (_: unknown, node: Node) => {
+      editable?.onNodeDragStop(node.id, { x: node.position.x, y: node.position.y });
+    },
+    [editable],
+  );
+
+  const onNodeDoubleClick = useCallback(
+    (_: unknown, node: { id: string }) => {
+      onNavigateToTask?.(node.id);
+    },
+    [onNavigateToTask],
+  );
 
   const criticalCount = useMemo(
     () => [...graph.metricsById.values()].filter((m) => m.isCritical).length,
@@ -118,11 +181,13 @@ function ObraCompletaFlowInner({
   return (
     <div className="relative flex h-full min-h-0 flex-1 flex-col">
       <ReactFlow
-        nodes={filtered.nodes}
-        edges={filtered.edges}
+        nodes={rfNodes}
+        edges={rfEdges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
         nodeTypes={pertFlowNodeTypes}
-        nodesDraggable={false}
-        nodesConnectable={false}
+        nodesDraggable={isEditable}
+        nodesConnectable={isEditable}
         elementsSelectable
         panOnDrag
         zoomOnScroll
@@ -131,6 +196,11 @@ function ObraCompletaFlowInner({
         onlyRenderVisibleElements
         proOptions={{ hideAttribution: true }}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
+        onConnect={isEditable ? onConnect : undefined}
+        onEdgesDelete={isEditable ? onEdgesDelete : undefined}
+        onNodeDragStop={isEditable ? onNodeDragStop : undefined}
+        deleteKeyCode={isEditable ? ['Backspace', 'Delete'] : null}
         onPaneClick={() => setSelected(null)}
         className="h-full w-full flex-1 !bg-[#f8fafc]"
       >
@@ -144,7 +214,7 @@ function ObraCompletaFlowInner({
             <p className="text-[10px] font-black uppercase tracking-wider text-[#64748b]">Obra completa</p>
             <h2 className="text-base font-extrabold text-[#0f172a]">{obraNombre}</h2>
             <p className="mt-1 text-[11px] text-[#64748b]">
-              Solo lectura · {graph.taskCount} tareas · {graph.edgeCount} vínculos canvas
+              {isEditable ? 'Editable' : 'Solo lectura'} · {graph.taskCount} tareas · {graph.edgeCount} vínculos canvas
               {graph.macroBridgeCount > 0
                 ? ` · ${graph.macroBridgeCount} enlaces fase/piso`
                 : ''}
@@ -160,6 +230,14 @@ function ObraCompletaFlowInner({
               inicio del siguiente. <span className="text-[#64748b]">Grises (→)</span> = orden en ambiente sin
               vínculos. Verdes = vínculos del canvas.
             </p>
+            {isEditable ? (
+              <p className="mt-1 rounded-lg border border-[#dbeafe] bg-[#eff6ff] px-2.5 py-1.5 text-[10px] leading-snug text-[#1d4ed8]">
+                <span className="font-bold">Edición:</span> arrastrá tareas para reubicarlas · tirá de un{' '}
+                borde a otro para crear precedencia (incluso entre etapas/ambientes) · seleccioná una
+                flecha verde y <span className="font-semibold">Supr</span> para borrarla · doble-clic para
+                abrir la tarea. Guardá con «Guardar en la nube».
+              </p>
+            ) : null}
             <div className="mt-2 rounded-lg border border-[#f1f5f9] bg-[#f8fafc] px-2.5 py-2">
               <p className="text-[9px] font-black uppercase tracking-wide text-[#64748b]">
                 Cómo leer cada caja
@@ -213,6 +291,17 @@ function ObraCompletaFlowInner({
         </Panel>
 
         <Panel position="top-right" className="!m-3 flex gap-2">
+          {isEditable ? (
+            <button
+              type="button"
+              onClick={() => editable?.onReacomodar()}
+              title="Reordenar automáticamente por capas de precedencia (borra posiciones manuales)"
+              className="flex items-center gap-1.5 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-xs font-bold text-[#334155] shadow-sm"
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Re-acomodar
+            </button>
+          ) : null}
           <AjustarButton />
           <button
             type="button"
@@ -270,6 +359,35 @@ function ObraCompletaFlowInner({
       <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 max-w-[min(92vw,520px)] -translate-x-1/2 rounded-full border border-[#e2e8f0] bg-white/90 px-4 py-1 text-center text-[10px] font-medium text-[#64748b] shadow-sm">
         Color de borde = fase · <span className="font-bold text-[#16a34a]">Anillo verde</span> = camino crítico
       </div>
+    </div>
+  );
+}
+
+/**
+ * Igual que el modal, pero embebido en el canvas (sin overlay fijo).
+ * Muestra la obra completa interconectada como workflow; al tocar un nodo
+ * se puede saltar a esa tarea en el canvas editable (onNavigateToTask).
+ */
+export function ObraCompletaFlowInline({
+  obraNombre,
+  nodes,
+  edges,
+  onClose,
+  onNavigateToTask,
+  editable,
+}: Omit<Props, 'open'>) {
+  return (
+    <div className="relative flex h-[min(70vh,780px)] min-h-[440px] w-full flex-col overflow-hidden rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]">
+      <ReactFlowProvider>
+        <ObraCompletaFlowInner
+          obraNombre={obraNombre}
+          nodes={nodes}
+          edges={edges}
+          onClose={onClose}
+          onNavigateToTask={onNavigateToTask}
+          editable={editable}
+        />
+      </ReactFlowProvider>
     </div>
   );
 }

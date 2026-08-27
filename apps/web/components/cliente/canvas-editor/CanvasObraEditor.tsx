@@ -46,7 +46,7 @@ import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
 import { CanvasHablarPanel } from './CanvasHablarPanel';
-import { ObraCompletaFlowModal } from './ObraCompletaFlowModal';
+import { ObraCompletaFlowModal, ObraCompletaFlowInline } from './ObraCompletaFlowModal';
 
 type Props = { obraId: string };
 
@@ -76,6 +76,8 @@ export function CanvasObraEditor({ obraId }: Props) {
   const projectXmlInputRef = useRef<HTMLInputElement | null>(null);
   const [publicarModalOpen, setPublicarModalOpen] = useState(false);
   const [obraCompletaOpen, setObraCompletaOpen] = useState(false);
+  /** Vista "Obra completa" embebida en el canvas (workflow interconectado). */
+  const [workflowInline, setWorkflowInline] = useState(false);
   const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
   const [hablarOpen, setHablarOpen] = useState(true);
@@ -112,6 +114,9 @@ export function CanvasObraEditor({ obraId }: Props) {
     duplicateNode,
     createChildOf,
     tryPrecedenceConnection,
+    tryPrecedenceConnectionGlobal,
+    updateWorkflowPosition,
+    clearWorkflowPositions,
     removeEdgeIds,
     patchEdge,
     addChecklistItem,
@@ -665,7 +670,10 @@ export function CanvasObraEditor({ obraId }: Props) {
         deleteDisabled={!selectedId}
         onGoOrganizar={() => setEditorTab('canvas')}
         onOpenTemplateLibrary={() => setLibraryOpen(true)}
-        onOpenObraCompleta={() => setObraCompletaOpen(true)}
+        onOpenObraCompleta={() => {
+          setEditorTab('canvas');
+          setWorkflowInline(true);
+        }}
       />
       <CanvasTemplateLibraryPanel
         open={libraryOpen}
@@ -821,6 +829,26 @@ export function CanvasObraEditor({ obraId }: Props) {
                 createBudgetGroup={createBudgetGroup}
                 saveCanvasSnapshotToCloud={saveCanvasSnapshotToCloud}
                 onOpenCanvasTab={() => setEditorTab('canvas')}
+              />
+            ) : workflowInline ? (
+              <ObraCompletaFlowInline
+                obraNombre={obraNombre}
+                nodes={nodes}
+                edges={edges}
+                onClose={() => setWorkflowInline(false)}
+                onNavigateToTask={(taskId) => {
+                  setWorkflowInline(false);
+                  setEditorTab('canvas');
+                  openPathToNode(taskId);
+                  setSelectedId(taskId);
+                  setInspectorOpen(true);
+                }}
+                editable={{
+                  onConnect: (c) => tryPrecedenceConnectionGlobal(c),
+                  onNodeDragStop: (taskId, pos) => updateWorkflowPosition(taskId, pos),
+                  onRemoveEdges: (ids) => removeEdgeIds(ids),
+                  onReacomodar: () => clearWorkflowPositions(),
+                }}
               />
             ) : (
               vistaCentral

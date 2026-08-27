@@ -4,7 +4,7 @@
  */
 import { NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
-import { assertMcpBearer, mcpCorsHeaders } from '@/lib/mcp-grows/createServer';
+import { authenticateMcp, mcpCorsHeaders } from '@/lib/mcp-grows/createServer';
 import { callGrowsMcpTool } from '@/lib/mcp-grows/tools';
 
 export const runtime = 'nodejs';
@@ -17,17 +17,17 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request, ctx: Ctx) {
-  const denied = assertMcpBearer(req);
-  if (denied) {
-    const headers = new Headers(denied.headers);
+  const auth = authenticateMcp(req);
+  if ('error' in auth) {
+    const headers = new Headers(auth.error.headers);
     for (const [k, v] of Object.entries(mcpCorsHeaders)) headers.set(k, v);
-    return new NextResponse(denied.body, { status: denied.status, headers });
+    return new NextResponse(auth.error.body, { status: auth.error.status, headers });
   }
 
   const { tool } = await ctx.params;
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const supabase = createServiceSupabaseClient();
-  const result = await callGrowsMcpTool(supabase, tool, body);
+  const result = await callGrowsMcpTool(supabase, tool, body, auth.ctx);
   const text = result.content[0]?.text ?? '{}';
   let json: unknown = text;
   try {

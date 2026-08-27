@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveUserOrgIds, type McpUserContext } from '@/lib/mcp-grows/oauth';
 
 const ETAPA_DEFINICION = '00. Definición del proyecto';
 
@@ -79,17 +80,36 @@ function textResult(obj: unknown) {
   };
 }
 
-function orgFilter() {
-  const org = process.env.GROWS_MCP_ORG_ID?.trim();
-  return org || null;
+/**
+ * Alcance de obras para esta request.
+ *  - Token OAuth (ctx.userId): solo las orgs del usuario (dueño o socio).
+ *  - Token estático (dueño): GROWS_MCP_ORG_ID si está, o todas.
+ * restrict=false ⇒ sin filtro (dueño con acceso total).
+ */
+async function resolveScope(
+  supabase: SupabaseClient,
+  ctx?: McpUserContext,
+): Promise<{ restrict: boolean; ids: string[] }> {
+  if (ctx?.userId) {
+    const ids = await resolveUserOrgIds(supabase, ctx.userId);
+    return { restrict: true, ids };
+  }
+  if (ctx?.orgIds && ctx.orgIds.length > 0) {
+    return { restrict: true, ids: ctx.orgIds };
+  }
+  const env = process.env.GROWS_MCP_ORG_ID?.trim();
+  if (env) return { restrict: true, ids: [env] };
+  return { restrict: false, ids: [] };
 }
 
 export async function callGrowsMcpTool(
   supabase: SupabaseClient,
   name: string,
   args: Record<string, unknown>,
+  ctx?: McpUserContext,
 ): Promise<{ content: { type: 'text'; text: string }[] }> {
   try {
+    const scope = await resolveScope(supabase, ctx);
     if (name === 'listar_obras_vivas') {
       let q = supabase
         .from('obras')
@@ -97,8 +117,10 @@ export async function callGrowsMcpTool(
         .in('graph_mode', ['proyecto_vivo', 'obra_plan'])
         .order('created_at', { ascending: false })
         .limit(40);
-      const org = orgFilter();
-      if (org) q = q.eq('org_id', org);
+      if (scope.restrict) {
+        if (scope.ids.length === 0) return textResult({ obras: [] });
+        q = q.in('org_id', scope.ids);
+      }
       const { data, error } = await q;
       if (error) throw error;
       return textResult({
@@ -111,15 +133,15 @@ export async function callGrowsMcpTool(
 
     if (name === 'leer_horizonte') {
       const obraId = String(args.obra_id || '');
-      let oq = supabase
+      const { data: obra, error: oe } = await supabase
         .from('obras')
         .select('id, name, objetivo_texto, graph_mode, canvas_ui, org_id')
-        .eq('id', obraId);
-      const org = orgFilter();
-      if (org) oq = oq.eq('org_id', org);
-      const { data: obra, error: oe } = await oq.maybeSingle();
+        .eq('id', obraId)
+        .maybeSingle();
       if (oe) throw oe;
       if (!obra) return textResult({ error: 'Obra no encontrada' });
+      if (scope.restrict && !scope.ids.includes(String(obra.org_id)))
+        return textResult({ error: 'Sin acceso a esta obra' });
 
       const { data: nodes, error: ne } = await supabase
         .from('canvas_nodes')
@@ -166,12 +188,15 @@ export async function callGrowsMcpTool(
       const mensaje = String(args.mensaje || '').trim();
       if (!mensaje) return textResult({ error: 'mensaje vacío' });
 
-      let oq = supabase.from('obras').select('id, org_id, graph_mode').eq('id', obraId);
-      const org = orgFilter();
-      if (org) oq = oq.eq('org_id', org);
-      const { data: obra, error: oe } = await oq.maybeSingle();
+      const { data: obra, error: oe } = await supabase
+        .from('obras')
+        .select('id, org_id, graph_mode')
+        .eq('id', obraId)
+        .maybeSingle();
       if (oe) throw oe;
       if (!obra) return textResult({ error: 'Obra no encontrada' });
+      if (scope.restrict && !scope.ids.includes(String(obra.org_id)))
+        return textResult({ error: 'Sin acceso a esta obra' });
 
       const { data: nodes, error: ne } = await supabase
         .from('canvas_nodes')
@@ -299,12 +324,15 @@ export async function callGrowsMcpTool(
       const obraId = String(args.obra_id || '');
       const user = String(args.user || '').trim();
       const oficio = String(args.oficio || '').trim();
-      let oq = supabase.from('obras').select('id, canvas_ui, org_id').eq('id', obraId);
-      const org = orgFilter();
-      if (org) oq = oq.eq('org_id', org);
-      const { data: obra, error: oe } = await oq.maybeSingle();
+      const { data: obra, error: oe } = await supabase
+        .from('obras')
+        .select('id, canvas_ui, org_id')
+        .eq('id', obraId)
+        .maybeSingle();
       if (oe) throw oe;
       if (!obra) return textResult({ error: 'Obra no encontrada' });
+      if (scope.restrict && !scope.ids.includes(String(obra.org_id)))
+        return textResult({ error: 'Sin acceso a esta obra' });
 
       const base =
         obra.canvas_ui && typeof obra.canvas_ui === 'object' && !Array.isArray(obra.canvas_ui)

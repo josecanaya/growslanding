@@ -1,6 +1,6 @@
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import {
-  assertMcpBearer,
+  authenticateMcp,
   createGrowsMcpServer,
   mcpCorsHeaders,
 } from '@/lib/mcp-grows/createServer';
@@ -13,18 +13,18 @@ async function handleMcp(req: Request): Promise<Response> {
     return new Response(null, { status: 204, headers: mcpCorsHeaders });
   }
 
-  const denied = assertMcpBearer(req);
-  if (denied) {
-    const headers = new Headers(denied.headers);
+  const auth = authenticateMcp(req);
+  if ('error' in auth) {
+    const headers = new Headers(auth.error.headers);
     for (const [k, v] of Object.entries(mcpCorsHeaders)) headers.set(k, v);
-    return new Response(denied.body, { status: denied.status, headers });
+    return new Response(auth.error.body, { status: auth.error.status, headers });
   }
 
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
-  const server = createGrowsMcpServer();
+  const server = createGrowsMcpServer(auth.ctx);
   await server.connect(transport);
   const res = await transport.handleRequest(req);
   const headers = new Headers(res.headers);

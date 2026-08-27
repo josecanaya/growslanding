@@ -4,6 +4,7 @@ dist
 .next
 out
 .env*
+!.env.example
 .eslintcache
 .DS_Store
 .idea

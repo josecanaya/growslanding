@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   typedRoutes: true,
   transpilePackages: [],
+  serverExternalPackages: ['@cursor/sdk'],
   outputFileTracingRoot: path.join(__dirname, '../../'),
   turbopack: {},
   webpack: (config, { isServer }) => {

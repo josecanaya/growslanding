@@ -12,6 +12,7 @@ import {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
+  type Edge,
   type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -40,9 +41,9 @@ function ProyectosCanvasInner() {
   const router = useRouter();
   const { obras, loading, error } = useClienteObras();
   const [level, setLevel] = useState<CanvasLevel>({ kind: 'root' });
-  const [blue, setBlue] = useState(CANVAS_BLUE_PRESETS[0].value);
+  const [blue, setBlue] = useState<string>(CANVAS_BLUE_PRESETS[0].value);
   const [nodes, setNodes, onNodesChange] = useNodesState<HubFlowNode>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     try {

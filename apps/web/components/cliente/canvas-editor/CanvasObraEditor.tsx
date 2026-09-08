@@ -39,7 +39,7 @@ import { buildCanvasImportBundle } from '@/lib/project/projectImportToCanvas';
 import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
-import { CanvasHablarPanel } from './CanvasHablarPanel';
+import { GrowsCommandBar } from './workspace/GrowsCommandBar';
 import { ObraCompletaFlowModal } from './ObraCompletaFlowModal';
 
 type Props = { obraId: string };
@@ -70,7 +70,6 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [obraCompletaOpen, setObraCompletaOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
-  const [hablarOpen, setHablarOpen] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
   const [atajosOpen, setAtajosOpen] = useState(false);
   const [filtrosBloqueadas, setFiltrosBloqueadas] = useState(false);
@@ -94,6 +93,7 @@ export function CanvasObraEditor({ obraId }: Props) {
     visibleEdges,
     relationCountsByNodeId,
     childTypeToCreate,
+    selectedIds,
     selectedId,
     setSelectedId,
     selectedNode,
@@ -685,21 +685,14 @@ export function CanvasObraEditor({ obraId }: Props) {
 
         {atajosOpen && <AtajosPanel onClose={() => setAtajosOpen(false)} />}
 
-        <CanvasHablarPanel
-          obraId={obraId}
-          open={hablarOpen && editorTab === 'canvas' && panel !== 'cronograma' && panel !== 'presupuestos'}
-          onClose={() => setHablarOpen(false)}
-          onCanvasMaybeChanged={() => void reloadCanvasFromCloud()}
-        />
-
-        {!hablarOpen && editorTab === 'canvas' ? (
-          <button
-            type="button"
-            onClick={() => setHablarOpen(true)}
-            className="absolute bottom-20 left-4 z-20 rounded-full bg-[#1e40af] px-3 py-2 text-xs font-bold text-white shadow-lg lg:left-auto lg:right-24"
-          >
-            Hablar
-          </button>
+        {editorTab === 'canvas' && panel !== 'cronograma' && panel !== 'presupuestos' ? (
+          <GrowsCommandBar
+            obraId={obraId}
+            breadcrumbItems={breadcrumbItems}
+            selectedIds={selectedIds}
+            onClearSelection={() => setSelectedId(null)}
+            onCanvasMaybeChanged={() => void reloadCanvasFromCloud()}
+          />
         ) : null}
 
         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col pl-12">

@@ -92,7 +92,12 @@ export function useCanvasMultinivel(obraId: string) {
   const [budgetGroups, setBudgetGroups] = useState<CanvasBudgetGroup[]>([]);
   const [projectKind, setProjectKind] = useState<CanvasProjectKind>('edificio_multifamiliar');
   const [obraProductKind, setObraProductKind] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedId = selectedIds.length > 0 ? selectedIds[0]! : null;
+  const setSelectedId = useCallback((id: string | null) => setSelectedIds(id ? [id] : []), []);
+  const toggleSelectedId = useCallback((id: string) => {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
   const [canvasHydrated, setCanvasHydrated] = useState(false);
   const [cloudSaveState, setCloudSaveState] = useState<'idle' | 'saving' | 'ok' | 'err'>('idle');
   const [cloudSaveMessage, setCloudSaveMessage] = useState<string | null>(null);
@@ -389,14 +394,12 @@ export function useCanvasMultinivel(obraId: string) {
     [nodes, containerId, edges],
   );
 
-  /** Evita lienzo vacío + inspector poblado cuando el seleccionado ya no pertenece a este contenedor */
+  /** Evita lienzo vacío + inspector poblado cuando los seleccionados ya no pertenecen a este contenedor */
   useEffect(() => {
-    setSelectedId((sid) => {
-      if (!sid) return null;
+    setSelectedIds((prev) => prev.filter((sid) => {
       const n = nodes.find((x) => x.id === sid);
-      if (!n || n.parentId !== containerId) return null;
-      return sid;
-    });
+      return n && n.parentId === containerId;
+    }));
   }, [containerId, nodes]);
 
   const childTypeToCreate = useMemo(
@@ -523,7 +526,7 @@ export function useCanvasMultinivel(obraId: string) {
         setEdges((eds) =>
           eds.filter((e) => !rm.has(e.sourceId) && !rm.has(e.targetId)),
         );
-        setSelectedId((s) => (s !== null && rm.has(s) ? null : s));
+        setSelectedIds((prev) => prev.filter((s) => !rm.has(s)));
       });
       return next;
     });
@@ -821,6 +824,9 @@ export function useCanvasMultinivel(obraId: string) {
     visibleEdges,
     relationCountsByNodeId,
     childTypeToCreate,
+    selectedIds,
+    setSelectedIds,
+    toggleSelectedId,
     selectedId,
     setSelectedId,
     selectedNode,

@@ -398,7 +398,7 @@ export function ScopeCanvasPanel({
 
   return (
     <div
-      className="relative isolate h-[min(68vh,760px)] min-h-[420px] w-full overflow-hidden rounded-2xl border border-[#e5e7eb] bg-[#f8fafc]"
+      className="relative isolate h-full w-full overflow-hidden bg-[#FBFBF9]"
     >
       {visibleNodes.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8">
@@ -489,8 +489,8 @@ export function ScopeCanvasPanel({
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.15}
-          color="#d7dde8"
-          className="!bg-[#f8fafc]"
+          color="#DCDBD5"
+          className="!bg-[#FBFBF9]"
         />
         <CanvasFloatingToolbar connectMode={connectMode} onToggleConnect={onToggleConnect} />
       </ReactFlow>

@@ -490,7 +490,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   );
 
   return (
-    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#f6f8fa] text-[#0f172a]">
+    <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#FBFBF9] text-[#0f172a]">
       <input
         ref={projectXmlInputRef}
         type="file"
@@ -585,7 +585,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         </div>
       ) : null}
 
-      <div className="relative mx-auto flex w-full max-w-[1920px] flex-1 min-h-0 gap-3 px-3 pb-3">
+      <div className="relative flex w-full min-h-0 flex-1">
         {showProjectBrowser ? (
           <CanvasProjectBrowser
             obraNombre={obraNombre}
@@ -617,7 +617,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           </button>
         ) : null}
 
-        <main className="flex min-h-0 min-w-0 flex-1 flex-col py-3">
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {showBreadcrumb ? <div className="mb-3 hidden xl:block">{renderBreadcrumb()}</div> : null}
 
           <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
@@ -658,55 +658,59 @@ export function CanvasObraEditor({ obraId }: Props) {
             </div>
           )}
 
-          <div className="flex min-h-[min(64vh,720px)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
-            {editorTab === 'archivo' ? (
-              <CanvasArchivoTab
-                obraNombre={obraNombre}
-                cloudSaveState={cloudSaveState}
-                cloudSaveMessage={cloudSaveMessage}
-                canvasHydrated={canvasHydrated}
-                onImportXml={openProjectXmlPicker}
-                onSaveCloud={() => {
-                  void saveCanvasSnapshotToCloud();
-                }}
-                importBusy={projectImportBusy}
-              />
-            ) : editorTab === 'publicar' ? (
-              <CanvasPublicarTab
-                obraNombre={obraNombre}
-                stats={publicationStats}
-                canvasHydrated={canvasHydrated}
-                tieneNodosTarea={tieneNodosTarea}
-                onOpenPublishModal={() => setPublicarModalOpen(true)}
-                onGoOrganizar={() => setEditorTab('canvas')}
-              />
-            ) : editorTab === 'cronograma' ? (
-              <CanvasCronogramaTab
-                obraNombre={obraNombre}
-                nodes={nodes}
-                edges={edges}
-                tareaPublicacionByNodeId={tareaPublicacionByNodeId}
-                selectedId={selectedId}
-                projectStart={cronogramaProjectStart}
-                onSelectTask={(id) => {
-                  setSelectedId(id);
-                  setInspectorOpen(true);
-                }}
-              />
-            ) : editorTab === 'presupuestos' ? (
-              <CanvasPresupuestosTab
-                obraId={obraId}
-                obraNombre={obraNombre}
-                budgetGroups={budgetGroups}
-                nodes={nodes}
-                tareaPublicacionByNodeId={tareaPublicacionByNodeId}
-                patchBudgetGroup={patchBudgetGroup}
-                createBudgetGroup={createBudgetGroup}
-                saveCanvasSnapshotToCloud={saveCanvasSnapshotToCloud}
-                onOpenCanvasTab={() => setEditorTab('canvas')}
-              />
-            ) : (
+          <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            {editorTab === 'canvas' ? (
               vistaCentral
+            ) : (
+              <div className="overflow-auto p-4">
+                {editorTab === 'archivo' ? (
+                  <CanvasArchivoTab
+                    obraNombre={obraNombre}
+                    cloudSaveState={cloudSaveState}
+                    cloudSaveMessage={cloudSaveMessage}
+                    canvasHydrated={canvasHydrated}
+                    onImportXml={openProjectXmlPicker}
+                    onSaveCloud={() => {
+                      void saveCanvasSnapshotToCloud();
+                    }}
+                    importBusy={projectImportBusy}
+                  />
+                ) : editorTab === 'publicar' ? (
+                  <CanvasPublicarTab
+                    obraNombre={obraNombre}
+                    stats={publicationStats}
+                    canvasHydrated={canvasHydrated}
+                    tieneNodosTarea={tieneNodosTarea}
+                    onOpenPublishModal={() => setPublicarModalOpen(true)}
+                    onGoOrganizar={() => setEditorTab('canvas')}
+                  />
+                ) : editorTab === 'cronograma' ? (
+                  <CanvasCronogramaTab
+                    obraNombre={obraNombre}
+                    nodes={nodes}
+                    edges={edges}
+                    tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+                    selectedId={selectedId}
+                    projectStart={cronogramaProjectStart}
+                    onSelectTask={(id) => {
+                      setSelectedId(id);
+                      setInspectorOpen(true);
+                    }}
+                  />
+                ) : editorTab === 'presupuestos' ? (
+                  <CanvasPresupuestosTab
+                    obraId={obraId}
+                    obraNombre={obraNombre}
+                    budgetGroups={budgetGroups}
+                    nodes={nodes}
+                    tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+                    patchBudgetGroup={patchBudgetGroup}
+                    createBudgetGroup={createBudgetGroup}
+                    saveCanvasSnapshotToCloud={saveCanvasSnapshotToCloud}
+                    onOpenCanvasTab={() => setEditorTab('canvas')}
+                  />
+                ) : null}
+              </div>
             )}
           </div>
         </main>

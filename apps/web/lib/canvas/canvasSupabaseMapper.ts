@@ -1,12 +1,27 @@
 import type {
   CanvasBudgetGroup,
+  CanvasEdgeRelation,
   CanvasChecklistItem,
   CanvasMultinivelPersisted,
   CanvasNode,
   CanvasNivelTipo,
   CanvasPrecedenceEdge,
 } from '@/lib/types/canvasMultinivel';
+import { isCanvasEdgeRelation } from '@/lib/types/canvasMultinivel';
 import { normalizeCanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
+
+/** Valor histórico de `canvas_edges.type` para una precedencia; lo consume publicar-tareas. */
+const DB_EDGE_TYPE_PRECEDENCIA = 'precedencia';
+
+function relationToDbEdgeType(relation: CanvasPrecedenceEdge['relation']): string {
+  if (!relation || relation === 'precede') return DB_EDGE_TYPE_PRECEDENCIA;
+  return relation;
+}
+
+function dbEdgeTypeToRelation(type: string | null | undefined): CanvasEdgeRelation {
+  if (isCanvasEdgeRelation(type)) return type;
+  return 'precede';
+}
 
 const UUID_CORE = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
@@ -276,7 +291,7 @@ export function persistedToSupabaseRows(
     id: toDbUuidFromCanvasId(e.id),
     source_node_id: toDbUuidFromCanvasId(e.sourceId),
     target_node_id: toDbUuidFromCanvasId(e.targetId),
-    type: 'precedencia',
+    type: relationToDbEdgeType(e.relation),
     is_critical: Boolean(e.critical),
     lag_days: 0,
   }));
@@ -413,6 +428,7 @@ export function supabaseRowsToPersisted(input: {
     sourceId: toClientNodeId(row.source_node_id),
     targetId: toClientNodeId(row.target_node_id),
     critical: row.is_critical,
+    relation: dbEdgeTypeToRelation(row.type),
   }));
 
   const budgetGroups: CanvasBudgetGroup[] = input.budgetGroups.map((g) => {

@@ -102,6 +102,11 @@ function orderOf(t: CanvasNivelTipo): number {
 /**
  * Tipo de hijo a crear bajo `parent` según el perfil.
  * `parent === null` → vista obra: siempre etapa.
+ *
+ * La cadena del perfil es una SUGERENCIA de etiquetas, no un techo de profundidad:
+ * el Canvas es recursivo y cualquier cuadro puede contener otros cuadros. Al llegar
+ * al final de la cadena el nodo se anida en sí mismo (V18 → sub-vigas, tarea →
+ * subtarea) en lugar de cerrar el nivel. La UI nunca limita la profundidad.
  */
 export function nextChildCanvasType(
   parent: { type: CanvasNivelTipo } | null,
@@ -110,10 +115,12 @@ export function nextChildCanvasType(
   const chain = CANVAS_TYPE_CHAIN_BY_KIND[kind];
   if (!parent) return chain[0] ?? 'etapa';
 
+  /** Dentro de un estado del grafo productivo lo siguiente son transformaciones/tareas. */
+  if (parent.type === 'estado') return 'tarea';
+
   const idx = chain.indexOf(parent.type);
   if (idx !== -1) {
-    if (idx >= chain.length - 1) return null;
-    return chain[idx + 1] ?? null;
+    return chain[idx + 1] ?? parent.type;
   }
 
   const pi = orderOf(parent.type);
@@ -122,7 +129,7 @@ export function nextChildCanvasType(
     const candidate = FULL_ORDER[i]!;
     if (chain.includes(candidate)) return candidate;
   }
-  return null;
+  return parent.type;
 }
 
 type LevelPresentation = {

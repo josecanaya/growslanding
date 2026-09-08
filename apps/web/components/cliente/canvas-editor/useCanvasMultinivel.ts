@@ -19,18 +19,19 @@ import {
 import {
   canEnterNode,
   canAddPrecedenceEdge,
-  canAddPrecedenceEdgeInAncestorSubtree,
   childTypeForContainer,
   collectSubtreeIds,
   defaultTitleFor,
-  edgesForSiblingLevel,
-  etapaPrefersSubtreeTaskCanvas,
-  plantaPrefersSubtreeTaskCanvas,
   newCanvasEdgeId,
   newCanvasNodeId,
   pathIdsToShowContainer,
   staggerPosition,
 } from './canvasMultinivelHelpers';
+import {
+  scopeRelationCounts,
+  visibleEdgesForScope,
+  visibleNodesForScope,
+} from '@/lib/canvas/canvasScope';
 import { getDescendantTaskIds } from '@/lib/canvas/budgetGroupTree';
 import { loadCanvasTemplateImportBundle } from '@/lib/canvas/importCanvasTemplateFromXml';
 
@@ -361,23 +362,31 @@ export function useCanvasMultinivel(obraId: string) {
     [nodes, containerId],
   );
 
-  const flattenSubtreePrecedenceRelaxed = useMemo(() => {
-    if (!containerNode) return false;
-    if (containerNode.type === 'etapa')
-      return etapaPrefersSubtreeTaskCanvas(nodes, containerNode);
-    if (containerNode.type === 'planta')
-      return plantaPrefersSubtreeTaskCanvas(nodes, containerNode);
-    return false;
-  }, [containerNode, nodes]);
-
+  /**
+   * REGLA DE RENDER DEL CANVAS RECURSIVO
+   * `currentScopeId` = `containerId` = nodo abierto (último de `pathIds`; null = raíz).
+   * Sólo se dibujan los HIJOS DIRECTOS de ese scope: nunca padre + hijos + nietos.
+   * Estados y transformaciones conviven acá porque todo el Canvas es el mismo grafo.
+   */
   const visibleNodes = useMemo(
-    () => nodes.filter((n) => n.parentId === containerId && n.type !== 'estado'),
+    () => visibleNodesForScope(nodes, containerId),
     [nodes, containerId],
   );
 
-  const siblingEdges = useMemo(
-    () => edgesForSiblingLevel(containerId, nodes, edges),
+  /** Aristas dibujables: ambos extremos son hijos directos del scope. */
+  const visibleEdges = useMemo(
+    () => visibleEdgesForScope(nodes, containerId, edges),
     [containerId, nodes, edges],
+  );
+
+  /**
+   * Relaciones que NO se dibujan en este nivel pero existen en el grafo global:
+   * externas (a otro scope) y agregadas (más profundas, entre tarjetas visibles).
+   * Se muestran como indicador en la tarjeta; la proyección agregada llega después.
+   */
+  const relationCountsByNodeId = useMemo(
+    () => scopeRelationCounts(nodes, containerId, edges),
+    [nodes, containerId, edges],
   );
 
   /** Evita lienzo vacío + inspector poblado cuando el seleccionado ya no pertenece a este contenedor */
@@ -592,26 +601,15 @@ export function useCanvasMultinivel(obraId: string) {
     [projectKind],
   );
 
+  /**
+   * Sólo se pueden trazar relaciones entre nodos visibles del scope (lo que el usuario
+   * ve y puede arrastrar). Las relaciones cross-scope ya existentes se preservan; el
+   * trazado entre scopes distintos llegará con la proyección agregada.
+   */
   const tryPrecedenceConnection = useCallback(
     (c: Connection) => {
       if (!c.source || !c.target) return false;
-
-      const useFlattenAncestorSubtree =
-        flattenSubtreePrecedenceRelaxed &&
-        !!containerId &&
-        (containerNode?.type === 'etapa' || containerNode?.type === 'planta');
-
-      if (useFlattenAncestorSubtree) {
-        if (
-          !canAddPrecedenceEdgeInAncestorSubtree(containerId!, nodes, edges, c.source, c.target)
-        ) {
-          return false;
-        }
-      } else {
-        if (!canAddPrecedenceEdge(containerId, nodes, edges, c.source, c.target)) {
-          return false;
-        }
-      }
+      if (!canAddPrecedenceEdge(containerId, nodes, edges, c.source, c.target)) return false;
 
       const id = newCanvasEdgeId();
       setEdges((prev) => [
@@ -620,7 +618,7 @@ export function useCanvasMultinivel(obraId: string) {
       ]);
       return true;
     },
-    [flattenSubtreePrecedenceRelaxed, containerId, containerNode?.type, nodes, edges],
+    [containerId, nodes, edges],
   );
 
   const removeEdgeIds = useCallback((ids: string[]) => {
@@ -816,10 +814,12 @@ export function useCanvasMultinivel(obraId: string) {
     nodes,
     edges,
     pathIds,
-    siblingEdges,
+    /** currentScope: nodo abierto + su proyección visible del grafo global */
     containerId,
     containerNode,
     visibleNodes,
+    visibleEdges,
+    relationCountsByNodeId,
     childTypeToCreate,
     selectedId,
     setSelectedId,

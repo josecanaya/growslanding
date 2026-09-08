@@ -10,6 +10,7 @@ import type {
   CabeceraNivelVista,
   VistaNivelPrincipal,
 } from '@/lib/canvas/canvasProjectProfile';
+import { hasChildren, visibleEdgesForScope } from '@/lib/canvas/canvasScope';
 import {
   cabeceraContextoNivelForKind,
   defaultTitleForKind,
@@ -95,21 +96,31 @@ export function pathIdsToShowContainer(nodes: CanvasNode[], containerId: string)
   return chain.map((c) => c.id);
 }
 
-export function canEnterNode(n: CanvasNode): boolean {
-  return n.type !== 'tarea';
+/**
+ * Cualquier nodo puede contener otro Canvas: la contención es recursiva y no está
+ * limitada por tipo. Dentro de una tarea/V18 pueden vivir estados, transformaciones
+ * y subtareas. Doble click siempre cambia de scope.
+ */
+export function canEnterNode(_n: CanvasNode): boolean {
+  return true;
 }
 
-/** Precedencias entre hermanos del mismo padre (`containerId` null = etapas raíz). */
+/** ¿El cuadro contiene otros cuadros? Sólo para el hint de la tarjeta. */
+export function nodeHasChildren(nodes: CanvasNode[], nodeId: string): boolean {
+  return hasChildren(nodes, nodeId);
+}
+
+/**
+ * Relaciones dibujables en el scope actual: entre hijos directos de `containerId`.
+ * Las relaciones que cruzan scopes siguen existiendo en el grafo global; acá sólo
+ * no se dibujan (ver `canvasScope.ts`).
+ */
 export function edgesForSiblingLevel(
   containerId: string | null,
   nodes: CanvasNode[],
   edges: CanvasPrecedenceEdge[],
 ): CanvasPrecedenceEdge[] {
-  return edges.filter((e) => {
-    const s = nodes.find((x) => x.id === e.sourceId);
-    const t = nodes.find((x) => x.id === e.targetId);
-    return !!s && !!t && s.parentId === containerId && t.parentId === containerId;
-  });
+  return visibleEdgesForScope(nodes, containerId, edges);
 }
 
 export function canAddPrecedenceEdge(
@@ -206,60 +217,27 @@ export function precedentEdgesAmongTaskIds(
 }
 
 /**
- * Cada línea bajo la fase es sólo «un escalón MSP de agrupo» antes de llegar a tareas (p. ej. Fundaciones → rubros → trabajos).
- * Si hay dos o más niveles no-tarea consecutivos (p. ej. planta → ambiente → tareas) se usa el hub / jerarquía profunda como Mampostería.
+ * @deprecated Aplanaba el subárbol de una fase en un único lienzo, mostrando tareas
+ * de varios niveles a la vez. Contradice la regla visual del Canvas recursivo: en
+ * pantalla se ve un único scope, y sólo los hijos directos. Devuelve `false` siempre;
+ * se conserva la firma para no romper los call sites de etiquetas de nivel.
  */
 export function etapaPrefersSubtreeTaskCanvas(
-  nodes: CanvasNode[],
-  etapa: Pick<CanvasNode, 'id' | 'type'>,
+  _nodes: CanvasNode[],
+  _etapa: Pick<CanvasNode, 'id' | 'type'>,
 ): boolean {
-  if (etapa.type !== 'etapa') return false;
-
-  const direct = nodes.filter((n) => n.parentId === etapa.id);
-  if (!direct.length) return false;
-
-  /** Máximo un contenedor MSP entre etapa y la hoja tarea por rama directa */
-  for (const d of direct) {
-    if (d.type === 'tarea') continue;
-    const bridgeKids = nodes.filter((k) => k.parentId === d.id);
-    if (!bridgeKids.length) return false;
-    const allLeavesAreTasks =
-      bridgeKids.every((k) => k.type === 'tarea') &&
-      bridgeKids.some((k) => k.type === 'tarea');
-    if (!allLeavesAreTasks) return false;
-  }
-
-  const subtree = collectSubtreeIds(nodes, etapa.id);
-  return nodes.some((n) => n.type === 'tarea' && subtree.has(n.id));
+  return false;
 }
 
 /**
- * Bajo un piso: si las ramas llegan al trabajo sin pasar por un nivel espacial típico (ambiente/depto…),
- * se usa lienzo de tareas como en MSP aunque el perfil suele hacer Piso→Ambientes primero.
- * Si hay algún hijo directo `ambiente` o `sector` (jerarquía profunda tipo Mampostería / edificio), no aplanamos.
+ * @deprecated Misma razón que `etapaPrefersSubtreeTaskCanvas`: mostraba el subárbol
+ * de un piso aplanado. El scope actual sólo renderiza hijos directos.
  */
 export function plantaPrefersSubtreeTaskCanvas(
-  nodes: CanvasNode[],
-  planta: Pick<CanvasNode, 'id' | 'type'>,
+  _nodes: CanvasNode[],
+  _planta: Pick<CanvasNode, 'id' | 'type'>,
 ): boolean {
-  if (planta.type !== 'planta') return false;
-
-  const direct = nodes.filter((n) => n.parentId === planta.id);
-  if (!direct.length) return false;
-
-  if (direct.some((d) => d.type === 'ambiente' || d.type === 'sector')) return false;
-
-  for (const d of direct) {
-    if (d.type === 'tarea') continue;
-    const bridgeKids = nodes.filter((k) => k.parentId === d.id);
-    if (!bridgeKids.length) return false;
-    const allLeavesAreTasks =
-      bridgeKids.every((k) => k.type === 'tarea') && bridgeKids.some((k) => k.type === 'tarea');
-    if (!allLeavesAreTasks) return false;
-  }
-
-  const subtree = collectSubtreeIds(nodes, planta.id);
-  return nodes.some((n) => n.type === 'tarea' && subtree.has(n.id));
+  return false;
 }
 
 export type GuiaContextualRow = {

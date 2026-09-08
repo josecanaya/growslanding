@@ -39,15 +39,20 @@ import type { CanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import { canEnterNode, publicationReviewCategory } from './canvasMultinivelHelpers';
 import {
+  emptyScopeRelationCount,
+  hasChildren,
+  type ScopeRelationCount,
+} from '@/lib/canvas/canvasScope';
+import {
   aristaCriticaVisual,
   type CanvasTaskCpmBundle,
 } from './canvasMultinivelCpm';
 import { multinivelFlowNodeTypes, type MultinivelNodeData } from './MultinivelFlowNode';
 
-function precedenciasIo(nodeId: string, siblingEdges: CanvasPrecedenceEdge[]) {
+function precedenciasIo(nodeId: string, visibleEdges: CanvasPrecedenceEdge[]) {
   let inC = 0;
   let outC = 0;
-  for (const e of siblingEdges) {
+  for (const e of visibleEdges) {
     if (e.targetId === nodeId) inC += 1;
     if (e.sourceId === nodeId) outC += 1;
   }
@@ -57,7 +62,7 @@ function precedenciasIo(nodeId: string, siblingEdges: CanvasPrecedenceEdge[]) {
 function buildNodeData(
   n: CanvasNode,
   nodes: CanvasNode[],
-  siblingEdges: CanvasPrecedenceEdge[],
+  visibleEdges: CanvasPrecedenceEdge[],
   selected: boolean,
   handlesEnabled: boolean,
   taskCpmBundle: CanvasTaskCpmBundle | null,
@@ -67,9 +72,10 @@ function buildNodeData(
     | undefined,
   budgetGroups: CanvasBudgetGroup[],
   publicationReviewMode: boolean,
+  relationCount: ScopeRelationCount,
 ): MultinivelNodeData {
   const childCount = countChildren(nodes, n.id);
-  const { inC, outC } = precedenciasIo(n.id, siblingEdges);
+  const { inC, outC } = precedenciasIo(n.id, visibleEdges);
   const cpmSnap =
     n.type === 'tarea' ? taskCpmBundle?.byId.get(n.id) ?? null : null;
   const pub = n.type === 'tarea' ? tareaPublicacionByNodeId?.[n.id] : undefined;
@@ -94,6 +100,9 @@ function buildNodeData(
     publicationReviewCategory: publicationReviewMode
       ? publicationReviewCategory(n, tareaPublicacionByNodeId ?? {})
       : null,
+    containsCanvas: hasChildren(nodes, n.id),
+    externalRelationCount: relationCount.externalIn + relationCount.externalOut,
+    aggregatedRelationCount: relationCount.aggregatedIn + relationCount.aggregatedOut,
   };
 }
 
@@ -181,11 +190,18 @@ function ZoomReporter({ onZoom }: { onZoom: (pct: number) => void }) {
 
 type Props = {
   projectKind: CanvasProjectKind;
-  /** CPM sobre tareas del ambiente actual (misma función que OrganizaSection). null si ciclo/vacío. */
+  /** CPM sobre las tareas del scope actual. null si ciclo/vacío. */
   taskCpmBundle: CanvasTaskCpmBundle | null;
+  /** Hijos DIRECTOS del scope: lo único que se dibuja. */
   visibleNodes: CanvasNode[];
+  /** Grafo global completo — sólo para derivar contadores y contención. */
   nodes: CanvasNode[];
-  siblingEdges: CanvasPrecedenceEdge[];
+  /** Aristas con ambos extremos visibles en este scope. */
+  visibleEdges: CanvasPrecedenceEdge[];
+  /** Relaciones externas / agregadas por tarjeta (badge, no flechas). */
+  relationCountsByNodeId?: Map<string, ScopeRelationCount>;
+  /** Título del cuadro abierto; `null` = raíz de la obra. */
+  scopeTitle?: string | null;
   selectedId: string | null;
   setSelectedId: (id: string | null) => void;
   selectedEdgeId: string | null;
@@ -208,12 +224,20 @@ type Props = {
   onZoomPercentChange?: (pct: number) => void;
 };
 
-export function TareasCanvasPanel({
+/**
+ * Canvas de un único scope: dibuja SOLO los hijos directos del cuadro abierto.
+ * Doble click en una tarjeta entra a su Canvas; click simple selecciona.
+ * Sirve para cualquier nivel (obra, piso, especialidad, viga, tarea): es el mismo
+ * grafo global, proyectado al scope visible.
+ */
+export function ScopeCanvasPanel({
   projectKind,
   taskCpmBundle,
   visibleNodes,
   nodes,
-  siblingEdges,
+  visibleEdges,
+  relationCountsByNodeId,
+  scopeTitle,
   selectedId,
   setSelectedId,
   selectedEdgeId,
@@ -236,7 +260,7 @@ export function TareasCanvasPanel({
 
   const rfEdges: Edge[] = useMemo(
     () =>
-      siblingEdges.map((e) => {
+      visibleEdges.map((e) => {
         const critical = aristaCriticaVisual(e, taskCpmBundle);
         return {
           id: e.id,
@@ -259,7 +283,7 @@ export function TareasCanvasPanel({
           },
         };
       }),
-    [siblingEdges, selectedEdgeId, taskCpmBundle],
+    [visibleEdges, selectedEdgeId, taskCpmBundle],
   );
 
   const initialRf = useMemo(
@@ -274,7 +298,7 @@ export function TareasCanvasPanel({
             data: buildNodeData(
               n,
               nodes,
-              siblingEdges,
+              visibleEdges,
               selectedId === n.id,
               connectMode,
               taskCpmBundle,
@@ -282,13 +306,15 @@ export function TareasCanvasPanel({
               tareaPublicacionByNodeId,
               budgetGroups,
               publicationReviewMode,
+              relationCountsByNodeId?.get(n.id) ?? emptyScopeRelationCount(),
             ),
           }) as Node<MultinivelNodeData>,
       ),
     [
       visibleNodes,
       nodes,
-      siblingEdges,
+      visibleEdges,
+      relationCountsByNodeId,
       selectedId,
       connectMode,
       taskCpmBundle,
@@ -313,7 +339,7 @@ export function TareasCanvasPanel({
             data: buildNodeData(
               n,
               nodes,
-              siblingEdges,
+              visibleEdges,
               selectedId === n.id,
               connectMode,
               taskCpmBundle,
@@ -321,6 +347,7 @@ export function TareasCanvasPanel({
               tareaPublicacionByNodeId,
               budgetGroups,
               publicationReviewMode,
+              relationCountsByNodeId?.get(n.id) ?? emptyScopeRelationCount(),
             ),
           }) as Node<MultinivelNodeData>,
       ),
@@ -329,7 +356,8 @@ export function TareasCanvasPanel({
     containerId,
     visibleNodes,
     nodes,
-    siblingEdges,
+    visibleEdges,
+    relationCountsByNodeId,
     selectedId,
     setRfNodes,
     connectMode,
@@ -376,9 +404,12 @@ export function TareasCanvasPanel({
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8">
           <div className="max-w-md rounded-2xl border border-dashed border-[#a8abb8] bg-white/96 px-6 py-8 text-center shadow-lg">
             <Network className="mx-auto mb-4 h-10 w-10 text-[#596574]" />
-            <p className="text-base font-bold text-[#0f1e1f]">Sin tareas en este ambiente</p>
+            <p className="text-base font-bold text-[#0f1e1f]">
+              {scopeTitle ? `«${scopeTitle}» todavía está vacío` : 'Este Canvas todavía está vacío'}
+            </p>
             <p className="mt-2 text-sm text-[#596574]">
-              Creá tareas con el botón superior. Acá se conectan precedencias, checklist y camino crítico.
+              Creá cuadros con el botón superior. Cada cuadro puede contener otro Canvas: doble click
+              para entrar. Acá se conectan relaciones, checklist y camino crítico.
             </p>
           </div>
         </div>

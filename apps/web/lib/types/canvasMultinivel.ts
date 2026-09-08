@@ -51,12 +51,49 @@ export type CanvasChecklistItem = {
   done: boolean;
 };
 
-/** Precedencia entre nodos hermanos (mismo `parentId` / mismo nivel del canvas). */
+/**
+ * Vocabulario de relaciones productivas del grafo global.
+ *
+ * Se persiste en `canvas_edges.type`. `precede` (o ausente) se guarda como
+ * `'precedencia'`, el valor histórico que consume la publicación a tareas
+ * operativas — no renombrar sin migrar ese flujo.
+ */
+export type CanvasEdgeRelation =
+  | 'precede'
+  | 'depende_de'
+  | 'habilita'
+  | 'requiere'
+  | 'afecta'
+  | 'se_ejecuta_mediante';
+
+export const CANVAS_EDGE_RELATIONS: readonly CanvasEdgeRelation[] = [
+  'precede',
+  'depende_de',
+  'habilita',
+  'requiere',
+  'afecta',
+  'se_ejecuta_mediante',
+] as const;
+
+export function isCanvasEdgeRelation(v: unknown): v is CanvasEdgeRelation {
+  return typeof v === 'string' && (CANVAS_EDGE_RELATIONS as readonly string[]).includes(v);
+}
+
+/**
+ * Relación del grafo global entre dos nodos del canvas.
+ *
+ * NO está limitada a hermanos: puede unir nodos de distintos scopes (p. ej. «Losa P3
+ * habilita Columnas P4»). La contención vive aparte, en `CanvasNode.parentId`.
+ * La UI decide qué relaciones dibuja según el scope visible (ver `lib/canvas/canvasScope.ts`);
+ * el grafo persistido nunca se recorta por navegación.
+ */
 export type CanvasPrecedenceEdge = {
   id: string;
   sourceId: string;
   targetId: string;
   critical: boolean;
+  /** Ausente = `precede` (compatibilidad con lo ya guardado). */
+  relation?: CanvasEdgeRelation;
 };
 
 export type CanvasBudgetGroup = {
@@ -80,6 +117,11 @@ export type CanvasBudgetGroup = {
 
 export type CanvasNode = {
   id: string;
+  /**
+   * CONTENCIÓN Y NADA MÁS: «este nodo está dentro de aquel». `null` = raíz de la obra.
+   * Nunca precedencia ni dependencia — eso vive en `CanvasPrecedenceEdge`.
+   * El Canvas dibuja un único scope: los hijos directos de `parentId === scope`.
+   */
   parentId: string | null;
   /** Profundidad 1 (etapa bajo obra) … 5 (tarea bajo ambiente) */
   level: number;

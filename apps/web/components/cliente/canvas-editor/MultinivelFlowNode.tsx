@@ -10,6 +10,7 @@ import {
   DoorOpen,
   LayoutGrid,
   Layers,
+  Link2,
   GitBranch,
   MoreHorizontal,
 } from 'lucide-react';
@@ -40,6 +41,15 @@ export type MultinivelNodeData = {
   /** Modo cinta Publicación: resalta estado de revisión. */
   publicationReview: boolean;
   publicationReviewCategory: PublicationReviewCategory | null;
+  /** El cuadro contiene otro Canvas (tiene hijos). Habilita el hint de doble click. */
+  containsCanvas: boolean;
+  /**
+   * Relaciones del grafo global que NO se dibujan en este nivel:
+   * externas = hacia otro scope; agregadas = más profundas, entre tarjetas visibles.
+   * Se muestran como contador para no dibujar flechas hacia nodos ocultos.
+   */
+  externalRelationCount: number;
+  aggregatedRelationCount: number;
 };
 
 function iconForType(type: CanvasNode['type']) {
@@ -124,6 +134,9 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
     budgetGroupLabel,
     publicationReview,
     publicationReviewCategory,
+    containsCanvas,
+    externalRelationCount,
+    aggregatedRelationCount,
   } = data;
   const Ico = iconForType(node.type);
   const wClass = cardWidths(node.type);
@@ -289,10 +302,33 @@ export const MultinivelFlowNodeInner = memo(function MultinivelFlowNodeInner({
           </div>
         )}
 
+        {externalRelationCount > 0 || aggregatedRelationCount > 0 ? (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {externalRelationCount > 0 ? (
+              <span
+                className="inline-flex items-center gap-0.5 rounded border border-[#c084fc]/60 bg-[#faf5ff] px-1 py-px text-[8px] font-bold uppercase text-[#6b21a8]"
+                title={`${externalRelationCount} relación(es) con nodos de otros cuadros. Ninguna caja aísla lo que contiene: la dependencia existe aunque no se dibuje acá.`}
+              >
+                <Link2 className="h-2.5 w-2.5" aria-hidden />
+                Ext. {externalRelationCount}
+              </span>
+            ) : null}
+            {aggregatedRelationCount > 0 ? (
+              <span
+                className="inline-flex items-center gap-0.5 rounded border border-[#7dd3fc]/70 bg-[#f0f9ff] px-1 py-px text-[8px] font-bold uppercase text-[#075985]"
+                title={`${aggregatedRelationCount} relación(es) entre elementos de más abajo y otras tarjetas de este nivel.`}
+              >
+                <Layers className="h-2.5 w-2.5" aria-hidden />
+                Agr. {aggregatedRelationCount}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
         <p className="mt-1 text-[8px] leading-snug text-[#94a3b8]">
-          {node.type === 'tarea'
-            ? 'Inspector: checklist, presupuesto y precedencias.'
-            : 'Doble click para bajar de nivel.'}
+          {containsCanvas
+            ? 'Doble click para entrar a su Canvas.'
+            : 'Doble click para abrir su Canvas (vacío).'}
         </p>
       </div>
     </div>

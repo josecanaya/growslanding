@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
-import type { Connection } from '@xyflow/react';
 
 import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -10,25 +9,16 @@ import { useRouter } from 'next/navigation';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { cn } from '@/lib/utils';
 import type { CanvasPrecedenceEdge } from '@/lib/types/canvasMultinivel';
-import { countChildren } from '@/lib/canvas/canvasMultinivelStorage';
 import {
   cabeceraContextoNivel,
-  descendantTaskNodesUnderAncestor,
   descendantTaskPublicationRollup,
-  etapaPrefersSubtreeTaskCanvas,
-  plantaPrefersSubtreeTaskCanvas,
   labelCrearContextual,
-  precedentEdgesAmongTaskIds,
-  sortSiblingsByPrecedence,
-  vistaPrincipalPorContenedor,
 } from './canvasMultinivelHelpers';
 import { CanvasLeftInspector } from './CanvasLeftInspector';
 import { CanvasProjectBrowser } from './CanvasProjectBrowser';
 import { CanvasEditorProChrome, CanvasEditorStatusBar, type EditorTab } from './CanvasEditorProChrome';
-import { EtapasTimelineView } from './nivel-views/EtapasTimelineView';
-import { HubGridNivelView } from './nivel-views/HubGridNivelView';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
-import { TareasCanvasPanel } from './TareasCanvasPanel';
+import { ScopeCanvasPanel } from './ScopeCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
 import { PublicarTareasCanvasModal } from './PublicarTareasCanvasModal';
 import { CanvasPresupuestosTab } from './CanvasPresupuestosTab';
@@ -65,8 +55,6 @@ export function CanvasObraEditor({ obraId }: Props) {
   const router = useRouter();
   const currentUser = useCurrentUser();
   const [connectTareas, setConnectTareas] = useState(false);
-  const [connectEtapas, setConnectEtapas] = useState(false);
-  const [pendingEtapasSource, setPendingEtapasSource] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [projectImportOpen, setProjectImportOpen] = useState(false);
@@ -92,10 +80,11 @@ export function CanvasObraEditor({ obraId }: Props) {
     nodes,
     edges,
     pathIds,
-    siblingEdges,
     containerNode,
     containerId,
     visibleNodes,
+    visibleEdges,
+    relationCountsByNodeId,
     childTypeToCreate,
     selectedId,
     setSelectedId,
@@ -243,78 +232,55 @@ export function CanvasObraEditor({ obraId }: Props) {
     saveCanvasSnapshotToCloud,
   ]);
 
-  const vista = vistaPrincipalPorContenedor(containerNode, projectKind, nodes);
-
-  /** Fase MSP con sólo agrupadores + tareas: ver canvas de precedencias sin pasar obligatoriamente por el hub «planta». */
-  const flattenAncestorSubtreeForTasks = useMemo(() => {
-    if (!containerNode || nodes.length === 0) return false;
-    if (containerNode.type === 'etapa')
-      return etapaPrefersSubtreeTaskCanvas(nodes, containerNode);
-    if (containerNode.type === 'planta')
-      return plantaPrefersSubtreeTaskCanvas(nodes, containerNode);
-    return false;
-  }, [containerNode, nodes]);
-
   const cabecera = useMemo(
     () => cabeceraContextoNivel(obraNombre, containerNode, projectKind, nodes),
     [obraNombre, containerNode, projectKind, nodes],
   );
 
-  const taskPanelNodes = useMemo(() => {
-    if (vista === 'tareas' && flattenAncestorSubtreeForTasks && containerNode) {
-      return descendantTaskNodesUnderAncestor(nodes, containerNode.id);
-    }
-    return visibleNodes;
-  }, [vista, flattenAncestorSubtreeForTasks, containerNode, nodes, visibleNodes]);
-
-  const taskPanelEdges = useMemo(() => {
-    if (vista === 'tareas' && flattenAncestorSubtreeForTasks && containerNode) {
-      const ids = new Set(descendantTaskNodesUnderAncestor(nodes, containerNode.id).map((n) => n.id));
-      return precedentEdgesAmongTaskIds(edges, ids);
-    }
-    return siblingEdges;
-  }, [vista, flattenAncestorSubtreeForTasks, containerNode, nodes, edges, siblingEdges]);
-
-  const sortedEtapas = useMemo(
-    () => sortSiblingsByPrecedence(visibleNodes, siblingEdges),
-    [visibleNodes, siblingEdges],
-  );
+  /**
+   * Un solo Canvas para todos los niveles: lo que se dibuja es siempre el scope
+   * actual (hijos directos del cuadro abierto) y sus relaciones directas.
+   */
+  const scopeTitle = containerNode?.title ?? null;
+  const enRaiz = containerId === null;
 
   useEffect(() => {
     setSelectedEdgeId(null);
     setConnectTareas(false);
-    setConnectEtapas(false);
-    setPendingEtapasSource(null);
   }, [containerId]);
 
   useEffect(() => {
     setSelectedEdgeId((eid) => {
       if (eid == null) return null;
-      return taskPanelEdges.some((e) => e.id === eid) ? eid : null;
+      return visibleEdges.some((e) => e.id === eid) ? eid : null;
     });
-  }, [taskPanelEdges]);
+  }, [visibleEdges]);
 
   useEffect(() => {
     setSelectedEdgeId(null);
     setConnectTareas(false);
-    setConnectEtapas(false);
-    setPendingEtapasSource(null);
     setSelectedId(null);
   }, [obraId, setSelectedId]);
 
   const puedeCrear = childTypeToCreate !== null;
   const labelBotonCrear = labelCrearContextual(childTypeToCreate, projectKind);
   const selectedEdge =
-    selectedEdgeId === null ? null : taskPanelEdges.find((e) => e.id === selectedEdgeId) ?? null;
+    selectedEdgeId === null ? null : visibleEdges.find((e) => e.id === selectedEdgeId) ?? null;
 
-  const taskCpmBundle = useMemo(() => {
-    if (vista !== 'tareas') return null;
-    return computeCanvasTaskCpm(taskPanelNodes, taskPanelEdges);
-  }, [vista, taskPanelNodes, taskPanelEdges]);
+  /**
+   * CPM del scope visible. Sólo alimenta tareas: los contenedores no tienen duración
+   * propia y meterlos daría holgura 0 a todo, pintando de crítico cualquier arista.
+   */
+  const taskCpmBundle = useMemo(
+    () => computeCanvasTaskCpm(visibleNodes.filter((n) => n.type === 'tarea'), visibleEdges),
+    [visibleNodes, visibleEdges],
+  );
 
-  const muestraLegendCritico =
-    vista === 'tareas' &&
-    edgeCriticoVisible(taskPanelEdges, taskPanelNodes, taskCpmBundle?.resultado.critical_count ?? null);
+  const muestraLegendCritico = edgeCriticoVisible(
+    visibleEdges,
+    visibleNodes,
+    taskCpmBundle?.resultado.critical_count ?? null,
+  );
 
   const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
@@ -374,8 +340,6 @@ export function CanvasObraEditor({ obraId }: Props) {
     return r ? `${name} | ${r}` : name;
   }, [currentUser?.email, currentUser?.role]);
 
-  const childCount = useCallback((id: string) => countChildren(nodes, id), [nodes]);
-
   const openProjectXmlPicker = useCallback(() => {
     setProjectImportError(null);
     setProjectImportPreview(null);
@@ -402,20 +366,6 @@ export function CanvasObraEditor({ obraId }: Props) {
     if (selectedNode || selectedEdge) setInspectorOpen(true);
   }, [selectedNode, selectedEdge]);
 
-  const onTimelineSecond = useCallback(
-    (sourceId: string, targetId: string) => {
-      const ok = tryPrecedenceConnection({
-        source: sourceId,
-        target: targetId,
-        sourceHandle: 'src',
-        targetHandle: 'tgt',
-      } as Connection);
-      setPendingEtapasSource(null);
-      return ok;
-    },
-    [tryPrecedenceConnection],
-  );
-
   const handleCanvasZoomPercent = useCallback((pct: number) => {
     setCanvasZoomPct(pct);
   }, []);
@@ -431,9 +381,16 @@ export function CanvasObraEditor({ obraId }: Props) {
             ? 'Presupuestos'
             : 'Organizar';
 
+  /**
+   * VISTA CENTRAL — un único scope a la vez.
+   *
+   * No hay árbol vertical expandido, ni hub circular, ni grilla por tipo de nivel:
+   * el mismo Canvas XYFlow sirve para obra, piso, especialidad, viga o tarea, y
+   * dibuja SOLO los hijos directos del cuadro abierto. Doble click entra.
+   */
   const vistaCentral = (
     <>
-      {vista === 'etapas' && visibleNodes.length === 0 && (
+      {enRaiz && visibleNodes.length === 0 && (
         <div className="rounded-2xl border border-dashed border-[#bcc3d9] bg-white/85 px-6 py-10 text-center text-[#596574]">
           <p className="text-base font-bold text-[#0f1e1f]">Todavía no hay plan en el canvas</p>
           <p className="mx-auto mt-2 max-w-md text-sm">
@@ -462,89 +419,17 @@ export function CanvasObraEditor({ obraId }: Props) {
         </div>
       )}
 
-      {vista === 'etapas' && visibleNodes.length > 0 && (
-        <EtapasTimelineView
-          projectKind={projectKind}
-          ordered={sortedEtapas}
-          selectedId={selectedId}
-          connectMode={connectEtapas}
-          pendingSourceId={pendingEtapasSource}
-          childCount={(id) => countChildren(nodes, id)}
-          onSelect={(id) => {
-            setSelectedEdgeId(null);
-            setSelectedId(id);
-          }}
-          onEnter={enterNode}
-          onConnectFirst={(id) => {
-            setSelectedEdgeId(null);
-            setPendingEtapasSource(id);
-            setSelectedId(id);
-          }}
-          onConnectSecond={onTimelineSecond}
-          getDescendantRollup={getDescendantRollup}
-        />
-      )}
-
-      {vista === 'plantas' && containerNode && (
-        <HubGridNivelView
-          projectKind={projectKind}
-          variant="planta"
-          hubNode={containerNode}
-          items={visibleNodes}
-          selectedId={selectedId}
-          childCount={childCount}
-          getDescendantRollup={getDescendantRollup}
-          onSelect={(id) => {
-            setSelectedEdgeId(null);
-            setSelectedId(id);
-          }}
-          onEnter={enterNode}
-        />
-      )}
-
-      {vista === 'sectores' && containerNode && (
-        <HubGridNivelView
-          projectKind={projectKind}
-          variant="sector"
-          hubNode={containerNode}
-          items={visibleNodes}
-          selectedId={selectedId}
-          childCount={childCount}
-          getDescendantRollup={getDescendantRollup}
-          onSelect={(id) => {
-            setSelectedEdgeId(null);
-            setSelectedId(id);
-          }}
-          onEnter={enterNode}
-        />
-      )}
-
-      {vista === 'ambientes' && containerNode && (
-        <HubGridNivelView
-          projectKind={projectKind}
-          variant="ambiente"
-          hubNode={containerNode}
-          items={visibleNodes}
-          selectedId={selectedId}
-          childCount={childCount}
-          getDescendantRollup={getDescendantRollup}
-          onSelect={(id) => {
-            setSelectedEdgeId(null);
-            setSelectedId(id);
-          }}
-          onEnter={enterNode}
-        />
-      )}
-
-      {vista === 'tareas' && (
+      {!(enRaiz && visibleNodes.length === 0) && (
         <ReactFlowProvider>
           <div className="flex min-h-0 w-full flex-1 flex-col">
-            <TareasCanvasPanel
+            <ScopeCanvasPanel
               projectKind={projectKind}
               taskCpmBundle={taskCpmBundle}
-              visibleNodes={taskPanelNodes}
+              visibleNodes={visibleNodes}
               nodes={nodes}
-              siblingEdges={taskPanelEdges}
+              visibleEdges={visibleEdges}
+              relationCountsByNodeId={relationCountsByNodeId}
+              scopeTitle={scopeTitle}
               selectedId={selectedId}
               setSelectedId={setSelectedId}
               selectedEdgeId={selectedEdgeId}
@@ -632,14 +517,14 @@ export function CanvasObraEditor({ obraId }: Props) {
         puedeCrear={puedeCrear}
         labelBotonCrear={labelBotonCrear}
         childTypeToCreate={childTypeToCreate}
-        connectEtapas={connectEtapas}
-        vistaEtapas={vista === 'etapas'}
+        connectEtapas={false}
+        vistaEtapas={false}
         proyectoBusy={projectImportBusy}
         userLabel={userLabel}
         taskCount={taskCount}
         publishedTaskCount={publishedTaskCount}
         criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
-        vistaTareas={vista === 'tareas'}
+        vistaTareas={editorTab === 'canvas'}
         onBack={() => router.push('/cliente/obras')}
         onSaveCloud={() => {
           void saveCanvasSnapshotToCloud();
@@ -649,10 +534,8 @@ export function CanvasObraEditor({ obraId }: Props) {
         onCreateChild={() => createChildNode()}
         onGoUp={() => goUpLevel()}
         upDisabled={!containerNode}
-        onToggleConnectEtapas={() => {
-          setConnectEtapas((v) => !v);
-          setPendingEtapasSource(null);
-        }}
+        /** El orden de fases se traza en el propio Canvas del scope raíz. */
+        onToggleConnectEtapas={() => setConnectTareas((x) => !x)}
         onToggleConnectTareas={() => setConnectTareas((x) => !x)}
         connectTareasActive={connectTareas}
         onDuplicate={() => {
@@ -869,7 +752,7 @@ export function CanvasObraEditor({ obraId }: Props) {
             selectedNode={selectedNode}
             nodes={nodes}
             edges={edges}
-            siblingEdges={taskPanelEdges}
+            siblingEdges={visibleEdges}
             containerId={containerId}
             patchEdge={patchEdge}
             removeEdgeIds={removeEdgeIds}

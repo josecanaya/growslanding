@@ -4,7 +4,11 @@ import type {
   CanvasNode,
   CanvasPrecedenceEdge,
 } from '@/lib/types/canvasMultinivel';
-import { CANVAS_MULTINIVEL_STORAGE_VERSION, isCanvasEstadoNode } from '@/lib/types/canvasMultinivel';
+import {
+  CANVAS_MULTINIVEL_STORAGE_VERSION,
+  isCanvasEdgeRelation,
+  isCanvasEstadoNode,
+} from '@/lib/types/canvasMultinivel';
 import { normalizeCanvasProjectKind } from '@/lib/canvas/canvasProjectProfile';
 
 /** Una clave estable por obra: la versión va dentro del JSON (`v`). */
@@ -204,6 +208,14 @@ export function saveCanvasMultinivel(obraId: string, data: CanvasMultinivelPersi
   }
 }
 
+/**
+ * Sanea aristas del grafo global: descarta huérfanas, auto-referencias y duplicados.
+ *
+ * NO filtra por `parentId`. Las relaciones productivas son independientes de la
+ * contención: una arista puede unir nodos de distintos scopes (p. ej. «Losa P3
+ * habilita Columnas P4»). Ninguna caja aísla lo que contiene del resto de la obra,
+ * así que navegar o guardar nunca debe destruir relaciones globales.
+ */
 function sanitizeEdges(nodes: CanvasNode[], edges: CanvasPrecedenceEdge[]): CanvasPrecedenceEdge[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const ok: CanvasPrecedenceEdge[] = [];
@@ -211,14 +223,17 @@ function sanitizeEdges(nodes: CanvasNode[], edges: CanvasPrecedenceEdge[]): Canv
   for (const e of edges) {
     if (!e?.id || !e.sourceId || !e.targetId) continue;
     if (e.sourceId === e.targetId) continue;
-    const s = byId.get(e.sourceId);
-    const t = byId.get(e.targetId);
-    if (!s || !t) continue;
-    if (s.parentId !== t.parentId) continue;
+    if (!byId.has(e.sourceId) || !byId.has(e.targetId)) continue;
     const dupK = `${e.sourceId}->${e.targetId}`;
     if (seen.has(dupK)) continue;
     seen.add(dupK);
-    ok.push({ id: e.id, sourceId: e.sourceId, targetId: e.targetId, critical: Boolean(e.critical) });
+    ok.push({
+      id: e.id,
+      sourceId: e.sourceId,
+      targetId: e.targetId,
+      critical: Boolean(e.critical),
+      ...(isCanvasEdgeRelation(e.relation) ? { relation: e.relation } : {}),
+    });
   }
   return ok;
 }
@@ -243,7 +258,12 @@ export function composeCanvasPersisted(partial: {
   });
 }
 
-/** Eliminar path inválido o nodos rotos tras borrados */
+/**
+ * Eliminar path inválido o nodos rotos tras borrados.
+ *
+ * `pathIds` sólo tiene que ser una cadena de contención válida desde un nodo raíz:
+ * la profundidad y los tipos no se restringen, porque el Canvas es recursivo.
+ */
 function sanitizePersisted(data: CanvasMultinivelPersisted): CanvasMultinivelPersisted {
   const byId = new Map(data.nodes.map((n) => [n.id, n]));
   const pathIds: string[] = [];
@@ -251,7 +271,7 @@ function sanitizePersisted(data: CanvasMultinivelPersisted): CanvasMultinivelPer
     const n = byId.get(id);
     if (!n) break;
     if (pathIds.length === 0) {
-      if (n.parentId === null && n.type === 'etapa') pathIds.push(id);
+      if (n.parentId === null) pathIds.push(id);
       else break;
       continue;
     }

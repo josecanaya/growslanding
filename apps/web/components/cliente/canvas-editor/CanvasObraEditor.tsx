@@ -40,6 +40,7 @@ import { publicationReviewCategory } from './canvasMultinivelHelpers';
 import { CanvasTemplateLibraryPanel } from './CanvasTemplateLibraryPanel';
 import { CanvasPlanWizardModal } from './CanvasPlanWizardModal';
 import { GrowsCommandBar } from './workspace/GrowsCommandBar';
+import { LayersControl } from './workspace/LayersControl';
 import { ObraCompletaFlowModal } from './ObraCompletaFlowModal';
 
 type Props = { obraId: string };
@@ -74,6 +75,8 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [atajosOpen, setAtajosOpen] = useState(false);
   const [filtrosBloqueadas, setFiltrosBloqueadas] = useState(false);
   const [filtrosCriticas, setFiltrosCriticas] = useState(false);
+  const [layerTareas, setLayerTareas] = useState(true);
+  const [layerCritico, setLayerCritico] = useState(true);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
   const {
@@ -292,10 +295,11 @@ export function CanvasObraEditor({ obraId }: Props) {
 
   const filteredVisibleNodes = useMemo(() => {
     let result = visibleNodes;
+    if (!layerTareas) result = result.filter((n) => n.type !== 'tarea');
     if (filtrosBloqueadas) result = result.filter((n) => (n as { bloqueo?: boolean }).bloqueo);
     if (filtrosCriticas) result = result.filter((n) => n.esCritica || (taskCpmBundle?.byId.get(n.id)?.isCritical ?? false));
     return result;
-  }, [visibleNodes, filtrosBloqueadas, filtrosCriticas, taskCpmBundle]);
+  }, [visibleNodes, layerTareas, filtrosBloqueadas, filtrosCriticas, taskCpmBundle]);
 
   const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
@@ -439,7 +443,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           <div className="flex min-h-0 w-full flex-1 flex-col">
             <ScopeCanvasPanel
               projectKind={projectKind}
-              taskCpmBundle={taskCpmBundle}
+              taskCpmBundle={layerCritico ? taskCpmBundle : null}
               visibleNodes={filteredVisibleNodes}
               nodes={nodes}
               visibleEdges={visibleEdges}
@@ -767,31 +771,46 @@ export function CanvasObraEditor({ obraId }: Props) {
                     </p>
                   </div>
                 ) : null}
-                {puedeCrear && (
-                  <button
-                    type="button"
-                    onClick={() => createChildNode()}
-                    style={{
-                      position: 'absolute',
-                      bottom: 20,
-                      right: 20,
-                      zIndex: 30,
-                      height: 32,
-                      padding: '0 14px',
-                      borderRadius: 6,
-                      border: 'none',
-                      background: '#0C1D36',
-                      color: '#FFFFFF',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 16px rgba(21,22,26,0.20)',
-                    }}
-                    title={`Crear ${labelBotonCrear}`}
-                  >
-                    + {labelBotonCrear}
-                  </button>
-                )}
+                {/* cluster inferior derecho: capas + crear */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 20,
+                    right: 20,
+                    zIndex: 30,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <LayersControl
+                    layerTareas={layerTareas}
+                    onToggleTareas={() => setLayerTareas((v) => !v)}
+                    layerCritico={layerCritico}
+                    onToggleCritico={() => setLayerCritico((v) => !v)}
+                  />
+                  {puedeCrear && (
+                    <button
+                      type="button"
+                      onClick={() => createChildNode()}
+                      style={{
+                        height: 32,
+                        padding: '0 14px',
+                        borderRadius: 6,
+                        border: 'none',
+                        background: '#0C1D36',
+                        color: '#FFFFFF',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(21,22,26,0.20)',
+                      }}
+                      title={`Crear ${labelBotonCrear}`}
+                    >
+                      + {labelBotonCrear}
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <div className="overflow-auto p-4">

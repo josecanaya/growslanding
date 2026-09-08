@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 
-import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
@@ -16,7 +15,8 @@ import {
 } from './canvasMultinivelHelpers';
 import { CanvasLeftInspector } from './CanvasLeftInspector';
 import { CanvasProjectBrowser } from './CanvasProjectBrowser';
-import { CanvasEditorProChrome, CanvasEditorStatusBar, type EditorTab } from './CanvasEditorProChrome';
+import { CanvasEditorProChrome, type EditorTab } from './CanvasEditorProChrome';
+import { ScopeBreadcrumb } from './workspace/ScopeBreadcrumb';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { ScopeCanvasPanel } from './ScopeCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
@@ -453,42 +453,6 @@ export function CanvasObraEditor({ obraId }: Props) {
     </>
   );
 
-  const renderBreadcrumb = (compact = false) => (
-    <div
-      className={cn(
-        'rounded-2xl border border-[#e5e7eb] bg-white/95 shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
-        compact ? 'px-3 py-2' : 'px-4 py-3',
-      )}
-    >
-      <div className="flex flex-wrap items-center gap-x-1 gap-y-1 text-[12px] font-semibold text-[#64748b]">
-        {breadcrumbItems.map((item, idx) => (
-          <span key={item.id ?? 'root'} className="flex min-w-0 items-center gap-1">
-            {idx > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#cbd5e1]" aria-hidden />}
-            <button
-              type="button"
-              onClick={() => goToBreadcrumbIndex(idx)}
-              className={cn(
-                'max-w-[260px] truncate rounded-lg px-1.5 py-0.5 transition hover:bg-[#f1f5f9] hover:text-[#0f172a]',
-                idx === breadcrumbItems.length - 1 ? 'font-bold text-[#0f172a]' : 'text-[#64748b]',
-              )}
-              title={item.title}
-            >
-              {item.title}
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#64748b]">
-        <span className="rounded-full bg-[#eff6ff] px-2 py-0.5 font-semibold text-[#1d4ed8]">
-          Nivel actual: {cabecera.nivelActualTitulo}
-        </span>
-        <span className="rounded-full bg-[#f8fafc] px-2 py-0.5 font-semibold text-[#475569]">
-          Vista: {cabecera.vistaActual}
-        </span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="flex min-h-[100dvh] min-w-0 flex-col bg-[#FBFBF9] text-[#0f172a]">
       <input
@@ -565,26 +529,6 @@ export function CanvasObraEditor({ obraId }: Props) {
         onApplySlug={(slug) => void handleApplyTemplate(slug)}
       />
 
-      {cloudSaveMessage ? (
-        <div className="border-b border-[#cbd5e1] bg-[#f8fafc] px-3 py-1">
-          <p
-            className={cn(
-              'whitespace-pre-line text-xs font-medium',
-              cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
-            )}
-            role="status"
-          >
-            {cloudSaveMessage}
-          </p>
-        </div>
-      ) : null}
-
-      {showBreadcrumb ? (
-        <div className="border-b border-[#e5e7eb] bg-[#f6f8fa] px-3 py-2 xl:hidden">
-          {renderBreadcrumb(true)}
-        </div>
-      ) : null}
-
       <div className="relative flex w-full min-h-0 flex-1">
         {showProjectBrowser ? (
           <CanvasProjectBrowser
@@ -618,8 +562,6 @@ export function CanvasObraEditor({ obraId }: Props) {
         ) : null}
 
         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-          {showBreadcrumb ? <div className="mb-3 hidden xl:block">{renderBreadcrumb()}</div> : null}
-
           <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
             {(
               [
@@ -660,7 +602,38 @@ export function CanvasObraEditor({ obraId }: Props) {
 
           <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
             {editorTab === 'canvas' ? (
-              vistaCentral
+              <>
+                {vistaCentral}
+                {showBreadcrumb && (
+                  <ScopeBreadcrumb
+                    items={breadcrumbItems}
+                    onGo={goToBreadcrumbIndex}
+                    onUp={goUpLevel}
+                    upDisabled={!containerNode}
+                    nodeCount={visibleNodes.length}
+                    taskCount={taskCount}
+                    publishedCount={publishedTaskCount}
+                    criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
+                    nivelLabel={cabecera.nivelActualTitulo}
+                    vistaLabel={cabecera.vistaActual}
+                  />
+                )}
+                {cloudSaveMessage ? (
+                  <div
+                    className="absolute right-5 top-14 z-40 max-w-[360px] rounded-[6px] border border-[#E4E3DE] bg-white p-3 shadow-[0_8px_24px_rgba(21,22,26,0.10),0_1px_2px_rgba(21,22,26,0.05)] text-[11px]"
+                    role="status"
+                  >
+                    <p
+                      className={cn(
+                        'whitespace-pre-line font-medium',
+                        cloudSaveState === 'err' ? 'text-red-600' : 'text-emerald-700',
+                      )}
+                    >
+                      {cloudSaveMessage}
+                    </p>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="overflow-auto p-4">
                 {editorTab === 'archivo' ? (
@@ -793,17 +766,6 @@ export function CanvasObraEditor({ obraId }: Props) {
           />
         ) : null}
       </div>
-      <CanvasEditorStatusBar
-        nivelLabel={cabecera.nivelActualTitulo}
-        modo={modoStatusBar}
-        modoDetalle={cabecera.vistaActual}
-        taskCount={taskCount}
-        publishedCount={publishedTaskCount}
-        unpublishedCount={Math.max(0, taskCount - publishedTaskCount)}
-        criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
-        zoomLabel={canvasZoomPct != null ? `Zoom ${canvasZoomPct}%` : undefined}
-        guardadoRelativo={guardadoRelativo}
-      />
     </div>
   );
 }

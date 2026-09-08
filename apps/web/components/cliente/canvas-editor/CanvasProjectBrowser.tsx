@@ -32,6 +32,8 @@ export type CanvasProjectBrowserProps = {
   tareaPublicacionByNodeId: Record<string, { publishedAt?: string | null } | undefined>;
   onGoRoot: () => void;
   onNavigateToNode: (nodeId: string) => void;
+  /** Cuando es true, quita el aside con su marco propio y se adapta al panel contenedor */
+  embedded?: boolean;
 };
 
 function iconForType(t: CanvasNode['type']) {
@@ -95,6 +97,7 @@ export function CanvasProjectBrowser({
   tareaPublicacionByNodeId,
   onGoRoot,
   onNavigateToNode,
+  embedded,
 }: CanvasProjectBrowserProps) {
   const roots = useMemo(
     () => sortNodes(nodes.filter((n) => n.parentId === null && n.type === 'etapa')),
@@ -253,7 +256,7 @@ export function CanvasProjectBrowser({
   };
 
   return (
-    <aside className="my-3 flex h-[calc(100%-1.5rem)] min-h-0 w-[272px] shrink-0 flex-col rounded-2xl border border-[#e5e7eb] bg-white text-[#0f172a] shadow-[0_1px_3px_rgba(15,23,42,0.05)] max-xl:hidden">
+    <aside className={embedded ? 'flex h-full min-h-0 w-full flex-col' : 'my-3 flex h-[calc(100%-1.5rem)] min-h-0 w-[272px] shrink-0 flex-col rounded-2xl border border-[#e5e7eb] bg-white text-[#0f172a] shadow-[0_1px_3px_rgba(15,23,42,0.05)] max-xl:hidden'}>
       <div className="shrink-0 border-b border-[#f1f5f9] px-3 py-3">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#64748b]">
           Project Browser

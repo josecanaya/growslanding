@@ -19,6 +19,8 @@ import { type EditorTab } from './CanvasEditorProChrome';
 import { ObraTopBar } from './workspace/ObraTopBar';
 import { ScopeBreadcrumb } from './workspace/ScopeBreadcrumb';
 import { ToolRail } from './workspace/ToolRail';
+import { InstrumentPanel, PanelNota } from './workspace/InstrumentPanel';
+import { AtajosPanel } from './workspace/AtajosPanel';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { ScopeCanvasPanel } from './ScopeCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
@@ -70,6 +72,9 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
   const [hablarOpen, setHablarOpen] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
+  const [atajosOpen, setAtajosOpen] = useState(false);
+  const [filtrosBloqueadas, setFiltrosBloqueadas] = useState(false);
+  const [filtrosCriticas, setFiltrosCriticas] = useState(false);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
   const {
@@ -285,6 +290,13 @@ export function CanvasObraEditor({ obraId }: Props) {
     taskCpmBundle?.resultado.critical_count ?? null,
   );
 
+  const filteredVisibleNodes = useMemo(() => {
+    let result = visibleNodes;
+    if (filtrosBloqueadas) result = result.filter((n) => (n as { bloqueo?: boolean }).bloqueo);
+    if (filtrosCriticas) result = result.filter((n) => n.esCritica || (taskCpmBundle?.byId.get(n.id)?.isCritical ?? false));
+    return result;
+  }, [visibleNodes, filtrosBloqueadas, filtrosCriticas, taskCpmBundle]);
+
   const tieneNodosTarea = useMemo(() => nodes.some((n) => n.type === 'tarea'), [nodes]);
 
   const taskCount = useMemo(() => nodes.filter((n) => n.type === 'tarea').length, [nodes]);
@@ -428,7 +440,7 @@ export function CanvasObraEditor({ obraId }: Props) {
             <ScopeCanvasPanel
               projectKind={projectKind}
               taskCpmBundle={taskCpmBundle}
-              visibleNodes={visibleNodes}
+              visibleNodes={filteredVisibleNodes}
               nodes={nodes}
               visibleEdges={visibleEdges}
               relationCountsByNodeId={relationCountsByNodeId}
@@ -487,7 +499,7 @@ export function CanvasObraEditor({ obraId }: Props) {
         onSaveCloud={() => {
           void saveCanvasSnapshotToCloud();
         }}
-        onHelp={() => {/* paso 4: abre AtajosPanel */}}
+        onHelp={() => setAtajosOpen((v) => !v)}
       />
       <CanvasTemplateLibraryPanel
         open={libraryOpen}
@@ -507,7 +519,13 @@ export function CanvasObraEditor({ obraId }: Props) {
       <div className="relative flex w-full min-h-0 flex-1">
         <ToolRail
           activePanel={panel}
-          onToggle={(id) => setPanel((prev) => (prev === id ? null : id))}
+          onToggle={(id) => {
+            if (id === 'pert') {
+              setObraCompletaOpen(true);
+              return;
+            }
+            setPanel((prev) => (prev === id ? null : id));
+          }}
         />
 
         {showProjectBrowser ? (
@@ -524,9 +542,152 @@ export function CanvasObraEditor({ obraId }: Props) {
           />
         ) : null}
 
+        {/* PANELES DEL RAIL */}
+        {panel === 'estructura' ? (
+          <InstrumentPanel id="estructura" title="Estructura" onClose={() => setPanel(null)}>
+            <CanvasProjectBrowser
+              obraNombre={obraNombre}
+              nodes={nodes}
+              projectKind={projectKind}
+              pathIds={pathIds}
+              containerId={containerId}
+              selectedId={selectedId}
+              tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+              onGoRoot={() => goToBreadcrumbIndex(0)}
+              onNavigateToNode={openPathToNode}
+              embedded
+            />
+          </InstrumentPanel>
+        ) : panel === 'buscar' ? (
+          <InstrumentPanel id="buscar" title="Buscar" onClose={() => setPanel(null)}>
+            <PanelNota text="Nodos, tareas y documentos de la obra. Búsqueda global con filtro por tipo." />
+          </InstrumentPanel>
+        ) : panel === 'archivo' ? (
+          <InstrumentPanel id="archivo" title="Archivo" onClose={() => setPanel(null)}>
+            <PanelNota text="Importar / exportar XML de proyecto. También Guardar una versión manual." />
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                onClick={openProjectXmlPicker}
+                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #E4E3DE', background: '#FFFFFF', fontSize: 11, cursor: 'pointer', color: '#3D3E43' }}
+              >
+                Importar XML…
+              </button>
+            </div>
+          </InstrumentPanel>
+        ) : panel === 'filtros' ? (
+          <InstrumentPanel id="filtros" title="Filtros" onClose={() => setPanel(null)}>
+            {([
+              { id: 'bloqueadas', label: 'Solo bloqueadas', state: filtrosBloqueadas, set: setFiltrosBloqueadas },
+              { id: 'criticas', label: 'Solo críticas', state: filtrosCriticas, set: setFiltrosCriticas },
+              { id: 'sin_presupuesto', label: 'Sin presupuesto', disabled: true },
+              { id: 'sin_publicar', label: 'Sin publicar', disabled: true },
+            ] as const).map((f) => (
+              <label
+                key={f.id}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '1px solid #E9E8E3', cursor: 'disabled' in f && f.disabled ? 'default' : 'pointer', opacity: 'disabled' in f && f.disabled ? 0.5 : 1 }}
+                title={'disabled' in f && f.disabled ? 'Próximamente' : undefined}
+              >
+                <input
+                  type="checkbox"
+                  checked={'state' in f ? f.state : false}
+                  onChange={'set' in f ? () => f.set((v) => !v) : undefined}
+                  disabled={'disabled' in f && f.disabled}
+                  style={{ accentColor: '#0C1D36' }}
+                />
+                <span style={{ fontSize: 11, color: '#3D3E43' }}>{f.label}</span>
+              </label>
+            ))}
+          </InstrumentPanel>
+        ) : panel === 'contexto' ? (
+          <InstrumentPanel id="contexto" title="Contexto y archivos" onClose={() => setPanel(null)}>
+            <PanelNota text="Todavía no hay archivos en esta obra." />
+            <div style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                disabled
+                title="Próximo paso: modelo de objetos de contexto"
+                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid #E4E3DE', background: '#FFFFFF', fontSize: 11, cursor: 'not-allowed', color: '#A9A8A2' }}
+              >
+                + Agregar
+              </button>
+            </div>
+          </InstrumentPanel>
+        ) : panel === 'ifc' ? (
+          <InstrumentPanel id="ifc" title="Modelo IFC" onClose={() => setPanel(null)}>
+            <PanelNota text="Visor y selección de elementos IFC. La capa IFC del lienzo vincula cada elemento con su cuadro." />
+          </InstrumentPanel>
+        ) : panel === 'tareas' ? (
+          <InstrumentPanel id="tareas" title="Tareas operativas" onClose={() => setPanel(null)}>
+            <PanelNota text="Tareas publicadas a la app Socio, con su estado de ejecución y validación." />
+          </InstrumentPanel>
+        ) : panel === 'socios' ? (
+          <InstrumentPanel id="socios" title="Socios" onClose={() => setPanel(null)}>
+            <PanelNota text="Agenda de socios y su carga por scope. Desde acá se invita a un paquete de presupuesto." />
+          </InstrumentPanel>
+        ) : panel === 'critico' ? (
+          <InstrumentPanel id="critico" title="Camino crítico" onClose={() => setPanel(null)}>
+            {taskCpmBundle ? (
+              <div>
+                <p style={{ fontSize: 10, color: '#8B8C90', marginBottom: 8 }}>
+                  {taskCpmBundle.resultado.critical_count} tarea{taskCpmBundle.resultado.critical_count !== 1 ? 's' : ''} en camino crítico (holgura 0)
+                </p>
+                {taskCpmBundle.resultado.tareas.filter((t) => t.isCritical).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => openPathToNode(t.id)}
+                    style={{ display: 'block', width: '100%', textAlign: 'left', padding: '5px 8px', marginBottom: 2, borderRadius: 5, border: 'none', background: '#FBF1F0', fontSize: 10, color: '#A32A2A', cursor: 'pointer' }}
+                  >
+                    {t.id}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <PanelNota text="CPM sobre duración y precedencias del scope. Se enciende como capa del lienzo, con holgura por tarea." />
+            )}
+          </InstrumentPanel>
+        ) : panel === 'historial' ? (
+          <InstrumentPanel id="historial" title="Historial" onClose={() => setPanel(null)}>
+            <PanelNota text="Versiones guardadas de la obra y cambios aplicados por Grows, con quién y cuándo." />
+          </InstrumentPanel>
+        ) : panel === 'cronograma' ? (
+          <InstrumentPanel id="cronograma" title="Cronograma" onClose={() => setPanel(null)} wide>
+            <CanvasCronogramaTab
+              obraNombre={obraNombre}
+              nodes={nodes}
+              edges={edges}
+              tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+              selectedId={selectedId}
+              projectStart={cronogramaProjectStart}
+              onSelectTask={(id) => {
+                setSelectedId(id);
+                openPathToNode(id);
+                setInspectorOpen(true);
+              }}
+            />
+          </InstrumentPanel>
+        ) : panel === 'presupuestos' ? (
+          <InstrumentPanel id="presupuestos" title="Presupuestos" onClose={() => setPanel(null)} wide>
+            <CanvasPresupuestosTab
+              obraId={obraId}
+              obraNombre={obraNombre}
+              budgetGroups={budgetGroups}
+              nodes={nodes}
+              tareaPublicacionByNodeId={tareaPublicacionByNodeId}
+              patchBudgetGroup={patchBudgetGroup}
+              createBudgetGroup={createBudgetGroup}
+              saveCanvasSnapshotToCloud={saveCanvasSnapshotToCloud}
+              onOpenCanvasTab={() => setPanel(null)}
+            />
+          </InstrumentPanel>
+        ) : null}
+
+        {atajosOpen && <AtajosPanel onClose={() => setAtajosOpen(false)} />}
+
         <CanvasHablarPanel
           obraId={obraId}
-          open={hablarOpen && editorTab === 'canvas'}
+          open={hablarOpen && editorTab === 'canvas' && panel !== 'cronograma' && panel !== 'presupuestos'}
           onClose={() => setHablarOpen(false)}
           onCanvasMaybeChanged={() => void reloadCanvasFromCloud()}
         />
@@ -613,6 +774,31 @@ export function CanvasObraEditor({ obraId }: Props) {
                     </p>
                   </div>
                 ) : null}
+                {puedeCrear && (
+                  <button
+                    type="button"
+                    onClick={() => createChildNode()}
+                    style={{
+                      position: 'absolute',
+                      bottom: 20,
+                      right: 20,
+                      zIndex: 30,
+                      height: 32,
+                      padding: '0 14px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: '#0C1D36',
+                      color: '#FFFFFF',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 16px rgba(21,22,26,0.20)',
+                    }}
+                    title={`Crear ${labelBotonCrear}`}
+                  >
+                    + {labelBotonCrear}
+                  </button>
+                )}
               </>
             ) : (
               <div className="overflow-auto p-4">

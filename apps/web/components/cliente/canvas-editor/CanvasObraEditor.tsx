@@ -15,7 +15,8 @@ import {
 } from './canvasMultinivelHelpers';
 import { CanvasLeftInspector } from './CanvasLeftInspector';
 import { CanvasProjectBrowser } from './CanvasProjectBrowser';
-import { CanvasEditorProChrome, type EditorTab } from './CanvasEditorProChrome';
+import { type EditorTab } from './CanvasEditorProChrome';
+import { ObraTopBar } from './workspace/ObraTopBar';
 import { ScopeBreadcrumb } from './workspace/ScopeBreadcrumb';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { ScopeCanvasPanel } from './ScopeCanvasPanel';
@@ -467,52 +468,24 @@ export function CanvasObraEditor({ obraId }: Props) {
           e.target.value = '';
         }}
       />
-      <CanvasEditorProChrome
+      {/* Del ribbon anterior: Templates→paso 4 rail, Crear→paso 4 botón contextual,
+          Guardar→chip de esta barra, Duplicar/Eliminar→menú contextual del paso 4,
+          Vincular tareas→toolbar del lienzo (ya existe), Obra completa→paso 4 rail,
+          Importar XML→paso 4 rail/Archivo, Subir nivel→breadcrumb del paso 2,
+          Publicar tareas→paso 4 rail. Placeholders deshabilitados: ver lista blanca del paso 4. */}
+      <ObraTopBar
         obraNombre={obraNombre}
         onObraNombreChange={setObraNombre}
+        projectKind={projectKind ?? null}
         cloudSaveState={cloudSaveState}
         cloudSaveMessage={cloudSaveMessage}
-        editorTab={editorTab}
-        onEditorTab={setEditorTab}
-        vistaLabel={cabecera.vistaActual}
-        nivelActualLabel={cabecera.nivelActualTitulo}
         canvasHydrated={canvasHydrated}
-        tieneNodosTarea={tieneNodosTarea}
-        puedeCrear={puedeCrear}
-        labelBotonCrear={labelBotonCrear}
-        childTypeToCreate={childTypeToCreate}
-        connectEtapas={false}
-        vistaEtapas={false}
-        proyectoBusy={projectImportBusy}
+        guardadoRelativo={guardadoRelativo}
         userLabel={userLabel}
-        taskCount={taskCount}
-        publishedTaskCount={publishedTaskCount}
-        criticalCount={taskCpmBundle?.resultado.critical_count ?? null}
-        vistaTareas={editorTab === 'canvas'}
-        onBack={() => router.push('/cliente/obras')}
         onSaveCloud={() => {
           void saveCanvasSnapshotToCloud();
         }}
-        onPublicar={() => setPublicarModalOpen(true)}
-        onImportXml={openProjectXmlPicker}
-        onCreateChild={() => createChildNode()}
-        onGoUp={() => goUpLevel()}
-        upDisabled={!containerNode}
-        /** El orden de fases se traza en el propio Canvas del scope raíz. */
-        onToggleConnectEtapas={() => setConnectTareas((x) => !x)}
-        onToggleConnectTareas={() => setConnectTareas((x) => !x)}
-        connectTareasActive={connectTareas}
-        onDuplicate={() => {
-          if (selectedId) duplicateNode(selectedId);
-        }}
-        onDelete={() => {
-          if (selectedId) deleteNode(selectedId);
-        }}
-        duplicateDisabled={!selectedId}
-        deleteDisabled={!selectedId}
-        onGoOrganizar={() => setEditorTab('canvas')}
-        onOpenTemplateLibrary={() => setLibraryOpen(true)}
-        onOpenObraCompleta={() => setObraCompletaOpen(true)}
+        onHelp={() => {/* paso 4: abre AtajosPanel */}}
       />
       <CanvasTemplateLibraryPanel
         open={libraryOpen}

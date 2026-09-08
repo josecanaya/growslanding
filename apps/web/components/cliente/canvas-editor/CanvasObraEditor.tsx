@@ -18,6 +18,7 @@ import { CanvasProjectBrowser } from './CanvasProjectBrowser';
 import { type EditorTab } from './CanvasEditorProChrome';
 import { ObraTopBar } from './workspace/ObraTopBar';
 import { ScopeBreadcrumb } from './workspace/ScopeBreadcrumb';
+import { ToolRail } from './workspace/ToolRail';
 import { computeCanvasTaskCpm } from './canvasMultinivelCpm';
 import { ScopeCanvasPanel } from './ScopeCanvasPanel';
 import { ProjectXmlImportPreviewModal } from './ProjectXmlImportPreviewModal';
@@ -68,6 +69,7 @@ export function CanvasObraEditor({ obraId }: Props) {
   const [editorTab, setEditorTab] = useState<EditorTab>('canvas');
   const [canvasZoomPct, setCanvasZoomPct] = useState<number | null>(null);
   const [hablarOpen, setHablarOpen] = useState(true);
+  const [panel, setPanel] = useState<string | null>(null);
   const lastCloudSaveOkAtRef = useRef<number | null>(null);
 
   const {
@@ -503,6 +505,11 @@ export function CanvasObraEditor({ obraId }: Props) {
       />
 
       <div className="relative flex w-full min-h-0 flex-1">
+        <ToolRail
+          activePanel={panel}
+          onToggle={(id) => setPanel((prev) => (prev === id ? null : id))}
+        />
+
         {showProjectBrowser ? (
           <CanvasProjectBrowser
             obraNombre={obraNombre}
@@ -534,7 +541,7 @@ export function CanvasObraEditor({ obraId }: Props) {
           </button>
         ) : null}
 
-        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col pl-12">
           <div className="mb-2 flex flex-wrap gap-2 xl:hidden">
             {(
               [

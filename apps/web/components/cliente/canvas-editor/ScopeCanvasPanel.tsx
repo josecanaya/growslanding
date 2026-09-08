@@ -268,15 +268,14 @@ export function ScopeCanvasPanel({
           target: e.targetId,
           type: 'smoothstep',
           selected: selectedEdgeId === e.id,
-          animated: critical,
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: critical ? '#bc2436' : '#5d6c88',
+            color: critical ? '#A32A2A' : '#9C9B94',
             width: 17,
             height: 17,
           },
           style: {
-            stroke: critical ? '#bc2436' : '#6f7e98',
+            stroke: critical ? '#A32A2A' : '#9C9B94',
             strokeWidth: critical ? 2.75 : 1.9,
             strokeDasharray: critical ? undefined : '7 8',
             strokeLinecap: 'round' as const,

@@ -3,7 +3,7 @@ import { mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
 const IS_WINDOWS = process.platform === 'win32';
 
@@ -253,7 +253,22 @@ function parseCodexUsage(stdout) {
   return usage;
 }
 
-export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600000 } = {}) {
+export const FALLBACK_AGENT_CONTEXT = '# Grows\nContexto no disponible. Devolvé JSON minimal {"reply":"error","operations":[]}.';
+
+/** Descarga el contrato del agente desde el server (capa 1 del prompt). */
+export async function fetchAgentContext(base, token, fetchImpl = fetch) {
+  const url = new URL('/api/bridge/agent-context', base);
+  const response = await fetchImpl(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error(`agent-context HTTP ${response.status}`);
+  const text = await response.text();
+  if (!String(text).trim()) throw new Error('agent-context vacío');
+  return text;
+}
+
+export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600000, agentContext = FALLBACK_AGENT_CONTEXT } = {}) {
   const startedAt = Date.now();
   const local = localGraphProposal(job);
   if (local) return { result: local, usage: { provider: 'local', model: 'reglas-del-grafo', local: true, durationMs: Date.now() - startedAt, limitDescription: 'Sin consumo de suscripción.' } };
@@ -274,12 +289,8 @@ export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600
   let stdout = '';
   let stderr = '';
   try {
-    // Escribir el contrato del agente como AGENTS.md en el cwd del job.
-    // Los CLIs (claude, codex, cursor-agent) lo leen automaticamente y aprovecha
-    // cache del proveedor entre jobs.
-    const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
-    const contextPath = path.join(scriptsDir, 'grows-agent-context.md');
-    await writeFile(path.join(directory, 'AGENTS.md'), await readFile(contextPath, 'utf8'));
+    // AGENTS.md en el cwd: los CLIs lo leen solos; el contenido viene del server.
+    await writeFile(path.join(directory, 'AGENTS.md'), agentContext);
 
     return await new Promise((resolve, reject) => {
       const prompt = `Regla y esquema en AGENTS.md del cwd.
@@ -353,6 +364,16 @@ export async function main() {
     if (!response.ok) throw new Error(`Puente HTTP ${response.status}`);
     return response.json();
   };
+  let agentContext = FALLBACK_AGENT_CONTEXT;
+  const refreshContext = async () => {
+    try {
+      agentContext = await fetchAgentContext(base, token);
+    } catch (error) {
+      console.warn(`Contexto del agente no disponible: ${error instanceof Error ? error.message : error}`);
+    }
+  };
+  await refreshContext();
+  const contextTimer = setInterval(refreshContext, 30 * 60 * 1000);
   let stopped = false;
   process.once('SIGINT', () => { stopped = true; });
   process.once('SIGTERM', () => { stopped = true; });
@@ -367,7 +388,7 @@ export async function main() {
         const identity = { jobId: job.id, leaseToken };
         try {
           await request({ action: 'heartbeat', ...identity, activity: `Preparando ${job.provider} · ${job.model}` });
-          const execution = await executeJob(job, { capabilities, heartbeat: async (activity) => stopped ? { cancelled: true } : request({ action: 'heartbeat', ...identity, activity }) });
+          const execution = await executeJob(job, { capabilities, agentContext, heartbeat: async (activity) => stopped ? { cancelled: true } : request({ action: 'heartbeat', ...identity, activity }) });
           const completed = await request({ action: 'complete', ...identity, result: execution.result, usage: execution.usage, activity: 'Propuesta entregada para revisión' });
           if (completed.ok === false || completed.cancelled) throw new Error('El trabajo fue cancelado o perdió su reserva');
           console.log('Propuesta entregada para revisión humana.');
@@ -380,6 +401,7 @@ export async function main() {
     if (process.argv.includes('--once')) break;
     if (!stopped) await new Promise((resolve) => setTimeout(resolve, 3000));
   }
+  clearInterval(contextTimer);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main().catch((error) => { console.error(error.message); process.exitCode = 1; });

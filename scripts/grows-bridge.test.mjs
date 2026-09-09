@@ -4,15 +4,33 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { childEnvironment, compactJobContext, localGraphProposal, parseAgentJson, validateResult, resultSchema } from './grows-bridge.mjs';
+import { childEnvironment, compactJobContext, fetchAgentContext, localGraphProposal, parseAgentJson, validateResult, resultSchema } from './grows-bridge.mjs';
 
 test('agent context file exists with minimum contract', async () => {
-  const contextPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'grows-agent-context.md');
-  assert.equal(existsSync(contextPath), true);
-  const content = await readFile(contextPath, 'utf8');
+  const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
+  const serverPath = path.join(scriptsDir, '../apps/web/lib/bridge/agent-context.md');
+  const localFallback = path.join(scriptsDir, 'grows-agent-context.md');
+  assert.equal(existsSync(serverPath), true, 'contexto canónico en apps/web');
+  assert.equal(existsSync(localFallback), true, 'fallback local durante transición');
+  const content = await readFile(serverPath, 'utf8');
   assert.match(content, /create_node/);
   assert.match(content, /nodeType/);
   assert.match(content, /etapa/);
+});
+
+test('fetchAgentContext downloads markdown from the server', async () => {
+  const markdown = '# Grows — Contrato del agente\ncreate_node\nnodeType\netapa\n';
+  const fetchImpl = async (url, options) => {
+    assert.match(String(url), /\/api\/bridge\/agent-context$/);
+    assert.equal(options.headers.Authorization, 'Bearer ' + 'a'.repeat(64));
+    return { ok: true, text: async () => markdown };
+  };
+  const text = await fetchAgentContext('https://example.com', 'a'.repeat(64), fetchImpl);
+  assert.equal(text, markdown);
+  await assert.rejects(
+    () => fetchAgentContext('https://example.com', 'a'.repeat(64), async () => ({ ok: false, status: 401, text: async () => '' })),
+    /agent-context HTTP 401/,
+  );
 });
 
 test('bridge validates operations and excludes secrets from Codex subprocess', () => {

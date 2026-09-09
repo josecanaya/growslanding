@@ -9,16 +9,17 @@ export function ClienteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '';
   /** Home Stitch trae su propia chrome; sin sidebar/header del shell. */
   const homeStitch = pathname === '/cliente/dashboard' || pathname === '/cliente';
+  /**
+   * Workspace de obra: el lienzo ocupa la pantalla. Sin sidebar ni header del shell
+   * — la obra trae su propia chrome (ObraTopBar + ToolRail + breadcrumb flotante).
+   */
+  const obraWorkspace = /^\/cliente\/tareas\/[^/]+\/editor/.test(pathname);
+  const fullBleed = homeStitch || obraWorkspace;
 
   return (
-    <div
-      className={cn(
-        'min-h-screen text-slate-900',
-        homeStitch ? 'bg-[#0a1628]' : 'bg-[#f6fafe]',
-      )}
-    >
+    <div className={cn('min-h-screen text-[#15161A]', fullBleed ? 'bg-[#FBFBF9]' : 'bg-[#F6F5F1]')}>
       <div className="flex min-h-screen">
-        {!homeStitch ? (
+        {!fullBleed ? (
           <div className="hidden md:block">
             <ClienteSidebar className="fixed left-0 top-0 z-30" />
           </div>
@@ -26,14 +27,14 @@ export function ClienteShell({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             'flex min-h-screen flex-1 flex-col',
-            !homeStitch && 'md:pl-[4.5rem]',
+            !fullBleed && 'md:pl-[4.5rem]',
           )}
         >
-          {!homeStitch ? <ClienteHeader /> : null}
+          {!fullBleed ? <ClienteHeader /> : null}
           <main
             className={cn(
               'min-h-0 flex-1',
-              homeStitch ? 'p-0' : 'px-4 py-6 md:px-8 md:py-8',
+              fullBleed ? 'p-0' : 'px-4 py-6 md:px-8 md:py-8',
             )}
           >
             {children}

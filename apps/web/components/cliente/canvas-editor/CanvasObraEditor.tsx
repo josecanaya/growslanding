@@ -332,7 +332,6 @@ export function CanvasObraEditor({ obraId }: Props) {
     };
   }, [nodes, tareaPublicacionByNodeId]);
 
-  const showProjectBrowser = editorTab === 'canvas' || editorTab === 'presupuestos';
   const showBreadcrumb = editorTab === 'canvas';
   const showCanvasInspector = editorTab === 'canvas';
   const showCronogramaInspector = editorTab === 'cronograma';
@@ -531,20 +530,6 @@ export function CanvasObraEditor({ obraId }: Props) {
             setPanel((prev) => (prev === id ? null : id));
           }}
         />
-
-        {showProjectBrowser ? (
-          <CanvasProjectBrowser
-            obraNombre={obraNombre}
-            nodes={nodes}
-            projectKind={projectKind}
-            pathIds={pathIds}
-            containerId={containerId}
-            selectedId={selectedId}
-            tareaPublicacionByNodeId={tareaPublicacionByNodeId}
-            onGoRoot={() => goToBreadcrumbIndex(0)}
-            onNavigateToNode={openPathToNode}
-          />
-        ) : null}
 
         {/* PANELES DEL RAIL */}
         {panel === 'estructura' ? (

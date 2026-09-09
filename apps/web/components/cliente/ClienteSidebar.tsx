@@ -161,7 +161,7 @@ export function ClienteSidebar({
         'flex h-full w-[4.5rem] shrink-0 flex-col items-center border-r py-6',
         canvas
           ? 'border-white/10 bg-[var(--grows-canvas-blue,#0C1D36)]'
-          : 'border-slate-200/80 bg-slate-50',
+          : 'border-[#E4E3DE] bg-[#F4F4F1]',
         className,
       )}
     >
@@ -169,7 +169,7 @@ export function ClienteSidebar({
         href="/cliente/dashboard"
         className={cn(
           'mb-8 font-bold tracking-tighter',
-          canvas ? 'text-white' : 'text-sky-950',
+          canvas ? 'text-white' : 'text-[#15161A]',
         )}
       >
         <span className="text-xl">G.</span>
@@ -190,8 +190,8 @@ export function ClienteSidebar({
                     ? 'bg-white/15 text-white shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-white'
                     : 'text-white/45 hover:bg-white/10 hover:text-white'
                   : active
-                    ? 'bg-white text-sky-700 shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-sky-600'
-                    : 'text-slate-400 hover:bg-white hover:text-sky-600',
+                    ? 'bg-white text-[#0C1D36] shadow-sm after:absolute after:right-[-10px] after:h-7 after:w-1 after:rounded-l-full after:bg-[#0C1D36]'
+                    : 'text-[#8B8C90] hover:bg-white hover:text-[#0C1D36]',
               )}
             >
               <Icon className="h-[22px] w-[22px]" strokeWidth={1.75} />
@@ -209,7 +209,7 @@ export function ClienteSidebar({
           title={user?.orgName || ''}
           className={cn(
             'max-w-[3rem] truncate text-[9px] font-semibold uppercase leading-tight',
-            canvas ? 'text-white/40' : 'text-slate-400',
+            canvas ? 'text-white/40' : 'text-[#A9A8A2]',
           )}
         >
           {orgLabel}
@@ -220,7 +220,7 @@ export function ClienteSidebar({
             'flex h-10 w-10 items-center justify-center rounded-xl',
             canvas
               ? 'text-white/45 hover:bg-white/10 hover:text-white'
-              : 'text-slate-400 hover:bg-white hover:text-sky-600',
+              : 'text-[#8B8C90] hover:bg-white hover:text-[#0C1D36]',
           )}
           title="Ajustes"
         >

@@ -6,6 +6,11 @@
 > CLI) y `--system-prompt-snapshot` (reuso dentro de la misma conversación). No se
 > implementa la vía API directa porque cambiaría la economía (API key vs suscripción).
 
+> TODO: snapshot delta — no aplica. Cada job crea un cwd temporal nuevo (`mkdtemp`)
+> e invoca el CLI en modo one-shot (`claude -p --max-turns 1`, sin `--continue`;
+> Codex `--ephemeral`). Las sesiones no comparten memoria entre pedidos, así que
+> omitir el JSON del canvas en el segundo pedido dejaría al agente sin contexto.
+
 ## Rol
 Sos el asistente de planificación de Grows. Respondé en español y breve.
 

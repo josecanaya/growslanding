@@ -150,6 +150,16 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
      <DialogDescription>Grows usa las suscripciones que ya tenés iniciadas en esta PC.</DialogDescription>
     </DialogHeader>
     <div className="space-y-3">
+     <div className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+      <p className="text-sm font-medium mb-1">¿Es tu primera vez?</p>
+      <p className="text-xs text-blue-800 mb-3">Necesitás instalar el conector de Grows en esta PC. Es una app liviana (~10 MB).</p>
+      <a href="/api/bridge/download" download className="inline-block rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700">
+        Descargar conector local
+      </a>
+      <details className="mt-2"><summary className="text-xs text-blue-800 cursor-pointer">Vas a ver una advertencia de Windows/Mac — es normal</summary>
+        <p className="text-xs text-blue-800 mt-1">Windows: click en &quot;Más información&quot; → &quot;Ejecutar de todas formas&quot;.<br/>Mac: click derecho en el .dmg → &quot;Abrir&quot; → &quot;Abrir de todas formas&quot;.</p>
+      </details>
+     </div>
      {PROVIDERS.filter(p=>p.id!=='local').map(item=>{
       const available=detectedCapabilities.find(c=>c.id===item.id);
       return <div key={item.id} className="flex items-center gap-3 rounded-xl border border-stone-200 p-3">

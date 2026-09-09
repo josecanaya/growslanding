@@ -274,7 +274,7 @@ export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600
 export async function main() {
   const configIndex = process.argv.indexOf('--config');
   const configPath = configIndex >= 0 ? process.argv[configIndex + 1] : null;
-  const config = configPath ? JSON.parse(await readFile(path.resolve(configPath), 'utf8')) : {};
+  const config = configPath ? JSON.parse((await readFile(path.resolve(configPath), 'utf8')).replace(/^﻿/, '')) : {};
   const base = config.url ?? process.env.GROWS_BRIDGE_URL;
   const token = config.token ?? process.env.GROWS_BRIDGE_TOKEN;
   if (!base || !token) throw new Error('Configurá GROWS_BRIDGE_URL y GROWS_BRIDGE_TOKEN del dispositivo emparejado.');

@@ -31,5 +31,16 @@ async function handleClick(e) {
   await render();
 }
 
-window.addEventListener('DOMContentLoaded', render);
+window.addEventListener('DOMContentLoaded', async () => {
+  await render();
+  try {
+    const status = await invoke('get_connection_status');
+    const el = document.getElementById('status');
+    if (status.configured) {
+      el.textContent = 'Conectado';
+      el.classList.add('ok');
+      await invoke('start_worker');
+    }
+  } catch (_) { /* sin config aún */ }
+});
 setInterval(render, 5000);

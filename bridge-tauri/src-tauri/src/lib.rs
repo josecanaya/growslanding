@@ -1,5 +1,15 @@
 mod cli_detector;
 mod cli_installer;
+mod config;
+mod job_runner;
+mod prompt;
+
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+struct AppState {
+    running: Arc<RwLock<bool>>,
+}
 
 #[tauri::command]
 fn detect_clis() -> Vec<cli_detector::CliStatus> {
@@ -16,11 +26,147 @@ fn login_cli(id: String, bin: String) -> cli_installer::InstallResult {
     cli_installer::open_login(&id, std::path::Path::new(&bin))
 }
 
+#[tauri::command]
+fn get_connection_status(app: tauri::AppHandle) -> serde_json::Value {
+    let cfg = config::load(&app);
+    serde_json::json!({
+        "configured": cfg.url.is_some() && cfg.token.is_some(),
+        "url": cfg.url,
+    })
+}
+
+#[tauri::command]
+async fn start_worker(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let mut running = state.running.write().await;
+    if *running {
+        return Ok(());
+    }
+    *running = true;
+    drop(running);
+    let flag = state.running.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            if !*flag.read().await {
+                break;
+            }
+            if let Err(e) = poll_and_execute(&app).await {
+                eprintln!("[worker] {}", e);
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        }
+    });
+    Ok(())
+}
+
+#[tauri::command]
+async fn stop_worker(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    *state.running.write().await = false;
+    Ok(())
+}
+
+async fn poll_and_execute(app: &tauri::AppHandle) -> Result<(), String> {
+    let cfg = config::load(app);
+    let url = cfg.url.ok_or("sin config")?;
+    let token = cfg.token.ok_or("sin token")?;
+    let caps = cli_detector::detect_all();
+    let ready: Vec<_> = caps.iter().filter(|c| c.logged_in).cloned().collect();
+    let capabilities_json: Vec<serde_json::Value> = ready
+        .iter()
+        .map(|c| {
+            serde_json::json!({
+                "id": c.id,
+                "label": c.label,
+                "models": default_models(&c.id),
+                "limitDescription": ""
+            })
+        })
+        .collect();
+
+    let client = reqwest::Client::new();
+    let claim: serde_json::Value = client
+        .post(format!("{}/api/bridge/worker", url.trim_end_matches('/')))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "action": "claim",
+            "capabilities": capabilities_json,
+            "activity": "Esperando pedidos"
+        }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let Some(job_val) = claim.get("job").filter(|v| !v.is_null()) else {
+        return Ok(());
+    };
+    let lease: String = claim
+        .get("leaseToken")
+        .and_then(|v| v.as_str())
+        .ok_or("sin lease")?
+        .into();
+    let job: job_runner::Job = serde_json::from_value(job_val.clone()).map_err(|e| e.to_string())?;
+
+    let result = job_runner::execute(&job, &ready).await;
+    let body = match result {
+        Ok(r) => serde_json::json!({
+            "action": "complete",
+            "jobId": job.id,
+            "leaseToken": lease,
+            "result": { "reply": r.reply, "operations": r.operations },
+            "activity": "Propuesta entregada para revisión"
+        }),
+        Err(e) => serde_json::json!({
+            "action": "fail",
+            "jobId": job.id,
+            "leaseToken": lease,
+            "error": e,
+            "activity": "No se pudo completar"
+        }),
+    };
+    client
+        .post(format!("{}/api/bridge/worker", url.trim_end_matches('/')))
+        .bearer_auth(&token)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+fn default_models(id: &str) -> Vec<serde_json::Value> {
+    match id {
+        "claude" => vec![
+            serde_json::json!({"id":"sonnet","label":"Claude Sonnet","description":"Equilibrado"}),
+            serde_json::json!({"id":"opus","label":"Claude Opus","description":"Mayor profundidad"}),
+            serde_json::json!({"id":"haiku","label":"Claude Haiku","description":"Rápido"}),
+        ],
+        "openai" => vec![
+            serde_json::json!({"id":"gpt-5.6-luna","label":"GPT-5.6 Luna","description":"Rápido"}),
+        ],
+        "cursor" => vec![
+            serde_json::json!({"id":"auto","label":"Auto","description":"Automático"}),
+        ],
+        _ => vec![],
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![detect_clis, install_cli, login_cli])
+        .manage(AppState {
+            running: Arc::new(RwLock::new(false)),
+        })
+        .invoke_handler(tauri::generate_handler![
+            detect_clis,
+            install_cli,
+            login_cli,
+            get_connection_status,
+            start_worker,
+            stop_worker
+        ])
         .run(tauri::generate_context!())
         .expect("error while running Grows Agent");
 }

@@ -61,28 +61,34 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
   }catch(e){setCError(e instanceof Error?e.message:'No se pudo conectar.');setCStep(0);}
  },[connected,endpoint]);
 
- // poll during steps 2 (wait bridge) and 3 (detect provider)
+ const cLabel=PROVIDERS.find(p=>p.id===cPid)?.label??'';
+
+ // poll during steps 2 (wait bridge) and 3 (detect provider), con timeout que reporta el fallo en la app
  useEffect(()=>{
   if(!cPid||cStep<2||cStep>=4)return;
+  const startedAt=Date.now();
   const poll=async()=>{
    try{
     const res=await fetch(endpoint,{cache:'no-store'});
     const data=await res.json();
     const online=(data.devices??[]).filter(isOnline) as Device[];
     setDevices(data.devices??[]);
-    if(cStep===2&&online.length>0){setCStep(3);setCElapsed(0);return;}
-    if(cStep===3){
-     setCElapsed(e=>e+2);
-     const caps=online.flatMap(d=>d.capabilities??[]);
-     if(caps.some(c=>c.id===cPid)){setCStep(4);setTimeout(closeConnect,2500);}
+    const secs=Math.round((Date.now()-startedAt)/1000);
+    if(cStep===2){
+     if(online.length>0){setCStep(3);setCElapsed(0);return;}
+     if(secs>=35){setCError('No se pudo abrir Grows Bridge. Revisá que aceptaste la ventana de Windows y que Node.js esté instalado, después reintentá.');setCStep(9);}
+     return;
     }
+    setCElapsed(secs);
+    const caps=online.flatMap(d=>d.capabilities??[]);
+    if(caps.some(c=>c.id===cPid)){setCStep(4);setTimeout(closeConnect,2500);return;}
+    if(online.length===0){setCError('El puente se desconectó. Reintentá la conexión.');setCStep(9);return;}
+    if(secs>=30){setCError(`El puente está conectado pero ${cLabel} no inició sesión en esta PC. Abrí una terminal, ${cPid&&CLI_HINT[cPid]?CLI_HINT[cPid]:'iniciá sesión en el CLI'}, y reintentá.`);setCStep(9);}
    }catch{/* silent */}
   };
   const t=setInterval(poll,2000);
   return()=>clearInterval(t);
- },[cPid,cStep,endpoint,closeConnect]);
-
- const cLabel=PROVIDERS.find(p=>p.id===cPid)?.label??'';
+ },[cPid,cStep,endpoint,closeConnect,cLabel]);
 
  return <div className="absolute bottom-4 left-1/2 z-40 w-[min(680px,calc(100%-112px))] -translate-x-1/2">
 
@@ -100,7 +106,7 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
      {n:3,label:`Detectando ${cLabel} en tu PC`},
      {n:4,label:`${cLabel} conectado`},
     ] as const).map(({n,label})=>{
-     const done=cStep>n,active=cStep===n;
+     const failed=cStep===9,done=cStep>n&&!failed,active=cStep===n&&!failed;
      return <div key={n} className="flex items-start gap-3">
       <div className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-all duration-200 ${done?'bg-green-500 text-white':active?'bg-slate-900 text-white':'bg-stone-100 text-stone-400'}`}>
        {done?'✓':n}
@@ -115,7 +121,10 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
      </div>;
     })}
    </div>
-   {cError&&<p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{cError}</p>}
+   {cError&&<div className="mt-4 space-y-3">
+    <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{cError}</p>
+    {cStep===9&&<div className="flex gap-2"><button onClick={()=>{if(cPid)void startConnect(cPid);}} className="flex-1 rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700 transition-colors">Reintentar</button><button onClick={closeConnect} className="rounded-lg border border-stone-200 px-3 py-2 text-xs font-medium text-stone-600 hover:bg-stone-50 transition-colors">Cerrar</button></div>}
+   </div>}
   </DialogContent>
  </Dialog>
 

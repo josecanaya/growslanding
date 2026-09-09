@@ -4,6 +4,21 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+const IS_WINDOWS = process.platform === 'win32';
+
+function shellQuote(value) {
+  const text = String(value);
+  if (text === '') return '""';
+  return /[\s"&|<>^()%!]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+/** On Windows npm CLIs (claude, codex, cursor-agent) are .cmd shims that spawn cannot
+ * resolve with shell:false; routing through the shell lets PATHEXT find them. */
+function spawnCli(bin, args, options = {}) {
+  if (IS_WINDOWS) return spawn(shellQuote(bin), args.map(shellQuote), { ...options, shell: true });
+  return spawn(bin, args, { ...options, shell: false });
+}
+
 const nullableString = { type: ['string', 'null'] };
 const nullableNumber = { type: ['number', 'null'] };
 const properties = {
@@ -169,8 +184,8 @@ const PROVIDERS = {
 
 function probe(bin, args = ['--version']) {
   return new Promise((resolve) => {
-    const child = spawn(bin, args, { shell: false, windowsHide: true, stdio: 'ignore' });
-    const timeout = setTimeout(() => { child.kill(); resolve(false); }, 4000);
+    const child = spawnCli(bin, args, { windowsHide: true, stdio: 'ignore' });
+    const timeout = setTimeout(() => { child.kill(); resolve(false); }, 8000);
     child.once('error', () => { clearTimeout(timeout); resolve(false); });
     child.once('close', (code) => { clearTimeout(timeout); resolve(code === 0); });
   });
@@ -228,8 +243,8 @@ export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600
         : provider === 'claude'
           ? ['-p', '--model', model, '--output-format', 'json', '--permission-mode', 'plan', '--max-turns', '1']
           : ['-p', '--model', model, '--output-format', 'json'];
-      child = spawn(capability.bin, args, {
-        cwd: directory, shell: false, windowsHide: true, env: childEnvironment(), stdio: ['pipe', 'pipe', 'pipe'],
+      child = spawnCli(capability.bin, args, {
+        cwd: directory, windowsHide: true, env: childEnvironment(), stdio: ['pipe', 'pipe', 'pipe'],
       });
       const terminate = (reason) => { failure = reason; child.kill(); };
       timeout = setTimeout(() => terminate(new Error('El agente superó el tiempo máximo')), timeoutMs);
@@ -279,7 +294,7 @@ export async function main() {
   const token = config.token ?? process.env.GROWS_BRIDGE_TOKEN;
   if (!base || !token) throw new Error('Configurá GROWS_BRIDGE_URL y GROWS_BRIDGE_TOKEN del dispositivo emparejado.');
   let capabilities = await detectCapabilities(config);
-  if (!capabilities.length) throw new Error('No encontré Codex, Claude ni Cursor conectados en esta PC.');
+  if (!capabilities.length) console.warn('Aún no detecté Codex, Claude ni Cursor. El puente queda conectado y los buscará cada pocos segundos; iniciá sesión en alguno (ej: claude, codex login) y aparecerá solo.');
   const url = new URL('/api/bridge/worker', base);
   if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) throw new Error('El puente requiere HTTPS (excepto localhost).');
   const request = async (body) => {

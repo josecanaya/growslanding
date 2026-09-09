@@ -1,6 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { childEnvironment, compactJobContext, localGraphProposal, parseAgentJson, validateResult, resultSchema } from './grows-bridge.mjs';
+
+test('agent context file exists with minimum contract', async () => {
+  const contextPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'grows-agent-context.md');
+  assert.equal(existsSync(contextPath), true);
+  const content = await readFile(contextPath, 'utf8');
+  assert.match(content, /create_node/);
+  assert.match(content, /nodeType/);
+  assert.match(content, /etapa/);
+});
+
 test('bridge validates operations and excludes secrets from Codex subprocess', () => {
   assert.deepEqual(childEnvironment({ PATH: 'path', GROWS_BRIDGE_TOKEN: 'secret', OPENAI_API_KEY: 'secret', CODEX_HOME: 'auth-home' }), { PATH: 'path', CODEX_HOME: 'auth-home' });
   assert.deepEqual(validateResult({ reply: 'Faltan datos.', operations: [] }), { reply: 'Faltan datos.', operations: [] });

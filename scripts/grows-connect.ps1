@@ -12,15 +12,22 @@ try {
  $stateDir=Join-Path $env:LOCALAPPDATA 'Grows'
  New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
  $configPath=Join-Path $stateDir 'bridge.private.json'
- # --- diagnostico del contexto de lanzamiento (temporal) ---
- $diag=@()
- $diag+="whoami=$(whoami)"
- $diag+="integrity=$((whoami /groups 2>&1 | Select-String 'Mandatory Level') -join ' ')"
- $diag+="APPDATA=$env:APPDATA"
- $diag+="TestPath APPDATA\Claude=$(Test-Path "$env:APPDATA\Claude")"
- $diag+="TestPath claude-code=$(Test-Path "$env:APPDATA\Claude\claude-code")"
- try{ $diag+="ls claude-code=$((Get-ChildItem "$env:APPDATA\Claude\claude-code" -ErrorAction Stop | ForEach-Object Name) -join ',')" }catch{ $diag+="ls claude-code ERROR: $_" }
- $diag+="PATH_len=$($env:PATH.Length)"
+ # --- busqueda amplia de claude accesible desde ESTE contexto (real) ---
+ $diag=@("whoami=$(whoami)","APPDATA=$env:APPDATA")
+ $claudeHits=@()
+ $searchGlobs=@(
+  "$env:APPDATA\npm\claude.cmd","$env:APPDATA\npm\claude.ps1",
+  "$env:APPDATA\Claude\claude-code\*\claude.exe",
+  "$env:LOCALAPPDATA\Claude\claude-code\*\claude.exe",
+  "$env:USERPROFILE\.local\bin\claude*",
+  "$env:USERPROFILE\scoop\shims\claude*",
+  "$env:LOCALAPPDATA\Programs\claude*\claude.exe"
+ )
+ foreach($g in $searchGlobs){ $h=Get-ChildItem -Path $g -ErrorAction SilentlyContinue; foreach($x in $h){ $claudeHits+=$x.FullName } }
+ $gc=Get-Command claude -ErrorAction SilentlyContinue; if($gc){ $claudeHits+=$gc.Source }
+ $diag+="claude hits: $($claudeHits -join ' | ')"
+ $npm=Get-Command npm -ErrorAction SilentlyContinue; $diag+="npm=$(if($npm){$npm.Source}else{'NO'})"
+ $diag+="TestPath Roaming\npm=$(Test-Path "$env:APPDATA\npm")"
  [System.IO.File]::WriteAllText((Join-Path $stateDir 'connect-diag.log'),($diag -join "`n"),(New-Object System.Text.UTF8Encoding $false))
  # Resolver los CLIs en PowerShell (contexto normal) y pasar rutas absolutas,
  # porque el proceso node lanzado por el navegador puede no poder listar AppData.

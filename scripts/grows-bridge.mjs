@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -191,12 +192,44 @@ function probe(bin, args = ['--version']) {
   });
 }
 
+function compareVersions(a, b) {
+  const pa = a.split('.').map(Number), pb = b.split('.').map(Number);
+  for (let i = 0; i < 3; i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; }
+  return 0;
+}
+
+/** Windows installers drop CLIs outside a clean PATH (e.g. claude en una carpeta
+ * versionada de AppData). Descubrimos rutas conocidas ademas del PATH. */
+async function discoverWindowsBins(id) {
+  if (!IS_WINDOWS) return [];
+  const appData = process.env.APPDATA, localAppData = process.env.LOCALAPPDATA, home = process.env.USERPROFILE;
+  const out = [];
+  if (id === 'claude') {
+    for (const root of [appData && path.join(appData, 'Claude', 'claude-code'), localAppData && path.join(localAppData, 'Claude', 'claude-code')].filter(Boolean)) {
+      try {
+        const versions = (await readdir(root)).filter((v) => /^\d+\.\d+\.\d+/.test(v)).sort(compareVersions).reverse();
+        for (const v of versions) { const exe = path.join(root, v, 'claude.exe'); if (existsSync(exe)) out.push(exe); }
+      } catch { /* dir ausente */ }
+    }
+  } else if (id === 'openai') {
+    for (const c of [appData && path.join(appData, 'npm', 'codex.cmd'), home && path.join(home, '.local', 'bin', 'codex.exe'), home && path.join(home, '.codex', 'bin', 'codex.exe')].filter(Boolean)) if (existsSync(c)) out.push(c);
+  } else if (id === 'cursor') {
+    for (const c of [localAppData && path.join(localAppData, 'Programs', 'cursor', 'resources', 'app', 'bin', 'cursor-agent.cmd'), appData && path.join(appData, 'npm', 'cursor-agent.cmd')].filter(Boolean)) if (existsSync(c)) out.push(c);
+  }
+  return out;
+}
+
 export async function detectCapabilities(config = {}) {
   const capabilities = [];
   for (const [id, definition] of Object.entries(PROVIDERS)) {
-    const bin = config[definition.binKey] ?? definition.fallbackBin;
-    const ready = await probe(bin, id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version']);
-    if (ready) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin });
+    const args = id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version'];
+    const candidates = [];
+    if (config[definition.binKey]) candidates.push(config[definition.binKey]);
+    candidates.push(definition.fallbackBin);
+    candidates.push(...await discoverWindowsBins(id));
+    let resolved = null;
+    for (const bin of [...new Set(candidates)]) { if (await probe(bin, args)) { resolved = bin; break; } }
+    if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved });
   }
   return capabilities;
 }

@@ -153,9 +153,9 @@ const PROVIDERS = {
   },
 };
 
-function probe(bin) {
+function probe(bin, args = ['--version']) {
   return new Promise((resolve) => {
-    const child = spawn(bin, ['--version'], { shell: false, windowsHide: true, stdio: 'ignore' });
+    const child = spawn(bin, args, { shell: false, windowsHide: true, stdio: 'ignore' });
     const timeout = setTimeout(() => { child.kill(); resolve(false); }, 4000);
     child.once('error', () => { clearTimeout(timeout); resolve(false); });
     child.once('close', (code) => { clearTimeout(timeout); resolve(code === 0); });
@@ -166,7 +166,8 @@ export async function detectCapabilities(config = {}) {
   const capabilities = [];
   for (const [id, definition] of Object.entries(PROVIDERS)) {
     const bin = config[definition.binKey] ?? definition.fallbackBin;
-    if (await probe(bin)) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin });
+    const ready = await probe(bin, id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version']);
+    if (ready) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin });
   }
   return capabilities;
 }
@@ -263,7 +264,7 @@ export async function main() {
   const base = config.url ?? process.env.GROWS_BRIDGE_URL;
   const token = config.token ?? process.env.GROWS_BRIDGE_TOKEN;
   if (!base || !token) throw new Error('Configurá GROWS_BRIDGE_URL y GROWS_BRIDGE_TOKEN del dispositivo emparejado.');
-  const capabilities = await detectCapabilities(config);
+  let capabilities = await detectCapabilities(config);
   if (!capabilities.length) throw new Error('No encontré Codex, Claude ni Cursor conectados en esta PC.');
   const url = new URL('/api/bridge/worker', base);
   if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) throw new Error('El puente requiere HTTPS (excepto localhost).');
@@ -278,6 +279,7 @@ export async function main() {
   console.log('Puente Grows conectado. Esperando pedidos; Ctrl+C para detener.');
   while (!stopped) {
     try {
+      capabilities = await detectCapabilities(config);
       const publicCapabilities = capabilities.map(({ bin: _bin, ...capability }) => capability);
       const { job, leaseToken } = await request({ action: 'claim', capabilities: publicCapabilities, activity: 'Esperando pedidos' });
       if (job) {

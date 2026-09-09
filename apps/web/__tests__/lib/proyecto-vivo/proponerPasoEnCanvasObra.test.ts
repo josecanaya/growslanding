@@ -13,7 +13,7 @@ const empty: CanvasMultinivelPersisted = {
 };
 
 describe('proponerPasoEnCanvasObra', () => {
-  it('crea etapa 00 y tarea con precedencia', () => {
+  it('crea propuestas sin inferir precedencia por orden del chat', () => {
     const a = proponerPasoEnCanvasObra({
       canvas: empty,
       mensaje: 'Definir lote → Lote 30x40',
@@ -31,6 +31,7 @@ describe('proponerPasoEnCanvasObra', () => {
       mensaje: 'Definir envelope → H 36m',
     });
     expect(b.nodos.filter((n) => n.type === 'etapa')).toHaveLength(0);
-    expect(b.edges).toHaveLength(1);
+    expect(b.edges).toHaveLength(0);
+    expect(b.nodos.find((n) => n.type === 'tarea')?.executorKind).toBe('sin_asignar');
   });
 });

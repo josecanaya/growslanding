@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { requireObraAccess, ObraAccessError } from '@/lib/obra-access';
+import { contextStoragePath } from '@/lib/legajo/storage-contract';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -27,7 +29,7 @@ export async function DELETE(
     // Obtener el documento para obtener la URL
     const { data: documento, error: fetchError } = await (supabase as any)
       .from('documentos_legajo')
-      .select('url')
+      .select('url, obra_id')
       .eq('id', documentoId)
       .single();
 
@@ -38,15 +40,9 @@ export async function DELETE(
       );
     }
 
-    // Extraer el path del archivo desde la URL
-    const urlParts = documento.url.split('/legajo/');
-    if (urlParts.length < 2) {
-      return NextResponse.json(
-        { success: false, error: 'URL de archivo inválida' },
-        { status: 400 }
-      );
-    }
-    const filePath = urlParts[1];
+    await requireObraAccess(documento.obra_id, true);
+    const filePath = contextStoragePath(documento.url, documento.obra_id);
+    if (!filePath) return NextResponse.json({ success: false, error: 'Ruta de archivo inválida.' }, { status: 400 });
 
     // Eliminar archivo de Storage
     const { error: storageError } = await supabase.storage
@@ -55,13 +51,14 @@ export async function DELETE(
 
     if (storageError) {
       console.error('[LEGAJO] Error eliminando archivo de Storage:', storageError);
-      // Continuar aunque falle el storage, para eliminar el registro
+      return NextResponse.json({ success: false, error: 'No se pudo eliminar el archivo. El registro se conservó para reintentar.' }, { status: 503 });
     }
 
     // Eliminar registro de documentos_legajo
     const { error: deleteError } = await (supabase as any)
       .from('documentos_legajo')
       .delete()
+      .eq('obra_id', documento.obra_id)
       .eq('id', documentoId);
 
     if (deleteError) {
@@ -83,7 +80,7 @@ export async function DELETE(
         success: false,
         error: error instanceof Error ? error.message : 'Error interno del servidor',
       },
-      { status: 500 }
+      { status: error instanceof ObraAccessError ? error.status : 500 }
     );
   }
 }

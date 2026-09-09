@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Connection } from '@xyflow/react';
 import type {
   CanvasBudgetGroup,
@@ -85,6 +85,8 @@ async function postPublicarTareasWithRetry(
 }
 
 export function useCanvasMultinivel(obraId: string) {
+  const cloudRevision = useRef<{ obraId: string; revision: number } | null>(null);
+  const saveInFlight = useRef(false);
   const [obraNombre, setObraNombre] = useState('Obra');
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasPrecedenceEdge[]>([]);
@@ -140,6 +142,9 @@ export function useCanvasMultinivel(obraId: string) {
   useEffect(() => {
     let cancelled = false;
     setCanvasHydrated(false);
+    cloudRevision.current = null;
+    setCloudSaveState('idle');
+    setCloudSaveMessage(null);
     setSelectedId(null);
 
     (async () => {
@@ -149,7 +154,8 @@ export function useCanvasMultinivel(obraId: string) {
         });
         const j = await res.json();
         if (cancelled) return;
-        if (res.ok && j.success && j.data) {
+        if (res.ok && j.success && j.data && Number.isSafeInteger(j.data.revision)) {
+          cloudRevision.current = { obraId, revision: j.data.revision };
           const name = j.data.obraNombre ?? j.data.obra?.name ?? 'Obra';
           setObraNombre(name);
           setNodes(Array.isArray(j.data.nodes) ? j.data.nodes : []);
@@ -176,6 +182,8 @@ export function useCanvasMultinivel(obraId: string) {
             }),
           );
         } else {
+          setCloudSaveState('err');
+          setCloudSaveMessage('No pudimos leer la obra completa. Mostramos la copia local; recargá antes de guardar en la nube.');
           const stored = loadCanvasMultinivel(obraId);
           if (stored) {
             setObraNombre(stored.obraNombre);
@@ -196,6 +204,8 @@ export function useCanvasMultinivel(obraId: string) {
         }
       } catch {
         if (cancelled) return;
+        setCloudSaveState('err');
+        setCloudSaveMessage('Sin conexión con la obra. Conservamos la copia local.');
         const stored = loadCanvasMultinivel(obraId);
         if (stored) {
           setObraNombre(stored.obraNombre);
@@ -230,7 +240,12 @@ export function useCanvasMultinivel(obraId: string) {
         cache: 'no-store',
       });
       const j = await res.json();
-      if (!res.ok || !j.success || !j.data) return;
+      if (!res.ok || !j.success || !j.data || !Number.isSafeInteger(j.data.revision)) {
+        setCloudSaveState('err');
+        setCloudSaveMessage('No se pudo recargar la obra. Conservamos tus cambios locales.');
+        return;
+      }
+      cloudRevision.current = { obraId, revision: j.data.revision };
       const name = j.data.obraNombre ?? j.data.obra?.name ?? 'Obra';
       setObraNombre(name);
       setNodes(Array.isArray(j.data.nodes) ? j.data.nodes : []);
@@ -271,6 +286,14 @@ export function useCanvasMultinivel(obraId: string) {
 
   const saveCanvasSnapshotToCloud = useCallback(
     async (snapshot?: CanvasMultinivelPersisted) => {
+      if (saveInFlight.current) return { ok: false as const, message: 'Ya hay un guardado en curso.' };
+      if (!cloudRevision.current || cloudRevision.current.obraId !== obraId) {
+        const message = 'Recargá la obra con conexión antes de guardar. Conservamos tus cambios locales.';
+        setCloudSaveState('err'); setCloudSaveMessage(message);
+        return { ok: false as const, message };
+      }
+      const expectedRevision = cloudRevision.current.revision;
+      saveInFlight.current = true;
       const payload =
         snapshot ??
         composeCanvasPersisted({ obraNombre, nodes, pathIds, edges, budgetGroups, projectKind });
@@ -282,6 +305,7 @@ export function useCanvasMultinivel(obraId: string) {
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            expectedRevision,
             obraNombre: payload.obraNombre,
             projectKind: payload.projectKind,
             pathIds: payload.pathIds,
@@ -297,6 +321,8 @@ export function useCanvasMultinivel(obraId: string) {
           setCloudSaveMessage(msg);
           return { ok: false as const, message: msg };
         }
+        if (!Number.isSafeInteger(j.data?.revision)) throw new Error('El servidor no confirmó la revisión guardada. Recargá antes de reintentar.');
+        if (cloudRevision.current?.obraId === obraId) cloudRevision.current = { obraId, revision: j.data.revision };
         const nodeCount =
           typeof j.data?.nodeCount === 'number' ? j.data.nodeCount : payload.nodes.length;
         saveCanvasMultinivel(obraId, payload);
@@ -352,6 +378,8 @@ export function useCanvasMultinivel(obraId: string) {
         setCloudSaveState('err');
         setCloudSaveMessage(msg);
         return { ok: false as const, message: msg };
+      } finally {
+        saveInFlight.current = false;
       }
     },
     [obraId, obraNombre, nodes, pathIds, edges, budgetGroups, projectKind, refreshTareaPublicacion],

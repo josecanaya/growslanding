@@ -93,7 +93,7 @@ async function packDesdeGithub(words: string[], limit: number): Promise<CorpusHi
   await Promise.all(
     PACK_REMOTO.map(async (rel) => {
       try {
-        const res = await fetch(`${base}/${rel}`);
+        const res = await fetch(`${base}/${rel}`, { signal: AbortSignal.timeout(4000) });
         if (!res.ok) return;
         const raw = await res.text();
         if (raw.length > 2) docs.push({ file: rel, raw });

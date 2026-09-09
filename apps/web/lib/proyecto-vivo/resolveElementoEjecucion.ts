@@ -21,18 +21,7 @@ export async function resolveElementoForProyectoVivoTransformacion(
   toNodeId: string | null,
   warnings: string[],
 ): Promise<string> {
-  const db = supabase as unknown as {
-    from: (t: string) => {
-      select: (s: string) => {
-        eq: (c: string, v: string) => {
-          maybeSingle: () => Promise<{ data: Record<string, unknown> | null; error: { message: string } | null }>;
-        };
-      };
-      insert: (row: Record<string, unknown>) => {
-        select: (s: string) => { single: () => Promise<{ data: { id: string } | null; error: { message: string; code?: string } | null }> };
-      };
-    };
-  };
+  const db = supabase as any;
 
   if (!toNodeId) {
     throw new Error('La transformación de ejecución debe tener estado destino (to_node_id).');
@@ -42,6 +31,7 @@ export async function resolveElementoForProyectoVivoTransformacion(
     .from('canvas_nodes')
     .select('id, title, metadata')
     .eq('id', toNodeId)
+    .eq('obra_id', obraId)
     .maybeSingle();
 
   if (nodeErr || !toNode) {
@@ -50,6 +40,8 @@ export async function resolveElementoForProyectoVivoTransformacion(
 
   const metaEl = readMetadataElementoId(toNode.metadata);
   if (metaEl) {
+    const { data: linked, error } = await db.from('elementos').select('id').eq('id', metaEl).eq('obra_id', obraId).maybeSingle();
+    if (error || !linked) throw new Error('El elemento del estado destino no pertenece a la obra.');
     warnings.push('Elemento reutilizado desde metadata del estado destino');
     return metaEl;
   }
@@ -142,11 +134,12 @@ export async function resolveElementoCanvasOperativoLegacy(
   throw new Error(insErr?.message ?? 'No se pudo crear elemento Canvas operativo');
 }
 
-export type GraphStatusTransformacionSync = 'en_curso' | 'realizada' | 'bloqueada';
+export type GraphStatusTransformacionSync = 'propuesta' | 'en_curso' | 'realizada' | 'bloqueada';
 
 export function graphStatusTransformacionFromTareaEstado(
   estado: EstadoTareaCore,
 ): GraphStatusTransformacionSync {
+  if (estado === 'pendiente') return 'propuesta';
   if (estado === 'validada') return 'realizada';
   if (estado === 'rechazada') return 'en_curso';
   return 'en_curso';

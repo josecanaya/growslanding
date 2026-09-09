@@ -1,3 +1,6 @@
+import { publicationBlockReason } from '@/lib/proyecto-vivo/publicationContract';
+import { activarEjecucionTransformacion } from '@/lib/proyecto-vivo/activarEjecucionTransformacion';
+import { normalizeProductiveRelation } from '@/lib/proyecto-vivo/relationSemantics';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -26,6 +29,10 @@ type CanvasNodeRow = {
   description: string | null;
   planned_duration_days: number | null;
   is_critical: boolean | null;
+  transform_kind?: string | null;
+  from_node_id?: string | null;
+  to_node_id?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type CanvasEdgeRow = {
@@ -41,13 +48,13 @@ async function assertObraInOrgs(
   supabase: ReturnType<typeof createServiceSupabaseClient>,
   obraId: string,
   allowedOrgIds: string[],
-): Promise<{ ok: true; org_id: string } | { ok: false; status: number; message: string }> {
+): Promise<{ ok: true; org_id: string; graph_mode: string } | { ok: false; status: number; message: string }> {
   if (allowedOrgIds.length === 0) {
     return { ok: false, status: 403, message: 'Sin organización accesible' };
   }
   const { data: obra, error } = await (supabase as any)
     .from('obras')
-    .select('id, org_id')
+    .select('id, org_id, graph_mode')
     .eq('id', obraId)
     .maybeSingle();
 
@@ -58,7 +65,7 @@ async function assertObraInOrgs(
   if (!allowedOrgIds.includes(orgId)) {
     return { ok: false, status: 403, message: 'No autorizado para esta obra' };
   }
-  return { ok: true, org_id: orgId };
+  return { ok: true, org_id: orgId, graph_mode: obra.graph_mode ?? 'obra_plan' };
 }
 
 async function puedePublicarTareasEnOrganizacion(
@@ -259,15 +266,15 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const supabaseAny = supabase as any;
     const { data: nodeRows, error: nErr } = await supabaseAny
       .from('canvas_nodes')
-      .select('id, type')
+      .select('id, type, transform_kind, from_node_id, to_node_id, metadata')
       .eq('obra_id', obraId);
 
     if (nErr) {
       return NextResponse.json({ ok: false, error: nErr.message }, { status: 500 });
     }
 
-    const allNodes = (nodeRows ?? []) as Array<{ id: string; type: string }>;
-    const taskNodesMeta = allNodes.filter((n) => n.type === 'tarea');
+    const allNodes = (nodeRows ?? []) as CanvasNodeRow[];
+    const taskNodesMeta = allNodes.filter((n) => n.type === 'tarea' && !publicationBlockReason(n, allNodes, gate.graph_mode === 'proyecto_vivo'));
     const taskIds = taskNodesMeta.map((n) => n.id);
 
     const publishedIds = new Set<string>();
@@ -298,7 +305,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const taskIdSet = new Set(taskIds);
-    const edges = (edgeRows ?? []) as CanvasEdgeRow[];
+    const edges = ((edgeRows ?? []) as CanvasEdgeRow[]).flatMap((edge) => {
+      const n = normalizeProductiveRelation(edge.source_node_id, edge.target_node_id, edge.type);
+      return n.temporal ? [{ ...edge, type: 'precedencia', source_node_id: n.sourceId, target_node_id: n.targetId }] : [];
+    });
     let precedenceEdgesDetected = 0;
     for (const e of edges) {
       if (e.type !== 'precedencia') {
@@ -392,7 +402,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const { data: nodeRows, error: nErr } = await supabaseAny
       .from('canvas_nodes')
       .select(
-        'id, obra_id, org_id, type, title, description, planned_duration_days, is_critical',
+        'id, obra_id, org_id, type, title, description, planned_duration_days, is_critical, transform_kind, from_node_id, to_node_id, metadata',
       )
       .eq('obra_id', obraId);
 
@@ -402,21 +412,26 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
     const allNodes = (nodeRows ?? []) as CanvasNodeRow[];
     const nodesById = new Map(allNodes.map((n) => [n.id, n]));
-    const taskNodes = allNodes.filter((n) => n.type === 'tarea');
+    const taskNodes = allNodes.filter((n) => n.type === 'tarea' && !publicationBlockReason(n, allNodes, gate.graph_mode === 'proyecto_vivo'));
 
     if (taskNodes.length === 0) {
       return NextResponse.json({
         ok: true,
         createdTasks: 0,
         updatedTasks: 0,
-        skippedNodes: 0,
+        skippedNodes: allNodes.filter((n) => n.type === 'tarea').length,
         createdPrecedences: 0,
         skippedEdges: 0,
-        warnings: ['No hay nodos tipo tarea en el canvas de esta obra.'],
+        warnings: ['No hay tareas publicables: revisar aceptación y extremos A/B.'],
       });
     }
 
-    const elementoId = await ensureElementoCanvasOperativo(supabase, obraId, warnings);
+    const elementoId = taskNodes.some((n) => !n.transform_kind)
+      ? await ensureElementoCanvasOperativo(supabase, obraId, warnings) : null;
+    for (const node of allNodes.filter((n) => n.type === 'tarea' && !taskNodes.includes(n))) {
+      skippedNodes++;
+      warnings.push(`Nodo ${node.id}: ${publicationBlockReason(node, allNodes, gate.graph_mode === 'proyecto_vivo')}`);
+    }
 
     const nowIso = new Date().toISOString();
     const canvasNodeIds = taskNodes.map((n) => n.id);
@@ -446,6 +461,19 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const canvasNodeIdToTareaId = new Map<string, string>();
 
     for (const node of taskNodes) {
+      if (node.transform_kind) {
+        try {
+          const result = await activarEjecucionTransformacion({ supabase, obraId, obraOrgId, actorId: user.id, canvasNodeId: node.id });
+          if (result.created) createdTasks++; else updatedTasks++;
+          createdPrecedences += result.createdPrecedences;
+          warnings.push(...result.warnings);
+          canvasNodeIdToTareaId.set(node.id, result.tareaId);
+        } catch (error) {
+          skippedNodes++;
+          warnings.push(`Nodo ${node.id}: ${error instanceof Error ? error.message : 'No se pudo publicar'}`);
+        }
+        continue;
+      }
       const orgId = node.org_id || obraOrgId;
       const rawTitle = (node.title ?? '').trim();
       const title = rawTitle || '(Sin título)';
@@ -472,7 +500,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
           payload: {
             obra_id: obraId,
             org_id: orgId,
-            elemento_id: elementoId,
+            elemento_id: elementoId!,
             canvas_node_id: node.id,
             title,
             descripcion,
@@ -505,7 +533,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     if (eErr) {
       warnings.push(`No se pudieron leer aristas del canvas: ${eErr.message}`);
     } else {
-      const edges = (edgeRows ?? []) as CanvasEdgeRow[];
+      const edges = ((edgeRows ?? []) as CanvasEdgeRow[]).flatMap((edge) => {
+      const n = normalizeProductiveRelation(edge.source_node_id, edge.target_node_id, edge.type);
+      return n.temporal ? [{ ...edge, type: 'precedencia', source_node_id: n.sourceId, target_node_id: n.targetId }] : [];
+    });
 
       for (const edge of edges) {
         if (edge.type !== 'precedencia') {

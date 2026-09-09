@@ -4,7 +4,7 @@ import type {
   CanvasPrecedenceEdge,
   TransformKind,
 } from '@/lib/types/canvasMultinivel';
-import { newCanvasEdgeId, newCanvasNodeId } from '@/lib/proyecto-vivo/ids';
+import { newCanvasNodeId } from '@/lib/proyecto-vivo/ids';
 
 const ETAPA_DEFINICION = '00. Definición del proyecto';
 
@@ -54,7 +54,7 @@ function findOrBuildEtapaDefinicion(
 }
 
 /**
- * Un turno de habla → nodos del canvas Organizar (etapa + tarea + precedencia).
+ * Un turno de habla → nodos del canvas Organizar (etapa + tarea propuesta).
  * Misma estructura que Casa nueva / XML, no el grafo IDEA→estado aparte.
  */
 export function proponerPasoEnCanvasObra(input: {
@@ -83,10 +83,8 @@ export function proponerPasoEnCanvasObra(input: {
     };
   }
 
-  const sorted = [...siblings].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const prev = sorted[sorted.length - 1] ?? null;
   const tareaId = newCanvasNodeId();
-  const x = 80 + sorted.length * 280;
+  const x = 80 + siblings.length * 280;
   const tarea: CanvasNode = {
     id: tareaId,
     parentId: etapa.id,
@@ -100,7 +98,7 @@ export function proponerPasoEnCanvasObra(input: {
     descripcion: paso.detalle,
     transformKind: paso.transformKind,
     graphStatus: 'propuesta',
-    executorKind: 'agente',
+    executorKind: 'sin_asignar',
     orquestador: {
       origen: 'agente',
       estado: 'pendiente',
@@ -111,14 +109,7 @@ export function proponerPasoEnCanvasObra(input: {
 
   const nodos: CanvasNode[] = created ? [etapa, tarea] : [tarea];
   const edges: CanvasPrecedenceEdge[] = [];
-  if (prev) {
-    edges.push({
-      id: newCanvasEdgeId(),
-      sourceId: prev.id,
-      targetId: tareaId,
-      critical: true,
-    });
-  }
+
 
   return {
     nodos,

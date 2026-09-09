@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { requireObraAccess, ObraAccessError } from '@/lib/obra-access';
+import { validateContextFile } from '@/lib/legajo/storage-contract';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,6 +12,7 @@ export const runtime = 'nodejs';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (Number(request.headers.get('content-length') ?? 0) > 21 * 1024 * 1024) return NextResponse.json({ success: false, error: 'Máximo 20 MB por archivo.' }, { status: 413 });
     const formData = await request.formData();
     const obraId = formData.get('obraId') as string;
     const categoriaId = formData.get('categoriaId') as string;
@@ -24,7 +26,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceSupabaseClient();
+    const { supabase } = await requireObraAccess(obraId, true);
+    if (typeof archivo.arrayBuffer !== 'function') return NextResponse.json({ success: false, error: 'Archivo inválido.' }, { status: 400 });
+    const invalid = validateContextFile(archivo, categoriaId, descripcion ?? '');
+    if (invalid) return NextResponse.json({ success: false, error: invalid }, { status: 400 });
+    const { data: category, error: categoryError } = await (supabase as any).from('categorias_legajo').select('id').eq('id', categoriaId).maybeSingle();
+    if (categoryError || !category) return NextResponse.json({ success: false, error: 'Categoría inexistente.' }, { status: 400 });
 
     // Generar nombre único para el archivo
     const fileExt = archivo.name.split('.').pop();
@@ -51,18 +58,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Obtener URL pública del archivo
-    const { data: urlData } = supabase.storage
-      .from('legajo')
-      .getPublicUrl(fileName);
-
-    const publicUrl = urlData.publicUrl;
+    // Stable internal locator; authorized reads issue short-lived download links.
+    const publicUrl = `legajo://${fileName}`;
 
     // Insertar registro en documentos_legajo
     const documentoData = {
       obra_id: obraId,
       categoria: categoriaId,
-      nombre_archivo: archivo.name,
+      nombre_archivo: archivo.name.replace(/[\\/]/g, '_').slice(0, 255),
       url: publicUrl,
       descripcion: descripcion || null,
     };
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Error interno del servidor',
       },
-      { status: 500 }
+      { status: error instanceof ObraAccessError ? error.status : 500 }
     );
   }
 }

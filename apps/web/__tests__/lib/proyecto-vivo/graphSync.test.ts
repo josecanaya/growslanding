@@ -7,7 +7,7 @@ describe('graphStatusTransformacionFromTareaEstado', () => {
   });
 
   it('mapea estados operativos a en_curso', () => {
-    expect(graphStatusTransformacionFromTareaEstado('pendiente')).toBe('en_curso');
+    expect(graphStatusTransformacionFromTareaEstado('pendiente')).toBe('propuesta');
     expect(graphStatusTransformacionFromTareaEstado('en_progreso')).toBe('en_curso');
     expect(graphStatusTransformacionFromTareaEstado('para_validar')).toBe('en_curso');
     expect(graphStatusTransformacionFromTareaEstado('rechazada')).toBe('en_curso');

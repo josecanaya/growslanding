@@ -1,3 +1,4 @@
+import { normalizeProductiveRelation } from './relationSemantics';
 import type { CanvasMultinivelPersisted, CanvasNode } from '@/lib/types/canvasMultinivel';
 import { isCanvasEstadoNode, isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
 
@@ -46,7 +47,8 @@ export function computeFrontera(
     const from = byId.get(fromId);
     if (!from || !estadoAlcanzado(from)) continue;
 
-    const preds = snapshot.edges.filter((e) => e.targetId === t.id);
+    const preds = snapshot.edges.map((e) => normalizeProductiveRelation(e.sourceId, e.targetId, e.relation))
+      .filter((e) => e.blocks && e.targetId === t.id);
     const predsOk = preds.every((e) => {
       const pred = byId.get(e.sourceId);
       if (!pred) return false;

@@ -12,3 +12,7 @@ out
 *.db-journal
 tmp_*
 testfile.txt
+
+/work/
+/supabase/.temp/
+*.private.json

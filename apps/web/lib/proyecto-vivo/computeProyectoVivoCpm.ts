@@ -1,3 +1,4 @@
+import { normalizeProductiveRelation } from './relationSemantics';
 import type { CanvasMultinivelPersisted } from '@/lib/types/canvasMultinivel';
 import { isCanvasTransformacionNode } from '@/lib/types/canvasMultinivel';
 import { calcularCPM, type CPMResultado, type TareaCPMResultado } from '@/lib/utils/cpm';
@@ -20,7 +21,9 @@ export function computeProyectoVivoCpm(
   const ids = new Set(transforms.map((t) => t.id));
   const predMap = new Map<string, string[]>();
   for (const t of transforms) predMap.set(t.id, []);
-  for (const e of snapshot.edges) {
+  for (const edge of snapshot.edges) {
+    const e = normalizeProductiveRelation(edge.sourceId, edge.targetId, edge.relation);
+    if (!e.temporal) continue;
     if (!ids.has(e.sourceId) || !ids.has(e.targetId)) continue;
     const arr = predMap.get(e.targetId) ?? [];
     if (!arr.includes(e.sourceId)) arr.push(e.sourceId);

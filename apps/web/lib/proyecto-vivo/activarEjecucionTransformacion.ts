@@ -1,3 +1,5 @@
+import { publicationBlockReason } from './publicationContract';
+import { normalizeProductiveRelation } from './relationSemantics';
 import type { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { TareaMetadataService } from '@/lib/tareas';
 import { TareasRepository } from '@/lib/tareas/infrastructure/tareas.repository';
@@ -61,23 +63,11 @@ export async function activarEjecucionTransformacion(params: {
   }
 
   const row = node as CanvasNodeRow;
-  if (row.type !== 'tarea') {
-    throw new Error('El nodo no es una transformación (type=tarea).');
-  }
-  if (row.transform_kind !== 'ejecucion') {
-    throw new Error('Solo transformaciones transform_kind=ejecucion pueden activarse en obra.');
-  }
-  if (!row.from_node_id || !row.to_node_id) {
-    throw new Error('Faltan from_node_id / to_node_id en la transformación.');
-  }
-  const orq = row.metadata?.orquestador;
-  if (
-    orq &&
-    typeof orq === 'object' &&
-    (orq as { estado?: string }).estado === 'pendiente'
-  ) {
-    throw new Error('Aceptá la propuesta del orquestador antes de activar ejecución.');
-  }
+  const { data: endpoints, error: endpointError } = await supabaseAny.from('canvas_nodes')
+    .select('id, type').eq('obra_id', params.obraId).in('id', [row.from_node_id, row.to_node_id].filter(Boolean));
+  if (endpointError) throw new Error(endpointError.message);
+  const blocked = publicationBlockReason(row, endpoints ?? [], true);
+  if (blocked) throw new Error(blocked);
 
   const elementoId = await resolveElementoForProyectoVivoTransformacion(
     params.supabase,
@@ -119,17 +109,16 @@ export async function activarEjecucionTransformacion(params: {
     },
   });
 
-  await supabaseAny
-    .from('canvas_nodes')
-    .update({ graph_status: 'en_curso' })
-    .eq('id', row.id);
-
-  const { data: edgeRows } = await supabaseAny
+  const { data: edgeRows, error: edgeError } = await supabaseAny
     .from('canvas_edges')
     .select('source_node_id, target_node_id, type, lag_days')
     .eq('obra_id', params.obraId);
 
-  const edges = (edgeRows ?? []) as CanvasEdgeRow[];
+  if (edgeError) throw new Error(edgeError.message);
+  const edges = ((edgeRows ?? []) as CanvasEdgeRow[]).flatMap((edge) => {
+    const normalized = normalizeProductiveRelation(edge.source_node_id, edge.target_node_id, edge.type);
+    return normalized.temporal ? [{ ...edge, type: 'precedencia', source_node_id: normalized.sourceId, target_node_id: normalized.targetId }] : [];
+  });
   const relatedNodeIds = new Set<string>();
   for (const e of edges) {
     if (e.type !== 'precedencia') continue;

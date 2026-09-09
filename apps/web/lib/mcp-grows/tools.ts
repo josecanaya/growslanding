@@ -13,7 +13,7 @@ export const GROWS_MCP_TOOLS = [
   {
     name: 'leer_horizonte',
     description:
-      'Lee el canvas Organizar de una obra: etapas, tareas y precedencias CPM. No incluye nodos estado del grafo IDEA.',
+      'Lee estados A/B, transformaciones, relaciones explícitas y revisión del canvas de una obra.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -31,12 +31,24 @@ export const GROWS_MCP_TOOLS = [
       type: 'object',
       properties: {
         obra_id: { type: 'string' },
+        base_revision: { type: 'integer', minimum: 0 },
+        idempotency_key: { type: 'string', minLength: 1, maxLength: 100 },
+        from_node_id: { type: 'string', description: 'Estado A existente en esta obra' },
+        to_node_id: { type: 'string', description: 'Estado B existente en esta obra' },
+        parent_id: { type: 'string', description: 'Contenedor existente; opcional' },
+        transform_kind: { type: 'string', enum: ['conocimiento', 'coordinacion', 'ejecucion'] },
+        executor_kind: { type: 'string', enum: ['humano', 'empresa', 'agente', 'sin_asignar'] },
+        duration_days: { type: 'number', minimum: 0 },
+        cantidad: { type: 'number', exclusiveMinimum: 0 },
+        unidad: { type: 'string', maxLength: 80 },
+        fuentes: { type: 'array', items: { type: 'string' }, maxItems: 30 },
+        supuestos: { type: 'array', items: { type: 'string' }, maxItems: 30 },
         mensaje: {
           type: 'string',
           description: 'Ej: Definir programa → Unidades por piso',
         },
       },
-      required: ['obra_id', 'mensaje'],
+      required: ['obra_id', 'mensaje', 'base_revision', 'idempotency_key', 'from_node_id', 'to_node_id', 'transform_kind'],
       additionalProperties: false,
     },
   },
@@ -81,15 +93,17 @@ function textResult(obj: unknown) {
 
 function orgFilter() {
   const org = process.env.GROWS_MCP_ORG_ID?.trim();
-  return org || null;
+  if (!org) throw new Error('MCP_SCOPE_REQUIRED: GROWS_MCP_ORG_ID no configurado');
+  return org;
 }
 
 export async function callGrowsMcpTool(
   supabase: SupabaseClient,
   name: string,
   args: Record<string, unknown>,
-): Promise<{ content: { type: 'text'; text: string }[] }> {
+): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
   try {
+    orgFilter(); // Fail closed before any privileged query, including unknown tools.
     if (name === 'listar_obras_vivas') {
       let q = supabase
         .from('obras')
@@ -111,29 +125,10 @@ export async function callGrowsMcpTool(
 
     if (name === 'leer_horizonte') {
       const obraId = String(args.obra_id || '');
-      let oq = supabase
-        .from('obras')
-        .select('id, name, objetivo_texto, graph_mode, canvas_ui, org_id')
-        .eq('id', obraId);
-      const org = orgFilter();
-      if (org) oq = oq.eq('org_id', org);
-      const { data: obra, error: oe } = await oq.maybeSingle();
-      if (oe) throw oe;
-      if (!obra) return textResult({ error: 'Obra no encontrada' });
-
-      const { data: nodes, error: ne } = await supabase
-        .from('canvas_nodes')
-        .select('id, type, title, parent_id, graph_status, transform_kind, status, metadata, created_at')
-        .eq('obra_id', obraId)
-        .neq('type', 'estado')
-        .order('created_at', { ascending: true });
-      if (ne) throw ne;
-
-      const { data: edges, error: ee } = await supabase
-        .from('canvas_edges')
-        .select('id, source_node_id, target_node_id, type, is_critical')
-        .eq('obra_id', obraId);
-      if (ee) throw ee;
+      const read = await supabase.rpc('read_canvas_snapshot', { p_obra_id: obraId, p_org_id: orgFilter() });
+      if (read.error) throw read.error;
+      if (!read.data) throw new Error('Obra no encontrada');
+      const { obra, nodes, edges } = read.data as { obra: any; nodes: any[]; edges: any[] };
 
       const canvasUi = obra.canvas_ui as { hilo?: unknown[] } | null;
       const hilo = Array.isArray(canvasUi?.hilo) ? canvasUi.hilo.slice(-20) : [];
@@ -154,9 +149,15 @@ export async function callGrowsMcpTool(
           graph_status: n.graph_status,
           status: n.status,
           transform_kind: n.transform_kind,
+          from_node_id: n.from_node_id,
+          to_node_id: n.to_node_id,
+          executor_kind: n.executor_kind,
+          metadata: n.metadata,
           orquestador: (n.metadata as { orquestador?: unknown } | null)?.orquestador ?? null,
         })),
-        precedencias: edges ?? [],
+        revision: (obra.canvas_ui as { revision?: number } | null)?.revision ?? 0,
+        relaciones: edges ?? [],
+        precedencias: (edges ?? []).filter((edge) => edge.type === 'precedencia' || edge.type === 'precede'),
         hilo,
       });
     }
@@ -166,133 +167,54 @@ export async function callGrowsMcpTool(
       const mensaje = String(args.mensaje || '').trim();
       if (!mensaje) return textResult({ error: 'mensaje vacío' });
 
-      let oq = supabase.from('obras').select('id, org_id, graph_mode').eq('id', obraId);
+      const baseRevision = args.base_revision;
+      const idempotencyKey = typeof args.idempotency_key === 'string' ? args.idempotency_key.trim() : '';
+      const fromId = typeof args.from_node_id === 'string' ? args.from_node_id : '';
+      const toId = typeof args.to_node_id === 'string' ? args.to_node_id : '';
+      const kind = args.transform_kind;
+      const executor = args.executor_kind ?? 'sin_asignar';
+      if (!Number.isSafeInteger(baseRevision) || Number(baseRevision) < 0 || !idempotencyKey || idempotencyKey.length > 100) {
+        throw new Error('INVALID_PROPOSAL: base_revision e idempotency_key son obligatorios');
+      }
+      if (!fromId || !toId || fromId === toId) throw new Error('INVALID_PROPOSAL: estados A/B distintos obligatorios');
+      if (!['conocimiento', 'coordinacion', 'ejecucion'].includes(String(kind))) throw new Error('INVALID_PROPOSAL: transform_kind explícito obligatorio');
+      if (!['humano', 'empresa', 'agente', 'sin_asignar'].includes(String(executor))) throw new Error('INVALID_PROPOSAL: executor_kind inválido');
+      if (args.duration_days != null && (typeof args.duration_days !== 'number' || !Number.isFinite(args.duration_days) || args.duration_days < 0)) throw new Error('INVALID_PROPOSAL: duración inválida');
+      if (args.cantidad != null && (typeof args.cantidad !== 'number' || !Number.isFinite(args.cantidad) || args.cantidad <= 0)) throw new Error('INVALID_PROPOSAL: cantidad inválida');
+      if (args.unidad != null && (typeof args.unidad !== 'string' || args.unidad.length > 80)) throw new Error('INVALID_PROPOSAL: unidad inválida');
+      for (const key of ['fuentes', 'supuestos']) {
+        const value = args[key];
+        if (value != null && (!Array.isArray(value) || value.length > 30 || value.some((item) => typeof item !== 'string' || item.length > 4000))) throw new Error(`INVALID_PROPOSAL: ${key} inválido`);
+      }
       const org = orgFilter();
-      if (org) oq = oq.eq('org_id', org);
-      const { data: obra, error: oe } = await oq.maybeSingle();
+      const { data: obra, error: oe } = await supabase.from('obras').select('id, org_id').eq('id', obraId).eq('org_id', org).maybeSingle();
       if (oe) throw oe;
-      if (!obra) return textResult({ error: 'Obra no encontrada' });
-
-      const { data: nodes, error: ne } = await supabase
-        .from('canvas_nodes')
-        .select('id, type, title, parent_id, created_at')
-        .eq('obra_id', obraId);
-      if (ne) throw ne;
-
-      let etapa = (nodes ?? []).find(
-        (n) =>
-          n.type === 'etapa' &&
-          !n.parent_id &&
-          (n.title === ETAPA_DEFINICION || /^00\.\s/i.test(String(n.title))),
-      );
-      const now = new Date().toISOString();
-      const createdEtapa = !etapa;
-      if (!etapa) {
-        const etapaId = randomUUID();
-        etapa = {
-          id: etapaId,
-          type: 'etapa',
-          title: ETAPA_DEFINICION,
-          parent_id: null,
-          created_at: now,
-        };
-        const { error: eEtapa } = await supabase.from('canvas_nodes').insert({
-          id: etapaId,
-          obra_id: obraId,
-          org_id: obra.org_id,
-          parent_id: null,
-          type: 'etapa',
-          title: ETAPA_DEFINICION,
-          position_x: 40,
-          position_y: 40,
-          status: 'en_curso',
-          metadata: { level: 1 },
-          created_at: now,
-          updated_at: now,
-        });
-        if (eEtapa) throw eEtapa;
-      }
-
+      if (!obra) throw new Error('Obra no encontrada');
       const paso = parsePaso(mensaje);
-      const siblings = (nodes ?? []).filter((n) => n.parent_id === etapa!.id && n.type === 'tarea');
-      const dup = siblings.find(
-        (n) => String(n.title).trim().toLowerCase() === paso.verb.toLowerCase(),
-      );
-      if (dup) {
-        return textResult({
-          ok: true,
-          ya_existia: true,
-          etapa_id: etapa.id,
-          tarea_id: dup.id,
-          paso,
-          nota: `Ya estaba la tarea «${paso.verb}».`,
-        });
-      }
-
-      const sorted = [...siblings].sort((a, b) =>
-        String(a.created_at).localeCompare(String(b.created_at)),
-      );
-      const prev = sorted[sorted.length - 1] ?? null;
+      // References, revision and deduplication are rechecked under the same obra lock as web saves.
       const tareaId = randomUUID();
-      const x = 80 + sorted.length * 280;
-
-      const { error: eTarea } = await supabase.from('canvas_nodes').insert({
-        id: tareaId,
-        obra_id: obraId,
-        org_id: obra.org_id,
-        parent_id: etapa.id,
-        type: 'tarea',
-        title: paso.verb,
-        description: paso.detalle,
-        position_x: x,
-        position_y: 120,
-        status: 'pendiente',
-        planned_duration_days: 1,
-        graph_status: 'propuesta',
-        transform_kind: paso.transformKind,
-        executor_kind: 'agente',
-        metadata: {
-          level: 2,
-          orquestador: {
-            origen: 'chatgpt_mcp',
-            estado: 'pendiente',
-            formulaId: 'chat',
-            chatUser: mensaje.slice(0, 4000),
+      const proposalRequest = {
+        p_obra_id: obraId,
+        p_org_id: org,
+        p_expected_revision: baseRevision,
+        p_idempotency_key: idempotencyKey,
+        p_node: {
+          id: tareaId, parent_id: args.parent_id ?? null, type: 'tarea',
+          title: paso.verb, description: paso.detalle, position_x: 80, position_y: 120,
+          status: 'pendiente', graph_status: 'propuesta', transform_kind: kind,
+          from_node_id: fromId, to_node_id: toId, executor_kind: executor,
+          planned_duration_days: args.duration_days ?? null,
+          sort_order: 0, is_summary: false, is_critical: false,
+          metadata: {
+            level: args.parent_id ? 2 : 1,
+            propuesta: { autor_tipo: 'agente', autor: 'mcp', base_revision: baseRevision, idempotency_key: idempotencyKey, fuentes: args.fuentes ?? [], supuestos: args.supuestos ?? [], cantidad: args.cantidad ?? null, unidad: args.unidad ?? null },
+            orquestador: { origen: 'chatgpt_mcp', estado: 'pendiente', formulaId: 'chat', chatUser: mensaje.slice(0, 4000) },
           },
         },
-        created_at: now,
-        updated_at: now,
-      });
-      if (eTarea) throw eTarea;
-
-      let edgeId: string | null = null;
-      if (prev) {
-        edgeId = randomUUID();
-        const { error: eEdge } = await supabase.from('canvas_edges').insert({
-          id: edgeId,
-          obra_id: obraId,
-          org_id: obra.org_id,
-          source_node_id: prev.id,
-          target_node_id: tareaId,
-          type: 'precedencia',
-          is_critical: true,
-          lag_days: 0,
-          created_at: now,
-          updated_at: now,
-        });
-        if (eEdge) throw eEdge;
-      }
-
-      return textResult({
-        ok: true,
-        etapa_id: etapa.id,
-        etapa_creada: createdEtapa,
-        tarea_id: tareaId,
-        precedencia_id: edgeId,
-        paso,
-        editor: `/cliente/tareas/${obraId}/editor`,
-        nota: 'Tarea propuesta en Organizar. Revisá y publicá en el canvas. No realizada / no wallet.',
-      });
+      };
+      const { data, error } = await appendProposal(supabase, proposalRequest);
+      if (error) throw new Error(error.message);
+      return textResult({ ok: true, ...data, editor: `/cliente/tareas/${obraId}/editor`, nota: 'Transformación propuesta entre A/B. Requiere aceptación humana; sin precedencias temporales inventadas.' });
     }
 
     if (name === 'anotar_hilo') {
@@ -306,28 +228,52 @@ export async function callGrowsMcpTool(
       if (oe) throw oe;
       if (!obra) return textResult({ error: 'Obra no encontrada' });
 
-      const base =
-        obra.canvas_ui && typeof obra.canvas_ui === 'object' && !Array.isArray(obra.canvas_ui)
-          ? { ...(obra.canvas_ui as Record<string, unknown>) }
-          : {};
-      const prev = Array.isArray(base.hilo) ? (base.hilo as unknown[]) : [];
+      const read = await supabase.rpc('read_canvas_snapshot', { p_obra_id: obraId, p_org_id: org });
+      if (read.error) throw read.error;
+      const snapshot = read.data;
+      const base = snapshot.obra.canvas_ui ?? {};
+      const prev = Array.isArray(base.hilo) ? base.hilo : [];
       const now = new Date().toISOString();
-      const hilo = [
-        ...prev,
-        { id: `u-${now}`, role: 'user', text: user, at: now },
-        { id: `h-${now}`, role: 'horizonte', text: oficio, at: now },
+      const hilo = [...prev,
+        { id: randomUUID(), role: 'user', text: user.slice(0, 8000), at: now },
+        { id: randomUUID(), role: 'horizonte', text: oficio.slice(0, 8000), at: now },
       ].slice(-80);
-
-      const { error: ue } = await supabase
-        .from('obras')
-        .update({ canvas_ui: { ...base, hilo } })
-        .eq('id', obraId);
+      const { error: ue } = await supabase.rpc('save_canvas_snapshot', {
+        p_obra_id: obraId, p_org_id: org, p_expected_revision: snapshot.revision,
+        p_snapshot: snapshotForSave(snapshot, { ...base, hilo }),
+      });
       if (ue) throw ue;
       return textResult({ ok: true, hilo_len: hilo.length });
     }
 
     return textResult({ error: `Herramienta desconocida: ${name}` });
   } catch (e) {
-    return textResult({ error: e instanceof Error ? e.message : String(e) });
+    return { ...textResult({ error: e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e) }), isError: true };
   }
+}
+
+/** Reuse the atomic canvas command; preserve raw metadata instead of lossy UI roundtrips. */
+function snapshotForSave(snapshot: any, canvasUi = snapshot.obra.canvas_ui) {
+  return {
+    obrasPatch: { name: snapshot.obra.name, canvas_project_kind: snapshot.obra.canvas_project_kind, canvas_ui: canvasUi },
+    nodes: snapshot.nodes, edges: snapshot.edges, budgetGroups: snapshot.budgetGroups,
+    checklistItems: snapshot.checklistItems, budgetGroupTasks: snapshot.budgetGroupTasks,
+  };
+}
+
+async function appendProposal(supabase: SupabaseClient, request: any) {
+  const read = await supabase.rpc('read_canvas_snapshot', { p_obra_id: request.p_obra_id, p_org_id: request.p_org_id });
+  if (read.error) return { data: null, error: read.error };
+  const snapshot = read.data;
+  const existing = snapshot.nodes.find((node: any) => node.metadata?.propuesta?.idempotency_key === request.p_idempotency_key);
+  if (existing) return { data: { tarea_id: existing.id, revision: snapshot.revision, ya_existia: true }, error: null };
+  const node = request.p_node;
+  for (const id of [node.from_node_id, node.to_node_id]) {
+    if (!snapshot.nodes.some((candidate: any) => candidate.id === id && candidate.type === 'estado')) throw new Error('INVALID_PROPOSAL: A/B deben ser estados existentes de esta obra');
+  }
+  if (node.parent_id && !snapshot.nodes.some((candidate: any) => candidate.id === node.parent_id)) throw new Error('INVALID_PROPOSAL: contenedor ajeno a la obra');
+  const rows = snapshotForSave(snapshot);
+  rows.nodes = [...rows.nodes, { ...node, obra_id: request.p_obra_id, org_id: request.p_org_id, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }];
+  const saved = await supabase.rpc('save_canvas_snapshot', { p_obra_id: request.p_obra_id, p_org_id: request.p_org_id, p_expected_revision: request.p_expected_revision, p_snapshot: rows });
+  return { data: { tarea_id: node.id, revision: saved.data?.revision }, error: saved.error };
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceSupabaseClient } from '@/lib/supabase-server';
+import { requireObraAccess, ObraAccessError } from '@/lib/obra-access';
+import { contextStoragePath } from '@/lib/legajo/storage-contract';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceSupabaseClient();
+    const { supabase } = await requireObraAccess(obraId, true);
 
     let query = (supabase as any)
       .from('documentos_legajo')
@@ -42,10 +43,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      data: data || [],
-    });
+    const documents = await Promise.all((data ?? []).map(async (document: any) => {
+      const path = contextStoragePath(document.url, obraId);
+      if (!path) return { ...document, url: null };
+      const { data: signed, error: signError } = await supabase.storage.from('legajo').createSignedUrl(path, 300);
+      if (signError) throw new Error('No se pudo autorizar la descarga.');
+      return { ...document, url: signed.signedUrl };
+    }));
+    return NextResponse.json({ success: true, data: documents });
   } catch (error) {
     console.error('[LEGAJO] Error inesperado:', error);
     return NextResponse.json(
@@ -53,7 +58,7 @@ export async function GET(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Error interno del servidor',
       },
-      { status: 500 }
+      { status: error instanceof ObraAccessError ? error.status : 500 }
     );
   }
 }

@@ -28,9 +28,9 @@ export function createGrowsMcpServer(): Server {
 
 export function assertMcpBearer(req: Request): Response | null {
   const expected = process.env.GROWS_MCP_TOKEN?.trim();
-  if (!expected) {
+  if (!expected || !process.env.GROWS_MCP_ORG_ID?.trim()) {
     return Response.json(
-      { error: 'GROWS_MCP_TOKEN no configurado en el servidor' },
+      { error: 'MCP requiere GROWS_MCP_TOKEN y GROWS_MCP_ORG_ID en el servidor' },
       { status: 503 },
     );
   }

@@ -25,6 +25,7 @@ export async function llamarLlmLocal(
     if (cfg.apiKey) headers.Authorization = `Bearer ${cfg.apiKey}`;
     const res = await fetch(cfg.url, {
       method: 'POST',
+      signal: AbortSignal.timeout(20000),
       headers,
       body: JSON.stringify({
         model: cfg.model,

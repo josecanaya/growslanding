@@ -6,6 +6,11 @@ vi.mock('@/lib/conocimiento/queryConocimientoMcp', () => ({
   queryConocimientoMcp: async () => ({ ok: false, text: '', queryText: '', godText: '' }),
 }));
 
+vi.mock('@/lib/conocimiento/buscarEnCorpus', () => ({
+  buscarEnCorpusAsync: async () => [],
+  buscarEnCorpus: () => [],
+}));
+
 const canvas: CanvasMultinivelPersisted = {
   v: 4,
   obraNombre: 'Test',

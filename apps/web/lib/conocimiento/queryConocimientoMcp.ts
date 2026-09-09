@@ -101,7 +101,9 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
         }, 20000);
       });
 
+    child.stdin.on('error', (e) => finish(empty(e.message)));
     child.stdout.on('data', (d: Uint8Array) => {
+      try {
       const out = pushMcpBytes(pending, d);
       pending = out.pending;
       for (const raw of out.messages) {
@@ -111,6 +113,9 @@ export function queryConocimientoMcp(pregunta: string): Promise<McpConocimientoH
           waiting.delete(Number(raw.id));
           cb(raw);
         }
+      }
+      } catch (e) {
+        finish(empty(e instanceof Error ? e.message : 'Respuesta MCP inválida'));
       }
     });
 

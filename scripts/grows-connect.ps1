@@ -24,9 +24,10 @@ try {
  foreach($p in $existing){Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue}
  $bridgePath=Join-Path $root 'scripts\grows-bridge.mjs'
  if(-not (Test-Path $bridgePath)){throw "No se encontro el bridge en: $bridgePath"}
- $logPath=Join-Path $stateDir 'bridge.log'
- Start-Process -FilePath $node -ArgumentList @($bridgePath,'--config',$configPath) -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput $logPath -RedirectStandardError $logPath
- Write-Host "Grows Bridge iniciado. Log: $logPath"
+ $logOut=Join-Path $stateDir 'bridge.log'
+ $logErr=Join-Path $stateDir 'bridge-error.log'
+ Start-Process -FilePath $node -ArgumentList @($bridgePath,'--config',$configPath) -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput $logOut -RedirectStandardError $logErr
+ Write-Host "Grows Bridge iniciado. Log: $logOut"
  Start-Sleep -Seconds 2
 } catch {
  Write-Host ""

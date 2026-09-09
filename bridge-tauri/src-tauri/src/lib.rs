@@ -45,12 +45,29 @@ async fn start_worker(app: tauri::AppHandle, state: tauri::State<'_, AppState>) 
     }
     *running = true;
     drop(running);
+
+    let cfg = config::load(&app);
+    if let (Some(url), Some(token)) = (cfg.url.clone(), cfg.token.clone()) {
+        if let Err(e) = prompt::fetch_and_cache(&url, &token).await {
+            eprintln!("[prompt] no se pudo cargar contexto: {} — usando embebido", e);
+        }
+    }
+
     let flag = state.running.clone();
     tauri::async_runtime::spawn(async move {
+        let mut ticks: u64 = 0;
         loop {
             if !*flag.read().await {
                 break;
             }
+            if ticks % 600 == 0 {
+                // cada ~30 min (600 * 3s)
+                let cfg = config::load(&app);
+                if let (Some(url), Some(token)) = (cfg.url, cfg.token) {
+                    let _ = prompt::fetch_and_cache(&url, &token).await;
+                }
+            }
+            ticks = ticks.wrapping_add(1);
             if let Err(e) = poll_and_execute(&app).await {
                 eprintln!("[worker] {}", e);
             }

@@ -1,3 +1,10 @@
+use std::sync::RwLock;
+
+static CACHED: RwLock<Option<String>> = RwLock::new(None);
+
+const FALLBACK: &str = "# Grows\nContrato no disponible. Devolvé JSON minimal {\"reply\":\"error\",\"operations\":[]}.";
+
+/// Contrato embebido de respaldo (también vive en el server).
 pub const AGENT_CONTEXT: &str = r#"# Grows — Contrato del agente
 
 ## Rol
@@ -22,3 +29,30 @@ sources, assumptions.
 
 Información extra (capital, montos, cálculos) va dentro de "description" o "assumptions".
 "#;
+
+pub async fn fetch_and_cache(url: &str, token: &str) -> Result<(), String> {
+    let ctx = reqwest::Client::new()
+        .get(format!("{}/api/bridge/agent-context", url.trim_end_matches('/')))
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .error_for_status()
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+    if ctx.trim().is_empty() {
+        return Err("contexto vacío".into());
+    }
+    *CACHED.write().unwrap() = Some(ctx);
+    Ok(())
+}
+
+pub fn current() -> String {
+    CACHED
+        .read()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| AGENT_CONTEXT.into())
+}

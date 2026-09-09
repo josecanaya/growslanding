@@ -1,5 +1,5 @@
 use crate::cli_detector::CliStatus;
-use crate::prompt::AGENT_CONTEXT;
+use crate::prompt;
 use serde::{Deserialize, Serialize};
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
@@ -36,7 +36,7 @@ pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult,
     let bin = cap.bin.as_ref().ok_or("Sin binario detectado")?;
 
     let temp_dir = tempfile::tempdir().map_err(|e| e.to_string())?;
-    tokio::fs::write(temp_dir.path().join("AGENTS.md"), AGENT_CONTEXT)
+    tokio::fs::write(temp_dir.path().join("AGENTS.md"), prompt::current())
         .await
         .map_err(|e| e.to_string())?;
 

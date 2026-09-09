@@ -24,7 +24,14 @@ pub fn install(id: &str) -> InstallResult {
             }
         }
     };
-    let output = Command::new(npm_cmd()).args(["install", "-g", package]).output();
+    let mut cmd = Command::new(npm_cmd());
+    cmd.args(["install", "-g", package]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000);
+    }
+    let output = cmd.output();
     match output {
         Ok(o) if o.status.success() => InstallResult {
             success: true,

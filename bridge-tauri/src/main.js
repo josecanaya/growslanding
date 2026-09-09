@@ -1,21 +1,29 @@
 const { invoke } = window.__TAURI__.core;
 
+let rendering = false;
+
 async function render() {
-  const clis = await invoke('detect_clis');
-  const container = document.getElementById('clis');
-  container.innerHTML = clis.map(c => {
-    const badge = c.logged_in ? '<span class="badge ok">Listo</span>'
-      : c.installed ? '<span class="badge warn">Sin sesión</span>'
-      : '<span class="badge error">No instalado</span>';
-    const action = c.logged_in ? ''
-      : c.installed ? `<button data-action="login" data-id="${c.id}" data-bin="${c.bin}">Login</button>`
-      : `<button data-action="install" data-id="${c.id}">Instalar</button>`;
-    return `<div class="cli-card">
-      <div class="label"><b>${c.label}</b><small>${c.version ?? 'no detectado'}</small></div>
-      ${badge}${action}
-    </div>`;
-  }).join('');
-  container.querySelectorAll('button').forEach(btn => btn.addEventListener('click', handleClick));
+  if (rendering) return;
+  rendering = true;
+  try {
+    const clis = await invoke('detect_clis');
+    const container = document.getElementById('clis');
+    container.innerHTML = clis.map(c => {
+      const badge = c.logged_in ? '<span class="badge ok">Listo</span>'
+        : c.installed ? '<span class="badge warn">Sin sesión</span>'
+        : '<span class="badge error">No instalado</span>';
+      const action = c.logged_in ? ''
+        : c.installed ? `<button data-action="login" data-id="${c.id}" data-bin="${c.bin}">Login</button>`
+        : `<button data-action="install" data-id="${c.id}">Instalar</button>`;
+      return `<div class="cli-card">
+        <div class="label"><b>${c.label}</b><small>${c.version ?? 'no detectado'}</small></div>
+        ${badge}${action}
+      </div>`;
+    }).join('');
+    container.querySelectorAll('button').forEach(btn => btn.addEventListener('click', handleClick));
+  } finally {
+    rendering = false;
+  }
 }
 
 async function handleClick(e) {
@@ -43,4 +51,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (_) { /* sin config aún */ }
 });
-setInterval(render, 5000);
+
+// Solo refrescar al volver a la ventana — no spamear detect_clis
+window.addEventListener('focus', () => { void render(); });

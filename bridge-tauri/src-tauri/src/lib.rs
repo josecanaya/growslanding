@@ -11,6 +11,7 @@ use tokio::sync::RwLock;
 
 struct AppState {
     running: Arc<RwLock<bool>>,
+    caps_cache: Arc<RwLock<(std::time::Instant, Vec<cli_detector::CliStatus>)>>,
 }
 
 #[tauri::command]
@@ -54,6 +55,7 @@ async fn start_worker(app: tauri::AppHandle, state: tauri::State<'_, AppState>) 
     }
 
     let flag = state.running.clone();
+    let caps_cache = state.caps_cache.clone();
     tauri::async_runtime::spawn(async move {
         let mut ticks: u64 = 0;
         loop {
@@ -68,7 +70,7 @@ async fn start_worker(app: tauri::AppHandle, state: tauri::State<'_, AppState>) 
                 }
             }
             ticks = ticks.wrapping_add(1);
-            if let Err(e) = poll_and_execute(&app).await {
+            if let Err(e) = poll_and_execute(&app, &caps_cache).await {
                 eprintln!("[worker] {}", e);
             }
             tokio::time::sleep(std::time::Duration::from_secs(3)).await;
@@ -83,11 +85,28 @@ async fn stop_worker(state: tauri::State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
-async fn poll_and_execute(app: &tauri::AppHandle) -> Result<(), String> {
+async fn cached_caps(
+    cache: &Arc<RwLock<(std::time::Instant, Vec<cli_detector::CliStatus>)>>,
+) -> Vec<cli_detector::CliStatus> {
+    {
+        let guard = cache.read().await;
+        if guard.0.elapsed() < std::time::Duration::from_secs(60) && !guard.1.is_empty() {
+            return guard.1.clone();
+        }
+    }
+    let fresh = cli_detector::detect_all();
+    *cache.write().await = (std::time::Instant::now(), fresh.clone());
+    fresh
+}
+
+async fn poll_and_execute(
+    app: &tauri::AppHandle,
+    caps_cache: &Arc<RwLock<(std::time::Instant, Vec<cli_detector::CliStatus>)>>,
+) -> Result<(), String> {
     let cfg = config::load(app);
     let url = cfg.url.ok_or("sin config")?;
     let token = cfg.token.ok_or("sin token")?;
-    let caps = cli_detector::detect_all();
+    let caps = cached_caps(caps_cache).await;
     let ready: Vec<_> = caps.iter().filter(|c| c.logged_in).cloned().collect();
     let capabilities_json: Vec<serde_json::Value> = ready
         .iter()
@@ -178,6 +197,10 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .manage(AppState {
             running: Arc::new(RwLock::new(false)),
+            caps_cache: Arc::new(RwLock::new((
+                std::time::Instant::now() - std::time::Duration::from_secs(120),
+                Vec::new(),
+            ))),
         })
         .setup(|app| {
             let handle = app.handle().clone();

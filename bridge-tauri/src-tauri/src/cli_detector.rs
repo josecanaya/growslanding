@@ -174,7 +174,14 @@ fn probe_cursor(bin: &Option<PathBuf>) -> (bool, bool, Option<String>) {
 }
 
 fn run(bin: &PathBuf, args: &[&str]) -> Option<String> {
-    let output = Command::new(bin).args(args).output().ok()?;
+    let mut cmd = Command::new(bin);
+    cmd.args(args);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW — evita flash de terminal
+    }
+    let output = cmd.output().ok()?;
     if !output.status.success() && output.stdout.is_empty() {
         return None;
     }

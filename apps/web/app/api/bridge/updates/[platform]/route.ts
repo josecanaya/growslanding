@@ -15,10 +15,10 @@ export async function GET(
 ) {
   const { platform } = await params;
   const url = platform.includes('windows')
-    ? `${BASE}/Grows%20Agent_${LATEST.version}_x64-setup.nsis.zip`
+    ? `${BASE}/Grows.Agent_${LATEST.version}_x64-setup.exe`
     : platform.includes('darwin') || platform.includes('mac')
-      ? `${BASE}/Grows%20Agent.app.tar.gz`
-      : `${BASE}/grows-agent_${LATEST.version}_amd64.AppImage.tar.gz`;
+      ? `${BASE}/Grows.Agent_${LATEST.version}_universal.dmg`
+      : `${BASE}/Grows.Agent_${LATEST.version}_amd64.AppImage`;
   return NextResponse.json({
     ...LATEST,
     url,

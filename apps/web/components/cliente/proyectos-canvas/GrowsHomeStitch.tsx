@@ -1,5 +1,7 @@
 'use client';
 
+import { ClienteLauncher } from '@/components/cliente/ClienteLauncher';
+
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -158,6 +160,7 @@ export function GrowsHomeStitch() {
       {/* Top bar */}
       <header className="flex h-12 shrink-0 items-center justify-between px-4 md:px-5">
         <div className="flex items-center gap-2">
+          <ClienteLauncher variant="inline" />
           <span className="text-[15px] font-semibold tracking-tight">Grows</span>
           <span className="rounded bg-[#F1F0EB] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#55565C]">
             beta

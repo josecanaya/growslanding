@@ -54,5 +54,6 @@ pub fn current() -> String {
         .read()
         .unwrap()
         .clone()
-        .unwrap_or_else(|| AGENT_CONTEXT.into())
+        .or_else(|| Some(AGENT_CONTEXT.to_string()))
+        .unwrap_or_else(|| FALLBACK.into())
 }

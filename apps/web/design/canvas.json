@@ -1,0 +1,24 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1920, "h": 1080, "title": "Workspace de obra", "is_interactive": true },
+    { "file": "Tarjetas.dc.html", "x": 0, "y": 1340, "w": 1000, "h": 860, "title": "Sistema de tarjetas" },
+    { "file": "BarraComando.dc.html", "x": 1080, "y": 1340, "w": 760, "h": 880, "title": "Barra de comando" }
+  ],
+  "annotations": [
+    {
+      "id": "note-1",
+      "x": 0,
+      "y": -170,
+      "w": 700,
+      "text": "PROTOTIPO — es interactivo, probalo.\n\nDoble clic en Piso 4, después Estructura, después Vigas: bajás de scope y solo se ven los hijos directos. El botón de chevrón o las migas suben.\nLa barra de abajo al centro abre el chat con el recibo de acción de Grows.\nClic en una tarjeta abre el inspector flotante; el botón punteado de la esquina activa selección múltiple y la selección entra como contexto del chat.\nEl rail de la izquierda abre Estructura, Contexto y Cronograma. El control de capas apaga la capa Contexto y los documentos desaparecen del lienzo."
+    },
+    {
+      "id": "note-2",
+      "x": 0,
+      "y": 1160,
+      "w": 700,
+      "text": "SISTEMA VISUAL — las piezas en tamaño real.\n\nTarjetas y barra de comando con estilos en línea, para retocar color, tipografía y espaciado directamente."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

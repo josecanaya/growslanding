@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: #4A6FA5; text-decoration: none; }
+    a:hover { color: #0C1D36; }
+  </style>
+</helmet>
+
+<div style="width: 1000px; height: 860px; padding: 40px 40px 0; box-sizing: border-box; background: #FBFBF9; color: #15161A; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 14px; border-bottom: 1px solid #E4E3DE;">
+    <div>
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #8B8C90;">Sistema de tarjetas</div>
+      <div style="margin-top: 6px; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Cuadros del lienzo</div>
+    </div>
+    <p style="max-width: 400px; margin: 0; font-size: 10px; line-height: 1.6; color: #8B8C90; text-wrap: pretty;">Neutras por defecto. El tipo se lee en el eyebrow y el glifo, nunca en el relleno. El estado vive en el borde izquierdo de 2 px. Los indicadores aparecen solo cuando el valor no es cero.</p>
+  </div>
+
+  <!-- ── contenedores ──────────────────────────────────── -->
+  <div style="display: flex; align-items: flex-start; gap: 28px; padding: 26px 0 0;">
+    <div style="width: 104px; flex: 0 0 auto; padding-top: 3px;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Contenedor</div>
+      <div style="margin-top: 5px; font-size: 9px; line-height: 1.5; color: #A9A8A2;">Fase, especialidad, sector</div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 232px; padding: 9px 11px 8px 12px; border: 1px solid #D3D2CC; border-radius: 6px; background: #FFFFFF; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #4A6FA5;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Especialidad</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 2.5h11v11h-11zM2.5 6h11M6.5 6v7.5"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">Estructura</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">14 tareas · 72 %</div>
+          <div style="margin-top: 6px; height: 2px; background: #E9E8E3;"><div style="width: 72%; height: 2px; background: #4A6FA5;"></div></div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic para entrar</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">En curso</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 232px; padding: 9px 11px 8px 12px; border: 1px solid #0C1D36; border-radius: 6px; background: #FFFFFF; box-shadow: 0 0 0 1px #0C1D36; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #4A6FA5;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Especialidad</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 2.5h11v11h-11zM2.5 6h11M6.5 6v7.5"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">Mampostería</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">22 tareas · 8 %</div>
+          <div style="margin-top: 6px; height: 2px; background: #E9E8E3;"><div style="width: 8%; height: 2px; background: #4A6FA5;"></div></div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic para entrar</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Seleccionada</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 232px; padding: 9px 11px 8px 12px; border: 1px solid #D3D2CC; border-radius: 6px; background: #FFFFFF; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #C9C8C1;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Fase</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 3.5h11v4h-11zM2.5 9.5h11v3h-11z"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">Piso 4</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">45 tareas · 12 %</div>
+          <div style="margin-top: 6px; height: 2px; background: #E9E8E3;"><div style="width: 12%; height: 2px; background: #C9C8C1;"></div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px;">
+            <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid rgba(176,122,22,0.32); border-radius: 3px; background: #FBF7EE; color: #8A6410; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-variant-numeric: tabular-nums;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M8 2.5 14 13H2zM8 6.5v3M8 11v.1"/></svg>2 bloqueos
+            </span>
+            <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid #DCDBD5; border-radius: 3px; background: #F6F5F1; color: #55565C; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-variant-numeric: tabular-nums;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M6.6 9.4 9.4 6.6M6 4.5 7.4 3a2.6 2.6 0 0 1 3.7 3.7L9.6 8.2M6.4 7.8 4.9 9.3A2.6 2.6 0 0 0 8.6 13L10 11.5"/></svg>Ext. 1
+            </span>
+          </div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic para entrar</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Con indicadores</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── tareas ────────────────────────────────────────── -->
+  <div style="display: flex; align-items: flex-start; gap: 28px; padding: 30px 0 0;">
+    <div style="width: 104px; flex: 0 0 auto; padding-top: 3px;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Tarea</div>
+      <div style="margin-top: 5px; font-size: 9px; line-height: 1.5; color: #A9A8A2;">Se publica a la app Socio</div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 220px; padding: 9px 11px 8px 12px; border: 1px solid #D3D2CC; border-radius: 6px; background: #FFFFFF; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #2B8A3E;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Tarea</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 3.5h11v9h-11zM5 8l2 2 4-4"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">V12 · Armado y encofrado</div>
+          <div style="margin-top: 3px; font-size: 9px; font-weight: 500; letter-spacing: 0.02em; color: #8B8C90; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">T-4C21A08E · 3 días</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">Completado · 4/4 checklist</div>
+          <div style="margin-top: 6px; height: 2px; background: #E9E8E3;"><div style="width: 100%; height: 2px; background: #2B8A3E;"></div></div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic abre su lienzo</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Completado</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 220px; padding: 9px 11px 8px 12px; border: 1px solid #D3D2CC; border-radius: 6px; background: #FFFFFF; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #4A6FA5;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Tarea</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 3.5h11v9h-11zM5 8l2 2 4-4"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">V13 · Armado y encofrado</div>
+          <div style="margin-top: 3px; font-size: 9px; font-weight: 500; letter-spacing: 0.02em; color: #8B8C90; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">T-9B7710D2 · 3 días</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">En curso · 2/5 checklist</div>
+          <div style="margin-top: 6px; height: 2px; background: #E9E8E3;"><div style="width: 40%; height: 2px; background: #4A6FA5;"></div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px;">
+            <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid #DCDBD5; border-radius: 3px; background: #F6F5F1; color: #55565C; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M2.5 3.5h11v9h-11zM5 8l2 2 4-4"/></svg>Publicada
+            </span>
+          </div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic abre su lienzo</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">En curso · publicada</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="position: relative; display: flex; flex-direction: column; width: 220px; padding: 9px 11px 8px 12px; border: 1px solid #C6A3A0; border-radius: 6px; background: #FFFFFF; overflow: hidden;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: #A32A2A;"></div>
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+            <span style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90;">Tarea</span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto;"><path d="M2.5 3.5h11v9h-11zM5 8l2 2 4-4"/></svg>
+          </div>
+          <div style="margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2;">V18 · Hormigonado</div>
+          <div style="margin-top: 3px; font-size: 9px; font-weight: 500; letter-spacing: 0.02em; color: #8B8C90; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">T-1F0C34AB · 2 días</div>
+          <div style="margin-top: 7px; font-size: 10px; color: #55565C; font-variant-numeric: tabular-nums;">Bloqueado · 0/3 checklist</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px;">
+            <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid rgba(163,42,42,0.34); border-radius: 3px; background: #FBF1F0; color: #A32A2A; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M4 2v12M4 3h8l-1.6 3L12 9H4"/></svg>Crítica
+            </span>
+            <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid #DCDBD5; border-radius: 3px; background: #F6F5F1; color: #55565C; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; font-variant-numeric: tabular-nums;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M6.6 9.4 9.4 6.6M6 4.5 7.4 3a2.6 2.6 0 0 1 3.7 3.7L9.6 8.2M6.4 7.8 4.9 9.3A2.6 2.6 0 0 0 8.6 13L10 11.5"/></svg>Ext. 1
+            </span>
+          </div>
+          <div style="margin-top: 8px; font-size: 8px; color: #B2B1AA;">Doble clic abre su lienzo</div>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Crítica y bloqueada</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── contexto ──────────────────────────────────────── -->
+  <div style="display: flex; align-items: flex-start; gap: 28px; padding: 30px 0 0;">
+    <div style="width: 104px; flex: 0 0 auto; padding-top: 3px;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Contexto</div>
+      <div style="margin-top: 5px; font-size: 9px; line-height: 1.5; color: #A9A8A2;">Objetos del espacio de trabajo</div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 26px;">
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; flex-direction: column; gap: 5px; width: 208px; padding: 9px 11px; border: 1px dashed #C9C6BB; border-radius: 6px; background: #F7F6F1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #8B8C90; flex: 0 0 auto;"><path d="M4 2.5h5l3 3v8H4zM9 2.5v3h3"/></svg>
+            <span style="font-size: 11px; font-weight: 600; color: #3D3E43;">Plano A-104</span>
+          </div>
+          <span style="font-size: 9px; color: #8B8C90; letter-spacing: 0.02em; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">pdf · 2,4 mb</span>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Documento</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; flex-direction: column; gap: 5px; width: 208px; padding: 9px 11px; border: 1px dashed #C9C6BB; border-radius: 6px; background: #F7F6F1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #8B8C90; flex: 0 0 auto;"><path d="M8 2 2.5 5v6L8 14l5.5-3V5L8 2M2.5 5 8 8l5.5-3M8 8v6"/></svg>
+            <span style="font-size: 11px; font-weight: 600; color: #3D3E43;">IFC edificio</span>
+          </div>
+          <span style="font-size: 9px; color: #8B8C90; letter-spacing: 0.02em; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">ifc · 18,4 mb</span>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Modelo</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <div style="display: flex; flex-direction: column; gap: 5px; width: 208px; padding: 9px 11px; border: 1px dashed #C9C6BB; border-radius: 6px; background: #F7F6F1;">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="width: 13px; height: 13px; color: #8B8C90; flex: 0 0 auto;"><path d="M3.5 2.5h9v11h-9zM6 6h5M6 8.5h5M6 11h3"/></svg>
+            <span style="font-size: 11px; font-weight: 600; color: #3D3E43;">Nota 08/09</span>
+          </div>
+          <span style="font-size: 9px; color: #8B8C90; letter-spacing: 0.02em; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">reunión de obra</span>
+        </div>
+        <div style="font-size: 9px; color: #A9A8A2; padding-left: 2px;">Nota</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── relación ──────────────────────────────────────── -->
+  <div style="display: flex; align-items: center; gap: 28px; padding: 34px 0 0; border-top: 1px solid #E4E3DE; margin-top: 30px;">
+    <div style="width: 104px; flex: 0 0 auto;">
+      <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Relaciones</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 34px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg viewBox="0 0 120 16" style="width: 120px; height: 16px;">
+          <path d="M2 8 H 104" fill="none" stroke="#9C9B94" stroke-width="1.9" stroke-dasharray="7 8" stroke-linecap="round"/>
+          <path d="M105 3.5 L 114 8 L 105 12.5 z" fill="#9C9B94"/>
+        </svg>
+        <span style="font-size: 10px; color: #55565C;">Precede · en el scope</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <svg viewBox="0 0 120 16" style="width: 120px; height: 16px;">
+          <path d="M2 8 H 104" fill="none" stroke="#A32A2A" stroke-width="2.75" stroke-linecap="round"/>
+          <path d="M105 3.5 L 114 8 L 105 12.5 z" fill="#A32A2A"/>
+        </svg>
+        <span style="font-size: 10px; color: #55565C;">Camino crítico</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 3px; padding: 1px 4px 1px 3px; border: 1px solid #DCDBD5; border-radius: 3px; background: #F6F5F1; color: #55565C; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 9px; height: 9px;"><path d="M6.6 9.4 9.4 6.6M6 4.5 7.4 3a2.6 2.6 0 0 1 3.7 3.7L9.6 8.2M6.4 7.8 4.9 9.3A2.6 2.6 0 0 0 8.6 13L10 11.5"/></svg>Ext. n
+        </span>
+        <span style="font-size: 10px; color: #55565C;">Depende de otro cuadro · no se dibuja acá</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 1000, "height": 860}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

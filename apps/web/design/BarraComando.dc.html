@@ -1,0 +1,134 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: #4A6FA5; text-decoration: none; }
+    a:hover { color: #0C1D36; }
+  </style>
+</helmet>
+
+<div style="width: 760px; height: 880px; padding: 32px 40px 24px; box-sizing: border-box; background: #FBFBF9; color: #15161A; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+
+  <div style="padding-bottom: 14px; border-bottom: 1px solid #E4E3DE;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #8B8C90;">Barra de comando</div>
+    <div style="margin-top: 6px; font-size: 19px; font-weight: 600; letter-spacing: -0.01em;">Hablar con Grows</div>
+    <p style="max-width: 560px; margin: 8px 0 0; font-size: 10px; line-height: 1.6; color: #8B8C90; text-wrap: pretty;">Abajo y al centro, flotando sobre el lienzo: cuesta alto solo cuando está abierta, en vez de comerle ancho al lienzo para siempre. Cada mensaje guarda el scope donde se escribió y qué había seleccionado.</p>
+  </div>
+
+  <!-- ── colapsada ─────────────────────────────────────── -->
+  <div style="padding: 26px 0 0;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Colapsada · estado por defecto</div>
+    <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; width: 560px; height: 44px; padding: 0 8px 0 16px; border: 1px solid #D3D2CC; border-radius: 999px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(21,22,26,0.07), 0 1px 2px rgba(21,22,26,0.05);">
+      <span style="flex: 1 1 auto; font-size: 12px; color: #A9A8A2;">Preguntale o pedile algo a Grows…</span>
+      <span style="display: flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid #E4E3DE; border-radius: 999px; background: #FBFBF9; font-size: 9px; color: #55565C; letter-spacing: 0.02em;">
+        <b style="font-weight: 600;">Obra Norte › Piso 4</b>
+      </span>
+      <span style="padding: 2px 5px; border: 1px solid #E4E3DE; border-radius: 6px; background: #FBFBF9; color: #A9A8A2; font-size: 9px; letter-spacing: 0.04em; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">⌘K</span>
+    </div>
+    <div style="margin-top: 7px; font-size: 9px; color: #A9A8A2;">Ocupa 64 px del borde inferior. El lienzo panea por debajo.</div>
+  </div>
+
+  <!-- ── colapsada con selección ───────────────────────── -->
+  <div style="padding: 26px 0 0;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Colapsada · con selección en el lienzo</div>
+    <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; width: 560px; height: 44px; padding: 0 8px 0 16px; border: 1px solid #D3D2CC; border-radius: 999px; background: #FFFFFF; box-shadow: 0 4px 16px rgba(21,22,26,0.07), 0 1px 2px rgba(21,22,26,0.05);">
+      <span style="flex: 1 1 auto; font-size: 12px; color: #A9A8A2;">Relacioná estos 3 elementos…</span>
+      <span style="display: flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid #0C1D36; border-radius: 999px; background: #FBFBF9; font-size: 9px; color: #0C1D36; letter-spacing: 0.02em;">
+        <span>◆</span><b style="font-weight: 600;">3 elementos</b>
+      </span>
+      <span style="padding: 2px 5px; border: 1px solid #E4E3DE; border-radius: 6px; background: #FBFBF9; color: #A9A8A2; font-size: 9px; letter-spacing: 0.04em; font-family: ui-monospace, 'SF Mono', Menlo, monospace;">⌘K</span>
+    </div>
+    <div style="margin-top: 7px; font-size: 9px; color: #A9A8A2;">La selección del lienzo entra como contexto del mensaje.</div>
+  </div>
+
+  <!-- ── expandida ─────────────────────────────────────── -->
+  <div style="padding: 26px 0 0;">
+    <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #55565C;">Expandida · con recibo de acción</div>
+
+    <div style="margin-top: 10px; display: flex; flex-direction: column; width: 680px; height: 420px; border: 1px solid #D3D2CC; border-radius: 8px; background: #FFFFFF; box-shadow: 0 8px 24px rgba(21,22,26,0.10), 0 1px 2px rgba(21,22,26,0.05); overflow: hidden;">
+
+      <div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 7px 0 13px; border-bottom: 1px solid #E4E3DE; flex: 0 0 auto;">
+        <span style="flex: 1 1 auto; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #55565C;">Grows</span>
+        <span style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; color: #55565C;">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;"><path d="M3 6l5 5 5-5"/></svg>
+        </span>
+      </div>
+
+      <div style="flex: 1 1 auto; overflow: hidden; padding: 14px 16px;">
+
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A9A8A2; margin-bottom: 4px;">Vos</div>
+          <p style="margin: 0; font-size: 12px; line-height: 1.55; color: #15161A;">¿Qué está frenando Piso 4?</p>
+          <div style="margin-top: 5px; font-size: 9px; color: #A9A8A2;">· Obra Norte › Piso 4</div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A9A8A2; margin-bottom: 4px;">Grows</div>
+          <p style="margin: 0; font-size: 12px; line-height: 1.55; color: #15161A; text-wrap: pretty;">Dos cosas. V18 · Hormigonado está bloqueada esperando la validación de la losa de Piso 3, y Mampostería no tiene presupuesto asignado, así que ningún socio puede arrancar.</p>
+          <div style="margin-top: 5px; font-size: 9px; color: #A9A8A2;">· Obra Norte › Piso 4</div>
+        </div>
+
+        <div>
+          <div style="font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A9A8A2; margin-bottom: 4px;">Grows</div>
+          <div style="border: 1px solid #E4E3DE; border-radius: 6px; background: #FBFBF9; overflow: hidden;">
+            <div style="display: flex; align-items: center; gap: 7px; padding: 6px 11px; font-size: 11px; color: #3D3E43;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="#2B8A3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 11px; height: 11px; flex: 0 0 auto;"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+              creó Sector A y Sector B dentro de Mampostería
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 6px 11px; font-size: 11px; color: #3D3E43; font-variant-numeric: tabular-nums;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="#2B8A3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 11px; height: 11px; flex: 0 0 auto;"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+              8 tareas · 11 relaciones
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px; padding: 6px 11px; font-size: 11px; color: #3D3E43;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="#2B8A3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 11px; height: 11px; flex: 0 0 auto;"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+              heredó el grupo de presupuesto del padre
+            </div>
+            <div style="display: flex; gap: 7px; padding: 8px 11px; border-top: 1px solid #E9E8E3;">
+              <span style="padding: 4px 9px; border: 1px solid #E4E3DE; border-radius: 6px; background: #FFFFFF; font-size: 10px; font-weight: 600; color: #3D3E43;">Ver cambios</span>
+              <span style="padding: 4px 9px; border: 1px solid #E4E3DE; border-radius: 6px; background: #FFFFFF; font-size: 10px; font-weight: 600; color: #3D3E43;">Deshacer</span>
+              <span style="padding: 4px 9px; border: 1px solid #0C1D36; border-radius: 6px; background: #0C1D36; font-size: 10px; font-weight: 600; color: #FFFFFF;">Aceptar</span>
+            </div>
+          </div>
+          <div style="margin-top: 5px; font-size: 9px; color: #A9A8A2;">· Obra Norte › Piso 4 › Mampostería</div>
+        </div>
+
+      </div>
+
+      <div style="flex: 0 0 auto; border-top: 1px solid #E4E3DE; padding: 9px 12px 11px;">
+        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+          <span style="display: flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid #E4E3DE; border-radius: 999px; background: #FBFBF9; font-size: 9px; color: #55565C; letter-spacing: 0.02em;">
+            <span style="color: #A9A8A2;">⌗</span><b style="font-weight: 600;">Obra Norte › Piso 4 › Estructura</b>
+          </span>
+          <span style="display: flex; align-items: center; gap: 5px; padding: 2px 4px 2px 7px; border: 1px solid #0C1D36; border-radius: 999px; background: #FBFBF9; font-size: 9px; color: #0C1D36; letter-spacing: 0.02em;">
+            <span>◆</span><b style="font-weight: 600;">3 elementos</b>
+            <span style="display: flex; align-items: center; justify-content: center; width: 13px; height: 13px; border-radius: 999px; color: #A9A8A2;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width: 8px; height: 8px;"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </span>
+          </span>
+        </div>
+        <div style="display: flex; align-items: flex-end; gap: 9px;">
+          <span style="flex: 1 1 auto; font-size: 12px; color: #15161A; padding-bottom: 4px;">Relacioná estas tres tareas.</span>
+          <span style="display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; background: #0C1D36; color: #FFFFFF;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M2.6 8 13.4 3.2 9.6 13.6 8.1 9.4z"/></svg>
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"$preview": {"width": 760, "height": 880}}'>
+class Component extends DCLogic {}
+</script>
+</body>
+</html>

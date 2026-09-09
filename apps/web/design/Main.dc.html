@@ -1,0 +1,1578 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; }
+    a { color: #4A6FA5; text-decoration: none; }
+    a:hover { color: #0C1D36; }
+
+    .root {
+      position: relative;
+      width: 1920px; height: 1080px;
+      overflow: hidden;
+      background: #FBFBF9;
+      color: #15161A;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .root * { box-sizing: border-box; }
+
+    /* ── plano 0 · barra de obra ─────────────────────────── */
+    .top {
+      position: absolute; inset: 0 0 auto 0; height: 40px; z-index: 60;
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 12px;
+      background: #FFFFFF;
+      border-bottom: 1px solid #E4E3DE;
+    }
+    .ic {
+      display: flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; padding: 0;
+      border: 1px solid transparent; border-radius: 6px;
+      background: transparent; color: #55565C; cursor: pointer;
+    }
+    .ic:hover { background: #F4F4F1; color: #15161A; }
+    .ic svg { width: 16px; height: 16px; }
+    .wordmark { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; }
+    .vrule { width: 1px; height: 16px; background: #E4E3DE; }
+    .obra { font-size: 12px; font-weight: 600; }
+    .obra-meta { font-size: 10px; color: #8B8C90; }
+    .spacer { flex: 1 1 auto; }
+    .chip {
+      display: flex; align-items: center; gap: 6px;
+      height: 24px; padding: 0 9px;
+      border: 1px solid #E4E3DE; border-radius: 999px;
+      background: #FFFFFF; color: #55565C;
+      font-size: 10px; font-weight: 500; cursor: pointer;
+      font-family: inherit;
+    }
+    .chip:hover { border-color: #D3D2CC; color: #15161A; }
+    .chip svg { width: 13px; height: 13px; color: #2B8A3E; }
+    .user {
+      display: flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 999px;
+      background: var(--ac); color: #FFFFFF;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.04em;
+    }
+
+    /* ── cuerpo ──────────────────────────────────────────── */
+    .body { position: absolute; inset: 40px 0 0 0; }
+
+    /* ── plano 1 · rail de instrumentos ──────────────────── */
+    .rail {
+      position: absolute; inset: 0 auto 0 0; width: 48px; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      padding: 8px 0;
+      background: #F4F4F1;
+      border-right: 1px solid #E4E3DE;
+    }
+    .rail-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; padding: 0;
+      border: 1px solid transparent; border-radius: 6px;
+      background: transparent; color: #55565C; cursor: pointer;
+    }
+    .rail-btn:hover { background: #FFFFFF; border-color: #E4E3DE; color: #15161A; }
+    .rail-btn svg { width: 16px; height: 16px; }
+    .rail-sep { width: 20px; height: 1px; margin: 7px 0; background: #DCDBD5; }
+
+    /* ── plano 0 · lienzo ────────────────────────────────── */
+    .canvas { position: absolute; inset: 0 0 0 48px; overflow: hidden; }
+    .edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .edge { fill: none; }
+    .nodes { position: absolute; inset: 0; }
+
+    @keyframes sInA { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: none; } }
+    @keyframes sInB { from { opacity: 0; transform: scale(0.985); } to { opacity: 1; transform: none; } }
+
+    /* ── tarjetas ────────────────────────────────────────── */
+    .card {
+      position: absolute;
+      display: flex; flex-direction: column;
+      padding: 9px 11px 8px 12px;
+      border: 1px solid #D3D2CC; border-radius: 6px;
+      background: #FFFFFF;
+      cursor: default; overflow: hidden;
+    }
+    .card:hover { border-color: #C9C8C1; }
+    .card-edge { position: absolute; inset: 0 auto 0 0; width: 2px; }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .eyebrow {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #8B8C90;
+    }
+    .glyph { width: 13px; height: 13px; color: #A9A8A2; flex: 0 0 auto; }
+    .card-title { margin-top: 5px; font-size: 13px; font-weight: 600; line-height: 1.2; }
+    .card-id {
+      margin-top: 3px; font-size: 9px; font-weight: 500; letter-spacing: 0.02em; color: #8B8C90;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    .card-metrics {
+      margin-top: 7px; font-size: 10px; color: #55565C;
+      font-variant-numeric: tabular-nums;
+    }
+    .bar { margin-top: 6px; height: 2px; background: #E9E8E3; }
+    .bar-fill { height: 2px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+    .badge {
+      display: flex; align-items: center; gap: 3px;
+      padding: 1px 4px 1px 3px;
+      border: 1px solid; border-radius: 3px;
+      font-size: 8px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      font-variant-numeric: tabular-nums;
+    }
+    .badge svg { width: 9px; height: 9px; }
+    .card-hint { margin-top: 8px; font-size: 8px; color: #B2B1AA; }
+
+    /* documento de contexto */
+    .doc {
+      position: absolute;
+      display: flex; flex-direction: column; gap: 5px;
+      padding: 9px 11px;
+      border: 1px dashed #C9C6BB; border-radius: 6px;
+      background: #F6F5F1;
+    }
+    .doc:hover { border-color: #ADA99B; }
+    .doc-top { display: flex; align-items: center; gap: 6px; }
+    .doc-top svg { width: 13px; height: 13px; color: #8B8C90; flex: 0 0 auto; }
+    .doc-title { font-size: 11px; font-weight: 600; color: #3D3E43; }
+    .doc-meta {
+      font-size: 9px; color: #8B8C90; letter-spacing: 0.02em;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+
+    /* ── plano 1 · breadcrumb ────────────────────────────── */
+    .crumbs {
+      position: absolute; top: 16px; left: 20px; z-index: 30;
+      display: flex; align-items: center; gap: 2px;
+    }
+    .crumb-up {
+      display: flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; margin-right: 4px; padding: 0;
+      border: 1px solid #E4E3DE; border-radius: 6px;
+      background: #FFFFFF; color: #55565C; cursor: pointer;
+    }
+    .crumb-up:hover { border-color: #C9C8C1; color: #15161A; }
+    .crumb-up svg { width: 14px; height: 14px; }
+    .crumb-up[disabled] { opacity: 0.35; cursor: default; }
+    .crumb {
+      padding: 2px 4px; border: 0; border-radius: 6px;
+      background: transparent; color: #8B8C90;
+      font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+    }
+    .crumb:hover { background: #F1F0EB; color: #15161A; }
+    .crumb-sep { color: #C9C8C1; font-size: 11px; padding: 0 1px; }
+    .crumb-count {
+      margin-left: 10px; padding-left: 11px;
+      border-left: 1px solid #E4E3DE;
+      font-size: 10px; color: #8B8C90;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ── plano 2 · panel de instrumento ──────────────────── */
+    .panel {
+      position: absolute; top: 12px; bottom: 12px; z-index: 45;
+      display: flex; flex-direction: column;
+      border: 1px solid #E4E3DE; border-radius: 8px;
+      background: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(21,22,26,0.10), 0 1px 2px rgba(21,22,26,0.05);
+      overflow: hidden;
+    }
+    .panel-hd {
+      display: flex; align-items: center; gap: 8px;
+      height: 38px; padding: 0 8px 0 12px;
+      border-bottom: 1px solid #E4E3DE; flex: 0 0 auto;
+    }
+    .panel-ttl {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: #55565C;
+    }
+    .panel-bd { flex: 1 1 auto; overflow: auto; padding: 10px 12px; }
+    .panel-ft {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 9px 12px; border-top: 1px solid #E4E3DE; flex: 0 0 auto;
+    }
+    .field {
+      display: flex; align-items: center; gap: 7px;
+      height: 28px; padding: 0 9px; margin-bottom: 10px;
+      border: 1px solid #E4E3DE; border-radius: 6px; background: #FBFBF9;
+    }
+    .field svg { width: 14px; height: 14px; color: #A9A8A2; flex: 0 0 auto; }
+    .field span { font-size: 11px; color: #A9A8A2; }
+    .row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 6px; border-radius: 6px; cursor: pointer;
+    }
+    .row:hover { background: #F6F5F1; }
+    .row svg { width: 13px; height: 13px; color: #8B8C90; flex: 0 0 auto; }
+    .row-t { font-size: 11px; font-weight: 500; flex: 1 1 auto; }
+    .row-m {
+      font-size: 9px; color: #8B8C90; flex: 0 0 auto;
+      font-variant-numeric: tabular-nums;
+    }
+    .note {
+      font-size: 10px; line-height: 1.5; color: #8B8C90;
+      padding: 8px 9px; border: 1px dashed #E4E3DE; border-radius: 6px; background: #FBFBF9;
+    }
+    .sw { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #55565C; cursor: pointer; }
+    .sw-box {
+      width: 26px; height: 15px; border-radius: 999px; background: #DCDBD5; position: relative;
+      flex: 0 0 auto;
+    }
+    .sw-dot {
+      position: absolute; top: 2px; left: 2px; width: 11px; height: 11px;
+      border-radius: 999px; background: #FFFFFF;
+    }
+
+    /* gantt del panel ancho */
+    .g-hd { display: flex; border-bottom: 1px solid #E4E3DE; padding-bottom: 5px; margin-bottom: 4px; }
+    .g-hd-l { width: 190px; flex: 0 0 auto; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: #8B8C90; font-weight: 700; }
+    .g-wk { flex: 1 1 0; font-size: 9px; color: #8B8C90; text-align: center; font-variant-numeric: tabular-nums; }
+    .g-row { display: flex; align-items: center; height: 26px; }
+    .g-row-l { width: 190px; flex: 0 0 auto; font-size: 10px; color: #3D3E43; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px; }
+    .g-track { flex: 1 1 auto; position: relative; height: 26px; }
+    .g-bar { position: absolute; top: 8px; height: 9px; border-radius: 3px; }
+
+    /* ── plano 2 · inspector ─────────────────────────────── */
+    .insp {
+      position: absolute; top: 12px; right: 12px; bottom: 12px; width: 360px; z-index: 46;
+      display: flex; flex-direction: column;
+      border: 1px solid #E4E3DE; border-radius: 8px; background: #F8F8F6;
+      box-shadow: 0 8px 24px rgba(21,22,26,0.10), 0 1px 2px rgba(21,22,26,0.05);
+      overflow: hidden;
+    }
+    .insp-hd { flex: 0 0 auto; padding: 10px 8px 11px 12px; background: #FFFFFF; border-bottom: 1px solid #E4E3DE; }
+    .insp-path { font-size: 9px; color: #8B8C90; letter-spacing: 0.02em; }
+    .insp-name { display: flex; align-items: center; gap: 7px; margin-top: 5px; }
+    .insp-name svg { width: 15px; height: 15px; color: #8B8C90; }
+    .insp-name b { font-size: 14px; font-weight: 600; }
+    .insp-bd { flex: 1 1 auto; overflow: auto; }
+    .sec { border-bottom: 1px solid #E9E8E3; }
+    .sec-hd {
+      display: flex; align-items: center; gap: 7px; width: 100%;
+      padding: 9px 12px; border: 0; background: transparent; cursor: pointer;
+      font-family: inherit; text-align: left;
+    }
+    .sec-hd:hover { background: #F1F0EB; }
+    .sec-hd svg { width: 12px; height: 12px; color: #A9A8A2; flex: 0 0 auto; }
+    .sec-t {
+      flex: 1 1 auto; font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: #55565C;
+    }
+    .sec-c { font-size: 9px; color: #8B8C90; font-variant-numeric: tabular-nums; }
+    .sec-bd { padding: 2px 12px 12px; }
+    .f-lbl {
+      display: block; margin-bottom: 4px;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #8B8C90;
+    }
+    .f-in {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 28px; margin-bottom: 10px; padding: 0 9px;
+      border: 1px solid #E4E3DE; border-radius: 6px; background: #FFFFFF;
+      font-size: 11px;
+    }
+    .f-in svg { width: 12px; height: 12px; color: #A9A8A2; }
+    .f-2 { display: flex; gap: 8px; }
+    .f-2 > div { flex: 1 1 0; }
+    .rel {
+      display: flex; align-items: center; gap: 7px;
+      padding: 5px 0; border-bottom: 1px solid #E9E8E3;
+      font-size: 11px;
+    }
+    .rel-dir { font-size: 11px; color: #A9A8A2; width: 11px; flex: 0 0 auto; }
+    .rel-t { flex: 1 1 auto; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      height: 28px; padding: 0 11px;
+      border: 1px solid #E4E3DE; border-radius: 6px; background: #FFFFFF;
+      font-size: 11px; font-weight: 600; color: #3D3E43; cursor: pointer;
+      font-family: inherit;
+    }
+    .btn:hover { border-color: #C9C8C1; color: #15161A; }
+    .btn svg { width: 13px; height: 13px; }
+    .btn-p { background: var(--ac); border-color: var(--ac); color: #FFFFFF; }
+    .btn-d { color: #A32A2A; }
+    .insp-ft {
+      flex: 0 0 auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px;
+      padding: 10px 12px; border-top: 1px solid #E4E3DE; background: #FFFFFF;
+    }
+
+    /* ── plano 1 · barra de comando ──────────────────────── */
+    .cmd { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 40; }
+    .cmd-pill {
+      display: flex; align-items: center; gap: 10px;
+      width: 560px; height: 44px; padding: 0 8px 0 16px;
+      border: 1px solid #D3D2CC; border-radius: 999px; background: #FFFFFF;
+      box-shadow: 0 4px 16px rgba(21,22,26,0.07), 0 1px 2px rgba(21,22,26,0.05);
+      cursor: text; font-family: inherit;
+    }
+    .cmd-ph {
+      flex: 1 1 auto; min-width: 0;
+      font-size: 12px; color: #A9A8A2; text-align: left;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .kbd {
+      padding: 2px 5px; border: 1px solid #E4E3DE; border-radius: 6px;
+      background: #FBFBF9; color: #A9A8A2;
+      font-size: 9px; letter-spacing: 0.04em;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    }
+    .sheet {
+      display: flex; flex-direction: column;
+      width: 680px; height: 420px;
+      border: 1px solid #D3D2CC; border-radius: 8px; background: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(21,22,26,0.10), 0 1px 2px rgba(21,22,26,0.05);
+      overflow: hidden;
+    }
+    .sheet-hd {
+      display: flex; align-items: center; gap: 8px;
+      height: 34px; padding: 0 7px 0 13px;
+      border-bottom: 1px solid #E4E3DE; flex: 0 0 auto;
+    }
+    .sheet-t { flex: 1 1 auto; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #55565C; }
+    .sheet-bd { flex: 1 1 auto; overflow: auto; padding: 14px 16px; }
+    .msg { margin-bottom: 16px; }
+    .msg-who {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #A9A8A2; margin-bottom: 4px;
+    }
+    .msg-tx { font-size: 12px; line-height: 1.55; color: #15161A; white-space: pre-line; }
+    .msg-scope {
+      margin-top: 5px; padding: 0; border: 0; background: transparent;
+      font-size: 9px; color: #A9A8A2; cursor: pointer; font-family: inherit;
+    }
+    .msg-scope:hover { color: #4A6FA5; }
+    .receipt {
+      margin-top: 8px; border: 1px solid #E4E3DE; border-radius: 6px;
+      background: #FBFBF9; overflow: hidden;
+    }
+    .rc-line {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 11px; font-size: 11px; color: #3D3E43;
+      font-variant-numeric: tabular-nums;
+    }
+    .rc-line svg { width: 11px; height: 11px; color: #2B8A3E; flex: 0 0 auto; }
+    .rc-ft { display: flex; gap: 7px; padding: 8px 11px; border-top: 1px solid #E9E8E3; }
+    .rc-btn {
+      padding: 4px 9px; border: 1px solid #E4E3DE; border-radius: 6px; background: #FFFFFF;
+      font-size: 10px; font-weight: 600; color: #3D3E43; cursor: pointer; font-family: inherit;
+    }
+    .rc-btn:hover { border-color: #C9C8C1; }
+    .rc-btn-p { background: var(--ac); border-color: var(--ac); color: #FFFFFF; }
+    .sheet-ft { flex: 0 0 auto; border-top: 1px solid #E4E3DE; padding: 9px 12px 11px; }
+    .ctx-chips { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .ctx {
+      display: flex; align-items: center; gap: 5px; flex: 0 0 auto; min-width: 0;
+      padding: 2px 4px 2px 7px;
+      border: 1px solid #E4E3DE; border-radius: 999px; background: #FBFBF9;
+      font-size: 9px; color: #55565C; letter-spacing: 0.02em;
+    }
+    .ctx b { font-weight: 600; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ctx-x {
+      display: flex; align-items: center; justify-content: center;
+      width: 13px; height: 13px; padding: 0;
+      border: 0; border-radius: 999px; background: transparent; color: #A9A8A2; cursor: pointer;
+    }
+    .ctx-x:hover { background: #E9E8E3; color: #15161A; }
+    .ctx-x svg { width: 8px; height: 8px; }
+    .cmd-in { display: flex; align-items: flex-end; gap: 9px; }
+    .cmd-in span { flex: 1 1 auto; font-size: 12px; color: #A9A8A2; padding-bottom: 4px; }
+    .send {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; padding: 0;
+      border: 0; border-radius: 6px; background: var(--ac); color: #FFFFFF; cursor: pointer;
+    }
+    .send svg { width: 14px; height: 14px; }
+
+    /* ── plano 1 · esquina inferior derecha ──────────────── */
+    .corner {
+      position: absolute; right: 20px; bottom: 20px; z-index: 40;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+    }
+    .tool {
+      display: flex; align-items: center; gap: 2px;
+      padding: 4px; border: 1px solid #E4E3DE; border-radius: 8px; background: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(21,22,26,0.05);
+    }
+    .tool-b {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; padding: 0;
+      border: 1px solid transparent; border-radius: 6px;
+      background: transparent; color: #55565C; cursor: pointer;
+    }
+    .tool-b:hover { background: #F4F4F1; color: #15161A; }
+    .tool-b svg { width: 15px; height: 15px; }
+    .tool-sep { width: 1px; height: 18px; margin: 0 3px; background: #E9E8E3; }
+    .tool-lbl {
+      display: flex; align-items: center; gap: 6px; padding: 0 9px 0 7px; height: 28px;
+      border: 1px solid transparent; border-radius: 6px;
+      background: transparent; color: #55565C; cursor: pointer;
+      font-size: 10px; font-weight: 600; font-family: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+    .tool-lbl:hover { background: #F4F4F1; color: #15161A; }
+    .tool-lbl svg { width: 15px; height: 15px; }
+    .zoom { padding: 0 6px; font-size: 10px; color: #8B8C90; font-variant-numeric: tabular-nums; }
+    .pop {
+      position: absolute; right: 0; bottom: 44px; width: 224px;
+      border: 1px solid #E4E3DE; border-radius: 8px; background: #FFFFFF;
+      box-shadow: 0 8px 24px rgba(21,22,26,0.10), 0 1px 2px rgba(21,22,26,0.05);
+      padding: 7px;
+    }
+    .pop-t {
+      padding: 4px 6px 7px; font-size: 9px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase; color: #8B8C90;
+    }
+    .lay {
+      display: flex; align-items: center; gap: 8px; width: 100%;
+      padding: 5px 6px; border: 0; border-radius: 6px;
+      background: transparent; cursor: pointer; font-family: inherit; text-align: left;
+    }
+    .lay:hover { background: #F6F5F1; }
+    .lay-box {
+      width: 13px; height: 13px; flex: 0 0 auto;
+      border: 1px solid #C9C8C1; border-radius: 3px; background: #FFFFFF;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .lay-box svg { width: 9px; height: 9px; color: #FFFFFF; }
+    .lay-t { flex: 1 1 auto; font-size: 11px; color: #3D3E43; }
+    .pop-sep { height: 1px; margin: 5px 6px; background: #E9E8E3; }
+
+    /* estado vacío del scope */
+    .empty {
+      position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+      width: 380px; text-align: center;
+    }
+    .empty-t { font-size: 14px; font-weight: 600; }
+    .empty-p { margin-top: 7px; font-size: 11px; line-height: 1.6; color: #8B8C90; }
+    .empty-a { display: flex; justify-content: center; margin-top: 14px; }
+  </style>
+</helmet>
+
+<div class="root" style="{{rootStyle}}">
+
+  <!-- ══ barra de obra ══════════════════════════════════ -->
+  <header class="top">
+    <button class="ic" title="Volver a obras">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>
+    <span class="wordmark">Grows</span>
+    <div class="vrule"></div>
+    <span class="obra">Obra Norte</span>
+    <span class="obra-meta">Edificio multifamiliar · 4 pisos</span>
+    <div class="spacer"></div>
+    <button class="chip" title="Guardar ahora · ⌘S">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h7a2.6 2.6 0 0 0 .3-5.2A3.6 3.6 0 0 0 4.9 6.5A2.8 2.8 0 0 0 4.5 12Z"/></svg>
+      Guardado hace 12 s
+    </button>
+    <button class="ic" title="Notificaciones">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a3.2 3.2 0 0 0-3.2 3.2c0 3.4-1.3 4.4-1.3 4.4h9s-1.3-1-1.3-4.4A3.2 3.2 0 0 0 8 2M6.6 12a1.5 1.5 0 0 0 2.8 0"/></svg>
+    </button>
+    <button class="ic" title="Cuenta y configuración">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4M8 2v1.4M8 12.6V14M2 8h1.4M12.6 8H14M3.9 3.9l1 1M11.1 11.1l1 1M12.1 3.9l-1 1M4.9 11.1l-1 1"/></svg>
+    </button>
+    <button class="ic" title="Ayuda y atajos">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a6 6 0 1 0 0 12A6 6 0 0 0 8 2M6.4 6.2a1.7 1.7 0 0 1 3.2.6c0 1.1-1.6 1.3-1.6 2.4M8 11.7v.1"/></svg>
+    </button>
+    <span class="user">JC</span>
+  </header>
+
+  <div class="body">
+
+    <!-- ══ rail de instrumentos ═════════════════════════ -->
+    <nav class="rail">
+      <sc-for list="{{railNav}}" as="it" hint-placeholder-count="2">
+        <button class="rail-btn" style="{{it.style}}" title="{{it.label}}" onClick="{{it.open}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"/></svg>
+        </button>
+      </sc-for>
+      <div class="rail-sep"></div>
+      <sc-for list="{{railVista}}" as="it" hint-placeholder-count="2">
+        <button class="rail-btn" style="{{it.style}}" title="{{it.label}}" onClick="{{it.open}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"/></svg>
+        </button>
+      </sc-for>
+      <div class="rail-sep"></div>
+      <sc-for list="{{railInstr}}" as="it" hint-placeholder-count="9">
+        <button class="rail-btn" style="{{it.style}}" title="{{it.label}}" onClick="{{it.open}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{it.d}}"/></svg>
+        </button>
+      </sc-for>
+    </nav>
+
+    <!-- ══ lienzo ═══════════════════════════════════════ -->
+    <div class="canvas" style="{{gridStyle}}" onClick="{{clearSel}}">
+
+      <svg class="edges">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 1 L9 5 L0 9 z" fill="#9C9B94"/>
+          </marker>
+          <marker id="arc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 1 L9 5 L0 9 z" fill="#A32A2A"/>
+          </marker>
+        </defs>
+        <sc-for list="{{edges}}" as="e" hint-placeholder-count="3">
+          <path class="edge" d="{{e.d}}" style="{{e.style}}" marker-end="{{e.marker}}"/>
+        </sc-for>
+      </svg>
+
+      <div class="nodes" style="{{nodesStyle}}">
+
+        <sc-for list="{{docs}}" as="dc" hint-placeholder-count="2">
+          <div class="doc" style="{{dc.style}}">
+            <div class="doc-top">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="{{dc.d}}"/></svg>
+              <span class="doc-title">{{dc.title}}</span>
+            </div>
+            <span class="doc-meta">{{dc.meta}}</span>
+          </div>
+        </sc-for>
+
+        <sc-for list="{{nodes}}" as="n" hint-placeholder-count="4">
+          <div class="card" style="{{n.style}}" onClick="{{n.select}}" onDoubleClick="{{n.enter}}">
+            <div class="card-edge" style="{{n.edgeStyle}}"></div>
+            <div class="card-top">
+              <span class="eyebrow">{{n.eyebrow}}</span>
+              <svg class="glyph" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.d}}"/></svg>
+            </div>
+            <div class="card-title">{{n.title}}</div>
+            <sc-if value="{{n.hasId}}" hint-placeholder-val="{{false}}">
+              <div class="card-id">{{n.idLabel}}</div>
+            </sc-if>
+            <div class="card-metrics">{{n.metrics}}</div>
+            <sc-if value="{{n.hasBar}}" hint-placeholder-val="{{true}}">
+              <div class="bar"><div class="bar-fill" style="{{n.barStyle}}"></div></div>
+            </sc-if>
+            <sc-if value="{{n.hasBadges}}" hint-placeholder-val="{{false}}">
+              <div class="badges">
+                <sc-for list="{{n.badges}}" as="b" hint-placeholder-count="1">
+                  <span class="badge" style="{{b.style}}">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{b.d}}"/></svg>{{b.label}}
+                  </span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <div class="card-hint">{{n.hint}}</div>
+          </div>
+        </sc-for>
+
+      </div>
+
+      <sc-if value="{{isEmpty}}" hint-placeholder-val="{{false}}">
+        <div class="empty">
+          <div class="empty-t">{{emptyTitle}}</div>
+          <p class="empty-p">{{emptyBody}}</p>
+          <div class="empty-a">
+            <button class="btn btn-p">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg>
+              {{createLabel}}
+            </button>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- breadcrumb -->
+      <div class="crumbs">
+        <button class="crumb-up" title="Subir nivel · Retroceso" disabled="{{upDisabled}}" onClick="{{goUp}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+        </button>
+        <sc-for list="{{crumbs}}" as="c" hint-placeholder-count="2">
+          <sc-if value="{{c.sep}}" hint-placeholder-val="{{false}}">
+            <span class="crumb-sep">›</span>
+          </sc-if>
+          <button class="crumb" style="{{c.style}}" onClick="{{c.go}}">{{c.label}}</button>
+        </sc-for>
+        <span class="crumb-count">{{scopeCount}}</span>
+      </div>
+
+    </div>
+
+    <!-- ══ panel de instrumento ═════════════════════════ -->
+    <sc-if value="{{panelOpen}}" hint-placeholder-val="{{false}}">
+      <aside class="panel" style="{{panelStyle}}">
+        <div class="panel-hd">
+          <span class="panel-ttl">{{panelTitle}}</span>
+          <div class="spacer"></div>
+          <button class="ic" title="Cerrar" onClick="{{closePanel}}">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          </button>
+        </div>
+
+        <div class="panel-bd">
+          <sc-if value="{{panelHasSearch}}" hint-placeholder-val="{{true}}">
+            <div class="field">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M11.2 11.2 14 14M12 7.2A4.8 4.8 0 1 1 2.4 7.2a4.8 4.8 0 0 1 9.6 0"/></svg>
+              <span>{{panelSearchPh}}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{panelHasRows}}" hint-placeholder-val="{{true}}">
+            <div>
+              <sc-for list="{{panelRows}}" as="r" hint-placeholder-count="6">
+                <div class="row" style="{{r.style}}" onClick="{{r.go}}">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.d}}"/></svg>
+                  <span class="row-t" style="{{r.tStyle}}">{{r.title}}</span>
+                  <span class="row-m">{{r.meta}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{panelHasGantt}}" hint-placeholder-val="{{false}}">
+            <div>
+              <div class="g-hd">
+                <span class="g-hd-l">Tarea</span>
+                <sc-for list="{{ganttWeeks}}" as="w" hint-placeholder-count="6">
+                  <span class="g-wk">{{w.label}}</span>
+                </sc-for>
+              </div>
+              <sc-for list="{{ganttRows}}" as="g" hint-placeholder-count="7">
+                <div class="g-row">
+                  <span class="g-row-l">{{g.title}}</span>
+                  <div class="g-track"><div class="g-bar" style="{{g.style}}"></div></div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{panelHasNote}}" hint-placeholder-val="{{false}}">
+            <p class="note">{{panelNote}}</p>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{panelHasFoot}}" hint-placeholder-val="{{true}}">
+          <div class="panel-ft">
+            <button class="sw" onClick="{{toggleCtxLayer}}">
+              <span class="sw-box" style="{{ctxSwBoxStyle}}"><span class="sw-dot" style="{{ctxSwDotStyle}}"></span></span>
+              Mostrar en el lienzo
+            </button>
+            <button class="btn">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+              Agregar
+            </button>
+          </div>
+        </sc-if>
+      </aside>
+    </sc-if>
+
+    <!-- ══ inspector ════════════════════════════════════ -->
+    <sc-if value="{{inspOpen}}" hint-placeholder-val="{{false}}">
+      <aside class="insp">
+        <div class="insp-hd">
+          <div style="display: flex; align-items: flex-start; gap: 8px;">
+            <div style="flex: 1 1 auto; min-width: 0;">
+              <div class="insp-path">{{inspPath}}</div>
+              <div class="insp-name">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{inspGlyph}}"/></svg>
+                <b>{{inspName}}</b>
+              </div>
+            </div>
+            <button class="ic" title="Cerrar inspector" onClick="{{closeInsp}}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="insp-bd">
+          <sc-for list="{{inspSecs}}" as="s" hint-placeholder-count="5">
+            <div class="sec">
+              <button class="sec-hd" onClick="{{s.toggle}}">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{s.chev}}"/></svg>
+                <span class="sec-t">{{s.title}}</span>
+                <span class="sec-c">{{s.count}}</span>
+              </button>
+
+              <sc-if value="{{s.isGeneral}}" hint-placeholder-val="{{true}}">
+                <div class="sec-bd">
+                  <label class="f-lbl">Nombre</label>
+                  <div class="f-in">{{inspName}}</div>
+                  <div class="f-2">
+                    <div>
+                      <label class="f-lbl">Estado</label>
+                      <div class="f-in">
+                        {{inspEstado}}
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>
+                      </div>
+                    </div>
+                    <div>
+                      <label class="f-lbl">{{inspDurLbl}}</label>
+                      <div class="f-in">{{inspDur}}</div>
+                    </div>
+                  </div>
+                  <label class="f-lbl">Avance</label>
+                  <div class="f-in">{{inspAvance}}</div>
+                  <label class="f-lbl">Notas</label>
+                  <div class="f-in" style="height: 56px; align-items: flex-start; padding-top: 7px; color: #A9A8A2;">Sin notas</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{s.isRel}}" hint-placeholder-val="{{false}}">
+                <div class="sec-bd">
+                  <sc-for list="{{inspRels}}" as="r" hint-placeholder-count="3">
+                    <div class="rel">
+                      <span class="rel-dir">{{r.dir}}</span>
+                      <span class="rel-t">{{r.title}}</span>
+                      <span class="row-m" style="{{r.tagStyle}}">{{r.tag}}</span>
+                    </div>
+                  </sc-for>
+                  <div style="margin-top: 10px;">
+                    <button class="btn" style="width: 100%;">
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h4M4 8a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0M15 8a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>
+                      Nueva relación
+                    </button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{s.isPub}}" hint-placeholder-val="{{false}}">
+                <div class="sec-bd">
+                  <p style="font-size: 11px; line-height: 1.55; color: #55565C; margin: 0 0 10px;">{{inspPubTxt}}</p>
+                  <button class="btn" style="width: 100%;">Publicar tareas…</button>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{s.isPres}}" hint-placeholder-val="{{false}}">
+                <div class="sec-bd">
+                  <label class="f-lbl">Grupo de presupuesto</label>
+                  <div class="f-in">
+                    {{inspGrupo}}
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>
+                  </div>
+                  <button class="btn" style="width: 100%;">Asignar al subárbol</button>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{s.isChk}}" hint-placeholder-val="{{false}}">
+                <div class="sec-bd">
+                  <sc-for list="{{inspChk}}" as="k" hint-placeholder-count="4">
+                    <div class="rel">
+                      <span class="lay-box" style="{{k.boxStyle}}">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+                      </span>
+                      <span class="rel-t" style="{{k.tStyle}}">{{k.title}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="insp-ft">
+          <button class="btn btn-p" onClick="{{enterSelected}}">Entrar</button>
+          <button class="btn">+ Hijo</button>
+          <button class="btn">Duplicar</button>
+          <button class="btn btn-d">Eliminar</button>
+        </div>
+      </aside>
+    </sc-if>
+
+    <!-- ══ barra de comando ═════════════════════════════ -->
+    <div class="cmd">
+      <sc-if value="{{chatCollapsed}}" hint-placeholder-val="{{true}}">
+        <button class="cmd-pill" onClick="{{openChat}}">
+          <span class="cmd-ph">{{cmdPlaceholder}}</span>
+          <sc-if value="{{hasSel}}" hint-placeholder-val="{{true}}">
+            <span class="ctx" style="{{selChipStyle}}">
+              <span>◆</span>
+              <b>{{selChip}}</b>
+            </span>
+          </sc-if>
+          <span class="ctx">
+            <b>{{scopeChip}}</b>
+          </span>
+          <span class="kbd">⌘K</span>
+        </button>
+      </sc-if>
+
+      <sc-if value="{{chatOpen}}" hint-placeholder-val="{{false}}">
+        <div class="sheet">
+          <div class="sheet-hd">
+            <span class="sheet-t">Grows</span>
+            <button class="ic" title="Colapsar" onClick="{{closeChat}}">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l5 5 5-5"/></svg>
+            </button>
+          </div>
+
+          <div class="sheet-bd">
+            <sc-for list="{{thread}}" as="m" hint-placeholder-count="4">
+              <div class="msg">
+                <div class="msg-who">{{m.who}}</div>
+                <sc-if value="{{m.hasText}}" hint-placeholder-val="{{true}}">
+                  <p class="msg-tx">{{m.text}}</p>
+                </sc-if>
+
+                <sc-if value="{{m.hasReceipt}}" hint-placeholder-val="{{false}}">
+                  <div class="receipt">
+                    <sc-for list="{{m.lines}}" as="l" hint-placeholder-count="3">
+                      <div class="rc-line">
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+                        {{l.text}}
+                      </div>
+                    </sc-for>
+                    <div class="rc-ft">
+                      <button class="rc-btn">Ver cambios</button>
+                      <button class="rc-btn">Deshacer</button>
+                      <button class="rc-btn rc-btn-p">Aceptar</button>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <button class="msg-scope" onClick="{{m.goScope}}">{{m.scope}}</button>
+              </div>
+            </sc-for>
+          </div>
+
+          <div class="sheet-ft">
+            <div class="ctx-chips">
+              <span class="ctx">
+                <span style="color: #A9A8A2;">⌗</span>
+                <b>{{scopeChip}}</b>
+              </span>
+              <sc-if value="{{hasSel}}" hint-placeholder-val="{{true}}">
+                <span class="ctx" style="{{selChipStyle}}">
+                  <span>◆</span>
+                  <b>{{selChip}}</b>
+                  <button class="ctx-x" title="Quitar de la selección" onClick="{{clearSelBtn}}">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+                  </button>
+                </span>
+              </sc-if>
+            </div>
+            <div class="cmd-in">
+              <span>{{cmdPlaceholder}}</span>
+              <button class="send" title="Enviar">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 8 13.4 3.2 9.6 13.6 8.1 9.4z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- ══ esquina inferior derecha ═════════════════════ -->
+    <div class="corner">
+      <sc-if value="{{layersOpen}}" hint-placeholder-val="{{false}}">
+        <div class="pop">
+          <div class="pop-t">Capas</div>
+          <sc-for list="{{layers}}" as="l" hint-placeholder-count="7">
+            <button class="lay" onClick="{{l.toggle}}">
+              <span class="lay-box" style="{{l.boxStyle}}">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5 6.5 11.5 12.5 5"/></svg>
+              </span>
+              <span class="lay-t">{{l.title}}</span>
+              <span class="row-m">{{l.meta}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <button class="btn btn-p" style="height: 32px;" title="Crear en este scope · N">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        {{createLabel}}
+      </button>
+
+      <div class="tool">
+        <button class="tool-lbl" style="{{layersBtnStyle}}" title="Capas visibles" onClick="{{toggleLayers}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 2 5.2 8 8.4 14 5.2 8 2M2 8.8 8 12l6-3.2"/></svg>
+          {{layersLabel}}
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-b" style="{{multiStyle}}" title="Selección múltiple" onClick="{{toggleMulti}}">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="2.6 2"><path d="M2.5 2.5h11v11h-11z"/></svg>
+        </button>
+        <button class="tool-b" title="Conectar relaciones">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h4M4 8a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0M15 8a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool-b" title="Alejar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 8h8"/></svg>
+        </button>
+        <span class="zoom">100 %</span>
+        <button class="tool-b" title="Acercar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 4v8M4 8h8"/></svg>
+        </button>
+        <button class="tool-b" title="Ajustar al scope">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 5.5v-3h3M13.5 5.5v-3h-3M2.5 10.5v3h3M13.5 10.5v3h-3"/></svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{
+  "accent": {"editor": "color", "default": "#0C1D36", "options": ["#0C1D36", "#4A6FA5", "#55565C"], "section": "Identidad"},
+  "grilla": {"editor": "boolean", "default": true, "section": "Lienzo"},
+  "capaContexto": {"editor": "boolean", "default": true, "section": "Lienzo"}
+}'>
+class Component extends DCLogic {
+
+  /* ── glifos ─────────────────────────────────────────── */
+  static get G() {
+    return {
+      fase:   'M2.5 3.5h11v4h-11zM2.5 9.5h11v3h-11z',
+      esp:    'M2.5 2.5h11v11h-11zM2.5 6h11M6.5 6v7.5',
+      sector: 'M2.5 2.5h5v5h-5zM8.5 2.5h5v5h-5zM2.5 8.5h5v5h-5zM8.5 8.5h5v5h-5z',
+      tarea:  'M2.5 3.5h11v9h-11zM5 8l2 2 4-4',
+      arbol:  'M3 3.5h10M6 8h7M9 12.5h4',
+      buscar: 'M11.2 11.2 14 14M12 7.2A4.8 4.8 0 1 1 2.4 7.2a4.8 4.8 0 0 1 9.6 0',
+      capas:  'M8 2 2 5.2 8 8.4 14 5.2 8 2M2 8.8 8 12l6-3.2',
+      filtro: 'M2.5 4.5h11M4.5 8h7M6.5 11.5h3',
+      folder: 'M2 4.2h4l1.2 1.6H14V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4.2Z',
+      ifc:    'M8 2 2.5 5v6L8 14l5.5-3V5L8 2M2.5 5 8 8l5.5-3M8 8v6',
+      socios: 'M5.5 7.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4M2 13c0-2 1.6-3.2 3.5-3.2S9 11 9 13M10.5 4a2 2 0 0 1 0 4M11.5 9.9c1.6.3 2.5 1.5 2.5 3.1',
+      flag:   'M4 2v12M4 3h8l-1.6 3L12 9H4',
+      crono:  'M2.5 3.5h11v10h-11zM2.5 6.5h11M5.5 2v2M10.5 2v2M5 9.5h3M6.5 11.5h4',
+      presup: 'M3.5 2.5h9v11l-2-1.2-2 1.2-2-1.2-2 1.2zM6 6h4M6 8.5h4',
+      pert:   'M8 2a1.6 1.6 0 1 0 0 3.2A1.6 1.6 0 0 0 8 2M4 10.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2M12 10.8a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2M8 5.2v2.4M8 7.6 4.6 10.6M8 7.6l3.4 3',
+      hist:   'M8 4.5V8l2.5 1.5M2.6 8a5.4 5.4 0 1 0 1.6-3.8M2 3v2.4h2.4',
+      file:   'M4 2.5h5l3 3v8H4zM9 2.5v3h3',
+      nota:   'M3.5 2.5h9v11h-9zM6 6h5M6 8.5h5M6 11h3',
+      permiso:'M8 2.5v10M4 5h8M5.5 5 4 9h3zM10.5 5 9 9h3zM5.5 12.5h5',
+      alerta: 'M8 2.5 14 13H2zM8 6.5v3M8 11v.1',
+      link:   'M6.6 9.4 9.4 6.6M6 4.5 7.4 3a2.6 2.6 0 0 1 3.7 3.7L9.6 8.2M6.4 7.8 4.9 9.3A2.6 2.6 0 0 0 8.6 13L10 11.5'
+    };
+  }
+
+  /* ── el grafo global: contención + relaciones ───────── */
+  static get SCOPES() {
+    const G = Component.G;
+    return {
+      root: {
+        parent: null,
+        crumbs: [{ id: 'root', label: 'Obra Norte' }],
+        create: '+ Fase',
+        nodes: [
+          { id: 'p1', eyebrow: 'FASE', title: 'Piso 1', d: G.fase, x: 150, y: 286, w: 232, h: 116,
+            tareas: 38, pct: 100, estado: 'ok', into: 'piso1' },
+          { id: 'p2', eyebrow: 'FASE', title: 'Piso 2', d: G.fase, x: 482, y: 286, w: 232, h: 116,
+            tareas: 41, pct: 84, estado: 'curso', into: 'piso2' },
+          { id: 'p3', eyebrow: 'FASE', title: 'Piso 3', d: G.fase, x: 814, y: 286, w: 232, h: 116,
+            tareas: 44, pct: 46, estado: 'curso', bloqueos: 1, into: 'piso3' },
+          { id: 'p4', eyebrow: 'FASE', title: 'Piso 4', d: G.fase, x: 1146, y: 286, w: 232, h: 116,
+            tareas: 45, pct: 12, estado: 'pend', bloqueos: 2, ext: 1, into: 'piso4' }
+        ],
+        edges: [['p1', 'p2', 0], ['p2', 'p3', 0], ['p3', 'p4', 0]],
+        docs: [
+          { id: 'x1', title: 'IFC edificio', meta: 'ifc · 18,4 mb', d: G.ifc, x: 402, y: 470, w: 208 },
+          { id: 'x2', title: 'Permiso municipal', meta: 'pdf · 1,2 mb', d: G.permiso, x: 672, y: 470, w: 208 }
+        ]
+      },
+      piso4: {
+        parent: 'root',
+        crumbs: [{ id: 'root', label: 'Obra Norte' }, { id: 'piso4', label: 'Piso 4' }],
+        create: '+ Especialidad',
+        nodes: [
+          { id: 'est', eyebrow: 'ESPECIALIDAD', title: 'Estructura', d: G.esp, x: 244, y: 258, w: 232, h: 132,
+            tareas: 14, pct: 72, estado: 'curso', bloqueos: 2, into: 'estructura' },
+          { id: 'mam', eyebrow: 'ESPECIALIDAD', title: 'Mampostería', d: G.esp, x: 596, y: 258, w: 232, h: 116,
+            tareas: 22, pct: 8, estado: 'pend', into: 'mamposteria' },
+          { id: 'ins', eyebrow: 'ESPECIALIDAD', title: 'Instalaciones', d: G.esp, x: 948, y: 258, w: 232, h: 116,
+            tareas: 9, pct: 0, estado: 'pend', into: 'instalaciones' }
+        ],
+        edges: [['est', 'mam', 0], ['mam', 'ins', 0]],
+        docs: [
+          { id: 'x3', title: 'Plano A-104', meta: 'pdf · 2,4 mb', d: G.file, x: 300, y: 470, w: 208 },
+          { id: 'x4', title: 'Nota 08/09', meta: 'reunión de obra', d: G.nota, x: 570, y: 470, w: 208 }
+        ]
+      },
+      estructura: {
+        parent: 'piso4',
+        crumbs: [
+          { id: 'root', label: 'Obra Norte' },
+          { id: 'piso4', label: 'Piso 4' },
+          { id: 'estructura', label: 'Estructura' }
+        ],
+        create: '+ Sector',
+        nodes: [
+          { id: 'col', eyebrow: 'SECTOR', title: 'Columnas', d: G.sector, x: 262, y: 292, w: 210, h: 116,
+            tareas: 5, pct: 100, estado: 'ok', into: 'columnas' },
+          { id: 'vig', eyebrow: 'SECTOR', title: 'Vigas', d: G.sector, x: 592, y: 292, w: 210, h: 132,
+            tareas: 6, pct: 58, estado: 'curso', bloqueos: 2, ext: 1, into: 'vigas' },
+          { id: 'los', eyebrow: 'SECTOR', title: 'Losa', d: G.sector, x: 922, y: 292, w: 210, h: 116,
+            tareas: 3, pct: 0, estado: 'pend', into: 'losa' }
+        ],
+        edges: [['col', 'vig', 0], ['vig', 'los', 0]],
+        docs: [
+          { id: 'x5', title: 'Detalle vigas', meta: 'dwg · 860 kb', d: G.file, x: 592, y: 470, w: 208 }
+        ]
+      },
+      vigas: {
+        parent: 'estructura',
+        crumbs: [
+          { id: 'root', label: 'Obra Norte' },
+          { id: 'piso4', label: 'Piso 4' },
+          { id: 'estructura', label: 'Estructura' },
+          { id: 'vigas', label: 'Vigas' }
+        ],
+        create: '+ Tarea',
+        nodes: [
+          { id: 'v12', eyebrow: 'TAREA', title: 'V12 · Armado y encofrado', d: G.tarea, x: 250, y: 282, w: 220, h: 148,
+            idLabel: 'T-4C21A08E · 3 días', tareas: -1, pct: 100, estado: 'ok', chk: '4/4', into: 'v12' },
+          { id: 'v13', eyebrow: 'TAREA', title: 'V13 · Armado y encofrado', d: G.tarea, x: 560, y: 282, w: 220, h: 148,
+            idLabel: 'T-9B7710D2 · 3 días', tareas: -1, pct: 40, estado: 'curso', chk: '2/5', into: 'v13' },
+          { id: 'v18', eyebrow: 'TAREA', title: 'V18 · Hormigonado', d: G.tarea, x: 870, y: 282, w: 220, h: 164,
+            idLabel: 'T-1F0C34AB · 2 días', tareas: -1, pct: 0, estado: 'crit', chk: '0/3', ext: 1, crit: true, into: 'v18' }
+        ],
+        edges: [['v12', 'v13', 0], ['v13', 'v18', 1]],
+        docs: []
+      },
+      piso1: { parent: 'root', crumbs: [], create: '+ Especialidad', nodes: [], edges: [], docs: [] },
+      piso2: { parent: 'root', crumbs: [], create: '+ Especialidad', nodes: [], edges: [], docs: [] },
+      piso3: { parent: 'root', crumbs: [], create: '+ Especialidad', nodes: [], edges: [], docs: [] },
+      mamposteria: { parent: 'piso4', crumbs: [], create: '+ Sector', nodes: [], edges: [], docs: [] },
+      instalaciones: { parent: 'piso4', crumbs: [], create: '+ Sector', nodes: [], edges: [], docs: [] },
+      columnas: { parent: 'estructura', crumbs: [], create: '+ Tarea', nodes: [], edges: [], docs: [] },
+      losa: { parent: 'estructura', crumbs: [], create: '+ Tarea', nodes: [], edges: [], docs: [] },
+      v12: { parent: 'vigas', crumbs: [], create: '+ Estado', nodes: [], edges: [], docs: [] },
+      v13: { parent: 'vigas', crumbs: [], create: '+ Estado', nodes: [], edges: [], docs: [] },
+      v18: { parent: 'vigas', crumbs: [], create: '+ Estado', nodes: [], edges: [], docs: [] }
+    };
+  }
+
+  static get ESTADOS() {
+    return {
+      ok:    { color: '#2B8A3E', label: 'Completado' },
+      curso: { color: '#4A6FA5', label: 'En curso' },
+      pend:  { color: '#C9C8C1', label: 'Pendiente' },
+      crit:  { color: '#A32A2A', label: 'Bloqueado' }
+    };
+  }
+
+  scope() {
+    const S = Component.SCOPES;
+    const id = this.state.scope || 'root';
+    return S[id] ? id : 'root';
+  }
+
+  scopeData() {
+    const id = this.scope();
+    const raw = Component.SCOPES[id];
+    if (raw.crumbs.length) return raw;
+    /* scopes hoja heredan las migas del padre y agregan su propio nodo */
+    const parent = Component.SCOPES[raw.parent];
+    const self = (parent.nodes || []).filter((n) => n.into === id)[0];
+    const crumbs = parent.crumbs.concat(self ? [{ id: id, label: self.title }] : []);
+    return { parent: raw.parent, crumbs: crumbs, create: raw.create, nodes: [], edges: [], docs: [] };
+  }
+
+  go(id) {
+    this.setState({ scope: id, sel: [], insp: false, anim: !this.state.anim });
+  }
+
+  selectedNodes() {
+    const sd = this.scopeData();
+    const sel = this.state.sel || [];
+    return (sd.nodes || []).filter((n) => sel.indexOf(n.id) !== -1);
+  }
+
+  /* ── datos del template ─────────────────────────────── */
+  renderVals() {
+    const G = Component.G;
+    const E = Component.ESTADOS;
+    const ac = this.props.accent || '#0C1D36';
+    const scopeId = this.scope();
+    const sd = this.scopeData();
+    const sel = this.state.sel || [];
+    const multi = !!this.state.multi;
+    const panel = this.state.panel || null;
+    const layersOpen = !!this.state.layersOpen;
+    const chatOpenRaw = !!this.state.chatOpen;
+    const ctxOn = this.state.ctx === undefined
+      ? (this.props.capaContexto !== false)
+      : !!this.state.ctx;
+    const grid = this.props.grilla !== false;
+    const layOn = this.state.layOn || { plan: true, tareas: true, crit: true };
+    const critOn = !!layOn.crit;
+    const secs = this.state.secs || { GENERAL: true, RELACIONES: true };
+
+    /* — lienzo — */
+    const gridStyle = grid
+      ? 'background-image: radial-gradient(#DCDBD5 0.6px, transparent 0.6px); background-size: 24px 24px; background-position: 12px 12px;'
+      : '';
+    const nodesStyle = 'animation: ' + (this.state.anim ? 'sInB' : 'sInA') + ' 0.2s ease-out;';
+
+    /* — nodos — */
+    const kidsOf = (id) => ((Component.SCOPES[id] || { nodes: [] }).nodes || []).length;
+    const nodeById = {};
+    (sd.nodes || []).forEach((n) => { nodeById[n.id] = n; });
+
+    const nodes = (sd.nodes || []).map((n) => {
+      const isSel = sel.indexOf(n.id) !== -1;
+      const est = E[n.estado] || E.pend;
+      const badges = [];
+      if (n.crit) {
+        badges.push({
+          label: 'Crítica',
+          d: G.flag,
+          style: 'border-color: rgba(163,42,42,0.34); background: #FBF1F0; color: #A32A2A;'
+        });
+      }
+      if (n.bloqueos) {
+        badges.push({
+          label: n.bloqueos + ' bloqueos',
+          d: G.alerta,
+          style: 'border-color: rgba(176,122,22,0.32); background: #FBF7EE; color: #8A6410;'
+        });
+      }
+      if (n.ext) {
+        badges.push({
+          label: 'Ext. ' + n.ext,
+          d: G.link,
+          style: 'border-color: #DCDBD5; background: #F6F5F1; color: #55565C;'
+        });
+      }
+      const metrics = n.tareas === -1
+        ? est.label + ' · ' + n.chk + ' checklist'
+        : n.tareas + ' tareas · ' + n.pct + ' %';
+      const hasKids = kidsOf(n.into) > 0;
+
+      return {
+        id: n.id,
+        eyebrow: n.eyebrow,
+        title: n.title,
+        d: n.d,
+        hasId: !!n.idLabel,
+        idLabel: n.idLabel || '',
+        metrics: metrics,
+        hasBar: n.pct > 0,
+        barStyle: 'width: ' + n.pct + '%; background: ' + est.color + ';',
+        hasBadges: badges.length > 0,
+        badges: badges,
+        hint: hasKids ? 'Doble clic para entrar' : 'Doble clic abre su lienzo',
+        edgeStyle: 'background: ' + est.color + ';',
+        style: 'left: ' + n.x + 'px; top: ' + n.y + 'px; width: ' + n.w + 'px; min-height: ' + n.h + 'px;' +
+          (isSel
+            ? ' border-color: ' + ac + '; box-shadow: 0 0 0 1px ' + ac + '; background: #FFFFFF;'
+            : n.crit ? ' border-color: #C6A3A0;' : ''),
+        select: (ev) => {
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          const cur = this.state.sel || [];
+          let next;
+          if (multi) {
+            next = cur.indexOf(n.id) !== -1
+              ? cur.filter((x) => x !== n.id)
+              : cur.concat([n.id]);
+          } else {
+            next = [n.id];
+          }
+          this.setState({ sel: next, insp: next.length > 0, layersOpen: false });
+        },
+        enter: (ev) => {
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          this.go(n.into);
+        }
+      };
+    });
+
+    /* — aristas — */
+    const edges = (sd.edges || []).map((pair) => {
+      const a = nodeById[pair[0]];
+      const b = nodeById[pair[1]];
+      if (!a || !b) return { d: '', style: 'display: none;', marker: 'url(#ar)' };
+      const x1 = a.x + a.w;
+      const y1 = a.y + a.h / 2;
+      const x2 = b.x;
+      const y2 = b.y + b.h / 2;
+      const dx = Math.max(40, (x2 - x1) / 2);
+      const crit = pair[2] === 1 && critOn;
+      return {
+        d: 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2,
+        style: crit
+          ? 'stroke: #A32A2A; stroke-width: 2.75; stroke-linecap: round;'
+          : 'stroke: #9C9B94; stroke-width: 1.9; stroke-dasharray: 7 8; stroke-linecap: round;',
+        marker: crit ? 'url(#arc)' : 'url(#ar)'
+      };
+    });
+
+    const critEdges = (sd.edges || []).filter((pr) => pr[2] === 1).length;
+
+    /* — documentos de contexto — */
+    const docs = ctxOn
+      ? (sd.docs || []).map((x) => ({
+          title: x.title,
+          meta: x.meta,
+          d: x.d,
+          style: 'left: ' + x.x + 'px; top: ' + x.y + 'px; width: ' + x.w + 'px;'
+        }))
+      : [];
+
+    /* — breadcrumb — */
+    const crumbs = [];
+    sd.crumbs.forEach((c, i) => {
+      const last = i === sd.crumbs.length - 1;
+      crumbs.push({
+        sep: i > 0,
+        label: c.label,
+        style: last ? 'color: #15161A; font-weight: 700; cursor: default;' : '',
+        go: (ev) => {
+          if (ev && ev.stopPropagation) ev.stopPropagation();
+          if (!last) this.go(c.id);
+        }
+      });
+    });
+    const nCount = (sd.nodes || []).length;
+    const dCount = docs.length;
+    const scopeCount = nCount === 0
+      ? 'vacío'
+      : nCount + (nCount === 1 ? ' cuadro' : ' cuadros') + (dCount ? ' · ' + dCount + ' objetos' : '');
+
+    /* — rail — */
+    const mk = (id, label, d, wide) => ({
+      id: id,
+      label: label,
+      d: d,
+      style: panel === id ? 'background: #FFFFFF; border-color: #D3D2CC; color: ' + ac + ';' : '',
+      open: () => this.setState({
+        panel: this.state.panel === id ? null : id,
+        layersOpen: false
+      })
+    });
+    const railNav = [mk('estructura', 'Estructura', G.arbol), mk('buscar', 'Buscar', G.buscar)];
+    const railVista = [
+      {
+        id: 'capas', label: 'Capas', d: G.capas,
+        style: layersOpen ? 'background: #FFFFFF; border-color: #D3D2CC; color: ' + ac + ';' : '',
+        open: () => this.setState({ layersOpen: !this.state.layersOpen })
+      },
+      mk('filtros', 'Filtros', G.filtro)
+    ];
+    const railInstr = [
+      mk('contexto', 'Contexto y archivos', G.folder),
+      mk('ifc', 'Modelo IFC', G.ifc),
+      mk('tareas', 'Tareas operativas', G.tarea),
+      mk('socios', 'Socios', G.socios),
+      mk('critico', 'Camino crítico', G.flag),
+      mk('cronograma', 'Cronograma', G.crono, true),
+      mk('presupuestos', 'Presupuestos', G.presup, true),
+      mk('pert', 'Obra completa', G.pert),
+      mk('historial', 'Historial', G.hist)
+    ];
+
+    /* — panel de instrumento — */
+    const PANELS = {
+      estructura: { title: 'Estructura', search: 'Filtrar el árbol de la obra…', kind: 'rows' },
+      buscar: { title: 'Buscar', search: 'Nodos, tareas, documentos…', kind: 'rows' },
+      filtros: { title: 'Filtros', kind: 'rows' },
+      contexto: { title: 'Contexto', search: 'Buscar documento…', kind: 'rows', foot: true },
+      cronograma: { title: 'Cronograma', kind: 'gantt' },
+      presupuestos: { title: 'Presupuestos', kind: 'rows' },
+      ifc: { title: 'Modelo IFC', kind: 'note', note: 'Visor y selección de elementos IFC. La capa IFC del lienzo vincula cada elemento con su cuadro.' },
+      tareas: { title: 'Tareas operativas', kind: 'note', note: 'Tareas publicadas a la app Socio, con su estado de ejecución y validación.' },
+      socios: { title: 'Socios', kind: 'note', note: 'Agenda de socios y su carga por scope. Desde acá se invita a un paquete de presupuesto.' },
+      critico: { title: 'Camino crítico', kind: 'note', note: 'CPM sobre duración y precedencias del scope. Se enciende como capa del lienzo, con holgura por tarea.' },
+      pert: { title: 'Obra completa', kind: 'note', note: 'Diagrama PERT de todas las tareas de la obra, de solo lectura, con ES/EF y LS/LF.' },
+      historial: { title: 'Historial', kind: 'note', note: 'Versiones guardadas de la obra y cambios aplicados por Grows, con quién y cuándo.' }
+    };
+    const P = panel ? PANELS[panel] : null;
+    const wideOpen = !!(panel && (panel === 'cronograma' || panel === 'presupuestos'));
+    /* el panel ancho y el chat no pueden ocupar el mismo aire */
+    const chatOpen = chatOpenRaw && !wideOpen;
+
+    let panelRows = [];
+    if (panel === 'estructura') {
+      const tree = [
+        { t: 'Obra Norte', m: '168 t', d: G.fase, i: 0, id: 'root' },
+        { t: 'Piso 1', m: '38 t · 100 %', d: G.fase, i: 1, id: 'root' },
+        { t: 'Piso 2', m: '41 t · 84 %', d: G.fase, i: 1, id: 'root' },
+        { t: 'Piso 3', m: '44 t · 46 %', d: G.fase, i: 1, id: 'root' },
+        { t: 'Piso 4', m: '45 t · 12 %', d: G.fase, i: 1, id: 'piso4' },
+        { t: 'Estructura', m: '14 t · 72 %', d: G.esp, i: 2, id: 'estructura' },
+        { t: 'Columnas', m: '5 t', d: G.sector, i: 3, id: 'estructura' },
+        { t: 'Vigas', m: '6 t', d: G.sector, i: 3, id: 'vigas' },
+        { t: 'Losa', m: '3 t', d: G.sector, i: 3, id: 'estructura' },
+        { t: 'Mampostería', m: '22 t · 8 %', d: G.esp, i: 2, id: 'piso4' },
+        { t: 'Instalaciones', m: '9 t', d: G.esp, i: 2, id: 'piso4' }
+      ];
+      panelRows = tree.map((r) => ({
+        title: r.t,
+        meta: r.m,
+        d: r.d,
+        style: 'padding-left: ' + (6 + r.i * 14) + 'px;' + (r.id === scopeId ? ' background: #F1F0EB;' : ''),
+        tStyle: r.id === scopeId ? 'font-weight: 700;' : '',
+        go: () => this.go(r.id)
+      }));
+    } else if (panel === 'buscar') {
+      panelRows = [
+        { title: 'V18 · Hormigonado', meta: 'Piso 4 › Estructura › Vigas', d: G.tarea, id: 'vigas' },
+        { title: 'Vigas', meta: 'Piso 4 › Estructura', d: G.sector, id: 'vigas' },
+        { title: 'Plano A-104', meta: 'Piso 4', d: G.file, id: 'piso4' }
+      ].map((r) => ({
+        title: r.title, meta: r.meta, d: r.d, style: '', tStyle: '', go: () => this.go(r.id)
+      }));
+    } else if (panel === 'filtros') {
+      panelRows = [
+        { title: 'Solo bloqueadas', meta: '3', d: G.alerta },
+        { title: 'Solo críticas', meta: '1', d: G.flag },
+        { title: 'Sin presupuesto', meta: '22', d: G.presup },
+        { title: 'Sin publicar', meta: '31', d: G.tarea }
+      ].map((r) => ({ title: r.title, meta: r.meta, d: r.d, style: '', tStyle: '', go: () => {} }));
+    } else if (panel === 'contexto') {
+      panelRows = [
+        { title: 'Plano A-104', meta: 'Piso 4', d: G.file, id: 'piso4' },
+        { title: 'Plano A-105', meta: 'Piso 4', d: G.file, id: 'piso4' },
+        { title: 'Detalle vigas', meta: 'Estructura', d: G.file, id: 'estructura' },
+        { title: 'IFC edificio', meta: 'Obra Norte', d: G.ifc, id: 'root' },
+        { title: 'Nota 08/09', meta: 'Piso 4', d: G.nota, id: 'piso4' },
+        { title: 'Permiso municipal', meta: 'Obra Norte', d: G.permiso, id: 'root' }
+      ].map((r) => ({
+        title: r.title, meta: r.meta, d: r.d, style: '', tStyle: '', go: () => this.go(r.id)
+      }));
+    } else if (panel === 'presupuestos') {
+      panelRows = [
+        { title: 'Estructura Piso 4', meta: 'Aprobado · 14 t', d: G.presup },
+        { title: 'Mampostería Piso 3 y 4', meta: 'En bolsa · 44 t', d: G.presup },
+        { title: 'Instalaciones Piso 4', meta: 'Borrador · 9 t', d: G.presup }
+      ].map((r) => ({ title: r.title, meta: r.meta, d: r.d, style: '', tStyle: '', go: () => {} }));
+    }
+
+    const ganttWeeks = ['S 36', 'S 37', 'S 38', 'S 39', 'S 40', 'S 41'].map((w) => ({ label: w }));
+    const ganttRows = [
+      { title: 'Columnas P4 · armado', a: 0, b: 22, c: '#2B8A3E' },
+      { title: 'Columnas P4 · hormigón', a: 20, b: 14, c: '#2B8A3E' },
+      { title: 'V12 · armado y encofrado', a: 33, b: 16, c: '#4A6FA5' },
+      { title: 'V13 · armado y encofrado', a: 47, b: 16, c: '#4A6FA5' },
+      { title: 'V18 · hormigonado', a: 61, b: 11, c: '#A32A2A' },
+      { title: 'Losa P4 · encofrado', a: 70, b: 20, c: '#C9C8C1' },
+      { title: 'Mampostería · sector norte', a: 84, b: 14, c: '#C9C8C1' }
+    ].map((g) => ({
+      title: g.title,
+      style: 'left: ' + g.a + '%; width: ' + g.b + '%; background: ' + g.c + ';'
+    }));
+
+    /* — inspector — */
+    const selNodes = this.selectedNodes();
+    const one = selNodes.length === 1 ? selNodes[0] : null;
+    const inspOpen = !!this.state.insp && selNodes.length > 0;
+    const est = one ? (E[one.estado] || E.pend) : E.pend;
+    const isTarea = !!(one && one.eyebrow === 'TAREA');
+
+    const titleOf = (id) => {
+      const m = (sd.nodes || []).filter((x) => x.id === id)[0];
+      return m ? m.title : id;
+    };
+    const inspRels = [];
+    if (one) {
+      (sd.edges || []).forEach((pr) => {
+        if (pr[1] === one.id) inspRels.push({ dir: '←', title: titleOf(pr[0]), tag: 'precede', tagStyle: '' });
+        if (pr[0] === one.id) inspRels.push({ dir: '→', title: titleOf(pr[1]), tag: 'precede', tagStyle: '' });
+      });
+      if (one.ext) {
+        inspRels.push({ dir: '→', title: 'Losa P3', tag: 'habilita · otro scope', tagStyle: 'color: #55565C;' });
+      }
+    }
+
+    const SEC_DEFS = [
+      { key: 'GENERAL', title: 'General', count: '' },
+      { key: 'RELACIONES', title: 'Relaciones', count: one ? String(inspRels.length) + (one.ext ? ' · 1 ext.' : '') : '' },
+      { key: 'PUBLICACION', title: 'Publicación', count: '' },
+      { key: 'PRESUPUESTO', title: 'Presupuesto', count: '' },
+      { key: 'CHECKLIST', title: 'Checklist', count: one && one.chk ? one.chk : '—' }
+    ];
+    const inspSecs = SEC_DEFS.map((s) => {
+      const open = !!secs[s.key];
+      return {
+        title: s.title,
+        count: s.count,
+        chev: open ? 'M3 6l5 5 5-5' : 'M6 3l5 5-5 5',
+        isGeneral: open && s.key === 'GENERAL',
+        isRel: open && s.key === 'RELACIONES',
+        isPub: open && s.key === 'PUBLICACION',
+        isPres: open && s.key === 'PRESUPUESTO',
+        isChk: open && s.key === 'CHECKLIST',
+        toggle: () => {
+          const next = {};
+          Object.keys(secs).forEach((k) => { next[k] = secs[k]; });
+          next[s.key] = !open;
+          this.setState({ secs: next });
+        }
+      };
+    });
+
+    const CHK_LABELS = [
+      'Replanteo verificado',
+      'Armadura aprobada',
+      'Encofrado montado',
+      'Hormigón solicitado',
+      'Curado registrado'
+    ];
+    const inspChk = [];
+    if (one && one.chk) {
+      const parts = String(one.chk).split('/');
+      const doneN = parseInt(parts[0], 10) || 0;
+      const totN = parseInt(parts[1], 10) || 0;
+      for (let i = 0; i < totN; i++) {
+        const done = i < doneN;
+        inspChk.push({
+          title: CHK_LABELS[i] || 'Ítem ' + (i + 1),
+          boxStyle: done ? 'background: ' + ac + '; border-color: ' + ac + ';' : '',
+          tStyle: done ? 'color: #8B8C90; text-decoration: line-through;' : ''
+        });
+      }
+    }
+
+    /* — capas — */
+    const LAY_DEFS = [
+      { key: 'plan', title: 'Planificación', meta: '' },
+      { key: 'tareas', title: 'Tareas', meta: '' },
+      { key: 'estados', title: 'Estados', meta: '' },
+      { key: 'transf', title: 'Transformaciones', meta: '' },
+      { key: 'ctx', title: 'Contexto', meta: String(sd.docs ? sd.docs.length : 0) },
+      { key: 'ifc', title: 'IFC', meta: '' },
+      { key: 'crit', title: 'Camino crítico', meta: String(critEdges) }
+    ];
+    const isLayOn = (k) => (k === 'ctx' ? ctxOn : !!layOn[k]);
+    const layers = LAY_DEFS.map((l) => ({
+      title: l.title,
+      meta: l.meta,
+      boxStyle: isLayOn(l.key) ? 'background: ' + ac + '; border-color: ' + ac + ';' : '',
+      toggle: l.key === 'ctx'
+        ? () => this.setState({ ctx: !ctxOn })
+        : () => {
+            const next = {};
+            Object.keys(layOn).forEach((k) => { next[k] = layOn[k]; });
+            next[l.key] = !layOn[l.key];
+            this.setState({ layOn: next });
+          }
+    }));
+    const layersOn = LAY_DEFS.filter((l) => isLayOn(l.key)).length;
+
+    /* — chat — */
+    const scopeChip = sd.crumbs.map((c) => c.label).join(' › ');
+    const thread = [
+      {
+        who: 'Vos', hasText: true, hasReceipt: false,
+        text: '¿Qué está frenando Piso 4?',
+        scope: '· Obra Norte › Piso 4', goScope: () => this.go('piso4'), lines: []
+      },
+      {
+        who: 'Grows', hasText: true, hasReceipt: false,
+        text: 'Dos cosas. V18 · Hormigonado está bloqueada esperando la validación de la losa de Piso 3, y Mampostería no tiene presupuesto asignado, así que ningún socio puede arrancar.',
+        scope: '· Obra Norte › Piso 4', goScope: () => this.go('piso4'), lines: []
+      },
+      {
+        who: 'Vos', hasText: true, hasReceipt: false,
+        text: 'Dividí Mampostería en Sector A y Sector B, con las tareas de cada uno.',
+        scope: '· Obra Norte › Piso 4', goScope: () => this.go('piso4'), lines: []
+      },
+      {
+        who: 'Grows', hasText: false, hasReceipt: true, text: '',
+        scope: '· Obra Norte › Piso 4 › Mampostería',
+        goScope: () => this.go('piso4'),
+        lines: [
+          { text: 'creó Sector A y Sector B dentro de Mampostería' },
+          { text: '8 tareas · 11 relaciones' },
+          { text: 'heredó el grupo de presupuesto del padre' }
+        ]
+      }
+    ];
+
+    const selChip = selNodes.length === 1
+      ? selNodes[0].title
+      : selNodes.length + ' elementos';
+
+    return {
+      accent: ac,
+      rootStyle: '--ac: ' + ac + ';',
+      gridStyle: gridStyle,
+      nodesStyle: nodesStyle,
+
+      railNav: railNav,
+      railVista: railVista,
+      railInstr: railInstr,
+
+      nodes: nodes,
+      edges: edges,
+      docs: docs,
+      isEmpty: (sd.nodes || []).length === 0,
+      emptyTitle: '«' + (sd.crumbs.length ? sd.crumbs[sd.crumbs.length - 1].label : 'Obra') + '» todavía está vacío',
+      createLabel: sd.create,
+      emptyBody: 'Cada cuadro puede contener otro lienzo. Creá el primero con ' + sd.create +
+        ', o pedíselo a Grows desde la barra de comando.',
+
+      crumbs: crumbs,
+      scopeCount: scopeCount,
+      upDisabled: !sd.parent,
+      goUp: (ev) => {
+        if (ev && ev.stopPropagation) ev.stopPropagation();
+        if (sd.parent) this.go(sd.parent);
+      },
+
+      panelOpen: !!panel,
+      panelTitle: P ? P.title : '',
+      panelStyle: wideOpen
+        ? 'left: 60px; right: 384px; bottom: 76px;'
+        : 'left: 60px; width: 320px;',
+      panelHasSearch: !!(P && P.search),
+      panelSearchPh: P && P.search ? P.search : '',
+      panelHasRows: !!(P && P.kind === 'rows'),
+      panelRows: panelRows,
+      panelHasGantt: !!(P && P.kind === 'gantt'),
+      ganttWeeks: ganttWeeks,
+      ganttRows: ganttRows,
+      panelHasNote: !!(P && P.kind === 'note'),
+      panelNote: P && P.note ? P.note : '',
+      panelHasFoot: !!(P && P.foot),
+      closePanel: () => this.setState({ panel: null }),
+      toggleCtxLayer: () => this.setState({ ctx: !ctxOn }),
+      ctxSwBoxStyle: ctxOn ? 'background: ' + ac + ';' : '',
+      ctxSwDotStyle: ctxOn ? 'left: 13px;' : '',
+
+      inspOpen: inspOpen,
+      inspPath: one ? sd.crumbs.map((c) => c.label).join(' › ') : '',
+      inspGlyph: one ? one.d : G.sector,
+      inspName: one ? one.title : selChip,
+      inspEstado: est.label,
+      inspDurLbl: isTarea ? 'Duración' : 'Cuadros',
+      inspDur: isTarea ? '2 días' : String(kidsOf(one ? one.into : 'root')),
+      inspAvance: one ? one.pct + ' %' : '—',
+      inspSecs: inspSecs,
+      inspRels: inspRels,
+      inspPubTxt: isTarea
+        ? 'Publicada como tarea operativa. El socio la ve en su app y carga evidencia.'
+        : 'Este cuadro no se publica: se publican las tareas que contiene.',
+      inspGrupo: 'Estructura Piso 4',
+      inspChk: inspChk,
+      closeInsp: () => this.setState({ insp: false, sel: [] }),
+      enterSelected: () => { if (one) this.go(one.into); },
+
+      chatCollapsed: !chatOpen,
+      chatOpen: chatOpen,
+      openChat: () => this.setState({ chatOpen: true, panel: wideOpen ? null : panel }),
+      closeChat: () => this.setState({ chatOpen: false }),
+      thread: thread,
+      scopeChip: scopeChip,
+      hasSel: selNodes.length > 0,
+      selChip: selChip,
+      selChipStyle: selNodes.length > 0 ? 'border-color: ' + ac + '; color: ' + ac + ';' : '',
+      clearSelBtn: () => this.setState({ sel: [], insp: false }),
+      cmdPlaceholder: selNodes.length > 1
+        ? 'Relacioná estos ' + selNodes.length + ' elementos…'
+        : 'Preguntale o pedile algo a Grows…',
+
+      layersOpen: layersOpen,
+      layers: layers,
+      layersLabel: layersOn + ' capas',
+      layersBtnStyle: layersOpen ? 'background: #F1F0EB; color: #15161A;' : '',
+      toggleLayers: () => this.setState({ layersOpen: !layersOpen }),
+
+      multiStyle: multi ? 'background: #F1F0EB; border-color: #D3D2CC; color: ' + ac + ';' : '',
+      toggleMulti: () => this.setState({ multi: !multi }),
+
+      clearSel: () => this.setState({ sel: [], insp: false, layersOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -27,7 +27,8 @@ try {
  if(-not (Test-Path $bridgePath)){throw "No se encontro el bridge en: $bridgePath"}
  $logOut=Join-Path $stateDir 'bridge.log'
  $logErr=Join-Path $stateDir 'bridge-error.log'
- Start-Process -FilePath $node -ArgumentList @($bridgePath,'--config',$configPath) -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput $logOut -RedirectStandardError $logErr
+ $env:GROWS_BRIDGE_DEBUG='1'
+ Start-Process -FilePath $node -ArgumentList @($bridgePath,'--config',$configPath,'--debug-detect') -WorkingDirectory $root -WindowStyle Hidden -RedirectStandardOutput $logOut -RedirectStandardError $logErr
  Write-Host "Grows Bridge iniciado. Log: $logOut"
  Start-Sleep -Seconds 2
 } catch {

@@ -219,18 +219,30 @@ async function discoverWindowsBins(id) {
   return out;
 }
 
+const DEBUG_DETECT = process.env.GROWS_BRIDGE_DEBUG === '1' || process.argv.includes('--debug-detect');
+let debugLines = 0;
+async function debugLog(line) {
+  if (!DEBUG_DETECT || debugLines > 40) return;
+  debugLines++;
+  try { const { appendFile } = await import('node:fs/promises'); await appendFile(path.join(process.env.LOCALAPPDATA ?? tmpdir(), 'Grows', 'detect-debug.log'), `${new Date().toISOString()} ${line}\n`); } catch { /* ignore */ }
+}
+
 export async function detectCapabilities(config = {}) {
   const capabilities = [];
+  await debugLog(`--- detect run --- APPDATA=${process.env.APPDATA} LOCALAPPDATA=${process.env.LOCALAPPDATA} PATH_len=${(process.env.PATH ?? process.env.Path ?? '').length}`);
   for (const [id, definition] of Object.entries(PROVIDERS)) {
     const args = id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version'];
     const candidates = [];
     if (config[definition.binKey]) candidates.push(config[definition.binKey]);
     candidates.push(definition.fallbackBin);
     candidates.push(...await discoverWindowsBins(id));
+    const unique = [...new Set(candidates)];
+    await debugLog(`${id}: candidatos=${JSON.stringify(unique)}`);
     let resolved = null;
-    for (const bin of [...new Set(candidates)]) { if (await probe(bin, args)) { resolved = bin; break; } }
+    for (const bin of unique) { const ok = await probe(bin, args); await debugLog(`${id}: probe ${bin} -> ${ok}`); if (ok) { resolved = bin; break; } }
     if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved });
   }
+  await debugLog(`resultado: ${JSON.stringify(capabilities.map((c) => c.id))}`);
   return capabilities;
 }
 

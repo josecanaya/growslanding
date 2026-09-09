@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { childEnvironment, compactJobContext, localGraphProposal, validateResult, resultSchema } from './grows-bridge.mjs';
+import { childEnvironment, compactJobContext, localGraphProposal, parseAgentJson, validateResult, resultSchema } from './grows-bridge.mjs';
 test('bridge validates operations and excludes secrets from Codex subprocess', () => {
   assert.deepEqual(childEnvironment({ PATH: 'path', GROWS_BRIDGE_TOKEN: 'secret', OPENAI_API_KEY: 'secret', CODEX_HOME: 'auth-home' }), { PATH: 'path', CODEX_HOME: 'auth-home' });
   assert.deepEqual(validateResult({ reply: 'Faltan datos.', operations: [] }), { reply: 'Faltan datos.', operations: [] });
@@ -10,6 +10,12 @@ test('bridge validates operations and excludes secrets from Codex subprocess', (
   op.type = 'create_node'; op.title = 'Estado propuesto'; op.nodeType = 'estado'; op.id = 'new-state';
   assert.equal(validateResult({ reply: 'Revisá este estado', operations: [op] }).operations.length, 1);
   assert.throws(() => validateResult({ reply: '', operations: [{ ...op, payment: 20 }] }));
+});
+test('bridge accepts JSON wrapped in Claude markdown fences', () => {
+  const result = parseAgentJson('```json\n{"reply":"Duración actualizada","operations":[]}\n```');
+  assert.equal(result.reply, 'Duración actualizada');
+  const wrapper = parseAgentJson(JSON.stringify({ result: '```json\n{"reply":"Lista","operations":[]}\n```' }));
+  assert.equal(parseAgentJson(wrapper.result).reply, 'Lista');
 });
 
 test('bridge limits model context to the current scope', () => {

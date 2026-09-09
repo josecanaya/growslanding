@@ -44,6 +44,20 @@ export function validateResult(result) {
   return result;
 }
 
+export function parseAgentJson(value) {
+  if (value && typeof value === 'object') return value;
+  let text = String(value ?? '').trim();
+  const fenced = text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced) text = fenced[1].trim();
+  try { return JSON.parse(text); }
+  catch {
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1));
+    throw new Error('El agente no devolvió una propuesta JSON válida');
+  }
+}
+
 export function childEnvironment(env = process.env) {
   // Keep login/session support, but do not pass device credentials or inference keys to the agent.
   const keys = ['PATH', 'Path', 'PATHEXT', 'SYSTEMROOT', 'SystemRoot', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'CODEX_HOME'];
@@ -240,8 +254,8 @@ export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600
           let raw;
           if (provider === 'openai') raw = JSON.parse(await readFile(outputFile, 'utf8'));
           else {
-            const wrapper = JSON.parse(stdout.trim());
-            raw = typeof wrapper.result === 'string' ? JSON.parse(wrapper.result) : wrapper.result ?? wrapper;
+            const wrapper = parseAgentJson(stdout);
+            raw = parseAgentJson(wrapper.result ?? wrapper);
           }
           const result = validateResult(raw);
           resolve({ result, usage: { provider, model, ...parseCodexUsage(stdout), durationMs: Date.now() - startedAt, limitDescription: capability.limitDescription } });

@@ -2,9 +2,11 @@ mod cli_detector;
 mod cli_installer;
 mod config;
 mod job_runner;
+mod pairing;
 mod prompt;
 
 use std::sync::Arc;
+use tauri_plugin_deep_link::DeepLinkExt;
 use tokio::sync::RwLock;
 
 struct AppState {
@@ -156,8 +158,21 @@ fn default_models(id: &str) -> Vec<serde_json::Value> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
         .manage(AppState {
             running: Arc::new(RwLock::new(false)),
+        })
+        .setup(|app| {
+            let handle = app.handle().clone();
+            app.deep_link().on_open_url(move |event| {
+                for url in event.urls() {
+                    match pairing::handle_pair_url(&handle, url.as_str()) {
+                        Ok(()) => eprintln!("[pairing] config guardada"),
+                        Err(e) => eprintln!("[pairing] {}", e),
+                    }
+                }
+            });
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             detect_clis,

@@ -12,7 +12,8 @@ try {
  $stateDir=Join-Path $env:LOCALAPPDATA 'Grows'
  New-Item -ItemType Directory -Path $stateDir -Force | Out-Null
  $configPath=Join-Path $stateDir 'bridge.private.json'
- @{url=$baseUrl.TrimEnd('/');token=$token}|ConvertTo-Json|Set-Content -LiteralPath $configPath -Encoding UTF8
+ $json=@{url=$baseUrl.TrimEnd('/');token=$token}|ConvertTo-Json
+ [System.IO.File]::WriteAllText($configPath,$json,(New-Object System.Text.UTF8Encoding $false))
  Write-Host "Config guardado en: $configPath"
  $root=Split-Path $PSScriptRoot -Parent
  Write-Host "Raiz del proyecto: $root"

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { childEnvironment, validateResult, resultSchema } from './grows-bridge.mjs';
+import { childEnvironment, compactJobContext, localGraphProposal, validateResult, resultSchema } from './grows-bridge.mjs';
 test('bridge validates operations and excludes secrets from Codex subprocess', () => {
   assert.deepEqual(childEnvironment({ PATH: 'path', GROWS_BRIDGE_TOKEN: 'secret', OPENAI_API_KEY: 'secret', CODEX_HOME: 'auth-home' }), { PATH: 'path', CODEX_HOME: 'auth-home' });
   assert.deepEqual(validateResult({ reply: 'Faltan datos.', operations: [] }), { reply: 'Faltan datos.', operations: [] });
@@ -10,4 +10,31 @@ test('bridge validates operations and excludes secrets from Codex subprocess', (
   op.type = 'create_node'; op.title = 'Estado propuesto'; op.nodeType = 'estado'; op.id = 'new-state';
   assert.equal(validateResult({ reply: 'Revisá este estado', operations: [op] }).operations.length, 1);
   assert.throws(() => validateResult({ reply: '', operations: [{ ...op, payment: 20 }] }));
+});
+
+test('bridge limits model context to the current scope', () => {
+  const job = { scopePathIds: ['floor'], selectionIds: [], canvas: { obraNombre: 'Casa', nodes: [
+    { id: 'floor', parentId: null, type: 'etapa', title: 'Piso' },
+    { id: 'a', parentId: 'floor', type: 'tarea', title: 'A' },
+    { id: 'b', parentId: 'floor', type: 'tarea', title: 'B' },
+    { id: 'other', parentId: null, type: 'etapa', title: 'Otro piso' },
+  ], edges: [{ id: 'ab', sourceId: 'a', targetId: 'b', relation: 'precede' }], budgetGroups: [{ id: 'private-budget' }] } };
+  const compact = compactJobContext(job);
+  assert.deepEqual(compact.canvas.nodes.map((node) => node.id), ['a', 'b']);
+  assert.equal(compact.canvas.edges.length, 1);
+  assert.equal('budgetGroups' in compact.canvas, false);
+});
+
+test('simple edge cleanup is computed locally without Codex', () => {
+  const proposal = localGraphProposal({ prompt: 'Reacomodá las vinculaciones porque no se entienden', scopePathIds: [], selectionIds: [], canvas: {
+    nodes: ['a','b','c'].map((id) => ({ id, parentId: null, type: 'etapa', title: id })),
+    edges: [
+      { id: 'ab', sourceId: 'a', targetId: 'b', relation: 'precede' },
+      { id: 'bc', sourceId: 'b', targetId: 'c', relation: 'precede' },
+      { id: 'ac', sourceId: 'a', targetId: 'c', relation: 'precede' },
+    ],
+  }});
+  assert.equal(proposal.operations.length, 1);
+  assert.equal(proposal.operations[0].id, 'ac');
+  assert.equal(proposal.operations[0].type, 'delete_edge');
 });

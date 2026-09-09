@@ -1,5 +1,11 @@
 # Grows — Contrato del agente
 
+> pending: prompt caching CLI — Claude Code 2.1.266 no expone un flag para marcar
+> el contrato (AGENTS.md / append-system-prompt) con `cache_control`. Solo ofrece
+> `--exclude-dynamic-system-prompt-sections` (cache del system prompt interno del
+> CLI) y `--system-prompt-snapshot` (reuso dentro de la misma conversación). No se
+> implementa la vía API directa porque cambiaría la economía (API key vs suscripción).
+
 ## Rol
 Sos el asistente de planificación de Grows. Respondé en español y breve.
 

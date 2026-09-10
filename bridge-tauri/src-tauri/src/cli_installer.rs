@@ -14,7 +14,7 @@ pub fn install(id: &str) -> InstallResult {
         "cursor" => {
             return InstallResult {
                 success: false,
-                message: "Cursor Agent viene con el editor Cursor. Descargalo de cursor.com.".into(),
+                message: "Cursor editor ≠ Cursor CLI. En PowerShell corré:\nirm 'https://cursor.com/install?win32=true' | iex\nLuego: agent --version  (y agent login si hace falta)".into(),
             }
         }
         _ => {
@@ -52,6 +52,7 @@ pub fn open_login(id: &str, bin: &std::path::Path) -> InstallResult {
     let args: Vec<&str> = match id {
         "claude" => vec!["auth", "login"],
         "openai" => vec!["login"],
+        "cursor" => vec!["login"],
         _ => {
             return InstallResult {
                 success: false,

@@ -183,7 +183,7 @@ const PROVIDERS = {
     limitDescription: 'El límite depende del plan Claude; el CLI no publica un porcentaje reutilizable.',
   },
   cursor: {
-    label: 'Cursor', binKey: 'cursorBin', fallbackBin: 'cursor-agent',
+    label: 'Cursor', binKey: 'cursorBin', fallbackBin: 'agent',
     models: [
       { id: 'auto', label: 'Auto', description: 'Cursor elige según costo y disponibilidad.' },
       { id: 'composer-2.5', label: 'Composer 2.5', description: 'Modelo de Cursor para trabajo con código.' },
@@ -225,7 +225,15 @@ async function discoverWindowsBins(id) {
   } else if (id === 'openai') {
     for (const c of [appData && path.join(appData, 'npm', 'codex.cmd'), home && path.join(home, '.local', 'bin', 'codex.exe'), home && path.join(home, '.codex', 'bin', 'codex.exe')].filter(Boolean)) if (existsSync(c)) out.push(c);
   } else if (id === 'cursor') {
-    for (const c of [localAppData && path.join(localAppData, 'Programs', 'cursor', 'resources', 'app', 'bin', 'cursor-agent.cmd'), appData && path.join(appData, 'npm', 'cursor-agent.cmd')].filter(Boolean)) if (existsSync(c)) out.push(c);
+    const home = process.env.USERPROFILE || process.env.HOME;
+    for (const c of [
+      home && path.join(home, '.local', 'bin', 'agent.exe'),
+      home && path.join(home, '.local', 'bin', 'agent'),
+      home && path.join(home, '.local', 'bin', 'cursor-agent.exe'),
+      localAppData && path.join(localAppData, 'Programs', 'cursor', 'resources', 'app', 'bin', 'cursor-agent.exe'),
+      localAppData && path.join(localAppData, 'Programs', 'cursor', 'resources', 'app', 'bin', 'agent.exe'),
+      appData && path.join(appData, 'npm', 'cursor-agent.cmd'),
+    ].filter(Boolean)) if (existsSync(c)) out.push(c);
   }
   return out;
 }
@@ -239,9 +247,10 @@ function resolveWindowsExe(bin, id) {
   if (resolved.toLowerCase().endsWith('.exe')) return resolved;
   const appData = process.env.APPDATA;
   if (!appData) return resolved;
-  const guesses = {
+    const guesses = {
     claude: path.join(appData, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe'),
     openai: path.join(appData, 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.exe'),
+    cursor: path.join(process.env.USERPROFILE || '', '.local', 'bin', 'agent.exe'),
   };
   const guess = guesses[id];
   if (guess && existsSync(guess)) return guess;

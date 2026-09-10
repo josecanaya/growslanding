@@ -13,7 +13,7 @@ async function render() {
         : c.installed ? '<span class="badge warn">Sin sesión</span>'
         : '<span class="badge error">No instalado</span>';
       const action = c.logged_in ? ''
-        : c.installed ? `<button data-action="login" data-id="${c.id}" data-bin="${c.bin}">Login</button>`
+        : c.installed ? `<button data-action="login" data-id="${c.id}" data-bin="${c.bin ?? ''}">Login</button>`
         : `<button data-action="install" data-id="${c.id}">Instalar</button>`;
       return `<div class="cli-card">
         <div class="label"><b>${c.label}</b><small>${c.version ?? 'no detectado'}</small></div>
@@ -39,16 +39,32 @@ async function handleClick(e) {
   await render();
 }
 
-// No re-detectar al enfocar: en Windows abría PowerShell. Botón/refresh manual si hace falta.
-window.addEventListener('DOMContentLoaded', async () => {
-  await render();
+async function refreshPairingStatus() {
+  const el = document.getElementById('status');
+  const hint = document.getElementById('pair-hint');
   try {
     const status = await invoke('get_connection_status');
-    const el = document.getElementById('status');
     if (status.configured) {
-      el.textContent = 'Conectado';
+      el.textContent = 'Emparejado con Grows';
       el.classList.add('ok');
+      el.classList.remove('warn');
+      if (hint) hint.textContent = 'Este PC puede recibir pedidos de la obra. En el globo de Grows deberías poder elegir Claude / Cursor.';
       await invoke('start_worker');
+    } else {
+      el.textContent = 'Sin emparejar';
+      el.classList.remove('ok');
+      el.classList.add('warn');
+      if (hint) hint.textContent = 'Claude “Listo” acá no alcanza. En Grows (web) abrí el enchufe → Conectar Claude (o Cursor). Windows abrirá esta app con grows://';
     }
-  } catch (_) { /* sin config aún */ }
+  } catch (_) {
+    el.textContent = 'Sin emparejar';
+    el.classList.add('warn');
+  }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  await render();
+  await refreshPairingStatus();
+  // Re-chequear por si el deep link guarda el token después del arranque
+  setInterval(() => { void refreshPairingStatus(); }, 5000);
 });

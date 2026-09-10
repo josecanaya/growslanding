@@ -43,7 +43,9 @@ fn detect_codex() -> CliStatus {
 }
 
 fn detect_cursor() -> CliStatus {
-    let bin = find_bin("cursor-agent", &cursor_candidates());
+    // Cursor CLI actual se llama `agent` (cursor.com/install). `cursor-agent` es legacy.
+    let bin = find_bin("agent", &cursor_candidates())
+        .or_else(|| find_bin("cursor-agent", &cursor_candidates()));
     let (installed, logged_in, version) = probe_cursor(&bin);
     CliStatus {
         id: "cursor".into(),
@@ -89,13 +91,19 @@ fn as_exe(path: &Path) -> Option<PathBuf> {
     if ext == "cmd" || ext == "bat" || ext == "ps1" {
         return peel_npm_shim(path);
     }
-    // Sin extensión: aceptar solo si es archivo ejecutable existente (unix)
+    // Binarios unix / Windows sin extensión (p.ej. `agent` de Cursor CLI)
+    #[cfg(windows)]
+    {
+        // En Windows, archivo sin extensión puede ser el CLI portable
+        if ext.is_empty() {
+            return Some(path.to_path_buf());
+        }
+        return None;
+    }
     #[cfg(not(windows))]
     {
-        return Some(path.to_path_buf());
+        Some(path.to_path_buf())
     }
-    #[cfg(windows)]
-    None
 }
 
 fn peel_npm_shim(shim: &Path) -> Option<PathBuf> {
@@ -127,9 +135,10 @@ fn peel_npm_shim(shim: &Path) -> Option<PathBuf> {
                 .join("codex")
                 .join("codex.exe"),
         ],
-        "cursor-agent" => vec![
+        "cursor-agent" | "agent" => vec![
             shim.with_extension("exe"),
             parent.join("cursor-agent.exe"),
+            parent.join("agent.exe"),
         ],
         _ => vec![shim.with_extension("exe")],
     };
@@ -185,6 +194,13 @@ fn codex_candidates() -> Vec<PathBuf> {
 
 fn cursor_candidates() -> Vec<PathBuf> {
     let mut out = vec![];
+    // Cursor CLI nuevo: ~/.local/bin/agent(.exe) tras `irm https://cursor.com/install?win32=true | iex`
+    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
+        let local_bin = PathBuf::from(&home).join(".local").join("bin");
+        out.push(local_bin.join("agent.exe"));
+        out.push(local_bin.join("agent"));
+        out.push(local_bin.join("cursor-agent.exe"));
+    }
     if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
         let bin = PathBuf::from(localapp)
             .join("Programs")
@@ -192,7 +208,9 @@ fn cursor_candidates() -> Vec<PathBuf> {
             .join("resources")
             .join("app")
             .join("bin");
+        // Legacy shims (Cursor viejo); peel_npm_shim / as_exe los ignora si no son .exe
         out.push(bin.join("cursor-agent.exe"));
+        out.push(bin.join("agent.exe"));
     }
     out
 }
@@ -285,10 +303,13 @@ mod tests {
             if let Some(bin) = &cli.bin {
                 let ext = bin.extension().and_then(|e| e.to_str()).unwrap_or("");
                 assert!(
-                    ext.eq_ignore_ascii_case("exe") || cfg!(not(windows)),
-                    "bin debe ser .exe en Windows, got {:?}",
+                    ext.eq_ignore_ascii_case("exe")
+                        || ext.is_empty()
+                        || cfg!(not(windows)),
+                    "bin debe ser .exe (o agent sin extensión), got {:?}",
                     bin
                 );
+                assert_ne!(ext, "ps1");
             }
         }
         eprintln!("{}", serde_json::to_string_pretty(&all).unwrap());

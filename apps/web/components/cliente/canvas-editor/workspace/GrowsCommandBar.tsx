@@ -13,7 +13,7 @@ type Device={id:string;last_seen_at:string|null;capabilities?:Capability[];usage
 const LOCAL:Capability={id:'local',label:'Automático local',models:[{id:'automatico',label:'Sin IA cuando sea posible',description:'Usa reglas locales primero y Codex solo si hace falta.'}],limitDescription:'Las operaciones locales no consumen suscripción.'};
 const PROVIDERS:Capability[]=[LOCAL,{id:'openai',label:'OpenAI · Codex',models:[],limitDescription:'Usa el límite de tu suscripción de ChatGPT.'},{id:'claude',label:'Anthropic · Claude',models:[],limitDescription:'Requiere Claude Code conectado en esta PC.'},{id:'cursor',label:'Cursor',models:[],limitDescription:'Requiere Cursor Agent conectado en esta PC.'}];
 const statusLabel:Record<string,string>={queued:'Pendiente · esperando a tu PC',running:'Tu agente está trabajando',completed:'Propuesta lista para revisar',failed:'No se pudo completar',cancelled:'Cancelado',applied:'Cambios aceptados'};
-const CLI_HINT:Record<string,string>={openai:'En terminal: codex login',claude:'En terminal: claude auth login',cursor:'Abrí Cursor y habilitá Agent mode'};
+const CLI_HINT:Record<string,string>={openai:'En terminal: codex login',claude:'En terminal: claude auth login',cursor:'Instalá Cursor CLI: irm \'https://cursor.com/install?win32=true\' | iex  →  agent login'};
 
 function isOnline(d:Device){return !!(d.last_seen_at&&Date.now()-Date.parse(d.last_seen_at)<30000);}
 

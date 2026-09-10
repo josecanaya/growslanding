@@ -91,7 +91,7 @@ async fn execute_inner(
         job.model.as_str()
     };
 
-    let args: Vec<String> = match provider {
+    let mut args: Vec<String> = match provider {
         "openai" => ["exec", "-m", model, "--sandbox", "read-only", "--json", "-"]
             .into_iter()
             .map(String::from)
@@ -116,6 +116,11 @@ async fn execute_inner(
             .collect(),
         _ => return Err(format!("Proveedor desconocido: {}", provider)),
     };
+    if !cap.prefix_args.is_empty() {
+        let mut full = cap.prefix_args.clone();
+        full.append(&mut args);
+        args = full;
+    }
 
     let mut cmd = {
         #[cfg(windows)]

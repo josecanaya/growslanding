@@ -225,6 +225,24 @@ async function discoverWindowsBins(id) {
   } else if (id === 'openai') {
     for (const c of [appData && path.join(appData, 'npm', 'codex.cmd'), home && path.join(home, '.local', 'bin', 'codex.exe'), home && path.join(home, '.codex', 'bin', 'codex.exe')].filter(Boolean)) if (existsSync(c)) out.push(c);
   } else if (id === 'cursor') {
+    // Installer win32 deja el runtime en %LOCALAPPDATA%\cursor-agent\versions\<ver>\
+    if (localAppData) {
+      const versionsRoot = path.join(localAppData, 'cursor-agent', 'versions');
+      try {
+        const versions = (await readdir(versionsRoot)).sort().reverse();
+        for (const v of versions) {
+          const node = path.join(versionsRoot, v, 'node.exe');
+          const indexJs = path.join(versionsRoot, v, 'index.js');
+          if (existsSync(node) && existsSync(indexJs)) {
+            out.push({ bin: node, prefixArgs: [indexJs] });
+            break;
+          }
+        }
+      } catch { /* sin versions */ }
+      for (const c of [path.join(localAppData, 'cursor-agent', 'agent.cmd'), path.join(localAppData, 'cursor-agent', 'cursor-agent.cmd')]) {
+        if (existsSync(c)) out.push(c);
+      }
+    }
     const home = process.env.USERPROFILE || process.env.HOME;
     for (const c of [
       home && path.join(home, '.local', 'bin', 'agent.exe'),
@@ -280,14 +298,17 @@ export async function detectCapabilities(config = {}, { force = false } = {}) {
     if (config[definition.binKey]) candidates.push(config[definition.binKey]);
     candidates.push(...await discoverWindowsBins(id));
     candidates.push(definition.fallbackBin);
-    const normalized = [...new Set(candidates.map((bin) => resolveWindowsExe(bin, id)))];
     let resolved = null;
-    for (const bin of normalized) {
-      // Nunca probear .ps1
+    let prefixArgs = [];
+    for (const raw of candidates) {
+      const prefix = raw && typeof raw === 'object' && Array.isArray(raw.prefixArgs) ? raw.prefixArgs : [];
+      const binRaw = raw && typeof raw === 'object' && raw.bin ? raw.bin : raw;
+      const bin = resolveWindowsExe(binRaw, id);
       if (typeof bin === 'string' && bin.toLowerCase().endsWith('.ps1')) continue;
-      if (await probe(bin, args)) { resolved = bin; break; }
+      const probeArgs = prefix.length ? [...prefix, ...args] : args;
+      if (await probe(bin, probeArgs)) { resolved = bin; prefixArgs = prefix; break; }
     }
-    if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved });
+    if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved, ...(prefixArgs.length ? { prefixArgs } : {}) });
   }
   capabilitiesCache = { at: Date.now(), value: capabilities };
   return capabilities;
@@ -360,7 +381,8 @@ ${JSON.stringify(compactContext)}`;
         : provider === 'claude'
           ? ['-p', '--model', model, '--output-format', 'json', '--permission-mode', 'plan', '--max-turns', '1']
           : ['-p', '--model', model, '--output-format', 'json'];
-      child = spawnCli(capability.bin, args, {
+      const launchArgs = Array.isArray(capability.prefixArgs) ? [...capability.prefixArgs, ...args] : args;
+      child = spawnCli(capability.bin, launchArgs, {
         cwd: directory, windowsHide: true, env: childEnvironment(), stdio: ['pipe', 'pipe', 'pipe'],
       });
       const terminate = (reason) => { failure = reason; child.kill(); };

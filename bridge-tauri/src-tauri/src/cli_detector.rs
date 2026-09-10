@@ -7,6 +7,9 @@ pub struct CliStatus {
     pub id: String,
     pub label: String,
     pub bin: Option<PathBuf>,
+    /// Args to prepend (e.g. path to index.js when bin is Cursor's bundled node.exe).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub prefix_args: Vec<String>,
     pub installed: bool,
     pub logged_in: bool,
     pub version: Option<String>,
@@ -23,6 +26,7 @@ fn detect_claude() -> CliStatus {
         id: "claude".into(),
         label: "Anthropic · Claude".into(),
         bin,
+        prefix_args: vec![],
         installed,
         logged_in,
         version,
@@ -36,6 +40,7 @@ fn detect_codex() -> CliStatus {
         id: "openai".into(),
         label: "OpenAI · Codex".into(),
         bin,
+        prefix_args: vec![],
         installed,
         logged_in,
         version,
@@ -43,7 +48,23 @@ fn detect_codex() -> CliStatus {
 }
 
 fn detect_cursor() -> CliStatus {
-    // Cursor CLI actual se llama `agent` (cursor.com/install). `cursor-agent` es legacy.
+    // Windows: %LOCALAPPDATA%\cursor-agent\versions\<ver>\node.exe + index.js
+    // (agent.cmd solo abre PowerShell; nosotros bypassamos el shim).
+    if let Some((node, index)) = resolve_cursor_node_entry() {
+        let index_s = index.to_string_lossy().to_string();
+        let version = run_with_prefix(&node, &[&index_s], &["--version"])
+            .map(|s| s.lines().next().unwrap_or("").trim().to_string());
+        let logged_in = version.is_some();
+        return CliStatus {
+            id: "cursor".into(),
+            label: "Cursor".into(),
+            bin: Some(node),
+            prefix_args: vec![index_s],
+            installed: true,
+            logged_in,
+            version,
+        };
+    }
     let bin = find_bin("agent", &cursor_candidates())
         .or_else(|| find_bin("cursor-agent", &cursor_candidates()));
     let (installed, logged_in, version) = probe_cursor(&bin);
@@ -51,10 +72,43 @@ fn detect_cursor() -> CliStatus {
         id: "cursor".into(),
         label: "Cursor".into(),
         bin,
+        prefix_args: vec![],
         installed,
         logged_in,
         version,
     }
+}
+
+/// Cursor CLI en Windows: LocalAppData\cursor-agent\versions\<latest>\node.exe + index.js
+pub fn resolve_cursor_node_entry() -> Option<(PathBuf, PathBuf)> {
+    let localapp = std::env::var_os("LOCALAPPDATA")?;
+    let root = PathBuf::from(localapp).join("cursor-agent");
+    // Prefer latest under versions/
+    let versions_dir = root.join("versions");
+    if let Ok(entries) = std::fs::read_dir(&versions_dir) {
+        let mut versions: Vec<PathBuf> = entries.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.is_dir()).collect();
+        versions.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+        for dir in versions {
+            let node = dir.join("node.exe");
+            let index = dir.join("index.js");
+            if node.exists() && index.exists() {
+                return Some((node, index));
+            }
+        }
+    }
+    // Fallback: root itself (unlikely on current installer)
+    let node = root.join("node.exe");
+    let index = root.join("index.js");
+    if node.exists() && index.exists() {
+        return Some((node, index));
+    }
+    None
+}
+
+fn run_with_prefix(bin: &PathBuf, prefix: &[&str], args: &[&str]) -> Option<String> {
+    let mut all: Vec<&str> = prefix.to_vec();
+    all.extend_from_slice(args);
+    run(bin, &all)
 }
 
 /// Solo rutas a .exe reales. Nunca .ps1/.cmd: en Windows eso abre PowerShell.
@@ -194,23 +248,32 @@ fn codex_candidates() -> Vec<PathBuf> {
 
 fn cursor_candidates() -> Vec<PathBuf> {
     let mut out = vec![];
-    // Cursor CLI nuevo: ~/.local/bin/agent(.exe) tras `irm https://cursor.com/install?win32=true | iex`
-    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
-        let local_bin = PathBuf::from(&home).join(".local").join("bin");
-        out.push(local_bin.join("agent.exe"));
-        out.push(local_bin.join("agent"));
-        out.push(local_bin.join("cursor-agent.exe"));
-    }
+    // Installer win32: %LOCALAPPDATA%\cursor-agent\ (shims .cmd; el runtime real es versions\*\node.exe)
     if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
+        let root = PathBuf::from(&localapp).join("cursor-agent");
+        out.push(root.join("agent.cmd"));
+        out.push(root.join("cursor-agent.cmd"));
+        if let Ok(entries) = std::fs::read_dir(root.join("versions")) {
+            let mut versions: Vec<_> = entries.filter_map(|e| e.ok()).map(|e| e.path()).filter(|p| p.is_dir()).collect();
+            versions.sort_by(|a, b| b.file_name().cmp(&a.file_name()));
+            for dir in versions {
+                out.push(dir.join("node.exe"));
+            }
+        }
         let bin = PathBuf::from(localapp)
             .join("Programs")
             .join("cursor")
             .join("resources")
             .join("app")
             .join("bin");
-        // Legacy shims (Cursor viejo); peel_npm_shim / as_exe los ignora si no son .exe
         out.push(bin.join("cursor-agent.exe"));
         out.push(bin.join("agent.exe"));
+    }
+    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
+        let local_bin = PathBuf::from(&home).join(".local").join("bin");
+        out.push(local_bin.join("agent.exe"));
+        out.push(local_bin.join("agent"));
+        out.push(local_bin.join("cursor-agent.exe"));
     }
     out
 }

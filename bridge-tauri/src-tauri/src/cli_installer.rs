@@ -1,3 +1,4 @@
+use crate::cli_detector;
 use serde::Serialize;
 use std::process::Command;
 
@@ -8,15 +9,21 @@ pub struct InstallResult {
 }
 
 pub fn install(id: &str) -> InstallResult {
+    if id == "cursor" {
+        if cli_detector::resolve_cursor_node_entry().is_some() {
+            return InstallResult {
+                success: true,
+                message: "Cursor CLI ya está instalado en esta PC. Cerrá este mensaje: debería pasar a Listo / Login.".into(),
+            };
+        }
+        return InstallResult {
+            success: false,
+            message: "No encontré Cursor CLI. En PowerShell corré:\nirm 'https://cursor.com/install?win32=true' | iex\nDespués reiniciá Grows Agent.".into(),
+        };
+    }
     let package = match id {
         "claude" => "@anthropic-ai/claude-code",
         "openai" => "@openai/codex",
-        "cursor" => {
-            return InstallResult {
-                success: false,
-                message: "Cursor editor ≠ Cursor CLI. En PowerShell corré:\nirm 'https://cursor.com/install?win32=true' | iex\nLuego: agent --version  (y agent login si hace falta)".into(),
-            }
-        }
         _ => {
             return InstallResult {
                 success: false,
@@ -49,10 +56,21 @@ pub fn install(id: &str) -> InstallResult {
 }
 
 pub fn open_login(id: &str, bin: &std::path::Path) -> InstallResult {
-    let args: Vec<&str> = match id {
-        "claude" => vec!["auth", "login"],
-        "openai" => vec!["login"],
-        "cursor" => vec!["login"],
+    let (launch_bin, args): (std::path::PathBuf, Vec<String>) = match id {
+        "claude" => (bin.to_path_buf(), vec!["auth".into(), "login".into()]),
+        "openai" => (bin.to_path_buf(), vec!["login".into()]),
+        "cursor" => {
+            if let Some((node, index)) = cli_detector::resolve_cursor_node_entry() {
+                (node, vec![index.to_string_lossy().into_owned(), "login".into()])
+            } else if !bin.as_os_str().is_empty() {
+                (bin.to_path_buf(), vec!["login".into()])
+            } else {
+                return InstallResult {
+                    success: false,
+                    message: "No encontré Cursor CLI instalado.".into(),
+                };
+            }
+        }
         _ => {
             return InstallResult {
                 success: false,
@@ -61,13 +79,24 @@ pub fn open_login(id: &str, bin: &std::path::Path) -> InstallResult {
         }
     };
     #[cfg(windows)]
-    let result = Command::new("cmd")
-        .args(["/C", "start", "cmd", "/K"])
-        .arg(bin)
-        .args(&args)
-        .spawn();
+    let result = {
+        let mut cmdline = format!("\"{}\"", launch_bin.display());
+        for a in &args {
+            cmdline.push(' ');
+            if a.chars().any(|c| c.is_whitespace()) {
+                cmdline.push('"');
+                cmdline.push_str(a);
+                cmdline.push('"');
+            } else {
+                cmdline.push_str(a);
+            }
+        }
+        Command::new("cmd")
+            .args(["/C", "start", "cmd", "/K", &cmdline])
+            .spawn()
+    };
     #[cfg(not(windows))]
-    let result = Command::new(bin).args(&args).spawn();
+    let result = Command::new(&launch_bin).args(&args).spawn();
     match result {
         Ok(_) => InstallResult {
             success: true,

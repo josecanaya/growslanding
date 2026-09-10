@@ -1,3 +1,4 @@
+mod child_env;
 mod cli_detector;
 mod cli_installer;
 mod config;

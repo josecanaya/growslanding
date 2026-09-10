@@ -87,6 +87,8 @@ pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult,
     let mut cmd = Command::new(bin);
     cmd.args(&args)
         .current_dir(temp_dir.path())
+        .env_clear()
+        .envs(crate::child_env::safe_env())
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());

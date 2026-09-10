@@ -87,7 +87,7 @@ export function parseAgentJson(value) {
 
 export function childEnvironment(env = process.env) {
   // Keep login/session support, but do not pass device credentials or inference keys to the agent.
-  const keys = ['PATH', 'Path', 'PATHEXT', 'SYSTEMROOT', 'SystemRoot', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'CODEX_HOME'];
+  const keys = ['PATH', 'Path', 'PATHEXT', 'SYSTEMROOT', 'SystemRoot', 'WINDIR', 'COMSPEC', 'TEMP', 'TMP', 'HOME', 'USERPROFILE', 'HOMEDRIVE', 'HOMEPATH', 'USERNAME', 'USER', 'LOCALAPPDATA', 'APPDATA', 'CODEX_HOME', 'CURSOR_API_KEY'];
   return Object.fromEntries(keys.filter((key) => env[key]).map((key) => [key, env[key]]));
 }
 
@@ -293,7 +293,7 @@ export async function detectCapabilities(config = {}, { force = false } = {}) {
   }
   const capabilities = [];
   for (const [id, definition] of Object.entries(PROVIDERS)) {
-    const args = id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version'];
+    const args = id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : id === 'cursor' ? ['status'] : ['--version'];
     const candidates = [];
     if (config[definition.binKey]) candidates.push(config[definition.binKey]);
     candidates.push(...await discoverWindowsBins(id));
@@ -306,6 +306,17 @@ export async function detectCapabilities(config = {}, { force = false } = {}) {
       const bin = resolveWindowsExe(binRaw, id);
       if (typeof bin === 'string' && bin.toLowerCase().endsWith('.ps1')) continue;
       const probeArgs = prefix.length ? [...prefix, ...args] : args;
+      if (id === 'cursor') {
+        // status imprime "Not logged in" con exit 0 — hay que leer stdout
+        const versionOk = await probe(bin, prefix.length ? [...prefix, '--version'] : ['--version']);
+        if (!versionOk) continue;
+        // probe solo mira exit code; para cursor exigimos login aparte vía attempt
+        const { spawnSync } = await import('node:child_process');
+        const r = spawnSync(bin, probeArgs, { encoding: 'utf8', windowsHide: true, timeout: 8000 });
+        const text = `${r.stdout || ''}${r.stderr || ''}`.toLowerCase();
+        if (text.includes('not logged') || text.includes('authentication required')) continue;
+        resolved = bin; prefixArgs = prefix; break;
+      }
       if (await probe(bin, probeArgs)) { resolved = bin; prefixArgs = prefix; break; }
     }
     if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved, ...(prefixArgs.length ? { prefixArgs } : {}) });

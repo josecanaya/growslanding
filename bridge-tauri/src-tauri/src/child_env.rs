@@ -14,9 +14,16 @@ pub fn safe_env() -> Vec<(String, String)> {
         "TMP",
         "HOME",
         "USERPROFILE",
+        "HOMEDRIVE",
+        "HOMEPATH",
+        "USERNAME",
+        "USER",
         "LOCALAPPDATA",
         "APPDATA",
         "CODEX_HOME",
+        // Cursor CLI puede leer la sesión vía esta key si el usuario la configuró.
+        // No es el token del bridge; no inventamos valores — solo pasamos si ya existe.
+        "CURSOR_API_KEY",
     ];
     let mut out = Vec::new();
     for &k in KEEP {

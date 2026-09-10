@@ -237,8 +237,48 @@ async fn execute_inner(
     let stderr_buf = stderr_task.await.unwrap_or_default();
     if !exit_status.success() {
         let stderr = String::from_utf8_lossy(&stderr_buf);
-        let tail = stderr.lines().rev().take(2).collect::<Vec<_>>().join(" ");
-        return Err(format!("{} exit={:?}. {}", cap.label, exit_status.code(), tail));
+        let stdout = String::from_utf8_lossy(&stdout_buf);
+        let hint = {
+            let from_err = stderr
+                .lines()
+                .rev()
+                .filter(|l| !l.trim().is_empty())
+                .take(3)
+                .collect::<Vec<_>>()
+                .into_iter()
+                .rev()
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !from_err.is_empty() {
+                from_err
+            } else {
+                stdout
+                    .lines()
+                    .rev()
+                    .filter(|l| !l.trim().is_empty())
+                    .take(3)
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .rev()
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            }
+        };
+        let hint = if hint.len() > 500 {
+            format!("{}…", &hint[..500])
+        } else {
+            hint
+        };
+        return Err(format!(
+            "{} terminó con código {}{}",
+            cap.label,
+            exit_status.code().unwrap_or(-1),
+            if hint.is_empty() {
+                String::new()
+            } else {
+                format!(". {}", hint)
+            }
+        ));
     }
     let stdout = String::from_utf8_lossy(&stdout_buf);
     let parsed = parse_agent_json(&stdout).ok_or_else(|| "El agente no devolvió JSON válido".to_string())?;

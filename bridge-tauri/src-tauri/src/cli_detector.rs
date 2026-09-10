@@ -54,7 +54,12 @@ fn detect_cursor() -> CliStatus {
         let index_s = index.to_string_lossy().to_string();
         let version = run_with_prefix(&node, &[&index_s], &["--version"])
             .map(|s| s.lines().next().unwrap_or("").trim().to_string());
-        let logged_in = version.is_some();
+        let status = run_with_prefix(&node, &[&index_s], &["status"]).unwrap_or_default();
+        let status_l = status.to_lowercase();
+        let logged_in = version.is_some()
+            && !status_l.contains("not logged")
+            && !status_l.is_empty()
+            && !status_l.contains("authentication required");
         return CliStatus {
             id: "cursor".into(),
             label: "Cursor".into(),
@@ -323,7 +328,12 @@ fn probe_cursor(bin: &Option<PathBuf>) -> (bool, bool, Option<String>) {
         return (false, false, None);
     };
     let version = run(bin, &["--version"]).map(|s| s.trim().to_string());
-    (true, version.is_some(), version)
+    let status = run(bin, &["status"]).unwrap_or_default().to_lowercase();
+    let logged_in = version.is_some()
+        && !status.contains("not logged")
+        && !status.is_empty()
+        && !status.contains("authentication required");
+    (true, logged_in, version)
 }
 
 fn run(bin: &PathBuf, args: &[&str]) -> Option<String> {

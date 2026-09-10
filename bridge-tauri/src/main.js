@@ -1,4 +1,5 @@
 const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
 
 let rendering = false;
 
@@ -42,6 +43,7 @@ async function handleClick(e) {
 async function refreshPairingStatus() {
   const el = document.getElementById('status');
   const hint = document.getElementById('pair-hint');
+  const box = document.getElementById('pair-box');
   try {
     const status = await invoke('get_connection_status');
     if (status.configured) {
@@ -49,22 +51,46 @@ async function refreshPairingStatus() {
       el.classList.add('ok');
       el.classList.remove('warn');
       if (hint) hint.textContent = 'Este PC puede recibir pedidos de la obra. En el globo de Grows deberías poder elegir Claude / Cursor.';
+      if (box) box.hidden = true;
       await invoke('start_worker');
     } else {
       el.textContent = 'Sin emparejar';
       el.classList.remove('ok');
       el.classList.add('warn');
-      if (hint) hint.textContent = 'Claude “Listo” acá no alcanza. En Grows (web) abrí el enchufe → Conectar Claude (o Cursor). Windows abrirá esta app con grows://';
+      if (hint) hint.textContent = 'Claude “Listo” acá no alcanza. En Grows (web) abrí el enchufe → Conectar. Si Windows no abre solo, pegá acá el link grows://pair…';
+      if (box) box.hidden = false;
     }
   } catch (_) {
     el.textContent = 'Sin emparejar';
     el.classList.add('warn');
+    if (box) box.hidden = false;
+  }
+}
+
+async function applyPairPaste() {
+  const input = document.getElementById('pair-url');
+  const msg = document.getElementById('pair-msg');
+  const raw = (input?.value || '').trim();
+  if (!raw.startsWith('grows://')) {
+    msg.textContent = 'Pegá el link completo que empieza con grows://pair';
+    return;
+  }
+  try {
+    const text = await invoke('apply_pair_url', { raw });
+    msg.textContent = text;
+    input.value = '';
+    await refreshPairingStatus();
+  } catch (e) {
+    msg.textContent = String(e);
   }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
   await render();
   await refreshPairingStatus();
-  // Re-chequear por si el deep link guarda el token después del arranque
+  document.getElementById('pair-apply')?.addEventListener('click', () => { void applyPairPaste(); });
+  try {
+    await listen('paired', () => { void refreshPairingStatus(); });
+  } catch (_) { /* event API no disponible */ }
   setInterval(() => { void refreshPairingStatus(); }, 5000);
 });

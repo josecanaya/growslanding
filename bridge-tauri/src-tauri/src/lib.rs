@@ -9,6 +9,7 @@ mod prompt;
 mod validate;
 
 use std::sync::Arc;
+use tauri::{Emitter, Manager};
 use tauri_plugin_deep_link::DeepLinkExt;
 use tokio::sync::RwLock;
 
@@ -43,6 +44,23 @@ fn get_connection_status(app: tauri::AppHandle) -> serde_json::Value {
         "configured": cfg.url.is_some() && cfg.token.is_some(),
         "url": cfg.url,
     })
+}
+
+#[tauri::command]
+fn apply_pair_url(app: tauri::AppHandle, raw: String) -> Result<String, String> {
+    pairing::handle_pair_url(&app, raw.trim())?;
+    kick_worker_after_pair(app);
+    Ok("Emparejado. Ya podés usar Claude/Cursor en Grows.".into())
+}
+
+fn kick_worker_after_pair(app: tauri::AppHandle) {
+    tauri::async_runtime::spawn(async move {
+        let state = app.state::<AppState>();
+        if let Err(e) = start_worker(app.clone(), state).await {
+            eprintln!("[pairing] no se pudo arrancar worker: {}", e);
+        }
+        let _ = app.emit("paired", true);
+    });
 }
 
 #[tauri::command]
@@ -262,6 +280,19 @@ fn default_models(id: &str) -> Vec<serde_json::Value> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // Segunda instancia (grows:// con la app ya abierta) → aplicar URL acá.
+            for arg in argv.iter().skip(1) {
+                if arg.starts_with("grows://") {
+                    if pairing::handle_pair_url(app, arg).is_ok() {
+                        kick_worker_after_pair(app.clone());
+                    }
+                }
+            }
+            if let Some(w) = app.get_webview_window("main") {
+                let _ = w.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_deep_link::init())
         .manage(AppState {
             running: Arc::new(RwLock::new(false)),
@@ -271,11 +302,35 @@ pub fn run() {
             ))),
         })
         .setup(|app| {
+            // Desarrollo / sideload: registrar grows:// si el instalador no lo hizo.
+            #[cfg(desktop)]
+            {
+                if let Err(e) = app.deep_link().register("grows") {
+                    eprintln!("[deep-link] register: {}", e);
+                }
+            }
+
+            // Arranque en frío: Windows pasa grows://pair?... como argv.
+            for arg in std::env::args().skip(1) {
+                if arg.starts_with("grows://") {
+                    match pairing::handle_pair_url(app.handle(), &arg) {
+                        Ok(()) => {
+                            eprintln!("[pairing] config desde argv");
+                            kick_worker_after_pair(app.handle().clone());
+                        }
+                        Err(e) => eprintln!("[pairing] argv: {}", e),
+                    }
+                }
+            }
+
             let handle = app.handle().clone();
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
                     match pairing::handle_pair_url(&handle, url.as_str()) {
-                        Ok(()) => eprintln!("[pairing] config guardada"),
+                        Ok(()) => {
+                            eprintln!("[pairing] config guardada");
+                            kick_worker_after_pair(handle.clone());
+                        }
                         Err(e) => eprintln!("[pairing] {}", e),
                     }
                 }
@@ -287,6 +342,7 @@ pub fn run() {
             install_cli,
             login_cli,
             get_connection_status,
+            apply_pair_url,
             start_worker,
             stop_worker
         ])

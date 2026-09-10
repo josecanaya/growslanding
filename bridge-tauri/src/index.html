@@ -7,6 +7,14 @@
       <span id="status" class="status">Sin emparejar</span>
     </header>
     <p id="pair-hint" class="hint">Si Claude dice “Listo” pero Grows no te deja elegirlo: falta emparejar desde el enchufe de la obra.</p>
+    <section id="pair-box" class="pair-box" hidden>
+      <label for="pair-url">Pegá el link grows://pair?… si Windows no abrió solo</label>
+      <div class="pair-row">
+        <input id="pair-url" type="text" placeholder="grows://pair?url=…&token=…" />
+        <button id="pair-apply" type="button">Emparejar</button>
+      </div>
+      <p id="pair-msg" class="hint"></p>
+    </section>
     <section id="clis"></section>
     <footer><small>v0.1.0 · <a href="#" id="open-logs">Ver logs</a></small></footer>
     <script type="module" src="main.js"></script>

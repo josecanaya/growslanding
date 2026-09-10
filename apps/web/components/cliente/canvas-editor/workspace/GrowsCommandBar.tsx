@@ -76,7 +76,7 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
     const secs=Math.round((Date.now()-startedAt)/1000);
     if(cStep===2){
      if(online.length>0){setCStep(3);setCElapsed(0);return;}
-     if(secs>=35){setCError('No se pudo abrir Grows Bridge. Revisá que aceptaste la ventana de Windows y que Node.js esté instalado, después reintentá.');setCStep(9);}
+     if(secs>=35){setCError('No se pudo emparejar Grows Agent. Dejá la app abierta, aceptá el aviso de Windows si aparece, o en Grows Agent pegá el link grows://pair… y tocá Emparejar.');setCStep(9);}
      return;
     }
     setCElapsed(secs);
@@ -102,7 +102,7 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
    <div className="space-y-4">
     {([
      {n:1,label:'Preparando credenciales'},
-     {n:2,label:'Abrí Grows Bridge cuando Windows te lo solicite'},
+     {n:2,label:'Abrí Grows Agent cuando Windows te lo solicite'},
      {n:3,label:`Detectando ${cLabel} en tu PC`},
      {n:4,label:`${cLabel} conectado`},
     ] as const).map(({n,label})=>{
@@ -113,7 +113,11 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
       </div>
       <div className="flex-1 min-w-0">
        <p className={`text-sm leading-snug transition-colors ${active?'font-semibold text-stone-900':done?'text-stone-500':'text-stone-300'}`}>{label}</p>
-       {active&&n===2&&<p className="mt-1 text-xs text-stone-400">Windows abrirá una ventana de PowerShell. Dejala correr un momento.</p>}
+       {active&&n===2&&<>
+        <p className="mt-1 text-xs text-stone-400">Windows debería abrir o enfocar Grows Agent (no PowerShell). Dejá la app abierta.</p>
+        {pairToken&&<p className="mt-2 break-all rounded-lg bg-stone-50 border border-stone-200 px-2 py-1.5 text-[10px] font-mono text-stone-600">grows://pair?url={typeof window!=='undefined'?encodeURIComponent(window.location.origin):''}&amp;token={pairToken}</p>}
+        {pairToken&&<p className="mt-1 text-[10px] text-stone-400">Si no abre solo: copiá ese link y pegalo en Grows Agent → Emparejar.</p>}
+       </>}
        {active&&n===3&&cElapsed>=10&&cPid&&CLI_HINT[cPid]&&<div className="mt-2 rounded-lg bg-stone-50 border border-stone-200 px-3 py-2"><p className="text-xs text-stone-500 mb-0.5">No lo encontró aún. Intentá:</p><code className="text-xs font-mono text-stone-700">{CLI_HINT[cPid]}</code></div>}
        {active&&n===4&&<CheckCircle2 size={16} className="mt-1 text-green-500"/>}
       </div>

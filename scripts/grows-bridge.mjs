@@ -59,6 +59,9 @@ export function validateResult(result) {
       if (typeof value === 'string' && value.length > 8000) throw new Error(`El campo "${key}" es demasiado largo.`);
       if (Array.isArray(value) && (value.length > 50 || value.some((item) => typeof item !== 'string' || item.length > 4000))) throw new Error(`Lista inválida en "${key}".`);
     }
+    if (['create_node', 'propose_transform'].includes(op.type) && (typeof op.id !== 'string' || !op.id.trim())) {
+      throw new Error(`Falta el campo "id" en la operación "${op.type}" (usá tmp-1, tmp-2, …).`);
+    }
   }
   return result;
 }

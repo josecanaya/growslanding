@@ -48,6 +48,18 @@ Poné null o [] en los que no apliquen. NUNCA agregues campos que no
 estén en la lista. Información extra (capital, montos, cálculos) va
 dentro de "description" o "assumptions".
 
-## Ejemplo
-Crear un nodo etapa "Búsqueda de inversores":
-{"type":"create_node","id":null,"parentId":null,"title":"Búsqueda de inversores","description":"Capital estimado: USD X. Duración total: N días.","nodeType":"etapa","sourceId":null,"targetId":null,"relation":null,"fromNodeId":null,"toNodeId":null,"transformKind":null,"executorKind":null,"quantity":null,"unit":null,"durationDays":30,"sources":[],"assumptions":["capital orientativo","depende del mercado"]}
+## Identificadores temporales
+Para `create_node` y `propose_transform` el `id` NUNCA debe ser null.
+Usá etiquetas temporales `tmp-1`, `tmp-2`, ... únicas dentro de la respuesta.
+Grows las traduce a IDs reales al aplicar.
+
+Podés referenciar esos aliases en `parentId`, `sourceId`, `targetId`, `fromNodeId`, `toNodeId`
+de operaciones posteriores en la MISMA respuesta.
+
+## Ejemplo — crear una etapa "Búsqueda de inversores" con dos sub-tareas
+[
+  {"type":"create_node","id":"tmp-1","parentId":null,"title":"Búsqueda de inversores","description":"Capital estimado: USD 200k. Duración: ~90 días.","nodeType":"etapa","sourceId":null,"targetId":null,"relation":null,"fromNodeId":null,"toNodeId":null,"transformKind":null,"executorKind":null,"quantity":null,"unit":null,"durationDays":90,"sources":[],"assumptions":["capital orientativo","depende del mercado"]},
+  {"type":"create_node","id":"tmp-2","parentId":"tmp-1","title":"Preparar pitch deck","description":null,"nodeType":"tarea","sourceId":null,"targetId":null,"relation":null,"fromNodeId":null,"toNodeId":null,"transformKind":null,"executorKind":"humano","quantity":null,"unit":null,"durationDays":10,"sources":[],"assumptions":[]},
+  {"type":"create_node","id":"tmp-3","parentId":"tmp-1","title":"Reuniones con inversores","description":null,"nodeType":"tarea","sourceId":null,"targetId":null,"relation":null,"fromNodeId":null,"toNodeId":null,"transformKind":null,"executorKind":"humano","quantity":null,"unit":null,"durationDays":45,"sources":[],"assumptions":[]},
+  {"type":"create_edge","id":null,"parentId":null,"title":null,"description":null,"nodeType":null,"sourceId":"tmp-2","targetId":"tmp-3","relation":"precede","fromNodeId":null,"toNodeId":null,"transformKind":null,"executorKind":null,"quantity":null,"unit":null,"durationDays":null,"sources":[],"assumptions":[]}
+]

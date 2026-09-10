@@ -42,6 +42,13 @@ test('bridge validates operations and excludes secrets from Codex subprocess', (
   op.type = 'create_node'; op.title = 'Estado propuesto'; op.nodeType = 'estado'; op.id = 'new-state';
   assert.equal(validateResult({ reply: 'Revisá este estado', operations: [op] }).operations.length, 1);
   assert.throws(() => validateResult({ reply: '', operations: [{ ...op, payment: 20 }] }));
+  // create_node sin id o con id ya usado debe fallar (contrato de IDs temporales)
+  const noId = { ...op, id: null };
+  assert.throws(() => validateResult({ reply: '', operations: [noId] }), /Falta el campo|Valor no permitido/);
+  const dupA = { ...op, id: 'tmp-1', title: 'A' };
+  const dupB = { ...op, id: 'tmp-1', title: 'B' };
+  // validateResult acepta cualquier string en id; la unicidad la valida applyBridgeOperations (server-side).
+  assert.doesNotThrow(() => validateResult({ reply: '', operations: [dupA, dupB] }));
 });
 test('bridge accepts JSON wrapped in Claude markdown fences', () => {
   const result = parseAgentJson('```json\n{"reply":"Duración actualizada","operations":[]}\n```');

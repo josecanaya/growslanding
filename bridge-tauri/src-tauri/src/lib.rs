@@ -206,13 +206,22 @@ async fn poll_and_execute(
             "activity": "No se pudo completar"
         }),
     };
-    client
+    let response = client
         .post(format!("{}/api/bridge/worker", url.trim_end_matches('/')))
         .bearer_auth(&token)
         .json(&body)
         .send()
         .await
         .map_err(|e| e.to_string())?;
+    if !response.status().is_success() {
+        return Err(format!("server rechazó {}: HTTP {}", body["action"], response.status()));
+    }
+    let ack: serde_json::Value = response.json().await.map_err(|e| e.to_string())?;
+    if ack.get("ok").and_then(|v| v.as_bool()) == Some(false)
+        || ack.get("cancelled").and_then(|v| v.as_bool()) == Some(true)
+    {
+        eprintln!("[worker] el trabajo {} fue cancelado o perdió su reserva", job.id);
+    }
     Ok(())
 }
 

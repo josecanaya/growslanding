@@ -39,6 +39,7 @@ async function handleClick(e) {
   await render();
 }
 
+// No re-detectar al enfocar: en Windows abría PowerShell. Botón/refresh manual si hace falta.
 window.addEventListener('DOMContentLoaded', async () => {
   await render();
   try {
@@ -51,6 +52,3 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } catch (_) { /* sin config aún */ }
 });
-
-// Solo refrescar al volver a la ventana — no spamear detect_clis
-window.addEventListener('focus', () => { void render(); });

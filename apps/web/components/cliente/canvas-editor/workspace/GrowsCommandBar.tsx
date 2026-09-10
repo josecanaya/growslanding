@@ -156,6 +156,7 @@ export function GrowsCommandBar({obraId,breadcrumbItems,selectedIds,onClearSelec
       <a href="/api/bridge/download" download className="inline-block rounded-lg bg-slate-900 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700">
         Descargar conector local
       </a>
+      <p className="mt-2 text-[11px] text-amber-900 bg-amber-50 rounded-lg px-2 py-1.5">Si se abren ventanas de PowerShell al conectar: el instalador de GitHub (v0.1.0) está viejo. Usá el build local actualizado, no reinstales desde ese botón.</p>
       <details className="mt-2"><summary className="text-xs text-blue-800 cursor-pointer">Vas a ver una advertencia de Windows/Mac — es normal</summary>
         <p className="text-xs text-blue-800 mt-1">Windows: click en &quot;Más información&quot; → &quot;Ejecutar de todas formas&quot;.<br/>Mac: click derecho en el .dmg → &quot;Abrir&quot; → &quot;Abrir de todas formas&quot;.</p>
       </details>

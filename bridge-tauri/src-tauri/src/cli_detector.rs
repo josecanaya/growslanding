@@ -1,5 +1,5 @@
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Debug, Serialize, Clone)]
@@ -17,7 +17,7 @@ pub fn detect_all() -> Vec<CliStatus> {
 }
 
 fn detect_claude() -> CliStatus {
-    let bin = find_bin("claude", &claude_globs());
+    let bin = find_bin("claude", &claude_candidates());
     let (installed, logged_in, version) = probe_claude(&bin);
     CliStatus {
         id: "claude".into(),
@@ -30,7 +30,7 @@ fn detect_claude() -> CliStatus {
 }
 
 fn detect_codex() -> CliStatus {
-    let bin = find_bin("codex", &codex_globs());
+    let bin = find_bin("codex", &codex_candidates());
     let (installed, logged_in, version) = probe_codex(&bin);
     CliStatus {
         id: "openai".into(),
@@ -43,7 +43,7 @@ fn detect_codex() -> CliStatus {
 }
 
 fn detect_cursor() -> CliStatus {
-    let bin = find_bin("cursor-agent", &cursor_globs());
+    let bin = find_bin("cursor-agent", &cursor_candidates());
     let (installed, logged_in, version) = probe_cursor(&bin);
     CliStatus {
         id: "cursor".into(),
@@ -55,97 +55,160 @@ fn detect_cursor() -> CliStatus {
     }
 }
 
-fn find_bin(name: &str, globs: &[PathBuf]) -> Option<PathBuf> {
-    // Preferir .exe conocidos (sin consola) antes que shims npm.
-    for g in globs {
-        if g.exists() {
-            let ext = g.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
-            if ext == "exe" {
-                return Some(g.clone());
-            }
+/// Solo rutas a .exe reales. Nunca .ps1/.cmd: en Windows eso abre PowerShell.
+fn find_bin(name: &str, candidates: &[PathBuf]) -> Option<PathBuf> {
+    for c in candidates {
+        if let Some(exe) = as_exe(c) {
+            return Some(exe);
         }
     }
+    // which puede devolver .ps1; lo pelamos a .exe o lo descartamos.
     if let Ok(path) = which::which(name) {
-        // Preferir .cmd sobre .ps1 en Windows (ver bridge Node actual)
-        if path.extension().map(|e| e == "ps1").unwrap_or(false) {
-            let cmd = path.with_extension("cmd");
-            if cmd.exists() {
-                return Some(cmd);
-            }
+        if let Some(exe) = as_exe(&path) {
+            return Some(exe);
         }
-        return Some(path);
-    }
-    for g in globs {
-        if g.exists() {
-            return Some(g.clone());
+        if let Some(peeled) = peel_npm_shim(&path) {
+            return Some(peeled);
         }
     }
     None
 }
 
-fn claude_globs() -> Vec<PathBuf> {
-    let mut out = vec![];
-    if let Some(appdata) = std::env::var_os("APPDATA") {
-        let base = PathBuf::from(&appdata).join("Claude").join("claude-code");
-        if let Ok(entries) = std::fs::read_dir(&base) {
-            let mut versions: Vec<_> = entries
-                .filter_map(|e| e.ok())
-                .filter_map(|e| e.file_name().into_string().ok())
-                .filter(|n| n.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false))
-                .collect();
-            versions.sort_by(|a, b| b.cmp(a));
-            for v in versions {
-                out.push(base.join(&v).join("claude.exe"));
-            }
-        }
-        out.push(PathBuf::from(&appdata).join("npm").join("claude.cmd"));
+fn as_exe(path: &Path) -> Option<PathBuf> {
+    if !path.exists() {
+        return None;
     }
-    if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
-        let base = PathBuf::from(&localapp).join("Claude").join("claude-code");
-        if let Ok(entries) = std::fs::read_dir(&base) {
-            let mut versions: Vec<_> = entries
-                .filter_map(|e| e.ok())
-                .filter_map(|e| e.file_name().into_string().ok())
-                .filter(|n| n.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false))
-                .collect();
-            versions.sort_by(|a, b| b.cmp(a));
-            for v in versions {
-                out.push(base.join(&v).join("claude.exe"));
-            }
-        }
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if ext == "exe" {
+        return Some(path.to_path_buf());
     }
-    out
+    if ext == "cmd" || ext == "bat" || ext == "ps1" {
+        return peel_npm_shim(path);
+    }
+    // Sin extensión: aceptar solo si es archivo ejecutable existente (unix)
+    #[cfg(not(windows))]
+    {
+        return Some(path.to_path_buf());
+    }
+    #[cfg(windows)]
+    None
 }
 
-fn codex_globs() -> Vec<PathBuf> {
-    let mut out = vec![];
-    if let Some(appdata) = std::env::var_os("APPDATA") {
-        out.push(PathBuf::from(&appdata).join("npm").join("codex.cmd"));
-    }
-    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
-        out.push(PathBuf::from(&home).join(".local").join("bin").join("codex.exe"));
-        out.push(PathBuf::from(&home).join(".codex").join("bin").join("codex.exe"));
-    }
-    out
-}
-
-fn cursor_globs() -> Vec<PathBuf> {
-    let mut out = vec![];
-    if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
-        out.push(
-            PathBuf::from(&localapp)
-                .join("Programs")
-                .join("cursor")
-                .join("resources")
-                .join("app")
+fn peel_npm_shim(shim: &Path) -> Option<PathBuf> {
+    let parent = shim.parent()?;
+    let name = shim
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let guesses: Vec<PathBuf> = match name.as_str() {
+        "claude" => vec![
+            parent
+                .join("node_modules")
+                .join("@anthropic-ai")
+                .join("claude-code")
                 .join("bin")
-                .join("cursor-agent.cmd"),
+                .join("claude.exe"),
+        ],
+        "codex" => vec![
+            parent
+                .join("node_modules")
+                .join("@openai")
+                .join("codex")
+                .join("bin")
+                .join("codex.exe"),
+            parent
+                .join("node_modules")
+                .join("@openai")
+                .join("codex")
+                .join("codex.exe"),
+        ],
+        "cursor-agent" => vec![
+            shim.with_extension("exe"),
+            parent.join("cursor-agent.exe"),
+        ],
+        _ => vec![shim.with_extension("exe")],
+    };
+    guesses.into_iter().find(|p| p.exists())
+}
+
+fn claude_candidates() -> Vec<PathBuf> {
+    let mut out = vec![];
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        let appdata = PathBuf::from(appdata);
+        out.push(
+            appdata
+                .join("npm")
+                .join("node_modules")
+                .join("@anthropic-ai")
+                .join("claude-code")
+                .join("bin")
+                .join("claude.exe"),
+        );
+        let base = appdata.join("Claude").join("claude-code");
+        push_versioned_exes(&base, "claude.exe", &mut out);
+    }
+    if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
+        let base = PathBuf::from(localapp)
+            .join("Claude")
+            .join("claude-code");
+        push_versioned_exes(&base, "claude.exe", &mut out);
+    }
+    out
+}
+
+fn codex_candidates() -> Vec<PathBuf> {
+    let mut out = vec![];
+    if let Some(appdata) = std::env::var_os("APPDATA") {
+        let appdata = PathBuf::from(appdata);
+        out.push(
+            appdata
+                .join("npm")
+                .join("node_modules")
+                .join("@openai")
+                .join("codex")
+                .join("bin")
+                .join("codex.exe"),
         );
     }
-    if let Some(appdata) = std::env::var_os("APPDATA") {
-        out.push(PathBuf::from(&appdata).join("npm").join("cursor-agent.cmd"));
+    if let Some(home) = std::env::var_os("USERPROFILE").or_else(|| std::env::var_os("HOME")) {
+        let home = PathBuf::from(home);
+        out.push(home.join(".local").join("bin").join("codex.exe"));
+        out.push(home.join(".codex").join("bin").join("codex.exe"));
     }
     out
+}
+
+fn cursor_candidates() -> Vec<PathBuf> {
+    let mut out = vec![];
+    if let Some(localapp) = std::env::var_os("LOCALAPPDATA") {
+        let bin = PathBuf::from(localapp)
+            .join("Programs")
+            .join("cursor")
+            .join("resources")
+            .join("app")
+            .join("bin");
+        out.push(bin.join("cursor-agent.exe"));
+    }
+    out
+}
+
+fn push_versioned_exes(base: &Path, exe_name: &str, out: &mut Vec<PathBuf>) {
+    if let Ok(entries) = std::fs::read_dir(base) {
+        let mut versions: Vec<_> = entries
+            .filter_map(|e| e.ok())
+            .filter_map(|e| e.file_name().into_string().ok())
+            .filter(|n| n.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false))
+            .collect();
+        versions.sort_by(|a, b| b.cmp(a));
+        for v in versions {
+            out.push(base.join(v).join(exe_name));
+        }
+    }
 }
 
 fn probe_claude(bin: &Option<PathBuf>) -> (bool, bool, Option<String>) {
@@ -183,56 +246,13 @@ fn probe_cursor(bin: &Option<PathBuf>) -> (bool, bool, Option<String>) {
 }
 
 fn run(bin: &PathBuf, args: &[&str]) -> Option<String> {
-    // En Windows, lanzar .cmd/.bat directo aún puede flashar consola. Pasamos por
-    // cmd.exe /d /s /c con CREATE_NO_WINDOW. Nunca ejecutamos .ps1.
+    // Solo .exe: sin cmd.exe ni PowerShell de por medio.
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x08000000;
-        let ext = bin.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
-        let mut cmd = if ext == "ps1" {
-            let cmd_path = bin.with_extension("cmd");
-            let target = if cmd_path.exists() { cmd_path } else { bin.clone() };
-            let mut c = Command::new("cmd.exe");
-            let line = format!(
-                "\"{}\" {}",
-                target.display(),
-                args.iter()
-                    .map(|a| {
-                        if a.chars().any(|ch| ch.is_whitespace()) {
-                            format!("\"{a}\"")
-                        } else {
-                            a.to_string()
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            );
-            c.args(["/d", "/s", "/c"]).arg(line);
-            c
-        } else if ext == "cmd" || ext == "bat" {
-            let mut c = Command::new("cmd.exe");
-            let line = format!(
-                "\"{}\" {}",
-                bin.display(),
-                args.iter()
-                    .map(|a| {
-                        if a.chars().any(|ch| ch.is_whitespace()) {
-                            format!("\"{a}\"")
-                        } else {
-                            a.to_string()
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join(" ")
-            );
-            c.args(["/d", "/s", "/c"]).arg(line);
-            c
-        } else {
-            let mut c = Command::new(bin);
-            c.args(args);
-            c
-        };
+        let mut cmd = Command::new(bin);
+        cmd.args(args);
         cmd.creation_flags(CREATE_NO_WINDOW);
         let output = cmd.output().ok()?;
         if !output.status.success() && output.stdout.is_empty() {
@@ -263,9 +283,21 @@ mod tests {
         assert_eq!(all[2].id, "cursor");
         for cli in &all {
             if let Some(bin) = &cli.bin {
-                assert_ne!(bin.extension().and_then(|e| e.to_str()), Some("ps1"));
+                let ext = bin.extension().and_then(|e| e.to_str()).unwrap_or("");
+                assert!(
+                    ext.eq_ignore_ascii_case("exe") || cfg!(not(windows)),
+                    "bin debe ser .exe en Windows, got {:?}",
+                    bin
+                );
             }
         }
         eprintln!("{}", serde_json::to_string_pretty(&all).unwrap());
+    }
+
+    #[test]
+    fn peels_npm_claude_shim() {
+        let shim = PathBuf::from(r"C:\Users\fake\AppData\Roaming\npm\claude.ps1");
+        // sin archivo real → None; solo chequea que no paniquea
+        let _ = peel_npm_shim(&shim);
     }
 }

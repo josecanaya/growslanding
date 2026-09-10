@@ -18,8 +18,12 @@ struct AppState {
 }
 
 #[tauri::command]
-fn detect_clis() -> Vec<cli_detector::CliStatus> {
-    cli_detector::detect_all()
+fn detect_clis(state: tauri::State<'_, AppState>) -> Vec<cli_detector::CliStatus> {
+    let fresh = cli_detector::detect_all();
+    if let Ok(mut guard) = state.caps_cache.try_write() {
+        *guard = (std::time::Instant::now(), fresh.clone());
+    }
+    fresh
 }
 
 #[tauri::command]
@@ -49,6 +53,14 @@ async fn start_worker(app: tauri::AppHandle, state: tauri::State<'_, AppState>) 
     }
     *running = true;
     drop(running);
+
+    // Detectar CLIs una sola vez al conectar — no en cada claim.
+    {
+        let fresh = tokio::task::spawn_blocking(cli_detector::detect_all)
+            .await
+            .unwrap_or_else(|_| vec![]);
+        *state.caps_cache.write().await = (std::time::Instant::now(), fresh);
+    }
 
     let cfg = config::load(&app);
     if let (Some(url), Some(token)) = (cfg.url.clone(), cfg.token.clone()) {
@@ -93,12 +105,14 @@ async fn cached_caps(
 ) -> Vec<cli_detector::CliStatus> {
     {
         let guard = cache.read().await;
-        // Cachear aunque la lista esté "vacía" de logueados: evita re-probe cada 3s.
-        if guard.0.elapsed() < std::time::Duration::from_secs(60) {
+        // Reusar hasta 30 min. El sondeo en cada claim abría PowerShell vía shims npm.
+        if !guard.1.is_empty() && guard.0.elapsed() < std::time::Duration::from_secs(1800) {
             return guard.1.clone();
         }
     }
-    let fresh = cli_detector::detect_all();
+    let fresh = tokio::task::spawn_blocking(cli_detector::detect_all)
+        .await
+        .unwrap_or_default();
     *cache.write().await = (std::time::Instant::now(), fresh.clone());
     fresh
 }

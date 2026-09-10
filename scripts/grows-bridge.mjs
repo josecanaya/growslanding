@@ -232,9 +232,36 @@ async function discoverWindowsBins(id) {
 
 let capabilitiesCache = { at: 0, value: null };
 
+function resolveWindowsExe(bin, id) {
+  if (!IS_WINDOWS || typeof bin !== 'string') return bin;
+  let resolved = bin;
+  if (resolved.toLowerCase().endsWith('.ps1')) resolved = `${resolved.slice(0, -4)}.cmd`;
+  if (resolved.toLowerCase().endsWith('.exe')) return resolved;
+  const appData = process.env.APPDATA;
+  if (!appData) return resolved;
+  const guesses = {
+    claude: path.join(appData, 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe'),
+    openai: path.join(appData, 'npm', 'node_modules', '@openai', 'codex', 'bin', 'codex.exe'),
+  };
+  const guess = guesses[id];
+  if (guess && existsSync(guess)) return guess;
+  // Si el shim es .../npm/claude.cmd → .../npm/node_modules/.../claude.exe
+  if (resolved.toLowerCase().endsWith('.cmd') || resolved.toLowerCase().endsWith('.bat')) {
+    const parent = path.dirname(resolved);
+    const stem = path.basename(resolved, path.extname(resolved)).toLowerCase();
+    const fromShim = stem === 'claude'
+      ? path.join(parent, 'node_modules', '@anthropic-ai', 'claude-code', 'bin', 'claude.exe')
+      : stem === 'codex'
+        ? path.join(parent, 'node_modules', '@openai', 'codex', 'bin', 'codex.exe')
+        : null;
+    if (fromShim && existsSync(fromShim)) return fromShim;
+  }
+  return resolved;
+}
+
 export async function detectCapabilities(config = {}, { force = false } = {}) {
-  // Re-detectar cada poll abría docenas de consolas en Windows. Cache 60s.
-  if (!force && capabilitiesCache.value && Date.now() - capabilitiesCache.at < 60_000) {
+  // Re-detectar cada poll abría PowerShell (claude.ps1). Cache 30 min.
+  if (!force && capabilitiesCache.value && Date.now() - capabilitiesCache.at < 30 * 60_000) {
     return capabilitiesCache.value;
   }
   const capabilities = [];
@@ -244,10 +271,13 @@ export async function detectCapabilities(config = {}, { force = false } = {}) {
     if (config[definition.binKey]) candidates.push(config[definition.binKey]);
     candidates.push(...await discoverWindowsBins(id));
     candidates.push(definition.fallbackBin);
-    // Un .ps1 vía shell ABRE el editor; npm siempre crea el .cmd hermano.
-    const normalized = candidates.map((bin) => (typeof bin === 'string' && bin.toLowerCase().endsWith('.ps1') ? `${bin.slice(0, -4)}.cmd` : bin));
+    const normalized = [...new Set(candidates.map((bin) => resolveWindowsExe(bin, id)))];
     let resolved = null;
-    for (const bin of [...new Set(normalized)]) { if (await probe(bin, args)) { resolved = bin; break; } }
+    for (const bin of normalized) {
+      // Nunca probear .ps1
+      if (typeof bin === 'string' && bin.toLowerCase().endsWith('.ps1')) continue;
+      if (await probe(bin, args)) { resolved = bin; break; }
+    }
     if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved });
   }
   capabilitiesCache = { at: Date.now(), value: capabilities };

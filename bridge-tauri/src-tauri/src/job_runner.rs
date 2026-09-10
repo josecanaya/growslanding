@@ -174,8 +174,7 @@ async fn execute_inner(
         .stderr(std::process::Stdio::piped());
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW — CommandExt via tokio
     }
 
     let mut child = cmd

@@ -13,7 +13,7 @@ pub fn install(id: &str) -> InstallResult {
         if cli_detector::resolve_cursor_node_entry().is_some() {
             return InstallResult {
                 success: true,
-                message: "Cursor CLI ya está instalado en esta PC. Cerrá este mensaje: debería pasar a Listo / Login.".into(),
+                message: "Cursor CLI ya está instalado. Tocá Login (no escribas 'login' a mano).".into(),
             };
         }
         return InstallResult {
@@ -78,33 +78,34 @@ pub fn open_login(id: &str, bin: &std::path::Path) -> InstallResult {
             }
         }
     };
+
+    // No usar `cmd /C start ...`: en Windows la primera comilla es el TÍTULO de la ventana
+    // y rompe rutas (error: '"C:\...\node.exe"' is not recognized).
     #[cfg(windows)]
     let result = {
-        let mut cmdline = format!("\"{}\"", launch_bin.display());
-        for a in &args {
-            cmdline.push(' ');
-            if a.chars().any(|c| c.is_whitespace()) {
-                cmdline.push('"');
-                cmdline.push_str(a);
-                cmdline.push('"');
-            } else {
-                cmdline.push_str(a);
-            }
-        }
-        Command::new("cmd")
-            .args(["/C", "start", "cmd", "/K", &cmdline])
+        use std::os::windows::process::CommandExt;
+        const CREATE_NEW_CONSOLE: u32 = 0x00000010;
+        Command::new(&launch_bin)
+            .args(&args)
+            .creation_flags(CREATE_NEW_CONSOLE)
             .spawn()
     };
     #[cfg(not(windows))]
     let result = Command::new(&launch_bin).args(&args).spawn();
+
     match result {
         Ok(_) => InstallResult {
             success: true,
-            message: "Terminal abierta. Seguí las instrucciones y volvé acá cuando termines.".into(),
+            message: if id == "cursor" {
+                "Se abrió el login de Cursor. Completá el login en el navegador; cuando termine, volvé a Grows Agent (debería decir Listo)."
+            } else {
+                "Terminal abierta. Seguí las instrucciones y volvé acá cuando termines."
+            }
+            .into(),
         },
         Err(e) => InstallResult {
             success: false,
-            message: format!("No se pudo abrir la terminal: {}", e),
+            message: format!("No se pudo abrir el login: {}", e),
         },
     }
 }

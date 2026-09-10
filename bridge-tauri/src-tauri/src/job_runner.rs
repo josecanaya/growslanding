@@ -76,7 +76,7 @@ async fn execute_inner(
         &job.recent_thread,
     );
     let user_prompt = format!(
-        "Regla y esquema en AGENTS.md del cwd.\n\nPEDIDO:\n{}\n\nNIVEL VISIBLE DE LA OBRA:\n{}",
+        "Regla y esquema en AGENTS.md del cwd.\n\nIMPORTANTE: no uses herramientas ni leas archivos. Respondé SOLO con el JSON {{\"reply\":\"...\",\"operations\":[...]}}.\n\nPEDIDO:\n{}\n\nNIVEL VISIBLE DE LA OBRA:\n{}",
         prompt_slice,
         serde_json::to_string(&compact).unwrap_or_default()
     );
@@ -98,6 +98,9 @@ async fn execute_inner(
             .collect(),
         "claude" => [
             "-p",
+            "--bare",
+            "--tools",
+            "",
             "--model",
             model,
             "--output-format",
@@ -235,9 +238,10 @@ async fn execute_inner(
 
     let stdout_buf = stdout_task.await.unwrap_or_default();
     let stderr_buf = stderr_task.await.unwrap_or_default();
-    if !exit_status.success() {
+    let stdout = String::from_utf8_lossy(&stdout_buf);
+    let parsed_ok = extract_bridge_payload(&stdout);
+    if !exit_status.success() && parsed_ok.is_none() {
         let stderr = String::from_utf8_lossy(&stderr_buf);
-        let stdout = String::from_utf8_lossy(&stdout_buf);
         let hint = {
             let from_err = stderr
                 .lines()
@@ -269,38 +273,24 @@ async fn execute_inner(
         } else {
             hint
         };
+        let extra = if stdout.contains("tool_use") {
+            " Claude intentó usar herramientas en vez de devolver solo el JSON. Reintentá."
+        } else {
+            ""
+        };
         return Err(format!(
-            "{} terminó con código {}{}",
+            "{} terminó con código {}{}{}",
             cap.label,
             exit_status.code().unwrap_or(-1),
             if hint.is_empty() {
                 String::new()
             } else {
                 format!(". {}", hint)
-            }
+            },
+            extra
         ));
     }
-    let stdout = String::from_utf8_lossy(&stdout_buf);
-    let parsed = parse_agent_json(&stdout).ok_or_else(|| "El agente no devolvió JSON válido".to_string())?;
-    let inner = if let Some(result) = parsed.get("result") {
-        match result {
-            serde_json::Value::String(s) => parse_agent_json(s).unwrap_or(parsed.clone()),
-            other => other.clone(),
-        }
-    } else {
-        parsed
-    };
-    let reply = inner
-        .get("reply")
-        .and_then(|v| v.as_str())
-        .unwrap_or("")
-        .to_string();
-    let ops = inner
-        .get("operations")
-        .and_then(|v| v.as_array())
-        .cloned()
-        .unwrap_or_default();
-    let for_check = serde_json::json!({ "reply": reply, "operations": ops });
+    let for_check = parsed_ok.ok_or_else(|| "El agente no devolvió JSON válido".to_string())?;
     crate::validate::validate_result(&for_check)
         .map_err(|e| format!("Respuesta del agente inválida: {}", e))?;
     let ops = for_check
@@ -317,6 +307,22 @@ async fn execute_inner(
         reply,
         operations: ops,
     })
+}
+
+/// Extrae {reply, operations} del stdout del CLI (Claude envuelve en result).
+fn extract_bridge_payload(stdout: &str) -> Option<serde_json::Value> {
+    let parsed = parse_agent_json(stdout)?;
+    let inner = if let Some(result) = parsed.get("result") {
+        match result {
+            serde_json::Value::String(s) => parse_agent_json(s).unwrap_or(parsed.clone()),
+            other => other.clone(),
+        }
+    } else {
+        parsed
+    };
+    let reply = inner.get("reply").and_then(|v| v.as_str())?;
+    let ops = inner.get("operations").and_then(|v| v.as_array())?;
+    Some(serde_json::json!({ "reply": reply, "operations": ops }))
 }
 
 fn parse_agent_json(text: &str) -> Option<serde_json::Value> {

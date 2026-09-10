@@ -390,7 +390,7 @@ ${JSON.stringify(compactContext)}`;
       const args = provider === 'openai'
         ? ['exec', '-m', model, '-c', 'model_reasoning_effort="low"', '--ignore-user-config', '--ephemeral', '--sandbox', 'read-only', '--skip-git-repo-check', '--json', '--color', 'never', '--output-schema', schemaFile, '-o', outputFile, '-']
         : provider === 'claude'
-          ? ['-p', '--model', model, '--output-format', 'json', '--permission-mode', 'plan', '--max-turns', '1']
+          ? ['-p', '--bare', '--tools', '', '--model', model, '--output-format', 'json', '--permission-mode', 'plan', '--max-turns', '1']
           : ['-p', '--model', model, '--output-format', 'json'];
       const launchArgs = Array.isArray(capability.prefixArgs) ? [...capability.prefixArgs, ...args] : args;
       child = spawnCli(capability.bin, launchArgs, {

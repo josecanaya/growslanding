@@ -40,7 +40,7 @@ pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult,
         .await
         .map_err(|e| e.to_string())?;
 
-    let prompt_slice = &job.prompt[..job.prompt.len().min(4000)];
+    let prompt_slice = truncate_utf8(&job.prompt, 4000);
     let user_prompt = format!(
         "Regla y esquema en AGENTS.md del cwd.\n\nPEDIDO:\n{}\n\nNIVEL VISIBLE DE LA OBRA:\n{}",
         prompt_slice,
@@ -152,6 +152,19 @@ fn parse_agent_json(text: &str) -> Option<serde_json::Value> {
     serde_json::from_str(&trimmed[start..=end]).ok()
 }
 
+/// Trunca un &str a como máximo `max_bytes` bytes, respetando fronteras UTF-8.
+/// Nunca panickea con caracteres multibyte (ñ, á, emoji, etc.).
+fn truncate_utf8(s: &str, max_bytes: usize) -> &str {
+    if s.len() <= max_bytes {
+        return s;
+    }
+    let mut end = max_bytes;
+    while end > 0 && !s.is_char_boundary(end) {
+        end -= 1;
+    }
+    &s[..end]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,5 +173,19 @@ mod tests {
     fn parses_fenced_json() {
         let v = parse_agent_json("```json\n{\"reply\":\"ok\",\"operations\":[]}\n```").unwrap();
         assert_eq!(v["reply"], "ok");
+    }
+
+    #[test]
+    fn truncate_utf8_never_panics_on_spanish() {
+        let s = "ñ".repeat(5000); // cada 'ñ' son 2 bytes
+        let t = truncate_utf8(&s, 4000);
+        assert!(t.len() <= 4000);
+        assert!(t.is_char_boundary(t.len()));
+        assert!(std::str::from_utf8(t.as_bytes()).is_ok());
+    }
+
+    #[test]
+    fn truncate_utf8_short_string_untouched() {
+        assert_eq!(truncate_utf8("hola", 100), "hola");
     }
 }

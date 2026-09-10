@@ -65,7 +65,7 @@ export function applyBridgeOperations(canvas: CanvasMultinivelPersisted, result:
     const seen = new Set([n.id]); let parent=n.parentId;
     while(parent) { if(seen.has(parent) || !byId.has(parent)) throw new Error('La contención contiene un ciclo o cuadro inexistente.'); seen.add(parent);parent=byId.get(parent)!.parentId; }
     n.level = seen.size;
-    if (n.level > 5) throw new Error('El canvas admite hasta cinco niveles de contención.');
+    if (n.level > 15) throw new Error('El canvas admite hasta 15 niveles de contención anidada.');
     if(newTransforms.has(n.id) && ( !n.fromNodeId || !n.toNodeId || byId.get(n.fromNodeId)?.type!=='estado' || byId.get(n.toNodeId)?.type!=='estado' || n.fromNodeId === n.toNodeId)) throw new Error('Una transformación necesita estados A y B existentes.');
   }
   for (const n of next.nodes) if (removedIds.has(n.fromNodeId ?? '') || removedIds.has(n.toNodeId ?? '')) throw new Error('No se puede eliminar un estado usado por una transformación.');

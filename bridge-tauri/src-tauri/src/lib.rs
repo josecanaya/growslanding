@@ -1,6 +1,7 @@
 mod cli_detector;
 mod cli_installer;
 mod config;
+mod context;
 mod job_runner;
 mod pairing;
 mod prompt;

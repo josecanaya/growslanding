@@ -41,10 +41,11 @@ pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult,
         .map_err(|e| e.to_string())?;
 
     let prompt_slice = truncate_utf8(&job.prompt, 4000);
+    let compact = crate::context::compact(&job.canvas, &job.scope_path_ids, &job.selection_ids);
     let user_prompt = format!(
         "Regla y esquema en AGENTS.md del cwd.\n\nPEDIDO:\n{}\n\nNIVEL VISIBLE DE LA OBRA:\n{}",
         prompt_slice,
-        serde_json::to_string(&job.canvas).unwrap_or_default()
+        serde_json::to_string(&compact).unwrap_or_default()
     );
 
     let model = if job.model == "automatico" || job.model.is_empty() {

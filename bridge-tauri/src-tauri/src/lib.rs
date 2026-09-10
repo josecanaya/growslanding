@@ -148,7 +148,48 @@ async fn poll_and_execute(
         .into();
     let job: job_runner::Job = serde_json::from_value(job_val.clone()).map_err(|e| e.to_string())?;
 
-    let result = job_runner::execute(&job, &ready).await;
+    let (activity_tx, mut activity_rx) = tokio::sync::mpsc::channel::<String>(16);
+    let (cancel_tx, cancel_rx) = tokio::sync::watch::channel::<bool>(false);
+
+    let hb_url = format!("{}/api/bridge/worker", url.trim_end_matches('/'));
+    let hb_token = token.clone();
+    let hb_job_id = job.id.clone();
+    let hb_lease = lease.clone();
+    let hb_client = client.clone();
+    let cancel_tx_hb = cancel_tx.clone();
+    let hb_task = tokio::spawn(async move {
+        let mut last_activity = String::from("Procesando");
+        let mut ticker = tokio::time::interval(std::time::Duration::from_secs(10));
+        loop {
+            tokio::select! {
+                Some(a) = activity_rx.recv() => { last_activity = a; }
+                _ = ticker.tick() => {
+                    let body = serde_json::json!({
+                        "action": "heartbeat",
+                        "jobId": hb_job_id,
+                        "leaseToken": hb_lease,
+                        "activity": last_activity,
+                    });
+                    match hb_client.post(&hb_url).bearer_auth(&hb_token).json(&body).send().await {
+                        Ok(resp) => {
+                            if let Ok(json) = resp.json::<serde_json::Value>().await {
+                                if json.get("cancelled").and_then(|v| v.as_bool()) == Some(true) {
+                                    let _ = cancel_tx_hb.send(true);
+                                    break;
+                                }
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+                else => break,
+            }
+        }
+    });
+
+    let result = job_runner::execute(&job, &ready, activity_tx, cancel_rx).await;
+    hb_task.abort();
+
     let body = match result {
         Ok(r) => serde_json::json!({
             "action": "complete",

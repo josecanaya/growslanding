@@ -1,7 +1,7 @@
 use crate::cli_detector::CliStatus;
 use crate::prompt;
 use serde::{Deserialize, Serialize};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::process::Command;
 
 #[derive(Debug, Deserialize)]
@@ -23,7 +23,16 @@ pub struct JobResult {
     pub operations: Vec<serde_json::Value>,
 }
 
-pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult, String> {
+pub async fn execute(
+    job: &Job,
+    capabilities: &[CliStatus],
+    activity_tx: tokio::sync::mpsc::Sender<String>,
+    mut cancel_rx: tokio::sync::watch::Receiver<bool>,
+) -> Result<JobResult, String> {
+    if *cancel_rx.borrow() {
+        return Err("Trabajo cancelado".into());
+    }
+
     let provider = if job.provider == "local" {
         "openai"
     } else {
@@ -103,13 +112,59 @@ pub async fn execute(job: &Job, capabilities: &[CliStatus]) -> Result<JobResult,
     if let Some(mut stdin) = child.stdin.take() {
         stdin.write_all(user_prompt.as_bytes()).await.ok();
     }
-    let output = child.wait_with_output().await.map_err(|e| e.to_string())?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let tail = stderr.lines().rev().take(2).collect::<Vec<_>>().join(" ");
-        return Err(format!("{} exit={:?}. {}", cap.label, output.status.code(), tail));
+
+    let activity = format!(
+        "{} · {}: analizando {} cuadros y {} relaciones",
+        cap.label,
+        model,
+        compact.canvas.nodes.len(),
+        compact.canvas.edges.len()
+    );
+    let _ = activity_tx.send(activity.clone()).await;
+
+    let mut stdout_stream = child.stdout.take().ok_or("sin stdout")?;
+    let mut stderr_stream = child.stderr.take().ok_or("sin stderr")?;
+    let stdout_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        stdout_stream.read_to_end(&mut buf).await.ok();
+        buf
+    });
+    let stderr_task = tokio::spawn(async move {
+        let mut buf = Vec::new();
+        stderr_stream.read_to_end(&mut buf).await.ok();
+        buf
+    });
+
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
+    interval.tick().await;
+    let exit_status;
+    loop {
+        tokio::select! {
+            biased;
+            _ = cancel_rx.changed() => {
+                if *cancel_rx.borrow() {
+                    let _ = child.kill().await;
+                    return Err("Trabajo cancelado".into());
+                }
+            }
+            _ = interval.tick() => {
+                let _ = activity_tx.send(activity.clone()).await;
+            }
+            status = child.wait() => {
+                exit_status = status.map_err(|e| e.to_string())?;
+                break;
+            }
+        }
     }
-    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let stdout_buf = stdout_task.await.unwrap_or_default();
+    let stderr_buf = stderr_task.await.unwrap_or_default();
+    if !exit_status.success() {
+        let stderr = String::from_utf8_lossy(&stderr_buf);
+        let tail = stderr.lines().rev().take(2).collect::<Vec<_>>().join(" ");
+        return Err(format!("{} exit={:?}. {}", cap.label, exit_status.code(), tail));
+    }
+    let stdout = String::from_utf8_lossy(&stdout_buf);
     let parsed = parse_agent_json(&stdout).ok_or_else(|| "El agente no devolvió JSON válido".to_string())?;
     let inner = if let Some(result) = parsed.get("result") {
         match result {
@@ -156,7 +211,6 @@ fn parse_agent_json(text: &str) -> Option<serde_json::Value> {
 }
 
 /// Trunca un &str a como máximo `max_bytes` bytes, respetando fronteras UTF-8.
-/// Nunca panickea con caracteres multibyte (ñ, á, emoji, etc.).
 fn truncate_utf8(s: &str, max_bytes: usize) -> &str {
     if s.len() <= max_bytes {
         return s;
@@ -180,7 +234,7 @@ mod tests {
 
     #[test]
     fn truncate_utf8_never_panics_on_spanish() {
-        let s = "ñ".repeat(5000); // cada 'ñ' son 2 bytes
+        let s = "ñ".repeat(5000);
         let t = truncate_utf8(&s, 4000);
         assert!(t.len() <= 4000);
         assert!(t.is_char_boundary(t.len()));
@@ -190,5 +244,24 @@ mod tests {
     #[test]
     fn truncate_utf8_short_string_untouched() {
         assert_eq!(truncate_utf8("hola", 100), "hola");
+    }
+
+    #[tokio::test]
+    async fn execute_respects_cancellation() {
+        let job = Job {
+            id: "j".into(),
+            prompt: "x".into(),
+            canvas: serde_json::json!({}),
+            scope_path_ids: vec![],
+            selection_ids: vec![],
+            provider: "openai".into(),
+            model: "auto".into(),
+        };
+        let (activity_tx, _) = tokio::sync::mpsc::channel(1);
+        let (_cancel_tx, cancel_rx) = tokio::sync::watch::channel(true);
+        let result = execute(&job, &[], activity_tx, cancel_rx).await;
+        assert!(result.is_err());
+        let msg = result.unwrap_err();
+        assert!(msg.contains("cancelado") || msg.contains("no está listo"));
     }
 }

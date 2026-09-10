@@ -201,6 +201,19 @@ async fn execute_inner(
         .and_then(|v| v.as_array())
         .cloned()
         .unwrap_or_default();
+    let for_check = serde_json::json!({ "reply": reply, "operations": ops });
+    crate::validate::validate_result(&for_check)
+        .map_err(|e| format!("Respuesta del agente inválida: {}", e))?;
+    let ops = for_check
+        .get("operations")
+        .and_then(|v| v.as_array())
+        .cloned()
+        .unwrap_or_default();
+    let reply = for_check
+        .get("reply")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
     Ok(JobResult {
         reply,
         operations: ops,

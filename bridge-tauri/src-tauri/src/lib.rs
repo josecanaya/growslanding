@@ -6,6 +6,7 @@ mod context;
 mod job_runner;
 mod pairing;
 mod prompt;
+mod validate;
 
 use std::sync::Arc;
 use tauri_plugin_deep_link::DeepLinkExt;

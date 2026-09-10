@@ -97,26 +97,33 @@ async fn execute_inner(
             .map(String::from)
             .collect(),
         "claude" => [
+            // Sin --bare/--tools "" (provocaba 0 tokens). bypassPermissions evita prompts
+            // en el cwd temporal; el contrato pide solo JSON sin tools.
             "-p",
-            "--bare",
-            "--tools",
-            "",
             "--model",
             model,
             "--output-format",
             "json",
             "--permission-mode",
-            "plan",
+            "bypassPermissions",
             "--max-turns",
             "1",
         ]
         .into_iter()
         .map(String::from)
         .collect(),
-        "cursor" => ["-p", "--model", model, "--output-format", "json"]
-            .into_iter()
-            .map(String::from)
-            .collect(),
+        "cursor" => [
+            "-p",
+            "--trust",
+            "--force",
+            "--model",
+            model,
+            "--output-format",
+            "json",
+        ]
+        .into_iter()
+        .map(String::from)
+        .collect(),
         _ => return Err(format!("Proveedor desconocido: {}", provider)),
     };
     if !cap.prefix_args.is_empty() {
@@ -273,8 +280,10 @@ async fn execute_inner(
         } else {
             hint
         };
-        let extra = if stdout.contains("tool_use") {
+        let extra = if stdout.contains("\"stop_reason\":\"tool_use\"") || stdout.contains("tool_use") {
             " Claude intentó usar herramientas en vez de devolver solo el JSON. Reintentá."
+        } else if stdout.contains("\"output_tokens\":0") || stdout.contains("\"input_tokens\":0") {
+            " Claude no generó respuesta (posible flag inválido o trust del cwd). Reintentá."
         } else {
             ""
         };

@@ -382,6 +382,8 @@ export async function executeJob(job, { capabilities, heartbeat, timeoutMs = 600
     return await new Promise((resolve, reject) => {
       const prompt = `Regla y esquema en AGENTS.md del cwd.
 
+IMPORTANTE: no uses herramientas ni leas archivos. Respondé SOLO con el JSON {"reply":"...","operations":[...]}.
+
 PEDIDO:
 ${String(job.prompt).slice(0, 4000)}
 
@@ -390,8 +392,8 @@ ${JSON.stringify(compactContext)}`;
       const args = provider === 'openai'
         ? ['exec', '-m', model, '-c', 'model_reasoning_effort="low"', '--ignore-user-config', '--ephemeral', '--sandbox', 'read-only', '--skip-git-repo-check', '--json', '--color', 'never', '--output-schema', schemaFile, '-o', outputFile, '-']
         : provider === 'claude'
-          ? ['-p', '--bare', '--tools', '', '--model', model, '--output-format', 'json', '--permission-mode', 'plan', '--max-turns', '1']
-          : ['-p', '--model', model, '--output-format', 'json'];
+          ? ['-p', '--model', model, '--output-format', 'json', '--permission-mode', 'bypassPermissions', '--max-turns', '1']
+          : ['-p', '--trust', '--force', '--model', model, '--output-format', 'json'];
       const launchArgs = Array.isArray(capability.prefixArgs) ? [...capability.prefixArgs, ...args] : args;
       child = spawnCli(capability.bin, launchArgs, {
         cwd: directory, windowsHide: true, env: childEnvironment(), stdio: ['pipe', 'pipe', 'pipe'],

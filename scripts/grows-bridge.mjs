@@ -13,11 +13,18 @@ function shellQuote(value) {
   return /[\s"&|<>^()%!]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-/** On Windows npm CLIs (claude, codex, cursor-agent) are .cmd shims that spawn cannot
- * resolve with shell:false; routing through the shell lets PATHEXT find them. */
+/** On Windows npm CLIs are .cmd shims. Never use shell:true (abre PowerShell/CMD a
+ * pantalla). Invocamos cmd.exe /d /s /c con windowsHide — sin flash de consola. */
 function spawnCli(bin, args, options = {}) {
-  if (IS_WINDOWS) return spawn(shellQuote(bin), args.map(shellQuote), { ...options, shell: true });
-  return spawn(bin, args, { ...options, shell: false });
+  if (!IS_WINDOWS) return spawn(bin, args, { ...options, shell: false });
+  let resolved = String(bin);
+  if (resolved.toLowerCase().endsWith('.ps1')) resolved = `${resolved.slice(0, -4)}.cmd`;
+  const cmdline = [shellQuote(resolved), ...args.map(shellQuote)].join(' ');
+  return spawn('cmd.exe', ['/d', '/s', '/c', cmdline], {
+    ...options,
+    shell: false,
+    windowsHide: true,
+  });
 }
 
 const nullableString = { type: ['string', 'null'] };
@@ -223,21 +230,27 @@ async function discoverWindowsBins(id) {
   return out;
 }
 
-export async function detectCapabilities(config = {}) {
+let capabilitiesCache = { at: 0, value: null };
+
+export async function detectCapabilities(config = {}, { force = false } = {}) {
+  // Re-detectar cada poll abría docenas de consolas en Windows. Cache 60s.
+  if (!force && capabilitiesCache.value && Date.now() - capabilitiesCache.at < 60_000) {
+    return capabilitiesCache.value;
+  }
   const capabilities = [];
   for (const [id, definition] of Object.entries(PROVIDERS)) {
     const args = id === 'claude' ? ['auth', 'status'] : id === 'openai' ? ['login', 'status'] : ['--version'];
     const candidates = [];
     if (config[definition.binKey]) candidates.push(config[definition.binKey]);
-    candidates.push(definition.fallbackBin);
     candidates.push(...await discoverWindowsBins(id));
-    // Un .ps1 ejecutado via cmd (shell:true) ABRE el archivo en el editor en vez de
-    // correrlo; npm siempre crea el .cmd hermano, así que lo usamos en su lugar.
+    candidates.push(definition.fallbackBin);
+    // Un .ps1 vía shell ABRE el editor; npm siempre crea el .cmd hermano.
     const normalized = candidates.map((bin) => (typeof bin === 'string' && bin.toLowerCase().endsWith('.ps1') ? `${bin.slice(0, -4)}.cmd` : bin));
     let resolved = null;
     for (const bin of [...new Set(normalized)]) { if (await probe(bin, args)) { resolved = bin; break; } }
     if (resolved) capabilities.push({ id, label: definition.label, models: config.models?.[id] ?? definition.models, limitDescription: definition.limitDescription, bin: resolved });
   }
+  capabilitiesCache = { at: Date.now(), value: capabilities };
   return capabilities;
 }
 

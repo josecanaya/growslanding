@@ -117,9 +117,56 @@ async fn execute_inner(
         _ => return Err(format!("Proveedor desconocido: {}", provider)),
     };
 
-    let mut cmd = Command::new(bin);
-    cmd.args(&args)
-        .current_dir(temp_dir.path())
+    let mut cmd = {
+        #[cfg(windows)]
+        {
+            let ext = bin
+                .extension()
+                .and_then(|e| e.to_str())
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            if ext == "cmd" || ext == "bat" || ext == "ps1" {
+                let target = if ext == "ps1" {
+                    let cmd_path = bin.with_extension("cmd");
+                    if cmd_path.exists() {
+                        cmd_path
+                    } else {
+                        bin.clone()
+                    }
+                } else {
+                    bin.clone()
+                };
+                let line = format!(
+                    "\"{}\" {}",
+                    target.display(),
+                    args.iter()
+                        .map(|a| {
+                            if a.chars().any(|ch| ch.is_whitespace()) {
+                                format!("\"{a}\"")
+                            } else {
+                                a.clone()
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                );
+                let mut c = Command::new("cmd.exe");
+                c.args(["/d", "/s", "/c"]).arg(line);
+                c
+            } else {
+                let mut c = Command::new(bin);
+                c.args(&args);
+                c
+            }
+        }
+        #[cfg(not(windows))]
+        {
+            let mut c = Command::new(bin);
+            c.args(&args);
+            c
+        }
+    };
+    cmd.current_dir(temp_dir.path())
         .env_clear()
         .envs(crate::child_env::safe_env())
         .stdin(std::process::Stdio::piped())
@@ -127,6 +174,7 @@ async fn execute_inner(
         .stderr(std::process::Stdio::piped());
     #[cfg(windows)]
     {
+        use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
     }
 

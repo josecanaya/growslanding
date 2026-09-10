@@ -56,6 +56,15 @@ fn detect_cursor() -> CliStatus {
 }
 
 fn find_bin(name: &str, globs: &[PathBuf]) -> Option<PathBuf> {
+    // Preferir .exe conocidos (sin consola) antes que shims npm.
+    for g in globs {
+        if g.exists() {
+            let ext = g.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+            if ext == "exe" {
+                return Some(g.clone());
+            }
+        }
+    }
     if let Ok(path) = which::which(name) {
         // Preferir .cmd sobre .ps1 en Windows (ver bridge Node actual)
         if path.extension().map(|e| e == "ps1").unwrap_or(false) {
@@ -174,18 +183,71 @@ fn probe_cursor(bin: &Option<PathBuf>) -> (bool, bool, Option<String>) {
 }
 
 fn run(bin: &PathBuf, args: &[&str]) -> Option<String> {
-    let mut cmd = Command::new(bin);
-    cmd.args(args);
+    // En Windows, lanzar .cmd/.bat directo aún puede flashar consola. Pasamos por
+    // cmd.exe /d /s /c con CREATE_NO_WINDOW. Nunca ejecutamos .ps1.
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW — evita flash de terminal
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let ext = bin.extension().and_then(|e| e.to_str()).unwrap_or("").to_ascii_lowercase();
+        let mut cmd = if ext == "ps1" {
+            let cmd_path = bin.with_extension("cmd");
+            let target = if cmd_path.exists() { cmd_path } else { bin.clone() };
+            let mut c = Command::new("cmd.exe");
+            let line = format!(
+                "\"{}\" {}",
+                target.display(),
+                args.iter()
+                    .map(|a| {
+                        if a.chars().any(|ch| ch.is_whitespace()) {
+                            format!("\"{a}\"")
+                        } else {
+                            a.to_string()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
+            c.args(["/d", "/s", "/c"]).arg(line);
+            c
+        } else if ext == "cmd" || ext == "bat" {
+            let mut c = Command::new("cmd.exe");
+            let line = format!(
+                "\"{}\" {}",
+                bin.display(),
+                args.iter()
+                    .map(|a| {
+                        if a.chars().any(|ch| ch.is_whitespace()) {
+                            format!("\"{a}\"")
+                        } else {
+                            a.to_string()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            );
+            c.args(["/d", "/s", "/c"]).arg(line);
+            c
+        } else {
+            let mut c = Command::new(bin);
+            c.args(args);
+            c
+        };
+        cmd.creation_flags(CREATE_NO_WINDOW);
+        let output = cmd.output().ok()?;
+        if !output.status.success() && output.stdout.is_empty() {
+            return None;
+        }
+        return Some(String::from_utf8_lossy(&output.stdout).to_string());
     }
-    let output = cmd.output().ok()?;
-    if !output.status.success() && output.stdout.is_empty() {
-        return None;
+    #[cfg(not(windows))]
+    {
+        let output = Command::new(bin).args(args).output().ok()?;
+        if !output.status.success() && output.stdout.is_empty() {
+            return None;
+        }
+        Some(String::from_utf8_lossy(&output.stdout).to_string())
     }
-    Some(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
 #[cfg(test)]

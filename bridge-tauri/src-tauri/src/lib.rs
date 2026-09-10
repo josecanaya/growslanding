@@ -93,7 +93,8 @@ async fn cached_caps(
 ) -> Vec<cli_detector::CliStatus> {
     {
         let guard = cache.read().await;
-        if guard.0.elapsed() < std::time::Duration::from_secs(60) && !guard.1.is_empty() {
+        // Cachear aunque la lista esté "vacía" de logueados: evita re-probe cada 3s.
+        if guard.0.elapsed() < std::time::Duration::from_secs(60) {
             return guard.1.clone();
         }
     }

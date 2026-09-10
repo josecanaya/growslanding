@@ -9,6 +9,8 @@ pub struct CompactContext {
     pub scope_path_ids: Vec<String>,
     #[serde(rename = "selectionIds")]
     pub selection_ids: Vec<String>,
+    #[serde(rename = "recentThread", skip_serializing_if = "Vec::is_empty")]
+    pub recent_thread: Vec<Value>,
     pub canvas: CompactCanvas,
 }
 
@@ -53,7 +55,12 @@ pub struct CompactEdge {
 }
 
 /// Portada de compactJobContext (grows-bridge.mjs): scope + selección + referencias.
-pub fn compact(canvas: &Value, scope_path_ids: &[String], selection_ids: &[String]) -> CompactContext {
+pub fn compact(
+    canvas: &Value,
+    scope_path_ids: &[String],
+    selection_ids: &[String],
+    recent_thread: &[Value],
+) -> CompactContext {
     let scope_id = scope_path_ids.last().cloned();
     let selected: std::collections::HashSet<&String> = selection_ids.iter().collect();
     let empty = Vec::new();
@@ -133,6 +140,7 @@ pub fn compact(canvas: &Value, scope_path_ids: &[String], selection_ids: &[Strin
         current_scope_id: scope_id,
         scope_path_ids: scope_path_ids.to_vec(),
         selection_ids: selection_ids.to_vec(),
+        recent_thread: recent_thread.to_vec(),
         canvas: CompactCanvas {
             obra_nombre: canvas.get("obraNombre").and_then(|v| v.as_str()).map(String::from),
             nodes: out_nodes,
@@ -160,7 +168,7 @@ mod tests {
                 { "id": "ab", "sourceId": "a", "targetId": "b", "relation": "precede" }
             ]
         });
-        let ctx = compact(&canvas, &["floor".into()], &[]);
+        let ctx = compact(&canvas, &["floor".into()], &[], &[]);
         let ids: Vec<&str> = ctx.canvas.nodes.iter().map(|n| n.id.as_str()).collect();
         assert_eq!(ids, vec!["a", "b"]);
         assert_eq!(ctx.canvas.edges.len(), 1);
@@ -175,7 +183,7 @@ mod tests {
                 { "id": "x", "parentId": "s2", "title": "X" }
             ], "edges": []
         });
-        let ctx = compact(&canvas, &["s1".into()], &["x".into()]);
+        let ctx = compact(&canvas, &["s1".into()], &["x".into()], &[]);
         let ids: Vec<&str> = ctx.canvas.nodes.iter().map(|n| n.id.as_str()).collect();
         assert!(ids.contains(&"a"));
         assert!(ids.contains(&"x"));

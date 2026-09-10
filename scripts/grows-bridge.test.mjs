@@ -68,6 +68,7 @@ test('bridge limits model context to the current scope', () => {
   assert.deepEqual(compact.canvas.nodes.map((node) => node.id), ['a', 'b']);
   assert.equal(compact.canvas.edges.length, 1);
   assert.equal('budgetGroups' in compact.canvas, false);
+  assert.deepEqual(compact.recentThread, []);
 });
 
 test('simple edge cleanup is computed locally without Codex', () => {

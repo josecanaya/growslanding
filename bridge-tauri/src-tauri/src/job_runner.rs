@@ -15,6 +15,8 @@ pub struct Job {
     pub selection_ids: Vec<String>,
     pub provider: String,
     pub model: String,
+    #[serde(rename = "recentThread", default)]
+    pub recent_thread: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Serialize)]
@@ -67,7 +69,12 @@ async fn execute_inner(
         .map_err(|e| e.to_string())?;
 
     let prompt_slice = truncate_utf8(&job.prompt, 4000);
-    let compact = crate::context::compact(&job.canvas, &job.scope_path_ids, &job.selection_ids);
+    let compact = crate::context::compact(
+        &job.canvas,
+        &job.scope_path_ids,
+        &job.selection_ids,
+        &job.recent_thread,
+    );
     let user_prompt = format!(
         "Regla y esquema en AGENTS.md del cwd.\n\nPEDIDO:\n{}\n\nNIVEL VISIBLE DE LA OBRA:\n{}",
         prompt_slice,
@@ -292,6 +299,7 @@ mod tests {
             selection_ids: vec![],
             provider: "openai".into(),
             model: "auto".into(),
+            recent_thread: vec![],
         };
         let (activity_tx, _) = tokio::sync::mpsc::channel(1);
         let (_cancel_tx, cancel_rx) = tokio::sync::watch::channel(true);

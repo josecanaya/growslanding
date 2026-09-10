@@ -4,6 +4,7 @@ import { ObraAccessError, requireObraAccess } from '@/lib/obra-access';
 import { readCanvasSnapshot, saveCanvasSnapshot, canvasPersistenceError } from '@/lib/canvas/canvasPersistenceServer';
 import { supabaseRowsToPersisted, persistedToSupabaseRows } from '@/lib/canvas/canvasSupabaseMapper';
 import { applyBridgeOperations, bridgeResultSchema } from '@/lib/bridge/operations';
+import { mergeCanvasUiHilo } from '@/lib/proyecto-vivo/hiloCanvasUi';
 import { z } from 'zod';
 
 export const runtime='nodejs';
@@ -47,7 +48,21 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
    }
    const snapshot=await readCanvasSnapshot(supabase,id,orgId);if(snapshot.error) throw new ObraAccessError(503,'No se pudo leer el canvas.');
    const result=await db.from('grows_bridge_jobs').insert({obra_id:id,org_id:orgId,user_id:user.id,prompt:input.prompt.trim(),activity:'Esperando a tu PC',context:{revision:snapshot.data.revision,scopePathIds:input.scopePathIds??[],selectionIds:input.selectionIds??[],provider,model}}).select('id').single();
-   if(result.error) throw result.error;return NextResponse.json({jobId:result.data.id},{status:202});
+   if(result.error) throw result.error;
+   // Registrar turno user en el hilo (memoria conversacional). Best-effort.
+   try {
+    const currentUi = snapshot.data.obra.canvas_ui as Record<string, unknown> | undefined;
+    const nextUi = mergeCanvasUiHilo(currentUi, [{
+      id: `u-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      role: 'user',
+      text: input.prompt.trim().slice(0, 8000),
+      at: new Date().toISOString(),
+      scopePathIds: input.scopePathIds ?? undefined,
+      selectionIds: input.selectionIds ?? undefined,
+    }]);
+    await db.from('obras').update({ canvas_ui: nextUi, updated_at: new Date().toISOString() }).eq('id', id);
+   } catch { /* no abortar el job */ }
+   return NextResponse.json({jobId:result.data.id},{status:202});
   }
   if(!input.jobId) throw new ObraAccessError(400,'Falta el trabajo.');
   if(input.action==='cancel') {

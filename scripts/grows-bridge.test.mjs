@@ -41,7 +41,11 @@ test('bridge validates operations and excludes secrets from Codex subprocess', (
   const op = Object.fromEntries(Object.keys(properties).map((key) => [key, ['sources', 'assumptions'].includes(key) ? [] : null]));
   op.type = 'create_node'; op.title = 'Estado propuesto'; op.nodeType = 'estado'; op.id = 'new-state';
   assert.equal(validateResult({ reply: 'Revisá este estado', operations: [op] }).operations.length, 1);
-  assert.throws(() => validateResult({ reply: '', operations: [{ ...op, payment: 20 }] }));
+  // Campos inventados por el LLM se strippean (sanitize), no rechazan
+  const withExtra = validateResult({ reply: '', operations: [{ ...op, payment: 20, node: 'estado', capital: 200 }] });
+  assert.equal(withExtra.operations[0].payment, undefined);
+  assert.equal(withExtra.operations[0].capital, undefined);
+  assert.equal(withExtra.operations[0].nodeType, 'estado');
   // create_node sin id o con id ya usado debe fallar (contrato de IDs temporales)
   const noId = { ...op, id: null };
   assert.throws(() => validateResult({ reply: '', operations: [noId] }), /Falta el campo|Valor no permitido/);

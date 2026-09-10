@@ -41,6 +41,71 @@ const REQUIRED_FIELDS: &[&str] = &[
 ];
 
 pub fn validate_result(v: &Value) -> Result<(), String> {
+    let sanitized = sanitize_result(v)?;
+    validate_result_strict(&sanitized)
+}
+
+/// Quita campos inventados por el LLM y completa los requeridos con null/[].
+pub fn sanitize_result(v: &Value) -> Result<Value, String> {
+    let obj = v.as_object().ok_or("El agente no devolvió un objeto JSON")?;
+    let reply = obj.get("reply").and_then(|v| v.as_str()).ok_or("Falta 'reply'")?;
+    let ops = obj
+        .get("operations")
+        .and_then(|v| v.as_array())
+        .ok_or("Falta 'operations' como array")?;
+    let mut clean_ops = Vec::with_capacity(ops.len());
+    for op in ops {
+        let op = op.as_object().ok_or("Operación no es un objeto")?;
+        let mut m = serde_json::Map::new();
+        for f in REQUIRED_FIELDS {
+            let default = if *f == "sources" || *f == "assumptions" {
+                Value::Array(vec![])
+            } else if *f == "type" {
+                Value::Null
+            } else {
+                Value::Null
+            };
+            // Alias comunes del LLM (solo strings/null; objetos inventados se ignoran)
+            let value = if op.contains_key(*f) {
+                op.get(*f).cloned().unwrap_or(default)
+            } else if *f == "id" {
+                op.get("nodeId")
+                    .filter(|v| v.is_string() || v.is_null())
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else if *f == "nodeType" {
+                op.get("node")
+                    .filter(|v| v.is_string() || v.is_null())
+                    .or_else(|| op.get("tipo").filter(|v| v.is_string() || v.is_null()))
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else if *f == "title" {
+                op.get("name")
+                    .filter(|v| v.is_string() || v.is_null())
+                    .or_else(|| op.get("nombre").filter(|v| v.is_string() || v.is_null()))
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else if *f == "parentId" {
+                op.get("parent")
+                    .filter(|v| v.is_string() || v.is_null())
+                    .or_else(|| op.get("padre").filter(|v| v.is_string() || v.is_null()))
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else {
+                default
+            };
+            m.insert((*f).to_string(), value);
+        }
+        // Si inventó "node" como objeto anidado, no lo copiamos; el resto ya está en campos canónicos.
+        clean_ops.push(Value::Object(m));
+    }
+    Ok(serde_json::json!({
+        "reply": reply,
+        "operations": clean_ops,
+    }))
+}
+
+fn validate_result_strict(v: &Value) -> Result<(), String> {
     let obj = v.as_object().ok_or("El agente no devolvió un objeto JSON")?;
     let reply = obj.get("reply").and_then(|v| v.as_str()).ok_or("Falta 'reply'")?;
     if reply.len() > 16000 {
@@ -184,10 +249,38 @@ mod tests {
     }
 
     #[test]
-    fn rejects_extra_field() {
+    fn strips_extra_field_then_accepts() {
         let mut op = base_op();
         op["capital"] = json!(200);
+        op["node"] = json!("tarea");
         let r = json!({"reply": "x", "operations": [op]});
-        assert!(validate_result(&r).unwrap_err().contains("capital"));
+        assert!(validate_result(&r).is_ok());
+        let clean = sanitize_result(&r).unwrap();
+        assert!(clean["operations"][0].get("capital").is_none());
+        assert!(clean["operations"][0].get("node").is_none());
+    }
+
+    #[test]
+    fn maps_aliases_and_ignores_object_node() {
+        let r = json!({
+            "reply": "ok",
+            "operations": [{
+                "type": "create_node",
+                "nodeId": "tmp-1",
+                "name": "Viga",
+                "parent": "floor-1",
+                "node": {"inventado": true},
+                "tipo": "tarea",
+                "capital": 99
+            }]
+        });
+        let clean = sanitize_result(&r).unwrap();
+        let op = &clean["operations"][0];
+        assert_eq!(op["id"], json!("tmp-1"));
+        assert_eq!(op["title"], json!("Viga"));
+        assert_eq!(op["parentId"], json!("floor-1"));
+        assert_eq!(op["nodeType"], json!("tarea"));
+        assert!(op.get("capital").is_none());
+        assert!(validate_result(&r).is_ok());
     }
 }

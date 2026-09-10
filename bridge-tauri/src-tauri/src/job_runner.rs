@@ -300,14 +300,16 @@ async fn execute_inner(
         ));
     }
     let for_check = parsed_ok.ok_or_else(|| "El agente no devolvió JSON válido".to_string())?;
-    crate::validate::validate_result(&for_check)
+    let sanitized = crate::validate::sanitize_result(&for_check)
         .map_err(|e| format!("Respuesta del agente inválida: {}", e))?;
-    let ops = for_check
+    crate::validate::validate_result(&sanitized)
+        .map_err(|e| format!("Respuesta del agente inválida: {}", e))?;
+    let ops = sanitized
         .get("operations")
         .and_then(|v| v.as_array())
         .cloned()
         .unwrap_or_default();
-    let reply = for_check
+    let reply = sanitized
         .get("reply")
         .and_then(|v| v.as_str())
         .unwrap_or("")

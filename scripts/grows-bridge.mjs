@@ -51,11 +51,25 @@ export const resultSchema = {
 };
 export function validateResult(result) {
   if (!result || typeof result.reply !== 'string' || result.reply.length > 16000 || !Array.isArray(result.operations) || result.operations.length > 100) throw new Error('Resultado inválido del agente');
-  for (const op of result.operations) {
+  const cleaned = { reply: result.reply, operations: result.operations.map((op) => {
     if (!op || typeof op !== 'object') throw new Error('El agente devolvió una operación vacía o inválida.');
+    const next = emptyOperation(op.type ?? null, {
+      id: op.id ?? op.nodeId ?? null,
+      parentId: op.parentId ?? op.parent ?? op.padre ?? null,
+      title: op.title ?? op.name ?? op.nombre ?? null,
+      description: op.description ?? null,
+      nodeType: op.nodeType ?? (typeof op.node === 'string' ? op.node : null) ?? (typeof op.tipo === 'string' ? op.tipo : null) ?? null,
+      sourceId: op.sourceId ?? null, targetId: op.targetId ?? null, relation: op.relation ?? null,
+      fromNodeId: op.fromNodeId ?? null, toNodeId: op.toNodeId ?? null,
+      transformKind: op.transformKind ?? null, executorKind: op.executorKind ?? null,
+      quantity: op.quantity ?? null, unit: op.unit ?? null, durationDays: op.durationDays ?? null,
+      sources: Array.isArray(op.sources) ? op.sources : [],
+      assumptions: Array.isArray(op.assumptions) ? op.assumptions : [],
+    });
+    return next;
+  }) };
+  for (const op of cleaned.operations) {
     if (!properties.type.enum.includes(op.type)) throw new Error(`Tipo de operación no permitido: "${String(op.type)}". Permitidos: ${properties.type.enum.join(', ')}.`);
-    const extra = Object.keys(op).find((key) => !(key in properties));
-    if (extra) throw new Error(`El agente inventó el campo "${extra}" (no existe en el canvas). Esos datos van dentro de "description" o "assumptions".`);
     for (const [key, schema] of Object.entries(properties)) {
       const value = op[key];
       if (value === undefined) throw new Error(`Falta el campo "${key}" en la operación "${op.type}".`);
@@ -70,7 +84,7 @@ export function validateResult(result) {
       throw new Error(`Falta el campo "id" en la operación "${op.type}" (usá tmp-1, tmp-2, …).`);
     }
   }
-  return result;
+  return cleaned;
 }
 
 export function parseAgentJson(value) {

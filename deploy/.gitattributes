@@ -1,0 +1,7 @@
+# Estos archivos se ejecutan en Linux. Con finales de línea CRLF, bash falla con
+# errores tipo "\r: command not found" y systemd no interpreta bien el unit.
+# Forzamos LF sin importar la configuración de git de quien clone.
+*.sh          text eol=lf
+*.service     text eol=lf
+*.mjs         text eol=lf
+*.env.example text eol=lf

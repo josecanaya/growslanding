@@ -1,0 +1,60 @@
+[Unit]
+Description=Grows Cloud Worker (bridge headless para agentes IA)
+Documentation=https://github.com/josecanaya/growslanding/blob/main/deploy/cloud-agent-poc/README.md
+# El worker necesita red e internet (habla con Grows y con la API del proveedor).
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# ── Identidad ────────────────────────────────────────────────────────────────
+# NUNCA root. La sesión de Claude vive en /home/grows-agent/.claude y debe
+# pertenecer a este mismo usuario, tanto si la creaste con `sudo -iu grows-agent`
+# como si la usa el servicio.
+User=grows-agent
+Group=grows-agent
+
+# systemd NO hereda el entorno del login shell: HOME y PATH hay que declararlos.
+# Sin HOME correcto, Claude no encuentra sus credenciales y el worker no lo detecta.
+Environment=HOME=/home/grows-agent
+# El instalador nativo de Claude deja el binario en ~/.local/bin/claude.
+Environment=PATH=/home/grows-agent/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# Logs sin buffer para que journalctl muestre los mensajes en tiempo real.
+Environment=NODE_OPTIONS=--enable-source-maps
+
+# ── Configuración (URL + token) ──────────────────────────────────────────────
+# Archivo aparte, root:grows-agent 0640. El token NUNCA va en este .service,
+# porque los units son world-readable.
+EnvironmentFile=/etc/grows-agent/grows-agent.env
+
+# ── Ejecución ────────────────────────────────────────────────────────────────
+WorkingDirectory=/opt/grows-agent
+ExecStart=/usr/bin/node /opt/grows-agent/grows-bridge.mjs
+
+# ── Ciclo de vida ────────────────────────────────────────────────────────────
+Restart=on-failure
+RestartSec=5
+# El worker atiende SIGTERM (marca stopped=true y sale del loop), pero si hay un
+# job en vuelo puede tardar hasta el timeout del agente. 120 s es el compromiso:
+# da margen para cerrar limpio y evita que un job colgado bloquee un reboot.
+# Un job cortado a la fuerza no se pierde: el server lo reintenta cuando vence
+# el lease (claim_grows_bridge_job reintenta hasta 3 veces).
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=grows-agent
+
+# ── Hardening mínimo ─────────────────────────────────────────────────────────
+# Deliberadamente conservador para la POC. NO agregar ProtectHome ni
+# ProtectSystem=strict: romperían el acceso a /home/grows-agent/.claude
+# (credenciales) y al auto-updater de Claude en ~/.local/share/claude.
+# PrivateTmp queda en false porque el worker crea el cwd del agente con
+# mkdtemp() en /tmp y conviene poder inspeccionarlo al depurar.
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

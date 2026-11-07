@@ -45,12 +45,20 @@ export default async function GrowsFeed({
     }
   }
 
+  const loginReturn = selected ? `/inversores?sector=${selected.id}` : '/inversores';
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(loginReturn)}` as Route;
+
   return (
     <main id="feed" className="min-h-screen bg-[#FBFBF9] text-[#15161A]">
       <header className="border-b border-[#E4E3DE] bg-white">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2.5 px-6">
           <Image src="/grows-icon.svg" alt="" width={28} height={28} />
           <span className="text-lg font-semibold tracking-tight">Grows</span>
+          {!user && (
+            <Link href={loginHref} prefetch={false} className="ml-auto rounded-lg bg-[#215AC2] px-4 py-2 text-sm font-medium text-white hover:bg-[#194A9F]">
+              Ingresar
+            </Link>
+          )}
         </div>
       </header>
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-12 sm:py-20">
@@ -65,9 +73,8 @@ export default async function GrowsFeed({
             const Icon = sector.id === 'trabajo' ? Briefcase : FolderPlus;
             const destination = `/inversores?sector=${sector.id}`;
             const allowed = role === sector.role || role === 'ADMIN';
-            const href = !user
-              ? `/auth/login?redirect=${encodeURIComponent(destination)}`
-              : allowed ? sector.path : destination;
+            const needsLogin = !user && selected?.id === sector.id;
+            const href = needsLogin ? loginHref : allowed ? sector.path : destination;
 
             return (
               <section key={sector.id} className="flex flex-col items-start gap-4 rounded-2xl border border-[#E4E3DE] bg-white p-6">
@@ -81,8 +88,8 @@ export default async function GrowsFeed({
                     Este sector requiere un perfil de {sector.role === 'SOCIO' ? 'socio' : 'cliente técnico'}.
                   </p>
                 ) : (
-                  <Link href={href as Route} className="mt-auto inline-flex items-center gap-2 rounded-lg bg-[#215AC2] px-4 py-2 font-medium text-white transition hover:bg-[#194A9F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#276EF1]">
-                    {sector.title}
+                  <Link href={href as Route} prefetch={false} className="mt-auto inline-flex items-center gap-2 rounded-lg bg-[#215AC2] px-4 py-2 font-medium text-white transition hover:bg-[#194A9F] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#276EF1]">
+                    {needsLogin ? 'Ingresar para continuar' : sector.title}
                     <ArrowRight aria-hidden="true" className="h-4 w-4" />
                   </Link>
                 )}

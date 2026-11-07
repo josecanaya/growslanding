@@ -89,11 +89,11 @@ net.innerHTML=svg;
 function highlight(id,on){document.querySelectorAll(`[data-area="${id}"]`).forEach(g=>g.classList.toggle('selected',on));net.classList.toggle('is-focused',on)}
 const destinations = {
   invest: '/inversores',
-  design: '/cliente/obras',
-  contract: '/socio/panel',
-  crew: '/socio/panel',
-  agent: '/socio/conocimiento',
-  project: '/cliente/obras',
+  design: '/inversores?sector=proyecto',
+  contract: '/inversores?sector=trabajo',
+  crew: '/inversores?sector=trabajo',
+  agent: '/inversores',
+  project: '/inversores?sector=proyecto',
 };
 
 function roleUrl(id) {

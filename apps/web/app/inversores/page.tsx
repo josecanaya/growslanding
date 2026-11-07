@@ -7,6 +7,12 @@ import { redirect } from 'next/navigation';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { normalizeRole } from '@/lib/roles';
 
+const previewProjects = [
+  { id: 'olivos', name: 'Olivos 12', city: 'Fisherton, Rosario', stage: 'Proyecto ejecutivo' },
+  { id: 'patio', name: 'Casa Patio', city: 'Funes, Santa Fe', stage: 'Fundaciones' },
+  { id: 'ribera', name: 'Ribera Residencias', city: 'Pueblo Esther, Santa Fe', stage: 'Estructura' },
+];
+
 const sectors = [
   {
     id: 'trabajo',
@@ -27,9 +33,10 @@ const sectors = [
 export default async function GrowsFeed({
   searchParams,
 }: {
-  searchParams: Promise<{ sector?: string }>;
+  searchParams: Promise<{ sector?: string; obra?: string; vista?: string }>;
 }) {
-  const { sector: intent } = await searchParams;
+  const { sector: intent, obra, vista } = await searchParams;
+  const project = previewProjects.find((item) => item.id === obra);
   const selected = sectors.find((sector) => sector.id === intent);
   const cookieStore = await cookies();
   const supabase = createServerComponentClient({ cookies: () => cookieStore as any });
@@ -40,12 +47,12 @@ export default async function GrowsFeed({
     if (!role) {
       redirect(`/auth/select-role?redirect=${encodeURIComponent(`/inversores?sector=${selected.id}`)}`);
     }
-    if (role === selected.role || role === 'ADMIN') {
+    if (!project && (role === selected.role || role === 'ADMIN')) {
       redirect(selected.path);
     }
   }
 
-  const loginReturn = selected ? `/inversores?sector=${selected.id}` : '/inversores';
+  const loginReturn = project && !selected ? '/inversores?obra=' + project.id : selected ? `/inversores?sector=${selected.id}` : '/inversores';
   const loginHref = `/auth/login?redirect=${encodeURIComponent(loginReturn)}` as Route;
 
   return (
@@ -63,18 +70,52 @@ export default async function GrowsFeed({
       </header>
       <div className="mx-auto max-w-5xl space-y-8 px-6 py-12 sm:py-20">
         <div className="space-y-3">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Grows para todos</h1>
+          {project && <Link href="/inversores" className="text-sm font-medium text-[#215AC2]">← Volver al feed</Link>}
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{project?.name ?? 'Grows para todos'}</h1>
           <p className="text-lg text-[#55565C]">
-            Encontrá trabajo en obra o empezá tu propio proyecto.
+            {project ? ${project.city} ·  · Obra de demostración : 'Encontrá trabajo en obra o empezá tu propio proyecto.'}
           </p>
         </div>
+        {project ? (
+          <section aria-label="Vistas de la obra" className="space-y-4 rounded-2xl border border-[#E4E3DE] bg-white p-6">
+            <nav className="flex flex-wrap gap-4 text-sm font-medium text-[#215AC2]">
+              <Link href={`/inversores?obra=${project.id}&vista=contratista` as Route}>Contratista</Link>
+              <Link href={`/inversores?obra=${project.id}&vista=arquitecto` as Route}>Arquitecto</Link>
+              <a href={`/inversores/index.html#project/${project.id}`}>Inversor</a>
+            </nav>
+            {vista === 'arquitecto' ? (
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Planificación y presupuestos</h2>
+                <p>Organizá los trabajos por etapas y revisá las cotizaciones desde tu espacio de proyectos.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold">Trabajo y seguimiento de obra</h2>
+                <p>Consultá el alcance, los plazos y el estado de los trabajos desde tu espacio de contratista.</p>
+              </div>
+            )}
+          </section>
+        ) : (
+          <section aria-labelledby="obras" className="space-y-4">
+            <h2 id="obras" className="text-xl font-semibold">Explorá obras</h2>
+            <p className="text-sm text-[#55565C]">Obras de demostración.</p>
+            <div className="grid gap-4 sm:grid-cols-3">
+              {previewProjects.map((item) => (
+                <Link key={item.id} href={`/inversores?obra=${item.id}` as Route} className="rounded-2xl border border-[#E4E3DE] bg-white p-5 hover:border-[#215AC2]">
+                  <h3 className="font-semibold">{item.name}</h3>
+                  <p className="text-sm text-[#55565C]">{item.city} · {item.stage}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
-          {sectors.map((sector) => {
+          {sectors.filter((sector) => !project || sector.id === (vista === 'arquitecto' ? 'proyecto' : 'trabajo')).map((sector) => {
             const Icon = sector.id === 'trabajo' ? Briefcase : FolderPlus;
-            const destination = `/inversores?sector=${sector.id}`;
+            const destination = project ? `/inversores?sector=${sector.id}&obra=${project.id}&vista=${vista === "arquitecto" ? "arquitecto" : "contratista"}` : `/inversores?sector=${sector.id}`;
             const allowed = role === sector.role || role === 'ADMIN';
             const needsLogin = !user && selected?.id === sector.id;
-            const href = needsLogin ? loginHref : allowed ? sector.path : destination;
+            const href = needsLogin ? `/auth/login?redirect=${encodeURIComponent(destination)}` : allowed ? sector.path : destination;
 
             return (
               <section key={sector.id} className="flex flex-col items-start gap-4 rounded-2xl border border-[#E4E3DE] bg-white p-6">

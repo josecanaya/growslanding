@@ -539,9 +539,13 @@ function CallbackPageContent() {
               if (result.success) {
                 console.log('[OAUTH_CALLBACK] Socio vinculado correctamente');
                 // Redirigir al panel del socio
-                router.replace('/panel' as Route);
+                router.replace((redirectTarget?.startsWith('/inversores?sector=') ? redirectTarget : '/panel') as Route);
                 return;
               } else {
+                if (redirectTarget?.startsWith('/inversores?sector=')) {
+                  router.replace(redirectTarget as Route);
+                  return;
+                }
                 // No es un socio invitado, mostrar mensaje
                 router.replace(
                   `/auth/login?error=${encodeURIComponent(

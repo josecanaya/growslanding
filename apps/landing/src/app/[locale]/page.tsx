@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { getAppWebUrlFor } from "@/lib/config";
 import { Navigation } from "@/components/navigation/Navigation";
 import { Hero } from "@/components/hero/Hero";
 import { SolutionsSection } from "@/components/sections/landing/SolutionsSection";
@@ -13,6 +15,7 @@ import { SectionDivider } from "@/components/SectionDivider";
 type Props = { params: { locale: string } };
 
 export default function HomePage({ params: { locale } }: Props) {
+  if (locale === "es") redirect(getAppWebUrlFor("/home"));
   setRequestLocale(locale);
   return (
     <div className="min-h-screen bg-white">

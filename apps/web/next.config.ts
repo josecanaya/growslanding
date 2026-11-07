@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      { source: '/home', destination: '/edificio/index.html' },
+      { source: '/inversores', destination: '/inversores/index.html' },
       { 
         source: '/wasm/:path*', 
         destination: '/wasm/:path*' 

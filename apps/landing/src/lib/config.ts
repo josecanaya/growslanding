@@ -2,41 +2,16 @@
  * Configuración centralizada para URLs de la aplicación
  */
 
-/**
- * Obtiene la URL base de la aplicación web (app principal de GROWS)
- * En desarrollo, usa localhost:3000 (puerto por defecto de Next.js)
- * En producción, usa la variable de entorno NEXT_PUBLIC_APP_URL
- */
+/** URL de la app web. NEXT_PUBLIC_APP_URL permite apuntar a otro entorno. */
 export function getAppWebUrl(): string {
-  // PRIORIDAD 1: Si estamos en desarrollo (NODE_ENV === 'development'), usar localhost
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  // PRIORIDAD 2: Si estamos en cliente y en localhost, usar localhost
-  if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1' ||
-                        window.location.hostname === '0.0.0.0' ||
-                        window.location.hostname.includes('localhost');
-    
-    if (isLocalhost || isDevelopment) {
-      // En desarrollo, la app web normalmente corre en el puerto 3000
-      // Ajusta este puerto si tu configuración es diferente
-      return 'http://localhost:3000';
-    }
-  }
-  
-  // PRIORIDAD 3: Si estamos en servidor y es desarrollo, usar localhost
-  if (isDevelopment) {
-    return 'http://localhost:3000';
-  }
-  
-  // PRIORIDAD 4: Si hay una variable de entorno definida, usarla
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL;
-  }
-  
-  // PRIORIDAD 5: Default de producción (solo si realmente estamos en producción)
-  return 'http://app.grows.com.ar';
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, '');
+  if (configuredUrl) return configuredUrl;
+
+  const hostname = typeof window === 'undefined' ? '' : window.location.hostname;
+  const local = ['localhost', '127.0.0.1', '0.0.0.0'].includes(hostname);
+  if (process.env.NODE_ENV === 'development' || local) return 'http://localhost:3000';
+
+  return 'https://app.grows.com.ar';
 }
 
 /**

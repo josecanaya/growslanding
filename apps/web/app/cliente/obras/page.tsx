@@ -58,22 +58,14 @@ export default function ObrasPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <SectionHeader
-        eyebrow="Proyectos"
         title="Proyectos"
-        description="Mismo canvas Organizar (etapas, tareas, CPM). El chat acompaña."
+        description="Abrí una obra para organizar sus tareas."
         action={
-          <div className="flex flex-wrap gap-2">
-            <Link href={'/cliente/proyectos/nuevo' as Route}>
-              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Nuevo proyecto
-              </Button>
-            </Link>
-            <Link href={'/cliente/obras/nueva' as Route}>
-              <Button variant="secondary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Obra
-              </Button>
-            </Link>
-          </div>
+          <Link href="/cliente/proyectos/nuevo">
+            <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
+              Nuevo proyecto
+            </Button>
+          </Link>
         }
       />
       {error && (
@@ -89,37 +81,28 @@ export default function ObrasPage() {
         </div>
       ) : obras.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-200 bg-white p-8 text-center text-slate-600">
-          No hay proyectos. Creá uno para abrir el Organizar.
-          <span className="mt-4 block">
-            <Link href={'/cliente/proyectos/nuevo' as Route}>
-              <Button variant="primary" size="sm" icon={<Plus className="h-4 w-4" />}>
-                Nuevo proyecto
-              </Button>
-            </Link>
-          </span>
+          Todavía no hay proyectos.
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {obras.map((o: ClienteObraListaItem) => {
-            const tareas = o._count?.tareas ?? 0;
-            const avance = Math.min(100, tareas > 0 ? 15 : 0);
-            return (
-              <ObraCard
-                key={o.id}
-                id={o.id}
-                nombre={o.name || 'Sin nombre'}
-                tipo="Obra"
-                ubicacion={o.address || 'Sin ubicación'}
-                estado={estadoLabel(o.estado)}
-                avancePct={avance}
-                href={`/cliente/tareas/${o.id}/editor` as Route}
-                onEliminar={handleEliminarObra}
-                eliminando={eliminandoId === o.id}
-              />
-            );
-          })}
+          {obras.map((o) => (
+            <ObraCard
+              key={o.id}
+              id={o.id}
+              nombre={o.name || 'Sin nombre'}
+              tipo="Obra"
+              ubicacion={o.address || 'Sin ubicación'}
+              estado={estadoLabel(o.estado)}
+              href={`/cliente/tareas/${o.id}/editor` as Route}
+              onEliminar={handleEliminarObra}
+              eliminando={eliminandoId === o.id}
+            />
+          ))}
         </div>
       )}
+      <Link className="inline-block text-sm text-slate-600 underline" href="/cliente/obras/nueva">
+        Alta de obra con datos técnicos
+      </Link>
     </div>
   );
 }

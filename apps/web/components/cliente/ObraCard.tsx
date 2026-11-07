@@ -9,7 +9,7 @@ export type ObraCardProps = {
   tipo: string;
   ubicacion: string;
   estado: string;
-  avancePct: number;
+  avancePct?: number;
   href?: Route;
   /** Si se pasa, muestra acción Eliminar (llama a DELETE desde la página). */
   onEliminar?: (id: string) => void;
@@ -46,20 +46,22 @@ export function ObraCard({
           </div>
           <StatusBadge label={estado} />
         </div>
-        <div className="mt-4">
-          <div className="mb-1 flex justify-between text-xs font-medium text-slate-600">
-            <span>Avance</span>
-            <span>{avancePct}%</span>
+        {avancePct !== undefined && (
+          <div className="mt-4">
+            <div className="mb-1 flex justify-between text-xs font-medium text-slate-600">
+              <span>Avance</span>
+              <span>{avancePct}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all group-hover:from-sky-700"
+                style={{ width: `${avancePct}%` }}
+              />
+            </div>
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all group-hover:from-sky-700"
-              style={{ width: `${avancePct}%` }}
-            />
-          </div>
-        </div>
+        )}
       </div>
-      <div className="relative z-10 mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 pointer-events-auto">
+      <div className="relative z-10 mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-4 pointer-events-none">
         {onEliminar ? (
           <button
             type="button"
@@ -69,7 +71,7 @@ export function ObraCard({
               e.stopPropagation();
               onEliminar(id);
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-800 disabled:pointer-events-none disabled:opacity-50"
+            className="pointer-events-auto inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 hover:text-rose-800 disabled:pointer-events-none disabled:opacity-50"
           >
             <Trash2 className="h-4 w-4 shrink-0" />
             {eliminando ? 'Eliminando…' : 'Eliminar'}

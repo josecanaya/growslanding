@@ -3,26 +3,12 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import type { Database } from '@/lib/types/supabase.gen';
+import { listCanvasPlanningOrgIds } from '@/lib/canvas/canvasPersistenceServer';
 import { toClientBudgetGroupId } from '@/lib/canvas/canvasSupabaseMapper';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-async function resolveAllowedOrgIds(supabaseAny: any, userId: string): Promise<string[]> {
-  const [orgClienteRows, orgSocioRows] = await Promise.all([
-    supabaseAny.from('organizations').select('id').eq('user_id', userId),
-    supabaseAny.from('socios').select('org_id').eq('user_id', userId),
-  ]);
-
-  const orgIds = new Set<string>([
-    ...((orgClienteRows.data ?? []) as Array<{ id: string }>).map((o) => o.id),
-    ...((orgSocioRows.data ?? []) as Array<{ org_id: string | null }>)
-      .map((s) => s.org_id)
-      .filter((orgId): orgId is string => Boolean(orgId)),
-  ]);
-
-  return Array.from(orgIds);
-}
 
 /**
  * GET /api/cliente/presupuestos?org_id=uuid (opcional)
@@ -42,13 +28,24 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceSupabaseClient();
     const supabaseAny = supabase as any;
-    const allowedOrgIds = await resolveAllowedOrgIds(supabaseAny, user.id);
+    const allowedOrgIds = await listCanvasPlanningOrgIds(supabaseAny, user.id, user.email);
     if (allowedOrgIds.length === 0) {
       return NextResponse.json({ success: true, data: [] });
     }
 
     const orgIdParam = request.nextUrl.searchParams.get('org_id');
-    const orgId = orgIdParam && allowedOrgIds.includes(orgIdParam) ? orgIdParam : allowedOrgIds[0];
+    if (orgIdParam && !allowedOrgIds.includes(orgIdParam)) {
+      return NextResponse.json({ success: false, error: 'Organización no accesible' }, { status: 403 });
+    }
+    let orgId = orgIdParam ?? allowedOrgIds[0];
+    const obraScope = request.nextUrl.searchParams.get('obra');
+    if (obraScope) {
+      const obra = await supabase.from('obras').select('org_id').eq('id', obraScope).maybeSingle();
+      if (obra.error || !obra.data || !allowedOrgIds.includes(obra.data.org_id)) {
+        return NextResponse.json({ success: false, error: 'No podés revisar los presupuestos de esta obra.' }, { status: 403 });
+      }
+      orgId = obra.data.org_id;
+    }
 
     // Sin embed `socios`: en muchas BDs no hay FK tareas_presupuestos.socio_id → socios y PostgREST falla.
     const { data, error } = await supabase
@@ -159,7 +156,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const rows = presupRows.map((p: any) => {
+    const rows = presupRows.filter((p: any) => !obraScope || p.tareas?.obra_id === obraScope).map((p: any) => {
       const t = p.tareas;
       const obra = t?.obras;
       const socio = p.socio_id ? socioMap.get(p.socio_id) : undefined;

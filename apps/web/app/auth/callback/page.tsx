@@ -464,6 +464,11 @@ function CallbackPageContent() {
           return;
         }
 
+        if (redirectTarget && (redirectTarget === '/inversores' || redirectTarget.startsWith('/inversores?') || redirectTarget === '/acceder' || redirectTarget.startsWith('/acceder?'))) {
+          router.replace(redirectTarget as Route);
+          return;
+        }
+
         const sessionUser = resolvedSession.user;
         
         // Verificar si viene del registro con Google para CLIENTE_TECNICO
@@ -539,10 +544,10 @@ function CallbackPageContent() {
               if (result.success) {
                 console.log('[OAUTH_CALLBACK] Socio vinculado correctamente');
                 // Redirigir al panel del socio
-                router.replace((redirectTarget?.startsWith('/inversores?sector=') ? redirectTarget : '/panel') as Route);
+                router.replace(((redirectTarget === '/inversores' || redirectTarget?.startsWith('/inversores?')) ? redirectTarget : '/panel') as Route);
                 return;
               } else {
-                if (redirectTarget?.startsWith('/inversores?sector=')) {
+                if ((redirectTarget === '/inversores' || redirectTarget?.startsWith('/inversores?'))) {
                   router.replace(redirectTarget as Route);
                   return;
                 }

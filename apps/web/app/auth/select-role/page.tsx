@@ -16,6 +16,7 @@ import {
   normalizeRole,
   type UserRole,
 } from '@/lib/roles';
+import { safeReturnPath } from '@/lib/auth/public-paths';
 import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
 const ROLE_CHOICES: Array<{ key: UserRole; title: string; description: string }> =
@@ -45,10 +46,7 @@ function SelectRolePageContent() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const redirectParam = searchParams?.get('redirect') ?? null;
-  const redirectTarget =
-    redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('/auth')
-      ? redirectParam
-      : null;
+  const redirectTarget = redirectParam ? safeReturnPath(redirectParam) : null;
 
   useEffect(() => {
     let active = true;
@@ -112,43 +110,15 @@ function SelectRolePageContent() {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        data: { role },
+      const response = await fetch('/api/auth/set-role', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
       });
-
-      if (error) {
-        throw error;
-      }
-
-      let resolvedRole = role;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const sessionRole = sessionData.session
-        ? normalizeRole(
-            (sessionData.session.user.app_metadata as Record<string, unknown> | undefined)
-              ?.role ??
-              (sessionData.session.user.user_metadata as Record<string, unknown> | undefined)
-                ?.role
-          )
-        : null;
-
-      if (!sessionRole) {
-        const { data: refreshed, error: refreshError } =
-          await supabase.auth.refreshSession();
-
-        if (!refreshError && refreshed.session) {
-          const refreshedRole = normalizeRole(
-            (refreshed.session.user.app_metadata as Record<string, unknown> | undefined)?.role ??
-              (refreshed.session.user.user_metadata as Record<string, unknown> | undefined)?.role
-          );
-
-          if (refreshedRole) {
-            resolvedRole = refreshedRole;
-          }
-        }
-      } else {
-        resolvedRole = sessionRole;
-      }
-
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'No se pudo habilitar el perfil.');
+      const refreshed = await supabase.auth.refreshSession();
+      if (refreshed.error) throw refreshed.error;
+      const resolvedRole = role;
       const target = redirectTarget ?? getDefaultRouteForRole(resolvedRole);
       setStatusMessage(null);
       router.replace(target as Route);

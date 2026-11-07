@@ -38,3 +38,14 @@ describe('MCP scope and proposals', () => {
     expect(query.eq).toHaveBeenCalledWith('org_id', 'org');
   });
 });
+
+it('does not expose quotations for an obra outside the configured organization', async () => {
+  vi.stubEnv('GROWS_MCP_ORG_ID', 'org');
+  const query: any = { select: vi.fn(() => query), eq: vi.fn(() => query), maybeSingle: vi.fn(async () => ({ data: null, error: null })) };
+  const from = vi.fn(() => query);
+  const response = await callGrowsMcpTool({ from } as any, 'comparar_cotizaciones', { obra_id: 'other-obra' });
+  expect(response.isError).toBe(true);
+  expect(query.eq).toHaveBeenCalledWith('org_id', 'org');
+  expect(from).toHaveBeenCalledTimes(1);
+  expect(from).toHaveBeenCalledWith('obras');
+});

@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Building2, ChevronRight } from 'lucide-react';
@@ -60,8 +61,9 @@ function resumenObra(rows: Row[]) {
 
 const ars = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 });
 
-export default function ClientePresupuestoPage() {
+function ClientePresupuestoContent() {
   const user = useCurrentUser();
+  const obraScope = useSearchParams().get('obra');
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export default function ClientePresupuestoPage() {
     setLoading(true);
     setErr(null);
     try {
-      const q = user.orgId ? `?org_id=${encodeURIComponent(user.orgId)}` : '';
+      const q = obraScope ? `?obra=${encodeURIComponent(obraScope)}` : `?org_id=${encodeURIComponent(user.orgId)}`;
       const res = await fetch(`/api/cliente/presupuestos${q}`, { cache: 'no-store' });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -85,14 +87,14 @@ export default function ClientePresupuestoPage() {
         setRows([]);
         return;
       }
-      setRows(Array.isArray(json.data) ? json.data : []);
+      setRows(Array.isArray(json.data) ? json.data.filter((row: Row) => !obraScope || row.obraId === obraScope) : []);
     } catch {
       setErr('Error de red');
       setRows([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.orgId]);
+  }, [user?.orgId, obraScope]);
 
   useEffect(() => {
     load();
@@ -339,4 +341,8 @@ export default function ClientePresupuestoPage() {
       )}
     </div>
   );
+}
+
+export default function ClientePresupuestoPage() {
+  return <Suspense fallback={<p className="p-6">Cargando presupuestos…</p>}><ClientePresupuestoContent /></Suspense>;
 }

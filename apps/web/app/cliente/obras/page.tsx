@@ -93,7 +93,7 @@ export default function ObrasPage() {
               tipo="Obra"
               ubicacion={o.address || 'Sin ubicación'}
               estado={estadoLabel(o.estado)}
-              href={`/cliente/tareas/${o.id}/editor` as Route}
+              href={`/obras/${o.id}` as Route}
               onEliminar={handleEliminarObra}
               eliminando={eliminandoId === o.id}
             />

@@ -33,6 +33,7 @@ function OportunidadesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const obraIdHighlight = searchParams.get('obra_id');
+  const obraScope = searchParams.get('obra');
 
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [seguimiento, setSeguimiento] = useState<Solicitud[]>([]);
@@ -123,13 +124,16 @@ function OportunidadesContent() {
 
   const filas = useMemo(() => {
     let list = filtro === 'seguimiento' ? seguimiento : solicitudes;
+    if (obraScope) list = list.filter((item) => item.obra_id === obraScope);
     if (filtro === 'urgentes') {
       list = list.filter((s) => s.urgencia === 'ALTA');
     } else if (filtro === 'cerca') {
       list = list.filter((_, i) => i % 2 === 0);
     }
     return list;
-  }, [solicitudes, seguimiento, filtro]);
+  }, [solicitudes, seguimiento, filtro, obraScope]);
+
+  const pliegosVisibles = obraScope ? bolsaPliegos.filter((item) => item.obra_id === obraScope) : bolsaPliegos;
 
   const postularBolsa = async (p: {
     obra_id: string;
@@ -261,12 +265,12 @@ function OportunidadesContent() {
       </StitchStickySubheader>
 
       <div className={STITCH_INNER + ' pt-2'}>
-        {filtro === 'presupuestar' && bolsaPliegos.length > 0 ? (
+        {filtro === 'presupuestar' && pliegosVisibles.length > 0 ? (
           <div className="mb-4 space-y-2">
             <p className="text-[10px] font-black uppercase tracking-wider text-stitch-on-surface/55">
               Bolsa — paquetes abiertos
             </p>
-            {bolsaPliegos.map((p) => {
+            {pliegosVisibles.map((p) => {
               const key = `${p.obra_id}:${p.budget_group_id}`;
               return (
                 <div

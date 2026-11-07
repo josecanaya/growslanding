@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 import type { Database } from '@/lib/types/supabase.gen';
-import { normalizeRole, type UserRole } from '@/lib/roles';
+import { type UserRole } from '@/lib/roles';
+import { profileRoles, roleForPath } from '@/lib/auth/profile-roles';
 
 // En desarrollo local no llamar getSession en cada request (evita rate limit y loops).
 // Nunca permitir bypass de auth en producción.
@@ -127,10 +128,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const role = normalizeRole(
-    (session.user.app_metadata as Record<string, unknown> | undefined)?.role ??
-      (session.user.user_metadata as Record<string, unknown> | undefined)?.role
-  );
+  const role = roleForPath(session.user, pathname);
+  const roles = profileRoles(session.user);
 
   if (!role) {
     const selectionUrl = new URL('/auth/select-role', req.url);
@@ -167,11 +166,12 @@ export async function middleware(req: NextRequest) {
   );
 
   if (matchedRule) {
-    const isAllowed = matchedRule.allowed.includes(role);
+    const isAllowed = matchedRule.allowed.some((allowed) => roles.includes(allowed));
     if (!isAllowed) {
-      const loginUrl = new URL('/auth/login', req.url);
-      loginUrl.searchParams.set('error', 'unauthorized');
-      return NextResponse.redirect(loginUrl);
+      const accessUrl = new URL('/acceder', req.url);
+      accessUrl.searchParams.set('sector', pathname.startsWith('/socio') ? 'trabajo' : 'proyecto');
+      accessUrl.searchParams.set('redirect', pathname + search);
+      return NextResponse.redirect(accessUrl);
     }
   }
 

@@ -6,5 +6,5 @@ export default async function ClienteObraCentroRedirectPage({
   params: Promise<{ obraId: string }>;
 }) {
   const { obraId } = await params;
-  redirect(`/cliente/tareas/${obraId}/editor`);
+  redirect(`/obras/${obraId}`);
 }

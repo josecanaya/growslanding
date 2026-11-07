@@ -1,9 +1,20 @@
 import { randomUUID } from 'crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { loadProcurement, comparableQuotes } from '@/lib/obras/procurement';
 
 const ETAPA_DEFINICION = '00. Definición del proyecto';
 
 export const GROWS_MCP_TOOLS = [
+  {
+    name: 'leer_estado_obra',
+    description: 'Lee tareas operativas, avances, plazos y cotizaciones de la obra compartida. Respeta la organización configurada para el agente.',
+    inputSchema: { type: 'object', properties: { obra_id: { type: 'string' } }, required: ['obra_id'], additionalProperties: false },
+  },
+  {
+    name: 'comparar_cotizaciones',
+    description: 'Agrupa cotizaciones enviadas por trabajo, moneda, cantidad y unidad. Incluye plazos y observaciones para revisión humana.',
+    inputSchema: { type: 'object', properties: { obra_id: { type: 'string' } }, required: ['obra_id'], additionalProperties: false },
+  },
   {
     name: 'listar_obras_vivas',
     description:
@@ -104,6 +115,15 @@ export async function callGrowsMcpTool(
 ): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
   try {
     orgFilter(); // Fail closed before any privileged query, including unknown tools.
+    if (name === 'leer_estado_obra' || name === 'comparar_cotizaciones') {
+      const obraId = String(args.obra_id || '');
+      const obra = await supabase.from('obras').select('id, name').eq('id', obraId).eq('org_id', orgFilter()).maybeSingle();
+      if (obra.error || !obra.data) throw new Error('Obra no accesible para este agente');
+      const procurement = await loadProcurement(supabase, obraId);
+      return textResult(name === 'leer_estado_obra'
+        ? { obra: obra.data, ...procurement }
+        : { obra: obra.data, comparisons: comparableQuotes(procurement.quotes), tasks: procurement.tasks });
+    }
     if (name === 'listar_obras_vivas') {
       let q = supabase
         .from('obras')

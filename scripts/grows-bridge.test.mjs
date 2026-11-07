@@ -88,3 +88,9 @@ test('simple edge cleanup is computed locally without Codex', () => {
   assert.equal(proposal.operations[0].id, 'ac');
   assert.equal(proposal.operations[0].type, 'delete_edge');
 });
+
+test('bridge keeps real procurement data in the agent context', () => {
+  const procurement = { tasks: [{ id: 't1', estado: 'en_curso' }], quotes: [{ id: 'q1', tarea_id: 't1', monto: 120, moneda: 'ARS' }] };
+  const context = compactJobContext({ canvas: { nodes: [], edges: [] }, procurement });
+  assert.deepEqual(context.procurement, procurement);
+});

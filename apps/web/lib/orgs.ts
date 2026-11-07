@@ -15,6 +15,8 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
     .from('organizations')
     .select('id, name, user_id')
       .eq('user_id', userId)
+    .order('created_at')
+    .limit(1)
     .maybeSingle();
 
   if (fetchError) {
@@ -29,6 +31,7 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
   const { data, error } = await supabase
     .from('organizations')
     .insert({
+      id: userId,
       name: defaultName,
       user_id: userId,
     })
@@ -36,6 +39,10 @@ export async function ensureOrgForUser(userId: string, fallbackName: string) {
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      const retry = await supabase.from('organizations').select('id, name, user_id').eq('id', userId).eq('user_id', userId).single();
+      if (!retry.error && retry.data) return retry.data;
+    }
     throw error;
   }
 

@@ -68,7 +68,7 @@ export function SocioHeader() {
   };
 
   const handleLogoClick = () => {
-    router.push('/socio/panel');
+    router.push('/inversores');
   };
 
   const getInitials = () => {

@@ -242,7 +242,7 @@ function LoginPageContent() {
             (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
         );
 
-        if (!role) {
+        if (!role && !redirectTarget) {
           setMissingRole(true);
           setStatusMessage(MISSING_ROLE_MESSAGE);
           return;
@@ -337,7 +337,7 @@ function LoginPageContent() {
           (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
       );
 
-      if (!role) {
+      if (!role && !redirectTarget) {
         setMissingRole(true);
         setStatusMessage(MISSING_ROLE_MESSAGE);
         setIsLoading(false);

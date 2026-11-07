@@ -33,6 +33,7 @@ export function isClienteNavItemActive(pathname: string, href: string): boolean 
 }
 
 export const CLIENTE_NAV_ITEMS = [
+  { href: '/inversores' as Route, label: 'Grows · feed y perfiles', icon: Building2 },
   { href: '/cliente/dashboard' as Route, label: 'Canvas', icon: LayoutGrid },
   { href: '/cliente/obras' as Route, label: 'Proyectos', icon: Building2 },
   { href: '/cliente/validar' as Route, label: 'Validaciones', icon: BadgeCheck },

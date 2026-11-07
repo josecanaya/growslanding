@@ -5,6 +5,7 @@ import {readCanvasSnapshot} from '@/lib/canvas/canvasPersistenceServer';
 import {supabaseRowsToPersisted} from '@/lib/canvas/canvasSupabaseMapper';
 import {bridgeResultSchema} from '@/lib/bridge/operations';
 import {z} from 'zod';
+import { loadProcurement } from '@/lib/obras/procurement';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 const capabilitySchema=z.array(z.object({id:z.enum(['openai','claude','cursor']),label:z.string().max(40),models:z.array(z.object({id:z.string().max(120),label:z.string().max(80),description:z.string().max(240)})).max(20),limitDescription:z.string().max(240)})).max(3);
@@ -28,7 +29,19 @@ export async function POST(request:NextRequest){
     if (contextUpdate.error) throw contextUpdate.error;
     if (!contextUpdate.data.length) return NextResponse.json({job:null});
    }
-   return NextResponse.json({job:{id:job.id,prompt:job.prompt,canvas:supabaseRowsToPersisted(snapshot.data),scopePathIds:job.context.scopePathIds??[],selectionIds:job.context.selectionIds??[],provider:job.context.provider??'local',model:job.context.model??'automatico',recentThread:((snapshot.data.obra.canvas_ui as any)?.hilo??[]).slice(-10).map((h:any)=>({role:h.role,text:h.text,at:h.at,scopePathIds:h.scopePathIds??null,selectionIds:h.selectionIds??null}))},leaseToken:job.lease_token});
+   let procurement;
+   try {
+    procurement = await loadProcurement(db, device.obra_id);
+   } catch {
+    await db.from('grows_bridge_jobs').update({status:'failed',error:'No se pudo leer el estado de tareas y cotizaciones. Volvé a enviar el pedido.',updated_at:new Date().toISOString()}).eq('id',job.id).eq('lease_token',job.lease_token).eq('status','running');
+    return NextResponse.json({job:null});
+   }
+   // Existing desktop connectors preserve recentThread, including read-only context.
+   const recentThread = [
+    ...((snapshot.data.obra.canvas_ui as any)?.hilo ?? []).slice(-10).map((h:any) => ({role:h.role,text:h.text,at:h.at,scopePathIds:h.scopePathIds??null,selectionIds:h.selectionIds??null})),
+    {role:'context',source:'grows-procurement',text:JSON.stringify({procurement}),at:new Date().toISOString()},
+   ];
+   return NextResponse.json({job:{procurement,id:job.id,prompt:job.prompt,canvas:supabaseRowsToPersisted(snapshot.data),scopePathIds:job.context.scopePathIds??[],selectionIds:job.context.selectionIds??[],provider:job.context.provider??'local',model:job.context.model??'automatico',recentThread},leaseToken:job.lease_token});
   }
   if(!input.jobId||!input.leaseToken)return NextResponse.json({message:'Falta trabajo o reserva'},{status:400});
   const patch=input.action==='heartbeat'?{lease_until:new Date(Date.now()+600000).toISOString(),activity:input.activity??'Procesando'}:input.action==='complete'?{status:'completed',result:input.result,usage:input.usage??{},activity:'Propuesta lista para revisar'}: {status:'failed',error:input.error??'El agente no pudo completar el trabajo.',usage:input.usage??{},activity:'No se pudo completar'};

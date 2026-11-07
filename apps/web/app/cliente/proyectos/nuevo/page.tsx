@@ -37,7 +37,7 @@ export default function NuevoProyectoDesdeIdeaPage() {
       if (!res.ok) {
         throw new Error(json.message ?? json.details ?? 'No se pudo crear el proyecto');
       }
-      const href = (json.redirectTo ?? `/cliente/tareas/${json.obra?.id}/editor`) as Route;
+      const href = (json.obra?.id ? `/obras/${json.obra.id}` : json.redirectTo) as Route;
       router.push(href);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');

@@ -136,7 +136,7 @@ export function compactJobContext(job) {
   const edges = (canvas.edges ?? []).filter((edge) => included.has(edge.sourceId) && included.has(edge.targetId)).map((edge) => ({
     id: edge.id, sourceId: edge.sourceId, targetId: edge.targetId, relation: edge.relation ?? 'precede',
   }));
-  return { scopePathIds: job.scopePathIds ?? [], selectionIds: job.selectionIds ?? [], recentThread: job.recentThread ?? [], canvas: { obraNombre: canvas.obraNombre, nodes, edges } };
+  return { scopePathIds: job.scopePathIds ?? [], selectionIds: job.selectionIds ?? [], recentThread: (job.recentThread ?? []).filter((entry) => !job.procurement || entry.source !== 'grows-procurement'), ...(job.procurement ? { procurement: job.procurement } : {}), canvas: { obraNombre: canvas.obraNombre, nodes, edges } };
 }
 
 function normalizedTemporalEdge(edge) {

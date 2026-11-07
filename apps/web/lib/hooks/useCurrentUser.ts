@@ -9,16 +9,11 @@ import { enforceSocioSingleSession } from '@/lib/auth/enforce-socio-single-sessi
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser-client';
 import { useAuthStore } from '@/lib/store/authStore';
 import type { SessionUser } from '@/lib/types/auth';
-import { normalizeRole } from '@/lib/roles';
+
 import { RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
 
-const AUTH_PREFIX = '/auth';
-/** Superficies públicas sin sesión: el watcher global no debe expulsarlas a login. */
-const PUBLIC_PREFIXES = ['/auth', '/obra-check'];
-
-function isPublicPath(path: string): boolean {
-  return PUBLIC_PREFIXES.some((p) => path.startsWith(p));
-}
+import { isPublicPath } from '@/lib/auth/public-paths';
+import { roleForPath } from '@/lib/auth/profile-roles';
 
 // Función global para verificar rate limit en localStorage
 function hasActiveRateLimit(): boolean {
@@ -38,14 +33,11 @@ function hasActiveRateLimit(): boolean {
   return true;
 }
 
-function mapSessionToUser(session: Session): SessionUser {
+function mapSessionToUser(session: Session, pathname: string): SessionUser {
   const appMeta = (session.user.app_metadata ?? {}) as Record<string, unknown>;
   const userMeta = (session.user.user_metadata ?? {}) as Record<string, unknown>;
 
-  const role =
-    normalizeRole(
-      (appMeta.role as string | undefined) ?? (userMeta.role as string | undefined)
-    ) ?? null;
+  const role = roleForPath(session.user, pathname);
 
   const orgId =
     (userMeta.org_id as string | undefined) ??
@@ -164,7 +156,7 @@ export function useCurrentUser(): SessionUser | null {
           return;
         }
 
-        const mapped = mapSessionToUser(data.session);
+        const mapped = mapSessionToUser(data.session, pathnameRef.current);
         setStoreUser(mapped);
         setUser(mapped);
         hasRateLimitRef.current = false;
@@ -203,7 +195,7 @@ export function useCurrentUser(): SessionUser | null {
 
         hasRateLimitRef.current = false;
         isRedirectingRef.current = false;
-        const mapped = mapSessionToUser(session);
+        const mapped = mapSessionToUser(session, pathnameRef.current);
         setStoreUser(mapped);
         setUser(mapped);
         if (mapped.role === 'SOCIO' && event === 'SIGNED_IN') {
@@ -219,8 +211,8 @@ export function useCurrentUser(): SessionUser | null {
       isRedirectingRef.current = false;
       sessionCheckRef.current = false;
     };
-    // Sin pathname en deps: solo montaje (y dev/supabase/store). Evita getSession en cada navegación.
-  }, [supabase, router, setStoreUser, resetStore]);
+    // Recheck when moving between public and operational spaces.
+  }, [supabase, router, setStoreUser, resetStore, pathname]);
 
   return user;
 }

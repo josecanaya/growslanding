@@ -142,7 +142,7 @@ export function GrowsHomeStitch() {
       if (!res.ok) {
         throw new Error(json.message ?? json.details ?? 'No se pudo crear el proyecto');
       }
-      const href = (json.redirectTo ?? `/cliente/tareas/${json.obra?.id}/editor`) as Route;
+      const href = (json.obra?.id ? `/obras/${json.obra.id}` : json.redirectTo) as Route;
       router.push(href);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');
@@ -152,7 +152,7 @@ export function GrowsHomeStitch() {
 
   const openObra = (id: string) => {
     setMobileProjectsOpen(false);
-    router.push(`/cliente/tareas/${id}/editor` as Route);
+    router.push(`/obras/${id}` as Route);
   };
 
   return (

@@ -10,7 +10,7 @@ El feed es público. Al tocar una obra se comprueba la identidad con Supabase y,
 
 Después del login, se recupera la preferencia `grows_feed_profile` de la cuenta. Para cuentas existentes, los perfiles operativos emitidos por el servidor se traducen a profesional o contratista. Si no hay perfil, se elige profesional, contratista o inversor y se guarda como preferencia de presentación.
 
-Los profesionales y contratistas entran en Trabajos; los inversores en Actividad. Los tres conservan el mismo espacio de obra y sus conversaciones habilitadas. Se puede editar la preferencia desde Mi perfil. Elegir un perfil para estas obras ficticias no concede permisos sobre obras reales.
+Los profesionales y contratistas entran en Trabajos; los inversores en Inversión. Los tres conservan el mismo espacio de obra y sus conversaciones habilitadas. Se puede editar la preferencia desde Mi perfil. Elegir un perfil para estas obras ficticias no concede permisos sobre obras reales.
 
 Contratista presenta evidencia → profesional valida → inversor consulta el avance validado. Las acciones del escenario siguen en memoria y se reinician al recargar; la identidad y la preferencia se conservan en Supabase.
 
@@ -39,3 +39,7 @@ Contratista presenta evidencia → profesional valida → inversor consulta el a
 La simulación comprueba una experiencia compartida y reglas de transición, no valida la operación técnica de una construcción. El avance es la proporción de bloques validados, con igual peso. No es avance físico ponderado ni certificado económico.
 
 Las quince obras ejercitan variantes del circuito evidencia-validación-dependencia. No simulan aún una contratación completa, pagos, un cronograma real, permisos de base de datos, concurrencia multiusuario ni interpretación libre mediante LLM. Para pasar a producción se requiere conectar participaciones por obra y permisos de servidor, eventos persistentes y bloques/tareas existentes. El canvas, los presupuestos y el puente actual permanecen sin cambios.
+
+## Inversión MCU
+
+Cada obra tiene un símbolo MCU, valor de referencia, historial de seis meses, emisión y tres rondas ficticias. El escenario financiero está fechado al 9 de noviembre de 2026. El valor de referencia se distingue del precio de emisión. El buscador combina obra, símbolo, ciudad y rondas abiertas o próximas. La calculadora usa cantidades enteras y centavos; no ejecuta compras. El seguimiento de rondas es local a la sesión. Estos datos no acreditan acciones societarias ni cotizaciones reales.

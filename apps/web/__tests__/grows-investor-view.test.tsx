@@ -1,0 +1,19 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
+import InvestorView from '@/components/grows/InvestorView';
+import { createScenarios } from '@/lib/obras/simulation';
+afterEach(cleanup);
+it('muestra cotización, rondas y cálculo ilustrativo y abre otra obra desde la búsqueda', () => {
+  const works=createScenarios();const onOpen=vi.fn();
+  render(<InvestorView obra={works[1]} works={works} onOpen={onOpen}/>);
+  expect(screen.getByRole('heading', {name:'Valor de referencia por MCU'})).toBeTruthy();
+  expect(screen.getByRole('heading', {name:'Ronda 2'})).toBeTruthy();
+  expect(screen.getByText('Próxima: ronda 3')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Calculá tu participación'), {target:{value:'0'}});
+  expect(screen.getByRole('alert')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('Buscar acciones MCU'), {target:{value:'CPAT'}});
+  fireEvent.click(screen.getByRole('button', {name:/CPAT · Casa Patio/}));
+  expect(onOpen).toHaveBeenCalledWith('demo-1');
+  fireEvent.click(screen.getByRole('button', {name:'Seguir esta ronda'}));
+  expect(screen.getByRole('status').textContent).toContain('esta sesión');
+});

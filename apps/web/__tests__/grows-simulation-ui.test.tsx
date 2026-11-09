@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, cleanup } from '@testing-library/react';
+import { act as reactAct, fireEvent, render, screen, cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const identity = vi.hoisted(() => ({ user: { id: 'user-1', user_metadata: { name: 'Ana Torres' } } as any, profile: 'profesional' as string | null, ready: true, chooseProfile: vi.fn() }));
 vi.mock('@/components/grows/useFeedIdentity', () => ({ useFeedIdentity: () => identity }));
@@ -27,12 +27,12 @@ it('mantiene el feed público y pide login solo al abrir una obra', () => {
   expect(screen.getByRole('link', { name: 'Iniciar sesión' }).getAttribute('href')).toBe('/auth/login?redirect=%2Finversores%2Fsimulacion%3Fobra%3Ddemo-1');
   expect(screen.queryByRole('heading', { name: 'Casa Patio' })).toBeNull();
 });
-it('recupera la obra del enlace después de iniciar sesión y solicita perfil si falta', () => {
+it('recupera la obra del enlace después de iniciar sesión y solicita perfil si falta', async () => {
   window.history.replaceState(null, '', '/inversores/simulacion?obra=demo-2');
   identity.profile = null;
   render(<Simulation />);
   expect(screen.getByRole('heading', { name: '¿Cómo participás en Grows?' })).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: /Inversor Hitos/ }));
+  await reactAct(async () => { fireEvent.click(screen.getByRole('button', { name: /Inversor Hitos/ })); });
   expect(identity.chooseProfile).toHaveBeenCalledWith('inversor');
 });
 it('un inversor entra directamente a su vista sin selector de prueba', () => {
@@ -41,6 +41,8 @@ it('un inversor entra directamente a su vista sin selector de prueba', () => {
   render(<Simulation />);
   expect(screen.getByRole('heading', { name: 'Taller del Sur' })).toBeTruthy();
   expect(screen.getByRole('heading', { name: 'La evolución de tu obra' })).toBeTruthy();
+  expect(screen.getByRole('heading', { name: 'Explorá acciones MCU' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Inversión' }).className).toContain('font-semibold');
   expect(screen.queryByRole('button', { name: 'Profesional' })).toBeNull();
 });
 it('filtra publicaciones guardadas sin instructivos', () => {

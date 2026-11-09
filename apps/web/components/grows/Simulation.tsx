@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useFeedIdentity } from './useFeedIdentity';
+import InvestorView, { InvestmentTeaser } from './InvestorView';
+import { investmentFor } from '@/lib/obras/investment-demo';
 import { obraReturnPath } from '@/lib/obras/feed-profile';
 import { ArrowLeft, ArrowUpRight, Bookmark, Check, Compass, Heart, MessageCircle, MoreHorizontal, Search, Send, Sparkles, Users, X } from 'lucide-react';
 import { act, createScenarios, inspectScenario, visibleActivity, type Action, type Role, type Scenario } from '@/lib/obras/simulation';
@@ -40,7 +42,7 @@ export default function Simulation() {
   }, []);
   useEffect(() => {
     if (pending && identity.ready && identity.user && identity.profile) {
-      setSelected(pending); setPending(null); setTab(identity.profile === 'inversor' ? 'Actividad' : 'Trabajos');
+      setSelected(pending); setPending(null); setTab(identity.profile === 'inversor' ? 'Inversión' : 'Trabajos');
     }
   }, [pending, identity.ready, identity.user, identity.profile]);
   function open(id: string | null) {
@@ -48,14 +50,14 @@ export default function Simulation() {
     if (!id) { setSelected(null); setPending(null); window.history.replaceState(null, '', '/inversores/simulacion'); }
     else {
       window.history.replaceState(null, '', obraReturnPath(id));
-      if (identity.ready && identity.user && identity.profile) { setSelected(id); setTab(identity.profile === 'inversor' ? 'Actividad' : 'Trabajos'); }
+      if (identity.ready && identity.user && identity.profile) { setSelected(id); setTab(identity.profile === 'inversor' ? 'Inversión' : 'Trabajos'); }
       else setPending(id);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   async function chooseProfile(profile: Role) {
     setProfileBusy(true); setProfileError('');
-    try { await identity.chooseProfile(profile); setChoosing(false); }
+    try { await identity.chooseProfile(profile); setChoosing(false); setTab(profile === 'inversor' ? 'Inversión' : 'Trabajos'); }
     catch (error) { setProfileError(error instanceof Error ? error.message : 'No pudimos guardar el perfil.'); }
     finally { setProfileBusy(false); }
   }
@@ -72,7 +74,7 @@ export default function Simulation() {
     }
     catch (error) { setNotice(error instanceof Error ? error.message : 'No pudimos guardar el cambio.'); }
   }
-  const filtered = works.filter(w => `${w.name} ${w.city} ${w.type}`.toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')) && (filter !== 'Siguiendo' || w.following) && (filter !== 'Guardados' || saved.includes(w.id)));
+  const filtered = works.filter(w => `${w.name} ${w.city} ${w.type} ${role === 'inversor' ? investmentFor(w).ticker : ''}`.toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es')) && (filter !== 'Siguiendo' || w.following) && (filter !== 'Guardados' || saved.includes(w.id)));
   return <div className="min-h-screen bg-[#f4f5f1] text-[#20382f]">
     {(needsLogin || needsProfile || (pending && !identity.ready)) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#122a23]/50 p-5 backdrop-blur-sm"><section role="dialog" aria-modal="true" aria-labelledby="access-title" className="relative w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
       <button aria-label="Cerrar acceso" onClick={() => { setPending(null); setChoosing(false); setProfileError(''); window.history.replaceState(null, '', selected ? obraReturnPath(selected) : '/inversores/simulacion'); }} className="absolute right-5 top-5 text-[#839075]"><X size={19}/></button>
@@ -97,6 +99,7 @@ export default function Simulation() {
           <div className="space-y-7">{filtered.map((w, i) => <article key={w.id} className="overflow-hidden rounded-2xl border border-[#e0e5dc] bg-white">
             <div className="flex items-center gap-3 px-5 py-4"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8edde] text-xs font-semibold">{initials(w.professional)}</span><button onClick={() => open(w.id)} className="text-left"><p className="text-sm font-semibold">{w.professional} <span className="font-normal text-[#86917f]">en</span> {w.name}</p><p className="mt-0.5 text-xs text-[#8a9583]">{w.city} · Hace {i + 1} h</p></button><button aria-label={`Abrir ${w.name}`} onClick={() => open(w.id)} className="ml-auto"><MoreHorizontal size={20}/></button></div>
             <p className="px-5 pb-4 text-sm leading-relaxed">{w.situation} <span className="text-[#6e8a58]">#{w.type.replaceAll(' ', '')} #EnObra</span></p>
+            {role === 'inversor' && <InvestmentTeaser obra={w}/>}
             <button onClick={() => open(w.id)} className="relative block w-full text-left"><img src={image(w)} alt={`Obra ${w.name} en ${w.city}`} loading={i ? 'lazy' : 'eager'} className="aspect-[4/3] w-full object-cover"/><span className="absolute bottom-5 left-5 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold shadow-sm">{w.name} ↗</span></button>
             <div className="p-5"><div className="flex items-center gap-5"><button aria-label={`Me gusta ${w.name}`} aria-pressed={likes.includes(w.id)} onClick={() => toggle(w.id, likes, setLikes)}><Heart size={23} fill={likes.includes(w.id) ? '#ab6256' : 'none'} className={likes.includes(w.id) ? 'text-[#ab6256]' : ''}/></button><button aria-label={`Comentar en ${w.name}`} onClick={() => open(w.id)}><MessageCircle size={23}/></button><button aria-label={`Ver ${w.name}`} onClick={() => open(w.id)}><ArrowUpRight size={23}/></button><button className="ml-auto" aria-label={`Guardar ${w.name}`} aria-pressed={saved.includes(w.id)} onClick={() => toggle(w.id, saved, setSaved)}><Bookmark size={22} fill={saved.includes(w.id) ? '#20382f' : 'none'}/></button></div><p className="mt-3 text-xs font-semibold">{28 + i * 7 + Number(likes.includes(w.id))} personas acompañan esta obra</p><button onClick={() => open(w.id)} className="mt-3 text-sm text-[#89937f]">Ver la conversación · {visibleActivity(w, 'publico').length} novedades</button>{visibleActivity(w, 'publico').slice(-1).map(e => <p key={e.id} className="mt-2 text-sm"><strong>{e.author}</strong> <span className="text-[#66745e]">{e.text}</span></p>)}</div>
           </article>)}</div>{!filtered.length && <p className="rounded-2xl bg-white p-8 text-sm text-[#718064]">Todavía no hay obras aquí.</p>}
@@ -104,8 +107,9 @@ export default function Simulation() {
           <button onClick={() => open(null)} className="mb-5 flex items-center gap-2 text-sm text-[#718064]"><ArrowLeft size={16}/> Volver</button>
           <section className="overflow-hidden rounded-2xl border border-[#e0e5dc] bg-white"><img src={image(obra)} alt={obra.name} className="aspect-[16/10] w-full object-cover"/><div className="p-6"><div className="flex items-start justify-between gap-4"><div><p className="text-xs text-[#829075]">{obra.city} · {obra.type}</p><h1 className="mt-2 text-3xl font-semibold tracking-tight">{obra.name}</h1></div><button onClick={() => dispatch({type:'follow'})} className={primary}>{obra.following ? 'Siguiendo ✓' : 'Seguir'}</button></div><p className="mt-4 text-sm leading-relaxed text-[#6b7c62]">{obra.situation}</p><div className="mt-5 flex items-center gap-3"><div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8edde]"><div className="h-full bg-[#87a56b]" style={{width:`${report!.progress}%`}}/></div><span className="text-xs text-[#7c8b70]">{report!.progress}% de hitos validados</span></div></div></section>
           <div className="my-5 flex items-center justify-between gap-3"><div><p className="text-xs text-[#829075]">{accountName} · {labels[role]}</p><h2 className="mt-1 text-lg font-semibold">{role === 'profesional' ? 'Tu espacio de coordinación' : role === 'contratista' ? 'Tu trabajo en esta obra' : 'La evolución de tu obra'}</h2></div><button onClick={() => setChoosing(true)} className="text-xs text-[#718064] underline">Mi perfil</button></div>
-          <div className="mb-5 flex border-b border-[#dce3d5]">{['Actividad','Trabajos','Personas'].map(t => <button key={t} onClick={() => setTab(t)} className={`px-5 py-3 text-sm ${tab === t ? 'border-b-2 border-[#193c32] font-semibold' : 'text-[#839075]'}`}>{t}</button>)}</div>
+          <div className="mb-5 flex border-b border-[#dce3d5]">{(role === 'inversor' ? ['Inversión','Actividad','Trabajos','Personas'] : ['Actividad','Trabajos','Personas']).map(t => <button key={t} onClick={() => setTab(t)} className={`px-5 py-3 text-sm ${tab === t ? 'border-b-2 border-[#193c32] font-semibold' : 'text-[#839075]'}`}>{t}</button>)}</div>
           {notice && <p role="status" className="mb-4 rounded-xl bg-[#eee8dc] p-3 text-sm">{notice}</p>}
+          {tab === 'Inversión' && role === 'inversor' && <InvestorView key={obra.id} obra={obra} works={works} onOpen={open} />}
           {tab === 'Actividad' && <section className="space-y-4">{visibleActivity(obra, role).map(e => <article key={e.id} className="rounded-2xl border border-[#e0e5dc] bg-white p-5"><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e9edde] text-xs font-semibold">{initials(e.author)}</span><div><p className="text-sm font-semibold">{e.author}</p><p className="text-[11px] text-[#8a957e]">{labels[e.role]}{e.visibility === 'equipo' ? ' · Equipo de obra' : ''}</p></div></div><p className="mt-4 text-sm leading-relaxed">{e.text}</p></article>)}<div className="rounded-2xl bg-white p-4"><label className="sr-only" htmlFor="comment">Escribir un comentario</label><textarea id="comment" value={text} onChange={e => setText(e.target.value)} maxLength={1000} placeholder="Sumate a la conversación..." className="w-full resize-none bg-transparent p-2 text-sm outline-none"/><div className="flex justify-end"><button disabled={!text.trim()} aria-label="Publicar comentario" onClick={() => dispatch({type:'comment',text})} className={primary}><Send size={16}/></button></div></div></section>}
           {tab === 'Trabajos' && <section className="space-y-4">{obra.blocks.filter(b => role === 'profesional' || role === 'contratista' || b.id !== 'propuesta').map(b => <article key={b.id} className="rounded-2xl border border-[#e0e5dc] bg-white p-5"><div className="flex justify-between gap-3"><h2 className="font-semibold">{b.title}</h2>{b.state === 'validado' && <Check size={19} className="text-[#7e9d64]"/>}</div><p className="mt-2 text-xs text-[#859277]">{states[b.state]}</p>{(role === 'contratista' || role === 'profesional') && b.evidence && <p className="mt-4 text-sm text-[#6f7d65]">{b.evidence}</p>}</article>)}{role === 'contratista' && current?.state === 'en_curso' && <div className="rounded-2xl bg-white p-5"><textarea aria-label="Evidencia del trabajo" value={text} onChange={e => setText(e.target.value)} placeholder="Contá el avance y la evidencia del trabajo..." className="mb-3 w-full rounded-xl border p-3 text-sm"/><button disabled={!text.trim()} onClick={() => dispatch({type:'evidence',text})} className={primary}>Presentar avance</button></div>}{role === 'profesional' && current?.state === 'presentado' && <button onClick={() => dispatch({type:'validate'})} className={primary}>Validar avance</button>}</section>}
           {tab === 'Personas' && <section className="space-y-3">{[{name:obra.professional,role:'Profesional'},{name:obra.contractor,role:'Contratista'},{name:obra.investor,role:'Inversor'}].map(p => <article key={p.role} className="flex items-center gap-4 rounded-2xl bg-white p-5"><span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e4ebda] text-sm">{initials(p.name)}</span><div><h2 className="font-semibold">{p.name}</h2><p className="text-xs text-[#829075]">{p.role}</p></div></article>)}</section>}

@@ -1,4 +1,5 @@
 "use client";
+import { safeReturnPath } from '@/lib/auth/public-paths';
 
 import { Suspense, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -25,19 +26,7 @@ function isAuthRateLimitError(err: {
 }
 
 function sanitizeRedirect(target: string | null): string | null {
-  if (!target) {
-    return null;
-  }
-
-  if (!target.startsWith("/")) {
-    return null;
-  }
-
-  if (target.startsWith("/auth")) {
-    return null;
-  }
-
-  return target;
+  return safeReturnPath(target, '') || null;
 }
 
 /** Supervivencia Strict Mode: primer layout borra `code` de la URL. */
@@ -464,7 +453,7 @@ function CallbackPageContent() {
           return;
         }
 
-        if (redirectTarget && (redirectTarget === '/inversores' || redirectTarget.startsWith('/inversores?') || redirectTarget === '/acceder' || redirectTarget.startsWith('/acceder?'))) {
+        if (redirectTarget && (redirectTarget === '/inversores' || redirectTarget.startsWith('/inversores?') || redirectTarget.startsWith('/inversores/') || redirectTarget === '/acceder' || redirectTarget.startsWith('/acceder?'))) {
           router.replace(redirectTarget as Route);
           return;
         }

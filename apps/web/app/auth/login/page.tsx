@@ -1,4 +1,5 @@
 'use client';
+import { safeReturnPath } from '@/lib/auth/public-paths';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import {
@@ -23,19 +24,7 @@ const MISSING_ROLE_MESSAGE =
   'Tu cuenta no tiene rol asignado. Contacta a soporte.';
 
 function sanitizeRedirect(target: string | null): string | null {
-  if (!target) {
-    return null;
-  }
-
-  if (!target.startsWith('/')) {
-    return null;
-  }
-
-  if (target.startsWith('/auth')) {
-    return null;
-  }
-
-  return target;
+  return safeReturnPath(target, '') || null;
 }
 
 function StatusMessage({ 

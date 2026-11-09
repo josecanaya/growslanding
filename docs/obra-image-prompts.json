@@ -1,0 +1,96 @@
+{
+  "tool": "image_gen built-in",
+  "promptTemplate": "Use case: photorealistic-natural. Generate one landscape architectural editorial photograph for a construction social feed: {subject}. Authentic Argentine contemporary architecture, believable construction materials, beautiful natural daylight, candid high-end architecture magazine photography, realistic textures, no text, no logos, no watermarks. Full bleed composition, landscape 3:2. Save image for project use.",
+  "images": [
+    {
+      "id": "demo-1",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-e923c30a-6727-473c-9e08-65f01af43ea2.png",
+      "output": "apps/web/public/images/obras/demo-1.webp",
+      "subject": "Casa Patio, modern courtyard house in Rosario with exposed concrete frame and brick walls under construction"
+    },
+    {
+      "id": "demo-2",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-08813fbd-af67-43b3-8c3f-299b8ce19619.png",
+      "output": "apps/web/public/images/obras/demo-2.webp",
+      "subject": "Ribera Norte, mid-rise riverside apartment building in Santa Fe with scaffolding"
+    },
+    {
+      "id": "demo-3",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-cef4766e-894b-4ee2-a287-1a9e82d6072e.png",
+      "output": "apps/web/public/images/obras/demo-3.webp",
+      "subject": "Taller del Sur, contemporary small commercial workshop in Cordoba, electrical fitout underway"
+    },
+    {
+      "id": "demo-4",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-3b0fffd3-e6a9-4437-ba9a-d710f05ae9ac.png",
+      "output": "apps/web/public/images/obras/demo-4.webp",
+      "subject": "Los Aromos, modern low brick house in Funes with large window openings"
+    },
+    {
+      "id": "demo-5",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-17ffcc08-6c2f-4ac6-b913-ba5d9e7f98bf.png",
+      "output": "apps/web/public/images/obras/demo-5.webp",
+      "subject": "Distrito Parque, apartment foundations and excavation in Mendoza with mountains distant"
+    },
+    {
+      "id": "demo-6",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-e8c1be91-0920-4bc6-b121-4d5283ddd765.png",
+      "output": "apps/web/public/images/obras/demo-6.webp",
+      "subject": "Escuela Horizonte, welcoming contemporary school in La Plata with access ramp under construction"
+    },
+    {
+      "id": "demo-7",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-7d9c7df5-411e-4338-902f-a25b1683c635.png",
+      "output": "apps/web/public/images/obras/demo-7.webp",
+      "subject": "Mercado Central, covered market steel structure being erected in Parana"
+    },
+    {
+      "id": "demo-8",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-17fa13ec-6c72-4906-a72f-2ea06fe9aae4.png",
+      "output": "apps/web/public/images/obras/demo-8.webp",
+      "subject": "Casa del Lago, timber and stone house under construction beside a Patagonian lake"
+    },
+    {
+      "id": "demo-9",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-46d6c9ae-a19d-4c18-8cb1-785dc27cc11b.png",
+      "output": "apps/web/public/images/obras/demo-9.webp",
+      "subject": "Clinica Alameda, contemporary small medical clinic interior with plumbing rough-in"
+    },
+    {
+      "id": "demo-10",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-bf02824f-f56e-44f1-b990-724e6c7e924d.png",
+      "output": "apps/web/public/images/obras/demo-10.webp",
+      "subject": "Duplex Encuentro, pair of contemporary duplex houses with exposed concrete slab in Neuquen"
+    },
+    {
+      "id": "demo-11",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-7093dc64-6b13-4c6c-98b7-cb913d99c69e.png",
+      "output": "apps/web/public/images/obras/demo-11.webp",
+      "subject": "Hotel del Valle, boutique courtyard hotel construction in Salta with warm terracotta"
+    },
+    {
+      "id": "demo-12",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-9abd5b94-9cd3-4700-a6d7-d1d9289602a4.png",
+      "output": "apps/web/public/images/obras/demo-12.webp",
+      "subject": "Centro Semilla, bright community center nearing completion in Tucuman"
+    },
+    {
+      "id": "demo-13",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-e2db9937-5d02-4af0-8a38-f4db8816bc56.png",
+      "output": "apps/web/public/images/obras/demo-13.webp",
+      "subject": "Galpon Logistico, large industrial warehouse with concrete floor work in Pilar"
+    },
+    {
+      "id": "demo-14",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-e483b20a-5672-4664-8f4d-b031d6712067.png",
+      "output": "apps/web/public/images/obras/demo-14.webp",
+      "subject": "Pasaje Olivos, careful renovation of a historic townhouse in Vicente Lopez"
+    },
+    {
+      "id": "demo-15",
+      "source": "C:\\Users\\luci_\\.codex\\generated_images\\01a1b382-b3f6-7820-acdb-572a163c0004\\exec-90fc166f-5489-4bc6-8ab4-ed8a598ab5da.png",
+      "output": "apps/web/public/images/obras/demo-15.webp",
+      "subject": "Terrazas del Este, coastal apartment balconies with new glass railings in Mar del Plata"
+    }
+  ]
+}

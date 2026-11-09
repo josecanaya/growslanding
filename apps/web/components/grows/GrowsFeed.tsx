@@ -63,6 +63,7 @@ export default function GrowsFeed({ projects, unavailable }: { projects: PublicO
       <main id="feed" className="mx-auto grid max-w-7xl gap-8 px-5 py-8 lg:grid-cols-[210px_minmax(0,1fr)]">
         <aside className="space-y-6">
           <Link href="/inversores" className="flex items-center gap-3 rounded-xl bg-[#e9f0e6] px-4 py-3 font-semibold"><Compass size={19} /> Descubrir obras</Link>
+          <Link href={'/inversores/simulacion' as Route} className="block rounded-xl border border-[#dfe6df] bg-white px-4 py-3 text-sm">La comunidad en obra →</Link>
           <div className="space-y-2">
             <p className="px-4 text-xs font-semibold uppercase tracking-widest text-[#718274]">Mi mirada</p>
             {views.map(({ id, label, icon: Icon }) => (

@@ -26,10 +26,13 @@ it('calcula estados en apertura, cierre, agotamiento y próxima apertura', () =>
   expect(roundStatus(r, '2026-12-21')).toBe('cerrada');
   expect(roundStatus({ ...r, subscribed: r.offered }, r.opens)).toBe('cerrada');
 });
-it('calcula en centavos y rechaza fracciones, negativos o exceso de emisión', () => {
+it('convierte USD a MCU enteras y explicita la diferencia sin aplicar', () => {
   const r = investmentFor({ id: 'demo-2' }).rounds[1];
-  expect(subscriptionEstimate(r, '100')).toEqual({ quantity: 100, totalCents: 10500 });
-  for (const value of ['1.5', '-1', '0', '1000000', '', 'Infinity']) expect(subscriptionEstimate(r, value)).toBeNull();
+  expect(subscriptionEstimate(r, '3500')).toEqual({ quantity: 3333, budgetCents: 350000, totalCents: 349965, remainderCents: 35 });
+  expect(subscriptionEstimate(r, '1,05')).toEqual({ quantity: 1, budgetCents: 105, totalCents: 105, remainderCents: 0 });
+  expect(subscriptionEstimate(r, '1.05')?.quantity).toBe(1);
+  expect(subscriptionEstimate(r, '55440')?.quantity).toBe(52800);
+  for (const value of ['-1', '0', '1.04', '55440.01', '1000000', '', 'Infinity', '1.005', '1e3']) expect(subscriptionEstimate(r, value)).toBeNull();
 });
 it('busca por símbolo y ciudad sin acentos y combina el estado', () => {
   const obras=createScenarios();

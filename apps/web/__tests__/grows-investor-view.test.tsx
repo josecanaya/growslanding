@@ -9,7 +9,8 @@ it('muestra cotización, rondas y cálculo ilustrativo y abre otra obra desde la
   expect(screen.getByRole('heading', {name:'Valor de referencia por MCU'})).toBeTruthy();
   expect(screen.getByRole('heading', {name:'Ronda 2'})).toBeTruthy();
   expect(screen.getByText('Próxima: ronda 3')).toBeTruthy();
-  fireEvent.change(screen.getByLabelText('Calculá tu participación'), {target:{value:'0'}});
+  expect(screen.getByText('3.333 MCU')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('¿Cuántos USD querés invertir?'), {target:{value:'0'}});
   expect(screen.getByRole('alert')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('Buscar acciones MCU'), {target:{value:'CPAT'}});
   fireEvent.click(screen.getByRole('button', {name:/CPAT · Casa Patio/}));

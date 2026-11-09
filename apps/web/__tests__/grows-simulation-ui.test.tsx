@@ -54,3 +54,14 @@ it('filtra publicaciones guardadas sin instructivos', () => {
   expect(screen.queryByAltText('Obra Ribera Norte en Santa Fe')).toBeNull();
   expect(screen.queryByText('Escenario a resolver')).toBeNull();
 });
+it('prepara una consulta de una unidad en la conversación de la misma obra', () => {
+  identity.profile = 'inversor';
+  window.history.replaceState(null, '', '/inversores/simulacion?obra=demo-2');
+  render(<Simulation />);
+  fireEvent.click(screen.getByRole('button', { name: 'Paquetes' }));
+  fireEvent.click(screen.getByRole('button', { name: /Departamento 3B/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Consultar por esta unidad' }));
+  expect((screen.getByLabelText('Escribir un comentario') as HTMLTextAreaElement).value).toContain('Departamento 3B de Ribera Norte');
+  expect(screen.getAllByRole('article').some(item => item.textContent?.includes('Me interesa Departamento'))).toBe(false);
+  expect(screen.getByRole('heading', { name: 'Ribera Norte' })).toBeTruthy();
+});

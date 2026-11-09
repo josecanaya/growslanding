@@ -34,11 +34,15 @@ export function roundOverview(investment: Investment, asOf = INVESTMENT_AS_OF) {
   const active = open ?? next ?? investment.rounds.at(-1)!;
   return { open, next, active, available: Math.max(0, active.offered - active.subscribed), fundedPercent: Math.round(active.subscribed / active.offered * 100) };
 }
-export function subscriptionEstimate(round: Round, raw: string): { quantity: number; totalCents: number } | null {
-  if (!/^\d+$/.test(raw)) return null;
-  const quantity = Number(raw);
-  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > round.offered - round.subscribed || !Number.isSafeInteger(quantity * round.priceCents)) return null;
-  return { quantity, totalCents: quantity * round.priceCents };
+export function subscriptionEstimate(round: Round, raw: string): { quantity: number; budgetCents: number; totalCents: number; remainderCents: number } | null {
+  if (!/^\d+(?:[.,]\d{1,2})?$/.test(raw.trim()) || !Number.isSafeInteger(round.priceCents) || round.priceCents < 1) return null;
+  const [whole, fraction = ''] = raw.trim().replace(',', '.').split('.');
+  const budgetCents = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+  const available = round.offered - round.subscribed;
+  if (!Number.isSafeInteger(budgetCents) || budgetCents < round.priceCents || budgetCents > available * round.priceCents) return null;
+  const quantity = Math.floor(budgetCents / round.priceCents);
+  const totalCents = quantity * round.priceCents;
+  return { quantity, budgetCents, totalCents, remainderCents: budgetCents - totalCents };
 }
 export function searchInvestments(works: Scenario[], query: string, status: 'todas' | 'abierta' | 'proxima') {
   const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es');

@@ -42,4 +42,10 @@ Las quince obras ejercitan variantes del circuito evidencia-validación-dependen
 
 ## Inversión MCU
 
-Cada obra tiene un símbolo MCU, valor de referencia, historial de seis meses, emisión y tres rondas ficticias. El escenario financiero está fechado al 9 de noviembre de 2026. El valor de referencia se distingue del precio de emisión. El buscador combina obra, símbolo, ciudad y rondas abiertas o próximas. La calculadora usa cantidades enteras y centavos; no ejecuta compras. El seguimiento de rondas es local a la sesión. Estos datos no acreditan acciones societarias ni cotizaciones reales.
+Cada obra tiene un símbolo MCU, valor de referencia, historial de seis meses, emisión y tres rondas ficticias. El escenario financiero está fechado al 9 de noviembre de 2026. El valor de referencia se distingue del precio de emisión. El buscador combina obra, símbolo, ciudad y rondas abiertas o próximas. La calculadora recibe USD, devuelve MCU enteras y muestra el importe aplicado y la diferencia sin aplicar; opera en centavos y admite coma o punto decimal. No ejecuta compras. El seguimiento de rondas es local a la sesión. Estos datos no acreditan acciones societarias ni cotizaciones reales.
+
+## Paquetes para una unidad completa
+
+La pestaña Paquetes permite explorar viviendas completas dentro de la misma obra. En obras residenciales hay dos unidades ficticias con superficie, ambientes y precio total. Las demás obras muestran que no hay viviendas publicadas. El precio se divide en cinco etapas: proyecto/documentación 20%, fundaciones/estructura 30%, cerramientos/instalaciones 25%, terminaciones 20%, inspección/entrega 5%. Los importes suman exactamente el precio, ajustando centavos en la última etapa.
+
+Es un esquema ilustrativo asociado a hitos, sin cuotas cobradas ni fechas contractuales. Los paquetes no se convierten automáticamente desde MCU. Consultar por una unidad prepara un borrador en la conversación de la obra; el usuario lo revisa y publica. No se crea una reserva ni se realiza un pago.

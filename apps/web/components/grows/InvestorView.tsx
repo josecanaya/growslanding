@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ArrowUpRight, Bell, CalendarDays, Search, TrendingUp } from 'lucide-react';
 import type { Scenario } from '@/lib/obras/simulation';
 import FinancialAnalysis from './FinancialAnalysis';
-import { INVESTMENT_AS_OF, investmentFor, roundOverview, roundStatus, searchInvestments, subscriptionEstimate } from '@/lib/obras/investment-demo';
+import { investmentFor, roundOverview, roundStatus, searchInvestments, subscriptionEstimate } from '@/lib/obras/investment-demo';
 
 const money = (cents: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'code' }).format(cents / 100);
 const integer = (value: number) => new Intl.NumberFormat('es-AR').format(value);
@@ -25,22 +25,9 @@ export default function InvestorView({ obra, works, onOpen }: { obra: Scenario; 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<'todas' | 'abierta' | 'proxima'>('todas');
   const [watching, setWatching] = useState(false);
-  const [range, setRange] = useState<'3M' | '6M'>('6M');
   const estimate = subscriptionEstimate(active, amount);
-  const history = range === '3M' ? investment.history.slice(-3) : investment.history;
-  const low = Math.min(...history.map(p => p.cents)) - 2;
-  const high = Math.max(...history.map(p => p.cents)) + 2;
-  const points = history.map((p, i) => `${20 + i * 560 / (history.length - 1)},${130 - (p.cents - low) / (high - low) * 105}`).join(' ');
   const matches = searchInvestments(works, query, status);
   return <div className="space-y-5">
-    <section className={panel}>
-      <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-widest text-[#829075]">{investment.ticker} · MCU de {obra.name}</p><span className="rounded-full bg-[#eef2e7] px-3 py-1 text-[10px] text-[#718064]">Simulación · {date(INVESTMENT_AS_OF)}</span></div>
-      <div className="mt-5 flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-sm text-[#718064]">Valor de referencia por MCU</h2><p className="mt-1 text-4xl font-semibold tracking-tight">{money(investment.referenceCents)}</p></div><div className="flex gap-2">{(['3M', '6M'] as const).map(r => <button key={r} onClick={() => setRange(r)} aria-pressed={range === r} className={`rounded-full px-4 py-2 text-xs ${range === r ? 'bg-[#193c32] text-white' : 'bg-[#f1f4ec]'}`}>{r}</button>)}</div></div>
-      <svg viewBox="0 0 600 160" className="mt-4 w-full" role="img" aria-label={`Evolución ilustrativa de MCU ${investment.ticker}, último valor ${money(investment.referenceCents)}`}><line x1="20" y1="135" x2="580" y2="135" stroke="#e4eadc"/><line x1="20" y1="75" x2="580" y2="75" stroke="#edf0e8"/><polygon points={`20,135 ${points} 580,135`} fill="#eef4e7"/><polyline points={points} stroke="#6f9153" strokeWidth="3" fill="none"/>{history.map((p,i) => <circle key={p.date} cx={20 + i * 560 / (history.length - 1)} cy={130 - (p.cents-low)/(high-low)*105} r="4" fill="#6f9153"><title>{date(p.date)} · {money(p.cents)}</title></circle>)}</svg>
-      <div className="flex justify-between text-[10px] text-[#829075]"><span>{date(history[0].date)}</span><span>{date(history.at(-1)!.date)}</span></div>
-      <div className="mt-5 grid gap-4 border-t border-[#e6ebdf] pt-5 sm:grid-cols-3"><div><p className="text-xs text-[#829075]">MCU emitidas</p><p className="mt-1 font-semibold">{integer(investment.issued)}</p></div><div><p className="text-xs text-[#829075]">Precio de {open ? 'ronda abierta' : 'próxima ronda'}</p><p className="mt-1 font-semibold">{money(active.priceCents)} / MCU</p></div><div><p className="text-xs text-[#829075]">Capital representado a referencia</p><p className="mt-1 font-semibold">{money(investment.issued * investment.referenceCents)}</p></div></div>
-      <p className="mt-4 text-[11px] leading-relaxed text-[#829075]">Las MCU representan participaciones ficticias de esta obra. Precios e historial ilustrativos; esta vista no acredita acciones societarias ni una cotización de mercado real.</p>
-    </section>
     <FinancialAnalysis key={obra.id} obra={obra} position={estimate}/>
     <section className={panel}>
       <div className="flex items-center justify-between"><h2 className="text-xl font-semibold">Ronda {active.number}</h2><span className="rounded-full bg-[#e9efdf] px-3 py-1 text-xs">{statusLabels[roundStatus(active)]}</span></div>

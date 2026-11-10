@@ -1,0 +1,20 @@
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, expect, it } from 'vitest';
+import FinancialAnalysis from '@/components/grows/FinancialAnalysis';
+import { createScenarios } from '@/lib/obras/simulation';
+afterEach(cleanup);
+it('recalcula la posición, permite explorar pérdidas y restablece supuestos',()=>{
+  render(<FinancialAnalysis obra={createScenarios()[1]} position={{quantity:3333,totalCents:349965}}/>);
+  expect(screen.getByRole('heading',{name:'Comparables de Santa Fe'})).toBeTruthy();
+  const before=screen.getByText('Distribución estimada').textContent;
+  fireEvent.change(screen.getByLabelText('Venta futura USD por m²'),{target:{value:'3000'}});
+  expect(screen.getByText('Distribución estimada').textContent).not.toBe(before);
+  fireEvent.change(screen.getByLabelText('Costos pendientes USD'),{target:{value:'10000000'}});
+  expect(screen.getByText('Distribución estimada').textContent).toContain('0,00');
+  expect(screen.getByRole('status').textContent).toContain('financiación adicional');
+  fireEvent.change(screen.getByLabelText('Meses hasta venta'),{target:{value:'0'}});
+  expect(screen.getByRole('alert')).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Restablecer'}));
+  expect(screen.queryByRole('alert')).toBeNull();
+  expect(screen.queryByRole('status')).toBeNull();
+});

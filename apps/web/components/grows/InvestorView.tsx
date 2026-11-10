@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ArrowUpRight, Bell, CalendarDays, Search, TrendingUp } from 'lucide-react';
 import type { Scenario } from '@/lib/obras/simulation';
+import FinancialAnalysis from './FinancialAnalysis';
 import { INVESTMENT_AS_OF, investmentFor, roundOverview, roundStatus, searchInvestments, subscriptionEstimate } from '@/lib/obras/investment-demo';
 
 const money = (cents: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'USD', currencyDisplay: 'code' }).format(cents / 100);
@@ -40,6 +41,7 @@ export default function InvestorView({ obra, works, onOpen }: { obra: Scenario; 
       <div className="mt-5 grid gap-4 border-t border-[#e6ebdf] pt-5 sm:grid-cols-3"><div><p className="text-xs text-[#829075]">MCU emitidas</p><p className="mt-1 font-semibold">{integer(investment.issued)}</p></div><div><p className="text-xs text-[#829075]">Precio de {open ? 'ronda abierta' : 'próxima ronda'}</p><p className="mt-1 font-semibold">{money(active.priceCents)} / MCU</p></div><div><p className="text-xs text-[#829075]">Capital representado a referencia</p><p className="mt-1 font-semibold">{money(investment.issued * investment.referenceCents)}</p></div></div>
       <p className="mt-4 text-[11px] leading-relaxed text-[#829075]">Las MCU representan participaciones ficticias de esta obra. Precios e historial ilustrativos; esta vista no acredita acciones societarias ni una cotización de mercado real.</p>
     </section>
+    <FinancialAnalysis key={obra.id} obra={obra} position={estimate}/>
     <section className={panel}>
       <div className="flex items-center justify-between"><h2 className="text-xl font-semibold">Ronda {active.number}</h2><span className="rounded-full bg-[#e9efdf] px-3 py-1 text-xs">{statusLabels[roundStatus(active)]}</span></div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2"><div><p className="text-xs text-[#829075]">Objetivo de la ronda</p><p className="mt-1 text-2xl font-semibold">{money(active.offered * active.priceCents)}</p></div><div><p className="text-xs text-[#829075]">Suscripciones simuladas</p><p className="mt-1 text-2xl font-semibold">{money(active.subscribed * active.priceCents)}</p></div></div>
@@ -51,6 +53,7 @@ export default function InvestorView({ obra, works, onOpen }: { obra: Scenario; 
         {estimate && <div className="mt-4 flex flex-wrap justify-between gap-3 border-t border-[#dce4d4] pt-3 text-xs text-[#718064]"><span>Importe aplicado: <strong>{money(estimate.totalCents)}</strong></span><span>Diferencia sin aplicar: <strong>{money(estimate.remainderCents)}</strong></span></div>}
         {!estimate && <p role="alert" className="mt-3 text-xs text-red-700">Ingresá un importe entre {money(active.priceCents)} y {money(available * active.priceCents)}, con hasta dos decimales.</p>}
         <p className="mt-3 text-xs text-[#829075]">Se calculan MCU enteras; la diferencia queda sin aplicar. Simulación sin compra, reserva ni pago.</p>
+        {estimate && <a href="#projection-position" className="mt-3 inline-block text-xs font-semibold text-[#52763d] underline">Ver el resultado proyectado de este monto ↑</a>}
       </div>
       <button aria-pressed={watching} onClick={() => setWatching(!watching)} className="mt-5 flex items-center gap-2 rounded-full bg-[#193c32] px-5 py-3 text-sm text-white"><Bell size={16}/>{watching ? 'Ronda en seguimiento ✓' : 'Seguir esta ronda'}</button>{watching && <p role="status" className="mt-3 text-xs text-[#718064]">Agregada al seguimiento de esta sesión.</p>}
     </section>

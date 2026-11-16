@@ -57,3 +57,6 @@ El general de MCU integra valor de referencia, un único valor objetivo y su hor
 El potencial hasta objetivo compara contra valor de referencia; la posición personal compara contra el aporte aplicado al precio de ronda. La proyección sigue siendo una distribución hipotética al cierre, no una cotización negociada. El cálculo y sus costos quedan en un desplegable. Los comparables por m² permanecen disponibles con indicación de que son sintéticos.
 
 El modelo conserva internamente sus cálculos y pruebas de escenarios y pérdidas. Distribución = máximo entre cero y (caja inicial + capital de rondas pendientes + ventas − comercialización − costos pendientes − deuda), dividido por las MCU después de las emisiones. Se supone suscripción completa, iguales derechos y ausencia de flujos intermedios; se excluyen impuestos personales, inflación, financiación adicional y liquidez secundaria. El valor objetivo no garantiza el resultado.
+## Circuito persistente (noviembre 2026)
+
+El laboratorio de esta página sigue siendo una demo en memoria. El circuito real con datos persistidos, usuarios de prueba autenticados y el ejecutor de simulación está documentado en [`circuito-obra-pruebas.md`](circuito-obra-pruebas.md). La ficha de inversión del feed (`/inversores?obra=…&vista=inversor`) ya registra suscripciones, posiciones e historial.

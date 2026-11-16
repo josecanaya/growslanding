@@ -20,6 +20,8 @@ if ! run -Atc "select to_regclass('public.obras')" | grep -q obras; then
   for f in supabase/baseline/02_historicas_posteriores/*.sql; do
     psql "$PGURL" -q -f "$f" 2>&1 | grep ERROR | sed "s|^.*ERROR|   $(basename "$f") no aplicada:|" || true
   done
+  echo "· restricciones únicas históricas (mejor esfuerzo)"
+  psql "$PGURL" -q -f supabase/baseline/03_unicidad_historica.sql 2>&1 | grep ERROR | sed 's/^.*ERROR/   no aplicada:/' || true
   run -c "create table if not exists public._migraciones_pruebas (nombre text primary key, aplicada_at timestamptz not null default now());"
 fi
 for f in supabase/migrations/*.sql; do

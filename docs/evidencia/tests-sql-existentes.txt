@@ -1,0 +1,2 @@
+PASS: revision, read, stable IDs/FKs, late rollback, cross-obra IDs/references, incomplete payload and ACL
+psql:apps/web/__tests__/sql/bridge-queue.sql:32: ERROR:  insert or update on table "obras" violates foreign key constraint "obras_org_id_fkey"

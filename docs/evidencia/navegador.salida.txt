@@ -1,0 +1,54 @@
+  ✓ [navegador d  0] arquitecto   Crear la obra
+  ✓ [navegador d  0] arquitecto   Agendar a contratista1
+  ✓ [navegador d  0] arquitecto   Agendar a contratista2
+  ✓ [navegador d  0] arquitecto   Agendar a contratista3
+  ✓ [navegador d  0] arquitecto   Sumar coordinador a la obra
+  ✓ [navegador d  0] arquitecto   Sumar auditor a la obra
+  ✓ [navegador d  0] arquitecto   Publicar la obra en el feed
+  ✓ [navegador d  0] inversor1    Un inversor intenta leer el circuito interno de la obra → 403
+  ✓ [navegador d  0] arquitecto   Crear pliego (ingeniería general)
+  ✓ [navegador d  0] arquitecto   Cargar 1 partidas con alcance general
+  ✓ [navegador d  0] contratista1 Un contratista intenta editar el pliego → 403
+  ✓ [navegador d  0] arquitecto   Pasar a ingeniería de detalle
+  ✓ [navegador d  0] arquitecto   Intentar publicar sin cantidad, fuente, evidencia, criterio ni responsable → 422
+  ✓ [navegador d  0] arquitecto   Completar cantidad, unidad, fuente y revisión, evidencia, criterio y responsable
+  ✓ [navegador d  0] arquitecto   Publicar el pliego (revisión 1)
+  ✓ [navegador d  0] coordinador  Planificar 1 tareas vinculadas a partidas
+  ✓ [navegador d  0] contratista2 Un contratista intenta cambiar el plan → 403
+  ✓ [navegador d  0] coordinador  Intentar repartir más cantidad que la partida → 422
+  ✓ [navegador d  0] arquitecto   Calcular cronograma y fijar línea base
+  ✓ [navegador d  0] arquitecto   Abrir una ronda y dejarla casi integrada
+  ✓ [navegador d  0] arquitecto   Pedir cotización y recibir dos ofertas por API
+Verificación en navegador · obra 61624538-d6b0-4b10-94e5-543c4597a0e2
+  ✓ 01 anonimo      Feed público muestra la obra y la ficha de inversión sin sesión
+  ✓ 02 anonimo      Circuito interno de la obra exige sesión
+  ✓ 03 inversor1    Iniciar sesión por el formulario
+  ✓ 04 inversor1    Entrar por el feed y suscribir 20 MCU
+  ✓ 05 inversor1    Integrar la suscripción
+  ✓ 06 inversor1    Mi posición muestra el estado de los fondos
+  ✓ 07 inversor1    El inversor no accede al circuito interno
+  ✓ 08 contratista3 Iniciar sesión por el formulario
+  ✓ 09 contratista3 Ver el alcance recibido y enviar oferta
+  ✓ 10 arquitecto   Iniciar sesión por el formulario
+  ✓ 11 arquitecto   Pliego publicado con todos los campos por partida
+  ✓ 12 arquitecto   Planificación: línea base, ruta crítica y curva S
+  ✓ 13 arquitecto   Comparar tres ofertas y adjudicar
+  ✓ 14 arquitecto   Cerrar la ronda y ver la caja
+  ✓ 15 contratista1 Iniciar sesión por el formulario
+  ✓ 16 contratista1 Informar avance de la tarea habilitada con evidencia
+  ✓ 17 arquitecto   Iniciar sesión por el formulario
+  ✓ 18 arquitecto   Aceptar el avance con evidencia
+  ✓ 19 contratista1 Iniciar sesión por el formulario
+  ✓ 20 contratista1 Presentar el certificado con evidencia
+  ✓ 21 arquitecto   Iniciar sesión por el formulario
+  ✓ 22 arquitecto   Rechazar el certificado con motivo
+  ✓ 23 contratista1 Iniciar sesión por el formulario
+  ✓ 24 contratista1 Corregir la observación y volver a presentar
+  ✓ 25 arquitecto   Iniciar sesión por el formulario
+  ✓ 26 arquitecto   Aprobar y pagar el certificado corregido
+  ✓ 27 auditor      Iniciar sesión por el formulario
+  ✓ 28 auditor      El auditor relee el circuito en solo lectura
+  ✓ 29 inversor1    Iniciar sesión por el formulario
+  ✓ 30 inversor1    El inversor ve el avance verificado y su posición asignada
+
+APROBADO · informe en /home/user/growslanding/docs/evidencia/navegador/informe.md

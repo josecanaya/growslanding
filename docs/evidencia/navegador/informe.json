@@ -1,0 +1,324 @@
+{
+  "generado_at": "2026-11-16T10:36:02.050Z",
+  "version": "e1e57cd",
+  "instancia": "http://127.0.0.1:3100",
+  "obra": "61624538-d6b0-4b10-94e5-543c4597a0e2",
+  "navegador": "Chromium (Playwright)",
+  "resultado": "aprobado",
+  "pasos": [
+    {
+      "n": "01",
+      "actor": "anonimo",
+      "paso": "Feed público muestra la obra y la ficha de inversión sin sesión",
+      "resultado": "aprobado",
+      "url": "/inversores?obra=61624538-d6b0-4b10-94e5-543c4597a0e2&vista=contratista",
+      "captura": "01-anonimo-feed-pu-blico-muestra-la-obra-y-la-ficha-de-invers.png",
+      "detalle": {
+        "aporte_minimo": "USD 1.000,00"
+      }
+    },
+    {
+      "n": "02",
+      "actor": "anonimo",
+      "paso": "Circuito interno de la obra exige sesión",
+      "resultado": "aprobado",
+      "url": "/auth/login",
+      "captura": "02-anonimo-circuito-interno-de-la-obra-exige-sesio-n.png",
+      "detalle": {
+        "destino": "/auth/login"
+      }
+    },
+    {
+      "n": "03",
+      "actor": "inversor1",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/inversores",
+      "captura": "03-inversor1-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/inversores"
+      }
+    },
+    {
+      "n": "04",
+      "actor": "inversor1",
+      "paso": "Entrar por el feed y suscribir 20 MCU",
+      "resultado": "aprobado",
+      "url": "/inversores?obra=61624538-d6b0-4b10-94e5-543c4597a0e2&vista=inversor",
+      "captura": "04-inversor1-entrar-por-el-feed-y-suscribir-20-mcu.png",
+      "detalle": {
+        "monto": "USD 2.000,00 · 6,67% si se completa"
+      }
+    },
+    {
+      "n": "05",
+      "actor": "inversor1",
+      "paso": "Integrar la suscripción",
+      "resultado": "aprobado",
+      "url": "/inversores?obra=61624538-d6b0-4b10-94e5-543c4597a0e2&vista=inversor",
+      "captura": "05-inversor1-integrar-la-suscripcio-n.png",
+      "detalle": null
+    },
+    {
+      "n": "06",
+      "actor": "inversor1",
+      "paso": "Mi posición muestra el estado de los fondos",
+      "resultado": "aprobado",
+      "url": "/inversores/posicion",
+      "captura": "06-inversor1-mi-posicio-n-muestra-el-estado-de-los-fondos.png",
+      "detalle": {
+        "saldo": "USD 693.057,68"
+      }
+    },
+    {
+      "n": "07",
+      "actor": "inversor1",
+      "paso": "El inversor no accede al circuito interno",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "07-inversor1-el-inversor-no-accede-al-circuito-interno.png",
+      "detalle": null
+    },
+    {
+      "n": "08",
+      "actor": "contratista3",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/socio/panel",
+      "captura": "08-contratista3-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/socio"
+      }
+    },
+    {
+      "n": "09",
+      "actor": "contratista3",
+      "paso": "Ver el alcance recibido y enviar oferta",
+      "resultado": "aprobado",
+      "url": "/socio/circuito",
+      "captura": "09-contratista3-ver-el-alcance-recibido-y-enviar-oferta.png",
+      "detalle": null
+    },
+    {
+      "n": "10",
+      "actor": "arquitecto",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/cliente/dashboard",
+      "captura": "10-arquitecto-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/cliente/dashboard"
+      }
+    },
+    {
+      "n": "11",
+      "actor": "arquitecto",
+      "paso": "Pliego publicado con todos los campos por partida",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "11-arquitecto-pliego-publicado-con-todos-los-campos-por-partida.png",
+      "detalle": null
+    },
+    {
+      "n": "12",
+      "actor": "arquitecto",
+      "paso": "Planificación: línea base, ruta crítica y curva S",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "12-arquitecto-planificacio-n-li-nea-base-ruta-cri-tica-y-curva-s.png",
+      "detalle": {
+        "ruta_critica": "N-PLAT"
+      }
+    },
+    {
+      "n": "13",
+      "actor": "arquitecto",
+      "paso": "Comparar tres ofertas y adjudicar",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "13-arquitecto-comparar-tres-ofertas-y-adjudicar.png",
+      "detalle": null
+    },
+    {
+      "n": "14",
+      "actor": "arquitecto",
+      "paso": "Cerrar la ronda y ver la caja",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "14-arquitecto-cerrar-la-ronda-y-ver-la-caja.png",
+      "detalle": {
+        "caja": "USD 0,00"
+      }
+    },
+    {
+      "n": "15",
+      "actor": "contratista1",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/socio/panel",
+      "captura": "15-contratista1-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/socio"
+      }
+    },
+    {
+      "n": "16",
+      "actor": "contratista1",
+      "paso": "Informar avance de la tarea habilitada con evidencia",
+      "resultado": "aprobado",
+      "url": "/socio/circuito",
+      "captura": "16-contratista1-informar-avance-de-la-tarea-habilitada-con-evidenc.png",
+      "detalle": null
+    },
+    {
+      "n": "17",
+      "actor": "arquitecto",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/cliente/dashboard",
+      "captura": "17-arquitecto-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/cliente/dashboard"
+      }
+    },
+    {
+      "n": "18",
+      "actor": "arquitecto",
+      "paso": "Aceptar el avance con evidencia",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "18-arquitecto-aceptar-el-avance-con-evidencia.png",
+      "detalle": null
+    },
+    {
+      "n": "19",
+      "actor": "contratista1",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/socio/panel",
+      "captura": "19-contratista1-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/socio"
+      }
+    },
+    {
+      "n": "20",
+      "actor": "contratista1",
+      "paso": "Presentar el certificado con evidencia",
+      "resultado": "aprobado",
+      "url": "/socio/circuito",
+      "captura": "20-contratista1-presentar-el-certificado-con-evidencia.png",
+      "detalle": null
+    },
+    {
+      "n": "21",
+      "actor": "arquitecto",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/cliente/dashboard",
+      "captura": "21-arquitecto-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/cliente/dashboard"
+      }
+    },
+    {
+      "n": "22",
+      "actor": "arquitecto",
+      "paso": "Rechazar el certificado con motivo",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "22-arquitecto-rechazar-el-certificado-con-motivo.png",
+      "detalle": null
+    },
+    {
+      "n": "23",
+      "actor": "contratista1",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/socio/panel",
+      "captura": "23-contratista1-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/socio"
+      }
+    },
+    {
+      "n": "24",
+      "actor": "contratista1",
+      "paso": "Corregir la observación y volver a presentar",
+      "resultado": "aprobado",
+      "url": "/socio/circuito",
+      "captura": "24-contratista1-corregir-la-observacio-n-y-volver-a-presentar.png",
+      "detalle": null
+    },
+    {
+      "n": "25",
+      "actor": "arquitecto",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/cliente/dashboard",
+      "captura": "25-arquitecto-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/cliente/dashboard"
+      }
+    },
+    {
+      "n": "26",
+      "actor": "arquitecto",
+      "paso": "Aprobar y pagar el certificado corregido",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "26-arquitecto-aprobar-y-pagar-el-certificado-corregido.png",
+      "detalle": {
+        "historial": [
+          "presentado",
+          "rechazado — El acta no está firmada.",
+          "corregido",
+          "aprobado",
+          "pagado"
+        ]
+      }
+    },
+    {
+      "n": "27",
+      "actor": "auditor",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "27-auditor-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito"
+      }
+    },
+    {
+      "n": "28",
+      "actor": "auditor",
+      "paso": "El auditor relee el circuito en solo lectura",
+      "resultado": "aprobado",
+      "url": "/obras/61624538-d6b0-4b10-94e5-543c4597a0e2/circuito",
+      "captura": "28-auditor-el-auditor-relee-el-circuito-en-solo-lectura.png",
+      "detalle": null
+    },
+    {
+      "n": "29",
+      "actor": "inversor1",
+      "paso": "Iniciar sesión por el formulario",
+      "resultado": "aprobado",
+      "url": "/inversores",
+      "captura": "29-inversor1-iniciar-sesio-n-por-el-formulario.png",
+      "detalle": {
+        "destino": "/inversores"
+      }
+    },
+    {
+      "n": "30",
+      "actor": "inversor1",
+      "paso": "El inversor ve el avance verificado y su posición asignada",
+      "resultado": "aprobado",
+      "url": "/inversores?obra=61624538-d6b0-4b10-94e5-543c4597a0e2&vista=inversor",
+      "captura": "30-inversor1-el-inversor-ve-el-avance-verificado-y-su-posicio-n.png",
+      "detalle": {
+        "mcu": "20"
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createRequire } from 'node:module';
-import { admin, cargarEntorno, RAIZ } from '../entorno-pruebas/entorno.mjs';
+import { admin, cargarEntorno, limpiarObra, RAIZ } from '../entorno-pruebas/entorno.mjs';
 import { abrirDiario, abrirSesiones, ejecutarEscenario, leerJson, rutaEstado, version } from './motor.mjs';
 import escenario from './escenarios/navegador.mjs';
 
@@ -19,7 +19,7 @@ const identidades = JSON.parse(readFileSync(entorno.identidades, 'utf8'));
 
 // Preparación: obra nueva cada vez (se limpia la anterior con acceso administrativo).
 const previo = leerJson(rutaEstado('navegador'), null);
-if (previo?.vars?.obra) await admin(entorno).rpc('sim_limpiar_obra', { p_obra: previo.vars.obra });
+if (previo?.vars?.obra) await limpiarObra(admin(entorno), previo.vars.obra);
 const { rmSync } = await import('node:fs');
 rmSync(rutaEstado('navegador'), { force: true });
 const corridaId = `navegador-${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}`;

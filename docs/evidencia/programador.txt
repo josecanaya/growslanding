@@ -1,0 +1,32 @@
+$ programador.mjs --una-vez
+[programador] disparo manual del programador: corrida 20261116T103618-programada sin fallas
+
+$ pgrep -af programador.mjs
+22389 node scripts/simulacion/programador.mjs
+
+$ log del proceso
+[programador] activo (pid 22389) · 09:00 y 18:00 America/Argentina/Buenos_Aires
+
+$ scripts/simulacion/estado/programador.json
+{
+ "historial": [
+  {
+   "motivo": "disparo manual del programador",
+   "inicio": "2026-11-16T10:36:18.784Z",
+   "corrida": "20261116T103618-programada",
+   "ok": true
+  }
+ ],
+ "pid": 22389,
+ "iniciado_at": "2026-11-16T10:36:15.779Z",
+ "horarios": [
+  "09:00",
+  "18:00"
+ ],
+ "zona_horaria": "America/Argentina/Buenos_Aires",
+ "actualizado_at": "2026-11-16T10:36:45.831Z",
+ "proximo": {
+  "utc": "2026-11-16T12:00:00.000Z",
+  "local": "2026-11-16 09:00 (America/Argentina/Buenos_Aires)"
+ }
+}

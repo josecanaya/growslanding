@@ -1,0 +1,149 @@
+Corrida corrida-2 · versión e1e57cd · semilla 20261116 · instancia http://127.0.0.1:3100
+
+▶ Vivienda unifamiliar · recorrido normal (hasta el día simulado 400, retoma desde el día 19)
+  ✓ [vivienda d 19] arquitecto   Pagar el certificado 1 (escritura que puede cortarse) (retomado)
+  ✓ [vivienda d 19] arquitecto   Pedir el pago otra vez con otra clave y con un pedido abortado: sigue habiendo un solo pago
+  ✓ [vivienda d 19] arquitecto   Pagar los honorarios desde la caja de obra
+  ✓ [vivienda d 19] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  ✓ [vivienda d 20] coordinador  Registrar la inspección de armaduras cumplida
+  ✓ [vivienda d 28] contratista2 Informar 60% de V-ESTR con evidencia
+  ✓ [vivienda d 28] arquitecto   Revisar y aceptar el avance de V-ESTR
+  ✓ [vivienda d 34] contratista2 Informar 100% de V-ESTR con evidencia
+  ✓ [vivienda d 34] arquitecto   Revisar y aceptar el avance de V-ESTR
+  ✓ [vivienda d 35] contratista2 Presentar certificado 2 de «obra-gruesa» con evidencia
+  ✓ [vivienda d 35] arquitecto   Aprobar certificado 2 de «obra-gruesa»
+  ✓ [vivienda d 36] arquitecto   Pagar certificado 2 de «obra-gruesa»
+  ✓ [vivienda d 42] contratista2 Empezar mampostería con la compra de ladrillos pendiente → 409
+  ✓ [vivienda d 42] coordinador  Registrar la compra de ladrillos recibida
+  ✓ [vivienda d 53] contratista2 Informar 100% de V-MAMP con evidencia
+  ✓ [vivienda d 53] arquitecto   Revisar y aceptar el avance de V-MAMP
+  ✓ [vivienda d 54] contratista2 Presentar certificado 3 de «obra-gruesa» con evidencia
+  ✓ [vivienda d 54] arquitecto   Aprobar certificado 3 de «obra-gruesa»
+  ✓ [vivienda d 55] arquitecto   Pagar certificado 3 de «obra-gruesa»
+  ✓ [vivienda d 56] inversor3    Un inversor quiere salir: publica una orden de venta y nadie compra
+  ✓ [vivienda d 60] arquitecto   Recalcular el plan al cierre: físico, certificado y pagado
+  ✓ [vivienda d 60] inversor3    Sin comprador, el inversor retira la orden y conserva su posición
+  ✓ [vivienda d 60] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  23 ejecutados (1 retomados) · 23 ✓ · 0 ✗ · 0 ■ · pendientes 0/81
+
+▶ Edificio por etapas · estructura y paquetes comunes (hasta el día simulado 400, retoma desde el día 9)
+  ✓ [edificio d 23] contratista1 Informar 100% de E-FUND con evidencia
+  ✓ [edificio d 23] arquitecto   Revisar y aceptar el avance de E-FUND
+  ✓ [edificio d 24] contratista1 Presentar certificado 1 de «estructura» con evidencia
+  ✓ [edificio d 24] arquitecto   Aprobar certificado 1 de «estructura»
+  ✓ [edificio d 25] arquitecto   Pagar certificado 1 de «estructura»
+  ✓ [edificio d 25] arquitecto   Pedir cotización de «instalaciones» a tres contratistas
+  ✓ [edificio d 26] contratista1 Cotizar la revisión recibida de «instalaciones»
+  ✓ [edificio d 27] contratista2 Cotizar la revisión recibida de «instalaciones»
+  ✓ [edificio d 28] contratista3 Cotizar la revisión recibida de «instalaciones»
+  ✓ [edificio d 29] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [edificio d 29] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [edificio d 30] arquitecto   Adjudicar «instalaciones» a contratista2 y publicar sus tareas
+  ✓ [edificio d 30] arquitecto   Pagar honorarios
+  ✓ [edificio d 35] contratista1 Informar 100% de E-EST-PB con evidencia
+  ✓ [edificio d 35] arquitecto   Revisar y aceptar el avance de E-EST-PB
+  ✓ [edificio d 38] arquitecto   Ronda 2 (etapa 2): necesidad calculada desde contratos, cronograma de pagos y caja
+  ✓ [edificio d 39] inversor2    Suscribir e integrar 40% de la ronda 2
+  ✓ [edificio d 40] inversor3    Suscribir e integrar el resto de la ronda 2
+  ✓ [edificio d 44] arquitecto   Cerrar la ronda 2 y medir el efecto sobre inversores anteriores, nuevos y caja
+  ✓ [edificio d 45] arquitecto   Pedir cotización de «terminaciones» a tres contratistas
+  ✓ [edificio d 46] contratista1 Cotizar la revisión recibida de «terminaciones»
+  ✓ [edificio d 47] contratista2 Cotizar la revisión recibida de «terminaciones»
+  ✓ [edificio d 48] contratista3 Cotizar la revisión recibida de «terminaciones»
+  ✓ [edificio d 49] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [edificio d 49] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [edificio d 50] arquitecto   Adjudicar «terminaciones» a contratista3 y publicar sus tareas
+  ✓ [edificio d 50] contratista2 Informar 100% de I-SAN con evidencia
+  ✓ [edificio d 50] arquitecto   Revisar y aceptar el avance de I-SAN
+  ✓ [edificio d 52] contratista1 Informar 100% de E-EST-N1 con evidencia
+  ✓ [edificio d 52] arquitecto   Revisar y aceptar el avance de E-EST-N1
+  ✓ [edificio d 53] contratista1 Certificar la partida común por encima de los frentes terminados → 422
+  ✓ [edificio d 53] contratista1 Presentar certificado 2 de «estructura» con evidencia
+  ✓ [edificio d 53] arquitecto   Aprobar certificado 2 de «estructura»
+  ✓ [edificio d 54] arquitecto   Pagar certificado 2 de «estructura»
+  ✓ [edificio d 54] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  ✓ [edificio d 55] coordinador  Registrar la compra del tablero recibida
+  ✓ [edificio d 57] coordinador  Registrar la inspección de estructura cumplida
+  ✓ [edificio d 60] inversor1    Ofrecer más MCU de las que se tienen → 422
+  ✓ [edificio d 60] inversor1    Publicar una orden de venta de 300 MCU
+  ✓ [edificio d 61] inversor3    Comprar la orden: la posición cambia de titular y el dinero va al vendedor
+  ✓ [edificio d 61] inversor2    Comprar una orden ya ejecutada → 409
+  ✓ [edificio d 66] contratista2 Informar 100% de I-ELE con evidencia
+  ✓ [edificio d 66] arquitecto   Revisar y aceptar el avance de I-ELE
+  ✓ [edificio d 67] contratista2 Presentar certificado 1 de «instalaciones» con evidencia
+  ✓ [edificio d 67] arquitecto   Aprobar certificado 1 de «instalaciones»
+  ✓ [edificio d 67] contratista1 Informar 100% de E-EST-CUB con evidencia
+  ✓ [edificio d 67] arquitecto   Revisar y aceptar el avance de E-EST-CUB
+  ✓ [edificio d 68] arquitecto   Pagar certificado 1 de «instalaciones»
+  ✓ [edificio d 68] contratista1 Presentar certificado 3 de «estructura» con evidencia
+  ✓ [edificio d 68] arquitecto   Aprobar certificado 3 de «estructura»
+  ✓ [edificio d 69] arquitecto   Pagar certificado 3 de «estructura»
+  ✓ [edificio d 78] contratista3 Informar 100% de T-A1 con evidencia
+  ✓ [edificio d 78] arquitecto   Revisar y aceptar el avance de T-A1
+  ✓ [edificio d 88] contratista3 Informar 100% de T-A2 con evidencia
+  ✓ [edificio d 88] arquitecto   Revisar y aceptar el avance de T-A2
+  ✓ [edificio d 89] contratista3 Presentar certificado 1 de «terminaciones» con evidencia
+  ✓ [edificio d 89] arquitecto   Aprobar certificado 1 de «terminaciones»
+  ✓ [edificio d 90] arquitecto   Pagar certificado 1 de «terminaciones»
+  ✓ [edificio d 98] contratista3 Informar 100% de T-B1 con evidencia
+  ✓ [edificio d 98] arquitecto   Revisar y aceptar el avance de T-B1
+  ✓ [edificio d108] contratista3 Informar 100% de T-B2 con evidencia
+  ✓ [edificio d108] arquitecto   Revisar y aceptar el avance de T-B2
+  ✓ [edificio d109] contratista3 Presentar certificado 2 de «terminaciones» con evidencia
+  ✓ [edificio d109] arquitecto   Aprobar certificado 2 de «terminaciones»
+  ✓ [edificio d110] arquitecto   Pagar certificado 2 de «terminaciones»
+  ✓ [edificio d112] arquitecto   Obra terminada: liberar la reserva y distribuir excedente a prorrata de MCU
+  ✓ [edificio d112] arquitecto   Plan al cierre: físico, certificado y pagado por separado
+  ✓ [edificio d112] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  68 ejecutados (0 retomados) · 68 ✓ · 0 ✗ · 0 ■ · pendientes 0/112
+
+▶ Obra con fallas combinadas (hasta el día simulado 400, retoma desde el día 16)
+  ✓ [fallas d 20] arquitecto   Reanudar por etapas con capital parcial y pagar terreno y honorarios
+  ✓ [fallas d 27] contratista3 Informar 100% de demolición con una foto sin fecha
+  ✓ [fallas d 27] arquitecto   Rechazar la evidencia: observar el avance
+  ✓ [fallas d 27] contratista3 Informar otro avance con uno observado pendiente → 409
+  ✓ [fallas d 28] contratista3 Corregir la observación con evidencia nueva
+  ✓ [fallas d 28] arquitecto   Aceptar el avance corregido
+  ✓ [fallas d 29] contratista3 Presentar el certificado 1 (demolición)
+  ✓ [fallas d 29] arquitecto   Rechazar el certificado: acta sin firma
+  ✓ [fallas d 30] contratista3 Corregir con el acta firmada
+  ✓ [fallas d 30] arquitecto   Aprobar y pagar el certificado corregido
+  ✓ [fallas d 30] coordinador  La compra de acero se demora 20 días: replanificar y reflejar el atraso
+  ✓ [fallas d 31] arquitecto   Pedir cotización de «cubierta» sobre la revisión 1
+  ✓ [fallas d 33] arquitecto   Cambio de alcance: revisión 2 del pliego (más hormigón por estudio de suelos, cubierta con aislación doble)
+  ✓ [fallas d 33] contratista2 Cotizar la solicitud de la revisión reemplazada → 409
+  ✓ [fallas d 33] arquitecto   Adjudicar una oferta hecha sobre la revisión reemplazada → 409
+  ✓ [fallas d 34] arquitecto   Proponer adenda al contrato de estructura por la revisión 2 (sube el costo)
+  ✓ [fallas d 34] arquitecto   El responsable intenta aceptar su propia adenda → 403
+  ✓ [fallas d 34] arquitecto   Pedir cotización de «cubierta» a tres contratistas
+  ✓ [fallas d 35] contratista3 El contratista acepta la adenda: sube el contrato y la necesidad de fondos
+  ✓ [fallas d 35] contratista1 Cotizar la revisión recibida de «cubierta»
+  ✓ [fallas d 36] contratista2 Cotizar la revisión recibida de «cubierta»
+  ✓ [fallas d 37] contratista3 Cotizar la revisión recibida de «cubierta»
+  ✓ [fallas d 38] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [fallas d 38] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [fallas d 38] arquitecto   Adjudicar «cubierta» a contratista1 y publicar sus tareas
+  ✓ [fallas d 38] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  ✓ [fallas d 38] arquitecto   Ronda 3 por la suba de costo, a menor precio (umbral 90%)
+  ✓ [fallas d 38] inversor1    Ver en la ficha el efecto de la ronda 3 sobre inversores anteriores, nuevos y caja
+  ✓ [fallas d 39] inversor2    Suscribir 70% de la ronda3 SIN integrar (solo promesa)
+  ✓ [fallas d 40] inversor1    Suscribir 20% de la ronda3 e integrar
+  ✓ [fallas d 42] arquitecto   Cerrar la ronda 3: falla; nadie se diluye y la caja no cambia
+  ✓ [fallas d 45] coordinador  Llega el acero
+  ✓ [fallas d 50] inversor3    Un inversor quiere salir: publica toda su posición y nadie compra
+  ✓ [fallas d 57] contratista3 Informar 50% de F-EST con evidencia
+  ✓ [fallas d 57] arquitecto   Revisar y aceptar el avance de F-EST
+  ✓ [fallas d 58] contratista3 Certificado 2 (estructura 50%): presentado, aprobado y pagado
+  ✓ [fallas d 66] contratista3 Informar 60% de F-EST con evidencia
+  ✓ [fallas d 66] arquitecto   Revisar y aceptar el avance de F-EST
+  ✓ [fallas d 67] arquitecto   Certificado 3 aprobado pero impago: la caja no alcanza sin tocar la reserva → 409
+  ✓ [fallas d 67] arquitecto   Liquidar a inversores con la obra en curso → 409
+  ✓ [fallas d 68] arquitecto   Entrar en proceso de cierre: se cancelan órdenes y la reserva se libera
+  ✓ [fallas d 68] contratista3 En cierre no se informa avance ni se abren rondas → 409
+  ✓ [fallas d 68] arquitecto   Liquidar a inversores con un certificado aprobado impago → 409 (cobra primero el contratista)
+  ✓ [fallas d 69] arquitecto   Pagar el certificado 3 con la reserva liberada
+  ✓ [fallas d 70] arquitecto   Liquidar el remanente a prorrata de MCU y cerrar la obra
+  ✓ [fallas d 70] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  46 ejecutados (0 retomados) · 46 ✓ · 0 ✗ · 0 ■ · pendientes 0/86
+
+Reporte: /home/user/growslanding/scripts/simulacion/estado/reportes/corrida-2/reporte.md

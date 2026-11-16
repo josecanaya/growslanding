@@ -1,0 +1,5 @@
+control: {"pausado":false}
+vivienda  obra 74639fc2-6811-4150-96ef-22fbac69af7b · semilla 20261116 · día simulado 19 · 58/81 aprobados · próximo: cert.obra-gruesa.1.pagar (día 19, iniciado) · corridas: 1
+edificio  obra e168d16b-a561-4b68-9e27-e4f1c567b7ff · semilla 20261116 · día simulado 9 · 44/112 aprobados · próximo: av.E-FUND.100.informar (día 23) · corridas: 1
+fallas    obra 6ce8365b-df51-4b24-9b6c-94487bf5dd72 · semilla 20261116 · día simulado 16 · 40/86 aprobados · próximo: obra.reanudar (día 20) · corridas: 1
+paso cortado (estado local): {"resultado": "iniciado", "corrida": "corrida-1", "intentos": 1, "iniciado_at": "2026-11-16T10:35:31.413Z"}

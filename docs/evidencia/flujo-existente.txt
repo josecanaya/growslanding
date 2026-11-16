@@ -1,0 +1,19 @@
+{
+  "tarea_sin_catalogo": {
+    "status": 201,
+    "id": "d639cd23-4b28-4000-b4cc-cc474b3235ea",
+    "elemento_id": null
+  },
+  "solicitar": {
+    "status": 201,
+    "created": 3
+  },
+  "repetir": {
+    "status": 400,
+    "message": "Las tareas seleccionadas ya tienen solicitudes para esos contratistas."
+  },
+  "contratista": {
+    "status": 403,
+    "error": "Solo el responsable o coordinador puede modificar el plan y sus documentos."
+  }
+}

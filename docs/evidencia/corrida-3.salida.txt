@@ -1,0 +1,12 @@
+Corrida corrida-3 · versión e1e57cd · semilla 20261116 · instancia http://127.0.0.1:3100
+
+▶ Vivienda unifamiliar · recorrido normal (hasta el día simulado 90, retoma desde el día 60)
+  0 ejecutados (0 retomados) · 0 ✓ · 0 ✗ · 0 ■ · pendientes 0/81
+
+▶ Edificio por etapas · estructura y paquetes comunes (hasta el día simulado 142, retoma desde el día 112)
+  0 ejecutados (0 retomados) · 0 ✓ · 0 ✗ · 0 ■ · pendientes 0/112
+
+▶ Obra con fallas combinadas (hasta el día simulado 100, retoma desde el día 70)
+  0 ejecutados (0 retomados) · 0 ✓ · 0 ✗ · 0 ■ · pendientes 0/86
+
+Reporte: /home/user/growslanding/scripts/simulacion/estado/reportes/corrida-3/reporte.md

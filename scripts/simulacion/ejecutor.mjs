@@ -3,11 +3,11 @@
 //   node scripts/simulacion/ejecutor.mjs corrida [--escenarios vivienda,edificio,fallas] [--hasta-dia N | --avanzar N]
 //                                               [--semilla N] [--interrumpir-en escenario:paso] [--id nombre]
 //   node scripts/simulacion/ejecutor.mjs estado | pausar | reanudar
-//   node scripts/simulacion/ejecutor.mjs limpiar --escenario vivienda | --todo        (administrativo: borra la obra simulada)
+//   node scripts/simulacion/ejecutor.mjs limpiar --escenario vivienda | --todo | --huerfanos   (administrativo: borra la obra simulada y sus evidencias)
 //   node scripts/simulacion/ejecutor.mjs reporte --corrida <id>
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { admin, cargarEntorno, RAIZ } from '../entorno-pruebas/entorno.mjs';
+import { admin, cargarEntorno, limpiarEvidenciasHuerfanas, limpiarObra, RAIZ } from '../entorno-pruebas/entorno.mjs';
 import { abrirDiario, abrirSesiones, DIR, DIR_ESTADO, ejecutarEscenario, guardarJson, leerJson, ordenarPasos, rutaControl, rutaEstado, version } from './motor.mjs';
 import { armarReporte, escribirReporte } from './reporte.mjs';
 
@@ -55,10 +55,11 @@ async function limpiar() {
   const entorno = cargarEntorno();
   const a = admin(entorno); // acceso administrativo: solo preparación y limpieza
   const claves = opcion('todo') ? ['vivienda', 'edificio', 'fallas', 'navegador'] : [opcion('escenario')].filter((x) => typeof x === 'string');
-  if (!claves.length) throw new Error('Indicá --escenario <clave> o --todo');
+  if (opcion('huerfanos')) { console.log(`Evidencias huérfanas borradas de Storage: ${await limpiarEvidenciasHuerfanas(a)}`); return; }
+  if (!claves.length) throw new Error('Indicá --escenario <clave>, --todo o --huerfanos');
   for (const clave of claves) {
     const estado = leerJson(rutaEstado(clave), null);
-    if (estado?.vars?.obra) console.log(clave, JSON.stringify(await a.rpc('sim_limpiar_obra', { p_obra: estado.vars.obra })));
+    if (estado?.vars?.obra) console.log(clave, JSON.stringify(await limpiarObra(a, estado.vars.obra)));
     rmSync(rutaEstado(clave), { force: true });
     console.log(`Estado local de ${clave} borrado.`);
   }

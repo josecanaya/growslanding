@@ -41,3 +41,18 @@ export function admin(entorno) {
     rpc: (fn, args) => pedir(`/rest/v1/rpc/${fn}`, { method: 'POST', body: JSON.stringify(args) }),
   };
 }
+
+/** Limpieza selectiva de una obra simulada: archivos de evidencia en Storage + registros (función sim_limpiar_obra). */
+export async function limpiarObra(a, obraId) {
+  const objetos = await a.pedir(`/rest/v1/objects?select=name&bucket_id=eq.evidencias-obra&name=like.${obraId}/*`, { headers: { 'Accept-Profile': 'storage' } });
+  if (objetos.length) await a.pedir('/storage/v1/object/evidencias-obra', { method: 'DELETE', body: JSON.stringify({ prefixes: objetos.map((o) => o.name) }) });
+  return { ...(await a.rpc('sim_limpiar_obra', { p_obra: obraId })), evidencias_borradas: objetos.length };
+}
+/** Archivos de evidencia cuya obra ya no existe (restos de limpiezas anteriores). */
+export async function limpiarEvidenciasHuerfanas(a) {
+  const objetos = await a.pedir('/rest/v1/objects?select=name&bucket_id=eq.evidencias-obra', { headers: { 'Accept-Profile': 'storage' } });
+  const obras = new Set((await a.rest('obras', '?select=id')).map((o) => o.id));
+  const huerfanos = objetos.map((o) => o.name).filter((n) => !obras.has(n.split('/')[0]));
+  if (huerfanos.length) await a.pedir('/storage/v1/object/evidencias-obra', { method: 'DELETE', body: JSON.stringify({ prefixes: huerfanos }) });
+  return huerfanos.length;
+}

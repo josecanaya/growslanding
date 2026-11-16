@@ -1,0 +1,153 @@
+Corrida corrida-1 · versión e1e57cd · semilla 20261116 · instancia http://127.0.0.1:3100
+
+▶ Edificio por etapas · estructura y paquetes comunes (hasta el día simulado 19)
+  ✓ [edificio d  0] arquitecto   Crear la obra
+  ✓ [edificio d  0] arquitecto   Agendar a contratista1
+  ✓ [edificio d  0] arquitecto   Agendar a contratista2
+  ✓ [edificio d  0] arquitecto   Agendar a contratista3
+  ✓ [edificio d  0] arquitecto   Sumar coordinador a la obra
+  ✓ [edificio d  0] arquitecto   Sumar auditor a la obra
+  ✓ [edificio d  0] arquitecto   Cargar 4 unidades
+  ✓ [edificio d  0] arquitecto   Publicar la obra en el feed
+  ✓ [edificio d  0] inversor1    Un inversor intenta leer el circuito interno de la obra → 403
+  ✓ [edificio d  1] arquitecto   Crear pliego (ingeniería general)
+  ✓ [edificio d  1] arquitecto   Cargar 8 partidas con alcance general
+  ✓ [edificio d  1] contratista1 Un contratista intenta editar el pliego → 403
+  ✓ [edificio d  1] arquitecto   Pasar a ingeniería de detalle
+  ✓ [edificio d  1] arquitecto   Intentar publicar sin cantidad, fuente, evidencia, criterio ni responsable → 422
+  ✓ [edificio d  1] arquitecto   Completar cantidad, unidad, fuente y revisión, evidencia, criterio y responsable
+  ✓ [edificio d  1] arquitecto   Publicar el pliego (revisión 1)
+  ✓ [edificio d  2] coordinador  Planificar 10 tareas vinculadas a partidas
+  ✓ [edificio d  2] contratista2 Un contratista intenta cambiar el plan → 403
+  ✓ [edificio d  2] coordinador  Intentar repartir más cantidad que la partida → 422
+  ✓ [edificio d  2] arquitecto   Calcular cronograma y fijar línea base
+  ✓ [edificio d  2] coordinador  Verificar: partida común repartida en frentes y recursos compartidos sin superposición
+  ✓ [edificio d  3] arquitecto   Registrar terreno y honorarios
+  ✓ [edificio d  3] arquitecto   Ronda 1 (etapa 1): terreno, estructura y honorarios
+  ✓ [edificio d  3] arquitecto   Pedir cotización de «estructura» a tres contratistas
+  ✓ [edificio d  4] contratista1 Cotizar la revisión recibida de «estructura»
+  ✓ [edificio d  4] inversor1    Entrar por el feed y suscribir 1200 MCU
+  ✓ [edificio d  4] inversor2    Entrar por el feed y suscribir 900 MCU
+  ✓ [edificio d  5] contratista2 Cotizar la revisión recibida de «estructura»
+  ✓ [edificio d  5] inversor1    Integrar la suscripción (dinero ficticio a custodia de la ronda)
+  ✓ [edificio d  5] inversor2    Integrar la suscripción (dinero ficticio a custodia de la ronda)
+  ✓ [edificio d  5] inversor3    Entrar por el feed y suscribir 480 MCU
+  ✓ [edificio d  6] contratista3 Cotizar la revisión recibida de «estructura»
+  ✓ [edificio d  6] inversor3    Integrar la suscripción (dinero ficticio a custodia de la ronda)
+  ✓ [edificio d  7] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [edificio d  7] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [edificio d  8] arquitecto   Cerrar la ronda 1
+  ✓ [edificio d  8] arquitecto   Adjudicar «estructura» a contratista1 y publicar sus tareas
+  ✓ [edificio d  9] arquitecto   Pagar el terreno
+  ✓ [edificio d  9] arquitecto   Volver a licitar la estructura común ya contratada → 409
+  ✓ [edificio d  9] inversor1    Vincular la posición a la unidad A1
+  ✓ [edificio d  9] inversor2    Otro inversor intenta vincularse a la misma unidad → 409
+  ✓ [edificio d  9] inversor2    Vincular la posición a la unidad B1
+  ✓ [edificio d  9] arquitecto   Imputar costos comunes a unidades por superficie, sin duplicar partidas
+  ✓ [edificio d  9] auditor      Releer lo persistido y contrastar lo que ve cada rol
+  44 ejecutados (0 retomados) · 44 ✓ · 0 ✗ · 0 ■ · pendientes 68/112 · detenido: tiempo simulado: el día 23 queda para la próxima corrida
+
+▶ Obra con fallas combinadas (hasta el día simulado 19)
+  ✓ [fallas d  0] arquitecto   Crear la obra
+  ✓ [fallas d  0] arquitecto   Agendar a contratista1
+  ✓ [fallas d  0] arquitecto   Agendar a contratista2
+  ✓ [fallas d  0] arquitecto   Agendar a contratista3
+  ✓ [fallas d  0] arquitecto   Sumar coordinador a la obra
+  ✓ [fallas d  0] arquitecto   Sumar auditor a la obra
+  ✓ [fallas d  0] arquitecto   Publicar la obra en el feed
+  ✓ [fallas d  0] inversor1    Un inversor intenta leer el circuito interno de la obra → 403
+  ✓ [fallas d  1] arquitecto   Crear pliego (ingeniería general)
+  ✓ [fallas d  1] arquitecto   Cargar 3 partidas con alcance general
+  ✓ [fallas d  1] contratista1 Un contratista intenta editar el pliego → 403
+  ✓ [fallas d  1] arquitecto   Pasar a ingeniería de detalle
+  ✓ [fallas d  1] arquitecto   Intentar publicar sin cantidad, fuente, evidencia, criterio ni responsable → 422
+  ✓ [fallas d  1] arquitecto   Completar cantidad, unidad, fuente y revisión, evidencia, criterio y responsable
+  ✓ [fallas d  1] arquitecto   Publicar el pliego (revisión 1)
+  ✓ [fallas d  2] coordinador  Planificar 3 tareas vinculadas a partidas
+  ✓ [fallas d  2] contratista2 Un contratista intenta cambiar el plan → 403
+  ✓ [fallas d  2] coordinador  Intentar repartir más cantidad que la partida → 422
+  ✓ [fallas d  2] arquitecto   Calcular cronograma y fijar línea base
+  ✓ [fallas d  3] arquitecto   Registrar terreno, honorarios y reserva
+  ✓ [fallas d  3] arquitecto   Ronda 1 por el 100% de la necesidad (umbral 80%)
+  ✓ [fallas d  3] arquitecto   Pedir cotización de «estructura» a tres contratistas
+  ✓ [fallas d  4] contratista1 Cotizar la revisión recibida de «estructura»
+  ✓ [fallas d  4] inversor1    Suscribir 35% de la ronda1 e integrar
+  ✓ [fallas d  4] inversor2    Suscribir 40% de la ronda1 SIN integrar (solo promesa)
+  ✓ [fallas d  5] contratista2 Cotizar la revisión recibida de «estructura»
+  ✓ [fallas d  5] inversor3    Suscribir 20% de la ronda1 e integrar
+  ✓ [fallas d  6] contratista3 Cotizar la revisión recibida de «estructura»
+  ✓ [fallas d  7] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [fallas d  7] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [fallas d  8] arquitecto   Cerrar la ronda 1: lo integrado (55%) no alcanza el umbral → falla y se devuelve
+  ✓ [fallas d  9] arquitecto   Pagar el terreno sin caja → 409 fondos insuficientes
+  ✓ [fallas d  9] arquitecto   Adjudicar «estructura» a contratista3 y publicar sus tareas
+  ✓ [fallas d  9] arquitecto   Sin capital: reprogramar el inicio de obra y reflejarlo en plan y feed
+  ✓ [fallas d 10] arquitecto   Ronda 2 a menor precio (umbral 60%)
+  ✓ [fallas d 11] inversor1    Suscribir 45% de la ronda2 e integrar
+  ✓ [fallas d 11] inversor3    Suscribir 30% de la ronda2 e integrar
+  ✓ [fallas d 12] inversor2    Suscribir 25% de la ronda2 SIN integrar (solo promesa)
+  ✓ [fallas d 14] arquitecto   Cerrar la ronda 2: supera el umbral pero queda incompleta
+  ✓ [fallas d 16] contratista3 Informar avance con la obra reprogramada → 409
+  40 ejecutados (0 retomados) · 40 ✓ · 0 ✗ · 0 ■ · pendientes 46/86 · detenido: tiempo simulado: el día 20 queda para la próxima corrida
+
+▶ Vivienda unifamiliar · recorrido normal (hasta el día simulado 19)
+  ✓ [vivienda d  0] arquitecto   Crear la obra
+  ✓ [vivienda d  0] arquitecto   Agendar a contratista1
+  ✓ [vivienda d  0] arquitecto   Agendar a contratista2
+  ✓ [vivienda d  0] arquitecto   Agendar a contratista3
+  ✓ [vivienda d  0] arquitecto   Sumar coordinador a la obra
+  ✓ [vivienda d  0] arquitecto   Sumar auditor a la obra
+  ✓ [vivienda d  0] arquitecto   Publicar la obra en el feed
+  ✓ [vivienda d  0] inversor1    Un inversor intenta leer el circuito interno de la obra → 403
+  ✓ [vivienda d  1] arquitecto   Crear pliego (ingeniería general)
+  ✓ [vivienda d  1] arquitecto   Cargar 3 partidas con alcance general
+  ✓ [vivienda d  1] contratista1 Un contratista intenta editar el pliego → 403
+  ✓ [vivienda d  1] arquitecto   Pasar a ingeniería de detalle
+  ✓ [vivienda d  1] arquitecto   Intentar publicar sin cantidad, fuente, evidencia, criterio ni responsable → 422
+  ✓ [vivienda d  1] arquitecto   Completar cantidad, unidad, fuente y revisión, evidencia, criterio y responsable
+  ✓ [vivienda d  1] arquitecto   Publicar el pliego (revisión 1)
+  ✓ [vivienda d  2] coordinador  Planificar 3 tareas vinculadas a partidas
+  ✓ [vivienda d  2] contratista2 Un contratista intenta cambiar el plan → 403
+  ✓ [vivienda d  2] coordinador  Intentar repartir más cantidad que la partida → 422
+  ✓ [vivienda d  2] arquitecto   Calcular cronograma y fijar línea base
+  ✓ [vivienda d  3] arquitecto   Registrar terreno, honorarios y reserva
+  ✓ [vivienda d  3] arquitecto   Calcular la necesidad de fondos y crear la ronda 1 por el 100%
+  ✓ [vivienda d  3] arquitecto   El responsable intenta suscribir su propia ronda → 403
+  ✓ [vivienda d  3] arquitecto   Pedir cotización de «obra-gruesa» a tres contratistas
+  ✓ [vivienda d  4] contratista1 Cotizar la revisión recibida de «obra-gruesa»
+  ✓ [vivienda d  4] inversor1    Suscribir por debajo del aporte mínimo → 422
+  ✓ [vivienda d  4] inversor1    Entrar por el feed y suscribir 700 MCU
+  ✓ [vivienda d  4] inversor2    Entrar por el feed y suscribir 470 MCU
+  ✓ [vivienda d  4] inversor3    Suscribir el resto de la ronda
+  ✓ [vivienda d  5] contratista2 Cotizar la revisión recibida de «obra-gruesa»
+  ✓ [vivienda d  5] inversor1    Integrar la suscripción (dinero ficticio a custodia de la ronda)
+  ✓ [vivienda d  5] inversor2    Integrar la suscripción (dinero ficticio a custodia de la ronda)
+  ✓ [vivienda d  5] arquitecto   Con una suscripción prometida sin integrar, la caja y la necesidad no cambian
+  ✓ [vivienda d  5] arquitecto   Pagar el terreno antes de cerrar la ronda → 409 fondos insuficientes
+  ✓ [vivienda d  5] inversor3    Integrar la suscripción
+  ✓ [vivienda d  5] inversor2    Integrar por encima del cupo de la ronda → 409
+  ✓ [vivienda d  6] contratista3 Cotizar la revisión recibida de «obra-gruesa»
+  ✓ [vivienda d  6] arquitecto   Cerrar la ronda 1: lo integrado pasa a caja de obra
+  ✓ [vivienda d  7] arquitecto   Comparar las tres ofertas sobre la misma revisión
+  ✓ [vivienda d  7] coordinador  El coordinador intenta adjudicar → 403
+  ✓ [vivienda d  7] arquitecto   Pagar el terreno desde la caja de obra
+  ✓ [vivienda d  7] arquitecto   Dos adjudicaciones simultáneas sobre la misma solicitud: gana una sola
+  ✓ [vivienda d  7] arquitecto   Reintentar la adjudicación ganadora con la misma clave: mismo contrato, sin duplicar
+  ✓ [vivienda d  7] arquitecto   Las tareas del contrato quedan publicadas para el contratista
+  ✓ [vivienda d 12] contratista1 Un contratista no adjudicado intenta informar avance → 403
+  ✓ [vivienda d 12] contratista2 Informar avance de una tarea con predecesoras sin terminar → 409
+  ✓ [vivienda d 12] contratista2 Informar 50% de V-FUND con evidencia
+  ✓ [vivienda d 12] arquitecto   Revisar y aceptar el avance de V-FUND
+  ✓ [vivienda d 17] contratista2 Informar 100% de V-FUND con evidencia
+  ✓ [vivienda d 17] arquitecto   Revisar y aceptar el avance de V-FUND
+  ✓ [vivienda d 18] contratista2 Certificar más que el avance físico aceptado → 422
+  ✓ [vivienda d 18] contratista2 Presentar el certificado 1 (fundaciones 100%)
+  ✓ [vivienda d 18] contratista2 El contratista intenta aprobar su propio certificado → 403
+  ✓ [vivienda d 18] arquitecto   Aprobar un certificado sin evidencia → 422
+  ✓ [vivienda d 18] contratista2 Adjuntar evidencia (solo remitos)
+  ✓ [vivienda d 18] arquitecto   Pagar un certificado sin aprobar → 409
+  ✓ [vivienda d 18] arquitecto   Rechazar: falta el protocolo de probetas exigido por el pliego
+  ✓ [vivienda d 19] contratista2 Corregir: sumar el protocolo de probetas y volver a presentar
+  ✓ [vivienda d 19] arquitecto   Aprobar el certificado corregido
+
+⚡ Corte simulado en vivienda:cert.obra-gruesa.1.pagar (escritura enviada, resultado sin anotar)

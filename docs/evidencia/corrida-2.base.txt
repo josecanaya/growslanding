@@ -1,0 +1,91 @@
+Border style is 1.
+== Obras simuladas
+                 obra                 |                   name                   | estado  
+--------------------------------------+------------------------------------------+---------
+ e168d16b-a561-4b68-9e27-e4f1c567b7ff | [SIM] Pasaje Alvear · semilla 20261116   | normal
+ 6ce8365b-df51-4b24-9b6c-94487bf5dd72 | [SIM] PH Las Heras · semilla 20261116    | cerrada
+ 74639fc2-6811-4150-96ef-22fbac69af7b | [SIM] Casa Los Ceibos · semilla 20261116 | normal
+(3 rows)
+
+== Certificados y pagos (un pago por certificado)
+                   obra                   |             certificado              | numero |  estado  | version | monto_neto | pagos |                 pago                 
+------------------------------------------+--------------------------------------+--------+----------+---------+------------+-------+--------------------------------------
+ [SIM] Casa Los Ceibos · semilla 20261116 | 36598c66-f180-4c92-a8fb-6a549690e169 |      1 | aprobado |       2 |   15447.28 |     1 | 15791829-4b73-413e-bdcc-5910bca3df51
+ [SIM] Casa Los Ceibos · semilla 20261116 | 823c2524-1022-42f2-a791-ac04f44c01e7 |      2 | aprobado |       1 |   28354.65 |     1 | 6c92901c-1b4c-42ce-8b34-a263ba96743f
+ [SIM] Casa Los Ceibos · semilla 20261116 | 0cf2ea3b-98c2-4e01-b7ea-10823d6821f7 |      3 | aprobado |       1 |   16933.18 |     1 | cc13277d-2dbe-4505-af70-9f95d07f4165
+ [SIM] Pasaje Alvear · semilla 20261116   | 9bd4a130-d875-48a5-9a52-73e5af1b0a2a |      1 | aprobado |       1 |   29750.96 |     1 | 70c8b504-6ca3-44cd-a481-90c570306508
+ [SIM] Pasaje Alvear · semilla 20261116   | 3c6a4013-88c6-40e1-b59e-e567096ca859 |      2 | aprobado |       1 |   54602.95 |     1 | 3111372f-b4d7-4dbc-a821-c4298f6d8eca
+ [SIM] Pasaje Alvear · semilla 20261116   | b82a1f81-20d6-45a3-af44-1ae3e56a4023 |      1 | aprobado |       1 |   29781.81 |     1 | c02da511-067f-4317-bec9-04e097cd6e4c
+ [SIM] Pasaje Alvear · semilla 20261116   | f96fd7c1-aed3-4d94-a3d5-7bd143b6f870 |      3 | aprobado |       1 |   19859.00 |     1 | 16e23ee2-8789-46c8-a292-d39a97a38c8e
+ [SIM] Pasaje Alvear · semilla 20261116   | badc9779-2588-4ac7-a76b-456aeb2bec2b |      1 | aprobado |       1 |   28663.87 |     1 | 83577b28-fc93-44ea-a10a-6af718f29200
+ [SIM] Pasaje Alvear · semilla 20261116   | 69e98169-e32a-434a-82db-5c9e778542a4 |      2 | aprobado |       1 |   28752.37 |     1 | a4837640-4117-436b-baa7-bcd57f0b3b9e
+ [SIM] PH Las Heras · semilla 20261116    | 674389ba-0bc2-4790-a9aa-e069f193f38d |      1 | aprobado |       2 |    8152.36 |     1 | 55ec289d-66dc-4b36-b6ba-9e5aab618c43
+ [SIM] PH Las Heras · semilla 20261116    | 509a3234-73c4-425f-8bac-bfc3ec51d163 |      2 | aprobado |       1 |   21094.32 |     1 | d5b1518d-a115-455c-a16b-08950fb0031c
+ [SIM] PH Las Heras · semilla 20261116    | 5e95000a-81b8-4dd4-87ad-ff0e7e1262df |      3 | aprobado |       1 |    4218.86 |     1 | f4f026df-949d-4294-9351-8ae13e6146d9
+(12 rows)
+
+== Movimientos de caja por pago de certificado (debe haber uno por certificado pagado)
+ certificado | movimientos | monto 
+-------------+-------------+-------
+(0 rows)
+
+== Contratos por solicitud (una adjudicación por solicitud)
+                   obra                   |    paquete    |     estado     | contratos | ofertas_adjudicadas 
+------------------------------------------+---------------+----------------+-----------+---------------------
+ [SIM] Casa Los Ceibos · semilla 20261116 | obra-gruesa   | adjudicada     |         3 |                   1
+ [SIM] Pasaje Alvear · semilla 20261116   | estructura    | adjudicada     |         3 |                   1
+ [SIM] Pasaje Alvear · semilla 20261116   | instalaciones | adjudicada     |         3 |                   1
+ [SIM] Pasaje Alvear · semilla 20261116   | terminaciones | adjudicada     |         3 |                   1
+ [SIM] PH Las Heras · semilla 20261116    | estructura    | adjudicada     |         3 |                   1
+ [SIM] PH Las Heras · semilla 20261116    | cubierta      | desactualizada |         0 |                   0
+ [SIM] PH Las Heras · semilla 20261116    | cubierta      | adjudicada     |         3 |                   1
+(7 rows)
+
+== Claves de idempotencia de pagos de certificado
+                              clave                               |                 pago                 | ya_pagado |          created_at           
+------------------------------------------------------------------+--------------------------------------+-----------+-------------------------------
+ sim:vivienda:20261116:cert.obra-gruesa.1.pagar                   | 15791829-4b73-413e-bdcc-5910bca3df51 | false     | 2026-11-16 10:35:31.424411+00
+ sim:vivienda:20261116:cert.obra-gruesa.1.doble-pago:otra-clave   | 15791829-4b73-413e-bdcc-5910bca3df51 | true      | 2026-11-16 10:35:31.853609+00
+ sim:vivienda:20261116:cert.obra-gruesa.1.doble-pago:abortada     | 15791829-4b73-413e-bdcc-5910bca3df51 | true      | 2026-11-16 10:35:31.869117+00
+ sim:vivienda:20261116:cert.obra-gruesa.1.doble-pago:simultanea-1 | 15791829-4b73-413e-bdcc-5910bca3df51 | true      | 2026-11-16 10:35:31.885664+00
+ sim:vivienda:20261116:cert.obra-gruesa.1.doble-pago:simultanea-2 | 15791829-4b73-413e-bdcc-5910bca3df51 | true      | 2026-11-16 10:35:31.887421+00
+(5 rows)
+
+== Rondas
+                   obra                   | numero |     estado      | precio_mcu | mcu_ofrecidas | umbral_mcu | asignadas | devueltas | prometidas_canceladas 
+------------------------------------------+--------+-----------------+------------+---------------+------------+-----------+-----------+-----------------------
+ [SIM] Casa Los Ceibos · semilla 20261116 |      1 | cerrada_exitosa |     100.00 |          1470 |       1470 |      1470 |         0 |                    50
+ [SIM] Pasaje Alvear · semilla 20261116   |      1 | cerrada_exitosa |     100.00 |          2580 |       2064 |      2580 |         0 |                     0
+ [SIM] Pasaje Alvear · semilla 20261116   |      2 | cerrada_exitosa |     115.00 |           923 |        739 |       923 |         0 |                     0
+ [SIM] PH Las Heras · semilla 20261116    |      1 | fallida         |     100.00 |          1262 |       1010 |         0 |       693 |                   504
+ [SIM] PH Las Heras · semilla 20261116    |      2 | cerrada_exitosa |      90.00 |          1380 |        828 |      1035 |         0 |                   345
+ [SIM] PH Las Heras · semilla 20261116    |      3 | fallida         |      80.00 |           496 |        447 |         0 |        99 |                   347
+(6 rows)
+
+== Caja por obra
+                   obra                   |   caja   |  aportes  
+------------------------------------------+----------+-----------
+ [SIM] Casa Los Ceibos · semilla 20261116 | 14264.89 | 147000.00
+ [SIM] Pasaje Alvear · semilla 20261116   | 10075.04 | 364145.00
+ [SIM] PH Las Heras · semilla 20261116    |     0.00 |  93150.00
+(3 rows)
+
+== Posiciones MCU
+                   obra                   |           email            |               posicion               | cantidad | costo_total | unidad 
+------------------------------------------+----------------------------+--------------------------------------+----------+-------------+--------
+ [SIM] Casa Los Ceibos · semilla 20261116 | ines.inversora@grows.test  | 902616cd-bfe8-4012-b1b3-c53a8d8efca3 |      700 |    70000.00 | 
+ [SIM] Casa Los Ceibos · semilla 20261116 | irene.inversora@grows.test | eaeda2c0-8bf7-436e-b3db-b04d352ab3f1 |      300 |    30000.00 | 
+ [SIM] Casa Los Ceibos · semilla 20261116 | ivan.inversor@grows.test   | a8118569-a24c-466d-aa79-fa43f2911f05 |      470 |    47000.00 | 
+ [SIM] Pasaje Alvear · semilla 20261116   | ines.inversora@grows.test  | 4da79fab-8112-46b2-a14d-9c35d0b6744f |      900 |    90000.00 | A1
+ [SIM] Pasaje Alvear · semilla 20261116   | irene.inversora@grows.test | a43966ca-d011-41e2-9572-3c2282735268 |     1334 |   147710.00 | 
+ [SIM] Pasaje Alvear · semilla 20261116   | ivan.inversor@grows.test   | 28398879-4264-4687-8bc2-597990711c06 |     1269 |   132435.00 | B1
+ [SIM] PH Las Heras · semilla 20261116    | ines.inversora@grows.test  | b873930a-8e9c-440d-a380-88f3566368ef |      621 |    55890.00 | 
+ [SIM] PH Las Heras · semilla 20261116    | irene.inversora@grows.test | e13cd053-e9b4-445c-943d-b4a76f65bd41 |      414 |    37260.00 | 
+(8 rows)
+
+== Evidencias en Storage vs registradas
+ registradas | objetos_en_storage 
+-------------+--------------------
+          33 |                 33
+(1 row)
+

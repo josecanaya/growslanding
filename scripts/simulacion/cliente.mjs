@@ -33,6 +33,8 @@ export class Sesion {
     const texto = await res.text();
     let json = null;
     try { json = texto ? JSON.parse(texto) : null; } catch { json = { _texto: texto }; }
+    // Punto de corte para simular la caída del proceso con la escritura ya confirmada por el servidor.
+    if (metodo !== 'GET' && res.status < 300 && idem) this.despuesDeEscribir?.(idem);
     return { status: res.status, cuerpo: json };
   }
   get(ruta, opciones) { return this.pedir('GET', ruta, opciones); }

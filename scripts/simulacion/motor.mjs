@@ -85,6 +85,8 @@ export async function ejecutarEscenario(escenario, { entorno, sesiones, corrida,
       // Corte simulado: el proceso muere con la escritura ya enviada y sin haber anotado el resultado.
       cortarSiCorresponde: () => { if (interrumpirEn === paso.id && !retomado) { console.log(`\n⚡ Corte simulado en ${escenario.clave}:${paso.id} (escritura enviada, resultado sin anotar)`); process.exit(75); } },
     };
+    // El corte también puede caer en cualquier paso: justo después de la escritura con la clave del paso.
+    for (const sesion of Object.values(sesiones)) sesion.despuesDeEscribir = (clave) => { if (clave === idem) ctx.cortarSiCorresponde(); };
     let resultado = 'aprobado'; let salida = {}; let error = null;
     const t0 = Date.now();
     try { salida = (await paso.ejecutar(ctx)) ?? {}; }

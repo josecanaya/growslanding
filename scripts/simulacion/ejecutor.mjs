@@ -54,7 +54,7 @@ export async function corrida({ escenarios: claves, hastaDia, avanzar, semilla =
 async function limpiar() {
   const entorno = cargarEntorno();
   const a = admin(entorno); // acceso administrativo: solo preparación y limpieza
-  const claves = opcion('todo') ? ['vivienda', 'edificio', 'fallas'] : [opcion('escenario')].filter((x) => typeof x === 'string');
+  const claves = opcion('todo') ? ['vivienda', 'edificio', 'fallas', 'navegador'] : [opcion('escenario')].filter((x) => typeof x === 'string');
   if (!claves.length) throw new Error('Indicá --escenario <clave> o --todo');
   for (const clave of claves) {
     const estado = leerJson(rutaEstado(clave), null);

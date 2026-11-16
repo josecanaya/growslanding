@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Building2, BriefcaseBusiness, Compass, FolderPlus, HardHat, Search, TrendingUp } from 'lucide-react';
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser-client';
 import type { PublicObra } from '@/lib/obras/publication';
+import FichaInversion from '@/components/circuito/FichaInversion';
 
 const views = [
   { id: 'contratista', label: 'Contratista', icon: HardHat },
@@ -54,6 +55,7 @@ export default function GrowsFeed({ projects, unavailable }: { projects: PublicO
           <nav className="ml-auto flex items-center gap-3 text-sm font-semibold">
             <Link href={access('trabajo')} className="hidden hover:underline sm:block">Mi trabajo</Link>
             <Link href={access('proyecto')} className="hidden hover:underline sm:block">Mis proyectos</Link>
+            <Link href={'/inversores/posicion' as Route} className="hidden hover:underline sm:block">Mi posición</Link>
             <Link href={signedIn ? access(view === 'contratista' ? 'trabajo' : 'proyecto') : login} prefetch={false} className="rounded-xl bg-[#19362d] px-5 py-2.5 text-white">
               {signedIn ? 'Mi espacio' : 'Ingresar'}
             </Link>
@@ -99,6 +101,7 @@ export default function GrowsFeed({ projects, unavailable }: { projects: PublicO
                   {project.milestones.map((milestone, index) => <div key={index} className="flex justify-between gap-4 py-3 text-sm"><span>{milestone.title}</span><span>{milestone.status === 'validado' ? 'Validado' : milestone.status === 'en_curso' ? 'En curso' : 'Pendiente'}</span></div>)}
                 </div>
               </section>
+              {view === 'inversor' && <FichaInversion key={project.id + String(signedIn)} obraId={project.id} conSesion={signedIn} />}
             </>
           ) : (
             <>

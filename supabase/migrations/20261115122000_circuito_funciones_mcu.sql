@@ -345,6 +345,8 @@ begin
   delete from pliego_partidas where obra_id = p_obra;
   delete from notificaciones where obra_id = p_obra;
   delete from tarea_precedencias where tarea_id in (select id from tareas where obra_id = p_obra) or depende_de in (select id from tareas where obra_id = p_obra);
+  delete from tareas_eventos where tarea_id in (select id from tareas where obra_id = p_obra);
+  delete from tareas_estados where tarea_id in (select id from tareas where obra_id = p_obra);
   delete from tareas where obra_id = p_obra;
   get diagnostics v_tareas = row_count;
   delete from obras where id = p_obra;

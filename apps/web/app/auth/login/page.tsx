@@ -23,6 +23,10 @@ const AUTH_LOGIN_PATH = '/auth/login';
 const MISSING_ROLE_MESSAGE =
   'Tu cuenta no tiene rol asignado. Contacta a soporte.';
 
+function esInversorDelFeed(user: { user_metadata?: Record<string, unknown> | null }) {
+  return user.user_metadata?.grows_feed_profile === 'inversor';
+}
+
 function sanitizeRedirect(target: string | null): string | null {
   return safeReturnPath(target, '') || null;
 }
@@ -231,6 +235,10 @@ function LoginPageContent() {
             (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
         );
 
+        if (!role && !redirectTarget && esInversorDelFeed(sessionUser)) {
+          router.replace('/inversores' as Route);
+          return;
+        }
         if (!role && !redirectTarget) {
           setMissingRole(true);
           setStatusMessage(MISSING_ROLE_MESSAGE);
@@ -326,6 +334,11 @@ function LoginPageContent() {
           (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
       );
 
+      if (!role && !redirectTarget && esInversorDelFeed(sessionUser)) {
+        // Un inversor no tiene rol operativo (obra/contratista): su espacio es el feed.
+        router.replace('/inversores' as Route);
+        return;
+      }
       if (!role && !redirectTarget) {
         setMissingRole(true);
         setStatusMessage(MISSING_ROLE_MESSAGE);

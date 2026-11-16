@@ -11,5 +11,5 @@ case "$NEXT_PUBLIC_SUPABASE_URL" in http://127.0.0.1:*|http://localhost:*) ;; *)
 PUERTO="${PRUEBAS_WEB_URL##*:}"
 export NEXT_TELEMETRY_DISABLED=1
 if [ "${1:-}" = "--dev" ]; then exec npx next dev -p "$PUERTO" -H 127.0.0.1; fi
-[ "${1:-}" = "--sin-build" ] || npx next build
+[ "${1:-}" = "--sin-build" ] || { npx prisma generate && npx next build; }  # igual que "npm run build" del producto
 exec npx next start -p "$PUERTO" -H 127.0.0.1

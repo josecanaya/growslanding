@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     type InsertPack = {
       obra_id: string;
-      elemento_id: string;
+      elemento_id: string | null;
       org_id: string;
       title: string;
       descripcion: string | null;
@@ -150,21 +150,18 @@ export async function POST(request: NextRequest) {
         .limit(1)
         .maybeSingle();
 
-      if (elErr || !primerElemento) {
+      // Una tarea directa no exige catálogo: si la obra no tiene elementos, la tarea se crea sin elemento.
+      if (elErr) {
         return NextResponse.json(
-          {
-            success: false,
-            error:
-              'La obra no tiene elementos en el catálogo. Agregá al menos un elemento a la obra antes de crear la tarea.',
-          },
-          { status: 400 }
+          { success: false, error: 'No se pudo leer el catálogo de la obra. Reintentá.' },
+          { status: 503 }
         );
       }
 
       const n = Math.max(1, s.bloques);
       pack = {
         obra_id: s.obra_id,
-        elemento_id: primerElemento.id,
+        elemento_id: primerElemento?.id ?? null,
         org_id: obraRow.org_id,
         title: s.nombre,
         descripcion: s.descripcion ?? null,

@@ -134,7 +134,11 @@ export async function callGrowsMcpTool(
       const org = orgFilter();
       if (org) q = q.eq('org_id', org);
       const { data, error } = await q;
-      if (error) throw error;
+      if (error) {
+        // El detalle de la base queda en el log del servidor; el agente recibe un error estable y accionable.
+        console.error('[mcp] listar_obras_vivas', (error as { code?: string }).code, (error as { message?: string }).message);
+        throw new Error('OBRAS_NO_DISPONIBLES: no se pudo listar las obras de la organización. Reintentá; si persiste, revisá la conexión del servidor MCP.');
+      }
       return textResult({
         obras: (data ?? []).map((o) => ({
           ...o,

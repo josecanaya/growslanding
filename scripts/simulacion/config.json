@@ -1,0 +1,10 @@
+{
+  "semilla": 20261116,
+  "dias_por_corrida": 30,
+  "programador": {
+    "activo": false,
+    "zona_horaria": "America/Argentina/Buenos_Aires",
+    "horarios": ["09:00", "18:00"],
+    "escenarios": ["vivienda", "edificio", "fallas"]
+  }
+}

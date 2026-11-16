@@ -16,3 +16,7 @@ testfile.txt
 /work/
 /supabase/.temp/
 *.private.json
+
+# Simulación: estado local, diarios y credenciales ficticias
+/scripts/simulacion/estado/
+/supabase/pruebas/.env*

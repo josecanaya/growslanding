@@ -48,7 +48,8 @@ export type TareaRow = {
 
 export type CrearTareaPayload = {
   obra_id: string;
-  elemento_id: string;
+  /** Opcional: una tarea directa o de cronograma puede no venir del catálogo de elementos. */
+  elemento_id: string | null;
   org_id: string;
   title: string;
   descripcion?: string | null;

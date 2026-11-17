@@ -147,3 +147,27 @@ jobs:
           path: ${{ runner.temp }}/alvear/
           if-no-files-found: error
           retention-days: 90
+
+  publicar:
+    name: Actualizar Pasaje Alvear en el feed
+    needs: circuito
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: alvear-bitacora
+      - name: Sincronizar avance verificado
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -ce 'select(.obra == "pasaje-alvear") | {obra, dia, ficha: .pasadas[-1].ficha}' avance.json > avance-feed.json
+          oidc="$(curl -fsS --max-time 15 -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=grows%3Afeed%3Apasaje-alvear" | jq -er '.value')"
+          echo "::add-mask::$oidc"
+          curl --fail-with-body --silent --show-error --max-time 20 --retry 3 \
+            -H "Authorization: Bearer $oidc" -H 'Content-Type: application/json' \
+            --data-binary @avance-feed.json \
+            https://rpzaihmpdcktpqkycidt.supabase.co/functions/v1/sincronizar-alvear

@@ -1,6 +1,9 @@
 name: GROWS circuito de pruebas
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/grows-circuito-qa.yml']
   schedule:
     - cron: '0 9,18 * * *'
       timezone: America/Argentina/Buenos_Aires
@@ -9,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: grows-circuito-qa
@@ -25,6 +29,22 @@ jobs:
           # Revisión del circuito con evidencia de las tres corridas.
           ref: d45a4faed235e5cefb04648b3d8180802c597f35
           persist-credentials: false
+      - name: Buscar última bitácora del edificio
+        id: anterior
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          result="$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts?name=alvear-bitacora&per_page=100"             --jq '[.artifacts[] | select(.workflow_run.head_branch == "main" and .expired == false)] | max_by(.id) | .workflow_run.id // empty')"
+          echo "run-id=$result" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        if: steps.anterior.outputs.run-id != ''
+        with:
+          name: alvear-bitacora
+          run-id: ${{ steps.anterior.outputs.run-id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/alvear
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.9
@@ -36,7 +56,7 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Levantar base aislada
         run: bash scripts/entorno-pruebas/levantar.sh
-      - name: Crear obras y verificar continuidad
+      - name: Operar el edificio Pasaje Alvear
         shell: bash
         run: |
           set -euo pipefail
@@ -50,16 +70,80 @@ jobs:
             sleep 4
           done
           if [[ "$status" != "401" ]]; then tail -60 "$RUNNER_TEMP/grows-web.log"; exit 1; fi
-          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 19 --id primera
-          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 120 --id continuar
-          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 120 --id verificar
-          node scripts/simulacion/ejecutor.mjs estado | tee "$RUNNER_TEMP/grows-estado.txt"
-          report=scripts/simulacion/estado/reportes/verificar/reporte.json
-          jq -e '(.escenarios | length == 3) and all(.escenarios[]; .obra and .total > 0 and .ejecutados_en_corrida == 0 and .acumulado.aprobado == .total)' "$report"
-          {
-            echo '### GROWS · Obras de prueba'
-            echo 'Las tres obras completaron el circuito. Repetir la corrida no duplicó operaciones.'
-            echo '```'
-            cat "$RUNNER_TEMP/grows-estado.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p "$RUNNER_TEMP/alvear"
+          previo=-1
+          if [[ -f "$RUNNER_TEMP/alvear/avance.json" ]]; then
+            previo="$(jq -er 'select(.version == 1 and .obra == "pasaje-alvear" and .semilla == 20261116) | .dia | select(type == "number" and . >= 0 and . <= 112 and . == floor)' "$RUNNER_TEMP/alvear/avance.json")"
+            node scripts/simulacion/ejecutor.mjs corrida --escenarios edificio --hasta-dia "$previo" --id reconstruir
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            node scripts/simulacion/ejecutor.mjs corrida --escenarios edificio --hasta-dia 9 --id preparar-prueba
+            previo=9
+          fi
+          limite="$(node --input-type=module - "$previo" <<'JS'
+          import escenario from './scripts/simulacion/escenarios/edificio.mjs';
+          const anterior = Number(process.argv[2]);
+          const dias = escenario.pasos(20261116).map(paso => paso.dia);
+          const siguiente = Math.min(...dias.filter(dia => dia > anterior));
+          const fin = Math.max(...dias);
+          console.log(Math.min(fin, anterior < 0 ? 9 : Math.max(anterior + 7, siguiente)));
+          JS
+          )"
+          node scripts/simulacion/ejecutor.mjs corrida --escenarios edificio --hasta-dia "$limite" --id avance
+          node --input-type=module - "$previo" "$limite" <<'JS'
+          import { readFileSync, writeFileSync, existsSync, appendFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          import { cargarEntorno } from './scripts/entorno-pruebas/entorno.mjs';
+          import { abrirSesiones, exito, leerJson, rutaEstado } from './scripts/simulacion/motor.mjs';
+          const [anterior, dia] = process.argv.slice(2).map(Number);
+          const archivo = join(process.env.RUNNER_TEMP, 'alvear', 'avance.json');
+          const documento = existsSync(archivo)
+            ? JSON.parse(readFileSync(archivo, 'utf8'))
+            : { version: 1, obra: 'pasaje-alvear', semilla: 20261116, pasadas: [] };
+          const diario = 'scripts/simulacion/estado/corridas/avance.jsonl';
+          const movimientos = (existsSync(diario) ? readFileSync(diario, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse) : [])
+            .map(({ actor, dia_simulado, accion, paso, resultado, tipo }) => ({ actor, dia_simulado, accion, paso, resultado, tipo }));
+          if (movimientos.some(m => m.resultado !== 'aprobado' || m.dia_simulado <= anterior || m.dia_simulado > dia))
+            throw new Error('La pasada no coincide con la ventana de avance aprobada.');
+          if (anterior < 112 && movimientos.length === 0) throw new Error('No se registró avance en el edificio.');
+          const { vars } = leerJson(rutaEstado('edificio'), {});
+          if (!vars?.obra) throw new Error('La obra de prueba no existe.');
+          const actores = abrirSesiones(cargarEntorno());
+          const lectura = exito(await actores.auditor.get(`/api/obras/${vars.obra}/circuito`), 'lectura de cierre del auditor');
+          if (lectura.rol !== 'auditor') throw new Error('La bitácora requiere el rol auditor.');
+          const avances = lectura.plan.avances;
+          const ficha = {
+            estado: lectura.obra.estado,
+            avance_fisico_pct: avances.avance_fisico.pct,
+            certificado_pct: avances.certificado.pct,
+            pagado_pct: avances.pagado.pct,
+            caja_simulada: lectura.financiacion.caja.saldo,
+            contratos: lectura.contratos.length,
+            rondas: lectura.rondas.map(r => ({ estado: r.estado, mcu_integradas: r.mcu_integradas })),
+          };
+          documento.dia = dia;
+          documento.pasadas.push({ id: process.env.GITHUB_RUN_ID, desde: anterior, hasta: dia, ficha, movimientos });
+          writeFileSync(archivo, JSON.stringify(documento, null, 2) + '\n');
+          const roles = {
+            arquitecto: 'Ana · Arquitectura', coordinador: 'Carla · Coordinación', auditor: 'Aldo · Auditoría',
+            contratista1: 'Delta · Estructura', contratista2: 'Litoral · Instalaciones', contratista3: 'Sur · Terminaciones',
+            inversor1: 'Inés · Inversión', inversor2: 'Iván · Inversión', inversor3: 'Irene · Inversión'
+          };
+          const lineas = ['## Pasaje Alvear · Bitácora de obra', '',
+            `Día simulado ${dia}. ${movimientos.length} pasos nuevos. ${dia === 112 ? 'Obra cerrada.' : 'Obra en curso.'}`, '',
+            `Avance físico: ${ficha.avance_fisico_pct}%. Certificado: ${ficha.certificado_pct}%. Pagado: ${ficha.pagado_pct}%. Caja ficticia: ${ficha.caja_simulada}.`, ''];
+          for (const [actor, nombre] of Object.entries(roles)) {
+            const tareas = movimientos.filter(m => m.actor === actor);
+            if (!tareas.length) continue;
+            lineas.push(`### ${nombre}`, '', ...tareas.map(m => `- Día ${m.dia_simulado}: ${m.accion}`), '');
+          }
+          writeFileSync(join(process.env.RUNNER_TEMP, 'alvear', 'bitacora.md'), lineas.join('\n') + '\n');
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, lineas.join('\n') + '\n');
+          JS
+      - uses: actions/upload-artifact@v4
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          name: alvear-bitacora
+          path: ${{ runner.temp }}/alvear/
+          if-no-files-found: error
+          retention-days: 90

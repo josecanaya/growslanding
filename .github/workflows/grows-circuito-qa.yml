@@ -1,0 +1,65 @@
+name: GROWS circuito de pruebas
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9,18 * * *'
+      timezone: America/Argentina/Buenos_Aires
+  pull_request:
+    paths: ['.github/workflows/grows-circuito-qa.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grows-circuito-qa
+  cancel-in-progress: false
+
+jobs:
+  circuito:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Revisión del circuito con evidencia de las tres corridas.
+          ref: d45a4faed235e5cefb04648b3d8180802c597f35
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+      - name: Levantar base aislada
+        run: bash scripts/entorno-pruebas/levantar.sh
+      - name: Crear obras y verificar continuidad
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/entorno-pruebas/web.sh > "$RUNNER_TEMP/grows-web.log" 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          for (( intento=0; intento<150; intento++ )); do
+            kill -0 "$web_pid" || { tail -60 "$RUNNER_TEMP/grows-web.log"; exit 1; }
+            status="$(curl -s --max-time 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/api/inversion/posicion || true)"
+            if [[ "$status" == "401" ]]; then break; fi
+            sleep 4
+          done
+          if [[ "$status" != "401" ]]; then tail -60 "$RUNNER_TEMP/grows-web.log"; exit 1; fi
+          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 19 --id primera
+          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 120 --id continuar
+          node scripts/simulacion/ejecutor.mjs corrida --hasta-dia 120 --id verificar
+          node scripts/simulacion/ejecutor.mjs estado | tee "$RUNNER_TEMP/grows-estado.txt"
+          report=scripts/simulacion/estado/reportes/verificar/reporte.json
+          jq -e '(.escenarios | length == 3) and all(.escenarios[]; .obra and .total > 0 and .ejecutados_en_corrida == 0 and .acumulado.aprobado == .total)' "$report"
+          {
+            echo '### GROWS · Obras de prueba'
+            echo 'Las tres obras completaron el circuito. Repetir la corrida no duplicó operaciones.'
+            echo '```'
+            cat "$RUNNER_TEMP/grows-estado.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

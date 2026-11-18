@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { loadPublicFeed, loadPublicObra } from '@/lib/obras/public-feed';
 import { getSessionUser } from '@/lib/auth/session-user';
 import { accountRole } from '@/lib/obras/feed-profile';
+import { loadComments, loadSocial } from '@/lib/obras/social';
 import GrowsFeed from '@/components/grows/GrowsFeed';
 import WorksMap from '@/components/grows/WorksMap';
 
@@ -38,13 +39,20 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
     investorNotes: account?.role === 'inversor' ? work.investorNotes : '',
     contractorNotes: account?.role === 'contratista' ? work.contractorNotes : '',
   }));
+  const detail = projects.find((item) => item.id === obra);
+  const [social, comments] = await Promise.all([
+    loadSocial(projects.map((item) => item.id), user?.id ?? null),
+    detail ? loadComments(detail.id) : Promise.resolve(null),
+  ]);
   return (
     <GrowsFeed
       projects={projects}
-      project={projects.find((item) => item.id === obra)}
+      project={detail}
       unavailable={result.unavailable}
       requestedObra={Boolean(obra)}
       account={account}
+      social={social}
+      comments={comments}
     />
   );
 }

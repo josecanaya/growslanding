@@ -33,7 +33,7 @@ it('reads approved public map points and validates the automated run independent
 it('connects the feed, map and work-specific run', () => {
   const { rerender } = render(<GrowsFeed projects={[work]} requestedObra={false} unavailable={false} account={null} />);
   expect(screen.getByRole('link', { name: 'Ver mapa' }).getAttribute('href')).toBe('/inversores?mapa=1');
-  expect(screen.getByRole('link', { name: 'Ver oportunidad' }).getAttribute('href')).toContain('#inversion');
+  expect(screen.getByRole('link', { name: 'Ver ronda' }).getAttribute('href')).toContain('#inversion');
 
   rerender(<GrowsFeed projects={[work]} project={work} requestedObra unavailable={false} account={null} />);
   expect(screen.getByRole('link', { name: 'Ver en mapa' }).getAttribute('href')).toContain(`mapa=1&obra=${work.id}`);

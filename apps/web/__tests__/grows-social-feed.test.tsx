@@ -28,3 +28,27 @@ describe('GROWS social feed', () => {
     expect(screen.queryByRole('link', { name: 'Ver actividad de Casa patio' })).toBeNull();
   });
 });
+
+describe('GROWS social actions', () => {
+  const social = { [withRound.id]: { follows: 3, supports: 5, comments: 2, following: false, supported: true } };
+
+  it('shows counts and sends visitors to login', () => {
+    render(<GrowsFeed projects={[withRound]} requestedObra={false} unavailable={false} account={null} social={social} />);
+    expect(screen.getByRole('link', { name: 'Apoyar · 5' }).getAttribute('href')).toContain('/auth/login');
+    expect(screen.getByRole('link', { name: 'Comentar en Pasaje Alvear' }).getAttribute('href')).toContain('#comentarios');
+  });
+
+  it('lets signed-in users support, follow and read comments', () => {
+    render(<GrowsFeed projects={[withRound]} project={withRound} requestedObra={false} unavailable={false} account={{ role: 'inversor' }} social={social}
+      comments={[{ id: 'c1', authorName: 'Ana', authorRole: 'inversor', body: '¿Cuándo termina la estructura?', createdAt: '2026-11-17T12:00:00.000Z' }]} />);
+    expect(screen.getByRole('button', { name: 'Seguir' }).getAttribute('aria-pressed')).toBe('false');
+    expect(screen.getByText('3 seguidores')).toBeTruthy();
+    expect(screen.getByText('¿Cuándo termina la estructura?')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Publicar' })).toBeTruthy();
+  });
+
+  it('hides social actions when the tables are not available', () => {
+    render(<GrowsFeed projects={[withRound]} requestedObra={false} unavailable={false} account={{ role: 'inversor' }} social={null} />);
+    expect(screen.queryByRole('button', { name: /Apoyar/ })).toBeNull();
+  });
+});

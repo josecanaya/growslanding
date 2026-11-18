@@ -8,8 +8,10 @@ import {
   Search, Share2, TrendingUp, UserRound,
 } from 'lucide-react';
 import InvestmentRun, { roundLabel } from './InvestmentRun';
+import { Comments, FollowButton, PostActions } from './ObraSocial';
 import type { accountRole } from '@/lib/obras/feed-profile';
 import type { PublicObra } from '@/lib/obras/publication';
+import type { ObraComment, ObraSocial } from '@/lib/obras/social';
 
 type AccountRole = NonNullable<ReturnType<typeof accountRole>>;
 
@@ -109,7 +111,7 @@ function RoundStrip({ work }: { work: PublicObra }) {
   );
 }
 
-function ProgressPost({ work }: { work: PublicObra }) {
+function ProgressPost({ work, social, signedIn }: { work: PublicObra; social?: ObraSocial; signedIn: boolean }) {
   const cover = coverFor(work);
   return (
     <article className={card}>
@@ -119,6 +121,7 @@ function ProgressPost({ work }: { work: PublicObra }) {
           <h2 className="text-[15px] font-semibold"><Link href={workLink(work.id)} className="hover:underline">{work.title}</Link> <span className={`font-normal ${muted}`}>· actualizó el avance</span></h2>
           <p className={`mt-0.5 text-[13px] ${muted}`}>{work.location}{work.location && work.publishedAt ? ' · ' : ''}<PublishedDate work={work} /></p>
         </div>
+        {social && <FollowButton obraId={work.id} initial={social} signedIn={signedIn} compact />}
       </div>
       {work.summary && <p className="line-clamp-3 whitespace-pre-wrap px-4 pb-3.5 leading-relaxed sm:px-5">{work.summary}</p>}
       <Link href={workLink(work.id)} className="relative block">
@@ -138,6 +141,7 @@ function ProgressPost({ work }: { work: PublicObra }) {
       </Link>
       <RoundStrip work={work} />
       <div className="mt-2 flex gap-1 px-2.5 pb-1.5 pt-2.5">
+        {social && <PostActions obraId={work.id} title={work.title} initial={social} signedIn={signedIn} />}
         <Link href={workLink(work.id)} className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl text-sm text-[#3c5047] hover:bg-[#f4f5f0]" aria-label={'Ver actividad de ' + work.title}>
           <Compass size={19} aria-hidden="true" />Ver actividad
         </Link>
@@ -214,7 +218,7 @@ function Opportunities({ projects }: { projects: PublicObra[] }) {
 
 /* ---------- Ficha de obra ---------- */
 
-function WorkDetail({ project, role }: { project: PublicObra; role: AccountRole | null }) {
+function WorkDetail({ project, role, social, comments, signedIn }: { project: PublicObra; role: AccountRole | null; social?: ObraSocial; comments: ObraComment[] | null; signedIn: boolean }) {
   const cover = coverFor(project);
   const run = project.simulation;
   return (
@@ -236,7 +240,8 @@ function WorkDetail({ project, role }: { project: PublicObra; role: AccountRole 
           <h1 className="text-3xl font-semibold tracking-tight">{project.title}</h1>
           {project.location && <p className={`mt-1 text-sm ${muted}`}>{project.location}</p>}
         </div>
-        <div className="flex gap-2 pb-1.5">
+        <div className="flex items-start gap-2 pb-1.5">
+          {social && <FollowButton obraId={project.id} initial={social} signedIn={signedIn} />}
           <Link href={`/inversores?mapa=1&obra=${project.id}` as Route} aria-label="Ver en mapa" className="grid size-11 place-items-center rounded-full border border-[#d5dccf] bg-white hover:bg-[#f4f5f0]"><MapPin size={17} aria-hidden="true" /></Link>
           <ShareButton work={project} label={false} />
         </div>
@@ -260,6 +265,8 @@ function WorkDetail({ project, role }: { project: PublicObra; role: AccountRole 
             <h2 className="font-semibold">Trabajos en esta obra</h2>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{project.contractorNotes}</p>
           </section>}
+
+          {comments && <Comments obraId={project.id} initial={comments} signedIn={signedIn} />}
 
           <section aria-labelledby="actividad" className="space-y-0">
             <h2 id="actividad" className="mb-3 text-xl font-semibold tracking-tight">Actividad</h2>
@@ -317,9 +324,11 @@ type FeedProps = {
   unavailable: boolean;
   requestedObra: boolean;
   account: { role: AccountRole | null } | null;
+  social?: Record<string, ObraSocial> | null;
+  comments?: ObraComment[] | null;
 };
 
-export default function GrowsFeed({ projects, project, unavailable, requestedObra, account }: FeedProps) {
+export default function GrowsFeed({ projects, project, unavailable, requestedObra, account, social = null, comments = null }: FeedProps) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>('todo');
   const role = account?.role ?? null;
@@ -359,7 +368,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
       </header>
 
       <div className="mx-auto max-w-[1360px] px-4 py-5 sm:px-6 lg:py-6">
-        {project ? <WorkDetail project={project} role={role} /> : (
+        {project ? <WorkDetail project={project} role={role} social={social?.[project.id]} comments={comments} signedIn={Boolean(account)} /> : (
           <div className="flex flex-wrap items-start gap-6">
             <aside className="hidden w-[240px] shrink-0 flex-col gap-4 lg:sticky lg:top-24 lg:flex">
               {profile && (
@@ -395,7 +404,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
               {requestedObra && <p role="status" className="text-sm">Esta obra no tiene una publicación disponible.</p>}
               {filtered.map((work) => (
                 <div key={work.id} className="flex flex-col gap-5">
-                  <ProgressPost work={work} />
+                  <ProgressPost work={work} social={social?.[work.id]} signedIn={Boolean(account)} />
                   {filter === 'todo' && <MilestonePost work={work} />}
                 </div>
               ))}

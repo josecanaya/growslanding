@@ -36,7 +36,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (current.revision !== parsed.data.revision) throw new ObraAccessError(409, 'La obra cambió. Recargá la publicación antes de guardar.');
     // The existing atomic snapshot RPC locks the obra and compares revision.
     // Only the reviewed public fields are exposed by the feed.
-    const publication = { ...parsed.data.publication, publishedAt: new Date().toISOString() };
+    const currentPublication = current.obra.canvas_ui?.publication as { simulation?: unknown } | undefined;
+    const publication = {
+      ...parsed.data.publication,
+      publishedAt: new Date().toISOString(),
+      ...(currentPublication?.simulation !== undefined ? { simulation: currentPublication.simulation } : {}),
+    };
     const saved = await saveCanvasSnapshot(supabase, id, orgId, current.revision, {
       obrasPatch: { name: current.obra.name, canvas_project_kind: current.obra.canvas_project_kind, canvas_ui: { publication } },
       nodes: current.nodes, edges: current.edges, budgetGroups: current.budgetGroups,

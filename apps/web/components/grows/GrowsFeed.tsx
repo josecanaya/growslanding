@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useState } from 'react';
-import { ArrowLeft, ArrowUpRight, Building2, Compass, HardHat, Search, TrendingUp, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Building2, Compass, HardHat, MapPin, Search, TrendingUp, UserRound } from 'lucide-react';
+import InvestmentRun from './InvestmentRun';
 import type { accountRole } from '@/lib/obras/feed-profile';
 import type { PublicObra } from '@/lib/obras/publication';
 
@@ -133,7 +134,10 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
         <main id="feed" className="min-w-0">
           {project ? (
             <>
-              <Link href="/inversores" className="mb-5 inline-flex items-center gap-2 text-sm text-[#53695d]"><ArrowLeft size={16} /> Volver al feed</Link>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <Link href="/inversores" className="inline-flex items-center gap-2 text-sm text-[#53695d]"><ArrowLeft size={16} /> Volver al feed</Link>
+                <Link href={`/inversores?mapa=1&obra=${project.id}` as Route} className="inline-flex items-center gap-2 rounded-full bg-[#e5ecde] px-4 py-2 text-sm font-semibold"><MapPin size={16} /> Ver en mapa</Link>
+              </div>
               <article className={panel}>
                 <div className="flex items-center gap-3 p-5 sm:p-6">
                   <WorkAvatar work={project} />
@@ -145,7 +149,8 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
                   <WorkProgress work={project} />
                 </div>
               </article>
-              {account?.role === 'inversor' && project.investorNotes && <section className={`${panel} mt-5 p-5 sm:p-6`}>
+              {project.simulation && <InvestmentRun run={project.simulation} />}
+              {!project.simulation && account?.role === 'inversor' && project.investorNotes && <section className={`${panel} mt-5 p-5 sm:p-6`}>
                 <h2 className="font-semibold">Seguimiento de inversión</h2>
                 <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{project.investorNotes}</p>
               </section>}
@@ -157,7 +162,10 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
             </>
           ) : (
             <>
-              <h1 className="mb-5 text-3xl font-semibold tracking-tight">Tu comunidad, en obra.</h1>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <h1 className="text-3xl font-semibold tracking-tight">Tu comunidad, en obra.</h1>
+                <Link href="/inversores?mapa=1" className="inline-flex items-center gap-2 rounded-full bg-[#e5ecde] px-4 py-2 text-sm font-semibold"><MapPin size={16} /> Ver mapa</Link>
+              </div>
               {requestedObra && <p role="status" className="mb-5 text-sm">Esta obra no tiene una publicación disponible.</p>}
               <div className="space-y-6">
                 {filtered.map((work) => (
@@ -176,7 +184,10 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
                       <WorkProgress work={work} />
                       <div className="flex items-center justify-between gap-3 border-t border-[#e0e6dc] pt-4 text-sm">
                         <span className="text-[#53695d]">{work.milestones.length ? `${work.milestones.length} ${work.milestones.length === 1 ? 'hito publicado' : 'hitos publicados'}` : 'Seguimiento de obra'}</span>
-                        <Link href={workLink(work.id)} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline" aria-label={'Ver actividad de ' + work.title}>Ver actividad <ArrowUpRight size={17} /></Link>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                          {work.simulation && <Link href={`${workLink(work.id)}#inversion` as Route} className="font-semibold hover:underline">Ver rondas</Link>}
+                          <Link href={workLink(work.id)} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline" aria-label={'Ver actividad de ' + work.title}>Ver actividad <ArrowUpRight size={17} /></Link>
+                        </div>
                       </div>
                     </div>
                   </article>

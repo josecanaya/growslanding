@@ -4,6 +4,7 @@ import type { Publication } from '@/lib/obras/publication';
 
 export default function PublicationEditor({ obraId }: { obraId: string }) {
   const [publication, setPublication] = useState<Publication | null>(null);
+  const [coordinates, setCoordinates] = useState({ lat: '', lng: '' });
   const [revision, setRevision] = useState(0);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
@@ -14,18 +15,27 @@ export default function PublicationEditor({ obraId }: { obraId: string }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setPublication(data.publication);
+      const point = data.publication.mapPoint;
+      setCoordinates(point ? { lat: String(point.lat), lng: String(point.lng) } : { lat: '', lng: '' });
       setRevision(data.revision);
     } catch (error) { setStatus(error instanceof Error ? error.message : 'No se pudo cargar.'); }
   }
   useEffect(() => { void load(); }, [obraId]);
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    const lat = coordinates.lat.trim();
+    const lng = coordinates.lng.trim();
+    if (Boolean(lat) !== Boolean(lng)) {
+      setStatus('Completá las dos coordenadas o dejá las dos vacías.');
+      return;
+    }
+    const mapPoint = lat && lng ? { lat: Number(lat), lng: Number(lng) } : undefined;
     setBusy(true);
     setStatus('');
     try {
       const response = await fetch('/api/obras/' + obraId + '/publicacion', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ publication, revision }),
+        body: JSON.stringify({ publication: { ...publication, mapPoint }, revision }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
@@ -47,6 +57,12 @@ export default function PublicationEditor({ obraId }: { obraId: string }) {
   return <form onSubmit={save} className="space-y-5">
     <div><h2 className="text-xl font-semibold">Publicación de la obra</h2><p className="mt-2 text-sm text-[#62776b]">Revisá la información que podrán ver las personas que visitan Grows. Cada actualización publica los campos de este formulario.</p></div>
     {fields.map(([key, label, maxLength]) => <label key={key} className="block space-y-2 text-sm font-medium"><span>{label}</span><textarea rows={maxLength > 2000 ? 3 : 1} required={key === 'title'} maxLength={maxLength} value={publication[key]} onChange={(event) => setPublication({ ...publication, [key]: event.target.value })} className="block w-full rounded-lg border border-[#cdd9ce] bg-white p-3" /></label>)}
+    <fieldset className="grid gap-3 sm:grid-cols-2">
+      <legend className="font-medium">Punto público en el mapa</legend>
+      <p className="text-sm text-[#62776b] sm:col-span-2">Elegí qué punto mostrar. Podés usar una referencia de la zona o dejar los dos campos vacíos.</p>
+      <label className="space-y-1 text-sm"><span>Latitud</span><input className="block w-full rounded-lg border p-2" type="number" step="any" min="-85" max="85" value={coordinates.lat} onChange={(event) => setCoordinates({ ...coordinates, lat: event.target.value })} /></label>
+      <label className="space-y-1 text-sm"><span>Longitud</span><input className="block w-full rounded-lg border p-2" type="number" step="any" min="-180" max="180" value={coordinates.lng} onChange={(event) => setCoordinates({ ...coordinates, lng: event.target.value })} /></label>
+    </fieldset>
     <label className="block space-y-2 text-sm"><span>Avance que confirmás publicar (%)</span><input type="number" min="0" max="100" required value={publication.progress} onChange={(event) => setPublication({ ...publication, progress: Number(event.target.value) })} className="block rounded-lg border p-3" /></label>
     <fieldset className="space-y-3">
       <legend className="font-medium">Hitos publicados</legend>

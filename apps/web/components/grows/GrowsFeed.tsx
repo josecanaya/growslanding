@@ -31,7 +31,7 @@ const mcu = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
 type Filter = 'todo' | 'rondas' | 'avances';
 const filters: { id: Filter; label: string }[] = [
   { id: 'todo', label: 'Para vos' },
-  { id: 'rondas', label: 'Rondas abiertas' },
+  { id: 'rondas', label: 'Con inversión' },
   { id: 'avances', label: 'Avances de obra' },
 ];
 
@@ -97,13 +97,13 @@ function RoundStrip({ work }: { work: PublicObra }) {
   if (!round) return null;
   return (
     <div className="mx-4 mt-4 flex flex-wrap items-center gap-3.5 rounded-2xl border border-[#e3e8df] bg-[#fbfbf8] p-3.5 sm:mx-5">
-      <span className="grid size-10 place-items-center rounded-xl bg-[#fbf3d0] text-[#6b5000]"><TrendingUp size={19} aria-hidden="true" /></span>
+      <span className={`grid size-10 place-items-center rounded-xl ${round.estado === 'abierta' ? 'bg-[#fbf3d0] text-[#6b5000]' : 'bg-[#e6eedf] text-[#2f5a2a]'}`}><TrendingUp size={19} aria-hidden="true" /></span>
       <div className="min-w-0 flex-[1_1_200px]">
         <p className="font-semibold">Ronda {round.number} · {roundLabel(round.estado).toLocaleLowerCase('es')}</p>
         <p className={`mt-0.5 text-[13px] ${muted}`}>{mcu.format(round.mcu_integradas)} MCU integradas · operaciones ficticias</p>
       </div>
-      <Link href={workLink(work.id, '#inversion')} className="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-[#e8c547] px-4 text-sm font-semibold text-[#1d3329] hover:bg-[#dcb83a]">
-        Ver oportunidad <ArrowRight size={16} aria-hidden="true" />
+      <Link href={workLink(work.id, '#inversion')} className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${round.estado === 'abierta' ? 'bg-[#e8c547] text-[#1d3329] hover:bg-[#dcb83a]' : 'border border-[#d5dccf] bg-white hover:bg-[#f0f3ec]'}`}>
+        {round.estado === 'abierta' ? 'Ver oportunidad' : 'Ver ronda'} <ArrowRight size={16} aria-hidden="true" />
       </Link>
     </div>
   );
@@ -190,7 +190,7 @@ function Opportunities({ projects }: { projects: PublicObra[] }) {
   if (!open.length) return null;
   return (
     <section className={`${card} p-[18px]`}>
-      <h2 className="text-lg font-semibold tracking-tight">Oportunidades abiertas</h2>
+      <h2 className="text-lg font-semibold tracking-tight">{open.some((work) => currentRound(work)?.estado === 'abierta') ? 'Oportunidades abiertas' : 'Rondas de inversión'}</h2>
       <ul className="mt-3.5 space-y-3.5">
         {open.map((work) => {
           const round = currentRound(work)!;
@@ -400,7 +400,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
                 </div>
               ))}
               {!filtered.length && <section role="status" className={`${card} p-8 text-center`}>
-                <h2 className="font-semibold">{unavailable ? 'No pudimos cargar las obras' : needle ? 'No encontramos obras con esa búsqueda' : filter === 'rondas' ? 'No hay rondas abiertas por ahora' : 'Todavía no hay obras publicadas'}</h2>
+                <h2 className="font-semibold">{unavailable ? 'No pudimos cargar las obras' : needle ? 'No encontramos obras con esa búsqueda' : filter === 'rondas' ? 'Todavía no hay obras con rondas' : 'Todavía no hay obras publicadas'}</h2>
                 {unavailable && <p className={`mt-2 text-sm ${muted}`}>Volvé a cargar la página para reintentar.</p>}
               </section>}
             </main>

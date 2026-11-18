@@ -23,7 +23,7 @@ describe('GROWS social feed', () => {
     expect(screen.getByRole('heading', { name: 'Oportunidades abiertas' })).toBeTruthy();
     expect(screen.getAllByRole('progressbar')).toHaveLength(2);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rondas abiertas' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Con inversión' }));
     expect(screen.getAllByRole('progressbar')).toHaveLength(1);
     expect(screen.queryByRole('link', { name: 'Ver actividad de Casa patio' })).toBeNull();
   });

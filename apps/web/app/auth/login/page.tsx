@@ -16,16 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Database } from '@/lib/types/supabase.gen';
-import { getDefaultRouteForRole, normalizeRole } from '@/lib/roles';
 import { getAppWebUrl, RELAX_CLIENT_AUTH_THROTTLE } from '@/lib/config';
-
-const AUTH_LOGIN_PATH = '/auth/login';
-const MISSING_ROLE_MESSAGE =
-  'Tu cuenta no tiene rol asignado. Contacta a soporte.';
-
-function sanitizeRedirect(target: string | null): string | null {
-  return safeReturnPath(target, '') || null;
-}
 
 function StatusMessage({ 
   text, 
@@ -90,12 +81,11 @@ function LoginPageContent() {
   const [password, setPassword] = useState('');
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [missingRole, setMissingRole] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const redirectParam = searchParams?.get('redirect') ?? null;
-  const redirectTarget = sanitizeRedirect(redirectParam);
+  const redirectTarget = safeReturnPath(redirectParam);
   const errorParam = searchParams?.get('error') ?? null;
 
   /** El bloqueo en localStorage dejaba sin Google OAuth aunque Supabase ya estuviera bien. Solo informamos, no bloqueamos. */
@@ -128,12 +118,9 @@ function LoginPageContent() {
 
   useEffect(() => {
     if (errorParam === 'missing-role') {
-      setMissingRole(true);
-      setStatusMessage(MISSING_ROLE_MESSAGE);
+      setStatusMessage('Tu cuenta necesita un perfil habilitado para entrar a esa sección.');
       return;
     }
-
-    setMissingRole(false);
 
     if (errorParam === 'unauthorized') {
       setStatusMessage('No tienes acceso a la seccion solicitada.');
@@ -225,33 +212,8 @@ function LoginPageContent() {
           return;
         }
 
-        const sessionUser = data.session.user;
-        const role = normalizeRole(
-          (sessionUser.app_metadata as Record<string, unknown> | undefined)?.role ??
-            (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
-        );
-
-        if (!role && !redirectTarget) {
-          setMissingRole(true);
-          setStatusMessage(MISSING_ROLE_MESSAGE);
-          return;
-        }
-
-        setMissingRole(false);
         setStatusMessage(null);
-
-        const defaultRoute = getDefaultRouteForRole(role);
-        const target = redirectTarget ?? defaultRoute;
-
-        if (pathname === target) {
-          return;
-        }
-
-        if (pathname === AUTH_LOGIN_PATH && target === AUTH_LOGIN_PATH) {
-          return;
-        }
-
-        router.replace(target as Route);
+        if (pathname !== redirectTarget) router.replace(redirectTarget as Route);
       } catch (err) {
         const error = err as { message?: string; status?: number };
         const isRateLimit =
@@ -320,22 +282,7 @@ function LoginPageContent() {
         throw new Error('No se pudo crear la sesión');
       }
 
-      const sessionUser = data.session.user;
-      const role = normalizeRole(
-        (sessionUser.app_metadata as Record<string, unknown> | undefined)?.role ??
-          (sessionUser.user_metadata as Record<string, unknown> | undefined)?.role
-      );
-
-      if (!role && !redirectTarget) {
-        setMissingRole(true);
-        setStatusMessage(MISSING_ROLE_MESSAGE);
-        setIsLoading(false);
-        return;
-      }
-
-      const defaultRoute = getDefaultRouteForRole(role);
-      const target = redirectTarget ?? defaultRoute;
-      router.replace(target as Route);
+      router.replace(redirectTarget as Route);
     } catch (error) {
       console.error('[EMAIL_PASSWORD_LOGIN_ERROR]', error);
       setStatusMessage(
@@ -365,9 +312,7 @@ function LoginPageContent() {
     try {
       const appBaseUrl = getAppWebUrl();
       const redirectUrl = new URL('/auth/callback', appBaseUrl);
-      if (redirectTarget) {
-        redirectUrl.searchParams.set('redirect', redirectTarget);
-      }
+      redirectUrl.searchParams.set('redirect', redirectTarget);
 
       const redirectToUrl = redirectUrl.toString();
       console.log('[GOOGLE_LOGIN] Redirect URL:', redirectToUrl);
@@ -415,49 +360,6 @@ function LoginPageContent() {
     }
   }
 
-  if (missingRole) {
-    const selectionPath = redirectTarget
-      ? `/auth/select-role?redirect=${encodeURIComponent(redirectTarget)}`
-      : '/auth/select-role';
-
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4 py-12">
-        <div className="flex w-full max-w-6xl flex-col items-center justify-center gap-16 md:flex-row">
-          {/* Columna izquierda: Mensaje de error */}
-          <div className="flex w-full max-w-md items-center justify-center">
-            <Card className="w-full rounded-lg border border-gray-200 bg-white p-10 shadow-sm">
-              <CardContent className="space-y-6 p-0 text-center">
-                <StatusMessage text={MISSING_ROLE_MESSAGE} />
-                <p className="text-sm text-gray-600">
-                  Elegí el rol que mejor describe tu perfil para personalizar tu experiencia en GROWS.
-                </p>
-                <Button
-                  asChild
-                  className="h-12 w-full rounded-md bg-[#002E5D] text-white shadow-sm transition-colors hover:bg-[#003d7a]"
-                >
-                  <Link href={selectionPath as Route}>Elegir mi rol</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Columna derecha: Imagen (oculta en mobile) */}
-          <div className="hidden h-[600px] w-full max-w-[460px] items-center justify-center md:flex">
-            <div className="relative h-full w-full">
-              <Image
-                src="/images/Login.png"
-                alt="GROWS Login"
-                fill
-                sizes="(max-width: 768px) 100vw, 460px"
-                className="object-contain"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#F4F4F4] px-4 py-12">
@@ -472,7 +374,7 @@ function LoginPageContent() {
                 </h1>
               </div>
 
-              {statusMessage && statusMessage !== MISSING_ROLE_MESSAGE ? (
+              {statusMessage ? (
                 <StatusMessage 
                   text={statusMessage} 
                   onDismiss={() => {

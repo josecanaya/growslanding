@@ -42,7 +42,7 @@ export default function InvestmentRun({ run }: { run: NonNullable<PublicObra['si
         <p className="text-[#53695d]">En el entorno de pruebas se abre una ronda, se suscriben MCU y se integra el aporte ficticio. En esta ficha podés seguir los resultados que publica la automatización. Las operaciones con dinero real siguen deshabilitadas.</p>
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-semibold">
-        <Link href="/inversores/simulacion" className="inline-flex items-center gap-1 hover:underline">Explorar el simulador <ArrowUpRight size={16} /></Link>
+        <Link href="/inversores/panel" className="inline-flex items-center gap-1 hover:underline">Abrir panel de inversor <ArrowUpRight size={16} /></Link>
         <a href={`https://github.com/josecanaya/growslanding/actions/runs/${run.corrida}`} className="inline-flex items-center gap-1 hover:underline">Ver corrida de la automatización <ArrowUpRight size={16} /></a>
       </div>
     </section>

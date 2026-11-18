@@ -129,6 +129,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
         <nav aria-label="Navegación del feed" className="hidden space-y-2 lg:sticky lg:top-28 lg:block">
           <Link href="/inversores" aria-current={project ? undefined : 'page'} className="flex items-center gap-3 rounded-2xl bg-[#e5ecde] px-4 py-3 text-sm font-semibold"><Compass size={19} /> Para vos</Link>
           {profile?.href && <Link href={profile.href as Route} className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm hover:bg-[#e5ecde]"><ProfileIcon size={19} /> Mi espacio</Link>}
+          <Link href="/inversores/panel" className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm hover:bg-[#e5ecde]"><TrendingUp size={19} /> Panel inversor</Link>
         </nav>
 
         <main id="feed" className="min-w-0">
@@ -164,7 +165,10 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
             <>
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <h1 className="text-3xl font-semibold tracking-tight">Tu comunidad, en obra.</h1>
-                <Link href="/inversores?mapa=1" className="inline-flex items-center gap-2 rounded-full bg-[#e5ecde] px-4 py-2 text-sm font-semibold"><MapPin size={16} /> Ver mapa</Link>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/inversores?mapa=1" className="inline-flex items-center gap-2 rounded-full bg-[#e5ecde] px-4 py-2 text-sm font-semibold"><MapPin size={16} /> Ver mapa</Link>
+                  <Link href="/inversores/panel" className="inline-flex items-center gap-2 rounded-full bg-[#e5ecde] px-4 py-2 text-sm font-semibold lg:hidden"><TrendingUp size={16} /> Panel inversor</Link>
+                </div>
               </div>
               {requestedObra && <p role="status" className="mb-5 text-sm">Esta obra no tiene una publicación disponible.</p>}
               <div className="space-y-6">

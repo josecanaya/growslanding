@@ -10,6 +10,8 @@ import {
 import InvestmentRun, { roundLabel } from './InvestmentRun';
 import { Comments, FollowButton, PostActions } from './ObraSocial';
 import type { accountRole } from '@/lib/obras/feed-profile';
+import { feedPosts } from '@/lib/obras/feed-posts';
+import type { WorkPost } from '@/lib/obras/publication';
 import type { PublicObra } from '@/lib/obras/publication';
 import type { ObraComment, ObraSocial } from '@/lib/obras/social';
 
@@ -111,19 +113,22 @@ function RoundStrip({ work }: { work: PublicObra }) {
   );
 }
 
-function ProgressPost({ work, social, signedIn }: { work: PublicObra; social?: ObraSocial; signedIn: boolean }) {
-  const cover = coverFor(work);
+function ProgressPost({ work, post, social, signedIn }: { work: PublicObra; post?: WorkPost; social?: ObraSocial; signedIn: boolean }) {
+  const cover = post?.coverUrl ? { src: post.coverUrl, render: true } : coverFor(work);
+  const content = post?.text ?? work.summary;
+  const published = post ? { ...work, publishedAt: post.publishedAt } : work;
   return (
     <article className={card}>
       <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
         <WorkAvatar work={work} />
         <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-semibold"><Link href={workLink(work.id)} className="hover:underline">{work.title}</Link> <span className={`font-normal ${muted}`}>· actualizó el avance</span></h2>
-          <p className={`mt-0.5 text-[13px] ${muted}`}>{work.location}{work.location && work.publishedAt ? ' · ' : ''}<PublishedDate work={work} /></p>
+          <h2 className="text-[15px] font-semibold"><Link href={workLink(work.id)} className="hover:underline">{work.title}</Link> <span className={`font-normal ${muted}`}>· {post ? post.author : 'actualizó el avance'}</span></h2>
+          <p className={`mt-0.5 text-[13px] ${muted}`}>{work.location}{work.location && work.publishedAt ? ' · ' : ''}<PublishedDate work={published} /></p>
         </div>
         {social && <FollowButton obraId={work.id} initial={social} signedIn={signedIn} compact />}
       </div>
-      {work.summary && <p className="line-clamp-3 whitespace-pre-wrap px-4 pb-3.5 leading-relaxed sm:px-5">{work.summary}</p>}
+      {post && <h3 className="px-4 pb-2 font-semibold sm:px-5">{post.title}</h3>}
+      {content && <p className="whitespace-pre-wrap px-4 pb-3.5 leading-relaxed sm:px-5">{content}</p>}
       <Link href={workLink(work.id)} className="relative block">
         {cover ? (
           <>
@@ -268,6 +273,10 @@ function WorkDetail({ project, role, social, comments, signedIn }: { project: Pu
 
           {comments && <Comments obraId={project.id} initial={comments} signedIn={signedIn} />}
 
+          {Boolean(project.posts?.length) && <section className="space-y-5" aria-label="Publicaciones de esta obra">
+            {feedPosts([project]).map(({ key, post }) => <ProgressPost key={key} work={project} post={post} signedIn={signedIn} />)}
+          </section>}
+
           <section aria-labelledby="actividad" className="space-y-0">
             <h2 id="actividad" className="mb-3 text-xl font-semibold tracking-tight">Actividad</h2>
             {project.milestones.length ? (
@@ -335,8 +344,10 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
   const profile = role ? profiles[role] : null;
   const ProfileIcon = profile?.icon ?? UserRound;
   const needle = query.trim().toLocaleLowerCase('es');
-  const searched = projects.filter((work) => [work.title, work.location, work.summary].join(' ').toLocaleLowerCase('es').includes(needle));
+  const searched = projects.filter((work) => [work.title, work.location, work.summary, ...(work.posts ?? []).map((post) => post.title + ' ' + post.text)].join(' ').toLocaleLowerCase('es').includes(needle));
   const filtered = filter === 'rondas' ? searched.filter((work) => currentRound(work)) : searched;
+  const entries = feedPosts(filtered).filter(({ post }) => filter !== 'avances' || !post || post.category === 'avance');
+  const [visiblePosts, setVisiblePosts] = useState(15);
   const navItem = 'flex min-h-11 items-center gap-3 rounded-2xl px-3.5 text-sm hover:bg-[#e6eedf]';
 
   return (
@@ -402,14 +413,12 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
                 <Link href="/inversores?mapa=1" className={`${chip} ml-auto gap-2 border border-[#d5dccf] bg-white font-semibold hover:bg-[#f0f3ec]`}><MapPin size={16} aria-hidden="true" /> Ver mapa</Link>
               </div>
               {requestedObra && <p role="status" className="text-sm">Esta obra no tiene una publicación disponible.</p>}
-              {filtered.map((work) => (
-                <div key={work.id} className="flex flex-col gap-5">
-                  <ProgressPost work={work} social={social?.[work.id]} signedIn={Boolean(account)} />
-                  {filter === 'todo' && <MilestonePost work={work} />}
-                </div>
+              {entries.slice(0, visiblePosts).map(({ key, work, post }) => (
+                <ProgressPost key={key} work={work} post={post} social={social?.[work.id]} signedIn={Boolean(account)} />
               ))}
-              {!filtered.length && <section role="status" className={`${card} p-8 text-center`}>
-                <h2 className="font-semibold">{unavailable ? 'No pudimos cargar las obras' : needle ? 'No encontramos obras con esa búsqueda' : filter === 'rondas' ? 'Todavía no hay obras con rondas' : 'Todavía no hay obras publicadas'}</h2>
+              {entries.length > visiblePosts && <button type="button" onClick={() => setVisiblePosts((count) => count + 15)} className="min-h-11 rounded-full border border-[#d5dccf] bg-white px-5 py-3 text-sm font-semibold">Ver más publicaciones</button>}
+              {!entries.length && <section role="status" className={`${card} p-8 text-center`}>
+                <h2 className="font-semibold">{unavailable ? 'No pudimos cargar las obras' : needle ? 'No encontramos obras con esa búsqueda' : filter === 'rondas' ? 'Todavía no hay obras con rondas' : filter === 'avances' ? 'Todavía no hay avances publicados' : 'Todavía no hay obras publicadas'}</h2>
                 {unavailable && <p className={`mt-2 text-sm ${muted}`}>Volvé a cargar la página para reintentar.</p>}
               </section>}
             </main>

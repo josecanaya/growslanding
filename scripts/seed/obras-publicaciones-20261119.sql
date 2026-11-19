@@ -30,6 +30,8 @@ for spec in select value from jsonb_array_elements($data$[{"id":"a0192026-1119-4
 end loop;
 end $seed$;
 
+update public.obras set canvas_ui=canvas_ui || jsonb_build_object('ensayo',(canvas_ui->'ensayo') || jsonb_build_object('scope',(canvas_ui->'ensayo'->'scope') || jsonb_build_object('m2',m2_estimados),'inversion',(canvas_ui->'ensayo'->'inversion') || jsonb_build_object('capital_objetivo',(canvas_ui->'ensayo'->'presupuesto'->'total')))) where canvas_ui->'ensayo'->>'batch'='grows-50-obras-20261119';
+
 update public.obras o set
 canvas_ui=jsonb_set(canvas_ui,'{publication,posts}',
  coalesce(canvas_ui->'publication'->'posts','[]'::jsonb) || (

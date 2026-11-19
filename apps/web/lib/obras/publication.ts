@@ -18,8 +18,20 @@ const simulationSchema = z.object({
   })).max(12),
 });
 
+export const postSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().min(2).max(160),
+  text: z.string().trim().min(2).max(2400),
+  author: z.string().trim().min(2).max(160),
+  publishedAt: z.string().datetime({ offset: true }),
+  coverUrl: z.string().url().refine((url) => url.startsWith('https://')).optional(),
+  category: z.enum(['proyecto', 'pliegos', 'planificacion', 'avance']),
+});
+export type WorkPost = z.infer<typeof postSchema>;
+
 export const publicationSchema = z.object({
   visible: z.boolean(),
+  posts: z.array(postSchema).max(100).default([]),
   title: z.string().trim().min(2).max(160),
   summary: z.string().trim().max(2400),
   location: z.string().trim().max(160),
@@ -54,5 +66,5 @@ export function readPublication(value: unknown): Publication | null {
 }
 
 export function emptyPublication(name: string): Publication {
-  return { visible: false, title: name, summary: '', location: '', stage: '', coverUrl: '', progress: 0, contractorNotes: '', investorNotes: '', milestones: [] };
+  return { posts: [], visible: false, title: name, summary: '', location: '', stage: '', coverUrl: '', progress: 0, contractorNotes: '', investorNotes: '', milestones: [] };
 }

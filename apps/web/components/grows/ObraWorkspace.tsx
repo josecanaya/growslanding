@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import type { Route } from 'next';
 import { useCallback, useEffect, useState } from 'react';
-import { GrowsCommandBar } from '@/components/cliente/canvas-editor/workspace/GrowsCommandBar';
 import PublicationEditor from './PublicationEditor';
 import type { Procurement, comparableQuotes } from '@/lib/obras/procurement';
 
@@ -18,9 +17,6 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
   const [error, setError] = useState('');
   const [unauthorized, setUnauthorized] = useState(false);
   const [tab, setTab] = useState<typeof tabs[number]>('Resumen');
-  const [agent, setAgent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState('');
   const load = useCallback(async () => {
     setError('');
     try {
@@ -35,21 +31,6 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
   }, [obraId]);
   useEffect(() => { void load(); }, [load]);
 
-  async function requestAgent(prompt: string) {
-    setBusy(true);
-    setNotice('');
-    try {
-      const response = await fetch('/api/obras/' + obraId + '/bridge', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'enqueue', prompt, provider: 'local' }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message);
-      setAgent(true);
-      setNotice('Pedido registrado. Podés seguir la respuesta en el panel del agente.');
-    } catch (err) { setNotice(err instanceof Error ? err.message : 'No se pudo enviar el pedido.'); }
-    finally { setBusy(false); }
-  }
 
   return <main className="min-h-screen bg-[#f5f7f4] px-5 py-6 pb-28 text-[#19362d]">
     <div className="mx-auto max-w-6xl space-y-6">
@@ -70,7 +51,7 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
           <p className="text-[#62776b]">{data.obra.objetivo_texto}</p>
           <div className="flex flex-wrap gap-3"><Link href={('/obras/' + obraId + '/estudio') as Route} className="rounded-lg bg-[#19362d] px-4 py-3 text-white">Estudio del proyectista y rondas</Link>
             <Link href={('/cliente/tareas/' + obraId + '/editor') as Route} className="rounded-lg bg-[#19362d] px-4 py-3 text-white">Organizar trabajos y pliegos</Link>
-            <button onClick={() => setAgent(true)} className="rounded-lg border border-[#bfd0bd] bg-white px-4 py-3">Conversar con el agente</button>
+            <Link href={"/conexiones" as Route} className="rounded-lg border border-[#bfd0bd] bg-white px-4 py-3">Conectar Claude o ChatGPT</Link>
             <Link href={('/inversores?obra=' + obraId) as Route} className="rounded-lg border border-[#bfd0bd] bg-white px-4 py-3">Ver publicación</Link>
           </div>
         </section>
@@ -83,14 +64,9 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
               <div key={label} className="rounded-2xl border border-[#dfe6df] bg-white p-5"><p className="text-sm text-[#62776b]">{label}</p><strong className="mt-2 block text-3xl">{value}</strong></div>)}
           </section>
           <section className="space-y-4 rounded-2xl border border-[#dfe6df] bg-white p-6">
-            <h2 className="text-xl font-semibold">Trabajar con agentes</h2>
-            <p className="text-sm text-[#62776b]">El agente consulta el plan, los trabajos y las cotizaciones de esta obra. Sus propuestas quedan disponibles para revisión en el panel.</p>
-            <div className="flex flex-wrap gap-3">
-              <button disabled={busy} onClick={() => requestAgent('Revisá el plan de esta obra. Proponé el orden de trabajos y sus dependencias, identificá tareas faltantes y supuestos. Conservá el trabajo existente y prepará cambios para revisión.')} className="rounded-lg border px-4 py-2 disabled:opacity-50">Ordenar los trabajos</button>
-              <button disabled={busy} onClick={() => requestAgent('Compará las cotizaciones reales de procurement por tarea, alcance, moneda y plazo. Indicá faltantes y diferencias. No inventes precios ni mezcles monedas. Respondé con el análisis y operations vacío.')} className="rounded-lg border px-4 py-2 disabled:opacity-50">Comparar cotizaciones</button>
-              <button disabled={busy} onClick={() => requestAgent('Revisá procurement y el plan. Indicá trabajos pendientes de cotización, tareas que bloquean otras y próximos pasos. Usá únicamente el estado registrado. Respondé con el análisis y operations vacío.')} className="rounded-lg border px-4 py-2 disabled:opacity-50">Revisar seguimiento</button>
-            </div>
-            {notice && <p role="status" className="text-sm">{notice}</p>}
+            <h2 className="text-xl font-semibold">Trabajar con tu IA</h2>
+            <p className="text-sm text-[#62776b]">Conectá Claude o ChatGPT a GROWS para consultar el proyecto, preparar tareas y pliegos, editar publicaciones y trabajar con los permisos de tu cuenta. Los cambios se guardan en esta misma obra.</p>
+            <Link href={"/conexiones" as Route} className="inline-block rounded-lg border px-4 py-2">Administrar conexiones y permisos</Link>
           </section>
           <section className="overflow-x-auto rounded-2xl border border-[#dfe6df] bg-white p-6">
             <h2 className="mb-4 text-xl font-semibold">Estado de los trabajos</h2>
@@ -110,6 +86,5 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
         </section>}
       </>}
     </div>
-    {data && agent && <GrowsCommandBar obraId={obraId} breadcrumbItems={[{ id: null, title: data.obra.name }]} selectedIds={[]} onClearSelection={() => {}} onCanvasMaybeChanged={load} defaultOpen />}
   </main>;
 }

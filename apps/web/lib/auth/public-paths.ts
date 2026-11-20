@@ -1,6 +1,6 @@
 /** Public pages stay readable while signed out, including after client navigation. */
 export function isPublicPath(path: string): boolean {
-  return path === '/' || ['/auth', '/obra-check', '/inversores', '/home', '/acceder']
+  return path === '/' || ['/api/docs', '/conectar', '/auth', '/obra-check', '/inversores', '/home', '/acceder']
     .some((prefix) => path === prefix || path.startsWith(prefix + '/'));
 }
 

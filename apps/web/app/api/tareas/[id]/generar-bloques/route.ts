@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -33,15 +34,9 @@ export async function POST(
   try {
     const { id: tareaId } = await params;
 
-    const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({
-      cookies: () => cookieStore as any,
-    });
+    const user = await getSessionUser();
+    const authError = !user;
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
 
     if (authError || !user) {
       return NextResponse.json({ success: false, error: 'No autenticado' }, { status: 401 });

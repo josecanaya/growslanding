@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 
 import { z } from 'zod';
 import { cookies } from 'next/headers';
@@ -233,27 +234,8 @@ export async function POST(
       throw zodError;
     }
     
-    // Obtener usuario autenticado
-    let cookieStore;
-    try {
-      cookieStore = await cookies();
-    } catch (cookieError) {
-      console.error('[TRANSITION_ERROR] Error al obtener cookies:', cookieError);
-      return new Response(
-        JSON.stringify({ 
-          message: 'Error de autenticación',
-          error: 'AUTH_ERROR'
-        }), 
-        { status: 401 }
-      );
-    }
-    
-    const supabaseAuth = createRouteHandlerClient<Database>({ 
-      cookies: () => cookieStore as any 
-    });
-    
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
-    
+    const user = await getSessionUser();
+    const authError = !user;
     if (authError || !user) {
       console.error('[TRANSITION_ERROR] Error de autenticación:', authError);
       return new Response(

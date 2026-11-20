@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 import { publicationBlockReason } from '@/lib/proyecto-vivo/publicationContract';
 import { activarEjecucionTransformacion } from '@/lib/proyecto-vivo/activarEjecucionTransformacion';
 import { normalizeProductiveRelation } from '@/lib/proyecto-vivo/relationSemantics';
@@ -228,12 +229,9 @@ function buildPreviewFromRows(
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: obraId } = await params;
-    const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const user = await getSessionUser();
+    const authError = !user;
+
 
     if (authError || !user) {
       return NextResponse.json({ ok: false, error: 'No autenticado' }, { status: 401 });

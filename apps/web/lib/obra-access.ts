@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
@@ -9,10 +10,8 @@ export class ObraAccessError extends Error {
 }
 
 export async function requireObraAccess(obraId: string, write = false) {
-  const cookieStore = await cookies();
-  const auth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
-  const { data: { user }, error } = await auth.auth.getUser();
-  if (error || !user) throw new ObraAccessError(401, 'Iniciá sesión para acceder a la obra.');
+  const user = await getSessionUser();
+  if (!user) throw new ObraAccessError(401, 'Iniciá sesión para acceder a la obra.');
   const supabase = createServiceSupabaseClient();
   const { data: obra, error: obraError } = await supabase.from('obras').select('id, org_id').eq('id', obraId).maybeSingle();
   if (obraError) throw new ObraAccessError(503, 'No se pudo comprobar el acceso.');

@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
@@ -25,12 +26,9 @@ const bodySchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const user = await getSessionUser();
+    const authError = !user;
+
     if (authError || !user) {
       return NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 });
     }

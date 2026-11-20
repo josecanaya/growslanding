@@ -398,7 +398,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
               <nav aria-label="Navegación del feed" className="flex flex-col gap-0.5">
                 <Link href="/inversores" aria-current="page" className={`${navItem} bg-[#e6eedf] font-semibold`}><Home size={19} aria-hidden="true" /> Para vos</Link>
                 {profile?.href && <Link href={profile.href as Route} className={navItem}><Briefcase size={19} aria-hidden="true" /> Mi espacio</Link>}
-                <Link href="/inversores/panel" className={navItem}><TrendingUp size={19} aria-hidden="true" /> Panel inversor</Link>
+                <Link href={"/conexiones" as Route} className={navItem}><Briefcase size={19} aria-hidden="true" /> Conectar mi IA</Link><Link href="/inversores/panel" className={navItem}><TrendingUp size={19} aria-hidden="true" /> Panel inversor</Link>
                 <Link href="/inversores?mapa=1" className={navItem}><MapPin size={19} aria-hidden="true" /> Mapa de obras</Link>
               </nav>
             </aside>

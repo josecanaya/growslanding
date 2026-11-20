@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth/session-user';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
@@ -10,10 +11,10 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 async function context(obraId: string) {
-  const cookieStore = await cookies();
-  const auth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
-  const { data: { user }, error } = await auth.auth.getUser();
-  if (error || !user) return { response: NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 }) };
+  const user = await getSessionUser();
+  const authError = !user;
+
+  if (authError || !user) return { response: NextResponse.json({ success: false, message: 'No autenticado' }, { status: 401 }) };
   const client = createServiceSupabaseClient();
   const ids = await listCanvasPlanningOrgIds(client, user.id, user.email);
   const obra = await (client as any).from('obras').select('org_id').eq('id', obraId).maybeSingle();

@@ -1,0 +1,8 @@
+import {expect,it,vi,afterEach} from 'vitest';
+import {render,screen,fireEvent,waitFor,cleanup} from '@testing-library/react';
+import ApiDocumentation from '@/app/api/docs/page';
+import {GET} from '@/app/api/v1/openapi/route';
+import {isPublicPath} from '@/lib/auth/public-paths';
+afterEach(()=>{cleanup();vi.unstubAllGlobals();window.location.hash='';});
+it('keeps documentation public while the product and credentials remain protected',()=>{expect(isPublicPath('/api/docs')).toBe(true);expect(isPublicPath('/conectar')).toBe(true);expect(isPublicPath('/api/conectores')).toBe(false);expect(isPublicPath('/obras/private/estudio')).toBe(false);});
+it('renders real service groups and the documented plan fields',async()=>{const doc=await (await GET()).json();vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>doc})));render(<ApiDocumentation/>);await waitFor(()=>expect(screen.getByRole('heading',{name:'Documentación de la API de GROWS'})).toBeTruthy());fireEvent.click(screen.getByRole('button',{name:/POST Agregar tareas, cómputos y grupos de pliego/}));await waitFor(()=>expect(screen.getByRole('heading',{name:'Agregar tareas, cómputos y grupos de pliego'})).toBeTruthy());expect(screen.getByText('grows:plan',{selector:'code'})).toBeTruthy();expect(screen.getByText('tasks',{selector:'code'})).toBeTruthy();fireEvent.click(screen.getByText('Ver estructura del elemento'));expect(screen.getByText('quantity',{selector:'code'})).toBeTruthy();expect(screen.getByText('dependsOn',{selector:'code'})).toBeTruthy();expect(screen.getByRole('button',{name:'Abrir consola de prueba'})).toBeTruthy();});

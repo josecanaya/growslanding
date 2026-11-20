@@ -1,0 +1,5 @@
+import { authenticateClient } from '@/lib/connectors/oauth';
+import { hash,oauthFailure } from '@/lib/connectors/core';
+import { createServiceSupabaseClient } from '@/lib/supabase-server';
+export const runtime='nodejs';
+export async function POST(request:Request){try{const form=await request.formData();const client=await authenticateClient(request,form);const value=String(form.get('token')??'');if(value.length<200){const db=createServiceSupabaseClient() as any;const column=value.startsWith('grows_r_')?'refresh_hash':'access_hash';const token=await db.from('connector_tokens').select('grant_id').eq(column,hash(value)).maybeSingle();if(token.error)throw Error('No se pudo leer el token');if(token.data){const saved=await db.from('connector_grants').update({revoked_at:new Date().toISOString()}).eq('id',token.data.grant_id).eq('client_id',client.id);if(saved.error)throw Error('No se pudo revocar');}}return new Response(null,{status:200,headers:{'Cache-Control':'no-store','Access-Control-Allow-Origin':'*'}});}catch(e){return oauthFailure(e);}}

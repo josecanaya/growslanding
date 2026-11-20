@@ -1,3 +1,6 @@
+import { authenticateConnector } from '@/lib/connectors/auth';
+import { executeOperation } from '@/lib/connectors/operations';
+import { oauthFailure } from '@/lib/connectors/core';
 /**
  * OpenAPI Actions para Custom GPT de ChatGPT (alternativa al conector MCP).
  * Misma lógica que /api/mcp — solo propuesta Organizar.
@@ -17,6 +20,10 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request, ctx: Ctx) {
+  if (req.headers.get('authorization')?.match(/^Bearer grows_c_/i)) {
+    try { const principal=await authenticateConnector(req);const {tool}=await ctx.params;const body=await req.json();const result=await executeOperation(principal,tool,body);return NextResponse.json(result,{status:result.status,headers:{...mcpCorsHeaders,'Cache-Control':'no-store'}}); }
+    catch(error){ return oauthFailure(error); }
+  }
   const denied = assertMcpBearer(req);
   if (denied) {
     const headers = new Headers(denied.headers);

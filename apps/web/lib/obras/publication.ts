@@ -31,6 +31,7 @@ export type WorkPost = z.infer<typeof postSchema>;
 
 export const publicationSchema = z.object({
   visible: z.boolean(),
+  sisterIds: z.array(z.string().uuid()).max(30).optional(),
   posts: z.array(postSchema).max(100).default([]),
   title: z.string().trim().min(2).max(160),
   summary: z.string().trim().max(2400),
@@ -51,7 +52,8 @@ export type Publication = z.infer<typeof publicationSchema> & {
   publishedAt?: string;
   simulation?: z.infer<typeof simulationSchema>;
 };
-export type PublicObra = Publication & { id: string };
+export type PublicRound = { version: number; goal: number; closes: string; conditions: string; fingerprint: string; mode: 'ensayo' };
+export type PublicObra = Publication & { id: string; round?: PublicRound };
 
 export function readPublication(value: unknown): Publication | null {
   const parsed = publicationSchema.safeParse(value);

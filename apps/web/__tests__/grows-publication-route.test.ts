@@ -20,7 +20,7 @@ const request = (revision: number) => new Request('https://grows.test/api/obras/
 });
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.access.mockResolvedValue({ supabase: {}, orgId: 'org' });
+  mocks.access.mockResolvedValue({ supabase: {rpc:mocks.save}, orgId: 'org', user:{id:'owner'} });
   mocks.read.mockResolvedValue({ data: {
     revision: 3, obra: { name: 'Obra', canvas_project_kind: null, canvas_ui: {} },
     nodes: [{ id: 'keep' }], edges: [], budgetGroups: [], checklistItems: [], budgetGroupTasks: [],
@@ -41,13 +41,13 @@ it('rejects stale revisions without changing the canvas', async () => {
   expect(mocks.save).not.toHaveBeenCalled();
 });
 
-it('saves publication with the original nodes and expected revision atomically', async () => {
+it('updates only publication with actor and expected revision, without replacing canvas rows', async () => {
+  mocks.save.mockResolvedValue({data:{revision:4,publication:{visible:true}},error:null});
   const response = await PUT(request(3), params);
   expect(response.status).toBe(200);
   expect(mocks.access).toHaveBeenCalledWith('obra', true);
-  expect(mocks.save.mock.calls[0][3]).toBe(3);
-  expect(mocks.save.mock.calls[0][4].nodes).toEqual([{ id: 'keep' }]);
-  expect(mocks.save.mock.calls[0][4].obrasPatch.canvas_ui.publication.visible).toBe(true);
+  expect(mocks.save).toHaveBeenCalledWith('project_studio_action',expect.objectContaining({p_obra:'obra',p_actor:'owner',p_data:expect.objectContaining({action:'publication',revision:3})}));
+  expect(mocks.save.mock.calls[0][1].p_data).not.toHaveProperty('nodes');
 });
 
 it('returns conflict if the database detects a concurrent edit', async () => {

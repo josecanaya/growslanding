@@ -27,6 +27,7 @@ export async function saveCanvasSnapshot(
 }
 
 export function canvasPersistenceError(error: { code?: string; message?: string }) {
+  if (error.code === '23514' && error.message?.includes('congelado')) return { status: 409, message: 'El alcance está congelado por la ronda. Registrá un adicional desde el estudio del proyectista.' };
   if (error.code === '40001') return { status: 409, message: 'La obra cambió en otra sesión. Conservamos tus cambios locales; recargá la obra antes de volver a guardar.' };
   if (error.code === 'PGRST202' || error.code === '42883') return { status: 503, message: 'El guardado seguro está pendiente de habilitación en el servidor. Tus cambios siguen guardados en este dispositivo.' };
   if (error.code === '42501') return { status: 403, message: 'No autorizado para modificar esta obra.' };

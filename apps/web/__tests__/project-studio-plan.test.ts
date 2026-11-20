@@ -1,0 +1,7 @@
+import {expect,it} from 'vitest';
+import {parsePlan,preparePlan,projectXml} from '@/lib/proyectista/plan';
+const plan='A|Estructura|Bases|30|m3|400|7|\nB|Estructura|Losa|10|m3|420|5|A\nC|Instalaciones|Sanitaria|1|global|3000|3|A';
+it('computes amounts and parallel finish-start dates from the same task data',()=>{const rows=parsePlan(plan);expect(rows.map(t=>[t.amount,t.startDay,t.endDay])).toEqual([[12000,0,7],[4200,7,12],[3000,7,10]]);});
+it('rejects cycles, missing dependencies, duplicate task codes and invalid measurements',()=>{expect(()=>parsePlan(plan.replace('7|\n','7|B\n'))).toThrow('ciclo');expect(()=>parsePlan(plan.replace('5|A','5|Z'))).toThrow('inexistente');expect(()=>parsePlan(plan+'\n'+plan.split('\n')[0])).toThrow('único');expect(()=>parsePlan(plan.replace('30|m3','-1|m3'))).toThrow();});
+it('exports Project XML links using UIDs and escapes user text',()=>{const tasks=parsePlan(plan);tasks[0].title='Bases <P&B>';const xml=projectXml(tasks,'Obra & Cía');expect(xml).toContain('<Name>Obra &amp; Cía</Name>');expect(xml).toContain('Bases &lt;P&amp;B&gt;');expect(xml).toContain('<PredecessorUID>1</PredecessorUID><Type>1</Type>');expect(xml).toContain('<Duration>PT56H0M0S</Duration>');});
+it('accepts out-of-order input while preserving dependency dates',()=>{const tasks=parsePlan(plan).reverse();const calculated=preparePlan(tasks);expect(calculated.find(t=>t.code==='B')?.endDay).toBe(12);});

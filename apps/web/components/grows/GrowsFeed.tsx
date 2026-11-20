@@ -49,6 +49,7 @@ function coverFor(work: PublicObra) {
 }
 
 function currentRound(work: PublicObra) {
+  if (work.round) return { number: work.round.version, estado: 'ensayo', mcu_integradas: 0 };
   const rounds = work.simulation?.rondas ?? [];
   if (!rounds.length) return null;
   const index = rounds.findIndex((round) => round.estado === 'abierta');
@@ -104,7 +105,7 @@ function RoundStrip({ work }: { work: PublicObra }) {
       <span className={`grid size-10 place-items-center rounded-xl ${round.estado === 'abierta' ? 'bg-[#fbf3d0] text-[#6b5000]' : 'bg-[#e6eedf] text-[#2f5a2a]'}`}><TrendingUp size={19} aria-hidden="true" /></span>
       <div className="min-w-0 flex-[1_1_200px]">
         <p className="font-semibold">Ronda {round.number} · {roundLabel(round.estado).toLocaleLowerCase('es')}</p>
-        <p className={`mt-0.5 text-[13px] ${muted}`}>{mcu.format(round.mcu_integradas)} MCU integradas · operaciones ficticias</p>
+        <p className={`mt-0.5 text-[13px] ${muted}`}>{work.round ? 'Expediente congelado · sin dinero ni MCU' : `${mcu.format(round.mcu_integradas)} MCU integradas · operaciones ficticias`}</p>
       </div>
       <Link href={workLink(work.id, '#inversion')} className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ${round.estado === 'abierta' ? 'bg-[#e8c547] text-[#1d3329] hover:bg-[#dcb83a]' : 'border border-[#d5dccf] bg-white hover:bg-[#f0f3ec]'}`}>
         {round.estado === 'abierta' ? 'Ver oportunidad' : 'Ver ronda'} <ArrowRight size={16} aria-hidden="true" />
@@ -210,7 +211,7 @@ function Opportunities({ projects }: { projects: PublicObra[] }) {
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-semibold">{work.title}</span>
                   <span className={`block text-xs ${muted}`}>Ronda {round.number} · {roundLabel(round.estado).toLocaleLowerCase('es')}</span>
-                  <span className={`block text-xs ${muted}`}>{mcu.format(round.mcu_integradas)} MCU integradas</span>
+                  <span className={`block text-xs ${muted}`}>{work.round ? 'Ronda de ensayo · sin dinero real' : `${mcu.format(round.mcu_integradas)} MCU integradas`}</span>
                 </span>
               </Link>
             </li>
@@ -223,7 +224,7 @@ function Opportunities({ projects }: { projects: PublicObra[] }) {
 
 /* ---------- Ficha de obra ---------- */
 
-function WorkDetail({ project, role, social, comments, signedIn }: { project: PublicObra; role: AccountRole | null; social?: ObraSocial; comments: ObraComment[] | null; signedIn: boolean }) {
+function WorkDetail({ project, projects, role, social, comments, signedIn }: { project: PublicObra; projects: PublicObra[]; role: AccountRole | null; social?: ObraSocial; comments: ObraComment[] | null; signedIn: boolean }) {
   const cover = coverFor(project);
   const run = project.simulation;
   return (
@@ -252,6 +253,8 @@ function WorkDetail({ project, role, social, comments, signedIn }: { project: Pu
         </div>
       </div>
 
+      {project.round && <section id="inversion" className={`${card} mt-6 space-y-3 p-5`}><p className="text-xs uppercase tracking-widest">Ronda de ensayo · versión {project.round.version}</p><h2 className="text-2xl font-semibold">USD {Number(project.round.goal).toLocaleString('es-AR')} para este proyecto</h2><p className="text-sm">Cierre: {project.round.closes} · Expediente congelado</p><p className="whitespace-pre-wrap text-sm">{project.round.conditions}</p><p className="text-xs text-[#66745f]">Ensayo sin recepción de dinero ni emisión de MCU.</p><p className="break-all font-mono text-xs">SHA-256: {project.round.fingerprint}</p></section>}
+      {Boolean(project.sisterIds?.length) && <section className={`${card} mt-5 p-5`}><h2 className="font-semibold">Obras hermanas</h2><div className="mt-3 flex flex-wrap gap-3">{project.sisterIds?.map((id,index)=><Link key={id} href={(`/inversores?obra=${id}`) as Route} className="rounded-full border px-4 py-2 text-sm">{projects.find(p=>p.id===id)?.title??('Conocé el proyecto '+(index+1))} ↗</Link>)}</div></section>}
       <div className="mt-6 flex flex-wrap items-start gap-6">
         <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5">
           <section className={`${card} p-5`}>
@@ -304,7 +307,7 @@ function WorkDetail({ project, role, social, comments, signedIn }: { project: Pu
 
         <aside className="flex min-w-[280px] max-w-[400px] flex-[1_1_340px] flex-col gap-4 lg:sticky lg:top-24">
           {run && <InvestmentRun run={run} />}
-          {!run && role === 'inversor' && project.investorNotes && <section id="inversion" className={`${card} p-5`}>
+          {!run && !project.round && role === 'inversor' && project.investorNotes && <section id="inversion" className={`${card} p-5`}>
             <h2 className="font-semibold">Seguimiento de inversión</h2>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed">{project.investorNotes}</p>
           </section>}
@@ -379,7 +382,7 @@ export default function GrowsFeed({ projects, project, unavailable, requestedObr
       </header>
 
       <div className="mx-auto max-w-[1360px] px-4 py-5 sm:px-6 lg:py-6">
-        {project ? <WorkDetail project={project} role={role} social={social?.[project.id]} comments={comments} signedIn={Boolean(account)} /> : (
+        {project ? <WorkDetail project={project} projects={projects} role={role} social={social?.[project.id]} comments={comments} signedIn={Boolean(account)} /> : (
           <div className="flex flex-wrap items-start gap-6">
             <aside className="hidden w-[240px] shrink-0 flex-col gap-4 lg:sticky lg:top-24 lg:flex">
               {profile && (

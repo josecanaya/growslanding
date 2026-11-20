@@ -57,7 +57,7 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
         <Link href="/inversores" className="text-2xl font-bold">Grows.</Link>
         <nav className="flex flex-wrap gap-4 text-sm">
           <Link href="/inversores">Feed público</Link>
-          <Link href="/cliente/dashboard">Mis proyectos</Link>
+          <Link href="/cliente/dashboard">Mis proyectos</Link><Link href={"/proyectista/automatizacion" as Route}>Carga automática</Link>
           <Link href={('/acceder?sector=trabajo&obra=' + obraId) as Route}>Espacio de contratista</Link>
         </nav>
       </header>
@@ -68,7 +68,7 @@ export default function ObraWorkspace({ obraId }: { obraId: string }) {
           <p className="text-xs uppercase tracking-widest text-[#718274]">Espacio de obra</p>
           <h1 className="text-3xl font-semibold">{data.obra.name}</h1>
           <p className="text-[#62776b]">{data.obra.objetivo_texto}</p>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3"><Link href={('/obras/' + obraId + '/estudio') as Route} className="rounded-lg bg-[#19362d] px-4 py-3 text-white">Estudio del proyectista y rondas</Link>
             <Link href={('/cliente/tareas/' + obraId + '/editor') as Route} className="rounded-lg bg-[#19362d] px-4 py-3 text-white">Organizar trabajos y pliegos</Link>
             <button onClick={() => setAgent(true)} className="rounded-lg border border-[#bfd0bd] bg-white px-4 py-3">Conversar con el agente</button>
             <Link href={('/inversores?obra=' + obraId) as Route} className="rounded-lg border border-[#bfd0bd] bg-white px-4 py-3">Ver publicación</Link>

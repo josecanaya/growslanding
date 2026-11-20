@@ -15,10 +15,10 @@ const withRound = {
 const plain = { ...emptyPublication('Casa patio'), id: '11111111-1111-1111-1111-111111111111', visible: true };
 
 describe('GROWS social feed', () => {
-  it('posts validated milestones and filters open rounds', () => {
+  it('renders published activity and filters open rounds', () => {
     render(<GrowsFeed projects={[withRound, plain]} requestedObra={false} unavailable={false} account={{ role: 'inversor' }} />);
 
-    expect(screen.getByText('Fundaciones', { selector: 'strong' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Ver actividad de Pasaje Alvear' })).toBeTruthy();
     expect(screen.getByRole('link', { name: /Ver oportunidad/ }).getAttribute('href')).toContain('#inversion');
     expect(screen.getByRole('heading', { name: 'Oportunidades abiertas' })).toBeTruthy();
     expect(screen.getAllByRole('progressbar')).toHaveLength(2);

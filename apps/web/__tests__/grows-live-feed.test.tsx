@@ -43,4 +43,13 @@ describe('GROWS community feed', () => {
     expect(screen.queryByText(work.investorNotes)).toBeNull();
     expect(screen.queryByText(work.contractorNotes)).toBeNull();
   });
+  it('shows a frozen trial round and sister projects without exposing private tasks', () => {
+    const project={...work,sisterIds:['a0192026-1119-4000-8000-000000000001'],round:{version:1,goal:127256.8,closes:'2026-12-20',conditions:'Condiciones del ensayo',fingerprint:'abc123',mode:'ensayo' as const}};
+    render(<GrowsFeed projects={[project]} project={project} requestedObra unavailable={false} account={null}/>);
+    expect(screen.getByText('Condiciones del ensayo')).toBeTruthy();
+    expect(screen.getByText('Ensayo sin recepción de dinero ni emisión de MCU.')).toBeTruthy();
+    expect(screen.getByRole('heading',{name:'Obras hermanas'})).toBeTruthy();
+    expect(screen.queryByText('El plan que respalda la ronda')).toBeNull();
+  });
+
 });

@@ -14,6 +14,9 @@ export async function loadPublicFeed(): Promise<{ projects: PublicObra[]; unavai
       const publication = readPublication((row as unknown as { publication: unknown }).publication);
       if (publication?.visible) projects.push({ ...publication, id: row.id });
     }
+    const rounds = await (db as any).from('project_rounds').select('obra_id,version,goal,closes,conditions,fingerprint,mode').in('obra_id', projects.map(p => p.id));
+    if (rounds.error) throw rounds.error;
+    for (const project of projects) project.round = rounds.data?.find((r: { obra_id: string }) => r.obra_id === project.id);
     return { projects, unavailable: false };
   } catch {
     return { projects: [], unavailable: true };
@@ -26,5 +29,8 @@ export async function loadPublicObra(id: string): Promise<PublicObra | null> {
     .eq('canvas_ui->publication->>visible', 'true').maybeSingle();
   if (error) throw error;
   const publication = readPublication((data as unknown as { publication: unknown } | null)?.publication);
-  return data && publication?.visible ? { ...publication, id: data.id } : null;
+  if (!data || !publication?.visible) return null;
+  const rounds = await (createServiceSupabaseClient() as any).from('project_rounds').select('version,goal,closes,conditions,fingerprint,mode').eq('obra_id',id).order('version',{ascending:false}).limit(1);
+  if (rounds.error) throw rounds.error;
+  return { ...publication, id: data.id, round: rounds.data?.[0] };
 }

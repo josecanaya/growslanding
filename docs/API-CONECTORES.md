@@ -31,6 +31,14 @@ Se vuelve a comprobar la identidad actual, pertenencia a la organización y rol.
 
 La organización de una obra nueva viene de la autorización, no de un campo elegido por el modelo. El alcance congelado sigue protegido por la base de datos. No hay herramientas para ejecutar SQL, administrar cuentas ajenas, conceder permisos o hacer pagos.
 
+## Pruebas desde la documentación
+
+En `/api/docs`, «Usar mi cuenta GROWS» conecta la sesión de navegador existente. Si hay varias organizaciones, se elige una; sin sesión se ofrece ingresar y volver a la documentación. No hay que copiar claves ni elegir permisos técnicos. El servidor determina los alcances según el rol actual y los servicios mantienen sus controles habituales. Las claves personales quedan en opciones avanzadas para conexiones externas.
+
+Esta autorización de consola dura 15 minutos, queda solo en memoria de la pestaña y requiere en cada solicitud la sesión web verificada del mismo usuario. Por sí sola no sirve para conectar un cliente externo. Cerrar sesión impide seguir operando; «Desconectar esta página» revoca la autorización. Al recibir 401, la consola vuelve a abrir el acceso sin reintentar escrituras automáticamente. Los cambios enviados son reales: usar obras de ensayo.
+
+Aplicar también `deploy/connector-console-session.sql`; agrega el canal `web_console` sin cambiar las credenciales externas existentes.
+
 ## REST
 
 Se documentan las rutas de recursos con GET, POST y PUT. Ejemplos:

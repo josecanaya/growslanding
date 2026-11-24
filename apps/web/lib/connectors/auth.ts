@@ -1,8 +1,9 @@
 import type { User } from '@supabase/supabase-js';
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
 import { listAccessibleOrgIds } from '@/lib/orgs';
-import { ConnectorError, hash, resource, type Scope } from './core';
-export type Grant = { id:string;user_id:string;org_id:string|null;name:string;scopes:Scope[];expires_at:string;revoked_at:string|null;client_id:string|null };
+import { getSessionUser } from '@/lib/auth/session-user';
+import { ConnectorError, hash, resource, requireSameOrigin, type Scope } from './core';
+export type Grant = { id:string;user_id:string;org_id:string|null;name:string;scopes:Scope[];expires_at:string;revoked_at:string|null;client_id:string|null;channel?:'external'|'web_console' };
 export type Principal = {user:User;grant:Grant;db:any;planner:boolean};
 export async function isPlanner(db:any,user:Pick<User,'id'|'email'>,org:string){
  const owner=await db.from('organizations').select('id').eq('id',org).eq('user_id',user.id).maybeSingle();if(owner.error)throw new ConnectorError(503,'No se pudo verificar el responsable.');if(owner.data)return true;
@@ -26,9 +27,18 @@ export async function authenticateConnector(request:Request):Promise<Principal>{
  const grant=await db.from('connector_grants').select('*').eq('id',token.data.grant_id).maybeSingle();
  if(grant.error)throw new ConnectorError(503,'No se pudo verificar la autorización.');
  if(!grant.data||grant.data.revoked_at||Date.parse(grant.data.expires_at)<=Date.now())throw new ConnectorError(401,'Autorización vencida o revocada.','invalid_token');
- const current=await db.auth.admin.getUserById(grant.data.user_id);
- if(current.error||!current.data?.user||(current.data.user.banned_until&&Date.parse(current.data.user.banned_until)>Date.now()))throw new ConnectorError(401,'Usuario no disponible.','invalid_token');
- const user=current.data.user;
+ let user:User;
+ if(grant.data.channel==='web_console'){
+   // The hidden console credential alone must never authorize an external client.
+   if(!['GET','HEAD'].includes(request.method))requireSameOrigin(request);
+   const session=await getSessionUser();
+   if(!session||session.id!==grant.data.user_id)throw new ConnectorError(401,'Iniciá sesión con la cuenta que conectaste a esta página.','invalid_token');
+   user=session;
+ } else {
+   const current=await db.auth.admin.getUserById(grant.data.user_id);
+   if(current.error||!current.data?.user||(current.data.user.banned_until&&Date.parse(current.data.user.banned_until)>Date.now()))throw new ConnectorError(401,'Usuario no disponible.','invalid_token');
+   user=current.data.user;
+ }
  const planner=await validateGrant(user,grant.data.org_id,grant.data.scopes,db);
  return {db,user,grant:grant.data,planner};
 }

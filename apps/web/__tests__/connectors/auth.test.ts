@@ -1,7 +1,8 @@
 // @vitest-environment node
 import {beforeEach,expect,it,vi} from 'vitest';
-const m=vi.hoisted(()=>({from:vi.fn(),current:vi.fn(),orgs:vi.fn()}));
+const m=vi.hoisted(()=>({from:vi.fn(),current:vi.fn(),orgs:vi.fn(),session:vi.fn()}));
 vi.mock('@/lib/supabase-server',()=>({createServiceSupabaseClient:()=>({from:m.from,auth:{admin:{getUserById:m.current}}})}));
+vi.mock('@/lib/auth/session-user',()=>({getSessionUser:m.session}));
 vi.mock('@/lib/orgs',()=>({listAccessibleOrgIds:m.orgs}));
 import {authenticateConnector,requireScope} from '@/lib/connectors/auth';
 let token:any,grant:any;
@@ -12,3 +13,17 @@ it.each(['revoked','expired','wrong-resource'])('rejects a %s bearer before retu
 it('rejects a deleted user and a user removed from the authorized organization',async()=>{m.current.mockResolvedValue({data:{user:null},error:Error('deleted')});await expect(authenticateConnector(request())).rejects.toMatchObject({status:401});m.current.mockResolvedValue({data:{user:{id:'verified'}}});m.orgs.mockResolvedValue([]);await expect(authenticateConnector(request())).rejects.toMatchObject({status:403});});
 it('a read-only connection cannot write even when its user owns the organization',()=>{expect(()=>requireScope({grant:{scopes:['grows:read']},planner:true} as any,'grows:plan',true)).toThrow();});
 it('does not allow a public-only connection to access private project data',()=>{expect(()=>requireScope({grant:{scopes:['grows:public']},planner:false} as any,'grows:read',true)).toThrow();});
+
+it('requires a matching current browser session for console authorizations',async()=>{
+ grant.channel='web_console';m.session.mockResolvedValue(null);
+ await expect(authenticateConnector(request())).rejects.toMatchObject({status:401});
+ m.session.mockResolvedValue({id:'another-user'});
+ await expect(authenticateConnector(request())).rejects.toMatchObject({status:401});
+ m.session.mockResolvedValue({id:'verified',email:'owner@grows.test'});
+ const p=await authenticateConnector(request());expect(p.user.id).toBe('verified');expect(m.current).not.toHaveBeenCalled();
+});
+it('rejects cross-origin console writes even when a console token is copied',async()=>{
+ grant.channel='web_console';m.session.mockResolvedValue({id:'verified'});
+ const r=new Request('https://grows.test/api',{method:'POST',headers:{authorization:'Bearer grows_c_'+'a'.repeat(43),origin:'https://foreign.test'}});
+ await expect(authenticateConnector(r)).rejects.toMatchObject({status:403});
+});

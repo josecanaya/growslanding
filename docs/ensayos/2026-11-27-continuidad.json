@@ -1,0 +1,33 @@
+{
+  "obra_id": "0deb686c-d97b-68a1-dbeb-ad413a6d394d",
+  "seed": 20261127,
+  "code_version": "132f134193be70d6acfdd96ba03c9fb6898782ed",
+  "pasadas": 2,
+  "acciones": {
+    "contratista1:oferta-v1": {
+      "http": 200,
+      "result": "aprobado",
+      "request_id": "7915adfb-de4f-59d8-b40c-e33cd34993ec"
+    },
+    "contratista2:oferta-v1": {
+      "http": 200,
+      "result": "aprobado",
+      "request_id": "a6cd84a6-39db-5d8e-ab67-e7e66c3eb6d6"
+    },
+    "contratista3:oferta-v1": {
+      "http": 200,
+      "result": "aprobado",
+      "request_id": "52095589-ff50-562c-a029-ee3d61b832b4"
+    },
+    "adjudicar-v1": {
+      "http": 400,
+      "result": "fallido",
+      "request_id": "adb12f28-20ff-58b4-a2fa-db6129e67c0b"
+    }
+  },
+  "paused": false,
+  "real_at": "2026-11-27T18:47:16.701254+00:00",
+  "task_id": "19ae9e83-832a-4465-8a39-b6e0d87be0df",
+  "best_quote": "568dc6bb-bb2a-469c-b194-f5d2caf6bacf",
+  "next": "bloqueado: adjudicacion requiere revisar permiso del titular"
+}

@@ -1,0 +1,30 @@
+{
+  "arquitecto": {
+    "user_id": "03bc19ab-621a-5854-9e1f-12e564d35a3d",
+    "grant_id": "ff650a80-7f83-479a-bcdb-16ec6b82170f"
+  },
+  "contratista1": {
+    "user_id": "d75f81af-0bf3-50fc-a469-923829176887",
+    "grant_id": "5e64aacf-892a-4be8-86a4-af34f11a2bf2"
+  },
+  "contratista2": {
+    "user_id": "47d23966-00b6-5119-8e62-3e4f6f71ff29",
+    "grant_id": "f3abc87b-2118-4905-a7a9-246a0847956d"
+  },
+  "contratista3": {
+    "user_id": "7c419b52-5b16-5a2d-a240-c4fa043cac65",
+    "grant_id": "c1c276ce-eaf1-4b22-8dca-5c440ac75083"
+  },
+  "inversor1": {
+    "user_id": "1cf99cdb-1d3e-5cb4-ad0a-0724673d22d3",
+    "grant_id": "1df58eaf-3e24-4d67-835e-9fb7d02267c6"
+  },
+  "inversor2": {
+    "user_id": "7b32391c-9a94-5a6d-84a4-5a1ac58dc08f",
+    "grant_id": "f398390f-82c6-4fed-8f62-8632c8a95cdf"
+  },
+  "inversor3": {
+    "user_id": "a4145a0f-c8bf-5619-b749-a8c97dd989ad",
+    "grant_id": "0812fdd1-d62f-4d84-a641-00b8aab852b7"
+  }
+}

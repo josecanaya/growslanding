@@ -1,0 +1,138 @@
+{
+  "fecha": "2026-11-27",
+  "obra_id": "0deb686c-d97b-68a1-dbeb-ad413a6d394d",
+  "semilla": 20261127,
+  "codigo_producto": "132f134193be70d6acfdd96ba03c9fb6898782ed",
+  "roles": [
+    "arquitecto coordinador",
+    "contratista Delta",
+    "contratista Litoral",
+    "contratista Sur",
+    "inversora Inés",
+    "inversor Iván",
+    "inversora Irene"
+  ],
+  "pasadas_persistentes": 2,
+  "publicacion": {
+    "status": 200,
+    "data": {
+      "ok": true,
+      "createdTasks": 24,
+      "updatedTasks": 0,
+      "skippedNodes": 0,
+      "createdPrecedences": 23,
+      "skippedEdges": 0,
+      "warnings": [
+        "Elemento técnico creado: Canvas operativo"
+      ]
+    },
+    "replayed": false,
+    "request_id": "7defcb99-1d31-53c2-a028-72ea5b6b0a49"
+  },
+  "ronda": {
+    "id": "d23bcc38-4a5e-45cc-a8f4-dc5fef50ecd2",
+    "modo": "ensayo",
+    "goal_usd": 189501.25,
+    "version": 1,
+    "fingerprint": "903d0c8be22cd8cf2505ef1441db5775f6383a24cc49e9c4d12b8bcb93311a40"
+  },
+  "ofertas": [
+    {
+      "id": "568dc6bb-bb2a-469c-b194-f5d2caf6bacf",
+      "tarea_id": "19ae9e83-832a-4465-8a39-b6e0d87be0df",
+      "socio_id": "d75f81af-0bf3-50fc-a469-923829176887",
+      "monto": 8280000,
+      "moneda": "ARS",
+      "cantidad": null,
+      "unidad": null,
+      "dias_reales": null,
+      "estado": "ENVIADO",
+      "notas": "{\"dias_reales\":3,\"observacion\":\"Oferta ficticia en ARS para alcance existente revision 1. Incluye materiales, remitos y probetas. No es una conversion del presupuesto USD. Sin dinero real.\",\"incluye_materiales\":true}"
+    },
+    {
+      "id": "c5edb08e-3817-4e29-addc-09dd9dd4c9ea",
+      "tarea_id": "19ae9e83-832a-4465-8a39-b6e0d87be0df",
+      "socio_id": "47d23966-00b6-5119-8e62-3e4f6f71ff29",
+      "monto": 8694000,
+      "moneda": "ARS",
+      "cantidad": null,
+      "unidad": null,
+      "dias_reales": null,
+      "estado": "ENVIADO",
+      "notas": "{\"dias_reales\":2,\"observacion\":\"Oferta ficticia en ARS para alcance existente revision 1. Incluye materiales, remitos y probetas. No es una conversion del presupuesto USD. Sin dinero real.\",\"incluye_materiales\":true}"
+    },
+    {
+      "id": "d3f92efc-c774-4db8-837a-f2542820e2aa",
+      "tarea_id": "19ae9e83-832a-4465-8a39-b6e0d87be0df",
+      "socio_id": "7c419b52-5b16-5a2d-a240-c4fa043cac65",
+      "monto": 9108000,
+      "moneda": "ARS",
+      "cantidad": null,
+      "unidad": null,
+      "dias_reales": null,
+      "estado": "ENVIADO",
+      "notas": "{\"dias_reales\":4,\"observacion\":\"Oferta ficticia en ARS para alcance existente revision 1. Incluye materiales, remitos y probetas. No es una conversion del presupuesto USD. Sin dinero real.\",\"incluye_materiales\":true}"
+    }
+  ],
+  "comparaciones": 1,
+  "comprobacion_independiente_sql": {
+    "trabajos": 24,
+    "ofertas_antes": 3,
+    "ofertas_despues": 3,
+    "solicitudes_cotizar_unicas": 3,
+    "rondas": 1,
+    "adjudicaciones": 0,
+    "bloques": 0,
+    "seguidores_ficticios": 3,
+    "apoyos_ficticios": 1,
+    "delivery_sin_cambios": "2028-06-30"
+  },
+  "navegador": {
+    "perfil_publico": "aprobado",
+    "imagenes_cargadas": "aprobado",
+    "ver_ronda": "aprobado",
+    "interfaces_autenticadas": "no_probado"
+  },
+  "rechazos_correctos": {
+    "inversor_lee_estudio": 403,
+    "contratista_edita_perfil": 403,
+    "cambiar_perfil_congelado": 409,
+    "solicitud_simultanea_reservada": 409
+  },
+  "bloqueo_actual": "bloqueado: adjudicacion requiere revisar permiso del titular",
+  "errores_producto": [
+    {
+      "id": "GROWS-ENSAYO-001",
+      "problema": "Publicar tareas por el conector ignoraba el actor verificado y exigía cookies.",
+      "estado": "corregido_y_reprobado_en_vivo",
+      "pr": 17
+    },
+    {
+      "id": "GROWS-ENSAYO-002",
+      "problema": "El coordinador puede planificar y abrir ronda pero no adjudicar; la adjudicación exige titular. Devuelve HTTP 400 aunque el servicio detecta falta de permiso.",
+      "estado": "bloqueado_regla_y_respuesta"
+    },
+    {
+      "id": "GROWS-ENSAYO-003",
+      "problema": "Las tres cotizaciones guardan cantidad y unidad nulas y la revisión de alcance solo figura en texto. Falta vinculación comprobable al cómputo y versión del pliego.",
+      "estado": "detectado_pendiente"
+    },
+    {
+      "id": "GROWS-ENSAYO-004",
+      "problema": "Presupuesto de ronda en USD y cotizaciones en ARS. No se verificó una regla de conversión compartida.",
+      "estado": "bloqueado_regla_financiera"
+    }
+  ],
+  "error_simulador": "Primera preparación de usuarios dejó campos de tokens nulos no compatibles con GoTrue; se corrigió antes de operar. No fue un error de autenticación del producto.",
+  "infraestructura": "Publicación Vercel completada; no se detectó fallo de infraestructura en las acciones de negocio.",
+  "no_probado": [
+    "inicio de trabajo",
+    "presentación de evidencia",
+    "rechazo y corrección de certificación",
+    "liquidación o pagos",
+    "inversión o emisión MCU",
+    "interfaces autenticadas del navegador",
+    "ejecución remota periódica de este nuevo ejecutor"
+  ],
+  "programacion": "Este ejecutor es manual; el cron de plantillas es independiente y continúa sin cambios."
+}

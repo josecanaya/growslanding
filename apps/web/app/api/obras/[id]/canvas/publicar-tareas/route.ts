@@ -3,11 +3,8 @@ import { publicationBlockReason } from '@/lib/proyecto-vivo/publicationContract'
 import { activarEjecucionTransformacion } from '@/lib/proyecto-vivo/activarEjecucionTransformacion';
 import { normalizeProductiveRelation } from '@/lib/proyecto-vivo/relationSemantics';
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
 import { createServiceSupabaseClient } from '@/lib/supabase-server';
-import type { Database } from '@/lib/types/supabase.gen';
 import { listAccessibleOrgIds } from '@/lib/orgs';
 import { PermisoService } from '@/lib/services/permiso.service';
 import { TareasRepository, TareaMetadataService } from '@/lib/tareas';
@@ -358,12 +355,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
   try {
     const { id: obraId } = await params;
-    const cookieStore = await cookies();
-    const supabaseAuth = createRouteHandlerClient<Database>({ cookies: () => cookieStore as any });
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseAuth.auth.getUser();
+    const user = await getSessionUser();
+    const authError = !user;
 
     if (authError || !user) {
       return NextResponse.json({ ok: false, error: 'No autenticado' }, { status: 401 });
